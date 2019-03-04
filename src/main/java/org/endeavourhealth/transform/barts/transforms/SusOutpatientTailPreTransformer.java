@@ -7,6 +7,8 @@ import org.endeavourhealth.transform.barts.schema.SusOutpatientTail;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -15,17 +17,17 @@ public class SusOutpatientTailPreTransformer {
     /**
      * simply caches the contents of a tails file into a hashmap
      */
-
+    private static final Logger LOG = LoggerFactory.getLogger(SusOutpatientTailPreTransformer.class);
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
-
+        SusPatientTailCache tailCache = csvHelper.getSusPatientTailCache();
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
                 try {
-                    processRecord((org.endeavourhealth.transform.barts.schema.SusOutpatientTail) parser, csvHelper);
+                    processRecord((org.endeavourhealth.transform.barts.schema.SusOutpatientTail) parser, csvHelper, tailCache);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -35,11 +37,11 @@ public class SusOutpatientTailPreTransformer {
 
         //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
+        LOG.info("SusPatientTail cache size:" + tailCache.size());
     }
 
-    private static void processRecord(SusOutpatientTail parser, BartsCsvHelper csvHelper) {
+    private static void processRecord(SusOutpatientTail parser, BartsCsvHelper csvHelper,  SusPatientTailCache tailCache ) {
 
-        SusPatientTailCache tailCache = csvHelper.getSusPatientTailCache();
         //only cache the fields we know we'll need
         CsvCell finNumber = parser.getFinNumber();
         CsvCell encounterId = parser.getEncounterId();

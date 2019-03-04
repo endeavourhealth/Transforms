@@ -7,37 +7,39 @@ import org.endeavourhealth.transform.barts.schema.SusOutpatient;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SusOutpatientPreTransformer {
-
+    private static final Logger LOG = LoggerFactory.getLogger(SusOutpatientPreTransformer.class);
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
-
+        SusPatientCache cache = csvHelper.getSusPatientCache();
         for (ParserI parser: parsers) {
 
             while (parser.nextRecord()) {
                 try {
-                    processRecord((org.endeavourhealth.transform.barts.schema.SusOutpatient)parser, csvHelper);
+                    processRecord((org.endeavourhealth.transform.barts.schema.SusOutpatient)parser, csvHelper, cache);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
         }
-
+        LOG.info("SusPatient cache size:" + cache.size());
     }
 
-    private static void processRecord(SusOutpatient parser, BartsCsvHelper csvHelper) {
+    private static void processRecord(SusOutpatient parser, BartsCsvHelper csvHelper,   SusPatientCache cache) {
 
         //only cache the fields we know we'll need
         if (!parser.getProcedureSchemeInUse().equals(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
             return;
         }
-        SusPatientCache cache = csvHelper.getSusPatientCache();
+
         CsvCell cdsUniqueId = parser.getCdsUniqueId();
         CsvCell localPatientId = parser.getPatientLocalId();
         CsvCell nhsNumber = parser.getNhsNumber();
