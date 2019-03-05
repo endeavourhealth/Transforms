@@ -272,12 +272,16 @@ public class PROCETransformer {
 //                    BartsCsvHelper.parseDate(procedureDateTimeCell));
             List<ProcedurePojo> pojoList = csvHelper.getProcedureCache().getProcedurePojoByEncId(compatibleEncId);
             ProcedurePojo pojo = null;
-            for (ProcedurePojo p : pojoList) {
-                if (procCodes.contains(p.getProcedureCode().getString())
-                && p.getProc_dt_tm().getDate().equals(procedureDateTimeCell.getDate())) {
-                    pojo = p;
-                    break;
+            if (pojoList != null) {
+                for (ProcedurePojo p : pojoList) {
+                    if (procCodes.contains(p.getProcedureCode().getString())
+                            && p.getProc_dt_tm().getDate().equals(procedureDateTimeCell.getDate())) {
+                        pojo = p;
+                        break;
+                    }
                 }
+            } else {
+                TransformWarnings.log(LOG, csvHelper, "Failed to find matching Enctr Id {} for {} procedure", compatibleEncId, procedureIdCell.getString());
             }
             if (pojo != null) {
                 if (pojo.getConsultant() != null) {
