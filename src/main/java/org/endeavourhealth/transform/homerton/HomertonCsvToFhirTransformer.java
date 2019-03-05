@@ -4,7 +4,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -26,18 +25,16 @@ public abstract class HomertonCsvToFhirTransformer {
     public static final String PRIMARY_ORG_ODS_CODE = "RQX";
     public static final String HOMERTON_RESOURCE_ID_SCOPE = "H";
 
-    public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, String version) throws Exception {
+    public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
-        LOG.info("Invoking Homerton CSV transformer for " + files.length + " files using and service " + serviceId);
+        LOG.info("Invoking Homerton CSV transformer for " + files.length + " files using and service " + fhirResourceFiler.getServiceId());
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //the processor is responsible for saving FHIR resources
-        FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
-        HomertonCsvHelper csvHelper = new HomertonCsvHelper(serviceId, systemId, exchangeId, null, version);
+        HomertonCsvHelper csvHelper = new HomertonCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), null, version);
 
         LOG.trace("Transforming Homerton CSV content in {}", orgDirectory);
 
@@ -76,8 +73,6 @@ public abstract class HomertonCsvToFhirTransformer {
             // apply them now, i.e. encounter items for previous created encounters
             csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
 
-            LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
-            fhirResourceFiler.waitToFinish();
         } finally {
             //if we had any exception that caused us to bomb out of the transform, we'll have
             //potentially cached resources in the DB, so tidy them up now

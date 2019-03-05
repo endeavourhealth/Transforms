@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.emis;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.ExchangePayloadFile;
@@ -17,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 
 public class EmisCustomCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCustomCsvToFhirTransformer.class);
@@ -31,14 +29,12 @@ public class EmisCustomCsvToFhirTransformer {
                                                 .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this;
 
 
-    public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds) throws Exception {
+    public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
-        LOG.info("Invoking EMIS CUSTOM CSV transformer for " + files.size() + " files and service " + serviceId);
+        LOG.info("Invoking EMIS CUSTOM CSV transformer for " + files.size() + " files and service " + fhirResourceFiler.getServiceId());
 
         //the processor is responsible for saving FHIR resources
-        FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
         EmisCustomCsvHelper csvHelper = new EmisCustomCsvHelper();
 
         for (ExchangePayloadFile fileObj: files) {
@@ -48,11 +44,11 @@ public class EmisCustomCsvToFhirTransformer {
             try {
 
                 if (fileObj.getType().equals("RegistrationStatus")) {
-                    parser = new RegistrationStatus(serviceId, systemId, exchangeId, null, filePath, CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
+                    parser = new RegistrationStatus(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), null, filePath, CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
                     RegistrationStatusTransformer.transform(parser, fhirResourceFiler, csvHelper);
 
                 } else if (fileObj.getType().equals("OriginalTerms")) {
-                    parser = new OriginalTerms(serviceId, systemId, exchangeId, null, filePath, CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
+                    parser = new OriginalTerms(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), null, filePath, CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
                     OriginalTermsTransformer.transform(parser, fhirResourceFiler, csvHelper);
 
                 } else {
@@ -69,9 +65,6 @@ public class EmisCustomCsvToFhirTransformer {
         }
 
         csvHelper.saveRegistrationStatues(fhirResourceFiler);
-
-        LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
-        fhirResourceFiler.waitToFinish();
     }
 
 }

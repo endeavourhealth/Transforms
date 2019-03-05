@@ -8,7 +8,6 @@ import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
@@ -43,34 +42,27 @@ public abstract class EmisCsvToFhirTransformer {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();   //EMIS csv files always contain a header
 
-    public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds) throws Exception {
+    public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
 
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
-        LOG.info("Invoking EMIS CSV transformer for " + files.size() + " files and service " + serviceId);
+        LOG.info("Invoking EMIS CSV transformer for " + files.size() + " files and service " + processor.getServiceId());
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
         //so we dynamically work out the version when we load the first set of files
-        String version = determineVersion(files);
+        version = determineVersion(files);
 
         ExchangePayloadFile.validateFilesAreInSameDirectory(files);
-        boolean processPatientData = shouldProcessPatientData(serviceId, files);
-
-        //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
+        boolean processPatientData = shouldProcessPatientData(processor.getServiceId(), files);
 
         Map<Class, AbstractCsvParser> parsers = new HashMap<>();
 
         try {
-            createParsers(serviceId, systemId, exchangeId, files, version, parsers);
+            createParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, parsers);
             transformParsers(version, parsers, processor, processPatientData);
 
         } finally {
             closeParsers(parsers.values());
         }
-
-        LOG.debug("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
-        processor.waitToFinish();
     }
 
     /**

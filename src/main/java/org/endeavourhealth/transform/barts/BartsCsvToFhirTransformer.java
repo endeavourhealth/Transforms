@@ -4,7 +4,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
@@ -45,11 +44,10 @@ public abstract class BartsCsvToFhirTransformer {
 
     //public static final int VERSION_2_2_FILE_COUNT = 14;
 
-    public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, String version) throws Exception {
+    public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
-        LOG.info("Invoking Barts CSV transformer for " + files.size() + " files using and service " + serviceId);
+        LOG.info("Invoking Barts CSV transformer for " + files.size() + " files using and service " + fhirResourceFiler.getServiceId());
 
         //separate out the bulk cleve files
         /*List<ExchangePayloadFile> cleveBulks = new ArrayList<>();
@@ -68,9 +66,7 @@ public abstract class BartsCsvToFhirTransformer {
         String exchangeDirectory = ExchangePayloadFile.validateFilesAreInSameDirectory(files);
         LOG.trace("Transforming Barts CSV content in " + exchangeDirectory);
 
-        //the processor is responsible for saving FHIR resources
-        FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
-        BartsCsvHelper csvHelper = new BartsCsvHelper(serviceId, systemId, exchangeId, PRIMARY_ORG_HL7_OID, version);
+        BartsCsvHelper csvHelper = new BartsCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), PRIMARY_ORG_HL7_OID, version);
 
         /*transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
         transformClinicalParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);*/
@@ -226,9 +222,6 @@ public abstract class BartsCsvToFhirTransformer {
                 csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
                 csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
             }*/
-
-            LOG.trace("Completed transform for service " + serviceId + " - waiting for resources to commit to DB");
-            fhirResourceFiler.waitToFinish();
 
         } finally {
 

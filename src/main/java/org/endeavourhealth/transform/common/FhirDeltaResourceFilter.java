@@ -8,7 +8,6 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.hl7.fhir.instance.model.Resource;
 
@@ -20,16 +19,14 @@ import java.util.concurrent.Callable;
  */
 public class FhirDeltaResourceFilter {
 
-    private final UUID serviceId;
-    private final UUID systemId;
+    private final FhirResourceFiler filer;
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
-    public FhirDeltaResourceFilter(UUID serviceId, UUID systemId) {
-        this.serviceId = serviceId;
-        this.systemId = systemId;
+    public FhirDeltaResourceFilter(FhirResourceFiler filer) {
+        this.filer = filer;
     }
 
-    public void process(List<Resource> resources, UUID exchangeId, TransformError currentErrors, List<UUID> batchIdsToPopulate) throws Exception {
+    public void process(List<Resource> resources) throws Exception {
 
         //first the IDs must be mapped, so we can compare to what's on the DB already
         mapIds(resources);
@@ -43,15 +40,10 @@ public class FhirDeltaResourceFilter {
         filterForDelta(resources, adminUpserts, patientUpserts, patientDeletes);
 
         //then file what's left
-        fileResources(exchangeId, currentErrors, adminUpserts, patientUpserts, patientDeletes, batchIdsToPopulate);
-
+        fileResources(adminUpserts, patientUpserts, patientDeletes);
     }
 
-    private void fileResources(UUID exchangeId, TransformError currentErrors, List<Resource> adminUpserts,
-                               List<Resource> patientUpserts,  List<Resource> patientDeletes,
-                               List<UUID> batchIdsToPopulate) throws Exception {
-
-        FhirResourceFiler filer = new FhirResourceFiler(exchangeId, serviceId, systemId, currentErrors, batchIdsToPopulate);
+    private void fileResources(List<Resource> adminUpserts, List<Resource> patientUpserts, List<Resource> patientDeletes) throws Exception {
 
         for (Resource resource: adminUpserts) {
             filer.saveAdminResource(null, false, new GenericBuilder(resource));
@@ -66,9 +58,6 @@ public class FhirDeltaResourceFilter {
             //String patientId = IdHelper.getPatientId(resource);
             filer.deletePatientResource(null, false, new GenericBuilder(resource));
         }
-
-        //must wait for everything to finish
-        filer.waitToFinish();
     }
 
     private void filterForDelta(List<Resource> resources, List<Resource> adminUpserts,
@@ -123,7 +112,7 @@ public class FhirDeltaResourceFilter {
             List<Resource> resourcesOfType = entry.getValue();
             //retrieve all the resources of this type for the service and hash the JSON by ID
             HashMap<String, String> hmExistingResources = new HashMap<>();
-            List<ResourceWrapper> existingResources = resourceRepository.getResourcesByService(serviceId, entry.getKey());
+            List<ResourceWrapper> existingResources = resourceRepository.getResourcesByService(filer.getServiceId(), entry.getKey());
             for (ResourceWrapper existingResource: existingResources) {
                 String id = existingResource.getResourceId().toString();
                 String json = existingResource.getResourceData();
@@ -156,7 +145,7 @@ public class FhirDeltaResourceFilter {
 
         //retrieve all existing resources on the DB for the patient and hash the json by resource ID
         HashMap<String, String> hmExistingResources = new HashMap<>();
-        List<ResourceWrapper> existingResources = resourceRepository.getResourcesByPatient(serviceId, UUID.fromString(patientId));
+        List<ResourceWrapper> existingResources = resourceRepository.getResourcesByPatient(filer.getServiceId(), UUID.fromString(patientId));
         for (ResourceWrapper existingResource: existingResources) {
             String id = existingResource.getResourceId().toString();
             String json = existingResource.getResourceData();
@@ -194,7 +183,7 @@ public class FhirDeltaResourceFilter {
 
         //don't set a limit on the pool to start blocking, since the resources
         //are already in memory, so having them all in the queue won't use much more
-        int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
+        int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(filer.getServiceId());
         ThreadPool idMappingPool = new ThreadPool(threadPoolSize, Integer.MAX_VALUE);
 
         for (Resource resource: resources) {
@@ -255,7 +244,7 @@ public class FhirDeltaResourceFilter {
                 List<Resource> resources = new ArrayList<>();
                 resources.add(resource);
 
-                IdHelper.mapIds(serviceId, systemId, resources);
+                IdHelper.mapIds(filer.getServiceId(), filer.getSystemId(), resources);
             } catch (Exception ex) {
                 throw new TransformException("Exception mapping  " + resource.getResourceType() + " " + resource.getId(), ex);
             }

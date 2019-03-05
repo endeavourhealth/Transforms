@@ -4,7 +4,6 @@ import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -30,31 +29,26 @@ public abstract class VisionCsvToFhirTransformer {
     public static final String TIME_FORMAT = "hhmm";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;   //Vision files do not contain a header, so set on in each parsers constructor
 
-    public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds,
-                                 String version) throws Exception {
+    public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
 
         //the exchange body will be a list of files received
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
 
         if (files.length == 0) {
-            LOG.warn("Exchange {} file list is empty for service {} - skipping", exchangeId.toString(), serviceId.toString());
+            LOG.warn("Exchange {} file list is empty for service {} - skipping", processor.getExchangeId().toString(), processor.getServiceId().toString());
             return;
         }
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
-        LOG.info("Invoking Vision CSV transformer for " + files.length + " files using service " + serviceId);
-
-        //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
+        LOG.info("Invoking Vision CSV transformer for " + files.length + " files using service " + processor.getServiceId());
 
         Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            validateAndOpenParsers(serviceId, systemId, exchangeId, files, version, allParsers);
+            validateAndOpenParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, allParsers);
 
             LOG.trace("Transforming Vision CSV content in {}", orgDirectory);
             transformParsers(version, allParsers, processor);
@@ -63,9 +57,6 @@ public abstract class VisionCsvToFhirTransformer {
 
             closeParsers(allParsers.values());
         }
-
-        LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
-        processor.waitToFinish();
     }
 
 

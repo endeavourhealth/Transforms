@@ -7,7 +7,6 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
@@ -29,10 +28,7 @@ public class FhirHl7v2Filer {
     private static final ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
 
-    public void file(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                     TransformError transformError, List<UUID> batchIds) throws Exception {
-
-        FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
+    public void file(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
         Resource bundleResource = FhirResourceHelper.deserialiseResouce(exchangeBody);
 
@@ -55,7 +51,7 @@ public class FhirHl7v2Filer {
 
             //see if there's any special work we need to do for merging/moving
             String adtMessageType = findAdtMessageType(bundle);
-            LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + exchangeId);
+            LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + fhirResourceFiler.getExchangeId());
             if (adtMessageType.equals(ADT_A34)) {
                 LOG.debug("Processing A34");
                 performA34PatientMerge(bundle, fhirResourceFiler);
@@ -75,8 +71,6 @@ public class FhirHl7v2Filer {
         } catch (TransformException ex) {
             //if we get an exception, there are no parameter, so nothing special to do
         }
-
-        fhirResourceFiler.waitToFinish();
     }
 
     /**

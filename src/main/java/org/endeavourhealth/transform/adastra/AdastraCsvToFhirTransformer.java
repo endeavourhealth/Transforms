@@ -5,7 +5,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.adastra.csv.schema.*;
 import org.endeavourhealth.transform.adastra.csv.transforms.*;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -35,12 +34,11 @@ public abstract class AdastraCsvToFhirTransformer {
     //Adastra files do not contain a header, so set on in each parsers constructor.  Delimiter is |
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|');
 
-    public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, String version) throws Exception {
+    public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
 
         //the exchange body will be a list of files received
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
-        LOG.info("Invoking Adastra CSV transformer for " + files.length + " files using service " + serviceId);
+        LOG.info("Invoking Adastra CSV transformer for " + files.length + " files using service " + processor.getServiceId());
 
         //determine the version from the csv file headers
         version = determineVersion(files);
@@ -48,14 +46,11 @@ public abstract class AdastraCsvToFhirTransformer {
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
-        //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
-
         Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            validateAndOpenParsers(serviceId, systemId, exchangeId, files, version, allParsers);
+            validateAndOpenParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, allParsers);
 
             LOG.trace("Transforming Adastra CSV content in {}", orgDirectory);
             transformParsers(version, allParsers, processor);
@@ -64,9 +59,6 @@ public abstract class AdastraCsvToFhirTransformer {
 
             closeParsers(allParsers.values());
         }
-
-        LOG.trace("Completed transform for service {} - waiting for resources to commit to DB", serviceId);
-        processor.waitToFinish();
     }
 
 

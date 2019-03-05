@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.adastra;
 
 import org.endeavourhealth.common.utility.XmlHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.adastra.xml.schema.AdastraCaseDataExport;
 import org.endeavourhealth.transform.adastra.xml.schema.CodedItem;
 import org.endeavourhealth.transform.adastra.xml.transforms.admin.LocationTransform;
@@ -15,20 +14,13 @@ import org.endeavourhealth.transform.adastra.xml.transforms.clinical.FlagTransfo
 import org.endeavourhealth.transform.adastra.xml.transforms.clinical.ObservationTransformer;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 
-import java.util.List;
-import java.util.UUID;
-
 public abstract class AdastraXmlToFhirTransformer {
 
-    public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds, String version) throws Exception {
+    public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
 
         AdastraCaseDataExport caseReport = XmlHelper.deserialize(exchangeBody, AdastraCaseDataExport.class);
 
         checkMessageForIssues(caseReport);
-
-        //the processor is responsible for saving FHIR resources
-        FhirResourceFiler processor = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
 
         OrganisationTransformer.transform(caseReport, processor);
         LocationTransform.transform(caseReport, processor);
@@ -64,9 +56,6 @@ public abstract class AdastraXmlToFhirTransformer {
                 FlagTransform.transform(specialNote, caseReport.getAdastraCaseReference(), processor);
             }
         }
-
-        //adding this so the transform completes properly (if ever used)
-        processor.waitToFinish();
     }
 
     private static void checkMessageForIssues(AdastraCaseDataExport caseReport) throws TransformException {

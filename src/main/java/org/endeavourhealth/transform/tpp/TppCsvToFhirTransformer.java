@@ -7,7 +7,6 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -61,25 +60,23 @@ public abstract class TppCsvToFhirTransformer {
 
     private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
 
-    public static void transform(UUID exchangeId, String exchangeBody, UUID serviceId, UUID systemId,
-                                 TransformError transformError, List<UUID> batchIds) throws Exception {
+    public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
-        LOG.info("Invoking TPP CSV transformer for " + files.length + " files and service " + serviceId);
+        LOG.info("Invoking TPP CSV transformer for " + files.length + " files and service " + fhirResourceFiler.getServiceId());
 
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
-        FhirResourceFiler fhirResourceFiler = new FhirResourceFiler(exchangeId, serviceId, systemId, transformError, batchIds);
         Map<Class, AbstractCsvParser> parsers = new HashMap<>();
 
-        //work out the version of the files by checking the headers
-        String version = determineVersion(files);
+        //work out the version of the files by checking the headers (ignoring what was passed in)
+        version = determineVersion(files);
 
         boolean processPatientData = shouldProcessPatientData(files);
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            createParsers(serviceId, systemId, exchangeId, version, files, parsers);
+            createParsers(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), version, files, parsers);
 
             LOG.trace("Transforming TPP CSV content in " + orgDirectory);
             transformParsers(parsers, fhirResourceFiler, processPatientData);
@@ -87,9 +84,6 @@ public abstract class TppCsvToFhirTransformer {
         } finally {
             closeParsers(parsers.values());
         }
-
-        LOG.trace("Completed transform for TPP service " + serviceId + " - waiting for resources to commit to DB");
-        fhirResourceFiler.waitToFinish();
     }
 
 
