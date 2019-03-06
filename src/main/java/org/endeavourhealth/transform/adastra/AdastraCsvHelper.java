@@ -37,6 +37,7 @@ public class AdastraCsvHelper {
 
     private Map<String, CsvCell> casePatientMap = new HashMap<>();
     private Map<String, CsvCell> consultationDateMap = new HashMap<>();
+    private Map<String, CsvCell> consultationUserRefMap = new HashMap<>();
     private Map<String, CsvCell> caseCaseNoMap = new HashMap<>();
     private Map<String, String> caseOutcomeMap = new HashMap<>();
     private Map<String, CsvCell> patientCareProviderMap = new HashMap<>();
@@ -120,6 +121,10 @@ public class AdastraCsvHelper {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
     }
 
+    public Reference createPractitionerReference(String practitionerGuid) throws Exception {
+        return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
+    }
+
     public void cacheCaseOutcome(String caseId, String outcomeText)  {
         caseOutcomeMap.put(caseId, outcomeText);
     }
@@ -150,6 +155,14 @@ public class AdastraCsvHelper {
 
     public CsvCell findConsultationDateTime(String consultationId) {
         return consultationDateMap.get(consultationId);
+    }
+
+    public void cacheConsultationUserRef(String consultationId, CsvCell consultationUserRefCell) {
+        consultationUserRefMap.put(consultationId, consultationUserRefCell);
+    }
+
+    public CsvCell findConsultationUserRef(String consultationId) {
+        return consultationUserRefMap.get(consultationId);
     }
 
     public void cachePatientCareProvider(String patientId, CsvCell providerCell) {

@@ -164,7 +164,7 @@ public class JournalPreTransformer {
             return EthnicCategory.WHITE_BRITISH;
         } else if (readCode.startsWith("9S11") || readCode.startsWith("9i10")) {
             return EthnicCategory.WHITE_IRISH;
-        } else if (readCode.startsWith("9S12") || readCode.startsWith("9i2")) {
+        } else if (readCode.startsWith("9S12") || readCode.startsWith("9i2") || readCode.startsWith("9S14")) {
             return EthnicCategory.OTHER_WHITE;
         } else if (readCode.startsWith("9SB5") || readCode.startsWith("9i3")) {
             return EthnicCategory.MIXED_CARIBBEAN;
@@ -172,7 +172,7 @@ public class JournalPreTransformer {
             return EthnicCategory.MIXED_AFRICAN;
         } else if (readCode.startsWith("9SB2") || readCode.startsWith("9i5")) {
             return EthnicCategory.MIXED_ASIAN;
-        } else if (readCode.startsWith("9SB.") || readCode.startsWith("9i6"))  {
+        } else if (readCode.startsWith("9SB") || readCode.startsWith("9i6"))  {
             return EthnicCategory.OTHER_MIXED;
         } else if (readCode.startsWith("9S6") || readCode.startsWith("9i7")) {
             return EthnicCategory.ASIAN_INDIAN;
@@ -180,19 +180,20 @@ public class JournalPreTransformer {
             return EthnicCategory.ASIAN_PAKISTANI;
         } else if (readCode.startsWith("9S8") || readCode.startsWith("9i9")) {
             return EthnicCategory.ASIAN_BANGLADESHI;
-        } else if (readCode.startsWith("9SH") || readCode.startsWith("9iA")) {
+        } else if (readCode.startsWith("9SH") || readCode.startsWith("9iA") || readCode.startsWith("9SA8")) {
             return EthnicCategory.OTHER_ASIAN;
         } else if (readCode.startsWith("9S2") || readCode.startsWith("9iB")) {
             return EthnicCategory.BLACK_CARIBBEAN;
         } else if (readCode.startsWith("9S3") || readCode.startsWith("9iC")) {
             return EthnicCategory.BLACK_AFRICAN;
-        } else if (readCode.startsWith("9S4") || readCode.startsWith("9iD")) {
+        } else if (readCode.startsWith("9S4") || readCode.startsWith("9iD") || readCode.startsWith("9S5")) {
             return EthnicCategory.OTHER_BLACK;
         } else if (readCode.startsWith("9S9") || readCode.startsWith("9iE")) {
             return EthnicCategory.CHINESE;
-        } else if (readCode.startsWith("9SJ") || readCode.startsWith("9iF")) {
+        } else if (readCode.startsWith("9SJ") || readCode.startsWith("9iF") ||
+                    readCode.startsWith("9SAC") || readCode.startsWith("9SAD") || readCode.startsWith("9SA.")) {
             return EthnicCategory.OTHER;
-        } else if (readCode.startsWith("9SE") || readCode.startsWith("9iG")) {
+        } else if (readCode.startsWith("9SE") || readCode.startsWith("9iG") || readCode.startsWith("9SD")) {
             return EthnicCategory.NOT_STATED;
         } else {
             return null;

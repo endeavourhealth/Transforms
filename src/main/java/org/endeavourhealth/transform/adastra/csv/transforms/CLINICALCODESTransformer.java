@@ -63,6 +63,7 @@ public class CLINICALCODESTransformer {
 
         CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (!patientId.isEmpty()) {
+
             observationBuilder.setPatient(csvHelper.createPatientReference(patientId));
         } else {
             TransformWarnings.log(LOG, parser, "No Patient id in record for CaseId: {},  file: {}",
@@ -79,6 +80,14 @@ public class CLINICALCODESTransformer {
 
             DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
+        }
+
+        //v2 userRef - get from consultation transformer
+        CsvCell userRef = csvHelper.findConsultationUserRef(consultationId.getString());
+        if (userRef != null) {
+
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+            observationBuilder.setClinician(practitionerReference, userRef);
         }
 
         if (!readCode.isEmpty()) {
