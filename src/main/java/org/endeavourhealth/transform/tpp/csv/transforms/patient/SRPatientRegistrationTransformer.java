@@ -128,6 +128,7 @@ public class SRPatientRegistrationTransformer {
                 }
             }
 
+
         }
 
         //if we have a temporary registration type, we can also work out the registration status from the reg type String too
