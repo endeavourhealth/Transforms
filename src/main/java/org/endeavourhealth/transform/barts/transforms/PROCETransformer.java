@@ -82,11 +82,6 @@ public class PROCETransformer {
             return;
         }
         CsvCell procedureDateTimeCell = parser.getProcedureDateTime();
-        if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)) {
-            //if there's no datetime, we've been told to ignore these records
-            TransformWarnings.log(LOG, parser, "No Procedure_dt_time in PROCE file for Procedure ID {}", procedureIdCell);
-            return;
-        }
 
         // create the FHIR Procedure
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
@@ -145,6 +140,12 @@ public class PROCETransformer {
 
         if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
             //NOTE: this code IS a SNOMED concept ID, unlike the Problem file which has a description ID
+            if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)) {
+                //if there's no datetime, we've been told to ignore these records
+                TransformWarnings.log(LOG, parser, "No Procedure_dt_time in PROCE file for SNOMED Procedure ID {}", procedureIdCell);
+                return;
+            }
+
             String term = TerminologyService.lookupSnomedTerm(conceptCode);
             if (Strings.isNullOrEmpty(term)) {
                 TransformWarnings.log(LOG, csvHelper, "Failed to find Snomed term for {}", conceptIdentifierCell);
