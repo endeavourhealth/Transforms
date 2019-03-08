@@ -17,7 +17,6 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.hl7.fhir.instance.model.*;
@@ -98,7 +97,7 @@ public class PROCETransformer {
 
         procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
         CsvCell personIdCell = CsvCell.factoryDummyWrapper(personId);
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell);
+//        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell);
 
 
         Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
@@ -118,11 +117,6 @@ public class PROCETransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
             throw new TransformException("PROCEDURE_HCP_PRSNL_ID column is not empty in PROCE file");
         }
-//        //should I use the practitioner reference at all?  Never populated for Barts.
-//        if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
-//            Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
-//            procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
-//        }
 
         // Procedure is coded either Snomed or OPCS4
         CsvCell conceptIdentifierCell = parser.getConceptCodeIdentifier();
@@ -204,7 +198,7 @@ public class PROCETransformer {
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 // Link to records cached from SUSInpatientTail
                 List<SusTailCacheEntry> tailCacheList = new ArrayList<>();
-                tailCacheList = csvHelper.getSusPatientTailCache().getPatientByEncId(parser.getEncounterId().getString());
+                tailCacheList = csvHelper.getSusPatientTailCache().getPatientByUniqueId(parser.getEncounterId().getString());
                 if (tailCacheList != null && tailCacheList.size() > 0) {  // we need the patient tail records to link
                     List<String> csdIds = new ArrayList<>();
                     for (SusTailCacheEntry e : tailCacheList) {
@@ -286,7 +280,7 @@ public class PROCETransformer {
                 TransformWarnings.log(LOG, csvHelper, "Failed to find matching Enctr Id {} for {} procedure", compatibleEncId, procedureIdCell.getString());
             }
             if (pojo != null) {
-                if (pojo.getConsultant() != null) {
+                if (!procedureBuilder.hasPerformer() && pojo.getConsultant() != null) {
                     CsvCell consultantCell = pojo.getConsultant();
                     if (!consultantCell.isEmpty()) {
                         String consultantStr = consultantCell.getString();
@@ -304,8 +298,12 @@ public class PROCETransformer {
                 }
                 if (pojo.getProc_dt_tm() != null && pojo.getProc_dt_tm().getDate() != null) {
                     procedureBuilder.setRecordedDate(BartsCsvHelper.parseDate(pojo.getProc_dt_tm()));
+                } else {
+                    if (pojo.getCreate_dt_tm() != null && pojo.getCreate_dt_tm().getDate() != null) {
+                        procedureBuilder.setRecordedDate(BartsCsvHelper.parseDate(pojo.getCreate_dt_tm()));
+                    }
                 }
-                if (pojo.getUpdatedBy() != null && pojo.getProc_dt_tm().getDate() != null) {
+                if (!procedureBuilder.hasPerformer() && pojo.getUpdatedBy() != null && pojo.getProc_dt_tm().getDate() != null) {
                     CsvCell updateByCell = pojo.getUpdatedBy();
                     if (!updateByCell.isEmpty()) {
                         String updatedByStr = updateByCell.getString();
