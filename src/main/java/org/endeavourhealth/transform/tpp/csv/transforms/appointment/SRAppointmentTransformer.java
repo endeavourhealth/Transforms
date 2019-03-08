@@ -67,15 +67,16 @@ public class SRAppointmentTransformer {
             if (appointment != null) {
                 AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
                 appointmentBuilder.setDeletedAudit(deleteData);
-                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, appointmentBuilder);
+
+                //create the linked slot to delete using the same Id as the appointment. nb. there is no patient on
+                //a slot so we don't need to retrieve the existing resource
+                SlotBuilder slotBuilder = new SlotBuilder();
+                slotBuilder.setId(appointmentId.getString(), appointmentId);
+                slotBuilder.setDeletedAudit(deleteData);
+
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
             }
-            //TODO: Slot is not a Patient resource, confirm what to delete
-//            Slot slot = (Slot) csvHelper.retrieveResource(appointmentId.getString(), ResourceType.Slot);
-//            if (slot != null) {
-//                SlotBuilder slotBuilder = new SlotBuilder(slot);
-//                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, slotBuilder);
-//            }
-//            return;
+            return;
         }
 
         // If we don't have a patient reference, don't file the slot as the filer doesn't support saving slots without a patient

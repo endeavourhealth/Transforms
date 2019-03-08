@@ -477,9 +477,6 @@ public abstract class TppCsvToFhirTransformer {
             SRChildAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             SRSpecialNotesTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
-            //TODO - commented out for now. Review
-            //SRMediaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         }
 
         //close down the utility thread pool

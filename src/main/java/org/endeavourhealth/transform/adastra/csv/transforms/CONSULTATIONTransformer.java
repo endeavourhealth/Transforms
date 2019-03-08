@@ -1,11 +1,9 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.csv.schema.CONSULTATION;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
@@ -60,6 +58,7 @@ public class CONSULTATIONTransformer {
         //link the Episode of care resource
         CsvCell caseId = parser.getCaseId();
         if (!caseId.isEmpty()) {
+
             Reference episodeOfCareReference = csvHelper.createEpisodeReference(caseId);
             encounterBuilder.setEpisodeOfCare(episodeOfCareReference);
         }
@@ -67,6 +66,7 @@ public class CONSULTATIONTransformer {
         //get cached patientId from case
         CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (!patientId.isEmpty()) {
+
             encounterBuilder.setPatient(csvHelper.createPatientReference(patientId));
         } else {
             TransformWarnings.log(LOG, parser, "No Patient id in record for CaseId: {},  file: {}",
@@ -93,9 +93,21 @@ public class CONSULTATIONTransformer {
 
         CsvCell consultationCaseType = parser.getConsultationCaseType();
         if (!consultationCaseType.isEmpty()) {
+
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilder.setText(consultationCaseType.getString(), consultationCaseType);
+        }
+
+        //v2 userRef
+        CsvCell userRef = parser.getUserRef();
+        if (!userRef.isEmpty()) {
+
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, userRef);
+
+            //cache the consultation user to use with linked clinical codes and prescriptions
+            csvHelper.cacheConsultationUserRef(consultationId.getString(), userRef);
         }
 
         //collect free text from history, exam, diagnosis and treatment
@@ -103,21 +115,25 @@ public class CONSULTATIONTransformer {
 
         CsvCell historyText = parser.getHistory();
         if (!historyText.isEmpty()) {
+
             encounterTextBuilder.append(historyText.getString()+" ");
         }
 
         CsvCell examinationText = parser.getExamination();
         if (!examinationText.isEmpty()) {
+
             encounterTextBuilder.append(examinationText.getString()+" ");
         }
 
         CsvCell diagnosisText = parser.getDiagnosis();
         if (!diagnosisText.isEmpty()) {
+
             encounterTextBuilder.append(diagnosisText.getString()+" ");
         }
 
         CsvCell treatmentPlanText = parser.getTreatmentPlan();
         if (!treatmentPlanText.isEmpty()) {
+
             encounterTextBuilder.append(treatmentPlanText.getString()+" ");
         }
 
@@ -138,6 +154,13 @@ public class CONSULTATIONTransformer {
             observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId));
             observationBuilder.setNotes(encounterTextBuilder.toString().trim());
 
+            //v2 userRef - add consulter clinician to observation
+            if (!userRef.isEmpty()) {
+
+                Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+                observationBuilder.setClinician(practitionerReference, userRef);
+            }
+
             //cache the link to this new observation
             csvHelper.cacheNewConsultationChildRelationship(consultationId,
                     observationId,
@@ -150,6 +173,7 @@ public class CONSULTATIONTransformer {
         containedListBuilder.addReferences(newLinkedResources);
 
         if (observationBuilder != null) {
+
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, observationBuilder);
         } else {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);

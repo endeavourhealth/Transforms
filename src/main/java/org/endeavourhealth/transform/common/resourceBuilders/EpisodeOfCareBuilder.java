@@ -173,6 +173,12 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         auditCodingExtension(extension, sourceCells);
     }
 
+    public void setPCCArrival(Date pccArrival, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateDateTimeExtension(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_PCCARRIVAL, pccArrival);
+
+        auditDateTimeExtension(extension, sourceCells);
+    }
+
     @Override
     public Identifier addIdentifier() {
         return this.episodeOfCare.addIdentifier();

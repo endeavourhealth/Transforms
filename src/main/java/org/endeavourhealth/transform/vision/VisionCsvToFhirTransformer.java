@@ -85,8 +85,6 @@ public abstract class VisionCsvToFhirTransformer {
         findFileAndOpenParser(Journal.class, serviceId, systemId, exchangeId, files, version, parsers);
 
         //then validate there are no extra, unexpected files in the folder, which would imply new data
-        //Set<File> sh = new HashSet<>(parsers);
-
         Set<String> expectedFiles = parsers
                 .values()
                 .stream()
@@ -177,10 +175,6 @@ public abstract class VisionCsvToFhirTransformer {
         JournalPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         EncounterPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
-        //before getting onto the files that actually create FHIR resources, we need to
-        //work out what record numbers to process, if we're re-running a transform
-        //boolean processingSpecificRecords = findRecordsToProcess(parsers, previousErrors);
-
         //run the transforms for non-patient resources
         PracticeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         StaffTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
@@ -191,35 +185,5 @@ public abstract class VisionCsvToFhirTransformer {
         ReferralTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         JournalTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
-//        if (!processingSpecificRecords) {
-//
-//            //if we have any new Obs, Conditions, Medication etc. that reference pre-existing parent obs or problems,
-//            //then we need to retrieve the existing resources and update them
-//            csvHelper.processRemainingObservationParentChildLinks(fhirResourceFiler);
-//
-//            //process any new items linked to past consultations
-//            csvHelper.processRemainingConsultationRelationships(fhirResourceFiler);
-//
-//            //if we have any new Obs etc. that refer to pre-existing problems, we need to update the existing FHIR Problem
-//            csvHelper.processRemainingProblemRelationships(fhirResourceFiler);
-//
-//            //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
-//            csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
-//
-//            //process any changes to ethnicity or marital status, without a change to the Patient
-//            csvHelper.processRemainingEthnicitiesAndMartialStatuses(fhirResourceFiler);
-//
-//            //process any changes to Org-Location links without a change to the Location itself
-//            csvHelper.processRemainingOrganisationLocationMappings(fhirResourceFiler);
-//
-//            //process any changes to Problems that didn't have an associated Observation change too
-//            csvHelper.processRemainingProblems(fhirResourceFiler);
-//
-//            //update any MedicationStatements to set the last issue date on them
-//            csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);
-//        }
     }
-
-
-
 }

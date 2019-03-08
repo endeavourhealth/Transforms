@@ -477,18 +477,21 @@ public class SRCodeTransformer {
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
         }
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
         CsvCell snomedCodeCell = parser.getSNOMEDCode();
         CsvCell snomedDescCell = parser.getSNOMEDText();
         CsvCell ctv3CodeCell = parser.getCTV3Code();
         CsvCell ctv3DescCell = parser.getCTV3Text();
         addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
-
-        ObservationBuilder systolicObservationBuilder = null;
-        ObservationBuilder diastolicObservationBuilder = null;
+        //ObservationBuilder systolicObservationBuilder = null;
+        //ObservationBuilder diastolicObservationBuilder = null;
 
         //TODO - rewrite the below to work - the aim is to have an Observation for the systolic and diastolic
+        // Not sure this is relevant to TPP.  This is only valid when a parent BP code is received with two
+        // values, i.e. the systolic and diastolic readings. See Vision Journal implementation
+
         //with a third Observation containing both values that the first two link to. The below does not do this.
         /*CsvCell readSNOMEDCode = parser.getSNOMEDCode();
         if (readSNOMEDCode != null && !readSNOMEDCode.isEmpty() && !readSNOMEDCode.getString().equals("-1")) {
@@ -588,12 +591,12 @@ public class SRCodeTransformer {
                 && (isNumericCell == null || isNumericCell.getBoolean())) { //null check required because the column wasn't always present
 
             observationBuilder.setValueNumber(numericValue.getDouble(), numericValue);
-            if (systolicObservationBuilder != null) {
-                systolicObservationBuilder.setValueNumber(numericValue.getDouble(), numericValue);
-            }
-            if (diastolicObservationBuilder != null) {
-                diastolicObservationBuilder.setValueNumber(numericValue.getDouble(), numericValue);
-            }
+//            if (systolicObservationBuilder != null) {
+//                systolicObservationBuilder.setValueNumber(numericValue.getDouble(), numericValue);
+//            }
+//            if (diastolicObservationBuilder != null) {
+//                diastolicObservationBuilder.setValueNumber(numericValue.getDouble(), numericValue);
+//            }
         }
 
         CsvCell numericUnits = parser.getNumericUnit();
@@ -601,12 +604,12 @@ public class SRCodeTransformer {
                 && (isNumericCell == null || isNumericCell.getBoolean())) { //null check required because the column wasn't always present
 
             observationBuilder.setValueNumberUnits(numericUnits.getString(), numericUnits);
-            if (systolicObservationBuilder != null) {
-                systolicObservationBuilder.setValueNumberUnits(numericUnits.getString(), numericUnits);
-            }
-            if (diastolicObservationBuilder != null) {
-                diastolicObservationBuilder.setValueNumberUnits(numericUnits.getString(), numericUnits);
-            }
+//            if (systolicObservationBuilder != null) {
+//                systolicObservationBuilder.setValueNumberUnits(numericUnits.getString(), numericUnits);
+//            }
+//            if (diastolicObservationBuilder != null) {
+//                diastolicObservationBuilder.setValueNumberUnits(numericUnits.getString(), numericUnits);
+//            }
         }
 
         CsvCell numericComparator = parser.getNumericComparator();
@@ -627,13 +630,13 @@ public class SRCodeTransformer {
             observationBuilder.setEncounter(eventReference, eventId);
         }
 
-        if (systolicObservationBuilder != null) {
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder, systolicObservationBuilder);
-        } else if (diastolicObservationBuilder != null) {
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder, diastolicObservationBuilder);
-        } else {
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
-        }
+//        if (systolicObservationBuilder != null) {
+//            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder, systolicObservationBuilder);
+//        } else if (diastolicObservationBuilder != null) {
+//            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder, diastolicObservationBuilder);
+//        } else {
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
+        //}
     }
 
     private static void createOrDeleteFamilyMemberHistory(SRCode parser,

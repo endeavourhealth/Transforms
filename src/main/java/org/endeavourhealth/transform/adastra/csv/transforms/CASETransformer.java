@@ -55,25 +55,40 @@ public class CASETransformer {
                 = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
 
         CsvCell caseNo = parser.getCaseNo();
-        IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeBuilder);
-        identifierBuilder.setUse(Identifier.IdentifierUse.USUAL);
-        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ADASTRA_CASENO);
-        identifierBuilder.setValue(caseNo.getString(), caseNo);
+        if (!caseNo.isEmpty()) {
+
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.USUAL);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ADASTRA_CASENO);
+            identifierBuilder.setValue(caseNo.getString(), caseNo);
+        }
+
+        CsvCell caseTag = parser.getCaseTagName();
+        if (!caseTag.isEmpty()) {
+
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ADASTRA_CASETAG);
+            identifierBuilder.setValue(caseTag.getString(), caseTag);
+        }
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         boolean isResourceMapped = csvHelper.isResourceIdMapped(caseId.getString(), episodeBuilder.getResource());
         if (isResourceMapped) {
+
             patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
         }
         episodeBuilder.setPatient(patientReference, patientId);
 
         CsvCell startDateTime = parser.getStartDateTime();
         if (!startDateTime.isEmpty()) {
+
             episodeBuilder.setRegistrationStartDate(startDateTime.getDateTime(), startDateTime);
         }
 
         CsvCell endDateTime = parser.getEndDateTime();
         if (!endDateTime.isEmpty()) {
+
             episodeBuilder.setRegistrationEndDate(endDateTime.getDateTime(), endDateTime);
         }
 
@@ -83,14 +98,35 @@ public class CASETransformer {
 
         // if episode already ID mapped, get the mapped ID for the org
         if (isResourceMapped) {
+
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
         }
         episodeBuilder.setManagingOrganisation(organisationReference);
 
+        //v2 userRef
+        CsvCell userRef = parser.getUserRef();
+        if (!userRef.isEmpty()) {
+
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+
+            if (isResourceMapped) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+            }
+            episodeBuilder.setCareManager(practitionerReference, userRef);
+        }
+
         //simple priority text set as an extension
         CsvCell priority = parser.getPriorityName();
         if (!priority.isEmpty()) {
+
             episodeBuilder.setPriority (priority.getString(), priority);
+        }
+
+        //v2 pcc arrival date and time
+        CsvCell pccArrival = parser.getArrivedPCC();
+        if (!pccArrival.isEmpty()) {
+
+            episodeBuilder.setPCCArrival(pccArrival.getDateTime(), pccArrival);
         }
 
         // return the builder back to the cache

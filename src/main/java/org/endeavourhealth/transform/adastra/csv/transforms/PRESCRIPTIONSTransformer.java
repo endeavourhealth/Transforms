@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.csv.schema.PRESCRIPTIONS;
@@ -68,6 +69,7 @@ public class PRESCRIPTIONSTransformer {
 
         CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (!patientId.isEmpty()) {
+
             medicationStatementBuilder.setPatient(csvHelper.createPatientReference(patientId));
         } else {
             TransformWarnings.log(LOG, parser, "No Patient Id in record for CaseId: {},  file: {}",
@@ -82,11 +84,31 @@ public class PRESCRIPTIONSTransformer {
             medicationStatementBuilder.setAssertedDate(dateTimeType, effectiveDate);
         }
 
+        //v2 userRef - get from consultation transformer
+        CsvCell userRef = csvHelper.findConsultationUserRef(consultationId.getString());
+        if (userRef != null) {
+
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+            medicationStatementBuilder.setInformationSource(practitionerReference, userRef);
+        }
+
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
 
-        // the drugs are not be coded, but has a name, so set as text
+        //v2 dm&d code
+        CsvCell drugCode = parser.getDMDCode();
+        if (!drugCode.isEmpty()) {
+
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(drugCode.getString(), drugCode);
+            if (!drugName.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(drugName.getString(), drugName);
+            }
+        }
+
+        // the drugs are not coded in v1, but has a name, so set as text
         if (!drugName.isEmpty()) {
+
             codeableConceptBuilder.setText(drugName.getString(), drugName);
         }
 
@@ -102,6 +124,7 @@ public class PRESCRIPTIONSTransformer {
 
         CsvCell dose = parser.getDosage();
         if (!dose.isEmpty()) {
+
             medicationStatementBuilder.setDose(dose.getString(), dose);
         }
 

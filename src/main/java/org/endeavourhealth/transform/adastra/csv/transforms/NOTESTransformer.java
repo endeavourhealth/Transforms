@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.FlagBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Flag;
 import org.hl7.fhir.instance.model.Identifier;
+import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,8 +89,17 @@ public class NOTESTransformer {
             }
         }
 
+        //v2 userRef
+        CsvCell userRef = parser.getUserRef();
+        if (!userRef.isEmpty()) {
+
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+            flagBuilder.setAuthor(practitionerReference, userRef);
+        }
+
         CsvCell noteText = parser.getNoteText();
         if (!noteText.isEmpty()) {
+
             flagBuilder.setCode(noteText.getString(), noteText);
         }
 
