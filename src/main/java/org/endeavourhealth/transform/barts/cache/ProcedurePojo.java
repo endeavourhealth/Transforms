@@ -8,11 +8,20 @@ public class ProcedurePojo {
     private CsvCell encounterId;
     private CsvCell consultant;
     private CsvCell proc_dt_tm;
+    private CsvCell create_dt_tm;
     private CsvCell updatedBy;
     private CsvCell notes;
     private CsvCell Mrn;
     private CsvCell procedureCode;
     private String snomedConceptId; // Handy for lookups
+
+    public CsvCell getCreate_dt_tm() {
+        return create_dt_tm;
+    }
+
+    public void setCreate_dt_tm(CsvCell create_dt_tm) {
+        this.create_dt_tm = create_dt_tm;
+    }
 
     public String getSnomedConceptId() {
         return snomedConceptId;
