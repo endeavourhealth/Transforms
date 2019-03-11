@@ -28,7 +28,7 @@ public class SusPatientTailCache {
     }
 
     public void cacheRecord(SusTailCacheEntry record) {
-        String id= record.getCDSUniqueIdentifier().getString();
+        String id= record.getEncounterId().getString();
 
         if (encIdInCache(id)) {
             List<SusTailCacheEntry> list = getPatientByEncId(id);

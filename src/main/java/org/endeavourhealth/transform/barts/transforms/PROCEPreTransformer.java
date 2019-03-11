@@ -38,8 +38,11 @@ public class PROCEPreTransformer {
 
         CsvCell procedureIdCell = parser.getProcedureID();
         CsvCell encounterIdCell = parser.getEncounterId();
+        CsvCell sequenceNumber = parser.getCDSSequence();
 
-
+        if (sequenceNumber.getLong()==1L) {
+           csvHelper.savePrimaryProcedureForEncounter(encounterIdCell.getLong(),sequenceNumber.getLong());
+        }
         PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), procedureIdCell, encounterIdCell, csvHelper);
         csvHelper.submitToThreadPool(callable);
     }

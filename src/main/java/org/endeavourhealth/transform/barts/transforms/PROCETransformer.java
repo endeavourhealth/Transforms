@@ -194,6 +194,7 @@ public class PROCETransformer {
 
             }
             List<String> procCodes = new ArrayList<>();
+            Long parentProcedureId = 0L;
             // Get data from SUS file caches for OPCS4
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 // Link to records cached from SUSInpatientTail
@@ -224,12 +225,14 @@ public class PROCETransformer {
                                     if (conceptCode.equals(susPatientCacheEntry.getSecondaryProcedureOPCS().getString()))
                                         patientCacheList.add(susPatientCacheEntry);
                                     procCodes.add(conceptCode);
+                                   parentProcedureId = csvHelper.getPrimaryProcedureForEncounter(encounterIdCell.getLong());
                                     break;
                                 default:
                                     if (!susPatientCacheEntry.getOtherCodes().isEmpty()
                                             && susPatientCacheEntry.getOtherCodes().get(seqNo).equals(conceptCode)) {
                                         procCodes.add(conceptCode);
                                         patientCacheList.add(susPatientCacheEntry);
+                                        parentProcedureId = csvHelper.getPrimaryProcedureForEncounter(encounterIdCell.getLong());
                                         break;
                                     }
                             }
@@ -263,7 +266,10 @@ public class PROCETransformer {
                     TransformWarnings.log(LOG, csvHelper, "No tail records found for person {}, procedure {} ", personId, procedureIdCell.getString());
                 }
             }
-
+            if (!parentProcedureId.equals(0L)) {
+                Reference procedureReference =  ReferenceHelper.createReference(ResourceType.Procedure, parentProcedureId.toString());
+                procedureBuilder.setParentResource(procedureReference);
+            }
 //            ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByMultipleFields(compatibleEncId, procCode,
 //                    BartsCsvHelper.parseDate(procedureDateTimeCell));
             List<ProcedurePojo> pojoList = csvHelper.getProcedureCache().getProcedurePojoByEncId(compatibleEncId);
