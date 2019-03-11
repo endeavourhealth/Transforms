@@ -41,7 +41,7 @@ public class SusOutpatientPreTransformer {
         }
 
         CsvCell cdsUniqueId = parser.getCdsUniqueId();
-        if (!csvHelper.getSusPatientTailCache().CSDuniqueIdInCache(cdsUniqueId.getString())) {
+        if (!csvHelper.getSusPatientTailCache().encIdInCache(cdsUniqueId.getString())) {
             LOG.warn("Outpatient records with CdsUniqueId " + cdsUniqueId.getString() +" has no tail record. ");
         }
         CsvCell localPatientId = parser.getPatientLocalId();

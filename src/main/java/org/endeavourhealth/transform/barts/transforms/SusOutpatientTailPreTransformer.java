@@ -50,8 +50,8 @@ public class SusOutpatientTailPreTransformer {
         CsvCell personnelId = parser.getResponsiblePersonnelId();
         CsvCell cdsActivityDate = parser.getCdsActivityDate();
         int seqNo = 1; // Primary is default
-        if (tailCache.CSDuniqueIdInCache(encounterId.getString())) {
-            List<SusTailCacheEntry> s = tailCache.getPatientByUniqueId(encounterId.getString());
+        if (tailCache.encIdInCache(encounterId.getString())) {
+            List<SusTailCacheEntry> s = tailCache.getPatientByEncId(encounterId.getString());
             seqNo = s.size() + 1;
         }
 
