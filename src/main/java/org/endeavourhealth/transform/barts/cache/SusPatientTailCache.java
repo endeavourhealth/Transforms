@@ -13,30 +13,30 @@ public class SusPatientTailCache {
     private static final Logger LOG = LoggerFactory.getLogger(SusPatientTailCache.class);
 
     private final BartsCsvHelper csvHelper;
-    private HashMap<String, List<SusTailCacheEntry>> patientTailCacheByCSDUniquecId = new HashMap<>();
+    private HashMap<String, List<SusTailCacheEntry>> patientTailCacheByEncId = new HashMap<>();
 
     public SusPatientTailCache(BartsCsvHelper csvHelper) {
         this.csvHelper = csvHelper;
     }
 
-    public List<SusTailCacheEntry> getPatientByUniqueId(String id) {
-        return patientTailCacheByCSDUniquecId.get(id);
+    public List<SusTailCacheEntry> getPatientByEncId(String id) {
+        return patientTailCacheByEncId.get(id);
     }
 
-    public boolean CSDuniqueIdInCache(String id) {
-        return patientTailCacheByCSDUniquecId.containsKey(id);
+    public boolean encIdInCache(String id) {
+        return patientTailCacheByEncId.containsKey(id);
     }
 
     public void cacheRecord(SusTailCacheEntry record) {
         String id= record.getCDSUniqueIdentifier().getString();
 
-        if (CSDuniqueIdInCache(id)) {
-            List<SusTailCacheEntry> list = getPatientByUniqueId(id);
+        if (encIdInCache(id)) {
+            List<SusTailCacheEntry> list = getPatientByEncId(id);
             list.add(record);
         } else {
             List<SusTailCacheEntry> list = new ArrayList<>();
             list.add(record);
-            patientTailCacheByCSDUniquecId.put(id, list);
+            patientTailCacheByEncId.put(id, list);
         }
     }
 
@@ -48,14 +48,14 @@ public class SusPatientTailCache {
      */
     public void cleanUpResourceCache() {
         try {
-            patientTailCacheByCSDUniquecId.clear();
+            patientTailCacheByEncId.clear();
         } catch (Exception ex) {
             LOG.error("Error cleaning up cache", ex);
         }
     }
 
     public int size() {
-        return patientTailCacheByCSDUniquecId.size();
+        return patientTailCacheByEncId.size();
     }
 
 }
