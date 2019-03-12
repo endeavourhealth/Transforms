@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PROCE;
 import org.endeavourhealth.transform.common.*;
@@ -40,7 +41,7 @@ public class PROCEPreTransformer {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell sequenceNumber = parser.getCDSSequence();
 
-        if (sequenceNumber.getLong()==1L) {
+        if (!sequenceNumber.isEmpty() && NumberUtils.isNumber(sequenceNumber.getString()) && sequenceNumber.getLong()==1L) {
            csvHelper.savePrimaryProcedureForEncounter(encounterIdCell.getLong(),sequenceNumber.getLong());
         }
         PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), procedureIdCell, encounterIdCell, csvHelper);
