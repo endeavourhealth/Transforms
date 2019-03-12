@@ -55,6 +55,7 @@ public class PROCETransformer {
 
         // this Procedure resource id
         CsvCell procedureIdCell = parser.getProcedureID();
+        Long parentProcedureId = 0L;
 
         //if the record is non-active (i.e. deleted) we ONLY get the ID, date and active indicator, NOT the person ID
         //so we need to re-retrieve the previous instance of the resource to find the patient Reference which we need to delete
@@ -181,6 +182,8 @@ public class PROCETransformer {
             //TODO remove isPrimary later. Just use sequence number
             if (sequenceNumberCell.getInt() == 1) { //only sequence number ONE is primary
                 procedureBuilder.setIsPrimary(true, sequenceNumberCell);
+            } else {
+                parentProcedureId = csvHelper.getPrimaryProcedureForEncounter(encounterIdCell.getLong());
             }
         }
 
@@ -194,7 +197,6 @@ public class PROCETransformer {
 
             }
             List<String> procCodes = new ArrayList<>();
-            Long parentProcedureId = 0L;
             // Get data from SUS file caches for OPCS4
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 // Link to records cached from SUSInpatientTail
