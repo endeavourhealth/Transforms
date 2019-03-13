@@ -222,12 +222,24 @@ public class PROCETransformer {
                                     if (conceptCode.equals(susPatientCacheEntry.getPrimaryProcedureOPCS().getString()))
                                         patientCacheList.add(susPatientCacheEntry);
                                     procCodes.add(conceptCode);
+                                    if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
+                                            && susPatientCacheEntry.getPrimaryProcedureDate() != null && !susPatientCacheEntry.getPrimaryProcedureDate().isEmpty()
+                                            && susPatientCacheEntry.getPrimaryProcedureDate().getDate() != null) {
+                                        DateTimeType dt = new DateTimeType(susPatientCacheEntry.getPrimaryProcedureDate().getDate());
+                                        procedureBuilder.setPerformed(dt, susPatientCacheEntry.getPrimaryProcedureDate());
+                                    }
                                     break;
                                 case 2:
                                     if (conceptCode.equals(susPatientCacheEntry.getSecondaryProcedureOPCS().getString()))
                                         patientCacheList.add(susPatientCacheEntry);
                                     procCodes.add(conceptCode);
                                    parentProcedureId = csvHelper.getPrimaryProcedureForEncounter(encounterIdCell.getLong());
+                                    if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
+                                            && susPatientCacheEntry.getSecondaryProcedureDate() != null && !susPatientCacheEntry.getSecondaryProcedureDate().isEmpty()
+                                            && susPatientCacheEntry.getSecondaryProcedureDate().getDate() != null) {
+                                        DateTimeType dt = new DateTimeType(susPatientCacheEntry.getSecondaryProcedureDate().getDate());
+                                        procedureBuilder.setPerformed(dt, susPatientCacheEntry.getSecondaryProcedureDate());
+                                    }
                                     break;
                                 default:
                                     if (!susPatientCacheEntry.getOtherCodes().isEmpty()
@@ -235,6 +247,11 @@ public class PROCETransformer {
                                         procCodes.add(conceptCode);
                                         patientCacheList.add(susPatientCacheEntry);
                                         parentProcedureId = csvHelper.getPrimaryProcedureForEncounter(encounterIdCell.getLong());
+                                        if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
+                                                && susPatientCacheEntry.getOtherDates() != null && !susPatientCacheEntry.getOtherDates().isEmpty()) {
+                                            DateTimeType dt = new DateTimeType(susPatientCacheEntry.getOtherDates().get(seqNo));
+                                            procedureBuilder.setPerformed(dt, susPatientCacheEntry.getOtherSecondaryProceduresOPCS());
+                                        }
                                         break;
                                     }
                             }
@@ -255,12 +272,7 @@ public class PROCETransformer {
                             procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
                             knownPerformers.add(tail.getResponsibleHcpPersonnelId().getString());
                             performerCount++;
-                            if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
-                                    && tail.getCdsActivityDate() != null && !tail.getCdsActivityDate().isEmpty()
-                                    && tail.getCdsActivityDate().getDate() != null) {
-                                DateTimeType dt = new DateTimeType(tail.getCdsActivityDate().getDate());
-                                procedureBuilder.setPerformed(dt, tail.getCdsActivityDate());
-                            }
+
                         }
                     }
                     LOG.info("Procedure " + procedureIdCell.getString() + ". Performers added:" + performerCount);
