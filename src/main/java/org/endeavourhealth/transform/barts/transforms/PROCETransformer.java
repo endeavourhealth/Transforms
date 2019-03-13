@@ -280,7 +280,7 @@ public class PROCETransformer {
                     TransformWarnings.log(LOG, csvHelper, "No tail records found for person {}, procedure {} ", personId, procedureIdCell.getString());
                 }
             }
-            if (!parentProcedureId.equals(null) && !parentProcedureId.equals(0L)) {
+            if (parentProcedureId != null && parentProcedureId != 0L) {
                 Reference procedureReference =  ReferenceHelper.createReference(ResourceType.Procedure, parentProcedureId.toString());
                 procedureBuilder.setParentResource(procedureReference);
             }
