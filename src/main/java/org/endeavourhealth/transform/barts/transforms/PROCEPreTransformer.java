@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.apache.commons.lang3.math.NumberUtils;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PROCE;
 import org.endeavourhealth.transform.common.*;
@@ -19,13 +18,13 @@ public class PROCEPreTransformer {
                                  BartsCsvHelper csvHelper) throws Exception {
 
         try {
-            for (ParserI parser: parsers) {
+            for (ParserI parser : parsers) {
                 while (parser.nextRecord()) {
 //                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
 //                        continue;
 //                    }
                     //no try/catch here, since any failure here means we don't want to continue
-                    processRecord((PROCE)parser, fhirResourceFiler, csvHelper);
+                    processRecord((PROCE) parser, fhirResourceFiler, csvHelper);
                 }
             }
 
@@ -41,9 +40,11 @@ public class PROCEPreTransformer {
         CsvCell encounterIdCell = parser.getEncounterId();
         CsvCell sequenceNumber = parser.getCDSSequence();
 
-        if (!sequenceNumber.isEmpty() && NumberUtils.isNumber(sequenceNumber.getString()) && sequenceNumber.getLong()==1L) {
-           csvHelper.savePrimaryProcedureForEncounter(encounterIdCell.getLong(),sequenceNumber.getLong());
+        if (!sequenceNumber.isEmpty()
+                && sequenceNumber.getInt() == 1) {
+            csvHelper.saveInternalId(PROCETransformer.INTERNAL_ID_MAP_PRIMARY_PROCEDURE, encounterIdCell.getString(), procedureIdCell.getString());
         }
+
         PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), procedureIdCell, encounterIdCell, csvHelper);
         csvHelper.submitToThreadPool(callable);
     }

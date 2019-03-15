@@ -31,6 +31,7 @@ public class PROCETransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCETransformer.class);
     private static final String TWO_DECIMAL_PLACES = ".00";
 
+    public static final String INTERNAL_ID_MAP_PRIMARY_PROCEDURE = "PRIMARY_PROCEDURE_FOR_ENCOUNTER";
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -55,7 +56,6 @@ public class PROCETransformer {
 
         // this Procedure resource id
         CsvCell procedureIdCell = parser.getProcedureID();
-        Long parentProcedureId = 0L;
 
         //if the record is non-active (i.e. deleted) we ONLY get the ID, date and active indicator, NOT the person ID
         //so we need to re-retrieve the previous instance of the resource to find the patient Reference which we need to delete
@@ -175,18 +175,11 @@ public class PROCETransformer {
             throw new TransformException("Unknown PROCE code type [" + conceptCodeType + "]");
         }
 
-        //populate comments, performed date, consultant etc. from that file if possible
-        CsvCell sequenceNumberCell = parser.getCDSSequence();
-        if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)) {
-            procedureBuilder.setSequenceNumber(sequenceNumberCell.getInt());
-            //TODO remove isPrimary later. Just use sequence number
-            if (sequenceNumberCell.getInt() == 1) { //only sequence number ONE is primary
-                procedureBuilder.setIsPrimary(true, sequenceNumberCell);
-            } else {
-                parentProcedureId = csvHelper.getPrimaryProcedureForEncounter(encounterIdCell.getLong());
-            }
-        }
+        //use the sequence number to work out which is the primary procedure and link secondary procedures to their primary
+        //note, this is only applicable to OPCS-4 procedures - for Snomed procedures the sequence number is always zero
+        processSequenceNumber(parser, procedureBuilder, csvHelper);
 
+        //populate comments, performed date, consultant etc. from that file if possible
         if (parser.getEncounterId().getString() != null) {
             String compatibleEncId = parser.getEncounterId().getString() + TWO_DECIMAL_PLACES; //Procedure has encounter ids suffixed with .00.
             String procCode = conceptIdentifierCell.getString().substring(conceptIdentifierCell.getString().indexOf("!") + 1); // before the ! is the code scheme.
@@ -194,8 +187,10 @@ public class PROCETransformer {
                 //SNOMED entries use the SNOMED description id rather than concept code
                 codeableConceptBuilder.setText(procCode);
                 procCode = csvHelper.lookupSnomedConceptIdFromDescId(procCode);
-
             }
+
+            CsvCell sequenceNumberCell = parser.getCDSSequence();
+
             List<String> procCodes = new ArrayList<>();
             // Get data from SUS file caches for OPCS4
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
@@ -233,7 +228,6 @@ public class PROCETransformer {
                                     if (conceptCode.equals(susPatientCacheEntry.getSecondaryProcedureOPCS().getString()))
                                         patientCacheList.add(susPatientCacheEntry);
                                     procCodes.add(conceptCode);
-                                   parentProcedureId = csvHelper.getPrimaryProcedureForEncounter(encounterIdCell.getLong());
                                     if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
                                             && susPatientCacheEntry.getSecondaryProcedureDate() != null && !susPatientCacheEntry.getSecondaryProcedureDate().isEmpty()
                                             && susPatientCacheEntry.getSecondaryProcedureDate().getDate() != null) {
@@ -246,7 +240,6 @@ public class PROCETransformer {
                                             && susPatientCacheEntry.getOtherCodes().get(seqNo).equals(conceptCode)) {
                                         procCodes.add(conceptCode);
                                         patientCacheList.add(susPatientCacheEntry);
-                                        parentProcedureId = csvHelper.getPrimaryProcedureForEncounter(encounterIdCell.getLong());
                                         if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
                                                 && susPatientCacheEntry.getOtherDates() != null && !susPatientCacheEntry.getOtherDates().isEmpty()) {
                                             DateTimeType dt = new DateTimeType(susPatientCacheEntry.getOtherDates().get(seqNo));
@@ -279,10 +272,6 @@ public class PROCETransformer {
                 } else {
                     TransformWarnings.log(LOG, csvHelper, "No tail records found for person {}, procedure {} ", personId, procedureIdCell.getString());
                 }
-            }
-            if (parentProcedureId != null && parentProcedureId != 0L) {
-                Reference procedureReference =  ReferenceHelper.createReference(ResourceType.Procedure, parentProcedureId.toString());
-                procedureBuilder.setParentResource(procedureReference);
             }
 //            ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByMultipleFields(compatibleEncId, procCode,
 //                    BartsCsvHelper.parseDate(procedureDateTimeCell));
@@ -345,6 +334,29 @@ public class PROCETransformer {
         // save resource
         LOG.info("Procedure pojo cache size is :" + csvHelper.getProcedureCache().size());
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
+    }
+
+    private static void processSequenceNumber(PROCE parser, ProcedureBuilder procedureBuilder, BartsCsvHelper csvHelper) throws Exception {
+
+        CsvCell sequenceNumberCell = parser.getCDSSequence();
+        if (BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)) {
+            return;
+        }
+
+        procedureBuilder.setSequenceNumber(sequenceNumberCell.getInt(), sequenceNumberCell);
+
+        //sequence number ONE is primary
+        if (sequenceNumberCell.getInt() == 1) {
+            procedureBuilder.setIsPrimary(true, sequenceNumberCell);
+
+        } else {
+            //if secondary, use the pre-cached PROCEDURE_ID to link this procedure to its primary
+            CsvCell encounterIdCell = parser.getEncounterId();
+            String procedureIdStr = csvHelper.getInternalId(PROCETransformer.INTERNAL_ID_MAP_PRIMARY_PROCEDURE, encounterIdCell.getString());
+
+            Reference procedureReference = ReferenceHelper.createReference(ResourceType.Procedure, procedureIdStr);
+            procedureBuilder.setParentResource(procedureReference, encounterIdCell, sequenceNumberCell);
+        }
     }
 
 }

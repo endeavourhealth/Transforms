@@ -88,7 +88,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private SusPatientCache susPatientCache = new SusPatientCache(this);
     private SusPatientTailCache susPatientTailCache = new SusPatientTailCache(this);
     private ThreadPool utilityThreadPool = null;
-    private Map<Long,Long> encounterToPrimaryProcedureMap = new HashMap<>();
 
     private UUID serviceId = null;
     private UUID systemId = null;
@@ -136,14 +135,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
     public String getHl7ReceiverGlobalScope() {
         return "G";
-    }
-
-    public void savePrimaryProcedureForEncounter(Long encId,Long procId ) {
-        encounterToPrimaryProcedureMap.put(encId,procId);
-    }
-
-    public Long getPrimaryProcedureForEncounter(Long encId) {
-        return encounterToPrimaryProcedureMap.get(encId);
     }
 
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
