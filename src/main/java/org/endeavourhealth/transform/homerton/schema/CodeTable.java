@@ -81,6 +81,8 @@ public class CodeTable extends AbstractCsvParser {
     public CsvCell getCodeSetNbr() {
         return super.getCell("CODE_SET");
     }
+    //public CsvCell getAliasNhsCdAlias() { return super.getCell("ALIAS_NHS_CD_ALIAS"); }   //TODO: requested from Homerton
+
 
     @Override
     protected boolean isFileAudited() {
