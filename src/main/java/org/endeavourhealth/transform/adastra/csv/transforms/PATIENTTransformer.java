@@ -252,6 +252,13 @@ public class PATIENTTransformer {
         if (Strings.isNullOrEmpty(ethnicity)) {
             return EthnicCategory.NOT_STATED;
         }
+
+        //if single character code sent in v2 use that, i.e. A-Z
+        if (ethnicity.trim().length() == 1) {
+            return EthnicCategory.fromCode(ethnicity);
+        }
+
+        //otherwise, use text matching
         if (ethnicity.contains("White")
                 && (ethnicity.contains("English") || ethnicity.contains("Scottish") || ethnicity.contains("Welsh"))) {
             return EthnicCategory.WHITE_BRITISH;
@@ -273,7 +280,7 @@ public class PATIENTTransformer {
             return EthnicCategory.MIXED_ASIAN;
         } else if (ethnicity.contains("Black") && ethnicity.contains("Caribbean")) {
             return EthnicCategory.BLACK_CARIBBEAN;
-        } else if (ethnicity.contains("Mixed") && ethnicity.contains("African")) {
+        } else if (ethnicity.contains("Black") && ethnicity.contains("African")) {
             return EthnicCategory.BLACK_AFRICAN;
         } else {
             return EthnicCategory.OTHER;
