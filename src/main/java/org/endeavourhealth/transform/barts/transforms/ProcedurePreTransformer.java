@@ -38,6 +38,7 @@ public class ProcedurePreTransformer {
         pojo.setConsultant(parser.getConsultant());
         pojo.setProc_dt_tm(parser.getProcedureDateTime());
         pojo.setUpdatedBy(parser.getUpdatedBy());
+        pojo.setCreate_dt_tm(parser.getCreateDateTime());
         pojo.setEncounterId(parser.getEncounterId()); // Remember encounter ids from Procedure have a trailing .00
         pojo.setNotes(parser.getComment());
         pojo.setMrn(parser.getMrn());

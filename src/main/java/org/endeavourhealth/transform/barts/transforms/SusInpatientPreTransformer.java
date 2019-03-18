@@ -54,8 +54,10 @@ public class SusInpatientPreTransformer {
         CsvCell secondaryProcedureDate = parser.getSecondaryProcedureDate();
         CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
         List<String> otherProcs = new ArrayList<>();
+        List<String> otherDates = new ArrayList<>();
         for (String word : otherProcedureOPCS.getString().split(" ")) {
-            otherProcs.add(word);
+            otherProcs.add(word.substring(0, 4));
+            otherDates.add(word.substring(5, 10));
         }
 
         SusPatientCacheEntry obj = new SusPatientCacheEntry();
@@ -68,7 +70,8 @@ public class SusInpatientPreTransformer {
         obj.setSecondaryProcedureOPCS(secondaryProcedureOPCS);
         obj.setSecondaryProcedureDate(secondaryProcedureDate);
         obj.setOtherSecondaryProceduresOPCS(otherProcedureOPCS);
-
+        obj.setOtherCodes(otherProcs);
+        obj.setOtherDates(otherDates);
         cache.cacheRecord(obj);
     }
 }

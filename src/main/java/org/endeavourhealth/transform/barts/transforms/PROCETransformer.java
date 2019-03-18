@@ -17,7 +17,6 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.hl7.fhir.instance.model.*;
@@ -32,6 +31,7 @@ public class PROCETransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCETransformer.class);
     private static final String TWO_DECIMAL_PLACES = ".00";
 
+    public static final String INTERNAL_ID_MAP_PRIMARY_PROCEDURE = "PRIMARY_PROCEDURE_FOR_ENCOUNTER";
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -98,7 +98,7 @@ public class PROCETransformer {
 
         procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
         CsvCell personIdCell = CsvCell.factoryDummyWrapper(personId);
-        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell);
+//        EncounterBuilder encounterBuilder = csvHelper.getEncounterCache().borrowEncounterBuilder(encounterIdCell, personIdCell, activeCell);
 
 
         Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
@@ -118,11 +118,6 @@ public class PROCETransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
             throw new TransformException("PROCEDURE_HCP_PRSNL_ID column is not empty in PROCE file");
         }
-//        //should I use the practitioner reference at all?  Never populated for Barts.
-//        if (!BartsCsvHelper.isEmptyOrIsZero(personnelIdCell)) {
-//            Reference practitionerReference = csvHelper.createPractitionerReference(personnelIdCell);
-//            procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
-//        }
 
         // Procedure is coded either Snomed or OPCS4
         CsvCell conceptIdentifierCell = parser.getConceptCodeIdentifier();
@@ -180,16 +175,11 @@ public class PROCETransformer {
             throw new TransformException("Unknown PROCE code type [" + conceptCodeType + "]");
         }
 
-        //populate comments, performed date, consultant etc. from that file if possible
-        CsvCell sequenceNumberCell = parser.getCDSSequence();
-        if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)) {
-            procedureBuilder.setSequenceNumber(sequenceNumberCell.getInt());
-            //TODO remove isPrimary later. Just use sequence number
-            if (sequenceNumberCell.getInt() == 1) { //only sequence number ONE is primary
-                procedureBuilder.setIsPrimary(true, sequenceNumberCell);
-            }
-        }
+        //use the sequence number to work out which is the primary procedure and link secondary procedures to their primary
+        //note, this is only applicable to OPCS-4 procedures - for Snomed procedures the sequence number is always zero
+        processSequenceNumber(parser, procedureBuilder, csvHelper);
 
+        //populate comments, performed date, consultant etc. from that file if possible
         if (parser.getEncounterId().getString() != null) {
             String compatibleEncId = parser.getEncounterId().getString() + TWO_DECIMAL_PLACES; //Procedure has encounter ids suffixed with .00.
             String procCode = conceptIdentifierCell.getString().substring(conceptIdentifierCell.getString().indexOf("!") + 1); // before the ! is the code scheme.
@@ -197,8 +187,10 @@ public class PROCETransformer {
                 //SNOMED entries use the SNOMED description id rather than concept code
                 codeableConceptBuilder.setText(procCode);
                 procCode = csvHelper.lookupSnomedConceptIdFromDescId(procCode);
-
             }
+
+            CsvCell sequenceNumberCell = parser.getCDSSequence();
+
             List<String> procCodes = new ArrayList<>();
             // Get data from SUS file caches for OPCS4
             if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
@@ -225,17 +217,34 @@ public class PROCETransformer {
                                     if (conceptCode.equals(susPatientCacheEntry.getPrimaryProcedureOPCS().getString()))
                                         patientCacheList.add(susPatientCacheEntry);
                                     procCodes.add(conceptCode);
+                                    if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
+                                            && susPatientCacheEntry.getPrimaryProcedureDate() != null && !susPatientCacheEntry.getPrimaryProcedureDate().isEmpty()
+                                            && susPatientCacheEntry.getPrimaryProcedureDate().getDate() != null) {
+                                        DateTimeType dt = new DateTimeType(susPatientCacheEntry.getPrimaryProcedureDate().getDate());
+                                        procedureBuilder.setPerformed(dt, susPatientCacheEntry.getPrimaryProcedureDate());
+                                    }
                                     break;
                                 case 2:
                                     if (conceptCode.equals(susPatientCacheEntry.getSecondaryProcedureOPCS().getString()))
                                         patientCacheList.add(susPatientCacheEntry);
                                     procCodes.add(conceptCode);
+                                    if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
+                                            && susPatientCacheEntry.getSecondaryProcedureDate() != null && !susPatientCacheEntry.getSecondaryProcedureDate().isEmpty()
+                                            && susPatientCacheEntry.getSecondaryProcedureDate().getDate() != null) {
+                                        DateTimeType dt = new DateTimeType(susPatientCacheEntry.getSecondaryProcedureDate().getDate());
+                                        procedureBuilder.setPerformed(dt, susPatientCacheEntry.getSecondaryProcedureDate());
+                                    }
                                     break;
                                 default:
                                     if (!susPatientCacheEntry.getOtherCodes().isEmpty()
                                             && susPatientCacheEntry.getOtherCodes().get(seqNo).equals(conceptCode)) {
                                         procCodes.add(conceptCode);
                                         patientCacheList.add(susPatientCacheEntry);
+                                        if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
+                                                && susPatientCacheEntry.getOtherDates() != null && !susPatientCacheEntry.getOtherDates().isEmpty()) {
+                                            DateTimeType dt = new DateTimeType(susPatientCacheEntry.getOtherDates().get(seqNo));
+                                            procedureBuilder.setPerformed(dt, susPatientCacheEntry.getOtherSecondaryProceduresOPCS());
+                                        }
                                         break;
                                     }
                             }
@@ -256,12 +265,7 @@ public class PROCETransformer {
                             procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
                             knownPerformers.add(tail.getResponsibleHcpPersonnelId().getString());
                             performerCount++;
-                            if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
-                                    && tail.getCdsActivityDate() != null && !tail.getCdsActivityDate().isEmpty()
-                                    && tail.getCdsActivityDate().getDate() != null) {
-                                DateTimeType dt = new DateTimeType(tail.getCdsActivityDate().getDate());
-                                procedureBuilder.setPerformed(dt, tail.getCdsActivityDate());
-                            }
+
                         }
                     }
                     LOG.info("Procedure " + procedureIdCell.getString() + ". Performers added:" + performerCount);
@@ -269,7 +273,6 @@ public class PROCETransformer {
                     TransformWarnings.log(LOG, csvHelper, "No tail records found for person {}, procedure {} ", personId, procedureIdCell.getString());
                 }
             }
-
 //            ProcedurePojo pojo = csvHelper.getProcedureCache().getProcedurePojoByMultipleFields(compatibleEncId, procCode,
 //                    BartsCsvHelper.parseDate(procedureDateTimeCell));
             List<ProcedurePojo> pojoList = csvHelper.getProcedureCache().getProcedurePojoByEncId(compatibleEncId);
@@ -286,7 +289,7 @@ public class PROCETransformer {
                 TransformWarnings.log(LOG, csvHelper, "Failed to find matching Enctr Id {} for {} procedure", compatibleEncId, procedureIdCell.getString());
             }
             if (pojo != null) {
-                if (pojo.getConsultant() != null) {
+                if (!procedureBuilder.hasPerformer() && pojo.getConsultant() != null) {
                     CsvCell consultantCell = pojo.getConsultant();
                     if (!consultantCell.isEmpty()) {
                         String consultantStr = consultantCell.getString();
@@ -304,8 +307,12 @@ public class PROCETransformer {
                 }
                 if (pojo.getProc_dt_tm() != null && pojo.getProc_dt_tm().getDate() != null) {
                     procedureBuilder.setRecordedDate(BartsCsvHelper.parseDate(pojo.getProc_dt_tm()));
+                } else {
+                    if (pojo.getCreate_dt_tm() != null && pojo.getCreate_dt_tm().getDate() != null) {
+                        procedureBuilder.setRecordedDate(BartsCsvHelper.parseDate(pojo.getCreate_dt_tm()));
+                    }
                 }
-                if (pojo.getUpdatedBy() != null && pojo.getProc_dt_tm().getDate() != null) {
+                if (!procedureBuilder.hasPerformer() && pojo.getUpdatedBy() != null && pojo.getProc_dt_tm().getDate() != null) {
                     CsvCell updateByCell = pojo.getUpdatedBy();
                     if (!updateByCell.isEmpty()) {
                         String updatedByStr = updateByCell.getString();
@@ -327,6 +334,29 @@ public class PROCETransformer {
         // save resource
         LOG.info("Procedure pojo cache size is :" + csvHelper.getProcedureCache().size());
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
+    }
+
+    private static void processSequenceNumber(PROCE parser, ProcedureBuilder procedureBuilder, BartsCsvHelper csvHelper) throws Exception {
+
+        CsvCell sequenceNumberCell = parser.getCDSSequence();
+        if (BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)) {
+            return;
+        }
+
+        procedureBuilder.setSequenceNumber(sequenceNumberCell.getInt(), sequenceNumberCell);
+
+        //sequence number ONE is primary
+        if (sequenceNumberCell.getInt() == 1) {
+            procedureBuilder.setIsPrimary(true, sequenceNumberCell);
+
+        } else {
+            //if secondary, use the pre-cached PROCEDURE_ID to link this procedure to its primary
+            CsvCell encounterIdCell = parser.getEncounterId();
+            String procedureIdStr = csvHelper.getInternalId(PROCETransformer.INTERNAL_ID_MAP_PRIMARY_PROCEDURE, encounterIdCell.getString());
+
+            Reference procedureReference = ReferenceHelper.createReference(ResourceType.Procedure, procedureIdStr);
+            procedureBuilder.setParentResource(procedureReference, encounterIdCell, sequenceNumberCell);
+        }
     }
 
 }

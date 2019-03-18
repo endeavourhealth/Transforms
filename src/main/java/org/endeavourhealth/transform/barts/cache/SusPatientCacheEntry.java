@@ -13,13 +13,14 @@ public class SusPatientCacheEntry {
     private CsvCell CDSUniqueIdentifier;
     private CsvCell localPatientId;
     private CsvCell NHSNumber;
-  //  private CsvCell cdsActivityDate;
+    //  private CsvCell cdsActivityDate;
     private CsvCell PrimaryProcedureOPCS;
     private CsvCell PrimaryProcedureDate;
     private CsvCell SecondaryProcedureOPCS;
     private CsvCell SecondaryProcedureDate;
     private CsvCell OtherSecondaryProceduresOPCS;
-    private List<String> otherCodes= new ArrayList();
+    private List<String> otherCodes = new ArrayList();
+    private List<String> otherDates = new ArrayList();
 
     public List<String> getOtherCodes() {
         return otherCodes;
@@ -29,6 +30,13 @@ public class SusPatientCacheEntry {
         this.otherCodes = otherCodes;
     }
 
+    public List<String> getOtherDates() {
+        return otherDates;
+    }
+
+    public void setOtherDates(List<String> otherDates) {
+        this.otherDates = otherDates;
+    }
 //    public CsvCell getCdsActivityDate() {
 //        return cdsActivityDate;
 //    }
