@@ -87,11 +87,11 @@ public abstract class AdastraCsvToFhirTransformer {
             findFileAndOpenParser(PRESCRIPTIONS.class, serviceId, systemId, exchangeId, files, version, parsers);
         }
 
-        //open and add additional version 2 files
+        //open and add additional version 2 files  //TODO:  get new filenames
         if (version.equalsIgnoreCase(VERSION_2)) {
 
-            findFileAndOpenParser(USERS.class, serviceId, systemId, exchangeId, files, version, parsers);
-            findFileAndOpenParser(ELECTRONICPRESCRIPTIONS.class, serviceId, systemId, exchangeId, files, version, parsers);
+            //findFileAndOpenParser(USERS.class, serviceId, systemId, exchangeId, files, version, parsers);
+            //findFileAndOpenParser(ETP.class, serviceId, systemId, exchangeId, files, version, parsers);
         }
 
         Set<String> expectedFiles = parsers
@@ -192,9 +192,9 @@ public abstract class AdastraCsvToFhirTransformer {
             PRESCRIPTIONSPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
             //then the admin transforms
-            //v2 USERS
+            //TODO:  v2 USERS
             if (version.equalsIgnoreCase(VERSION_2)) {
-                USERSTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+
             }
             PROVIDERTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
@@ -208,8 +208,6 @@ public abstract class AdastraCsvToFhirTransformer {
             CONSULTATIONTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             CLINICALCODESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             PRESCRIPTIONSTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-
-            //TODO: ELECTRONICPRESCRIPTIONSTransformer - usefull and where map resource?
         }
         finally {
             csvHelper.getOrganisationCache().cleanUpResourceCache();

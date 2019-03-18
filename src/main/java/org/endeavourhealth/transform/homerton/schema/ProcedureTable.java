@@ -98,10 +98,6 @@ public class ProcedureTable extends AbstractCsvParser {
         return super.getCell("PROC_DT_TM");
     }
 
-    public CsvCell getProcedureNotes() {
-        return super.getCell("PROCEDURE_NOTE");
-    }
-
     public CsvCell getEncounterSliceID() {
         return super.getCell("ENCNTR_SLICE_ID");
     }
