@@ -101,7 +101,7 @@ public class CONSULTATIONTransformer {
 
         //v2 userRef
         CsvCell userRef = parser.getUserRef();
-        if (!userRef.isEmpty()) {
+        if (userRef != null && !userRef.isEmpty()) {
 
             Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
             encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, userRef);

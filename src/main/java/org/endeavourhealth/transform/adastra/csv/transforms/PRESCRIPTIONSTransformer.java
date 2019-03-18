@@ -97,7 +97,7 @@ public class PRESCRIPTIONSTransformer {
 
         //v2 dm&d code
         CsvCell drugCode = parser.getDMDCode();
-        if (!drugCode.isEmpty()) {
+        if (drugCode != null && !drugCode.isEmpty()) {
 
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             codeableConceptBuilder.setCodingCode(drugCode.getString(), drugCode);

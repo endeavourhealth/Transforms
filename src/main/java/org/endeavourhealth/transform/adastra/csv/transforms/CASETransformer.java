@@ -64,7 +64,7 @@ public class CASETransformer {
         }
 
         CsvCell caseTag = parser.getCaseTagName();
-        if (!caseTag.isEmpty()) {
+        if (caseTag != null && !caseTag.isEmpty()) {
 
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
@@ -105,7 +105,7 @@ public class CASETransformer {
 
         //v2 userRef
         CsvCell userRef = parser.getUserRef();
-        if (!userRef.isEmpty()) {
+        if (userRef !=null && !userRef.isEmpty()) {
 
             Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
 
@@ -124,7 +124,7 @@ public class CASETransformer {
 
         //v2 pcc arrival date and time
         CsvCell pccArrival = parser.getArrivedPCC();
-        if (!pccArrival.isEmpty()) {
+        if (pccArrival != null && !pccArrival.isEmpty()) {
 
             episodeBuilder.setPCCArrival(pccArrival.getDateTime(), pccArrival);
         }
