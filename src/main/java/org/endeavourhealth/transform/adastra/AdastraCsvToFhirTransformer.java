@@ -158,9 +158,9 @@ public abstract class AdastraCsvToFhirTransformer {
             String clsName = "org.endeavourhealth.transform.adastra.csv.schema." + className;
             Class parserCls = Class.forName(clsName);
 
-            //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
+            //create a parser for the file but with a v1 version, which will be fine since we never actually parse any data from it
             Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
-            AbstractCsvParser parser = constructor.newInstance(null, null, null, null, filePath);
+            AbstractCsvParser parser = constructor.newInstance(null, null, null, VERSION_1, filePath);
 
             //calling this will return the possible versions that apply to this parser
             possibleVersions = parser.testForValidVersions(possibleVersions);
