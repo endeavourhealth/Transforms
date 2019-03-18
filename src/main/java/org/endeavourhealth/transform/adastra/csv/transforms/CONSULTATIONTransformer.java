@@ -154,8 +154,8 @@ public class CONSULTATIONTransformer {
             observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId));
             observationBuilder.setNotes(encounterTextBuilder.toString().trim());
 
-            //v2 userRef - add consulter clinician to observation
-            if (!userRef.isEmpty()) {
+            //v2 userRef - add consulting clinician to observation
+            if (userRef != null && !userRef.isEmpty()) {
 
                 Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
                 observationBuilder.setClinician(practitionerReference, userRef);
