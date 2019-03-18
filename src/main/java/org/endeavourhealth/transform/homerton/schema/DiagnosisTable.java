@@ -109,6 +109,10 @@ public class DiagnosisTable extends AbstractCsvParser {
         return super.getCell("DIAG_DT_TM");
     }
 
+    public CsvCell getDiagnosisNotes() {
+        return super.getCell("DIAG_NOTE");
+    }
+
     public CsvCell getEncounterSliceID() {
         return super.getCell("ENCNTR_SLICE_ID");
     }
