@@ -43,6 +43,7 @@ public class PROCEPreTransformer {
         if (!sequenceNumber.isEmpty()
                 && sequenceNumber.getInt() == 1) {
             csvHelper.saveInternalId(PROCETransformer.INTERNAL_ID_MAP_PRIMARY_PROCEDURE, encounterIdCell.getString(), procedureIdCell.getString());
+            LOG.debug("Saving enc:" + encounterIdCell.getString() + ":proc:" + procedureIdCell.getString());
         }
 
         PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), procedureIdCell, encounterIdCell, csvHelper);

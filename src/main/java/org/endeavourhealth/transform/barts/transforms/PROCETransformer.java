@@ -251,7 +251,7 @@ public class PROCETransformer {
                             patientCacheList.add(susPatientCacheEntry);
                         }
                     } // Now we have lists of candidate SUS Patient and patient tail records. Now parse them.
-                    LOG.info("Procedure " + procedureIdCell.getString() + " SUS patient record count:" + patientCacheList.size());
+                    //LOG.info("Procedure " + procedureIdCell.getString() + " SUS patient record count:" + patientCacheList.size());
 
                     List<String> knownPerformers = new ArrayList<>(); // Track known performers to avoid duplicate performers per procedure.
                     int performerCount = 0;
@@ -261,14 +261,14 @@ public class PROCETransformer {
                                 && !tail.getResponsibleHcpPersonnelId().isEmpty()
                                 && !knownPerformers.contains(tail.getResponsibleHcpPersonnelId())) {
                             Reference practitionerReference = ReferenceHelper.createReference(ResourceType.Practitioner, tail.getResponsibleHcpPersonnelId().getString());
-                            LOG.info("Adding performer " + tail.getResponsibleHcpPersonnelId() + " to procedure " + procedureIdCell.getString());
+                           // LOG.info("Adding performer " + tail.getResponsibleHcpPersonnelId() + " to procedure " + procedureIdCell.getString());
                             procedureBuilder.addPerformer(practitionerReference, personnelIdCell);
                             knownPerformers.add(tail.getResponsibleHcpPersonnelId().getString());
                             performerCount++;
 
                         }
                     }
-                    LOG.info("Procedure " + procedureIdCell.getString() + ". Performers added:" + performerCount);
+                    //LOG.info("Procedure " + procedureIdCell.getString() + ". Performers added:" + performerCount);
                 } else {
                     TransformWarnings.log(LOG, csvHelper, "No tail records found for person {}, procedure {} ", personId, procedureIdCell.getString());
                 }
