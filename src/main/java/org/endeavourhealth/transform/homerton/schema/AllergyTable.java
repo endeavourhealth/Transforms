@@ -112,8 +112,16 @@ public class AllergyTable extends AbstractCsvParser {
         return super.getCell("CREATED_DT_TM");
     }
 
+    public CsvCell getActiveIndicator() {
+        return super.getCell("ACTIVE_IND");
+    }
+
     public CsvCell getRecordedByClinicianID() {
         return super.getCell("CREATED_PRSNL_ID");
+    }
+
+    public CsvCell getOriginalClinicianID() {
+        return super.getCell("ORIG_PRSNL_ID");
     }
 
     public CsvCell getVocabulary() {

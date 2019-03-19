@@ -164,8 +164,8 @@ public class DiagnosisTransformer extends HomertonBasisTransformer {
                 }
             }
         } else {
-            //if there's no code, create a non coded code so we retain the text
-            CsvCell term = parser.getDiagnosisDisplay();
+            //if there's no code, create a non coded code so we retain the text from the non code element
+            CsvCell term = parser.getDiagnosisDisplayNonCoded();
 
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);

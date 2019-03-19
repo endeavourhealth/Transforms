@@ -130,6 +130,10 @@ public class DiagnosisTable extends AbstractCsvParser {
     }
 
     public CsvCell getDiagnosisDisplay() {
+        return super.getCell("nomenclature_description");
+    }
+
+    public CsvCell getDiagnosisDisplayNonCoded() {
         return super.getCell("DIAGNOSIS_DISPLAY");
     }
 

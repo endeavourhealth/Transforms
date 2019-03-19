@@ -58,12 +58,11 @@ public class AllergyTransformer extends HomertonBasisTransformer {
         Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personIdCell.getString());
         allergyIntoleranceBuilder.setPatient(patientReference, personIdCell);
 
-        //the life cycle status cell tells us to delete
-        CsvCell statusCell = parser.getReactionStatus();
-        String status = statusCell.getString();
-        if (status.equalsIgnoreCase("Canceled")) { //note the US spelling used
 
-            allergyIntoleranceBuilder.setDeletedAudit(statusCell);
+        CsvCell activeCell = parser.getActiveIndicator();
+        if (!activeCell.getIntAsBoolean()) {
+
+            allergyIntoleranceBuilder.setDeletedAudit(activeCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
             return;
         }
@@ -86,6 +85,13 @@ public class AllergyTransformer extends HomertonBasisTransformer {
 
             Reference reference = csvHelper.createPractitionerReference(recordedByClinicianID.getString());
             allergyIntoleranceBuilder.setRecordedBy(reference, recordedByClinicianID);
+        }
+
+        // TODO - need personnel data to map
+        CsvCell originalClinicianID = parser.getOriginalClinicianID();
+        if (!originalClinicianID.isEmpty()) {
+            Reference reference = csvHelper.createPractitionerReference(originalClinicianID.getString());
+            allergyIntoleranceBuilder.setClinician(reference, originalClinicianID);
         }
 
         CsvCell encounterIdCell = parser.getEncounterId();
@@ -141,11 +147,19 @@ public class AllergyTransformer extends HomertonBasisTransformer {
             }
         }
 
-       // set the raw term on the codeable concept text - This is true if the vocab is 'Allergy' for example
+       // set the raw term on the codeable concept text
         if (!allergyDescCell.isEmpty()) {
 
             String term = allergyDescCell.getString();
             codeableConceptBuilder.setText(term, allergyDescCell);
+        }
+
+        CsvCell statusCell = parser.getReactionStatus();
+        String status = statusCell.getString();
+        if (status.equalsIgnoreCase("cancelled")) {
+            allergyIntoleranceBuilder.setStatus(AllergyIntolerance.AllergyIntoleranceStatus.INACTIVE);
+        } else {
+            allergyIntoleranceBuilder.setStatus(AllergyIntolerance.AllergyIntoleranceStatus.ACTIVE);
         }
 
         CsvCell severity = parser.getAllergySeverity();
@@ -160,11 +174,7 @@ public class AllergyTransformer extends HomertonBasisTransformer {
             }
         }
 
-
         // save resource
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
     }
-
-
-
 }

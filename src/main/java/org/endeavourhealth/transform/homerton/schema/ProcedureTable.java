@@ -115,7 +115,7 @@ public class ProcedureTable extends AbstractCsvParser {
     }
 
     public CsvCell getProcedureDesc() {
-        return super.getCell("PROC_FTDESC");
+        return super.getCell("nomenclature_description");
     }
 
     public CsvCell getProcedureType() {
