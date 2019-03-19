@@ -44,6 +44,10 @@ public class CsvCell {
         return new CsvCell(-1, -1, -1, value, null);
     }
 
+    public static CsvCell factoryWithNewValue(CsvCell source, String newValue) {
+        return new CsvCell(source.getPublishedFileId(), source.getRecordNumber(), source.getColIndex(), newValue, source.getParentParser());
+    }
+
     public static CsvCell factoryOldStyleAudit(Long oldStyleAuditId, int colIndex, String value, ParserI parentParser) {
         CsvCell ret = new CsvCell(-1, -1, colIndex, value, parentParser);
         ret.oldStyleAuditId = oldStyleAuditId;
@@ -64,6 +68,10 @@ public class CsvCell {
 
     public Long getOldStyleAuditId() {
         return oldStyleAuditId;
+    }
+
+    public ParserI getParentParser() {
+        return parentParser;
     }
 
     public boolean isEmpty() {

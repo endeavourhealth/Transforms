@@ -21,7 +21,6 @@ import javax.xml.crypto.dsig.TransformException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class PatientTransformer {
 
@@ -36,7 +35,7 @@ public class PatientTransformer {
         while (parser.nextRecord()) {
 
             try {
-                createResource((Patient) parser, fhirResourceFiler, csvHelper, version);
+                createResources((Patient) parser, fhirResourceFiler, csvHelper, version);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -46,32 +45,152 @@ public class PatientTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    public static void createResource(Patient parser,
+    public static void createResources(Patient parser,
                                       FhirResourceFiler fhirResourceFiler,
                                       EmisCsvHelper csvHelper,
                                       String version) throws Exception {
 
+        //if the Resource is to be deleted from the data store, then stop processing the CSV row
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            //Emis send us a delete for a patient WITHOUT a corresponding delete for all other data, so
+            //we need to manually delete all dependant resources
+            CsvCell patientGuid = parser.getPatientGuid();
+            deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser.getCurrentState(), patientGuid, deletedCell);
+            return;
+        }
+
         //this transform creates two resources
-        PatientBuilder patientBuilder = new PatientBuilder();
+        PatientBuilder patientBuilder = createPatientResource(parser, csvHelper, version);
+        EpisodeOfCareBuilder episodeBuilder = createEpisodeResource(parser, csvHelper, fhirResourceFiler);
+
+        //save both resources together, so the patient is defintiely saved before the episode
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+    }
+
+    private static EpisodeOfCareBuilder createEpisodeResource(Patient parser, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
 
+        //factor the registration start date into the unique ID for the episode, so a change in registration start
+        //date correctly results in a new episode of care being created
         CsvCell patientGuid = parser.getPatientGuid();
-        CsvCell organisationGuid = parser.getOrganisationGuid();
-
-        EmisCsvHelper.setUniqueId(patientBuilder, patientGuid, null);
-        EmisCsvHelper.setUniqueId(episodeBuilder, patientGuid, null); //use the patient GUID as the ID for the episode
+        CsvCell regDateCell = parser.getDateOfRegistration();
+        regDateCell = fixRegDateCell(regDateCell);
+        EmisCsvHelper.setUniqueId(episodeBuilder, patientGuid, regDateCell);
 
         Reference patientReference = csvHelper.createPatientReference(patientGuid);
         episodeBuilder.setPatient(patientReference, patientGuid);
 
-        //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deleted = parser.getDeleted();
-        if (deleted.getBoolean()) {
-            //Emis send us a delete for a patient WITHOUT a corresponding delete for all other data, so
-            //we need to manually delete all dependant resources
-            deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser.getCurrentState(), patientBuilder, episodeBuilder, deleted);
+        //create a second reference, since it's not an immutable object
+        CsvCell organisationGuid = parser.getOrganisationGuid();
+        Reference organisationReference = csvHelper.createOrganisationReference(organisationGuid);
+        episodeBuilder.setManagingOrganisation(organisationReference, organisationGuid);
+
+        CsvCell patientType = parser.getPatientTypedescription();
+        CsvCell dummyType = parser.getDummyType();
+        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
+        episodeBuilder.setRegistrationType(registrationType, patientType, dummyType);
+
+        episodeBuilder.setRegistrationStartDate(regDateCell.getDate(), regDateCell);
+
+        //we store the latest start date for each patient, so see if it's changed since last transform.
+        //If so, this means a patient was deducted and re-registered on the same day, so we need to manually
+        //end the previous episode.
+        CsvCell previousStartDate = csvHelper.getLatestEpisodeStartDate(patientGuid);
+        if (previousStartDate != null) {
+            String previousStr = previousStartDate.getString();
+            String currentStr = regDateCell.getString();
+            //we have to compare as Strings because can't call getDate() on a dummy cell
+            if (!previousStr.equals(currentStr)) {
+                endLastEpisodeOfCare(patientGuid, previousStartDate, regDateCell, fhirResourceFiler, csvHelper);
+            }
+        }
+
+        //and cache the start date in the helper since we'll need this when linking Encounters to Episodes
+        csvHelper.cacheLatestEpisodeStartDate(patientGuid, regDateCell);
+
+        CsvCell dedDateCell = parser.getDateOfDeactivation();
+        if (!dedDateCell.isEmpty()) {
+            episodeBuilder.setRegistrationEndDate(dedDateCell.getDate(), dedDateCell);
+        }
+
+        CsvCell confidential = parser.getIsConfidential();
+        if (confidential.getBoolean()) {
+            //add the confidential flag to BOTH resources
+            episodeBuilder.setConfidential(true, confidential);
+        }
+
+        //HL7 have clarified that the care provider field is for the patient's general practitioner, NOT
+        //for the patient's carer at a specific organisation. That being the case, we store the local carer
+        //on the episode_of_care and the general practitioner on the patient.
+        CsvCell usualGpGuid = parser.getUsualGpUserInRoleGuid();
+
+        //the care manager on the episode is the person who cares for the patient AT THIS ORGANISATION,
+        //so ignore the external... fields which refer to clinicians elsewhere
+        if (!usualGpGuid.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReference(usualGpGuid);
+            episodeBuilder.setCareManager(practitionerReference, usualGpGuid);
+        }
+
+        //and carry over any registration statuses that we've received in our custom extract
+        List<List_.ListEntryComponent> statusList = csvHelper.getExistingRegistrationStatuses(episodeBuilder.getResourceId());
+        if (statusList != null) {
+            ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
+
+            for (List_.ListEntryComponent status: statusList) {
+                CodeableConcept codeableConcept = status.getFlag();
+                containedListBuilder.addCodeableConcept(codeableConcept);
+                if (status.hasDate()) {
+                    Date d = status.getDate();
+                    containedListBuilder.addDateToLastItem(d);
+                }
+            }
+        }
+
+        return episodeBuilder;
+    }
+
+    /**
+     * the test pack includes a handful of records with a missing reg start date. This never happens
+     * with live data. The transform requires a start date, as we use that as part of the unique key.
+     * To get around this, just use a dummy date for the cell.
+     */
+    private static CsvCell fixRegDateCell(CsvCell regDateCell) {
+        if (!regDateCell.isEmpty()) {
+            return regDateCell;
+        }
+
+        return CsvCell.factoryWithNewValue(regDateCell, "1900-01-01");
+    }
+
+    /**
+     * if we detect the patient was deducted and re-registered on the same day, then we want to manually end
+     * the previous Episode, setting the end date to the new start date
+     */
+    private static void endLastEpisodeOfCare(CsvCell patientGuid, CsvCell previousStartDate, CsvCell newStartDate,
+                                             FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper) throws Exception {
+
+        String sourceId = EmisCsvHelper.createUniqueId(patientGuid, previousStartDate);
+        EpisodeOfCare lastEpisode = (EpisodeOfCare)csvHelper.retrieveResource(sourceId, ResourceType.EpisodeOfCare);
+
+        EpisodeOfCareBuilder builder = new EpisodeOfCareBuilder(lastEpisode);
+        if (builder.getRegistrationEndDate() != null) {
+            //if we were informed of the previous deduction, then nothing for us to do
             return;
         }
+
+        builder.setRegistrationEndDate(newStartDate.getDate(), newStartDate);
+
+        fhirResourceFiler.savePatientResource(null, false, builder);
+    }
+
+    private static PatientBuilder createPatientResource(Patient parser, EmisCsvHelper csvHelper, String version) throws Exception {
+
+        PatientBuilder patientBuilder = new PatientBuilder();
+
+        CsvCell patientGuid = parser.getPatientGuid();
+        EmisCsvHelper.setUniqueId(patientBuilder, patientGuid, null);
 
         CsvCell nhsNumber = parser.getNhsNumber();
         if (!nhsNumber.isEmpty()) {
@@ -191,13 +310,9 @@ public class PatientTransformer {
             contactPointBuilder.setValue(email.getString(), email);
         }
 
+        CsvCell organisationGuid = parser.getOrganisationGuid();
         Reference organisationReference = csvHelper.createOrganisationReference(organisationGuid);
         patientBuilder.setManagingOrganisation(organisationReference, organisationGuid);
-
-        //create a second reference, since it's not an immutable object
-        organisationReference = csvHelper.createOrganisationReference(organisationGuid);
-        episodeBuilder.setManagingOrganisation(organisationReference, organisationGuid);
-
 
         CsvCell carerName = parser.getCarerName();
         CsvCell carerRelationship = parser.getCarerRelation();
@@ -234,22 +349,9 @@ public class PatientTransformer {
             patientBuilder.setSpineSensitive(true, spineSensitive);
         }
 
-        episodeBuilder.setRegistrationType(registrationType, patientType, dummyType);
-
-        //HL7 have clarified that the care provider field is for the patient's general practitioner, NOT
-        //for the patient's carer at a specific organisation. That being the case, we store the local carer
-        //on the episode_of_care and the general practitioner on the patient.
-        CsvCell usualGpGuid = parser.getUsualGpUserInRoleGuid();
-
-        //the care manager on the episode is the person who cares for the patient AT THIS ORGANISATION,
-        //so ignore the external... fields which refer to clinicians elsewhere
-        if (!usualGpGuid.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReference(usualGpGuid);
-            episodeBuilder.setCareManager(practitionerReference, usualGpGuid);
-        }
-
         //the care provider field on the patient is ONLY for the patients usual GP, so only set the Emis usual
         //GP field in it if the patient is a GMS patient, otherwise use the "external" GP fields on the parser
+        CsvCell usualGpGuid = parser.getUsualGpUserInRoleGuid();
         if (!usualGpGuid.isEmpty()
                 && registrationType == RegistrationType.REGULAR_GMS) {
 
@@ -280,18 +382,11 @@ public class PatientTransformer {
             }
         }
 
-        transformEthnicityAndMaritalStatus(patientBuilder, patientGuid, csvHelper, fhirResourceFiler);
+        transformEthnicityAndMaritalStatus(patientBuilder, patientGuid, csvHelper);
 
-        CsvCell regDate = parser.getDateOfRegistration();
-        if (!regDate.isEmpty()) {
-            episodeBuilder.setRegistrationStartDate(regDate.getDate(), regDate);
-        }
-
+        //patient is active if they're not deducted. We only get one record in this file for a patient's
+        //most recent registration, so it's safe to just use this deduction date
         CsvCell dedDate = parser.getDateOfDeactivation();
-        if (!dedDate.isEmpty()) {
-            episodeBuilder.setRegistrationEndDate(dedDate.getDate(), dedDate);
-        }
-
         boolean active = dedDate.isEmpty() || dedDate.getDate().after(new Date());
         patientBuilder.setActive(active, dedDate);
 
@@ -299,26 +394,9 @@ public class PatientTransformer {
         if (confidential.getBoolean()) {
             //add the confidential flag to BOTH resources
             patientBuilder.setConfidential(true, confidential);
-            episodeBuilder.setConfidential(true, confidential);
         }
 
-        //and carry over any registration statuses that we've received in our custom extract
-        List<List_.ListEntryComponent> statusList = csvHelper.getExistingRegistrationStatuses(patientGuid);
-        if (statusList != null) {
-            ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
-
-            for (List_.ListEntryComponent status: statusList) {
-                CodeableConcept codeableConcept = status.getFlag();
-                containedListBuilder.addCodeableConcept(codeableConcept);
-                if (status.hasDate()) {
-                    Date d = status.getDate();
-                    containedListBuilder.addDateToLastItem(d);
-                }
-            }
-        }
-
-        //save both resources together, so the patient is defintiely saved before the episode
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+        return patientBuilder;
     }
 
 
@@ -326,7 +404,34 @@ public class PatientTransformer {
      * Emis send us a delete for a patient WITHOUT a corresponding delete for all other data, so
      * we need to manually delete all dependant resources
      */
-    private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper,
+    private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler,
+                                                  EmisCsvHelper csvHelper,
+                                                  CsvCurrentState currentState,
+                                                  CsvCell patientGuidCell,
+                                                  CsvCell deletedCell) throws Exception {
+
+        //retrieve any resources that exist for the patient
+        String sourceId = EmisCsvHelper.createUniqueId(patientGuidCell, null);
+        List<Resource> resources = csvHelper.retrieveAllResourcesForPatient(sourceId, fhirResourceFiler);
+        if (resources == null) {
+            return;
+        }
+
+        for (Resource resource : resources) {
+
+            //do not delete Appointment resources either. If Emis delete and subsequently un-delete a patient
+            //they do not re-send the Appointments, so we shouldn't delete them in the first place.
+            if (resource.getResourceType() == ResourceType.Appointment) {
+                continue;
+            }
+
+            //wrap the resource in generic builder so we can delete it
+            GenericBuilder genericBuilder = new GenericBuilder(resource);
+            genericBuilder.setDeletedAudit(deletedCell);
+            fhirResourceFiler.deletePatientResource(currentState, false, genericBuilder);
+        }
+    }
+    /*private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper,
                                                   CsvCurrentState currentState,
                                                   PatientBuilder patientBuilder, EpisodeOfCareBuilder episodeBuilder,
                                                   CsvCell deletedCell) throws Exception {
@@ -382,59 +487,12 @@ public class PatientTransformer {
         patientBuilder.setDeletedAudit(deletedCell);
         episodeBuilder.setDeletedAudit(deletedCell);
         fhirResourceFiler.deletePatientResource(currentState, patientBuilder, episodeBuilder);
-    }
-
-    /*private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper,
-                                                                                                    CsvCurrentState currentState, String patientGuid,
-																									org.hl7.fhir.instance.model.Patient fhirPatient, EpisodeOfCare fhirEpisode) throws Exception {
-
-        UUID edsPatientId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirPatient.getResourceType(), fhirPatient.getId());
-        UUID edsEpisodeId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirEpisode.getResourceType(), fhirEpisode.getId());
-
-        //only go into this if we've had something for the patient before
-        if (edsPatientId != null) {
-
-            String edsPatientIdStr = edsPatientId.toString();
-
-            //the episode ID MAY be null if we've received something for the patient (e.g. an observation) before
-            //we actually received the patient record itself
-            String edsEpisodeIdStr = null;
-            if (edsEpisodeId != null) {
-                edsEpisodeIdStr = edsEpisodeId.toString();
-            }
-
-            List<Resource> resources = csvHelper.retrieveAllResourcesForPatient(patientGuid, fhirResourceFiler);
-            if (resources != null) {
-                for (Resource resource : resources) {
-
-                    //if this resource is our patient or episode resource, then skip deleting it here, as we'll just delete them at the end
-                    if ((resource.getResourceType() == fhirPatient.getResourceType()
-                            && resource.getId().equals(edsPatientIdStr))
-                            || (edsEpisodeId != null
-                            && resource.getResourceType() == fhirEpisode.getResourceType()
-                            && resource.getId().equals(edsEpisodeIdStr))) {
-                        continue;
-                    }
-
-                    //do not delete Appointment resources either. If Emis delete and subsequently un-delete a patient
-                    //they do not re-send the Appointments, so we shouldn't delete them in the first place.
-                    if (resource.getResourceType() == ResourceType.Appointment) {
-                        continue;
-                    }
-
-                    fhirResourceFiler.deletePatientResource(currentState, false, resource);
-                }
-            }
-        }
-
-        //and delete the patient and episode
-        fhirResourceFiler.deletePatientResource(currentState, fhirPatient, fhirEpisode);
     }*/
+
 
     private static void transformEthnicityAndMaritalStatus(PatientBuilder patientBuilder,
                                                            CsvCell patientGuid,
-                                                           EmisCsvHelper csvHelper,
-                                                           FhirResourceFiler fhirResourceFiler) throws Exception {
+                                                           EmisCsvHelper csvHelper) throws Exception {
 
         CodeAndDate newEthnicity = csvHelper.findEthnicity(patientGuid);
         CodeAndDate newMaritalStatus = csvHelper.findMaritalStatus(patientGuid);

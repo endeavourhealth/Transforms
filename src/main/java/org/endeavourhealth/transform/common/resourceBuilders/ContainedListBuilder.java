@@ -126,20 +126,9 @@ public class ContainedListBuilder {
         }
     }
 
-    public boolean addCodeableConcept(CodeableConcept codeableConcept, CsvCell... sourceCells) {
+    public void addCodeableConcept(CodeableConcept codeableConcept, CsvCell... sourceCells) {
         DomainResource resource = parentBuilder.getResource();
         List_ list = getOrCreateContainedList();
-
-        //avoid having duplicates, so check before we add
-        /*for (List_.ListEntryComponent entry: list.getEntry()) {
-            if (entry.hasFlag()) {
-                CodeableConcept existingCodeableConcept = entry.getFlag();
-                String existingText = existingCodeableConcept.getText();
-                if (existingText.equals(text)) {
-                    return false;
-                }
-            }
-        }*/
 
         List_.ListEntryComponent entry = list.addEntry();
         entry.setFlag(codeableConcept);
@@ -147,8 +136,6 @@ public class ContainedListBuilder {
         int listIndex = resource.getContained().indexOf(list);
         int entryIndex = list.getEntry().indexOf(entry);
         parentBuilder.auditValue("contained[" + listIndex + "].entry[" + entryIndex + "].flag.text", sourceCells);
-
-        return true;
     }
 
     public void addDateToLastItem(Date date, CsvCell... sourceCells) {

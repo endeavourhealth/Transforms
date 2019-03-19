@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.emis.custom.schema.RegistrationStatus;
 
 public class RegistrationStatusTransformer {
 
+    
     public static void transform(AbstractCsvParser parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCustomCsvHelper csvHelper) throws Exception {
@@ -32,12 +33,13 @@ public class RegistrationStatusTransformer {
                                       EmisCustomCsvHelper csvHelper) throws Exception {
 
         CsvCell patientGuidCell = parser.getPatientGuid();
-        CsvCell dateCell = parser.getDate();
+        CsvCell dateTimeCell = parser.getDate();
         CsvCell regStatusCell = parser.getRegistrationStatus();
         CsvCell regTypeCell = parser.getRegistrationType();
-        CsvCell processingOrderCell = parser.getProcessingOrder();
+        CsvCell organisationGuidCell = parser.getOrganisationGuid();
+        //CsvCell processingOrderCell = parser.getProcessingOrder();
 
-        csvHelper.cacheRegStatus(patientGuidCell, regStatusCell, regTypeCell, dateCell, processingOrderCell);
+        csvHelper.cacheRegStatus(patientGuidCell, regStatusCell, dateTimeCell, regTypeCell, organisationGuidCell);
     }
 
 
@@ -124,6 +126,37 @@ public class RegistrationStatusTransformer {
             default:
                 throw new TransformException("Unsupported registration status " + value);
         }
+    }
+
+    /**
+     * certain statuses indicate, or are part of, the deduction process
+     */
+    public static boolean isDeductionRegistrationStatus(org.endeavourhealth.common.fhir.schema.RegistrationStatus status) {
+
+        return status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_DEATH
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_DEATH_NOTIFICATION
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_RECORD_REQUESTED_BY_FHSA
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_REMOVAL_TO_NEW_HA
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_INTERNAL_TRANSFER
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_MENTAL_HOSPITAL
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_EMBARKATION
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_NEW_HA_SAME_GP
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_ADOPTED_CHILD
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_AT_GP_REQUEST
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_REGISTRATION_CANCELLED
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_AT_PATIENT_REQUEST
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_OTHER_REASON
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_MAIL_RETURNED_UNDELIVERED
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_INTERNAL_TRANSFER_ADDRESS_CHANGE
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_INTERNAL_TRANSFER_WITHIN_PARTNERSHIP
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_MAIL_STATES_GONE_AWAY
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_OUTSIDE_OF_AREA
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_NO_LONGER_RESIDENT
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_VIA_SCREENING_SYSTEM
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_VIA_VACCINATION_DATA
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_RECORDS_SENT_BACK_TO_FHSA
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_RECORDS_RECEIVED_BY_FHSA
+                || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_REGISTRATION_EXPIRED;
     }
 
     public static RegistrationType convertRegistrationType(Integer obj) throws Exception {

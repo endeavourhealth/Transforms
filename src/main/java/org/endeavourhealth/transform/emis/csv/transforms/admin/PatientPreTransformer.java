@@ -48,25 +48,29 @@ public class PatientPreTransformer {
                                     String version) throws Exception {
 
         CsvCell patientGuidCell = parser.getPatientGuid();
+        CsvCell startDateCell = parser.getDateOfRegistration();
         CsvCurrentState state = parser.getCurrentState();
 
-        PreCreateEdsPatientIdTask task = new PreCreateEdsPatientIdTask(state, patientGuidCell, fhirResourceFiler, csvHelper);
+        PreCreateEdsPatientIdTask task = new PreCreateEdsPatientIdTask(state, patientGuidCell, startDateCell, fhirResourceFiler, csvHelper);
         csvHelper.submitToThreadPool(task);
     }
 
     static class PreCreateEdsPatientIdTask extends AbstractCsvCallable {
 
         private CsvCell patientGuidCell;
+        private CsvCell startDateCell;
         private FhirResourceFiler fhirResourceFiler;
         private EmisCsvHelper csvHelper;
 
         public PreCreateEdsPatientIdTask(CsvCurrentState state,
                                          CsvCell patientGuidCell,
+                                         CsvCell startDateCell,
                                          FhirResourceFiler fhirResourceFiler,
                                          EmisCsvHelper csvHelper) {
             super(state);
 
             this.patientGuidCell = patientGuidCell;
+            this.startDateCell = startDateCell;
             this.fhirResourceFiler = fhirResourceFiler;
             this.csvHelper = csvHelper;
         }
@@ -74,21 +78,21 @@ public class PatientPreTransformer {
         @Override
         public Object call() throws Exception {
             try {
-                String sourceEmisPatientGuid = patientGuidCell.getString();
-
                 //just make the call into the ID helper, which will create and cache or just cache, so no creation is needed
-                //when we get to the point of creating and saving resources
-                IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(), ResourceType.Patient, sourceEmisPatientGuid);
+                //when we get to the point of creating and saving resources, making it a bit faster
+                String sourcePatientId = EmisCsvHelper.createUniqueId(patientGuidCell, null);
+                IdHelper.getOrCreateEdsResourceIdString(fhirResourceFiler.getServiceId(), ResourceType.Patient, sourcePatientId);
 
-                //we also want to cache the registration status from any pre-exsting episode of care,
+                //we also want to cache the registration statuses from any pre-existing episode of care,
                 //because we receive that in a separate custom extract, and don't want to lose it
-                EpisodeOfCare existingEpisode = (EpisodeOfCare)csvHelper.retrieveResource(sourceEmisPatientGuid, ResourceType.EpisodeOfCare);
+                String sourceEpisodeId = EmisCsvHelper.createUniqueId(patientGuidCell, startDateCell);
+                EpisodeOfCare existingEpisode = (EpisodeOfCare)csvHelper.retrieveResource(sourceEpisodeId, ResourceType.EpisodeOfCare);
                 if (existingEpisode != null) {
                     EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(existingEpisode);
                     ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeOfCareBuilder);
                     List<List_.ListEntryComponent> items = containedListBuilder.getContainedListItems();
                     if (items != null) {
-                        csvHelper.cacheExistingRegistrationStatuses(patientGuidCell, items);
+                        csvHelper.cacheExistingRegistrationStatuses(sourceEpisodeId, items);
                     }
                 }
 

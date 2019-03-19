@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -34,6 +35,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     //private static final String CODEABLE_CONCEPT = "CodeableConcept";
     private static final String ID_DELIMITER = ":";
+    private static final String EMIS_LATEST_REG_DATE = "Emis_Latest_Reg_Date";
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -41,11 +43,14 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private final String dataSharingAgreementGuid;
     private final boolean processPatientData;
 
+    //DB access
+    private EmisTransformDalI mappingRepository = DalProvider.factoryEmisTransformDal();
+    private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+    private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
+
     //metadata, not relating to patients
     private Map<Long, EmisCsvCodeMap> clinicalCodes = new ConcurrentHashMap<>();
     private Map<Long, EmisCsvCodeMap> medication = new ConcurrentHashMap<>();
-    private EmisTransformDalI mappingRepository = DalProvider.factoryEmisTransformDal();
-    private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     //some resources are referred to by others, so we cache them here for when we need them
     private ResourceCache<StringMemorySaver, ConditionBuilder> problemMap = new ResourceCache<>();
@@ -66,6 +71,8 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<StringMemorySaver, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
     private Map<StringMemorySaver, List<List_.ListEntryComponent>> existingRegsitrationStatues = new ConcurrentHashMap<>();
     private ThreadPool utilityThreadPool = null;
+    private Map<String, String> internalIdMapCache = new ConcurrentHashMap<>();
+
 
     public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData) {
         this.serviceId = serviceId;
@@ -212,7 +219,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createPractitionerReference(CsvCell practitionerGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid.getString());
     }
-    public Reference createOrganisationReference(CsvCell organizationGuid) throws Exception {
+    public static Reference createOrganisationReference(CsvCell organizationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid.getString());
     }
     public Reference createLocationReference(CsvCell locationGuid) throws Exception {
@@ -247,7 +254,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      * patient-type resources must include the patient GUID are part of the unique ID in the reference
      * because the EMIS GUIDs for things like Obs are only unique within that patient record itself
      */
-    public Reference createPatientReference(CsvCell patientGuid) throws Exception {
+    public static Reference createPatientReference(CsvCell patientGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Patient, createUniqueId(patientGuid, null));
     }
     public Reference createAppointmentReference(CsvCell appointmentGuid, CsvCell patientGuid) throws Exception {
@@ -280,11 +287,35 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
         return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
     }
-    public Reference createEpisodeReference(CsvCell patientGuid) {
-        //the episode of care just uses the patient GUID as its ID, so that's all we need to refer to it too
-        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientGuid.getString());
+
+    public Reference createEpisodeReference(CsvCell patientGuid) throws Exception{
+        //we now use registration start date as part of the source ID for episodes of care, so we use the internal  ID map table to store that start date
+        CsvCell regStartCell = getLatestEpisodeStartDate(patientGuid);
+        String episodeSourceId = createUniqueId(patientGuid, regStartCell);
+        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeSourceId);
     }
 
+    public void cacheLatestEpisodeStartDate(CsvCell patientGuid, CsvCell startDateCell) throws Exception {
+        String key = patientGuid.getString();
+        String value = startDateCell.getString();
+
+        internalIdDal.save(serviceId, EMIS_LATEST_REG_DATE, key, value);
+        internalIdMapCache.put(key, value);
+    }
+
+    public CsvCell getLatestEpisodeStartDate(CsvCell patientGuid) throws Exception {
+        String key = patientGuid.getString();
+        String value = internalIdMapCache.get(key);
+        if (value == null) {
+            value = internalIdDal.getDestinationId(serviceId, EMIS_LATEST_REG_DATE, key);
+            if (value == null) {
+                return null;
+            }
+            internalIdMapCache.put(key, value);
+        }
+
+        return CsvCell.factoryDummyWrapper(value);
+    }
 
     public void cacheReferral(CsvCell observationGuid, CsvCell patientGuid, ReferralRequestBuilder referralRequestBuilder) throws Exception {
         String uid = createUniqueId(patientGuid, observationGuid);
@@ -1261,15 +1292,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public void cacheExistingRegistrationStatuses(CsvCell patientGuidCell, List<List_.ListEntryComponent> items) {
-        String uniqueId = patientGuidCell.getString();
-        StringMemorySaver key = new StringMemorySaver(uniqueId);
+    public void cacheExistingRegistrationStatuses(String sourceId, List<List_.ListEntryComponent> items) {
+        StringMemorySaver key = new StringMemorySaver(sourceId);
         existingRegsitrationStatues.put(key, items);
     }
 
-    public List<List_.ListEntryComponent> getExistingRegistrationStatuses(CsvCell patientGuidCell) {
-        String uniqueId = patientGuidCell.getString();
-        StringMemorySaver key = new StringMemorySaver(uniqueId);
+    public List<List_.ListEntryComponent> getExistingRegistrationStatuses(String sourceId) {
+        StringMemorySaver key = new StringMemorySaver(sourceId);
         return existingRegsitrationStatues.get(key);
     }
 

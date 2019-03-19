@@ -42,7 +42,6 @@ public class Observation extends AbstractCsvParser {
         };
     }
 
-
     @Override
     protected boolean isFileAudited() {
         return true;

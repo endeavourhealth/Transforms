@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.emis;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.ExchangePayloadFile;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class EmisCustomCsvToFhirTransformer {
@@ -44,7 +46,9 @@ public class EmisCustomCsvToFhirTransformer {
             try {
 
                 if (fileObj.getType().equals("RegistrationStatus")) {
-                    parser = new RegistrationStatus(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), null, filePath, CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
+                    //we've had two versions of this file, so need to detect which we've got
+                    version = detectRegStatusFileVersion(filePath);
+                    parser = new RegistrationStatus(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), version, filePath, CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
                     RegistrationStatusTransformer.transform(parser, fhirResourceFiler, csvHelper);
 
                 } else if (fileObj.getType().equals("OriginalTerms")) {
@@ -65,6 +69,21 @@ public class EmisCustomCsvToFhirTransformer {
         }
 
         csvHelper.saveRegistrationStatues(fhirResourceFiler);
+    }
+
+    private static String detectRegStatusFileVersion(String filePath) throws Exception {
+        List<String> possibleVersions = new ArrayList<>();
+        possibleVersions.add(RegistrationStatus.VERSION_WITH_PROCESSING_ID);
+        possibleVersions.add(RegistrationStatus.VERSION_WITHOUT_PROCESSING_ID);
+
+        RegistrationStatus testParser = new RegistrationStatus(null, null, null, null, filePath, CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
+        possibleVersions = testParser.testForValidVersions(possibleVersions);
+
+        if (!possibleVersions.isEmpty()) {
+            return possibleVersions.get(0);
+        }
+
+        throw new TransformException("Unable to determine version for EMIS Custom file");
     }
 
 }

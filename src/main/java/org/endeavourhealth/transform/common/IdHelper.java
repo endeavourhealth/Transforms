@@ -105,7 +105,9 @@ public class IdHelper {
         try {
             cache.put(cacheKey, id);
         } catch (Exception ex) {
-            LOG.error("Error adding key ["+ referenceValue + "] value [" + id + "] to ID map cache", ex);
+            //don't suppress this
+            throw new RuntimeException("Error adding key ["+ referenceValue + "] value [" + id + "] to ID map cache", ex);
+            //LOG.error("Error adding key ["+ referenceValue + "] value [" + id + "] to ID map cache", ex);
         }
     }
 

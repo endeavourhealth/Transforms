@@ -100,69 +100,115 @@ public class Patient extends AbstractCsvParser {
     public CsvCell getPatientID() {
         return super.getCell("PID");
     }
+
     public CsvCell getPatientRef() {
         return super.getCell("REFERENCE");
     }
-    public CsvCell getOrganisationID() { return super.getCell("SERVICE_ID"); }
+
+    public CsvCell getOrganisationID() {
+        return super.getCell("SERVICE_ID");
+    }
+
     public CsvCell getSex() {
         return super.getCell("SEX");
     }
-    public CsvCell getEthnicOrigin () { return super.getCell("ETHNIC"); }
-    public CsvCell getMaritalStatus () { return super.getCell("MARITAL_STATUS"); }
-    public CsvCell getDateOfBirth() {return super.getCell("DATE_OF_BIRTH"); }
-    public CsvCell getDateOfDeath() {return super.getCell("DATE_OF_DEATH"); }
+
+    public CsvCell getEthnicOrigin() {
+        return super.getCell("ETHNIC");
+    }
+
+    public CsvCell getMaritalStatus() {
+        return super.getCell("MARITAL_STATUS");
+    }
+
+    public CsvCell getDateOfBirth() {
+        return super.getCell("DATE_OF_BIRTH");
+    }
+
+    public CsvCell getDateOfDeath() {
+        return super.getCell("DATE_OF_DEATH");
+    }
+
     public CsvCell getTitle() {
         return super.getCell("TITLE");
     }
-    public CsvCell getGivenName() {return super.getCell("FORENAME");}
+
+    public CsvCell getGivenName() {
+        return super.getCell("FORENAME");
+    }
+
     public CsvCell getSurname() {
         return super.getCell("SURNAME");
     }
-    public CsvCell getDateOfRegistration() {return super.getCell("REGISTERED_DATE"); }
+
+    public CsvCell getDateOfRegistration() {
+        return super.getCell("REGISTERED_DATE");
+    }
+
     public CsvCell getNhsNumber() {
         return super.getCell("NHS_NUMBER");
     }
+
     public CsvCell getPatientNumber() {
         return super.getCell("PRACT_NUMBER");
     }
+
     public CsvCell getPatientTypeCode() {
         return super.getCell("ACTIVE");
     }
+
     public CsvCell getHouseNameFlatNumber() {
         return super.getCell("ADDRESS_1");
     }
+
     public CsvCell getNumberAndStreet() {
         return super.getCell("ADDRESS_2");
     }
+
     public CsvCell getVillage() {
         return super.getCell("ADDRESS_3");
     }
+
     public CsvCell getTown() {
         return super.getCell("ADDRESS_4");
     }
+
     public CsvCell getCounty() {
         return super.getCell("ADDRESS_5");
     }
+
     public CsvCell getPostcode() {
         return super.getCell("POSTCODE");
     }
-    public CsvCell getDateOfDeactivation() { return super.getCell("REMOVED_DATE"); }
+
+    public CsvCell getDateOfDeactivation() {
+        return super.getCell("REMOVED_DATE");
+    }
+
     public CsvCell getHomePhone() {
         return super.getCell("PHONE_NUMBER");
     }
+
     public CsvCell getMobilePhone() {
         return super.getCell("MOBILE_NUMBER");
     }
+
     public CsvCell getEmail() {
         return super.getCell("EMAIL");
     }
+
     public CsvCell getUsualGpID() {
         return super.getCell("GP_USUAL");
     }
-    public CsvCell getExternalUsualGPID() { return super.getCell("GP"); }
+
+    public CsvCell getExternalUsualGPID() {
+        return super.getCell("GP");
+    }
+
     public CsvCell getExternalUsualGPOrganisation() {
         return super.getCell("SERVICE_ID");
     }
+
     public CsvCell getPatientAction() {
         return super.getCell("ACTION");
     }

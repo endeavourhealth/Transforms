@@ -8,7 +8,10 @@ import java.util.UUID;
 
 public class RegistrationStatus extends AbstractCsvParser {
 
-    public RegistrationStatus(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+    public static final String VERSION_WITH_PROCESSING_ID = "WithProcessingId";
+    public static final String VERSION_WITHOUT_PROCESSING_ID = "WithoutProcessingId";
+
+    public RegistrationStatus(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, CSVFormat csvFormat, String dateFormat, String timeFormat) {
         super(serviceId,
                 systemId,
                 exchangeId,
@@ -21,21 +24,33 @@ public class RegistrationStatus extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return getHeaders();
+        return getHeaders(version);
     }
 
     /**
      * the file doesn't contain headers, so we just have to specify what they'll be
      */
-    private static String[] getHeaders() {
-        return new String[] {
-                "OrganisationGuid",
-                "PatientGuid",
-                "Date",
-                "RegistrationStatus",
-                "RegistrationType",
-                "ProcessingOrder"
-        };
+    private static String[] getHeaders(String version) {
+        if (version.equals(VERSION_WITH_PROCESSING_ID)) {
+            return new String[] {
+                    "OrganisationGuid",
+                    "PatientGuid",
+                    "Date",
+                    "RegistrationStatus",
+                    "RegistrationType",
+                    "ProcessingOrder"
+            };
+        } else if (version.equals(VERSION_WITHOUT_PROCESSING_ID)) {
+            return new String[] {
+                    "OrganisationGuid",
+                    "PatientGuid",
+                    "Date",
+                    "RegistrationStatus",
+                    "RegistrationType"
+            };
+        } else {
+            throw new RuntimeException("Unknown version [" + version + "]");
+        }
     }
 
     public CsvCell getOrganisationGuid() {
@@ -58,6 +73,9 @@ public class RegistrationStatus extends AbstractCsvParser {
         return getCell("RegistrationType");
     }
 
+    /**
+     * note this column doesn't exist on the latest version of the file
+     */
     public CsvCell getProcessingOrder() {
         return getCell("ProcessingOrder");
     }
