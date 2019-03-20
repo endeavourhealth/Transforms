@@ -13,8 +13,8 @@ version=${version/-/--} # Hyphen escaping required by shields.io
 echo "https://img.shields.io/badge/Build-In_progress-orange.svg"
 curl -s "https://img.shields.io/badge/Build-In_progress-orange.svg" > badges/build.svg
 
-echo "https://img.shields.io/badge/Version-$version-green.svg"
-curl -s "https://img.shields.io/badge/Version-$version-green.svg" > badges/version.svg
+echo "https://img.shields.io/badge/Version-$version-orange.svg"
+curl -s "https://img.shields.io/badge/Version-$version-orange.svg" > badges/version.svg
 
 echo "https://img.shields.io/badge/Unit_Tests-Pending-orange.svg"
 curl -s "https://img.shields.io/badge/Unit_Tests-Pending-orange.svg" > badges/unit-test.svg
@@ -40,6 +40,9 @@ else
 fi
 echo "https://img.shields.io/badge/Build-$badge_status-$badge_colour.svg"
 curl -s "https://img.shields.io/badge/Build-$badge_status-$badge_colour.svg" > badges/build.svg
+
+echo "https://img.shields.io/badge/Version-$version-$badge_colour.svg"
+curl -s "https://img.shields.io/badge/Version-$version-$badge_colour.svg" > badges/version.svg
 
 # Unit tests
 failures=$( xmllint --xpath 'string(//testsuite/@failures) + string(//testsuite/@errors)' API/target/surefire-reports/TEST-*.xml )
