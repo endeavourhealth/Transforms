@@ -10,16 +10,22 @@ import java.util.List;
 public class ExchangeHelper {
 
     public static List<ExchangePayloadFile> parseExchangeBody(String exchangeBody) {
+        return parseExchangeBody(exchangeBody, true);
+    }
+
+    public static List<ExchangePayloadFile> parseExchangeBody(String exchangeBody, boolean addSharedStoragePath) {
         String sharedStoragePath = TransformConfig.instance().getSharedStoragePath();
 
         List<ExchangePayloadFile> ret = new ArrayList<>();
 
         ExchangePayloadFile[] files = JsonSerializer.deserialize(exchangeBody, ExchangePayloadFile[].class);
 
-        for (int i=0; i<files.length; i++) {
+        for (int i = 0; i < files.length; i++) {
             ExchangePayloadFile file = files[i];
-            String path = FilenameUtils.concat(sharedStoragePath, file.getPath());
-            file.setPath(path);
+            if (addSharedStoragePath) {
+                String path = FilenameUtils.concat(sharedStoragePath, file.getPath());
+                file.setPath(path);
+            }
             ret.add(file);
         }
 
