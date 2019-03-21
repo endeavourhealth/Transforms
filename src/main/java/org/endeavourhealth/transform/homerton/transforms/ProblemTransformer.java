@@ -81,6 +81,7 @@ public class ProblemTransformer extends HomertonBasisTransformer {
         // it's rare, but there are cases where records have a textual term but not vocab or code
         CsvCell problemCodeCell = parser.getProblemCode();
         CsvCell vocabCell = parser.getVocabulary();
+        CsvCell problemTermCell = parser.getProblemDescriptionText();
         if (!vocabCell.isEmpty() && !problemCodeCell.isEmpty()) {
             String vocab = vocabCell.getString();
             String code = problemCodeCell.getString();
@@ -100,9 +101,14 @@ public class ProblemTransformer extends HomertonBasisTransformer {
                     codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
                 }
             } else if (vocab.equalsIgnoreCase("Cerner")) {
-                // in this file, Cerner VOCAB doesn't seem to mean it refers to the CVREF file, so don't make any attempt to look up an official term
+                // in this file, Cerner VOCAB doesn't seem to mean it refers to the CVREF file, so don't make any
+                // attempt to look up an official term but instead use the problem description for the display
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
+
+                if (!problemTermCell.isEmpty()) {
+                    codeableConceptBuilder.setCodingDisplay(problemTermCell.getString(), problemTermCell);
+                }
 
             } else {
                 throw new TransformException("Unexpected problem VOCAB [" + vocab + "]");
@@ -110,7 +116,6 @@ public class ProblemTransformer extends HomertonBasisTransformer {
         }
 
         // set the raw term on the codeable concept text
-        CsvCell problemTermCell = parser.getProblemDescriptionText();
         if (!problemTermCell.isEmpty()) {
             String term = problemTermCell.getString();
             codeableConceptBuilder.setText(term, problemTermCell);
