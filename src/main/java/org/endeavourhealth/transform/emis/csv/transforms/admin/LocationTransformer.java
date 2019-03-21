@@ -26,7 +26,7 @@ public class LocationTransformer {
         EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid());
 
         AbstractCsvParser parser = parsers.get(Location.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((Location)parser, fhirResourceFiler, csvHelper, adminCacheFiler);

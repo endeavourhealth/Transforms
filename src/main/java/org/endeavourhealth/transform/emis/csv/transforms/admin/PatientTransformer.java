@@ -32,7 +32,7 @@ public class PatientTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Patient.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResources((Patient) parser, fhirResourceFiler, csvHelper, version);

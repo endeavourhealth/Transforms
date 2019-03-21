@@ -18,7 +18,7 @@ public class DiaryPreTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Diary.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((Diary)parser, fhirResourceFiler, csvHelper, version);

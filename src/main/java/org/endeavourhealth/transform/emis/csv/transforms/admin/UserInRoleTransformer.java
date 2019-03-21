@@ -27,7 +27,7 @@ public class UserInRoleTransformer {
         EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid());
 
         AbstractCsvParser parser = parsers.get(UserInRole.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((UserInRole)parser, fhirResourceFiler, csvHelper, adminCacheFiler);

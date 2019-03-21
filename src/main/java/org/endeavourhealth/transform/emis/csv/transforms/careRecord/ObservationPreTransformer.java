@@ -27,7 +27,7 @@ public class ObservationPreTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         AbstractCsvParser parser = parsers.get(Observation.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 processLine((Observation)parser, csvHelper, fhirResourceFiler, version);

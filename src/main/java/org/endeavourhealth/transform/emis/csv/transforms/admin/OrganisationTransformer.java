@@ -30,7 +30,7 @@ public class OrganisationTransformer {
         EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid());
 
         AbstractCsvParser parser = parsers.get(Organisation.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((Organisation)parser, fhirResourceFiler, csvHelper, adminCacheFiler);

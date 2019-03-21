@@ -28,7 +28,7 @@ public class ProblemPreTransformer {
         //to parse any record in this file it a critical error
         try {
             AbstractCsvParser parser = parsers.get(Problem.class);
-            while (parser.nextRecord()) {
+            while (parser != null && parser.nextRecord()) {
 
                 try {
                     processLine((Problem) parser, fhirResourceFiler, csvHelper, version);

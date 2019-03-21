@@ -28,7 +28,7 @@ public class PatientPreTransformer {
         //to parse any record in this file it a critical error
         try {
             AbstractCsvParser parser = parsers.get(Patient.class);
-            while (parser.nextRecord()) {
+            while (parser != null && parser.nextRecord()) {
 
                 try {
                     processLine((Patient) parser, fhirResourceFiler, csvHelper, version);

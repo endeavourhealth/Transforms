@@ -20,7 +20,7 @@ public class SessionUserTransformer {
         //to parse any record in this file it a critical error
         AbstractCsvParser parser = parsers.get(SessionUser.class);
 
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             //don't continue if an exception is raised, since follow files depend on this working OK
             try {

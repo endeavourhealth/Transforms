@@ -29,7 +29,7 @@ public class IssueRecordTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(IssueRecord.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((IssueRecord)parser, fhirResourceFiler, csvHelper, version);

@@ -37,7 +37,7 @@ public class DrugCodeTransformer {
             List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
 
             AbstractCsvParser parser = parsers.get(DrugCode.class);
-            while (parser.nextRecord()) {
+            while (parser != null && parser.nextRecord()) {
 
                 try {
                     transform((DrugCode)parser, fhirResourceFiler, csvHelper, mappingsToSave);

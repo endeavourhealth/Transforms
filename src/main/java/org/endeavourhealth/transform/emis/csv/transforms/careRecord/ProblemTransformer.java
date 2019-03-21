@@ -26,7 +26,7 @@ public class ProblemTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Problem.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((Problem)parser, fhirResourceFiler, csvHelper, version);

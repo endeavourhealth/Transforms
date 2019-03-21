@@ -39,7 +39,7 @@ public abstract class ClinicalCodeTransformer {
             List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
 
             AbstractCsvParser parser = parsers.get(ClinicalCode.class);
-            while (parser.nextRecord()) {
+            while (parser != null && parser.nextRecord()) {
 
                 //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
                 //to parse any record in this file it a critical error

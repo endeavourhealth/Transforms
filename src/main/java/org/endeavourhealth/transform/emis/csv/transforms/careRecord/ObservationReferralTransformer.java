@@ -29,7 +29,7 @@ public class ObservationReferralTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(ObservationReferral.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((ObservationReferral)parser, fhirResourceFiler, csvHelper);

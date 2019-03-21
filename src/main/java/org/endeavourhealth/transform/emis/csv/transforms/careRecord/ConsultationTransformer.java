@@ -31,7 +31,7 @@ public class ConsultationTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Consultation.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((Consultation)parser, fhirResourceFiler, csvHelper, version);

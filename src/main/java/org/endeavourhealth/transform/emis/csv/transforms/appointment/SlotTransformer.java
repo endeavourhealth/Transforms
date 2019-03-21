@@ -27,7 +27,7 @@ public class SlotTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Slot.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createSlotAndAppointment((Slot)parser, fhirResourceFiler, csvHelper);

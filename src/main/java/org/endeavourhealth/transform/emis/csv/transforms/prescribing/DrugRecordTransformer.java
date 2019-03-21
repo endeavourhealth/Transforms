@@ -27,7 +27,7 @@ public class DrugRecordTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(DrugRecord.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((DrugRecord)parser, fhirResourceFiler, csvHelper, version);

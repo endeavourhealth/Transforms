@@ -20,7 +20,7 @@ public class OrganisationLocationTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         AbstractCsvParser parser = parsers.get(OrganisationLocation.class);
-        while (parser.nextRecord()) {
+        while (parser != null && parser.nextRecord()) {
 
             try {
                 createLocationOrganisationMapping((OrganisationLocation)parser, fhirResourceFiler, csvHelper, version);
