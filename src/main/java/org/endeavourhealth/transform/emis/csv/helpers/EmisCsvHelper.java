@@ -11,7 +11,6 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -21,11 +20,13 @@ import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,7 +36,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     //private static final String CODEABLE_CONCEPT = "CodeableConcept";
     private static final String ID_DELIMITER = ":";
-    private static final String EMIS_LATEST_REG_DATE = "Emis_Latest_Reg_Date";
+    //private static final String EMIS_LATEST_REG_DATE = "Emis_Latest_Reg_Date";
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -46,7 +47,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     //DB access
     private EmisTransformDalI mappingRepository = DalProvider.factoryEmisTransformDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
-    private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
 
     //metadata, not relating to patients
     private Map<Long, EmisCsvCodeMap> clinicalCodes = new ConcurrentHashMap<>();
@@ -71,8 +71,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<StringMemorySaver, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
     private Map<StringMemorySaver, List<List_.ListEntryComponent>> existingRegsitrationStatues = new ConcurrentHashMap<>();
     private ThreadPool utilityThreadPool = null;
-    private Map<String, String> internalIdMapCache = new ConcurrentHashMap<>();
-
+    private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
 
     public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData) {
         this.serviceId = serviceId;
@@ -291,6 +290,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createEpisodeReference(CsvCell patientGuid) throws Exception{
         //we now use registration start date as part of the source ID for episodes of care, so we use the internal  ID map table to store that start date
         CsvCell regStartCell = getLatestEpisodeStartDate(patientGuid);
+        if (regStartCell == null) {
+            throw new Exception("Failed to find latest registration date for patient " + patientGuid);
+        }
         String episodeSourceId = createUniqueId(patientGuid, regStartCell);
         return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeSourceId);
     }
@@ -299,19 +301,43 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String key = patientGuid.getString();
         String value = startDateCell.getString();
 
-        internalIdDal.save(serviceId, EMIS_LATEST_REG_DATE, key, value);
-        internalIdMapCache.put(key, value);
+        latestEpisodeStartDateCache.put(key, value);
     }
 
     public CsvCell getLatestEpisodeStartDate(CsvCell patientGuid) throws Exception {
         String key = patientGuid.getString();
-        String value = internalIdMapCache.get(key);
+        String value = latestEpisodeStartDateCache.get(key);
         if (value == null) {
-            value = internalIdDal.getDestinationId(serviceId, EMIS_LATEST_REG_DATE, key);
-            if (value == null) {
+
+            //convert patient GUID to UUID
+            String sourcePatientId = createUniqueId(patientGuid, null);
+            UUID patientUuid = IdHelper.getEdsResourceId(serviceId, ResourceType.Patient, sourcePatientId);
+            if (patientUuid == null) {
                 return null;
             }
-            internalIdMapCache.put(key, value);
+
+            Date latestDate = null;
+
+            List<ResourceWrapper> episodeWrappers = resourceRepository.getResourcesByPatient(serviceId, patientUuid, ResourceType.EpisodeOfCare.toString());
+            for (ResourceWrapper wrapper: episodeWrappers) {
+                EpisodeOfCare episode = (EpisodeOfCare)FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
+                if (episode.hasPeriod()) {
+                    Date d = episode.getPeriod().getStart();
+                    if (latestDate == null
+                            || d.after(latestDate)) {
+                        latestDate = d;
+                    }
+                }
+            }
+
+            if (latestDate == null) {
+                return null;
+            }
+
+            //need to convert back to a string in the same format as the raw file
+            SimpleDateFormat sdf = new SimpleDateFormat(EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD);
+            value = sdf.format(latestDate);
+            latestEpisodeStartDateCache.put(key, value);
         }
 
         return CsvCell.factoryDummyWrapper(value);

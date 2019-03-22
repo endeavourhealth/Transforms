@@ -108,6 +108,7 @@ public class PatientTransformer {
         }
 
         //and cache the start date in the helper since we'll need this when linking Encounters to Episodes
+        //note we must do this AFTER the above check, otherwise we'll fail to end episodes when patients are deducted and re-register on the same day
         csvHelper.cacheLatestEpisodeStartDate(patientGuid, regDateCell);
 
         CsvCell dedDateCell = parser.getDateOfDeactivation();
