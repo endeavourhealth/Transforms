@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -123,7 +124,7 @@ public class EncounterTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
 
-    private static String convertSessionTypeCode(String sessionTypeCode) {
+    private static String convertSessionTypeCode(String sessionTypeCode) throws Exception {
         switch (sessionTypeCode) {
             case "G": return "General consultations";
             case "V": return "Visit";
@@ -134,18 +135,18 @@ public class EncounterTransformer {
             case "3": return "Three year check";
             case "7": return "75+ check";
             case "O": return "Other";
-            default: return null;
+            default: throw new TransformException("Unexpected Encounter Session Type Code: [" + sessionTypeCode + "]");
         }
     }
 
-    private static String convertLocationTypeCode(String locationTypeCode) {
+    private static String convertLocationTypeCode(String locationTypeCode) throws Exception {
         switch (locationTypeCode) {
             case "S": return "Surgery";
             case "C": return "Clinic";
             case "A": return "A+E";
             case "H": return "Hospital";
             case "O": return "Other";
-            default: return null;
+            default: throw new TransformException("Unexpected Encounter Location Type Code: [" + locationTypeCode + "]");
         }
     }
 

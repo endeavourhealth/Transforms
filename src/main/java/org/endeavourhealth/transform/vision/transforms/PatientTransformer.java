@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
@@ -319,16 +320,16 @@ public class PatientTransformer {
         }
     }
 
-    private static MaritalStatus convertMaritalStatus(String statusCode) {
+    private static MaritalStatus convertMaritalStatus(String statusCode) throws Exception {
         switch (statusCode) {
             case "S": return MaritalStatus.NEVER_MARRIED;
             case "M": return MaritalStatus.MARRIED;
             case "D": return MaritalStatus.DIVORCED;
             case "P": return MaritalStatus.LEGALLY_SEPARATED;
-            case "C": return null; //"Cohabiting";
+            case "C": return MaritalStatus.DOMESTIC_PARTNER;   //"Cohabiting";
             case "W": return MaritalStatus.WIDOWED;
             case "U": return null; //"Unspecified";
-            default: return null;
+            default: throw new TransformException("Unexpected Patient Marital Status Code: [" + statusCode + "]");
         }
     }
 }
