@@ -64,12 +64,19 @@ public class SRPatientTransformer {
             return;
         }
 
+        //remove existing PatientId identifier to prevent any duplication
+        IdentifierBuilder.removeExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID);
+
         IdentifierBuilder identifierBuilderTpp = new IdentifierBuilder(patientBuilder);
         identifierBuilderTpp.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID);
         identifierBuilderTpp.setUse(Identifier.IdentifierUse.SECONDARY);
         identifierBuilderTpp.setValue(rowIdCell.getString(), rowIdCell);
 
         if (!nhsNumberCell.isEmpty()) {
+
+            //remove existing NHS number identifier to prevent any duplication
+            IdentifierBuilder.removeExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+
             String nhsNumber = nhsNumberCell.getString();
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
@@ -115,7 +122,6 @@ public class SRPatientTransformer {
         if (!surnameCell.isEmpty()) {
             nameBuilder.addFamily(surnameCell.getString(), surnameCell);
         }
-
 
         CsvCell dobCell = parser.getDateBirth();
         if (!dobCell.isEmpty()) {
