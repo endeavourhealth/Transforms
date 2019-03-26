@@ -277,6 +277,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRSystmOnline");
             set.add("SRTreatmentCentrePreference");
             set.add("SRTemplate");
+            set.add("SRCodeTemplateLink");
             set.add("SRMedia");
             set.add("SRImmunisationConsent");
 
