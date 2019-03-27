@@ -3,7 +3,11 @@ package org.endeavourhealth.transform.emis.csv.transforms.admin;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.*;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -21,6 +25,7 @@ import javax.xml.crypto.dsig.TransformException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class PatientTransformer {
 
@@ -94,19 +99,6 @@ public class PatientTransformer {
 
         episodeBuilder.setRegistrationStartDate(regDateCell.getDate(), regDateCell);
 
-        //we store the latest start date for each patient, so see if it's changed since last transform.
-        //If so, this means a patient was deducted and re-registered on the same day, so we need to manually
-        //end the previous episode.
-        CsvCell previousStartDate = csvHelper.getLatestEpisodeStartDate(patientGuid);
-        if (previousStartDate != null) {
-            String previousStr = previousStartDate.getString();
-            String currentStr = regDateCell.getString();
-            //we have to compare as Strings because can't call getDate() on a dummy cell
-            if (!previousStr.equals(currentStr)) {
-                endLastEpisodeOfCare(patientGuid, previousStartDate, regDateCell, fhirResourceFiler, csvHelper);
-            }
-        }
-
         //and cache the start date in the helper since we'll need this when linking Encounters to Episodes
         //note we must do this AFTER the above check, otherwise we'll fail to end episodes when patients are deducted and re-register on the same day
         csvHelper.cacheLatestEpisodeStartDate(patientGuid, regDateCell);
@@ -115,6 +107,8 @@ public class PatientTransformer {
         if (!dedDateCell.isEmpty()) {
             episodeBuilder.setRegistrationEndDate(dedDateCell.getDate(), dedDateCell);
         }
+
+        endOtherEpisodes(patientGuid, regDateCell, fhirResourceFiler);
 
         CsvCell confidential = parser.getIsConfidential();
         if (confidential.getBoolean()) {
@@ -166,10 +160,57 @@ public class PatientTransformer {
     }
 
     /**
+     * if a patient was deducted and re-registered on the same day, we don't ever receive the end date for the previous
+     * registration, so we need to manually check for any active episode with a different start date and end them
+     */
+    private static void endOtherEpisodes(CsvCell patientGuidCell, CsvCell thisStartDateCell, FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        String sourceId = EmisCsvHelper.createUniqueId(patientGuidCell, null);
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Patient, sourceId);
+        if (globallyUniqueId == null) {
+            return;
+        }
+
+        Date thisStartDate = thisStartDateCell.getDate();
+
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> episodeWrappers = resourceDal.getResourcesByPatient(fhirResourceFiler.getServiceId(), globallyUniqueId, ResourceType.EpisodeOfCare.toString());
+
+        for (ResourceWrapper episodeWrapper: episodeWrappers) {
+            EpisodeOfCare episode = (EpisodeOfCare)FhirSerializationHelper.deserializeResource(episodeWrapper.getResourceData());
+            if (!episode.hasPeriod()) {
+                throw new Exception("Episode " + episode.getId() + " doesn't have period");
+            }
+
+            Period period = episode.getPeriod();
+            if (!PeriodHelper.isActive(period)) {
+                continue;
+            }
+
+            Date startDate = period.getStart();
+            if (startDate == null) {
+                throw new Exception("Episode " + episode.getId() + " doesn't have start date");
+            }
+
+            //if we're re-processing old files, we will end up processing records for old start dates,
+            //and we need to ensure we don't accidentially end episodes from AFTER
+            if (!startDate.before(thisStartDate)) {
+                continue;
+            }
+
+            EpisodeOfCareBuilder builder = new EpisodeOfCareBuilder(episode);
+            builder.setRegistrationEndDate(thisStartDate, thisStartDateCell);
+
+            fhirResourceFiler.savePatientResource(null, false, builder);
+        }
+    }
+
+
+    /**
      * if we detect the patient was deducted and re-registered on the same day, then we want to manually end
      * the previous Episode, setting the end date to the new start date
      */
-    private static void endLastEpisodeOfCare(CsvCell patientGuid, CsvCell previousStartDate, CsvCell newStartDate,
+    /*private static void endLastEpisodeOfCare(CsvCell patientGuid, CsvCell previousStartDate, CsvCell newStartDate,
                                              FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper) throws Exception {
 
         String sourceId = EmisCsvHelper.createUniqueId(patientGuid, previousStartDate);
@@ -184,7 +225,7 @@ public class PatientTransformer {
         builder.setRegistrationEndDate(newStartDate.getDate(), newStartDate);
 
         fhirResourceFiler.savePatientResource(null, false, builder);
-    }
+    }*/
 
     private static PatientBuilder createPatientResource(Patient parser, EmisCsvHelper csvHelper, String version) throws Exception {
 
