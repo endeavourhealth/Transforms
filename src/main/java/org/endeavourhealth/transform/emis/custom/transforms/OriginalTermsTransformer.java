@@ -46,13 +46,13 @@ public class OriginalTermsTransformer {
         CsvCell patientGuidCell = parser.getPatientGuid();
         CsvCell observationGuidCell = parser.getObservationGuid();
 
-        //this file has GUIDs in the normal style, but the regular Emis data has them with brackets, so
+        //this file has GUIDs in the normal style, but the regular Emis data has them with brackets and in UPPER case, so
         //we need to create new cell objects with the adjusted content
-        CsvCell adjustedPatientGuidCell = new CsvCell(patientGuidCell.getPublishedFileId(), patientGuidCell.getRecordNumber(), patientGuidCell.getColIndex(), "{" + patientGuidCell.getString() + "}", parser);
-        CsvCell adjustedObservationGuidCell = new CsvCell(observationGuidCell.getPublishedFileId(), observationGuidCell.getRecordNumber(), observationGuidCell.getColIndex(), "{" + observationGuidCell.getString() + "}", parser);
+        patientGuidCell = CsvCell.factoryWithNewValue(patientGuidCell, "{" + patientGuidCell.getString().toUpperCase() + "}");
+        observationGuidCell = CsvCell.factoryWithNewValue(observationGuidCell, "{" + observationGuidCell.getString().toUpperCase() + "}");
 
         //work out what FHIR resource type the original record was saved as
-        Set<ResourceType> resourceTypes = ObservationTransformer.findOriginalTargetResourceTypes(fhirResourceFiler, adjustedPatientGuidCell, adjustedObservationGuidCell);
+        Set<ResourceType> resourceTypes = ObservationTransformer.findOriginalTargetResourceTypes(fhirResourceFiler, patientGuidCell, observationGuidCell);
 
         //we do get some records for data/patients we've never received (deleted before the extract started)
         if (resourceTypes.isEmpty()) {
@@ -61,7 +61,7 @@ public class OriginalTermsTransformer {
 
         for (ResourceType resourceType: resourceTypes) {
 
-            String locallyUniqueId = EmisCsvHelper.createUniqueId(adjustedPatientGuidCell, adjustedObservationGuidCell);
+            String locallyUniqueId = EmisCsvHelper.createUniqueId(patientGuidCell, observationGuidCell);
             UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), resourceType, locallyUniqueId);
 
             //if we've never mapped the local ID to a EDS UI, then we've never heard of this resource before
