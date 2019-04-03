@@ -855,8 +855,47 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      * resource cache and save them against the new organisation. This is because EMIS only send most Organisations,
      * Locations and Staff once, with the very first organisation, and when a second organisation is added to
      * the extract, none of that data is re-sent, so we have to create those resources for the new org
+     *
+     * getting out of memory errors as there simply too many to retrieve into memory at once, so changing to stream them
      */
     public void applyAdminResourceCache(FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        mappingRepository.startRetrievingAdminResources(dataSharingAgreementGuid);
+
+        int count = 0;
+
+        while (true) {
+            EmisAdminResourceCache cachedResource = mappingRepository.getNextAdminResource();
+            if (cachedResource == null) {
+                break;
+            }
+
+            //wrap the resource and audit trail in a generic resource builder for saving
+            Resource fhirResource = FhirSerializationHelper.deserializeResource(cachedResource.getResourceData());
+            ResourceFieldMappingAudit audit = cachedResource.getAudit();
+            GenericBuilder genericBuilder = new GenericBuilder(fhirResource, audit);
+
+            fhirResourceFiler.saveAdminResource(null, genericBuilder);
+
+            //to cut memory usage, clear out the JSON field on each object as we pass it. Due to weird
+            //Emis org/practitioner hierarchy, we've got 500k practitioners to save, so this is quite a lot of memory
+            cachedResource.setDataSharingAgreementGuid(null);
+            cachedResource.setEmisGuid(null);
+            cachedResource.setResourceType(null);
+            cachedResource.setResourceData(null);
+            cachedResource.setAudit(null);
+
+            //log progress
+            count ++;
+            if (count % 50000 == 0) {
+                LOG.trace("Done " + count);
+            }
+        }
+
+        LOG.trace("Finished " + count + " admin resources");
+    }
+
+    /*public void applyAdminResourceCache(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         List<EmisAdminResourceCache> cachedResources = mappingRepository.getAdminResources(dataSharingAgreementGuid);
         LOG.trace("Got to apply " + cachedResources.size() + " admin resources");
@@ -886,7 +925,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
                 LOG.trace("Done " + count + " / " + cachedResources.size());
             }
         }
-    }
+    }*/
 
     /**
      * in some cases, we get a row in the CareRecord_Problem file but not in the CareRecord_Observation file,

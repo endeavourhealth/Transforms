@@ -441,7 +441,10 @@ public class PatientBuilder extends ResourceBuilderBase
         }
     }
 
-    public void setInterpreterRequired(Boolean interpreterRequired, CsvCell... sourceCells) {
+    /**
+     * use speaksEnglish
+     */
+    /*public void setInterpreterRequired(Boolean interpreterRequired, CsvCell... sourceCells) {
 
         if (interpreterRequired != null) {
             Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.patient, FhirExtensionUri.PATIENT_INTERPRETER_REQUIRED, interpreterRequired.booleanValue());
@@ -452,7 +455,7 @@ public class PatientBuilder extends ResourceBuilderBase
 
             ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_INTERPRETER_REQUIRED);
         }
-    }
+    }*/
 
     public boolean hasManagingOrganisation() {
         return this.patient.hasManagingOrganization();

@@ -45,7 +45,9 @@ public abstract class EmisCsvToFhirTransformer {
     public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
 
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
-        LOG.info("Invoking EMIS CSV transformer for " + files.size() + " files and service " + processor.getServiceId());
+        UUID serviceId = processor.getServiceId();
+        Service service = DalProvider.factoryServiceDal().getById(serviceId);
+        LOG.info("Invoking EMIS CSV transformer for " + files.size() + " files and service " + service.getName() + " " + service.getId());
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
         //so we dynamically work out the version when we load the first set of files
