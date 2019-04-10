@@ -22,6 +22,9 @@ public class PatientResourceCache {
         //check the cache
         PatientBuilder cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(patientIdCell.getString());
         if (cachedResource != null) {
+
+            //add it back into the cache as many identical patients can exist in same session
+            returnPatientBuilder(patientIdCell,cachedResource);
             return cachedResource;
         }
 

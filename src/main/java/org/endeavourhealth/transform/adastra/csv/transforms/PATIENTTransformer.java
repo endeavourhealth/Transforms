@@ -227,10 +227,6 @@ public class PATIENTTransformer {
 
         if (!patientCreatedInSession) {
 
-            // return the builders back to their caches
-            csvHelper.getPatientCache().returnPatientBuilder(patientId, patientBuilder);
-            csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(caseId, episodeBuilder);
-
             //save both resources together, so the new patient is saved before the episode
             boolean mapPatientIds = !(csvHelper.isResourceIdMapped(patientId.getString(), patientBuilder.getResource()));
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapPatientIds, patientBuilder);
@@ -238,15 +234,19 @@ public class PATIENTTransformer {
             boolean mapEpisodeIds = !(csvHelper.isResourceIdMapped(caseId.getString(), episodeBuilder.getResource()));
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapEpisodeIds, episodeBuilder);
 
-        } else {
-
-            // return the builder back to the cache
+            // return the builders back to their caches
+            csvHelper.getPatientCache().returnPatientBuilder(patientId, patientBuilder);
             csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(caseId, episodeBuilder);
+
+        } else {
 
             //patient already saved during session, so just file the new episode
             //determine if episode already has mapped Id, i.e. retrieved from DB
             boolean mapEpisodeIds = !(csvHelper.isResourceIdMapped(caseId.getString(), episodeBuilder.getResource()));
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapEpisodeIds, episodeBuilder);
+
+            // return the builder back to the cache
+            csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(caseId, episodeBuilder);
         }
     }
 
