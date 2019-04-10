@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
+import org.endeavourhealth.common.fhir.schema.Religion;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -153,17 +154,33 @@ public class PPATITransformer {
             patientBuilder.setEthnicity(null);
         }
 
-        //since we're working on an existing Patient resource we need to remove any existing language or religion codeable concepts
-        //and since the Patient resource only supports one of each of these, we can get away with passing NULL in rather than needing
-        //to find the CodeableConcept to remove
+        //since we're working on an existing Patient resource we need to remove any existing language
         CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, null);
-        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, null);
 
         CsvCell languageCell = parser.getFirstLanguageCode();
         BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CodeValueSet.LANGUAGE, patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, csvHelper);
 
+        //religion
         CsvCell religionCell = parser.getReligionCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
+        if (!BartsCsvHelper.isEmptyOrIsZero(religionCell)) {
+            CernerCodeValueRef cvref = csvHelper.lookupCodeRef(CodeValueSet.RELIGION, religionCell);
+
+            //if possible, map the religion to the NHS data dictionary values
+            Religion fhirReligion = mapReligion(cvref);
+            if (fhirReligion != null) {
+                patientBuilder.setReligion(fhirReligion, religionCell);
+            } else {
+                //if not possible to map, carry the value over as free text
+                String freeTextReligion = cvref.getCodeDispTxt();
+                patientBuilder.setReligionFreeText(freeTextReligion, religionCell);
+            }
+
+        } else {
+            //it's an existing patient resource, so set to null as the religion field may have been cleared
+            patientBuilder.setReligion(null);
+        }
+        /*CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, null);
+        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);*/
 
         // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
         CsvCell deceasedDateTimeCell = parser.getDeceasedDateTime();
@@ -192,6 +209,65 @@ public class PPATITransformer {
         //we don't save the patient here; there are subsequent transforms that work on the patients so we
         //save patients after all of them are done
         csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
+    }
+
+    private static Religion mapReligion(CernerCodeValueRef cvref) throws Exception {
+        String s = cvref.getAliasNhsCdAlias();
+
+        switch (s) {
+            case "BAPTIST":
+                return Religion.BAPTIST;
+            case "BUDDHISM":
+                return Religion.BUDDHIST;
+            case "ROMANCATHOLIC":
+                return Religion.ROMAN_CATHOLIC;
+            case "HINDU":
+                return Religion.HINDU;
+            case "JEHOVAHSWITNESS":
+                return Religion.JEHOVAHS_WITNESS;
+            case "LUTHERAN":
+                return Religion.LUTHERAN;
+            case "METHODIST":
+                return Religion.METHODIST;
+            case "ISLAM":
+                return Religion.MUSLIM;
+            case "SEVENTHDAYADVENTIST":
+                return Religion.SEVENTH_DAY_ADVENTIST;
+            case "OTHER":
+                return Religion.RELIGION_OTHER;
+            case "JUDAISMJEWISHHEBREW":
+                return Religion.JEWISH;
+            case "PRESBYTERIAN":
+                return Religion.PRESBYTERIAN;
+            case "NAZARENE":
+                return Religion.NAZARENE_CHURCH;
+            case "LATTERDAYSAINTS":
+                return Religion.MORMON;
+            case "GREEKORTHODOX":
+                return Religion.GREEK_ORTHODOX;
+            case "PENTECOSTAL":
+                return Religion.PENTECOSTALIST;
+            case "CHURCHOFENGLAND":
+                return Religion.CHURCH_OF_ENGLAND;
+            case "ETHIOPIANORTHODOXRASTAFARIAN":
+                return Religion.RASTAFARI;
+            case "SIKH":
+                return Religion.SIKH;
+            case "PLYMOUTHBRETHREN":
+                return Religion.PLYMOUTH_BRETHREN;
+            case "CHRISTIANCHURCH":
+                return Religion.CHRISTIAN;
+            case "CHURCHOFGOD":
+                return Religion.CHURCH_OF_GOD_OF_PROPHECY;
+            case "ASSEMBLIESOFGOD":
+                return null;
+            case "CHURCHOFCHRIST":
+                return null;
+            case "EPISCOPAL":
+                return null;
+            default:
+                throw new Exception("Unmapped religion " + s);
+        }
     }
 
     /**

@@ -65,17 +65,29 @@ public class StaffMemberCache {
 
         EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(TppCsvHelper.ADMIN_CACHE_KEY);
 
+        LOG.debug("Saving " + cache.size() + " staff members to admin DB cache");
+        int done = 0;
+
         for (Long staffMemberId: cache.keySet()) {
             StaffMemberCacheObj cachedStaff = cache.get(staffMemberId);
 
             //since each staff member is independent of each other, we can parallelise this
             Task task = new Task(staffMemberId, cachedStaff, fhirResourceFiler, csvHelper, adminCacheFiler);
             csvHelper.submitToThreadPool(task);
+
+            done ++;
+            if (done % 10000 == 0) {
+                LOG.debug("Done " + done);
+            }
         }
 
         csvHelper.waitUntilThreadPoolIsEmpty();
+        LOG.debug("Finished saving " + cache.size() + " staff members to admin DB cache");
 
         //we must save any past practitioners that we didn't save to our EHR DB, but now are referred to
+        LOG.debug("Saving " + staffProfileIdsThatMustBeTransformed.size() + " staff members to FHIR DB");
+        done = 0;
+
         for (Long profileId: staffProfileIdsThatMustBeTransformed) {
 
             EmisAdminResourceCache adminCacheResource = adminCacheFiler.getResourceFromCache(ResourceType.Practitioner, "" + profileId);
@@ -89,9 +101,16 @@ public class StaffMemberCache {
                 PractitionerBuilder practitionerBuilder = new PractitionerBuilder(practitioner, audit);
                 fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
             }
+
+            done ++;
+            if (done % 10000 == 0) {
+                LOG.debug("Done " + done);
+            }
         }
 
         adminCacheFiler.close();
+
+        LOG.debug("Finished saving " + staffProfileIdsThatMustBeTransformed.size() + " staff members to FHIR DB");
     }
 
     public static void addOrUpdatePractitionerDetails(PractitionerBuilder practitionerBuilder, StaffMemberCacheObj cachedStaff, TppCsvHelper csvHelper) throws Exception {

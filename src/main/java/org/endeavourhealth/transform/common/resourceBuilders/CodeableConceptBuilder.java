@@ -23,7 +23,7 @@ public class CodeableConceptBuilder {
         Observation_Range_Meaning,
         Referral_Request_Service,
         Patient_Language,
-        Patient_Religion,
+        //Patient_Religion,
         Encounter_Specialty,
         Encounter_Treatment_Function,
         Encounter_Source,

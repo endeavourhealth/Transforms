@@ -216,13 +216,25 @@ public class PatientTransformer extends HomertonBasisTransformer {
         addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
 
         CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, null);
-        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, null);
 
         CsvCell languageCell = parser.getLanguageID();
         HomertonCodeableConceptHelper.applyCodeDescTxt(languageCell, CodeValueSet.LANGUAGE, patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, csvHelper);
 
+        //religion has changed to be a proper valueset, based on the NHS data dictionary, so this has changed to match
         CsvCell religionCell = parser.getReligionID();
-        HomertonCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);
+        if (!religionCell.isEmpty() && religionCell.getLong() > 0) {
+            CernerCodeValueRef cvref = csvHelper.lookupCodeRef(CodeValueSet.RELIGION, religionCell.getString());
+            //TODO - attempt to map the CVREF religion to Religion enum values in the FHIR repo (see Barts PPATITransformer)
+            String desc = cvref.getCodeDescTxt();
+            patientBuilder.setReligionFreeText(desc, religionCell);
+
+        } else {
+            patientBuilder.setReligion(null);
+        }
+
+        /*CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, null);
+        CsvCell religionCell = parser.getReligionID();
+        HomertonCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);*/
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
         //here we simply return the patient builder to the cache

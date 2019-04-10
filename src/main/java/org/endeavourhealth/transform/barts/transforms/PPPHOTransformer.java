@@ -63,15 +63,20 @@ public class PPPHOTransformer {
             return;
         }
 
-        //if no number, then nothing to process
-        CsvCell numberCell = parser.getPhoneNumber();
-        if (numberCell.isEmpty()) {
-            return;
-        }
-
+        //get our patient resource builder
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
+            return;
+        }
+
+        //we always fully recreate the phone record on the patient so just remove any matching one already there
+        ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
+
+        //if no number, then nothing to process - seems like in some cases the Millennium user doesn't delete
+        //a phone number, but just amends it to have a blank number
+        CsvCell numberCell = parser.getPhoneNumber();
+        if (numberCell.isEmpty()) {
             return;
         }
 
@@ -82,9 +87,6 @@ public class PPPHOTransformer {
         if (!extensionCell.isEmpty()) {
             number += " " + extensionCell.getString();
         }
-
-        //we always fully recreate the phone record on the patient so just remove any matching one already there
-        ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
 
         //and remove any instance of this phone number created by the ADT feed
         removeExistingContactPointWithoutIdByValue(patientBuilder, number);
@@ -118,13 +120,18 @@ public class PPPHOTransformer {
         contactPointBuilder.setUse(use, phoneTypeCell, phoneTypeDescCell);
 
         CsvCell phoneMethodCell = parser.getContactMethodCode();
-        if (!phoneMethodCell.isEmpty() && phoneMethodCell.getLong() > 0) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(phoneMethodCell)) {
 
             CsvCell phoneMethodDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_METHOD, phoneMethodCell);
             String phoneMethodDesc = phoneMethodDescCell.getString();
 
             ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, phoneMethodDesc);
             contactPointBuilder.setSystem(system, phoneTypeCell, phoneMethodCell, phoneMethodDescCell);
+
+        } else {
+            //the phone method is zero for some records, but we still need to look up a system
+            ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, null);
+            contactPointBuilder.setSystem(system, phoneTypeCell);
         }
 
 
@@ -230,29 +237,28 @@ public class PPPHOTransformer {
         //the method AND type both convey information about the type of contact point, so refer to both fields
 
         //the type tells us which are fax and pager contacts (see the above fn for the full list of known types)
-        if (type != null) {
-            switch (type) {
-                case "FAX BUS":
-                case "FAXEPRESCR":
-                case "FAX ALT":
-                case "FAX BILL":
-                case "FAX PERS":
-                case "FAX PREV":
-                case "OS FAX":
-                case "FAX TEMP":
-                    return ContactPoint.ContactPointSystem.FAX;
+        switch (type) {
+            case "FAX BUS":
+            case "FAXEPRESCR":
+            case "FAX ALT":
+            case "FAX BILL":
+            case "FAX PERS":
+            case "FAX PREV":
+            case "OS FAX":
+            case "FAX TEMP":
+                return ContactPoint.ContactPointSystem.FAX;
 
-                case "PAGER ALT":
-                case "PAGER PREV":
-                case "PAGER PERS":
-                case "OS PAGER":
-                case "PAGER BILL":
-                case "PAGING":
-                    return ContactPoint.ContactPointSystem.PAGER;
-            }
+            case "PAGER ALT":
+            case "PAGER PREV":
+            case "PAGER PERS":
+            case "OS PAGER":
+            case "PAGER BILL":
+            case "PAGING":
+                return ContactPoint.ContactPointSystem.PAGER;
         }
 
         //there are only four distinct methods in the code ref table
+        //but there are cases where we don't have a method, so need to handle null
         if (method != null) {
             switch (method) {
                 case "TEL":
@@ -263,10 +269,14 @@ public class PPPHOTransformer {
                     return ContactPoint.ContactPointSystem.EMAIL;
                 case "TEXTPHONE":
                     return ContactPoint.ContactPointSystem.OTHER;
+                default:
+                    return ContactPoint.ContactPointSystem.OTHER;
             }
-        }
 
-        return ContactPoint.ContactPointSystem.OTHER;
+        } else {
+            //in the cases where we don't get a method, all the data received looked like phone numbers
+            return ContactPoint.ContactPointSystem.PHONE;
+        }
     }
 }
 

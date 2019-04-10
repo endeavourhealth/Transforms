@@ -1,9 +1,11 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
+import org.endeavourhealth.common.fhir.schema.Religion;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -247,6 +249,31 @@ public class PatientBuilder extends ResourceBuilderBase
         }
     }
 
+    public void setReligion(Religion fhirReligion, CsvCell... sourceCells) {
+        if (fhirReligion == null) {
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+
+        } else {
+            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirReligion);
+            Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION, codeableConcept);
+            auditCodeableConceptExtension(extension, sourceCells);
+        }
+    }
+
+    /**
+     * if possible, set the religion using on fo the Religion enum values. Only if not possible to map, use this free-text version
+     */
+    public void setReligionFreeText(String freeTextReligion, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty((freeTextReligion))) {
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+
+        } else {
+            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(freeTextReligion);
+            Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION, codeableConcept);
+            auditCodeableConceptExtension(extension, sourceCells);
+        }
+    }
+
     @Override
     public Identifier addIdentifier() {
         return this.patient.addIdentifier();
@@ -282,7 +309,7 @@ public class PatientBuilder extends ResourceBuilderBase
     /**
      * although FHIR supports multiple communication components, this builder doesn't. If needed, then change.
      */
-    private Patient.PatientCommunicationComponent getOrCreatCommunicationComponent(boolean createIfMissing) {
+    private Patient.PatientCommunicationComponent getOrCreateCommunicationComponent(boolean createIfMissing) {
         Patient.PatientCommunicationComponent communicationComponent = null;
         if (this.patient.getCommunication().isEmpty()) {
             if (createIfMissing) {
@@ -302,7 +329,7 @@ public class PatientBuilder extends ResourceBuilderBase
     @Override
     public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
         if (tag == CodeableConceptBuilder.Tag.Patient_Language) {
-            Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent(true);
+            Patient.PatientCommunicationComponent communicationComponent = getOrCreateCommunicationComponent(true);
             if (communicationComponent.hasLanguage()) {
                 if (useExisting) {
                     return communicationComponent.getLanguage();
@@ -311,7 +338,7 @@ public class PatientBuilder extends ResourceBuilderBase
             communicationComponent.setLanguage(new CodeableConcept());
             return communicationComponent.getLanguage();
 
-        } else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
+        /*} else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
             if (extension.hasValue()) {
                 if (useExisting) {
@@ -322,7 +349,7 @@ public class PatientBuilder extends ResourceBuilderBase
             }
             CodeableConcept ret = new CodeableConcept();
             extension.setValue(ret);
-            return ret;
+            return ret;*/
 
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
@@ -334,10 +361,10 @@ public class PatientBuilder extends ResourceBuilderBase
         if (tag == CodeableConceptBuilder.Tag.Patient_Language) {
             return "communication[0].language";
 
-        } else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
+        /*} else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
             Extension extension = ExtensionConverter.findOrCreateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
             int index = this.patient.getExtension().indexOf(extension);
-            return "extension[" + index + "].valueCodeableConcept";
+            return "extension[" + index + "].valueCodeableConcept";*/
 
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
@@ -348,7 +375,7 @@ public class PatientBuilder extends ResourceBuilderBase
     public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
 
         if (tag == CodeableConceptBuilder.Tag.Patient_Language) {
-            Patient.PatientCommunicationComponent communicationComponent = getOrCreatCommunicationComponent(false);
+            Patient.PatientCommunicationComponent communicationComponent = getOrCreateCommunicationComponent(false);
             if (communicationComponent != null) {
                 communicationComponent.setLanguage(null);
 
@@ -358,8 +385,8 @@ public class PatientBuilder extends ResourceBuilderBase
                 }
             }
 
-        } else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
-            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+        /*} else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION);*/
 
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
