@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
@@ -108,10 +110,35 @@ public class AppointmentBuilder extends ResourceBuilderBase
         auditDateTimeExtension(extension, sourceCells);
     }
 
+    public void setCancelledDateTime(Date cancelledDateTime, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateDateTimeExtension(this.appointment, FhirExtensionUri.APPOINTMENT_CANCELLATION_DATE, cancelledDateTime);
+
+        auditDateTimeExtension(extension, sourceCells);
+    }
+
+    public void setBookedDateTime(Date bookedDateTime, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateDateTimeExtension(this.appointment, FhirExtensionUri.APPOINTMENT_BOOKING_DATE, bookedDateTime);
+
+        auditDateTimeExtension(extension, sourceCells);
+    }
+
     public void setStatus(Appointment.AppointmentStatus status, CsvCell... sourceCells) {
         this.appointment.setStatus(status);
 
         auditValue("status", sourceCells);
+    }
+
+    public void setType(String type, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(type)) {
+            this.appointment.setType(null);
+
+        } else {
+            CodeableConcept cc = CodeableConceptHelper.createCodeableConcept(type);
+            this.appointment.setType(cc);
+
+            auditValue("type.text", sourceCells);
+        }
+
     }
 
 

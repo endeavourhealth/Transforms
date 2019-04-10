@@ -17,8 +17,6 @@ import org.hl7.fhir.instance.model.Slot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +28,6 @@ public class SRAppointmentTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentTransformer.class);
 
-    public static final DateFormat DATETIME_FORMAT = new SimpleDateFormat("dd MMM yyyy HH:mm:ss");
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -56,23 +53,24 @@ public class SRAppointmentTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell appointmentId = parser.getRowIdentifier();
-        CsvCell patientId = parser.getIDPatient();
-        CsvCell deleteData = parser.getRemovedData();
+        CsvCell appointmentIdCell = parser.getRowIdentifier();
+        CsvCell patientIdCell = parser.getIDPatient();
+        CsvCell deleteDataCell = parser.getRemovedData();
 
-        if (deleteData != null && deleteData.getIntAsBoolean()) {
+        if (deleteDataCell != null //cell wasn't present on old versions
+                && deleteDataCell.getIntAsBoolean()) {
 
             // get previously filed resources for deletion
-            Appointment appointment = (Appointment) csvHelper.retrieveResource(appointmentId.getString(), ResourceType.Appointment);
+            Appointment appointment = (Appointment) csvHelper.retrieveResource(appointmentIdCell.getString(), ResourceType.Appointment);
             if (appointment != null) {
                 AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
-                appointmentBuilder.setDeletedAudit(deleteData);
+                appointmentBuilder.setDeletedAudit(deleteDataCell);
 
                 //create the linked slot to delete using the same Id as the appointment. nb. there is no patient on
                 //a slot so we don't need to retrieve the existing resource
                 SlotBuilder slotBuilder = new SlotBuilder();
-                slotBuilder.setId(appointmentId.getString(), appointmentId);
-                slotBuilder.setDeletedAudit(deleteData);
+                slotBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);
+                slotBuilder.setDeletedAudit(deleteDataCell);
 
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
             }
@@ -80,22 +78,22 @@ public class SRAppointmentTransformer {
         }
 
         // If we don't have a patient reference, don't file the slot as the filer doesn't support saving slots without a patient
-        if (patientId.isEmpty()) {
+        if (patientIdCell.isEmpty()) {
             return;
         }
 
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
-        appointmentBuilder.setId(appointmentId.getString(), appointmentId);
+        appointmentBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);
 
         SlotBuilder slotBuilder = new SlotBuilder();
-        slotBuilder.setId(appointmentId.getString(), appointmentId);
+        slotBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);
 
-        Reference patientReference = csvHelper.createPatientReference(patientId);
-        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientId);
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
 
-        Reference slotRef = csvHelper.createSlotReference(appointmentId);
-        appointmentBuilder.addSlot(slotRef, appointmentId);
+        Reference slotRef = csvHelper.createSlotReference(appointmentIdCell);
+        appointmentBuilder.addSlot(slotRef, appointmentIdCell);
 
         CsvCell rotaId = parser.getIDRota();
         if (!rotaId.isEmpty()) {
@@ -107,21 +105,20 @@ public class SRAppointmentTransformer {
         slotBuilder.setFreeBusyType(Slot.SlotStatus.BUSY);
 
         //cell is both date and time, so create datetime from both
-        CsvCell startDate = parser.getDateStart();
-        CsvCell startTime = parser.getDateStart();
+        CsvCell startDateCell = parser.getDateStart();
         Date startDateTime = null;
-        if (!startDate.isEmpty()) {
-            startDateTime = DATETIME_FORMAT.parse(startTime.getString());
-            slotBuilder.setStartDateTime(startDateTime, startDate);
-            appointmentBuilder.setStartDateTime(startDateTime, startDate);
+        if (!startDateCell.isEmpty()) {
+            startDateTime = startDateCell.getDateTime();
+            slotBuilder.setStartDateTime(startDateTime, startDateCell);
+            appointmentBuilder.setStartDateTime(startDateTime, startDateCell);
         }
 
-        CsvCell endDate = parser.getDateEnd();
+        CsvCell endDateCell = parser.getDateEnd();
         Date endDateTime = null;
-        if (!endDate.isEmpty()) {
-            endDateTime = DATETIME_FORMAT.parse(endDate.getString());
-            slotBuilder.setEndDateTime(endDateTime, endDate);
-            appointmentBuilder.setEndDateTime(endDateTime, endDate);
+        if (!endDateCell.isEmpty()) {
+            endDateTime = endDateCell.getDateTime();
+            slotBuilder.setEndDateTime(endDateTime, endDateCell);
+            appointmentBuilder.setEndDateTime(endDateTime, endDateCell);
         }
 
         if (endDateTime != null && startDateTime != null) {
@@ -136,11 +133,27 @@ public class SRAppointmentTransformer {
             appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, profileIdClinician);
         }
 
-        CsvCell patientSeenDate = parser.getDatePatientSeen();
-        if (!patientSeenDate.isEmpty()) {
+        CsvCell patientSeenDateCell = parser.getDatePatientSeen();
+        if (!patientSeenDateCell.isEmpty()) {
+            Date d = patientSeenDateCell.getDateTime();
+            appointmentBuilder.setSentInDateTime(d, patientSeenDateCell);
+        }
 
-            Date seenDateTime = DATETIME_FORMAT.parse(patientSeenDate.getString());
-            appointmentBuilder.setSentInDateTime(seenDateTime, patientSeenDate);
+        CsvCell cancelledDateCell = parser.getDateAppointmentCancelled();
+        if (!cancelledDateCell.isEmpty()) {
+            Date d = cancelledDateCell.getDateTime();
+            appointmentBuilder.setCancelledDateTime(d, cancelledDateCell);
+        }
+
+        CsvCell bookingDateCell = parser.getDateAppointmentBooked();
+        if (!bookingDateCell.isEmpty()) {
+            Date d = bookingDateCell.getDateTime();
+            appointmentBuilder.setBookedDateTime(d, bookingDateCell);
+        }
+
+        CsvCell telephoneApptCell = parser.getTelephoneAppointment();
+        if (telephoneApptCell.getBoolean()) {
+            appointmentBuilder.setType("Telephone Appointment", telephoneApptCell);
         }
 
         CsvCell appointmentStatus = parser.getAppointmentStatus();
@@ -159,7 +172,7 @@ public class SRAppointmentTransformer {
         }
 
         // Check for appointment flags
-        List<AppointmentFlagsPojo> pojoList = csvHelper.getAppointmentFlagCache().getAndRemoveFlagsForAppointmentId(appointmentId.getLong());
+        List<AppointmentFlagsPojo> pojoList = csvHelper.getAppointmentFlagCache().getAndRemoveFlagsForAppointmentId(appointmentIdCell.getLong());
         if (pojoList != null) {
             AppointmentFlagCache.applyFlagsToAppointment(csvHelper, appointmentBuilder, pojoList);
         }
