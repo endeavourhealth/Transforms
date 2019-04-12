@@ -85,6 +85,7 @@ public class SRAppointmentTransformer {
         //use the same Id reference for the Appointment and the Slot; since it's a different resource type, it should be fine
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
         appointmentBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);
+        appointmentBuilder.setOriginalIdentifier(appointmentIdCell.getString(), appointmentIdCell);
 
         SlotBuilder slotBuilder = new SlotBuilder();
         slotBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);

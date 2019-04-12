@@ -41,6 +41,7 @@ public class AppointmentTransformer extends AbstractTransformer {
         Integer patientDelay = null;
         Date sentIn = null;
         Date left = null;
+        String source_id = null;
 
         if (fhir.hasParticipant()) {
             for (Appointment.AppointmentParticipantComponent participantComponent: fhir.getParticipant()) {
@@ -124,6 +125,9 @@ public class AppointmentTransformer extends AbstractTransformer {
                     DateTimeType dt = (DateTimeType)extension.getValue();
                     left = dt.getValue();
 
+                } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_ORIGINAL_IDENTIFIER)) {
+                    Identifier orig_id = (Identifier) extension.getValue();
+                    source_id = orig_id.getValue();
                 }
             }
         }
@@ -143,7 +147,8 @@ public class AppointmentTransformer extends AbstractTransformer {
             patientWait,
             patientDelay,
             sentIn,
-            left);
+            left, 
+            source_id);
     }
 
 

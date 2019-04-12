@@ -122,6 +122,13 @@ public class AppointmentBuilder extends ResourceBuilderBase
         auditDateTimeExtension(extension, sourceCells);
     }
 
+    public void setOriginalIdentifier(String originalIdentifier, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.appointment, FhirExtensionUri.APPOINTMENT_ORIGINAL_IDENTIFIER, originalIdentifier);
+
+        auditIdentifierExtension(extension, sourceCells);
+    }
+
+
     public void setStatus(Appointment.AppointmentStatus status, CsvCell... sourceCells) {
         this.appointment.setStatus(status);
 
