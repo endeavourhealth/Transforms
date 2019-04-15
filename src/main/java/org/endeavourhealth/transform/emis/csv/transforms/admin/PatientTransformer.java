@@ -461,10 +461,60 @@ public class PatientTransformer {
 
         for (Resource resource : resources) {
 
-            //do not delete Appointment resources either. If Emis delete and subsequently un-delete a patient
-            //they do not re-send the Appointments, so we shouldn't delete them in the first place.
-            if (resource.getResourceType() == ResourceType.Appointment) {
+            ResourceType resourceType = resource.getResourceType();
+            if (resourceType == ResourceType.Appointment) {
+                //do not delete Appointment resources either. If Emis delete and subsequently un-delete a patient
+                //they do not re-send the Appointments, so we shouldn't delete them in the first place.
                 continue;
+
+            } else if (resourceType == ResourceType.Encounter) {
+                //if we're re-processing a limited file set, then only delete this kind of resource if we're doing those files
+                if (!csvHelper.getParsers().containsKey(org.endeavourhealth.transform.emis.csv.schema.careRecord.Consultation.class)) {
+                    continue;
+                }
+
+            } else if (resourceType == ResourceType.ProcedureRequest) {
+                //if we're re-processing a limited file set, then only delete this kind of resource if we're doing those files
+                if (!csvHelper.getParsers().containsKey(org.endeavourhealth.transform.emis.csv.schema.careRecord.Diary.class)) {
+                    continue;
+                }
+
+            } else if (resourceType == ResourceType.Observation
+                    || resourceType == ResourceType.Condition
+                    || resourceType == ResourceType.Procedure
+                    || resourceType == ResourceType.AllergyIntolerance
+                    || resourceType == ResourceType.FamilyMemberHistory
+                    || resourceType == ResourceType.Immunization
+                    || resourceType == ResourceType.DiagnosticOrder
+                    || resourceType == ResourceType.DiagnosticReport
+                    || resourceType == ResourceType.Specimen
+                    || resourceType == ResourceType.ReferralRequest) {
+
+                //if we're re-processing a limited file set, then only delete this kind of resource if we're doing those files
+                if (!csvHelper.getParsers().containsKey(org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation.class)) {
+                    continue;
+                }
+
+            } else if (resourceType == ResourceType.MedicationOrder) {
+
+                //if we're re-processing a limited file set, then only delete this kind of resource if we're doing those files
+                if (!csvHelper.getParsers().containsKey(org.endeavourhealth.transform.emis.csv.schema.prescribing.IssueRecord.class)) {
+                    continue;
+                }
+
+            } else if (resourceType == ResourceType.MedicationStatement) {
+
+                //if we're re-processing a limited file set, then only delete this kind of resource if we're doing those files
+                if (!csvHelper.getParsers().containsKey(org.endeavourhealth.transform.emis.csv.schema.prescribing.DrugRecord.class)) {
+                    continue;
+                }
+
+            } else if (resourceType == ResourceType.EpisodeOfCare
+                    || resourceType == ResourceType.Patient) {
+                //let these resources be deleted, since they come from this file
+
+            } else {
+                throw new Exception("Unexpected resource type " + resourceType);
             }
 
             //wrap the resource in generic builder so we can delete it

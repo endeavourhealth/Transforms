@@ -42,6 +42,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private final UUID exchangeId;
     private final String dataSharingAgreementGuid;
     private final boolean processPatientData;
+    private final Map<Class, AbstractCsvParser> parsers;
 
     //DB access
     private EmisTransformDalI mappingRepository = DalProvider.factoryEmisTransformDal();
@@ -72,12 +73,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ThreadPool utilityThreadPool = null;
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
 
-    public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData) {
+    public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData, Map<Class, AbstractCsvParser> parsers) {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
         this.dataSharingAgreementGuid = dataSharingAgreementGuid;
         this.processPatientData = processPatientData;
+        this.parsers = parsers;
     }
 
 
@@ -102,6 +104,10 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public boolean isProcessPatientData() {
         return processPatientData;
+    }
+
+    public Map<Class, AbstractCsvParser> getParsers() {
+        return parsers;
     }
 
     /**

@@ -446,7 +446,7 @@ public abstract class EmisCsvToFhirTransformer {
         }
 
         EmisCsvHelper csvHelper = new EmisCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
-                fhirResourceFiler.getExchangeId(), sharingAgreementGuid, processPatientData);
+                fhirResourceFiler.getExchangeId(), sharingAgreementGuid, processPatientData, parsers);
 
         /*ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
         UUID firstExchangeId = exchangeDal.getFirstExchangeId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());

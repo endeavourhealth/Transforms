@@ -62,6 +62,12 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             batchSize = config.get("transform_batch_size").asInt();
         }
 
+        //TODO - detect if NHS number was previously added and now is deleted
+        //TODO - detect if NHS number was previously present and now is deleted
+        //TODO - detect if DoB has changed
+        //how do the above work when we only retrieve the CURRENT version of each resource?
+        //we don't actually know what we sent to the subscriber before...
+
         //this has been on for a year, so turn on permanently
         boolean useInstanceMapping = true;
         /*boolean useInstanceMapping = false;
@@ -85,7 +91,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
 
         try {
-            tranformResources(resources, params);
+            transformResources(resources, params);
 
             byte[] bytes = data.writeToZip();
             return Base64.getEncoder().encodeToString(bytes);
@@ -258,7 +264,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
     }
 
 
-    private static void tranformResources(List<ResourceWrapper> resources,
+    private static void transformResources(List<ResourceWrapper> resources,
                                           SubscriberTransformParams params) throws Exception {
 
         int threads = Math.min(10, resources.size()/10); //limit to 10 threads, but don't create too many unnecessarily if we only have a few resources
@@ -269,20 +275,18 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         //we detect whether we're doing an update or insert, based on whether we're previously mapped
         //a reference to a resource, so we need to transform the resources in a specific order, so
         //that we transform resources before we ones that refer to them
-        tranformResources(ResourceType.Organization, resources, threadPool, params);
-        tranformResources(ResourceType.Location, resources, threadPool, params);
-        tranformResources(ResourceType.Practitioner, resources, threadPool, params);
-        tranformResources(ResourceType.Schedule, resources, threadPool, params);
-        boolean didPatient = tranformResources(ResourceType.Patient, resources, threadPool, params);
+        transformResources(ResourceType.Organization, resources, threadPool, params);
+        transformResources(ResourceType.Location, resources, threadPool, params);
+        transformResources(ResourceType.Practitioner, resources, threadPool, params);
+        transformResources(ResourceType.Schedule, resources, threadPool, params);
+
+        //do the patient resource
+        transformResources(ResourceType.Patient, resources, threadPool, params);
 
         //if we transformed a patient resource, we need to guarantee that the patient is fully transformed before continuing
-        //so we need to close the thread pool and wait. Then re-open for any remaining resources.
-        if (didPatient) {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
-
-            threadPool = new ThreadPool(threads, 1000);
-        }
+        //so we need to let the threadpool empty before doing anything more
+        List<ThreadPoolError> errors = threadPool.waitUntilEmpty();
+        handleErrors(errors);
 
         //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
         String discoveryPatientId = findPatientId(resources);
@@ -311,30 +315,30 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             params.setEnterprisePersonId(enterprisePersonId);
         }
 
-        tranformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
-        tranformResources(ResourceType.Appointment, resources, threadPool, params);
-        tranformResources(ResourceType.Encounter, resources, threadPool, params);
-        tranformResources(ResourceType.Condition, resources, threadPool, params);
-        tranformResources(ResourceType.Procedure, resources, threadPool, params);
-        tranformResources(ResourceType.ReferralRequest, resources, threadPool, params);
-        tranformResources(ResourceType.ProcedureRequest, resources, threadPool, params);
-        tranformResources(ResourceType.Observation, resources, threadPool, params);
-        tranformResources(ResourceType.MedicationStatement, resources, threadPool, params);
-        tranformResources(ResourceType.MedicationOrder, resources, threadPool, params);
-        tranformResources(ResourceType.Immunization, resources, threadPool, params);
-        tranformResources(ResourceType.FamilyMemberHistory, resources, threadPool, params);
-        tranformResources(ResourceType.AllergyIntolerance, resources, threadPool, params);
-        tranformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);
-        tranformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
-        tranformResources(ResourceType.Specimen, resources, threadPool, params);
-        tranformResources(ResourceType.Flag, resources, threadPool, params);
+        transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
+        transformResources(ResourceType.Appointment, resources, threadPool, params);
+        transformResources(ResourceType.Encounter, resources, threadPool, params);
+        transformResources(ResourceType.Condition, resources, threadPool, params);
+        transformResources(ResourceType.Procedure, resources, threadPool, params);
+        transformResources(ResourceType.ReferralRequest, resources, threadPool, params);
+        transformResources(ResourceType.ProcedureRequest, resources, threadPool, params);
+        transformResources(ResourceType.Observation, resources, threadPool, params);
+        transformResources(ResourceType.MedicationStatement, resources, threadPool, params);
+        transformResources(ResourceType.MedicationOrder, resources, threadPool, params);
+        transformResources(ResourceType.Immunization, resources, threadPool, params);
+        transformResources(ResourceType.FamilyMemberHistory, resources, threadPool, params);
+        transformResources(ResourceType.AllergyIntolerance, resources, threadPool, params);
+        transformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);
+        transformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
+        transformResources(ResourceType.Specimen, resources, threadPool, params);
+        transformResources(ResourceType.Flag, resources, threadPool, params);
 
         //for these resource types, call with a null transformer as they're actually transformed when
         //doing one of the above entities, but we want to remove them from the resources list
-        tranformResources(ResourceType.Slot, resources, threadPool, params);
+        transformResources(ResourceType.Slot, resources, threadPool, params);
 
         //close the thread pool
-        List<ThreadPoolError> errors = threadPool.waitAndStop();
+        errors = threadPool.waitAndStop();
         handleErrors(errors);
 
         //if there's anything left in the list, then we've missed a resource type
@@ -461,7 +465,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
-    private static boolean tranformResources(ResourceType resourceType,
+    private static boolean transformResources(ResourceType resourceType,
                                          List<ResourceWrapper> resources,
                                          ThreadPool threadPool,
                                          SubscriberTransformParams params) throws Exception {
@@ -551,7 +555,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
 
 
-    /*private static void tranformResources(ResourceType resourceType,
+    /*private static void transformResources(ResourceType resourceType,
                                           AbstractTransformer transformer,
                                           OutputContainer data,
                                           List<ResourceByExchangeBatch> resources,
