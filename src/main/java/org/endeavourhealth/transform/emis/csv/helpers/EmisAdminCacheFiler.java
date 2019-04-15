@@ -5,10 +5,13 @@ import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisAdminResourceCache;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformConfig;
+import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -148,6 +151,59 @@ public class EmisAdminCacheFiler {
         ThreadPoolError first = errors.get(0);
         Throwable exception = first.getException();
         throw new TransformException("", exception);
+    }
+
+    /**
+     * when we receive the first extract for an organisation, we need to copy all the contents of the admin
+     * resource cache and save them against the new organisation. This is because EMIS only send most Organisations,
+     * Locations and Staff once, with the very first organisation, and when a second organisation is added to
+     * the extract, none of that data is re-sent, so we have to create those resources for the new org
+     *
+     * getting out of memory errors as there simply too many to retrieve into memory at once, so changing to stream them
+     */
+    public void applyAdminResourceCache(FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        mappingRepository.startRetrievingAdminResources(dataSharingAgreementGuid);
+
+        int count = 0;
+
+        while (true) {
+            EmisAdminResourceCache cachedResource = mappingRepository.getNextAdminResource();
+            if (cachedResource == null) {
+                break;
+            }
+
+            //wrap the resource and audit trail in a generic resource builder for saving
+            Resource fhirResource = FhirSerializationHelper.deserializeResource(cachedResource.getResourceData());
+            ResourceFieldMappingAudit audit = cachedResource.getAudit();
+            GenericBuilder genericBuilder = new GenericBuilder(fhirResource, audit);
+
+            fhirResourceFiler.saveAdminResource(null, genericBuilder);
+
+            //to cut memory usage, clear out the JSON field on each object as we pass it. Due to weird
+            //Emis org/practitioner hierarchy, we've got 500k practitioners to save, so this is quite a lot of memory
+            cachedResource.setDataSharingAgreementGuid(null);
+            cachedResource.setEmisGuid(null);
+            cachedResource.setResourceType(null);
+            cachedResource.setResourceData(null);
+            cachedResource.setAudit(null);
+
+            //log progress
+            count ++;
+            if (count % 50000 == 0) {
+                LOG.trace("Done " + count);
+            }
+        }
+
+        LOG.trace("Finished " + count + " admin resources");
+    }
+
+    public boolean wasAdminCacheApplied(FhirResourceFiler fhirResourceFiler) throws Exception {
+        return mappingRepository.wasAdminCacheApplied(fhirResourceFiler.getServiceId());
+    }
+
+    public void adminCacheWasApplied(FhirResourceFiler fhirResourceFiler) throws Exception {
+        mappingRepository.adminCacheWasApplied(fhirResourceFiler.getServiceId(), dataSharingAgreementGuid);
     }
 
     static class SaveAdminTask implements Callable {

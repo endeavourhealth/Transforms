@@ -6,9 +6,9 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
-import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
@@ -432,18 +432,31 @@ public abstract class EmisCsvToFhirTransformer {
 
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
 
+        //if this is the first exchange for this organisation, we need to apply all the content of the admin resource cache
+        EmisAdminCacheFiler adminHelper = new EmisAdminCacheFiler(sharingAgreementGuid);
+        if (!adminHelper.wasAdminCacheApplied(fhirResourceFiler)) {
+
+            //apply the cache
+            LOG.trace("Applying admin resource cache for service " + fhirResourceFiler.getServiceId());
+            adminHelper.applyAdminResourceCache(fhirResourceFiler);
+
+            //record that we've done so
+            adminHelper.adminCacheWasApplied(fhirResourceFiler);
+            AuditWriter.writeExchangeEvent(fhirResourceFiler.getExchangeId(), "Applied Emis Admin Resource Cache");
+        }
+
         EmisCsvHelper csvHelper = new EmisCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
                 fhirResourceFiler.getExchangeId(), sharingAgreementGuid, processPatientData);
 
-        //if this is the first exchange for this organisation, we need to apply all the content of the admin resource cache
-        ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
+        /*ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
         UUID firstExchangeId = exchangeDal.getFirstExchangeId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
         if (firstExchangeId.equals(fhirResourceFiler.getExchangeId())) {
             LOG.trace("Applying admin resource cache for service {} and system {}", fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
 
-            csvHelper.applyAdminResourceCache(fhirResourceFiler);
+            EmisAdminCacheFiler adminHelper = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid());
+            adminHelper.applyAdminResourceCache(fhirResourceFiler);
             AuditWriter.writeExchangeEvent(fhirResourceFiler.getExchangeId(), "Applied Emis Admin Resource Cache");
-        }
+        }*/
 
         //check the sharing agreement to see if it's been disabled
         SharingOrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
