@@ -1,7 +1,12 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherTransform.BartsStagingDataDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.BartsStagingDataProcedure;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.cache.ProcedurePojo;
+import org.endeavourhealth.transform.common.AbstractCsvCallable;
+import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
@@ -12,15 +17,18 @@ import java.util.List;
 public class ProcedurePreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedurePreTransformer.class);
 
+    private static BartsStagingDataDalI repository = DalProvider.factoryBartsStagingDataDalI();
+
+
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        for (ParserI parser: parsers) {
+        for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
                 try {
-                    processRecord((org.endeavourhealth.transform.barts.schema.Procedure)parser, csvHelper);
+                    processRecord((org.endeavourhealth.transform.barts.schema.Procedure) parser, csvHelper);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -43,10 +51,53 @@ public class ProcedurePreTransformer {
         pojo.setNotes(parser.getComment());
         pojo.setMrn(parser.getMrn());
         pojo.setProcedureCode(parser.getProcedureCode());
-        if (parser.getProcedureCodeType().getString()=="SNOMED") {
-            pojo.setSnomedConceptId(csvHelper.lookupSnomedConceptIdFromDescId(parser.getProcedureCode().getString()));
+        BartsStagingDataProcedure obj = toBartsStagingData(pojo);
+
+        csvHelper.submitToThreadPool(new ProcedurePreTransformer.saveDataCallable(parser.getCurrentState(), obj));
+    }
+
+    private static class saveDataCallable extends AbstractCsvCallable {
+
+        private BartsStagingDataProcedure obj = null;
+
+        public saveDataCallable(CsvCurrentState parserState,
+                                        BartsStagingDataProcedure obj) {
+            super(parserState);
+            this.obj = obj;
         }
-        csvHelper.getProcedureCache().cachePojo(pojo);
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+                repository.saveBartsStagingDataProcedure(obj);
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
+            }
+
+            return null;
+        }
+    }
+    private static BartsStagingDataProcedure toBartsStagingData(ProcedurePojo in) throws  Exception{
+
+        BartsStagingDataProcedure ret = new BartsStagingDataProcedure();
+        ret.setExchangeId(in.getExchangeId());
+        ret.setEncounterId(in.getEncounterId().getInt());
+        ret.setPersonId(in.getMRN().getInt());
+        ret.setWard(in.getWard().getString());
+        ret.setSite(in.getSite().getString());
+        ret.setConsultant(in.getConsultant().getString());
+        ret.setProc_dt_tm(in.getProc_dt_tm().getDate());
+        ret.setCreate_dt_tm(in.getCreate_dt_tm().getDate());
+        ret.setUpdatedBy(in.getUpdatedBy().getInt());
+        ret.setNotes(in.getNotes().getString());
+        ret.setProcedureCode(in.getProcedureCode().getString());
+        ret.setProcedureCodeType(in.getProcedureCodeType().getString());
+        ret.setComparisonCode(in.getComparisonCode());
+
+        return ret;
 
     }
 

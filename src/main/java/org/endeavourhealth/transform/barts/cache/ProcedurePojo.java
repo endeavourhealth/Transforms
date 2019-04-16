@@ -1,11 +1,21 @@
 package org.endeavourhealth.transform.barts.cache;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.endeavourhealth.transform.common.CsvCell;
 
 // basic pojo for cached encounter fields needed by ProceTransformer
 public class ProcedurePojo {
 
+    /*
+     *
+     * */
+
+    private String exchangeId;
     private CsvCell encounterId;
+    private CsvCell DOB;
+    private CsvCell MRN;
+    private CsvCell ward;
+    private CsvCell site;
     private CsvCell consultant;
     private CsvCell proc_dt_tm;
     private CsvCell create_dt_tm;
@@ -13,7 +23,28 @@ public class ProcedurePojo {
     private CsvCell notes;
     private CsvCell Mrn;
     private CsvCell procedureCode;
-    private String snomedConceptId; // Handy for lookups
+    private CsvCell procedureCodeType;
+    private int comparisonCode;
+
+    public String getExchangeId() {
+        return exchangeId;
+    }
+
+    public void setExchangeId(String exchangeId) {
+        this.exchangeId = exchangeId;
+    }
+
+    public void setComparisonCode(int comparisonCode) {
+        this.comparisonCode = comparisonCode;
+    }
+
+    public CsvCell getProcedureCodeType() {
+        return procedureCodeType;
+    }
+
+    public void setProcedureCodeType(CsvCell procedureCodeType) {
+        this.procedureCodeType = procedureCodeType;
+    }
 
     public CsvCell getCreate_dt_tm() {
         return create_dt_tm;
@@ -23,12 +54,36 @@ public class ProcedurePojo {
         this.create_dt_tm = create_dt_tm;
     }
 
-    public String getSnomedConceptId() {
-        return snomedConceptId;
+    public CsvCell getWard() {
+        return ward;
     }
 
-    public void setSnomedConceptId(String snomedConceptId) {
-        this.snomedConceptId = snomedConceptId;
+    public void setWard(CsvCell ward) {
+        this.ward = ward;
+    }
+
+    public CsvCell getSite() {
+        return site;
+    }
+
+    public void setSite(CsvCell site) {
+        this.site = site;
+    }
+
+    public CsvCell getDOB() {
+        return DOB;
+    }
+
+    public void setDOB(CsvCell DOB) {
+        this.DOB = DOB;
+    }
+
+    public CsvCell getMRN() {
+        return MRN;
+    }
+
+    public void setMRN(CsvCell MRN) {
+        this.MRN = MRN;
     }
 
     public CsvCell getMrn() {
@@ -86,4 +141,33 @@ public class ProcedurePojo {
     public void setUpdatedBy(CsvCell updatedBy) {
         this.updatedBy = updatedBy;
     }
+
+    public void setComparisonCode() {
+        this.comparisonCode = hashCode();
+    }
+
+    public int getComparisonCode() {
+        return this.comparisonCode;
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+                .append(encounterId)
+                .append(DOB)
+                .append(MRN)
+                .append(ward)
+                .append(site)
+                .append(consultant)
+                .append(proc_dt_tm)
+                .append(create_dt_tm)
+                .append(updatedBy)
+                .append(notes)
+                .append(Mrn)
+                .append(procedureCode)
+                .append(procedureCodeType)
+                .toHashCode();
+    }
+
+
 }

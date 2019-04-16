@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static org.apache.commons.lang3.time.DateUtils.isSameDay;
+
 public class PROCETransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCETransformer.class);
     private static final String TWO_DECIMAL_PLACES = ".00";
@@ -218,7 +220,8 @@ public class PROCETransformer {
                                         patientCacheList.add(susPatientCacheEntry);
                                     procCodes.add(conceptCode);
                                     if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
-                                            && susPatientCacheEntry.getPrimaryProcedureDate() != null && !susPatientCacheEntry.getPrimaryProcedureDate().isEmpty()
+                                            && susPatientCacheEntry.getPrimaryProcedureDate() != null
+                                            && !susPatientCacheEntry.getPrimaryProcedureDate().isEmpty()
                                             && susPatientCacheEntry.getPrimaryProcedureDate().getDate() != null) {
                                         DateTimeType dt = new DateTimeType(susPatientCacheEntry.getPrimaryProcedureDate().getDate());
                                         procedureBuilder.setPerformed(dt, susPatientCacheEntry.getPrimaryProcedureDate());
@@ -229,7 +232,8 @@ public class PROCETransformer {
                                         patientCacheList.add(susPatientCacheEntry);
                                     procCodes.add(conceptCode);
                                     if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
-                                            && susPatientCacheEntry.getSecondaryProcedureDate() != null && !susPatientCacheEntry.getSecondaryProcedureDate().isEmpty()
+                                            && susPatientCacheEntry.getSecondaryProcedureDate() != null
+                                            && !susPatientCacheEntry.getSecondaryProcedureDate().isEmpty()
                                             && susPatientCacheEntry.getSecondaryProcedureDate().getDate() != null) {
                                         DateTimeType dt = new DateTimeType(susPatientCacheEntry.getSecondaryProcedureDate().getDate());
                                         procedureBuilder.setPerformed(dt, susPatientCacheEntry.getSecondaryProcedureDate());
@@ -241,7 +245,8 @@ public class PROCETransformer {
                                         procCodes.add(conceptCode);
                                         patientCacheList.add(susPatientCacheEntry);
                                         if (BartsCsvHelper.isEmptyOrIsEndOfTime(procedureDateTimeCell)
-                                                && susPatientCacheEntry.getOtherDates() != null && !susPatientCacheEntry.getOtherDates().isEmpty()) {
+                                                && susPatientCacheEntry.getOtherDates() != null
+                                                && !susPatientCacheEntry.getOtherDates().isEmpty()) {
                                             DateTimeType dt = new DateTimeType(susPatientCacheEntry.getOtherDates().get(seqNo));
                                             procedureBuilder.setPerformed(dt, susPatientCacheEntry.getOtherSecondaryProceduresOPCS());
                                         }
@@ -280,7 +285,8 @@ public class PROCETransformer {
             if (pojoList != null) {
                 for (ProcedurePojo p : pojoList) {
                     if (procCodes.contains(p.getProcedureCode().getString())
-                            && p.getProc_dt_tm().getDate().equals(procedureDateTimeCell.getDate())) {
+                            && isSameDay(p.getProc_dt_tm().getDate(),procedureDateTimeCell.getDate())) {
+                            //&& p.getProc_dt_tm().getDate().equals(procedureDateTimeCell.getDate())) {
                         pojo = p;
                         break;
                     }
@@ -312,7 +318,7 @@ public class PROCETransformer {
                         procedureBuilder.setRecordedDate(BartsCsvHelper.parseDate(pojo.getCreate_dt_tm()));
                     }
                 }
-                if (!procedureBuilder.hasPerformer() && pojo.getUpdatedBy() != null && pojo.getProc_dt_tm().getDate() != null) {
+                if (!procedureBuilder.hasPerformer() && pojo.getUpdatedBy() != null) {
                     CsvCell updateByCell = pojo.getUpdatedBy();
                     if (!updateByCell.isEmpty()) {
                         String updatedByStr = updateByCell.getString();
