@@ -19,13 +19,13 @@ public class TransformConfig {
     private String sharedStoragePath;
     private int attemptsPermmitedPerExchange;
     private String killFileLocation;
-    private List<Pattern> emisDisabledOragnisationsAllowed = new ArrayList<>();
+    private Set<String> emisDisabledOdsCodesAllowed;
     private boolean emisAllowMissingCodes;
     private boolean emisAllowUnmappedRegistrationTypes;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private String cernerPatientIdFile;
     private int maxTransformErrorsBeforeAbort;
-    private List<Pattern> warningsToFailOn = new ArrayList<>();
+    private List<Pattern> warningsToFailOn;
     private boolean disableSavingResources;
     private boolean validateResourcesOnSaving;
     private int resourceCacheMaxSizeInMemory;
@@ -54,7 +54,7 @@ public class TransformConfig {
         //this.sharedStoragePath = null; //can't really default this
         this.attemptsPermmitedPerExchange = 5;
         //this.killFileLocation = null; //no default
-        this.emisDisabledOragnisationsAllowed = new ArrayList<>();
+        this.emisDisabledOdsCodesAllowed = new HashSet<>();
         this.emisAllowMissingCodes = false;
         this.emisAllowUnmappedRegistrationTypes = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
@@ -133,8 +133,7 @@ public class TransformConfig {
                 if (subNode != null) {
                     for (int i=0; i<subNode.size(); i++) {
                         String s = subNode.get(i).asText();
-                        Pattern pattern = Pattern.compile(s);
-                        this.emisDisabledOragnisationsAllowed.add(pattern);
+                        this.emisDisabledOdsCodesAllowed.add(s);
                     }
                 }
 
@@ -205,8 +204,8 @@ public class TransformConfig {
         return killFileLocation;
     }
 
-    public List<Pattern> getEmisDisabledOragnisationsAllowed() {
-        return emisDisabledOragnisationsAllowed;
+    public Set<String> getEmisDisabledOdsCodesAllowed() {
+        return emisDisabledOdsCodesAllowed;
     }
 
     public boolean isEmisAllowMissingCodes() {

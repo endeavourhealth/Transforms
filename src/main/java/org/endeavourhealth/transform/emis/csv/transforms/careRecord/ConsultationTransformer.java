@@ -25,8 +25,7 @@ import java.util.Map;
 public class ConsultationTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ConsultationTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -34,7 +33,7 @@ public class ConsultationTransformer {
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((Consultation)parser, fhirResourceFiler, csvHelper, version);
+                createResource((Consultation)parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -46,8 +45,7 @@ public class ConsultationTransformer {
 
     public static void createResource(Consultation parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      EmisCsvHelper csvHelper,
-                                      String version) throws Exception {
+                                      EmisCsvHelper csvHelper) throws Exception {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
 
@@ -95,7 +93,7 @@ public class ConsultationTransformer {
         //in the earliest version of the extract, we only got the entered date and not time
         CsvCell dateCell = parser.getEnteredDate();
         CsvCell timeCell = null;
-        if (!version.equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
+        if (!parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
             timeCell = parser.getEnteredTime();
         }
         Date enteredDateTime = CsvCell.getDateTimeFromTwoCells(dateCell, timeCell);

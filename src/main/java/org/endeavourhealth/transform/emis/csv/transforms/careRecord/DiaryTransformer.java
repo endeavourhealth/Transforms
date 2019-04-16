@@ -19,8 +19,7 @@ import java.util.Map;
 
 public class DiaryTransformer {
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -28,7 +27,7 @@ public class DiaryTransformer {
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((Diary)parser, fhirResourceFiler, csvHelper, version);
+                createResource((Diary)parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -40,8 +39,7 @@ public class DiaryTransformer {
 
     public static void createResource(Diary parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      EmisCsvHelper csvHelper,
-                                      String version) throws Exception {
+                                      EmisCsvHelper csvHelper) throws Exception {
 
         ProcedureRequestBuilder procedureRequestBuilder = new ProcedureRequestBuilder();
 
@@ -88,8 +86,8 @@ public class DiaryTransformer {
         //handle mis-spelt column in EMIS test pack
         //String clinicianGuid = diaryParser.getClinicianUserInRoleGuid();
         CsvCell clinicianGuid = null;
-        if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                || version.equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
+        if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
+                || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
             clinicianGuid = parser.getClinicanUserInRoleGuid();
         } else {
             clinicianGuid = parser.getClinicianUserInRoleGuid();

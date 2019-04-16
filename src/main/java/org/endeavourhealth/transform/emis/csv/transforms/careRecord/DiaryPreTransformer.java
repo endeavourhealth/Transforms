@@ -12,8 +12,7 @@ import java.util.Map;
 
 public class DiaryPreTransformer {
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -21,7 +20,7 @@ public class DiaryPreTransformer {
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((Diary)parser, fhirResourceFiler, csvHelper, version);
+                createResource((Diary)parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 throw new TransformException(parser.getCurrentState().toString(), ex);
             }
@@ -31,8 +30,7 @@ public class DiaryPreTransformer {
 
     private static void createResource(Diary parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       String version) throws Exception {
+                                       EmisCsvHelper csvHelper) throws Exception {
 
         CsvCell deleted = parser.getDeleted();
         if (deleted.getBoolean()) {

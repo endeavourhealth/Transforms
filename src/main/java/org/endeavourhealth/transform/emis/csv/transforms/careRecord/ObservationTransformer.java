@@ -26,8 +26,7 @@ import java.util.*;
 public class ObservationTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ObservationTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -41,9 +40,9 @@ public class ObservationTransformer {
                 //if it's deleted we need to look up what the original resource type was before we can do the delete
                 CsvCell deleted = observationParser.getDeleted();
                 if (deleted.getBoolean()) {
-                    deleteResource(observationParser, fhirResourceFiler, csvHelper, version);
+                    deleteResource(observationParser, fhirResourceFiler, csvHelper);
                 } else {
-                    createResource(observationParser, fhirResourceFiler, csvHelper, version);
+                    createResource(observationParser, fhirResourceFiler, csvHelper);
                 }
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -56,8 +55,7 @@ public class ObservationTransformer {
 
     private static void deleteResource(Observation parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       String version) throws Exception {
+                                       EmisCsvHelper csvHelper) throws Exception {
 
         Set<ResourceType> resourceTypes = findOriginalTargetResourceTypes(fhirResourceFiler, parser);
         for (ResourceType resourceType: resourceTypes) {
@@ -141,12 +139,11 @@ public class ObservationTransformer {
 
     public static void createResource(Observation parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       String version) throws Exception {
+                                       EmisCsvHelper csvHelper) throws Exception {
 
         //the code ID should NEVER be null, but the test data has nulls, so adding this to handle those rows gracefully
-        if ((version.equalsIgnoreCase(EmisCsvToFhirTransformer.VERSION_5_0)
-                || version.equalsIgnoreCase(EmisCsvToFhirTransformer.VERSION_5_1))
+        if ((parser.getVersion().equalsIgnoreCase(EmisCsvToFhirTransformer.VERSION_5_0)
+                || parser.getVersion().equalsIgnoreCase(EmisCsvToFhirTransformer.VERSION_5_1))
                 && parser.getCodeId().isEmpty()) {
             return;
         }

@@ -12,8 +12,7 @@ import java.util.Map;
 
 public class OrganisationLocationTransformer {
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -23,7 +22,7 @@ public class OrganisationLocationTransformer {
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createLocationOrganisationMapping((OrganisationLocation)parser, fhirResourceFiler, csvHelper, version);
+                createLocationOrganisationMapping((OrganisationLocation)parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 throw new TransformException(parser.getCurrentState().toString(), ex);
             }
@@ -33,8 +32,7 @@ public class OrganisationLocationTransformer {
 
     private static void createLocationOrganisationMapping(OrganisationLocation parser,
                                                           FhirResourceFiler fhirResourceFiler,
-                                                          EmisCsvHelper csvHelper,
-                                                          String version) throws Exception {
+                                                          EmisCsvHelper csvHelper) throws Exception {
 
         //if an org-location link has been deleted, then either a) the location has been deleted
         //in which case we'll sort it out because we'll have the deleted row in the Location CSV or
@@ -50,7 +48,7 @@ public class OrganisationLocationTransformer {
         CsvCell mainLocation = parser.getIsMainLocation();
 
         boolean isMainLocation;
-        if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
+        if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
             //NOTE in the emis test pack, the IsMainLocation column in the OrganisationLocation file is not in the
             //standard true/false format and is 1/0 instead, hence this special handler for that version
             isMainLocation = mainLocation.getInt() > 0;

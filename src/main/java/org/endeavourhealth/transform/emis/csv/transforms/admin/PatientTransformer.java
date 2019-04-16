@@ -31,8 +31,7 @@ public class PatientTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -40,7 +39,7 @@ public class PatientTransformer {
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResources((Patient) parser, fhirResourceFiler, csvHelper, version);
+                createResources((Patient) parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -52,21 +51,19 @@ public class PatientTransformer {
 
     public static void createResources(Patient parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      EmisCsvHelper csvHelper,
-                                      String version) throws Exception {
+                                      EmisCsvHelper csvHelper) throws Exception {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell deletedCell = parser.getDeleted();
         if (deletedCell.getBoolean()) {
             //Emis send us a delete for a patient WITHOUT a corresponding delete for all other data, so
             //we need to manually delete all dependant resources
-            CsvCell patientGuid = parser.getPatientGuid();
-            deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser.getCurrentState(), patientGuid, deletedCell);
+            deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser);
             return;
         }
 
         //this transform creates two resources
-        PatientBuilder patientBuilder = createPatientResource(parser, csvHelper, version);
+        PatientBuilder patientBuilder = createPatientResource(parser, csvHelper);
         EpisodeOfCareBuilder episodeBuilder = createEpisodeResource(parser, csvHelper, fhirResourceFiler);
 
         //save both resources together, so the patient is defintiely saved before the episode
@@ -227,7 +224,7 @@ public class PatientTransformer {
         fhirResourceFiler.savePatientResource(null, false, builder);
     }*/
 
-    private static PatientBuilder createPatientResource(Patient parser, EmisCsvHelper csvHelper, String version) throws Exception {
+    private static PatientBuilder createPatientResource(Patient parser, EmisCsvHelper csvHelper) throws Exception {
 
         PatientBuilder patientBuilder = new PatientBuilder();
 
@@ -411,8 +408,8 @@ public class PatientTransformer {
             //have to handle the mis-spelling of the column name in EMIS test pack
             //String externalOrgGuid = patientParser.getExternalUsualGPOrganisation();
             CsvCell externalOrgGuid = null;
-            if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                    || version.equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
+            if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
+                    || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
                 externalOrgGuid = parser.getExternalUsusalGPOrganisation();
             } else {
                 externalOrgGuid = parser.getExternalUsualGPOrganisation();
@@ -448,9 +445,15 @@ public class PatientTransformer {
      */
     private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler,
                                                   EmisCsvHelper csvHelper,
-                                                  CsvCurrentState currentState,
-                                                  CsvCell patientGuidCell,
-                                                  CsvCell deletedCell) throws Exception {
+                                                  Patient parser) throws Exception {
+        //Emis send us rolling deletes for patients a year after deduction or death, which we want to ignore
+        if (!shouldProcessDelete(parser, csvHelper)) {
+            return;
+        }
+
+        CsvCurrentState currentState = parser.getCurrentState();
+        CsvCell patientGuidCell = parser.getPatientGuid();
+        CsvCell deletedCell = parser.getDeleted();
 
         //retrieve any resources that exist for the patient
         String sourceId = EmisCsvHelper.createUniqueId(patientGuidCell, null);
@@ -523,6 +526,42 @@ public class PatientTransformer {
             fhirResourceFiler.deletePatientResource(currentState, false, genericBuilder);
         }
     }
+
+    /**
+     * works out if a delete instruction should be ignored
+     */
+    private static boolean shouldProcessDelete(Patient parser, EmisCsvHelper csvHelper) throws Exception {
+
+        //if the patient is neither deducted or deceased, then don't ignore the delete
+        String patientId = csvHelper.createUniqueId(parser.getPatientGuid(), null);
+        org.hl7.fhir.instance.model.Patient patient = (org.hl7.fhir.instance.model.Patient)csvHelper.retrieveResource(patientId, ResourceType.Patient);
+
+        //if we've never transformed the patient or it's already deleted, then we could ignore it, but
+        //it seems safter to just process the delete
+        if (patient == null) {
+            //LOG.debug("Patient is null, so process");
+            return true;
+        }
+
+        //if the patient is active (i.e. not deducted) and not deceased, then we should process the delete
+        if (patient.getActive()
+                && patient.getDeceased() == null) {
+            //LOG.debug("Patient active = " + (patient.getActive()) + ", deceased = " + patient.getDeceased() + ", so process");
+            return true;
+        }
+
+        //if the patient is deducted or deleted, then only process if the extract is disabled
+        //and we'll only be allowed to process a deleted extract if we know the service is actually finished with DDS
+        if (csvHelper.isSharingAgreementDisabled()) {
+            //.debug("Sharing agreement is NOT disabled, so process");
+            return true;
+        }
+
+        //if we make it to here, then we want to allow the delete to happen
+        LOG.info("Ignoring delete for patient " + patientId);
+        return false;
+    }
+
     /*private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper,
                                                   CsvCurrentState currentState,
                                                   PatientBuilder patientBuilder, EpisodeOfCareBuilder episodeBuilder,

@@ -30,8 +30,7 @@ public abstract class ClinicalCodeTransformer {
     private static SnomedDalI snomedDal = DalProvider.factorySnomedDal();
     private static EmisTransformDalI mappingDal = DalProvider.factoryEmisTransformDal();
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -44,7 +43,7 @@ public abstract class ClinicalCodeTransformer {
                 //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
                 //to parse any record in this file it a critical error
                 try {
-                    transform((ClinicalCode)parser, fhirResourceFiler, csvHelper, mappingsToSave, version);
+                    transform((ClinicalCode)parser, fhirResourceFiler, csvHelper, mappingsToSave);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -60,13 +59,10 @@ public abstract class ClinicalCodeTransformer {
         }
     }
 
-
-
     private static void transform(ClinicalCode parser,
                                   FhirResourceFiler fhirResourceFiler,
                                   EmisCsvHelper csvHelper,
-                                  List<EmisCsvCodeMap> mappingsToSave,
-                                  String version) throws Exception {
+                                  List<EmisCsvCodeMap> mappingsToSave) throws Exception {
 
         CsvCell codeId = parser.getCodeId();
         CsvCell emisTerm = parser.getTerm();
@@ -93,7 +89,7 @@ public abstract class ClinicalCodeTransformer {
         mapping.setNationalCodeDescription(nationalCodeDescription.getString());
 
         //the parent code ID was added after 5.3
-        if (version.equals(EmisCsvToFhirTransformer.VERSION_5_4)) {
+        if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_4)) {
             CsvCell parentCodeId = parser.getParentCodeId();
             mapping.setParentCodeId(parentCodeId.getLong());
         }

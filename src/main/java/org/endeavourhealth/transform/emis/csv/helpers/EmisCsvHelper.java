@@ -6,6 +6,8 @@ import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
@@ -53,6 +55,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, EmisCsvCodeMap> medication = new ConcurrentHashMap<>();
 
     //some resources are referred to by others, so we cache them here for when we need them
+    private Boolean sharingAgreementDisabled = null;
     private ResourceCache<StringMemorySaver, ConditionBuilder> problemMap = new ResourceCache<>();
     private ResourceCache<StringMemorySaver, ReferralRequestBuilder> referralMap = new ResourceCache<>();
     private Map<StringMemorySaver, ReferenceList> observationChildMap = new HashMap<>(); //now keyed on just ObservationGUID and w/o PatientGUID
@@ -1329,5 +1332,24 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
+    public boolean allowedToProcessedDisabledExtract() throws Exception {
 
+        ServiceDalI serviceDal = DalProvider.factoryServiceDal();
+        Service service = serviceDal.getById(this.serviceId);
+        String odsCode = service.getLocalId();
+
+        Set<String> disabledOrgIdsAllowed = TransformConfig.instance().getEmisDisabledOdsCodesAllowed();
+        return disabledOrgIdsAllowed.contains(odsCode);
+    }
+
+    public boolean isSharingAgreementDisabled() {
+        if (sharingAgreementDisabled == null) {
+            throw new RuntimeException("Have missed processing sharing agreement");
+        }
+        return sharingAgreementDisabled.booleanValue();
+    }
+
+    public void setSharingAgreementDisabled(boolean sharingAgreementDisabled) {
+        this.sharingAgreementDisabled = new Boolean(sharingAgreementDisabled);
+    }
 }

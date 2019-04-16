@@ -22,8 +22,7 @@ public class OrganisationTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 

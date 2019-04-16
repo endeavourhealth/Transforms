@@ -20,8 +20,7 @@ import java.util.Map;
 
 public class ProblemTransformer {
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -29,7 +28,7 @@ public class ProblemTransformer {
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((Problem)parser, fhirResourceFiler, csvHelper, version);
+                createResource((Problem)parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -41,8 +40,7 @@ public class ProblemTransformer {
 
     private static void createResource(Problem parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       String version) throws Exception {
+                                       EmisCsvHelper csvHelper) throws Exception {
 
         ConditionBuilder conditionBuilder = new ConditionBuilder();
 
@@ -55,8 +53,8 @@ public class ProblemTransformer {
         conditionBuilder.setPatient(patientReference, patientGuid);
 
         //the deleted fields isn't present in the test pack, so need to check the version first
-        if (!version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                && !version.equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
+        if (!parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
+                && !parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
 
             //if the problem is deleted, it doesn't necessarily mean the observation is deleted,
             //so let the observation transformer pick up finishing saving this condition

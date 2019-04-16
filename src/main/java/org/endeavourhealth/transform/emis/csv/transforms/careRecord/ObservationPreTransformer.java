@@ -19,8 +19,7 @@ import java.util.Map;
 public class ObservationPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ObservationPreTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -30,7 +29,7 @@ public class ObservationPreTransformer {
         while (parser != null && parser.nextRecord()) {
 
             try {
-                processLine((Observation)parser, csvHelper, fhirResourceFiler, version);
+                processLine((Observation)parser, csvHelper, fhirResourceFiler);
             } catch (Exception ex) {
                 throw new TransformException(parser.getCurrentState().toString(), ex);
             }
@@ -42,7 +41,7 @@ public class ObservationPreTransformer {
     }
 
 
-    private static void processLine(Observation parser, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
+    private static void processLine(Observation parser, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         CsvCell deleted = parser.getDeleted();
         if (deleted.getBoolean()) {
@@ -50,8 +49,8 @@ public class ObservationPreTransformer {
         }
 
         //the test pack has non-deleted rows with missing CodeIds, so skip these rows
-        if ((version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                || version.equals(EmisCsvToFhirTransformer.VERSION_5_1))
+        if ((parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
+                || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1))
             && parser.getCodeId().isEmpty()) {
             return;
         }

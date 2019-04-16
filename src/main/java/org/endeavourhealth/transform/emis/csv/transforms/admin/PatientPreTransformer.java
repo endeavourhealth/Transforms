@@ -18,8 +18,7 @@ import java.util.Map;
 public class PatientPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientPreTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -31,7 +30,7 @@ public class PatientPreTransformer {
             while (parser != null && parser.nextRecord()) {
 
                 try {
-                    processLine((Patient) parser, fhirResourceFiler, csvHelper, version);
+                    processLine((Patient) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -44,8 +43,7 @@ public class PatientPreTransformer {
 
     private static void processLine(Patient parser,
                                     FhirResourceFiler fhirResourceFiler,
-                                    EmisCsvHelper csvHelper,
-                                    String version) throws Exception {
+                                    EmisCsvHelper csvHelper) throws Exception {
 
         CsvCell patientGuidCell = parser.getPatientGuid();
         CsvCell startDateCell = parser.getDateOfRegistration();

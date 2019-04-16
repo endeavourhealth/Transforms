@@ -459,27 +459,27 @@ public abstract class EmisCsvToFhirTransformer {
         }*/
 
         //check the sharing agreement to see if it's been disabled
-        SharingOrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        SharingOrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         //these transforms don't create resources themselves, but cache data that the subsequent ones rely on
-        ClinicalCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        DrugCodeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        ClinicalCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        DrugCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         LOG.trace("Starting orgs, locations and user transforms");
-        OrganisationLocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        LocationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        OrganisationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        UserInRoleTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        OrganisationLocationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        LocationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        OrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        UserInRoleTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         csvHelper.processRemainingOrganisationLocationMappings(fhirResourceFiler); //process any changes to Org-Location links without a change to the Location itself
 
         //appointments
         LOG.trace("Starting appointments transforms");
-        SessionUserTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        SessionTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        SessionUserTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SessionTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         if (processPatientData) {
             //the Slot transformer requires Discovery UUIDs to be generated for all patients, so we must call this Pre-transformer before it
-            PatientPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            SlotTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            PatientPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SlotTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         }
         //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
         //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
@@ -492,24 +492,24 @@ public abstract class EmisCsvToFhirTransformer {
         if (processPatientData) {
 
             LOG.trace("Starting patient pre-transforms");
-            ProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            ObservationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            DrugRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            IssueRecordPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            DiaryPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            ConsultationPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            ProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            ObservationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            DrugRecordPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            IssueRecordPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            DiaryPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            ConsultationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             //note the order of these transforms is important, as consultations should be before obs etc.
             LOG.trace("Starting patient transforms");
-            PatientTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            ConsultationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            IssueRecordTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            DrugRecordTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            PatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            ConsultationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            IssueRecordTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            DrugRecordTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-            DiaryTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            ObservationReferralTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            ProblemTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            ObservationTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            DiaryTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            ObservationReferralTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            ProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            ObservationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             //if we have any new Obs, Conditions, Medication etc. that reference pre-existing parent obs or problems,
             //then we need to retrieve the existing resources and update them

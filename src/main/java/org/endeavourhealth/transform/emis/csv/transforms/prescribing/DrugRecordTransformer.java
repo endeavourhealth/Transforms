@@ -21,8 +21,7 @@ import java.util.Map;
 
 public class DrugRecordTransformer {
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
@@ -30,7 +29,7 @@ public class DrugRecordTransformer {
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((DrugRecord)parser, fhirResourceFiler, csvHelper, version);
+                createResource((DrugRecord)parser, fhirResourceFiler, csvHelper);
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
@@ -42,8 +41,7 @@ public class DrugRecordTransformer {
 
     public static void createResource(DrugRecord parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      EmisCsvHelper csvHelper,
-                                      String version) throws Exception {
+                                      EmisCsvHelper csvHelper) throws Exception {
 
         MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder();
 
@@ -66,8 +64,8 @@ public class DrugRecordTransformer {
         //need to handle mis-spelt column name in EMIS test pack
         //String clinicianGuid = parser.getClinicianUserInRoleGuid();
         CsvCell clinicianGuid = null;
-        if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                || version.equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
+        if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
+                || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
             clinicianGuid = parser.getClinicanUserInRoleGuid();
         } else {
             clinicianGuid = parser.getClinicianUserInRoleGuid();
@@ -148,7 +146,7 @@ public class DrugRecordTransformer {
         //in the earliest version of the extract, we only got the entered date and not time
         CsvCell enteredDate = parser.getEnteredDate();
         CsvCell enteredTime = null;
-        if (!version.equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
+        if (!parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
             enteredTime = parser.getEnteredTime();
         }
         Date enteredDateTime = CsvCell.getDateTimeFromTwoCells(enteredDate, enteredTime);
