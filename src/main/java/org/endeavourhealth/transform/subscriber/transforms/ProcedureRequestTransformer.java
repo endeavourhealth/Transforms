@@ -3,10 +3,7 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.ProcedureRequest;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +36,7 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         Integer procedureRequestStatusId = null;
         String originalCode = null;
         String originalTerm = null;
+        Double age_during_event = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -73,6 +71,11 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
             procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
         }
 
+        if (fhir.getSubjectTarget() != null) {
+            Patient patient = (Patient) fhir.getSubjectTarget();
+            age_during_event = getPatientAgeInMonths(patient);
+        }
+
         org.endeavourhealth.transform.subscriber.outputModels.ProcedureRequest model
                 = (org.endeavourhealth.transform.subscriber.outputModels.ProcedureRequest)csvWriter;
         model.writeUpsert(id,
@@ -86,7 +89,8 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
             snomedConceptId,
             procedureRequestStatusId,
             originalCode,
-            originalTerm);
+            originalTerm,
+            age_during_event);
     }
 }
 

@@ -21,6 +21,10 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DecimalFormat;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -527,7 +531,16 @@ public abstract class AbstractTransformer {
         instanceCache.put(key, mappedResourceId);
     }
 
-
+    protected static Double getPatientAgeInMonths(Patient patient) {
+        if (patient.getBirthDate() != null) {
+            LocalDate date = patient.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            Period diff = Period.between(date, LocalDate.now());
+            Double inYears = diff.getYears() + ((double) diff.getMonths()) / 12;
+            DecimalFormat df = new DecimalFormat("#.##");
+            return Double.valueOf(df.format(inYears));
+        }
+        return null;
+    }
 
     /*protected Long transformOnDemandAndMapId(Reference reference,
                                              SubscriberTransformParams params) throws Exception {

@@ -38,6 +38,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         String originalCode = null;
         String originalTerm = null;
         boolean isReview = false;
+        Double age_during_event = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -83,6 +84,10 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             }
         }
 
+        if (fhir.getPatientTarget() != null) {
+            age_during_event = getPatientAgeInMonths(fhir.getPatientTarget());
+        }
+
         org.endeavourhealth.transform.subscriber.outputModels.AllergyIntolerance model
                 = (org.endeavourhealth.transform.subscriber.outputModels.AllergyIntolerance)csvWriter;
         model.writeUpsert(id,
@@ -96,7 +101,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             snomedConceptId,
             originalCode,
             originalTerm,
-            isReview);
+            isReview,
+            age_during_event);
     }
 
 }

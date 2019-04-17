@@ -47,6 +47,7 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
+        Double age_during_event = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -90,6 +91,11 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
             }
         }
 
+        if (fhir.getSubjectTarget() != null) {
+            Patient patient = (Patient) fhir.getSubjectTarget();
+            age_during_event = getPatientAgeInMonths(patient);
+        }
+
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
@@ -117,6 +123,7 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
                 originalTerm,
                 isReview,
                 problemEndDate,
-                parentObservationId);
+                parentObservationId,
+                age_during_event);
     }
 }

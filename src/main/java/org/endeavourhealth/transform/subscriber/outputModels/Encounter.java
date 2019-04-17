@@ -28,7 +28,8 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                             String originalCode,
                             String originalTerm,
                             Long episodeOfCareId,
-                            Long serviceProviderOrganisationId) throws Exception {
+                            Long serviceProviderOrganisationId,
+                            Double age_during_event) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -43,7 +44,8 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                 originalCode,
                 originalTerm,
                 convertLong(episodeOfCareId),
-                convertLong(serviceProviderOrganisationId));
+                convertLong(serviceProviderOrganisationId),
+                convertDouble(age_during_event));
     }
 
     @Override
@@ -62,7 +64,8 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                 "original_code",
                 "original_term",
                 "episode_of_care_id",
-                "service_provider_organization_id"
+                "service_provider_organization_id",
+                "age_during_event"
         };
     }
 
@@ -82,7 +85,8 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                 String.class,
                 String.class,
                 Long.class,
-                Long.class
+                Long.class,
+                String.class
         };
     }
 }

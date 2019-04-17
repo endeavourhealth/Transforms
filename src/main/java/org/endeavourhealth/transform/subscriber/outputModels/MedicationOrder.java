@@ -32,7 +32,8 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
                             Integer durationDays,
                             BigDecimal estimatedCost,
                             Long medicationStatementId,
-                            String originalTerm) throws Exception {
+                            String originalTerm,
+                            Double age_during_event) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -50,7 +51,8 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
                 convertInt(durationDays),
                 convertBigDecimal(estimatedCost),
                 convertLong(medicationStatementId),
-                originalTerm);
+                originalTerm,
+                convertDouble(age_during_event));
     }
 
     @Override
@@ -72,7 +74,8 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
                 "duration_days",
                 "estimated_cost",
                 "medication_statement_id",
-                "original_term"
+                "original_term",
+                "age_during_event"
         };
     }
 
@@ -95,6 +98,7 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
                 Integer.class,
                 BigDecimal.class,
                 Long.class,
+                String.class,
                 String.class
         };
     }
