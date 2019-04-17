@@ -1,10 +1,9 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.BartsStagingDataDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.BartsStagingDataProcedure;
+import org.endeavourhealth.core.database.dal.publisherStaging.StagingProcedureDalI;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.cache.ProcedurePojo;
 import org.endeavourhealth.transform.common.AbstractCsvCallable;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -17,7 +16,7 @@ import java.util.List;
 public class ProcedurePreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedurePreTransformer.class);
 
-    private static BartsStagingDataDalI repository = DalProvider.factoryBartsStagingDataDalI();
+    private static StagingProcedureDalI repository = DalProvider.factoryBartsStagingDataDalI();
 
 
     public static void transform(List<ParserI> parsers,
@@ -42,26 +41,28 @@ public class ProcedurePreTransformer {
 
     private static void processRecord(org.endeavourhealth.transform.barts.schema.Procedure parser, BartsCsvHelper csvHelper) throws Exception {
 
-        ProcedurePojo pojo = new ProcedurePojo();
-        pojo.setConsultant(parser.getConsultant());
-        pojo.setProc_dt_tm(parser.getProcedureDateTime());
-        pojo.setUpdatedBy(parser.getUpdatedBy());
-        pojo.setCreate_dt_tm(parser.getCreateDateTime());
-        pojo.setEncounterId(parser.getEncounterId()); // Remember encounter ids from Procedure have a trailing .00
-        pojo.setNotes(parser.getComment());
-        pojo.setMrn(parser.getMrn());
-        pojo.setProcedureCode(parser.getProcedureCode());
-        BartsStagingDataProcedure obj = ProcedurePojo.toBartsStagingData(pojo);
+
+        StagingProcedure obj = new StagingProcedure();
+        obj.setExchangeId(parser.getExchangeId().toString());
+
+        obj.setConsultant(parser.getConsultant().getString());
+        obj.setProc_dt_tm(parser.getProcedureDateTime().getDate());
+        obj.setUpdatedBy(parser.getUpdatedBy().getInt());
+        obj.setCreate_dt_tm(parser.getCreateDateTime().getDate());
+        obj.setEncounterId(parser.getEncounterId().getInt()); // Remember encounter ids from Procedure have a trailing .00
+        obj.setComments(parser.getComment().getString());
+        obj.setPersonId(parser.getMrn().getInt());
+        obj.setProcedureCode(parser.getProcedureCode().getString());
 
         csvHelper.submitToThreadPool(new ProcedurePreTransformer.saveDataCallable(parser.getCurrentState(), obj));
     }
 
     private static class saveDataCallable extends AbstractCsvCallable {
 
-        private BartsStagingDataProcedure obj = null;
+        private StagingProcedure obj = null;
 
         public saveDataCallable(CsvCurrentState parserState,
-                                        BartsStagingDataProcedure obj) {
+                                        StagingProcedure obj) {
             super(parserState);
             this.obj = obj;
         }
@@ -70,7 +71,7 @@ public class ProcedurePreTransformer {
         public Object call() throws Exception {
 
             try {
-                repository.saveBartsStagingDataProcedure(obj);
+                repository.saveStagingProcedure(obj);
 
             } catch (Throwable t) {
                 LOG.error("", t);
