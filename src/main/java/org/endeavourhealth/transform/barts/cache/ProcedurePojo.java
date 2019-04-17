@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.cache;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.BartsStagingDataProcedure;
 import org.endeavourhealth.transform.common.CsvCell;
 
 // basic pojo for cached encounter fields needed by ProceTransformer
@@ -169,5 +170,24 @@ public class ProcedurePojo {
                 .toHashCode();
     }
 
+    public static BartsStagingDataProcedure toBartsStagingData(ProcedurePojo in) throws  Exception{
 
+        BartsStagingDataProcedure ret = new BartsStagingDataProcedure();
+        ret.setExchangeId(in.getExchangeId());
+        ret.setEncounterId(in.getEncounterId().getInt());
+        ret.setPersonId(in.getMRN().getInt());
+        ret.setWard(in.getWard().getString());
+        ret.setSite(in.getSite().getString());
+        ret.setConsultant(in.getConsultant().getString());
+        ret.setProc_dt_tm(in.getProc_dt_tm().getDate());
+        ret.setCreate_dt_tm(in.getCreate_dt_tm().getDate());
+        ret.setUpdatedBy(in.getUpdatedBy().getInt());
+        ret.setNotes(in.getNotes().getString());
+        ret.setProcedureCode(in.getProcedureCode().getString());
+        ret.setProcedureCodeType(in.getProcedureCodeType().getString());
+        ret.setComparisonCode(in.getComparisonCode());
+
+        return ret;
+
+    }
 }

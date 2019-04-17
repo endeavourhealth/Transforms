@@ -51,7 +51,7 @@ public class ProcedurePreTransformer {
         pojo.setNotes(parser.getComment());
         pojo.setMrn(parser.getMrn());
         pojo.setProcedureCode(parser.getProcedureCode());
-        BartsStagingDataProcedure obj = toBartsStagingData(pojo);
+        BartsStagingDataProcedure obj = ProcedurePojo.toBartsStagingData(pojo);
 
         csvHelper.submitToThreadPool(new ProcedurePreTransformer.saveDataCallable(parser.getCurrentState(), obj));
     }
@@ -80,25 +80,6 @@ public class ProcedurePreTransformer {
             return null;
         }
     }
-    private static BartsStagingDataProcedure toBartsStagingData(ProcedurePojo in) throws  Exception{
 
-        BartsStagingDataProcedure ret = new BartsStagingDataProcedure();
-        ret.setExchangeId(in.getExchangeId());
-        ret.setEncounterId(in.getEncounterId().getInt());
-        ret.setPersonId(in.getMRN().getInt());
-        ret.setWard(in.getWard().getString());
-        ret.setSite(in.getSite().getString());
-        ret.setConsultant(in.getConsultant().getString());
-        ret.setProc_dt_tm(in.getProc_dt_tm().getDate());
-        ret.setCreate_dt_tm(in.getCreate_dt_tm().getDate());
-        ret.setUpdatedBy(in.getUpdatedBy().getInt());
-        ret.setNotes(in.getNotes().getString());
-        ret.setProcedureCode(in.getProcedureCode().getString());
-        ret.setProcedureCodeType(in.getProcedureCodeType().getString());
-        ret.setComparisonCode(in.getComparisonCode());
-
-        return ret;
-
-    }
 
 }
