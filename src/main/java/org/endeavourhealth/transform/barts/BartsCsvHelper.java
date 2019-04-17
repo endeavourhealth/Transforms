@@ -76,6 +76,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private Map<String, String> snomedDescToConceptCache = new ConcurrentHashMap<>();
 
     private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
+    private Map<Long, String> encounterIdToNhsNumberMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
+
     private Map<Long, ReferenceList> clinicalEventChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     //private Map<Long, String> patientRelationshipTypeMap = new HashMap<>();
@@ -429,7 +431,29 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         return ret;
     }
+    public String findNhsNumberFromEncounterId(CsvCell encounterIdCell) throws Exception {
+        Long encounterId = encounterIdCell.getLong();
+        String ret = encounterIdToNhsNumberMap.get(encounterId);
+        if (ret == null
+                && !encounterIdToNhsNumberMap.containsKey(encounterId)) { //we add null values to the map, so check for the key being present too
 
+            Encounter encounter = (Encounter) retrieveResourceForLocalId(ResourceType.Encounter, encounterIdCell);
+            if (encounter == null) {
+                //if no encounter, then add null to the map to save us hitting the DB repeatedly for the same encounter
+                encounterIdToNhsNumberMap.put(encounterId, null);
+
+            } else {
+
+                //we then need to backwards convert the patient UUID to the person ID it came from
+                Reference patientUuidReference = encounter.getPatient();
+                Reference patientPersonIdReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(this, patientUuidReference);
+                ret = ReferenceHelper.getReferenceId(patientPersonIdReference);
+                encounterIdToNhsNumberMap.put(encounterId, ret);
+            }
+        }
+
+        return ret;
+    }
 
     public void cacheParentChildClinicalEventLink(CsvCell childEventIdCell, CsvCell parentEventIdCell) throws Exception {
         Long parentEventId = parentEventIdCell.getLong();

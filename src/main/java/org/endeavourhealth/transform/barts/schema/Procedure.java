@@ -62,24 +62,18 @@ public class Procedure extends AbstractFixedParser {
         return super.getCell("Updt_By");
     }
 
+    public CsvCell getWard() {return super.getCell("Ward");}
 
+    public CsvCell getSite() {return super.getCell("Site");}
 
-
-    public Date getDOB() throws TransformException {
-        return super.getDate("DOB");
-    }
+    public Date getDOB() throws TransformException {return super.getDate("DOB");}
 
     public String getNHSNo() {
         return super.getString("NHS_No").replaceAll("\\-", "");
     }
 
 
-
-
-
-    public Date getAdmissionDateTime() throws TransformException {
-        return super.getDateTime("Admit_Dt_Tm");
-    }
+    public Date getAdmissionDateTime() throws TransformException {return super.getDateTime("Admit_Dt_Tm");}
 
     public String getAdmissionDateTimeAsString() throws TransformException {
         return super.getString("Admit_Dt_Tm");
@@ -93,15 +87,9 @@ public class Procedure extends AbstractFixedParser {
         return super.getString("Disch_Dt_Tm");
     }
 
-
-
-
-
     public Date getUpdateDateTime() throws TransformException {
         return super.getDateTime("Updt_Dt_Tm");
     }
-
-
 
     public String getFINNo() {
         return super.getString("FIN_No");
