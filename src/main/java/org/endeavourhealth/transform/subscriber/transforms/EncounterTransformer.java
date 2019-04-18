@@ -51,7 +51,7 @@ public class EncounterTransformer extends AbstractTransformer {
         String originalTerm = null;
         Long episodeOfCareId = null;
         Long serviceProviderOrganisationId = null;
-        Double age_during_event = null;
+        Double ageDuringEvent = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -139,7 +139,7 @@ public class EncounterTransformer extends AbstractTransformer {
         }
 
         if (fhir.getPatientTarget() != null) {
-            age_during_event = getPatientAgeInMonths(fhir.getPatientTarget());
+            ageDuringEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.Encounter model
@@ -157,7 +157,7 @@ public class EncounterTransformer extends AbstractTransformer {
             originalTerm,
             episodeOfCareId,
             serviceProviderOrganisationId,
-            age_during_event);
+            ageDuringEvent);
 
         //we also need to populate the two new encounter tables
         tranformExtraEncounterTables(resource, params,

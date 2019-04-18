@@ -36,7 +36,7 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         Integer procedureRequestStatusId = null;
         String originalCode = null;
         String originalTerm = null;
-        Double age_during_event = null;
+        Double ageDuringEvent = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -73,7 +73,7 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
 
         if (fhir.getSubjectTarget() != null) {
             Patient patient = (Patient) fhir.getSubjectTarget();
-            age_during_event = getPatientAgeInMonths(patient);
+            ageDuringEvent = getPatientAgeInMonths(patient);
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.ProcedureRequest model
@@ -90,7 +90,7 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
             procedureRequestStatusId,
             originalCode,
             originalTerm,
-            age_during_event);
+            ageDuringEvent);
     }
 }
 
