@@ -28,7 +28,7 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                             Integer procedureRequestStatusId,
                             String originalCode,
                             String originalTerm,
-                            Double age_during_event) throws Exception {
+                            Double ageDuringEvent) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -43,7 +43,7 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                 convertInt(procedureRequestStatusId),
                 originalCode,
                 originalTerm,
-                convertDouble(age_during_event));
+                convertDouble(ageDuringEvent));
     }
 
     @Override

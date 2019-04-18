@@ -45,8 +45,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         String quantityUnit = null;
         int authorisationTypeId;
         String originalTerm = null;
-        Double age_during_event = null;
-        String issue_method = null;
+        Double ageDuringEvent = null;
+        String issueMethod = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -129,11 +129,11 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         authorisationTypeId = authorisationType.ordinal();
 
         if (fhir.getPatientTarget() != null) {
-            age_during_event = getPatientAgeInMonths(fhir.getPatientTarget());
+            ageDuringEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
 
         if (fhir.getNote() != null && fhir.getNote().length() > 0) {
-            issue_method = fhir.getNote();
+            issueMethod = fhir.getNote();
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.MedicationStatement model
@@ -154,8 +154,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             quantityUnit,
             authorisationTypeId,
             originalTerm,
-            age_during_event,
-            issue_method);
+            ageDuringEvent,
+            issueMethod);
     }
 }
 

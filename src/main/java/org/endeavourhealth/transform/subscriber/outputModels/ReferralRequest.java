@@ -34,7 +34,7 @@ public class ReferralRequest extends AbstractSubscriberCsvWriter {
                             String originalCode,
                             String originalTerm,
                             boolean isReview,
-                            Double age_during_event) throws Exception {
+                            Double ageDuringEvent) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -55,7 +55,7 @@ public class ReferralRequest extends AbstractSubscriberCsvWriter {
                 originalCode,
                 originalTerm,
                 convertBoolean(isReview),
-                convertDouble(age_during_event));
+                convertDouble(ageDuringEvent));
     }
 
     @Override

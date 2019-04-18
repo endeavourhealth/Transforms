@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -48,7 +49,8 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
-        Double age_during_event = null;
+        Double ageDuringEvent = null;
+        Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -109,9 +111,19 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
         }
 
         if (fhir.getPatientTarget() != null) {
-            age_during_event = getPatientAgeInMonths(fhir.getPatientTarget());
+            ageDuringEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
 
+        Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
+        if (episodicityExtension != null) {
+
+            StringType episodicityType = (StringType) episodicityExtension.getValue();
+            // episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            episodicityConceptId  = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
+            //TODO do we know how extension uri is mapped?
+        }
+        
         org.endeavourhealth.transform.subscriber.outputModels.Observation model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
@@ -134,7 +146,8 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
                 isReview,
                 problemEndDate,
                 parentObservationId,
-                age_during_event);
+                ageDuringEvent,
+                episodicityConceptId);
     }
 
 

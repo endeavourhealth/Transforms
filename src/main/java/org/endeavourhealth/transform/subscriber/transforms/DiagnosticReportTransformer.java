@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.subscriber.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -47,7 +48,8 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
-        Double age_during_event = null;
+        Double ageDuringEvent = null;
+        Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -93,13 +95,23 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
 
         if (fhir.getSubjectTarget() != null) {
             Patient patient = (Patient) fhir.getSubjectTarget();
-            age_during_event = getPatientAgeInMonths(patient);
+            ageDuringEvent = getPatientAgeInMonths(patient);
         }
 
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
             parentObservationId = findEnterpriseId(params, parentReference);
+        }
+
+        Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
+        if (episodicityExtension != null) {
+
+            StringType episodicityType = (StringType) episodicityExtension.getValue();
+            // episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            episodicityConceptId  = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+            //IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
+            //TODO do we know how extension uri is mapped?
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.Observation model
@@ -124,6 +136,7 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
                 isReview,
                 problemEndDate,
                 parentObservationId,
-                age_during_event);
+                ageDuringEvent,
+                episodicityConceptId);
     }
 }
