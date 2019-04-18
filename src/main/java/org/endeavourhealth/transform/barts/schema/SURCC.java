@@ -62,9 +62,7 @@ public class SURCC extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getSurgicalCaseId() {
-        return super.getCell("#SURGICAL_CASE_ID");
-    }
+    public CsvCell getSurgicalCaseId() {return super.getCell("#SURGICAL_CASE_ID"); }
     public CsvCell getActiveIndicator() {
         return super.getCell("ACTIVE_IND");
     }
