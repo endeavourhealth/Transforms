@@ -1,16 +1,12 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
-import org.endeavourhealth.transform.barts.cache.SusTailCacheEntry;
 import org.endeavourhealth.transform.barts.schema.SusEmergency;
-import org.endeavourhealth.transform.barts.schema.SusEmergencyTail;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,32 +17,32 @@ public class SusEmergencyTransformer {
                                            FhirResourceFiler fhirResourceFiler,
                                            BartsCsvHelper csvHelper,
                                            Map<String, List<ParserI>> parserMap) throws Exception {
-
-        for (ParserI parser: parsers) {
-
-            //parse corresponding tails file first
-            Map<String, SusTailCacheEntry> tailsCache = processTailsFile(parser, parserMap);
-
-            while (parser.nextRecord()) {
-                try {
-                    processRecordProcedures((SusEmergency)parser);
-
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
-            }
-        }
+//
+//        for (ParserI parser: parsers) {
+//
+//            //parse corresponding tails file first
+//            Map<String, SusTailCacheEntry> tailsCache = processTailsFile(parser, parserMap);
+//
+//            while (parser.nextRecord()) {
+//                try {
+//                    processRecordProcedures((SusEmergency)parser);
+//
+//                } catch (Exception ex) {
+//                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+//                }
+//            }
+//        }
 
         //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    private static Map<String, SusTailCacheEntry> processTailsFile(ParserI parser, Map<String, List<ParserI>> parserMap) throws Exception {
-        SusEmergencyTail tailParser = (SusEmergencyTail)BartsCsvToFhirTransformer.findTailFile(parserMap, "SusEmergencyTail", parser.getFilePath());
-        Map<String, SusTailCacheEntry> tailsCache = new HashMap<>();
-        SusEmergencyTailPreTransformer.transform(tailParser, tailsCache);
-        return tailsCache;
-    }
+//    private static Map<String, SusTailCacheEntry> processTailsFile(ParserI parser, Map<String, List<ParserI>> parserMap) throws Exception {
+//        SusEmergencyTail tailParser = (SusEmergencyTail)BartsCsvToFhirTransformer.findTailFile(parserMap, "SusEmergencyTail", parser.getFilePath());
+//        Map<String, SusTailCacheEntry> tailsCache = new HashMap<>();
+//        SusEmergencyTailPreTransformer.transform(tailParser, tailsCache);
+//        return tailsCache;
+//    }
 
     private static void processRecordProcedures(SusEmergency parser) throws Exception {
         //not doing anything with this file yet
