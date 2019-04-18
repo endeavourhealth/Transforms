@@ -1,42 +1,92 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.transform.barts.cache.SusTailCacheEntry;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsTailDalI;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsTail;
+import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.SusEmergencyTail;
-import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.AbstractCsvCallable;
+import org.endeavourhealth.transform.common.CsvCurrentState;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Map;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
 public class SusEmergencyTailPreTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyTailPreTransformer.class);
+    private static StagingCdsTailDalI repository = DalProvider.factoryStagingCdsTailDalI();
 
-    /**
-     * simply caches the contents of a tails file into a hashmap
-     */
-    public static void transform(SusEmergencyTail parser, Map<String, SusTailCacheEntry> tailsCache) throws Exception {
+    public static void transform(List<ParserI> parsers,
+                                 FhirResourceFiler fhirResourceFiler,
+                                 BartsCsvHelper csvHelper) throws Exception {
+        for (ParserI parser : parsers) {
 
-        //don't catch any record level parsing errors, since any problems here need to stop the transform
-        while (parser.nextRecord()) {
-            processRecord(parser, tailsCache);
+            while (parser.nextRecord()) {
+                try {
+                    processRecord((org.endeavourhealth.transform.barts.schema.SusEmergencyTail) parser, csvHelper);
+
+                } catch (Exception ex) {
+                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
+            }
         }
     }
 
-    private static void processRecord(SusEmergencyTail parser, Map<String, SusTailCacheEntry> tailsCache) {
+    private static void processRecord(SusEmergencyTail parser, BartsCsvHelper csvHelper) throws Exception{
 
-        //only cache the fields we know we'll need
-        CsvCell cdsActivityDate = parser.getCdsActivityDate();
-        CsvCell cdsUniqueIdentifier = parser.getCdsUniqueId();
-        CsvCell encounterId = parser.getEncounterId();
-        CsvCell episodeId = parser.getEpisodeId();
-        CsvCell personId = parser.getPersonId();
-        CsvCell personnelId = parser.getResponsiblePersonnelId();
 
-        SusTailCacheEntry obj = new SusTailCacheEntry();
-        obj.setCDSUniqueIdentifier(cdsUniqueIdentifier);
-        obj.setEncounterId(encounterId);
-        obj.setEpisodeId(episodeId);
-        obj.setPersonId(personId);
-        obj.setResponsibleHcpPersonnelId(personnelId);
+        StagingCdsTail staging = new StagingCdsTail();
+        staging.setCdsUniqueIdentifierm(parser.getCdsUniqueId().getString());
+        staging.setExchangeId(parser.getExchangeId().toString());
+        staging.setDTReceived(new Date());
+        staging.setSusRecordType(csvHelper.SUS_RECORD_TYPE_OUTPATIENT);
+        staging.setCdsUniqueIdentifierm(parser.getCdsUniqueId().getString());
+        staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
+        staging.setMrn(parser.getLocalPatientId().getString());
+        staging.setNhsNumber(parser.getNhsNumber().getString());
+        staging.setPersonId(parser.getPersonId().getInt());
+        staging.setEncounterId(parser.getEncounterId().getInt());
+        staging.setResponsibleHcpPersonnelId(parser.getResponsiblePersonnelId().getInt());
 
-        CsvCell uniqueId = parser.getCdsUniqueId();
-        tailsCache.put(uniqueId.getString(), obj);
+
+        UUID serviceId = csvHelper.getServiceId();
+        staging.setRecordChecksum(staging.hashCode());
+        csvHelper.submitToThreadPool(new SusEmergencyTailPreTransformer.saveDataCallable(parser.getCurrentState(), staging, serviceId));
+
+    }
+
+
+    private static class saveDataCallable extends AbstractCsvCallable {
+
+        private StagingCdsTail obj = null;
+        private UUID serviceId;
+
+        public saveDataCallable(CsvCurrentState parserState,
+                                StagingCdsTail obj,
+                                UUID serviceId) {
+            super(parserState);
+            this.obj = obj;
+            this.serviceId = serviceId;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+                repository.save(obj, serviceId);
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
+            }
+
+            return null;
+        }
     }
 }
+
+

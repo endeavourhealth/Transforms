@@ -44,6 +44,9 @@ public class SusOutpatientTail extends AbstractFixedParser{
     }
 
     public CsvCell getCdsActivityDate() { return  super.getCell("CDS_Activity_Date");}
+    public CsvCell getCdsUpdateType() { return super.getCell("CDSUpdateType");}
+    public CsvCell getLocalPatientId() { return super.getCell("Local_Patient_ID");}
+    public CsvCell getNhsNumber() { return super.getCell("NHS_Number");}
 
 
     @Override
