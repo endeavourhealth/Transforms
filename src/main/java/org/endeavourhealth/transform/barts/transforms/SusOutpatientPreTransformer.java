@@ -50,7 +50,7 @@ public class SusOutpatientPreTransformer {
             stagingCds.setCdsUniqueIdentifierm(parser.getCdsUniqueId().getString());
             stagingCds.setExchangeId(parser.getExchangeId().toString());
             stagingCds.setDTReceived(new Date());
-            stagingCds.setSusRecordType(csvHelper.SUS_RECORD_TYPE_INPATIENT);
+            stagingCds.setSusRecordType(csvHelper.SUS_RECORD_TYPE_OUTPATIENT);
             stagingCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
             stagingCds.setMrn(parser.getLocalPatientId().getString());
             stagingCds.setNhsNumber(parser.getNhsNumber().getString());
