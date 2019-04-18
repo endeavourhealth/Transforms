@@ -52,19 +52,27 @@ public class PROCEPreTransformer {
         stagingPROCE.setExchangeId(parser.getExchangeId().toString());
         stagingPROCE.setDateReceived(new Date());
         stagingPROCE.setProcedureId(parser.getProcedureID().getInt());
-        stagingPROCE.setActiveInd(parser.getActiveIndicator().getIntAsBoolean());
-        stagingPROCE.setEncounterId(parser.getEncounterId().getInt());
-        stagingPROCE.setProcedureDtTm(parser.getProcedureDateTime().getDate());
-        stagingPROCE.setProcedureType(parser.getProcedureTypeCode().getString());
-        String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(parser.getConceptCodeIdentifier());
-        stagingPROCE.setProcedureCode(codeId);
-        stagingPROCE.setProcedureTerm(TerminologyService.lookupSnomedTerm(codeId));
-        stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
-        String personId  = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
-        stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
-        //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
-        String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
-        stagingPROCE.setLookupMrn(mrn);
+
+        boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
+        stagingPROCE.setActiveInd(activeInd);
+
+        //only set additional values if active
+        if (activeInd) {
+            stagingPROCE.setEncounterId(parser.getEncounterId().getInt());
+            stagingPROCE.setProcedureDtTm(parser.getProcedureDateTime().getDate());
+            stagingPROCE.setProcedureType(parser.getProcedureTypeCode().getString());
+            String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(parser.getConceptCodeIdentifier());
+            stagingPROCE.setProcedureCode(codeId);
+            stagingPROCE.setProcedureTerm(TerminologyService.lookupSnomedTerm(codeId));
+            stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
+            String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
+            stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
+            //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
+            String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
+            stagingPROCE.setLookupMrn(mrn);
+
+            stagingPROCE.setCheckSum(stagingPROCE.hashCode());
+        }
         //TODO lookup_nhs and lookup_dob - how from enc?
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new PROCEPreTransformer.saveDataCallable(parser.getCurrentState(), stagingPROCE, serviceId));

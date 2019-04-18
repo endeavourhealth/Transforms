@@ -71,9 +71,10 @@ public class ProcedurePreTransformer {
         obj.setLookupConsultantPersonnelId(Integer.parseInt(consultantStr));
         String recordedBy = parser.getUpdatedBy().getString();
         obj.setLookuprecordedByPersonnelId(Integer.parseInt(recordedBy));
-
+        obj.setCheckSum();
 
         obj.setProcedureCode(parser.getProcedureCode().getString());
+
         UUID serviceId = csvHelper.getServiceId();
         // obj.setDateReceived(parser.);
 

@@ -45,16 +45,21 @@ public class SURCCPreTransformer {
 
         stagingSURCC.setSurgicalCaseId(parser.getSurgicalCaseId().getInt());
         stagingSURCC.setDTExtract(parser.getExtractDateTime().getDate());
-        stagingSURCC.setActiveInd(parser.getActiveIndicator().getBoolean());
-        stagingSURCC.setPersonId(parser.getPersonId().getInt());
-        stagingSURCC.setEncounterId(parser.getEncounterId().getInt());
-        stagingSURCC.setDTCancelled(parser.getCancelledDateTime().getDate());
-        stagingSURCC.setInstitutionCode(parser.getInstitutionCode().getString());
-        stagingSURCC.setDepartmentCode(parser.getDepartmentCode().getString());
-        stagingSURCC.setSurgicalAreaCode(parser.getSurgicalAreaCode().getString());
-        stagingSURCC.setTheatreNumberCode(parser.getTheatreNumberCode().getString());
 
-        stagingSURCC.setRecordChecksum(stagingSURCC.hashCode());
+        boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
+        stagingSURCC.setActiveInd(activeInd);
+
+        if (activeInd) {
+            stagingSURCC.setPersonId(parser.getPersonId().getInt());
+            stagingSURCC.setEncounterId(parser.getEncounterId().getInt());
+            stagingSURCC.setDTCancelled(parser.getCancelledDateTime().getDate());
+            stagingSURCC.setInstitutionCode(parser.getInstitutionCode().getString());
+            stagingSURCC.setDepartmentCode(parser.getDepartmentCode().getString());
+            stagingSURCC.setSurgicalAreaCode(parser.getSurgicalAreaCode().getString());
+            stagingSURCC.setTheatreNumberCode(parser.getTheatreNumberCode().getString());
+
+            stagingSURCC.setRecordChecksum(stagingSURCC.hashCode());
+        }
 
         UUID serviceId = csvHelper.getServiceId();
 

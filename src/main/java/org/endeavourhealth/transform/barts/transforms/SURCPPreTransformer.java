@@ -44,19 +44,24 @@ public class SURCPPreTransformer {
         stagingSURCP.setDTReceived(new Date());
 
         stagingSURCP.setSurgicalCaseProcedureId(parser.getSurgicalCaseProcedureId().getInt());
-        stagingSURCP.setSurgicalCaseId(parser.getSurgicalCaseId().getInt());
-        stagingSURCP.setDTExtract(parser.getExtractDateTime().getDate());
-        stagingSURCP.setActiveInd(parser.getActiveIndicator().getBoolean());
-        stagingSURCP.setProcedureCode(parser.getProcedureCode().getInt());
-        stagingSURCP.setProcedureText(parser.getProcedureText().getString());
-        stagingSURCP.setModifierText(parser.getModifierText().getString());
-        stagingSURCP.setPrimaryProcedureIndicator(parser.getPrimaryProcedureIndicator().getInt());
-        stagingSURCP.setSurgeonPersonnelId(parser.getSurgeonPersonnelId().getInt());
-        stagingSURCP.setDTStart(parser.getStartDateTime().getDate());
-        stagingSURCP.setDTStop(parser.getStopDateTime().getDate());
-        stagingSURCP.setWoundClassCode(parser.getWoundClassCode().getString());
 
-        stagingSURCP.setRecordChecksum(stagingSURCP.hashCode());
+        boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
+        stagingSURCP.setActiveInd(activeInd);
+
+        if (activeInd) {
+            stagingSURCP.setDTExtract(parser.getExtractDateTime().getDate());
+            stagingSURCP.setSurgicalCaseId(parser.getSurgicalCaseId().getInt());
+            stagingSURCP.setProcedureCode(parser.getProcedureCode().getInt());
+            stagingSURCP.setProcedureText(parser.getProcedureText().getString());
+            stagingSURCP.setModifierText(parser.getModifierText().getString());
+            stagingSURCP.setPrimaryProcedureIndicator(parser.getPrimaryProcedureIndicator().getInt());
+            stagingSURCP.setSurgeonPersonnelId(parser.getSurgeonPersonnelId().getInt());
+            stagingSURCP.setDTStart(parser.getStartDateTime().getDate());
+            stagingSURCP.setDTStop(parser.getStopDateTime().getDate());
+            stagingSURCP.setWoundClassCode(parser.getWoundClassCode().getString());
+
+            stagingSURCP.setRecordChecksum(stagingSURCP.hashCode());
+        }
 
         UUID serviceId = csvHelper.getServiceId();
 
