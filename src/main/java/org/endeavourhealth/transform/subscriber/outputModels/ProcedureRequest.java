@@ -27,7 +27,8 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                             Long snomedConceptId,
                             Integer procedureRequestStatusId,
                             String originalCode,
-                            String originalTerm) throws Exception {
+                            String originalTerm,
+                            Double age_during_event) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -41,7 +42,8 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                 convertLong(snomedConceptId),
                 convertInt(procedureRequestStatusId),
                 originalCode,
-                originalTerm);
+                originalTerm,
+                convertDouble(age_during_event));
     }
 
     @Override
@@ -59,7 +61,8 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                 "snomed_concept_id",
                 "procedure_request_status_id",
                 "original_code",
-                "original_term"
+                "original_term",
+                "age_during_event"
         };
     }
 
@@ -77,6 +80,7 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                 Integer.class,
                 Long.class,
                 Integer.class,
+                String.class,
                 String.class,
                 String.class
         };

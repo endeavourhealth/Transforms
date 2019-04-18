@@ -27,7 +27,8 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                             Long snomedConceptId,
                             String originalCode,
                             String originalTerm,
-                            boolean isReview) throws Exception {
+                            boolean isReview,
+                            Double age_during_event) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -41,7 +42,8 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 convertLong(snomedConceptId),
                 originalCode,
                 originalTerm,
-                convertBoolean(isReview));
+                convertBoolean(isReview),
+                convertDouble(age_during_event));
     }
 
     @Override
@@ -59,7 +61,8 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 "snomed_concept_id",
                 "original_code",
                 "original_term",
-                "is_review"
+                "is_review",
+                "age_during_event"
         };
     }
 
@@ -78,7 +81,8 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 Long.class,
                 String.class,
                 String.class,
-                Boolean.TYPE
+                Boolean.TYPE,
+                String.class,
         };
     }
 }

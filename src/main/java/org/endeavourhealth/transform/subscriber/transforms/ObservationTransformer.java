@@ -50,6 +50,7 @@ public class ObservationTransformer extends AbstractTransformer {
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
+        Double age_during_event = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -124,6 +125,11 @@ public class ObservationTransformer extends AbstractTransformer {
             parentObservationId = findEnterpriseId(params, parentReference);
         }
 
+        if (fhir.getSubjectTarget() != null) {
+            Patient patient = (Patient) fhir.getSubjectTarget();
+            age_during_event = getPatientAgeInMonths(patient);
+        }
+
         org.endeavourhealth.transform.subscriber.outputModels.Observation model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
@@ -145,7 +151,8 @@ public class ObservationTransformer extends AbstractTransformer {
             originalTerm,
             isReview,
             problemEndDate,
-            parentObservationId);
+            parentObservationId,
+            age_during_event);
     }
 
 
