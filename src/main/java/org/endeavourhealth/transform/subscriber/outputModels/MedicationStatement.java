@@ -33,7 +33,8 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
                             String quantityUnit,
                             int authorisationTypeId,
                             String originalTerm,
-                            Double age_during_event) throws Exception {
+                            Double age_during_event,
+                            String issue_method) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -52,7 +53,8 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
                 quantityUnit,
                 "" + authorisationTypeId,
                 originalTerm,
-                convertDouble(age_during_event));
+                convertDouble(age_during_event),
+                issue_method);
     }
 
     @Override
@@ -75,7 +77,8 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
                 "quantity_unit",
                 "medication_statement_authorisation_type_id",
                 "original_term",
-                "age_during_event"
+                "age_during_event",
+                "issue_method"
         };
     }
 
@@ -98,6 +101,7 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
                 BigDecimal.class,
                 String.class,
                 Integer.TYPE,
+                String.class,
                 String.class,
                 String.class
         };
