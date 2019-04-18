@@ -45,6 +45,8 @@ public class ProcedurePreTransformer {
     private static void processRecord(org.endeavourhealth.transform.barts.schema.Procedure parser, BartsCsvHelper csvHelper) throws Exception {
 
 
+        // Observer not null conditions in DB
+
         StagingProcedure obj = new StagingProcedure();
         obj.setExchangeId(parser.getExchangeId().toString());
         obj.setDateReceived(new Date());

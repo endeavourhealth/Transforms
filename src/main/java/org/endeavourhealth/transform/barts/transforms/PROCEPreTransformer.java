@@ -7,10 +7,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalI
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PROCE;
-import org.endeavourhealth.transform.common.AbstractCsvCallable;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,30 +48,55 @@ public class PROCEPreTransformer {
         stagingPROCE.setActiveInd(parser.getActiveIndicator().getIntAsBoolean());
         stagingPROCE.setExchangeId(parser.getExchangeId().toString());
         stagingPROCE.setDateReceived(new Date());
-        stagingPROCE.setProcedureId(parser.getProcedureID().getInt());
+        int procId = parser.getProcedureID().getInt();
+        stagingPROCE.setProcedureId(procId);
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingPROCE.setActiveInd(activeInd);
-
+        UUID serviceId = csvHelper.getServiceId();
         //only set additional values if active
         if (activeInd) {
             stagingPROCE.setEncounterId(parser.getEncounterId().getInt());
             stagingPROCE.setProcedureDtTm(parser.getProcedureDateTime().getDate());
+            if (parser.getProcedureTypeCode() == null ) {
+                TransformWarnings.log(LOG,csvHelper,"");
+                return;
+            }
+            if (parser.getProcedureTypeCode() == null ) {
+                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedureTypeCode", procId );
+                return;
+            }
             stagingPROCE.setProcedureType(parser.getProcedureTypeCode().getString());
             String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(parser.getConceptCodeIdentifier());
+            if (codeId == null) {
+                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure Code", procId );
+                return;
+            }
             stagingPROCE.setProcedureCode(codeId);
-            stagingPROCE.setProcedureTerm(TerminologyService.lookupSnomedTerm(codeId));
+            String procTerm = TerminologyService.lookupSnomedTerm(codeId);
+            if (procTerm == null) {
+                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure term", procId );
+                return;
+            }
+            stagingPROCE.setProcedureTerm(procTerm);
             stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
             String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
             stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
             //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
             String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
+            if (mrn == null) {
+                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no MRN from lookup", codeId );
+                return;
+            }
             stagingPROCE.setLookupMrn(mrn);
 
+
             stagingPROCE.setCheckSum(stagingPROCE.hashCode());
+            stagingPROCE.setLookupNhsNumber("0");
+            stagingPROCE.setLookupDateOfBirth(new Date());
         }
         //TODO lookup_nhs and lookup_dob - how from enc?
-        UUID serviceId = csvHelper.getServiceId();
+
         csvHelper.submitToThreadPool(new PROCEPreTransformer.saveDataCallable(parser.getCurrentState(), stagingPROCE, serviceId));
     }
 
