@@ -29,6 +29,8 @@ import java.util.List;
 
 import static org.apache.commons.lang3.time.DateUtils.isSameDay;
 
+//TODO   NEEDS TO BE TOTALLY
+// REWRITTEN TO READ FROM PRIMARY STAGING TABLES
 public class PROCETransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCETransformer.class);
     private static final String TWO_DECIMAL_PLACES = ".00";

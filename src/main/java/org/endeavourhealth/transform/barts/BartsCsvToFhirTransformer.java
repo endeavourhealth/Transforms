@@ -134,7 +134,7 @@ public abstract class BartsCsvToFhirTransformer {
             SusOutpatientPreTransformer.transform(getParsers(parserMap, "SusOutpatient", true), fhirResourceFiler,csvHelper);
 
             ProcedurePreTransformer.transform(getParsers(parserMap, "Procedure", true), fhirResourceFiler, csvHelper);
-            PROCETransformer.transform(getParsers(parserMap, "PROCE", true), fhirResourceFiler, csvHelper);
+           // PROCETransformer.transform(getParsers(parserMap, "PROCE", true), fhirResourceFiler, csvHelper);
 
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
