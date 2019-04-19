@@ -56,8 +56,18 @@ public class SURCPPreTransformer {
             stagingSURCP.setModifierText(parser.getModifierText().getString());
             stagingSURCP.setPrimaryProcedureIndicator(parser.getPrimaryProcedureIndicator().getInt());
             stagingSURCP.setSurgeonPersonnelId(parser.getSurgeonPersonnelId().getInt());
-            stagingSURCP.setDTStart(parser.getStartDateTime().getDate());
-            stagingSURCP.setDTStop(parser.getStopDateTime().getDate());
+            Date nullDate = new Date();
+            nullDate = null;
+            if (parser.getStartDateTime()!=null) {
+                stagingSURCP.setDTStart(parser.getStartDateTime().getDate());
+            } else {
+                stagingSURCP.setDTStart(nullDate);
+            }
+            if (parser.getStopDateTime()!=null) {
+                stagingSURCP.setDTStop(parser.getStopDateTime().getDate());
+            } else {
+                stagingSURCP.setDTStop(nullDate);
+            }
             stagingSURCP.setWoundClassCode(parser.getWoundClassCode().getString());
 
             stagingSURCP.setRecordChecksum(stagingSURCP.hashCode());
