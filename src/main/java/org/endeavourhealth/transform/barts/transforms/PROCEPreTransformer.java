@@ -62,10 +62,6 @@ public class PROCEPreTransformer {
                 TransformWarnings.log(LOG,csvHelper,"");
                 return;
             }
-            if (parser.getProcedureTypeCode() == null ) {
-                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedureTypeCode", procId );
-                return;
-            }
             stagingPROCE.setProcedureType(parser.getProcedureTypeCode().getString());
             String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(parser.getConceptCodeIdentifier());
             if (codeId == null) {
@@ -85,7 +81,7 @@ public class PROCEPreTransformer {
             //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
             String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
             if (mrn == null) {
-                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no MRN from lookup", codeId );
+                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no MRN from lookup", procId );
                 return;
             }
             stagingPROCE.setLookupMrn(mrn);
