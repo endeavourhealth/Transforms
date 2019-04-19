@@ -45,7 +45,9 @@ public class SusInpatientTailPreTransformer {
         staging.setExchangeId(parser.getExchangeId().toString());
         staging.setDTReceived(new Date());
         staging.setSusRecordType(csvHelper.SUS_RECORD_TYPE_INPATIENT);
-        staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
+        if (parser.getCdsUpdateType() != null) {
+            staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
+        }
         staging.setMrn(parser.getLocalPatientId().getString());
         staging.setNhsNumber(parser.getNhsNumber().getString());
         staging.setPersonId(parser.getPersonId().getInt());
