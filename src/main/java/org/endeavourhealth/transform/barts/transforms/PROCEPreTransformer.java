@@ -77,15 +77,17 @@ public class PROCEPreTransformer {
             stagingPROCE.setProcedureTerm(procTerm);
             stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
             String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
-            stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
-            //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
-            String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
-            if (mrn == null) {
-                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no MRN from lookup", procId );
-                return;
-            }
-            stagingPROCE.setLookupMrn(mrn);
+            if (personId!= null) {
+                stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
 
+                //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
+                String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
+                if (mrn == null) {
+                    TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no MRN from lookup", procId);
+                    return;
+                }
+                stagingPROCE.setLookupMrn(mrn);
+            }
 
             stagingPROCE.setCheckSum(stagingPROCE.hashCode());
             stagingPROCE.setLookupNhsNumber("0");
