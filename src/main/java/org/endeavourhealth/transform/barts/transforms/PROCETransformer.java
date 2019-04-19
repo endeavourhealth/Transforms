@@ -41,18 +41,18 @@ public class PROCETransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        for (ParserI parser : parsers) {
-            while (parser.nextRecord()) {
-                try {
-                    createProcedure((PROCE) parser, fhirResourceFiler, csvHelper);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
-            }
-        }
-
-        //call this to abort if we had any errors, during the above processing
-        fhirResourceFiler.failIfAnyErrors();
+//        for (ParserI parser : parsers) {
+//            while (parser.nextRecord()) {
+//                try {
+//                    createProcedure((PROCE) parser, fhirResourceFiler, csvHelper);
+//                } catch (Exception ex) {
+//                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+//                }
+//            }
+//        }
+//
+//        //call this to abort if we had any errors, during the above processing
+//        fhirResourceFiler.failIfAnyErrors();
     }
 
 

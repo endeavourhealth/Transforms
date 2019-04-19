@@ -63,7 +63,7 @@ public class PROCEPreTransformer {
             }
             stagingPROCE.setProcedureDtTm(procDate);
             if (parser.getProcedureTypeCode() == null ) {
-                TransformWarnings.log(LOG,csvHelper,"");
+                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure TypeCode", procId);
                 return;
             }
             stagingPROCE.setProcedureType(parser.getProcedureTypeCode().getString());
