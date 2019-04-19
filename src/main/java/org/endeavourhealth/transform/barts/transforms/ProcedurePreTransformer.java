@@ -55,7 +55,11 @@ public class ProcedurePreTransformer {
         obj.setDob(parser.getDOB());
         obj.setEncounterId(parser.getEncounterId().getInt()); // Remember encounter ids from Procedure have a trailing .00
         obj.setConsultant(parser.getConsultant().getString());
-        obj.setProc_dt_tm(parser.getProcedureDateTime().getDate());
+        Date procDate = csvHelper.parseDate(parser.getProcedureDateTime());
+        if (procDate==null ) {
+            return;
+        }
+        obj.setProc_dt_tm(procDate);
         obj.setUpdatedBy(parser.getUpdatedBy().getInt());
         obj.setCreate_dt_tm(parser.getCreateDateTime().getDate());
         obj.setComments(parser.getComment().getString());

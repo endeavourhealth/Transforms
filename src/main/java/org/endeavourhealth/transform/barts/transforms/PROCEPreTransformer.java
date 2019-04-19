@@ -57,7 +57,11 @@ public class PROCEPreTransformer {
         //only set additional values if active
         if (activeInd) {
             stagingPROCE.setEncounterId(parser.getEncounterId().getInt());
-            stagingPROCE.setProcedureDtTm(parser.getProcedureDateTime().getDate());
+            Date procDate = csvHelper.parseDate(parser.getProcedureDateTime());
+            if (procDate == null) {
+                return;
+            }
+            stagingPROCE.setProcedureDtTm(procDate);
             if (parser.getProcedureTypeCode() == null ) {
                 TransformWarnings.log(LOG,csvHelper,"");
                 return;
