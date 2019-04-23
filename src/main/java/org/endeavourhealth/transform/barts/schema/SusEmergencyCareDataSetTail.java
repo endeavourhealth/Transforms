@@ -28,8 +28,12 @@ public class SusEmergencyCareDataSetTail extends AbstractFixedParser {
         return super.getCell("Fin_Nbr");
     }
 
-    public CsvCell getEncounterId() {
-        return super.getCell("Encounter_ID");
+    public CsvCell getEncounterId() {  CsvCell ret =  super.getCell("Encounter_ID");
+        if (ret.getString().contains(".")) {
+            int i= new Double(ret.getString()).intValue();
+            ret=ret.factoryWithNewValue(ret,Integer.toString(i));
+        }
+        return ret;
     }
 
     public CsvCell getEpisodeId() {

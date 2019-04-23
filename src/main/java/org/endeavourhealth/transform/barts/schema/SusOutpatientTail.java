@@ -28,8 +28,13 @@ public class SusOutpatientTail extends AbstractFixedParser{
     }
 
     public CsvCell getEncounterId() {
-        return super.getCell("Encounter_ID");
-    }
+        CsvCell ret =  super.getCell("Encounter_ID");
+        if (ret.getString().contains(".")) {
+            int i= new Double(ret.getString()).intValue();
+            ret=ret.factoryWithNewValue(ret,Integer.toString(i));
+        }
+        return ret;
+     }
 
     public CsvCell getEpisodeId() {
         return super.getCell("Episode_ID");

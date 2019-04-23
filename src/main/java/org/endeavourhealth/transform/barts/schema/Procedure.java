@@ -39,7 +39,13 @@ public class Procedure extends AbstractFixedParser {
     }
 
     public CsvCell getEncounterId() {
-        return super.getCell("Encntr_Id");
+
+        CsvCell ret =  super.getCell("Encntr_Id");
+        if (ret.getString().contains(".")) {
+            int i= new Double(ret.getString()).intValue();
+            ret=ret.factoryWithNewValue(ret,Integer.toString(i));
+        }
+        return ret;
     }
 
     public CsvCell getProcedureText() {
