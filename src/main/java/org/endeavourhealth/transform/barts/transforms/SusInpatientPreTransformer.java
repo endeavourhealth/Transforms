@@ -49,7 +49,7 @@ public class SusInpatientPreTransformer {
         StagingCds stagingCds = new StagingCds();
         stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCds.setExchangeId(parser.getExchangeId().toString());
-        stagingCds.setDTReceived(new Date());
+        stagingCds.setDtReceived(new Date());
         stagingCds.setSusRecordType(csvHelper.SUS_RECORD_TYPE_INPATIENT);
         stagingCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
         stagingCds.setMrn(parser.getLocalPatientId().getString());
