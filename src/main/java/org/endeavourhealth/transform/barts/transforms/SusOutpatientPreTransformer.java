@@ -80,12 +80,12 @@ public class SusOutpatientPreTransformer {
             //Secondary
             StagingCds stagingCds2 = stagingCds.clone();
             opcsCode = parser.getSecondaryProcedureOPCS().getString();
-            stagingCds.setProcedureOpcsCode(opcsCode);
-            stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
-            stagingCds.setProcedureSeqNbr(2);
-            stagingCds.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
-            stagingCds.setRecordChecksum(stagingCds.hashCode());
-            csvHelper.submitToThreadPool(new SusOutpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
+            stagingCds2.setProcedureOpcsCode(opcsCode);
+            stagingCds2.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
+            stagingCds2.setProcedureSeqNbr(2);
+            stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
+            stagingCds2.setRecordChecksum(stagingCds.hashCode());
+            csvHelper.submitToThreadPool(new SusOutpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
             //Rest
             CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
             List<String> otherProcs = new ArrayList<>();
