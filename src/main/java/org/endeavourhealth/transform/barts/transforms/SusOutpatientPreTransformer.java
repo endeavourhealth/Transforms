@@ -98,12 +98,12 @@ public class SusOutpatientPreTransformer {
                 if (code.isEmpty()) {break;}  //
                 String dateStr = word.substring(5, 10);
                 Date date = dateFormat.parse(dateStr);
-                stagingCds.setProcedureOpcsCode(code);
-                stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(code));
-                stagingCds.setProcedureSeqNbr(seq);
-                stagingCds.setProcedureDate(date);
-                stagingCds.setRecordChecksum(stagingCds.hashCode());
-                csvHelper.submitToThreadPool(new SusOutpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
+                stagingCds3.setProcedureOpcsCode(code);
+                stagingCds3.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(code));
+                stagingCds3.setProcedureSeqNbr(seq);
+                stagingCds3.setProcedureDate(date);
+                stagingCds3.setRecordChecksum(stagingCds.hashCode());
+                csvHelper.submitToThreadPool(new SusOutpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds3, serviceId));
                 seq++;
             }
         }
