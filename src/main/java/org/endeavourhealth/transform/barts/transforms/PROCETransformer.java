@@ -156,7 +156,7 @@ public class PROCETransformer {
             codeableConceptBuilder.setText(term); //don't pass in a cell as this was derived
 
         } else if (conceptCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
-            String term = TerminologyService.lookupOpcs4ProcedureName(conceptCode);
+            String term = TerminologyService.lookupIcd10CodeDescription(conceptCode);
             if (Strings.isNullOrEmpty(term)) {
                 TransformWarnings.log(LOG, csvHelper, "Failed to find ICD-10 term for {}", conceptIdentifierCell);
             }
