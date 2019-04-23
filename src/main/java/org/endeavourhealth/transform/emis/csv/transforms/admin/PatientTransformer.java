@@ -730,6 +730,8 @@ public class PatientTransformer {
             return RegistrationType.VASECTOMY;
         } else if (csvRegType.equalsIgnoreCase("Out of Hours")) {
             return RegistrationType.OUT_OF_HOURS;
+        } else if (csvRegType.equalsIgnoreCase("Rehabilitation")) {
+            return RegistrationType.REHABILITATION;
 
         } else {
             if (TransformConfig.instance().isEmisAllowUnmappedRegistrationTypes()) {
