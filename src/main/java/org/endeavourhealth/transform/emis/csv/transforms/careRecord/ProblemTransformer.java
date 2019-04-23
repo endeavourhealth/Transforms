@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -78,9 +79,10 @@ public class ProblemTransformer {
 
         CsvCell comments = parser.getComment();
         if (!comments.isEmpty()) {
-            //we store the free text from the observation file in the condition "notes" element,
-            //and this additional text in an extension
-            conditionBuilder.setAdditionalNotes(comments.getString(), comments);
+            //until we see an example of this data, we don't know if this text is a duplication of the AssociatedText
+            //field on the observation table or not, so wait until we get something then work out where it should go
+            throw new TransformException("Received problem comments - need to see if a duplicate of observation notes and work out FHIR mapping");
+            //conditionBuilder.setAdditionalNotes(comments.getString(), comments);
         }
 
         CsvCell endDate = parser.getEndDate();

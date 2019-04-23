@@ -79,7 +79,7 @@ public class SRProblemTransformer {
                     conditionBuilder.setProblemSignificance(null);
                     conditionBuilder.setParentProblem(null);
                     conditionBuilder.setParentProblemRelationship(null);
-                    conditionBuilder.setAdditionalNotes(null);
+                    //conditionBuilder.setAdditionalNotes(null);
 
                     ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
                     containedListBuilder.removeContainedList();
