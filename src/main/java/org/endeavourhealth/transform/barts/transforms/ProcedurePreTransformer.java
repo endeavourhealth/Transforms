@@ -60,7 +60,7 @@ public class ProcedurePreTransformer {
             return;
         }
         obj.setProc_dt_tm(procDate);
-        obj.setUpdatedBy(parser.getUpdatedBy().getInt());
+        obj.setUpdatedBy(parser.getUpdatedBy().getString());
         obj.setCreate_dt_tm(parser.getCreateDateTime().getDate());
         obj.setComments(parser.getComment().getString());
         obj.setProcedureCode(parser.getProcedureCode().getString());

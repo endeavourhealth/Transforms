@@ -75,7 +75,8 @@ public class PROCEPreTransformer {
             stagingPROCE.setProcedureCode(codeId);
 
             String procTerm;
-            if (parser.getProcedureTypeCode().getString().equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+            String codeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(parser.getConceptCodeIdentifier());
+            if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 procTerm = TerminologyService.lookupOpcs4ProcedureName(codeId);
             } else {
                 procTerm = TerminologyService.lookupSnomedTerm(codeId);
