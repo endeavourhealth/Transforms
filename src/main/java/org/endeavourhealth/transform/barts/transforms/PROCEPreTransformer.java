@@ -47,7 +47,7 @@ public class PROCEPreTransformer {
 
         stagingPROCE.setActiveInd(parser.getActiveIndicator().getIntAsBoolean());
         stagingPROCE.setExchangeId(parser.getExchangeId().toString());
-        stagingPROCE.setDateReceived(new Date());
+        stagingPROCE.setDTReceived(new Date());
         int procId = parser.getProcedureID().getInt();
         stagingPROCE.setProcedureId(procId);
 
