@@ -78,6 +78,7 @@ public class SusEmergencyPreTransformer {
         csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
 
         //Secondary
+        StagingCds stagingCds2 = stagingCds.clone();
         opcsCode = parser.getSecondaryProcedureOPCS().getString();
         stagingCds.setProcedureOpcsCode(opcsCode);
         stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
@@ -92,6 +93,7 @@ public class SusEmergencyPreTransformer {
         DateFormat dateFormat = new SimpleDateFormat("ddMMyy");
         int seq = 3;
         for (String word : otherProcedureOPCS.getString().split(" ")) {
+            StagingCds stagingCds3 = stagingCds.clone();
             String code = word.substring(0, 4);
             if (code.isEmpty()) {break;}  //
             String dateStr = word.substring(5, 10);

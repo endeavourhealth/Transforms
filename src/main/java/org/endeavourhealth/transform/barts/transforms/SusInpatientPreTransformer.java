@@ -78,13 +78,14 @@ public class SusInpatientPreTransformer {
         csvHelper.submitToThreadPool(new SusInpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
 
         //Secondary
+        StagingCds stagingCds2 = stagingCds.clone();
         opcsCode = parser.getSecondaryProcedureOPCS().getString();
-        stagingCds.setProcedureOpcsCode(opcsCode);
-        stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
-        stagingCds.setProcedureSeqNbr(2);
-        stagingCds.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
-        stagingCds.setRecordChecksum(stagingCds.hashCode());
-        csvHelper.submitToThreadPool(new SusInpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
+        stagingCds2.setProcedureOpcsCode(opcsCode);
+        stagingCds2.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
+        stagingCds2.setProcedureSeqNbr(2);
+        stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
+        stagingCds2.setRecordChecksum(stagingCds.hashCode());
+        csvHelper.submitToThreadPool(new SusInpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
         //Rest
         CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
         List<String> otherProcs = new ArrayList<>();
@@ -92,6 +93,7 @@ public class SusInpatientPreTransformer {
         DateFormat dateFormat = new SimpleDateFormat("ddMMyy");
         int seq = 3;
         for (String word : otherProcedureOPCS.getString().split(" ")) {
+            StagingCds stagingCds3 = stagingCds.clone();
             String code = word.substring(0, 4);
             if (code.isEmpty()) {break;}  //
             String dateStr = word.substring(5, 10);
