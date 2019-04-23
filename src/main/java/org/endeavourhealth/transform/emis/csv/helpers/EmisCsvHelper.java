@@ -977,8 +977,8 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         ProblemRelationshipType parentProblemRelationship = newConditionBuilder.getParentProblemRelationship();
         conditionBuilder.setParentProblemRelationship(parentProblemRelationship);
 
-        String additionalNotes = newConditionBuilder.getAdditionalNotes();
-        conditionBuilder.setAdditionalNotes(additionalNotes);
+        /*String additionalNotes = newConditionBuilder.getAdditionalNotes();
+        conditionBuilder.setAdditionalNotes(additionalNotes);*/
 
         //carry over any new links to child items
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
@@ -1021,7 +1021,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         conditionBuilder.setProblemSignificance(null);
         conditionBuilder.setParentProblem(null);
         conditionBuilder.setParentProblemRelationship(null);
-        conditionBuilder.setAdditionalNotes(null);
+        //conditionBuilder.setAdditionalNotes(null);
 
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
         containedListBuilder.removeContainedList();

@@ -177,7 +177,10 @@ public class ConditionBuilder extends ResourceBuilderBase
         return null;
     }
 
-    public void setAdditionalNotes(String additionalNodes, CsvCell... sourceCells) {
+    /**
+     * removed - it's a confusing extension added for data we never receive anyway
+     */
+    /*public void setAdditionalNotes(String additionalNodes, CsvCell... sourceCells) {
         if (Strings.isNullOrEmpty(additionalNodes)) {
             ExtensionConverter.removeExtension(this.condition, FhirExtensionUri.PROBLEM_ADDITIONAL_NOTES);
 
@@ -194,7 +197,7 @@ public class ConditionBuilder extends ResourceBuilderBase
             return stringTypeType.getValue();
         }
         return null;
-    }
+    }*/
 
     public void setCategory(String category, CsvCell... sourceCells) {
         if (Strings.isNullOrEmpty(category)) {
