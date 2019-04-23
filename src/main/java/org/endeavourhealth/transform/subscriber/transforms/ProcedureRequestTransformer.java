@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -36,7 +38,8 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         Integer procedureRequestStatusId = null;
         String originalCode = null;
         String originalTerm = null;
-        Double ageDuringEvent = null;
+        Double ageAtEvent = null;
+        Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -73,7 +76,15 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
 
         if (fhir.getSubjectTarget() != null) {
             Patient patient = (Patient) fhir.getSubjectTarget();
-            ageDuringEvent = getPatientAgeInMonths(patient);
+            ageAtEvent = getPatientAgeInMonths(patient);
+        }
+
+        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
+        if (isPrimaryExtension != null) {
+            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
+            if (b.getValue() != null) {
+                isPrimary = b.getValue();
+            }
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.ProcedureRequest model
@@ -90,7 +101,8 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
             procedureRequestStatusId,
             originalCode,
             originalTerm,
-            ageDuringEvent);
+            ageAtEvent,
+            isPrimary);
     }
 }
 
