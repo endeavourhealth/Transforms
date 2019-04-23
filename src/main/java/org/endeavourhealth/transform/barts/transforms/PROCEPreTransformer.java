@@ -73,7 +73,13 @@ public class PROCEPreTransformer {
                 return;
             }
             stagingPROCE.setProcedureCode(codeId);
-            String procTerm = TerminologyService.lookupSnomedTerm(codeId);
+
+            String procTerm;
+            if (parser.getProcedureTypeCode().getString().equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+                procTerm = TerminologyService.lookupOpcs4ProcedureName(codeId);
+            } else {
+                procTerm = TerminologyService.lookupSnomedTerm(codeId);
+            }
             if (procTerm == null) {
                 TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure term", procId );
                 return;

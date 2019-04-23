@@ -52,7 +52,9 @@ public class SURCCPreTransformer {
         if (activeInd) {
             stagingSURCC.setPersonId(parser.getPersonId().getInt());
             stagingSURCC.setEncounterId(parser.getEncounterId().getInt());
-            stagingSURCC.setDTCancelled(parser.getCancelledDateTime().getDate());
+            if (stagingSURCC.getDTCancelled()!=null) {
+                stagingSURCC.setDTCancelled(parser.getCancelledDateTime().getDate());
+            }
             stagingSURCC.setInstitutionCode(parser.getInstitutionCode().getString());
             stagingSURCC.setDepartmentCode(parser.getDepartmentCode().getString());
             stagingSURCC.setSurgicalAreaCode(parser.getSurgicalAreaCode().getString());
