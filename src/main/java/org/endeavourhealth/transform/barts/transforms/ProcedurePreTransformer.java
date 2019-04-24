@@ -75,7 +75,7 @@ public class ProcedurePreTransformer {
         obj.setLookupPersonId(personId);
         String consultantStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, parser.getConsultant().getString());
         obj.setLookupConsultantPersonnelId(Integer.parseInt(consultantStr));
-        String recordedBy = parser.getUpdatedBy().getString();
+        String recordedBy = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID,parser.getUpdatedBy().getString());
         obj.setLookuprecordedByPersonnelId(Integer.parseInt(recordedBy));
         obj.setCheckSum();
 
