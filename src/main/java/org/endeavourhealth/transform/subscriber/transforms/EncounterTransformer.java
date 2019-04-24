@@ -51,7 +51,8 @@ public class EncounterTransformer extends AbstractTransformer {
         String originalTerm = null;
         Long episodeOfCareId = null;
         Long serviceProviderOrganisationId = null;
-        Double ageDuringEvent = null;
+        Double ageAtEvent = null;
+        Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -139,7 +140,15 @@ public class EncounterTransformer extends AbstractTransformer {
         }
 
         if (fhir.getPatientTarget() != null) {
-            ageDuringEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+            ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+        }
+
+        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
+        if (isPrimaryExtension != null) {
+            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
+            if (b.getValue() != null) {
+                isPrimary = b.getValue();
+            }
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.Encounter model
@@ -157,7 +166,8 @@ public class EncounterTransformer extends AbstractTransformer {
             originalTerm,
             episodeOfCareId,
             serviceProviderOrganisationId,
-            ageDuringEvent);
+            ageAtEvent,
+            isPrimary);
 
         //we also need to populate the two new encounter tables
         tranformExtraEncounterTables(resource, params,

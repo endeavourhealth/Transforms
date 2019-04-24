@@ -38,7 +38,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         String originalCode = null;
         String originalTerm = null;
         boolean isReview = false;
-        Double ageDuringEvent = null;
+        Double ageAtEvent = null;
+        Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -85,7 +86,15 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         }
 
         if (fhir.getPatientTarget() != null) {
-            ageDuringEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+            ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+        }
+
+        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
+        if (isPrimaryExtension != null) {
+            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
+            if (b.getValue() != null) {
+                isPrimary = b.getValue();
+            }
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.AllergyIntolerance model
@@ -102,7 +111,8 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             originalCode,
             originalTerm,
             isReview,
-            ageDuringEvent);
+            ageAtEvent,
+            isPrimary);
     }
 
 }

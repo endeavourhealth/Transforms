@@ -49,7 +49,8 @@ public class ReferralRequestTransformer extends AbstractTransformer {
         String originalCode = null;
         String originalTerm = null;
         boolean isReview = false;
-        Double ageDuringEvent = null;
+        Double ageAtEvent = null;
+        Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
@@ -208,7 +209,15 @@ public class ReferralRequestTransformer extends AbstractTransformer {
         }
 
         if (fhir.getPatientTarget() != null) {
-            ageDuringEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+            ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+        }
+
+        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
+        if (isPrimaryExtension != null) {
+            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
+            if (b.getValue() != null) {
+                isPrimary = b.getValue();
+            }
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.ReferralRequest model
@@ -231,7 +240,8 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             originalCode,
             originalTerm,
             isReview,
-            ageDuringEvent);
+            ageAtEvent,
+            isPrimary);
     }
 
     private Long findOrganisationEnterpriseIdFromPractictioner(Reference practitionerReference,

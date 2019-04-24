@@ -221,6 +221,14 @@ public abstract class ResourceBuilderBase {
         auditReferenceExtension(extension, sourceCells);
     }
 
+    public void createOrUpdateIsPrimaryExtension(boolean isPrimary, CsvCell... sourceCells) {
+
+        if (isPrimary) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.IS_PRIMARY, true);
+            auditBooleanExtension(extension, sourceCells);
+        }
+    }
+
     public void createOrUpdateContextExtension(String context, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateStringExtension(getResource(), FhirExtensionUri.RESOURCE_CONTEXT, context);
 

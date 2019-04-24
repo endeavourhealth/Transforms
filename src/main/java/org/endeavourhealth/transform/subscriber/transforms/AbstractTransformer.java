@@ -535,6 +535,9 @@ public abstract class AbstractTransformer {
         if (patient.getBirthDate() != null) {
             LocalDate date = patient.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             Period diff = Period.between(date, LocalDate.now());
+            if (diff.getMonths() == 0) {
+                diff.plusMonths(1);
+            }
             Double inYears = diff.getYears() + ((double) diff.getMonths()) / 12;
             DecimalFormat df = new DecimalFormat("#.##");
             return Double.valueOf(df.format(inYears));

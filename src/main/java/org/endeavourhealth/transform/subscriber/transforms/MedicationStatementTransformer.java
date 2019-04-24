@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.subscriber.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -45,8 +46,9 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         String quantityUnit = null;
         int authorisationTypeId;
         String originalTerm = null;
-        Double ageDuringEvent = null;
+        Double ageAtEvent = null;
         String issueMethod = null;
+        Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -129,11 +131,19 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         authorisationTypeId = authorisationType.ordinal();
 
         if (fhir.getPatientTarget() != null) {
-            ageDuringEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+            ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
 
         if (fhir.getNote() != null && fhir.getNote().length() > 0) {
             issueMethod = fhir.getNote();
+        }
+
+        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
+        if (isPrimaryExtension != null) {
+            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
+            if (b.getValue() != null) {
+                isPrimary = b.getValue();
+            }
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.MedicationStatement model
@@ -154,8 +164,9 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             quantityUnit,
             authorisationTypeId,
             originalTerm,
-            ageDuringEvent,
-            issueMethod);
+            ageAtEvent,
+            issueMethod,
+            isPrimary);
     }
 }
 

@@ -29,7 +29,8 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                             String originalTerm,
                             Long episodeOfCareId,
                             Long serviceProviderOrganisationId,
-                            Double ageDuringEvent) throws Exception {
+                            Double ageAtEvent,
+                            Boolean isPrimary) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -45,7 +46,8 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                 originalTerm,
                 convertLong(episodeOfCareId),
                 convertLong(serviceProviderOrganisationId),
-                convertDouble(ageDuringEvent));
+                convertDouble(ageAtEvent),
+                convertBoolean(isPrimary));
     }
 
     @Override
@@ -65,7 +67,8 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                 "original_term",
                 "episode_of_care_id",
                 "service_provider_organization_id",
-                "age_during_event"
+                "age_at_event",
+                "is_primary"
         };
     }
 
@@ -86,7 +89,8 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                 String.class,
                 Long.class,
                 Long.class,
-                String.class
+                String.class,
+                Boolean.TYPE,
         };
     }
 }

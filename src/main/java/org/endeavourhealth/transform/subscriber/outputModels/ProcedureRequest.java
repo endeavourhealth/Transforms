@@ -28,7 +28,8 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                             Integer procedureRequestStatusId,
                             String originalCode,
                             String originalTerm,
-                            Double ageDuringEvent) throws Exception {
+                            Double ageAtEvent,
+                            Boolean isPrimary) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -43,7 +44,8 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                 convertInt(procedureRequestStatusId),
                 originalCode,
                 originalTerm,
-                convertDouble(ageDuringEvent));
+                convertDouble(ageAtEvent),
+                convertBoolean(isPrimary));
     }
 
     @Override
@@ -62,7 +64,8 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                 "procedure_request_status_id",
                 "original_code",
                 "original_term",
-                "age_during_event"
+                "age_at_event",
+                "is_primary"
         };
     }
 
@@ -82,7 +85,8 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                 Integer.class,
                 String.class,
                 String.class,
-                String.class
+                String.class,
+                Boolean.TYPE
         };
     }
 }

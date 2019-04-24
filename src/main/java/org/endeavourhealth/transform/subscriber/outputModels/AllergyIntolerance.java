@@ -28,7 +28,8 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                             String originalCode,
                             String originalTerm,
                             boolean isReview,
-                            Double ageDuringEvent) throws Exception {
+                            Double ageAtEvent,
+                            Boolean isPrimary) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -43,7 +44,8 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 originalCode,
                 originalTerm,
                 convertBoolean(isReview),
-                convertDouble(ageDuringEvent));
+                convertDouble(ageAtEvent),
+                convertBoolean(isPrimary));
     }
 
     @Override
@@ -62,7 +64,8 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 "original_code",
                 "original_term",
                 "is_review",
-                "age_during_event"
+                "age_at_event",
+                "isPrimary"
         };
     }
 
@@ -83,6 +86,7 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 String.class,
                 Boolean.TYPE,
                 String.class,
+                Boolean.TYPE,
         };
     }
 }

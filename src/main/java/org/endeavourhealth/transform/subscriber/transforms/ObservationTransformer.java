@@ -51,8 +51,9 @@ public class ObservationTransformer extends AbstractTransformer {
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
-        Double ageDuringEvent = null;
+        Double ageAtEvent = null;
         Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -129,7 +130,7 @@ public class ObservationTransformer extends AbstractTransformer {
 
         if (fhir.getSubjectTarget() != null) {
             Patient patient = (Patient) fhir.getSubjectTarget();
-            ageDuringEvent = getPatientAgeInMonths(patient);
+            ageAtEvent = getPatientAgeInMonths(patient);
         }
 
         Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
@@ -140,6 +141,14 @@ public class ObservationTransformer extends AbstractTransformer {
             episodicityConceptId  = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
             //IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
             //TODO do we know how extension uri is mapped?
+        }
+
+        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
+        if (isPrimaryExtension != null) {
+            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
+            if (b.getValue() != null) {
+                isPrimary = b.getValue();
+            }
         }
 
         org.endeavourhealth.transform.subscriber.outputModels.Observation model
@@ -164,8 +173,9 @@ public class ObservationTransformer extends AbstractTransformer {
             isReview,
             problemEndDate,
             parentObservationId,
-            ageDuringEvent,
-            episodicityConceptId);
+            ageAtEvent,
+            episodicityConceptId,
+            isPrimary);
     }
 
 
