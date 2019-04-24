@@ -567,4 +567,9 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("hospitalization.dischargeDisposition.text", sourceCells);
     }
 
+    public void setLocationReference(String locationReference, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.encounter, FhirExtensionUri.ENCOUNTER_LOCATION_REFERENCE, locationReference);
+
+        auditIdentifierExtension(extension, sourceCells);
+    }
 }

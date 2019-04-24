@@ -54,6 +54,7 @@ public class EncounterTransformer extends AbstractTransformer {
         Double ageAtEvent = null;
         Boolean isPrimary = null;
         Date endDate = null;
+        String institutionLocationId = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -158,6 +159,14 @@ public class EncounterTransformer extends AbstractTransformer {
             endDate = dt.getValue();
         }
 
+        Extension locationRefExt = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_LOCATION_REFERENCE);
+        if (locationRefExt != null) {
+            StringType ref = (StringType) locationRefExt.getValue();
+            if (ref.getValue() != null) {
+                institutionLocationId = ref.getValue();
+            }
+        }
+
         org.endeavourhealth.transform.subscriber.outputModels.Encounter model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Encounter)csvWriter;
         model.writeUpsert(id,
@@ -175,7 +184,8 @@ public class EncounterTransformer extends AbstractTransformer {
             serviceProviderOrganisationId,
             ageAtEvent,
             isPrimary,
-            endDate);
+            endDate,
+            institutionLocationId);
 
         //we also need to populate the two new encounter tables
         tranformExtraEncounterTables(resource, params,

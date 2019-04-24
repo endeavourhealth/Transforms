@@ -255,6 +255,11 @@ public class ENCNTTransformer {
             }
         }
 
+        CsvCell locationRefCell = parser.getCurrentInstitutionMillenniumLocationCode();
+        if (!locationRefCell.isEmpty()) {
+            encounterBuilder.setLocationReference(locationRefCell.getString(), locationRefCell);
+        }
+
         // Maintain EpisodeOfCare
         // Field maintained from OPATT, AEATT, IPEPI and IPWDS
 

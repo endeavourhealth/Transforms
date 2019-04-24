@@ -30,6 +30,7 @@ public class ScheduleTransformer extends AbstractTransformer {
         Date startDate = null;
         String type = null;
         String location = null;
+        String comments = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -69,6 +70,8 @@ public class ScheduleTransformer extends AbstractTransformer {
             }
         }
 
+        comments = fhir.getComment();
+
         org.endeavourhealth.transform.subscriber.outputModels.Schedule model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Schedule)csvWriter;
         model.writeUpsert(id,
@@ -76,6 +79,7 @@ public class ScheduleTransformer extends AbstractTransformer {
             practitionerId,
             startDate,
             type,
-            location);
+            location,
+            comments);
     }
 }
