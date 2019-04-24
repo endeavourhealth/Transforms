@@ -76,33 +76,39 @@ public class SusEmergencyPreTransformer {
         csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
 
         //Secondary
-        StagingCds stagingCds2 = stagingCds.clone();
-        opcsCode = parser.getSecondaryProcedureOPCS().getString();
-        stagingCds2.setProcedureOpcsCode(opcsCode);
-        stagingCds2.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
-        stagingCds2.setProcedureSeqNbr(2);
-        stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
-        stagingCds2.setRecordChecksum(stagingCds.hashCode());
-        csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
+        if (parser.getSecondaryProcedureOPCS()!=null) {
+            StagingCds stagingCds2 = stagingCds.clone();
+            opcsCode = parser.getSecondaryProcedureOPCS().getString();
+            stagingCds2.setProcedureOpcsCode(opcsCode);
+            stagingCds2.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
+            stagingCds2.setProcedureSeqNbr(2);
+            if (parser.getSecondaryProcedureDate() != null) {
+                stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
+            }
+            stagingCds2.setRecordChecksum(stagingCds.hashCode());
+            csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
+        }
         //Rest
         CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
         List<String> otherProcs = new ArrayList<>();
         List<String> otherDates = new ArrayList<>();
-        DateFormat dateFormat = new SimpleDateFormat("ddMMyy");
+        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         int seq = 3;
         for (String word : otherProcedureOPCS.getString().split(" ")) {
             if (Strings.isNullOrEmpty(word)) {
-                return;
+                break;
             }
             StagingCds stagingCds3 = stagingCds.clone();
             String code = word.substring(0, 4);
-            if (code.isEmpty()) {break;}  //
-            String dateStr = word.substring(5, 10);
-            Date date = dateFormat.parse(dateStr);
+            if (code.isEmpty()) {break;}
+            if (word.length()==12) {
+                String dateStr = word.substring(4);
+                Date date = dateFormat.parse(dateStr);
+                stagingCds3.setProcedureDate(date);
+            }
             stagingCds3.setProcedureOpcsCode(code);
             stagingCds3.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(code));
             stagingCds3.setProcedureSeqNbr(seq);
-            stagingCds3.setProcedureDate(date);
             stagingCds3.setRecordChecksum(stagingCds.hashCode());
             csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds3, serviceId));
             seq++;
