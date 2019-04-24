@@ -72,6 +72,10 @@ public class SusEmergencyPreTransformer {
         stagingCds.setProcedureOpcsCode(opcsCode);
         stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
         stagingCds.setProcedureSeqNbr(1);
+        if (parser.getPrimaryProcedureDate().isEmpty()) {
+            LOG.warn("Missing primary date for " + parser.getCdsUniqueId());
+            return;
+        }
         stagingCds.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
         stagingCds.setRecordChecksum(stagingCds.hashCode());
         csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
@@ -83,11 +87,15 @@ public class SusEmergencyPreTransformer {
             stagingCds2.setProcedureOpcsCode(opcsCode);
             stagingCds2.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
             stagingCds2.setProcedureSeqNbr(2);
-            if (parser.getSecondaryProcedureDate() != null) {
+            if (parser.getSecondaryProcedureDate().isEmpty()) {
+                LOG.warn("Missing secondary date for " + parser.getCdsUniqueId());
+                stagingCds2.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
+            } else {
                 stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
+            }
                 stagingCds2.setRecordChecksum(stagingCds.hashCode());
                 csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
-            }
+
         }
         //Rest
         CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();

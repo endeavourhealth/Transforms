@@ -73,23 +73,30 @@ public class SusOutpatientPreTransformer {
         stagingCds.setProcedureOpcsCode(opcsCode);
         stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
         stagingCds.setProcedureSeqNbr(1);
+        if (parser.getPrimaryProcedureDate().isEmpty()) {
+            LOG.warn("Missing primary date for " + parser.getCdsUniqueId());
+            return;
+        }
         stagingCds.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
         stagingCds.setRecordChecksum(stagingCds.hashCode());
         csvHelper.submitToThreadPool(new SusOutpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
 
         //Secondary
-        if (parser.getSecondaryProcedureOPCS()!=null) {
+        if (!parser.getSecondaryProcedureOPCS().isEmpty()) {
             StagingCds stagingCds2 = stagingCds.clone();
             opcsCode = parser.getSecondaryProcedureOPCS().getString();
             stagingCds2.setProcedureOpcsCode(opcsCode);
             stagingCds2.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
             stagingCds2.setProcedureSeqNbr(2);
-            if (parser.getSecondaryProcedureDate() != null) {
+            if (parser.getSecondaryProcedureDate().isEmpty()) {
+                LOG.warn("Missing secondary date for " + parser.getCdsUniqueId());
+                stagingCds2.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
+            } else {
                 stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
-
+            }
                 stagingCds2.setRecordChecksum(stagingCds.hashCode());
                 csvHelper.submitToThreadPool(new SusOutpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
-            }
+
         }
         //Rest
         CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
@@ -108,9 +115,12 @@ public class SusOutpatientPreTransformer {
             }
             if (word.length() >4) {
                 String dateStr = word.substring(4,12);
-                if (Strings.isNullOrEmpty(dateStr)) {break;}
-                Date date = dateFormat.parse(dateStr);
-                stagingCds3.setProcedureDate(date);
+                if (Strings.isNullOrEmpty(dateStr)) {
+                    stagingCds3.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
+                } else {
+                    Date date = dateFormat.parse(dateStr);
+                    stagingCds3.setProcedureDate(date);
+                }
 
             }
             stagingCds3.setProcedureOpcsCode(code);
