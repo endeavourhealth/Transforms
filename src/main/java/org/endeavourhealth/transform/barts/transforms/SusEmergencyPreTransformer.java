@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
@@ -90,6 +91,9 @@ public class SusEmergencyPreTransformer {
         DateFormat dateFormat = new SimpleDateFormat("ddMMyy");
         int seq = 3;
         for (String word : otherProcedureOPCS.getString().split(" ")) {
+            if (Strings.isNullOrEmpty(word)) {
+                return;
+            }
             StagingCds stagingCds3 = stagingCds.clone();
             String code = word.substring(0, 4);
             if (code.isEmpty()) {break;}  //
