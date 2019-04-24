@@ -86,9 +86,10 @@ public class SusOutpatientPreTransformer {
             stagingCds2.setProcedureSeqNbr(2);
             if (parser.getSecondaryProcedureDate() != null) {
                 stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
+
+                stagingCds2.setRecordChecksum(stagingCds.hashCode());
+                csvHelper.submitToThreadPool(new SusOutpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
             }
-            stagingCds2.setRecordChecksum(stagingCds.hashCode());
-            csvHelper.submitToThreadPool(new SusOutpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
         }
         //Rest
         CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
@@ -107,6 +108,7 @@ public class SusOutpatientPreTransformer {
             }
             if (word.length() >4) {
                 String dateStr = word.substring(4,12);
+                if (Strings.isNullOrEmpty(dateStr)) {break;}
                 Date date = dateFormat.parse(dateStr);
                 stagingCds3.setProcedureDate(date);
 
