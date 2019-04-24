@@ -44,12 +44,13 @@ public class SURCPPreTransformer {
         stagingSURCP.setDTReceived(new Date());
 
         stagingSURCP.setSurgicalCaseProcedureId(parser.getSurgicalCaseProcedureId().getInt());
+        stagingSURCP.setDTExtract(parser.getExtractDateTime().getDate());
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingSURCP.setActiveInd(activeInd);
 
         if (activeInd) {
-            stagingSURCP.setDTExtract(parser.getExtractDateTime().getDate());
+
             stagingSURCP.setSurgicalCaseId(parser.getSurgicalCaseId().getInt());
             stagingSURCP.setProcedureCode(parser.getProcedureCode().getInt());
             stagingSURCP.setProcedureText(parser.getProcedureText().getString());
@@ -71,10 +72,15 @@ public class SURCPPreTransformer {
             stagingSURCP.setWoundClassCode(parser.getWoundClassCode().getString());
 
             stagingSURCP.setRecordChecksum(stagingSURCP.hashCode());
+
+            //TODO - auditing for each class
+//            ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
+//            auditWrapper.auditValue(parser.getSurgicalCaseProcedureId().getPublishedFileId(), parser.getSurgicalCaseProcedureId().getRecordNumber(), parser.getSurgicalCaseProcedureId().getColIndex(), "SurgicalCaseProcedureId");
+//
+//            stagingSURCP.setAudit(auditWrapper);
         }
 
         UUID serviceId = csvHelper.getServiceId();
-
         csvHelper.submitToThreadPool(new SURCPPreTransformer.saveDataCallable(parser.getCurrentState(), stagingSURCP, serviceId));
     }
 

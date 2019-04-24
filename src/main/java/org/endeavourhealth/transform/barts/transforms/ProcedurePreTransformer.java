@@ -5,10 +5,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.StagingProcedureDa
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.common.AbstractCsvCallable;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +49,7 @@ public class ProcedurePreTransformer {
         obj.setDateReceived(new Date());
         obj.setMrn(parser.getMrn().getString());
         obj.setNhsNumber(parser.getNHSNo());
-        obj.setDob(parser.getDOB());
+        obj.setDateOfBirth(parser.getDOB());
         obj.setEncounterId(parser.getEncounterId().getInt()); // Remember encounter ids from Procedure have a trailing .00
         obj.setConsultant(parser.getConsultant().getString());
         Date procDate = csvHelper.parseDate(parser.getProcedureDateTime());
@@ -62,12 +59,23 @@ public class ProcedurePreTransformer {
         obj.setProcDtTm(procDate);
         obj.setUpdatedBy(parser.getUpdatedBy().getString());
         obj.setCreateDtTm(parser.getCreateDateTime().getDate());
-        obj.setComments(parser.getComment().getString());
-        obj.setProcedureCode(parser.getProcedureCode().getString());
-        obj.setProcedureCodeType(parser.getProcedureCodeType().getString());
-        String conceptCodeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(parser.getProcedureCodeType());
-        obj.setProcedureCodeType(conceptCodeType);
-        obj.setProcedureTerm(TerminologyService.lookupSnomedTerm(parser.getProcedureCode().getString()));
+        obj.setFreeTextComment(parser.getComment().getString());
+
+        String procCd = parser.getProcedureCode().getString();
+        obj.setProcCd(procCd);
+
+        //proceCdType is either "OPCS4" or "SNOMED CT"
+        String procCdType = parser.getProcedureCodeType().getString();
+        obj.setProcCdType(procCdType);
+
+        String procTerm;
+        if (procCdType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+            procTerm = TerminologyService.lookupOpcs4ProcedureName(procCd);
+        } else {
+            procTerm = TerminologyService.lookupSnomedTerm(procCd);
+        }
+        obj.setProcTerm(procTerm);
+
         String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
         obj.setPersonId(personId);
         obj.setWard(parser.getWard().getString());
@@ -83,11 +91,7 @@ public class ProcedurePreTransformer {
         }
         obj.setCheckSum();
 
-        obj.setProcedureCode(parser.getProcedureCode().getString());
-
         UUID serviceId = csvHelper.getServiceId();
-        // obj.setDateReceived(parser.);
-
         csvHelper.submitToThreadPool(new ProcedurePreTransformer.saveDataCallable(parser.getCurrentState(), obj, serviceId));
     }
 
