@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.BartsSusHelper;
 import org.endeavourhealth.transform.barts.schema.SusInpatient;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
@@ -72,22 +73,23 @@ public class SusInpatientPreTransformer {
         stagingCds.setProcedureOpcsCode(opcsCode);
         stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
         stagingCds.setProcedureSeqNbr(1);
+        if (parser.getPrimaryProcedureDate().isEmpty()) {return;} //TODO review handling of empty dates
         stagingCds.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
         stagingCds.setRecordChecksum(stagingCds.hashCode());
         csvHelper.submitToThreadPool(new SusInpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
 
         //Secondary
-        if (parser.getSecondaryProcedureOPCS()!=null) {
+        if (!parser.getSecondaryProcedureOPCS().isEmpty()) {
             StagingCds stagingCds2 = stagingCds.clone();
             opcsCode = parser.getSecondaryProcedureOPCS().getString();
             stagingCds2.setProcedureOpcsCode(opcsCode);
             stagingCds2.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
             stagingCds2.setProcedureSeqNbr(2);
-            if (parser.getSecondaryProcedureDate() != null) {
+            if (!parser.getSecondaryProcedureDate().isEmpty()) { //TODO review handling of empty dates
                 stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
+                stagingCds2.setRecordChecksum(stagingCds.hashCode());
+                csvHelper.submitToThreadPool(new SusInpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
             }
-            stagingCds2.setRecordChecksum(stagingCds.hashCode());
-            csvHelper.submitToThreadPool(new SusInpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
         }
         //Rest
         CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
@@ -95,15 +97,16 @@ public class SusInpatientPreTransformer {
         List<String> otherDates = new ArrayList<>();
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         int seq = 3;
-        for (String word : otherProcedureOPCS.getString().split(" ")) {
+        for (String word : BartsSusHelper.splitEqually(otherProcedureOPCS.getString(),40)) {
             if (Strings.isNullOrEmpty(word)) {
                 break;
             }
             StagingCds stagingCds3 = stagingCds.clone();
             String code = word.substring(0, 4);
             if (code.isEmpty()) {break;}
-            if (word.length()==12) {
-                String dateStr = word.substring(4);
+            if (word.length()>4) {
+                String dateStr = word.substring(4,12);
+                if (Strings.isNullOrEmpty(dateStr)) { break;}
                 Date date = dateFormat.parse(dateStr);
                 stagingCds3.setProcedureDate(date);
 
