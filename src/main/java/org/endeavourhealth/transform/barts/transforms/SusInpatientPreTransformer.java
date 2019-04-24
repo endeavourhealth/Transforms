@@ -57,7 +57,9 @@ public class SusInpatientPreTransformer {
         stagingCds.setPrimaryProcedureOpcsCode(opcsCode);
         stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
         String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, consultantStr);
-        stagingCds.setLookupConsultantPersonnelId(Integer.parseInt(personnelIdStr));
+        if (personnelIdStr!=null) {
+            stagingCds.setLookupConsultantPersonnelId(Integer.parseInt(personnelIdStr));
+        }
         //TODO lookup person
        // stagingCds.setLookupPersonId(parser.get);
 
