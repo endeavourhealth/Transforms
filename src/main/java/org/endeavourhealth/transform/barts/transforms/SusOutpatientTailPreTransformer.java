@@ -4,7 +4,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsTailDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsTail;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.cache.SusPatientTailCache;
 import org.endeavourhealth.transform.barts.schema.SusOutpatientTail;
 import org.endeavourhealth.transform.common.AbstractCsvCallable;
 import org.endeavourhealth.transform.common.CsvCurrentState;
@@ -18,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class SusOutpatientTailPreTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(SusPatientTailCache.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SusOutpatientTailPreTransformer.class);
     private static StagingCdsTailDalI repository = DalProvider.factoryStagingCdsTailDalI();
 
     public static void transform(List<ParserI> parsers,
