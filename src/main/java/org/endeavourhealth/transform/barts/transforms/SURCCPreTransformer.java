@@ -61,6 +61,11 @@ public class SURCCPreTransformer {
             stagingSURCC.setTheatreNumberCode(parser.getTheatreNumberCode().getString());
 
             stagingSURCC.setRecordChecksum(stagingSURCC.hashCode());
+
+            //TODO - auditing for each class
+            //ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
+            //auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
+            //stagingSURCC.setAudit(auditWrapper);
         }
 
         UUID serviceId = csvHelper.getServiceId();
