@@ -3,12 +3,10 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingSURCPDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURCP;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.SURCP;
-import org.endeavourhealth.transform.common.AbstractCsvCallable;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +50,22 @@ public class SURCPPreTransformer {
         if (activeInd) {
 
             stagingSURCP.setSurgicalCaseId(parser.getSurgicalCaseId().getInt());
-            stagingSURCP.setProcedureCode(parser.getProcedureCode().getInt());
+
+            CsvCell procedureCodeCell = parser.getProcedureCode();
+            if (!procedureCodeCell.isEmpty()) {
+                stagingSURCP.setProcedureCode(procedureCodeCell.getInt());
+            }
+
+            //get lookup term from non 0 code
+            if (!BartsCsvHelper.isEmptyOrIsZero(procedureCodeCell)) {
+                CernerCodeValueRef codeValueRef = csvHelper.lookupCodeRef(200L, procedureCodeCell);
+                if (codeValueRef != null) {
+                    String codeLookupTerm = codeValueRef.getCodeDispTxt();
+                    //TODO - add term to new lookup term member
+                    //stagingSURCP.setLookupProcedureCodeTerm(codeLookupTerm);
+                }
+            }
+
             stagingSURCP.setProcedureText(parser.getProcedureText().getString());
             stagingSURCP.setModifierText(parser.getModifierText().getString());
             stagingSURCP.setPrimaryProcedureIndicator(parser.getPrimaryProcedureIndicator().getInt());
