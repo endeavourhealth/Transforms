@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.BartsSusHelper;
 import org.endeavourhealth.transform.barts.schema.SusOutpatient;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
@@ -95,7 +96,7 @@ public class SusOutpatientPreTransformer {
         List<String> otherDates = new ArrayList<>();
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         int seq = 3;
-        for (String word : otherProcedureOPCS.getString().split(" ")) {
+        for (String word : BartsSusHelper.splitEqually(otherProcedureOPCS.getString(),40)) {
             if (Strings.isNullOrEmpty(word)) {
                 break;
             }
@@ -104,8 +105,8 @@ public class SusOutpatientPreTransformer {
             if (code.isEmpty()) {
                 break;
             }
-            if (word.length() == 12) {
-                String dateStr = word.substring(4);
+            if (word.length() >4) {
+                String dateStr = word.substring(4,12);
                 Date date = dateFormat.parse(dateStr);
                 stagingCds3.setProcedureDate(date);
 
