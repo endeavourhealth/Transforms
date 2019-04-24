@@ -41,10 +41,6 @@ public class SusOutpatientPreTransformer {
 
         private static void processRecord(SusOutpatient parser, BartsCsvHelper csvHelper) throws Exception {
 
-            //only cache the fields we know we'll need
-            if (!parser.getProcedureSchemeInUse().equals(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
-                return;
-            }
 
             StagingCds stagingCds = new StagingCds();
             stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());

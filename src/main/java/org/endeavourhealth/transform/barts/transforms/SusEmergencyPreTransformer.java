@@ -41,11 +41,6 @@ public class SusEmergencyPreTransformer {
 
     private static void processRecord(SusEmergency parser, BartsCsvHelper csvHelper) throws Exception {
 
-        //only cache the fields we know we'll need
-        if (!parser.getProcedureSchemeInUse().equals(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
-            return;
-        }
-
         StagingCds stagingCds = new StagingCds();
         stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCds.setExchangeId(parser.getExchangeId().toString());
