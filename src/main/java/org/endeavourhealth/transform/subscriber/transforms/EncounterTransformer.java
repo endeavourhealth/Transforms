@@ -53,6 +53,7 @@ public class EncounterTransformer extends AbstractTransformer {
         Long serviceProviderOrganisationId = null;
         Double ageAtEvent = null;
         Boolean isPrimary = null;
+        String admissionMethod = null;
         Date endDate = null;
         String institutionLocationId = null;
 
@@ -153,6 +154,26 @@ public class EncounterTransformer extends AbstractTransformer {
             }
         }
 
+        if (fhir.hasClass_()) {
+
+            Encounter.EncounterClass encounterClass = fhir.getClass_();
+
+            if (encounterClass == Encounter.EncounterClass.OTHER
+                    && fhir.hasClass_Element()
+                    && fhir.getClass_Element().hasExtension()) {
+
+                for (Extension classExtension: fhir.getClass_Element().getExtension()) {
+
+                    if (classExtension.getUrl().equals(FhirExtensionUri.ENCOUNTER_CLASS)) {
+                        admissionMethod = "" + classExtension.getValue();
+                    }
+                }
+            }
+
+            else {admissionMethod = encounterClass.toCode();}
+        }
+
+
         if (fhir.hasPeriod()) {
             Period period = fhir.getPeriod();
             DateTimeType dt = period.getEndElement();
@@ -184,6 +205,7 @@ public class EncounterTransformer extends AbstractTransformer {
             serviceProviderOrganisationId,
             ageAtEvent,
             isPrimary,
+            admissionMethod,
             endDate,
             institutionLocationId);
 

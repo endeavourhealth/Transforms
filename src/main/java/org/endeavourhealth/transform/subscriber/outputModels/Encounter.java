@@ -31,6 +31,7 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                             Long serviceProviderOrganisationId,
                             Double ageAtEvent,
                             Boolean isPrimary,
+                            String admissionMethod,
                             Date endDate,
                             String institutionLocationId) throws Exception {
 
@@ -50,6 +51,7 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                 convertLong(serviceProviderOrganisationId),
                 convertDouble(ageAtEvent),
                 convertBoolean(isPrimary),
+                admissionMethod,
                 convertDate(endDate),
                 institutionLocationId);
     }
@@ -73,6 +75,7 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                 "service_provider_organization_id",
                 "age_at_event",
                 "is_primary",
+                "admission_method",
                 "end_date",
                 "institution_location_id"
         };
@@ -97,6 +100,7 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                 Long.class,
                 String.class,
                 Boolean.TYPE,
+                String.class,
                 Date.class,
                 String.class
         };
