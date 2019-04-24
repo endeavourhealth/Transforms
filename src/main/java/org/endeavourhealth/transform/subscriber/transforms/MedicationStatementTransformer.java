@@ -48,7 +48,6 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         String originalTerm = null;
         Double ageAtEvent = null;
         String issueMethod = null;
-        Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -138,14 +137,6 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             issueMethod = fhir.getNote();
         }
 
-        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
-        if (isPrimaryExtension != null) {
-            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
-            if (b.getValue() != null) {
-                isPrimary = b.getValue();
-            }
-        }
-
         org.endeavourhealth.transform.subscriber.outputModels.MedicationStatement model
                 = (org.endeavourhealth.transform.subscriber.outputModels.MedicationStatement)csvWriter;
         model.writeUpsert(id,
@@ -165,8 +156,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             authorisationTypeId,
             originalTerm,
             ageAtEvent,
-            issueMethod,
-            isPrimary);
+            issueMethod);
     }
 }
 

@@ -26,6 +26,8 @@ import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.ui.helpers.NameHelper;
+import org.endeavourhealth.transform.ui.models.types.UIHumanName;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -97,6 +99,9 @@ public class PatientTransformer extends AbstractTransformer {
         Long registeredPracticeId = null;
         String targetSaltKeyName = null;
         String targetSkid = null;
+        String title = null;
+        String firstNames = null;
+        String lastName = null;
 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
@@ -258,6 +263,16 @@ public class PatientTransformer extends AbstractTransformer {
 
             nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
 
+            UIHumanName name = NameHelper.getUsualOrOfficialName(fhirPatient.getName());
+            if (name != null) {
+                title = name.getPrefix();
+                for (String given : name.getGivenNames()) {
+                    firstNames += given + " ";
+                }
+                firstNames = firstNames.trim();
+                lastName = name.getFamilyName();
+            }
+
             patientWriter.writeUpsertIdentifiable(id,
                     organizationId,
                     personId,
@@ -271,7 +286,10 @@ public class PatientTransformer extends AbstractTransformer {
                     ethnicCode,
                     wardCode,
                     localAuthorityCode,
-                    registeredPracticeId);
+                    registeredPracticeId,
+                    title,
+                    firstNames,
+                    lastName);
 
             //if our patient record is the one that should define the person record, then write that too
             if (shouldWritePersonRecord) {
@@ -286,7 +304,10 @@ public class PatientTransformer extends AbstractTransformer {
                         ethnicCode,
                         wardCode,
                         localAuthorityCode,
-                        registeredPracticeId);
+                        registeredPracticeId,
+                        title,
+                        firstNames,
+                        lastName);
             }
         }
     }

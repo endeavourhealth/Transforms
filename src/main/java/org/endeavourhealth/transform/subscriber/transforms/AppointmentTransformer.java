@@ -42,6 +42,7 @@ public class AppointmentTransformer extends AbstractTransformer {
         Date sentIn = null;
         Date left = null;
         String sourceId = null;
+        Date cancelledDate = null;
 
         if (fhir.hasParticipant()) {
             for (Appointment.AppointmentParticipantComponent participantComponent: fhir.getParticipant()) {
@@ -128,9 +129,14 @@ public class AppointmentTransformer extends AbstractTransformer {
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_ORIGINAL_IDENTIFIER)) {
                     Identifier orig_id = (Identifier) extension.getValue();
                     sourceId = orig_id.getValue();
+
+                } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_CANCELLATION_DATE)) {
+                    DateTimeType dt = (DateTimeType)extension.getValue();
+                    cancelledDate = dt.getValue();
                 }
             }
         }
+
 
         org.endeavourhealth.transform.subscriber.outputModels.Appointment model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Appointment)csvWriter;
@@ -148,7 +154,8 @@ public class AppointmentTransformer extends AbstractTransformer {
             patientDelay,
             sentIn,
             left,
-            sourceId);
+            sourceId,
+            cancelledDate);
     }
 
 

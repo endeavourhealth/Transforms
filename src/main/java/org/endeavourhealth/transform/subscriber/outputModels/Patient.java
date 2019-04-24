@@ -75,7 +75,10 @@ public class Patient extends AbstractSubscriberCsvWriter {
                                         String ethnicCode,
                                         String wardCode,
                                         String localAuthorityCode,
-                                        Long registeredPracticeId) throws Exception {
+                                        Long registeredPracticeId,
+                                        String title,
+                                        String firstNames,
+                                        String lastName) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -91,7 +94,10 @@ public class Patient extends AbstractSubscriberCsvWriter {
                 ethnicCode,
                 wardCode,
                 localAuthorityCode,
-                convertLong(registeredPracticeId));
+                convertLong(registeredPracticeId),
+                title,
+                firstNames,
+                lastName);
     }
 
     @Override
@@ -132,7 +138,10 @@ public class Patient extends AbstractSubscriberCsvWriter {
                     "ethnic_code",
                     "ward_code",
                     "local_authority_code",
-                    "registered_practice_organization_id"
+                    "registered_practice_organization_id",
+                    "title",
+                    "first_names",
+                    "last_name"
             };
         }
     }
@@ -175,7 +184,10 @@ public class Patient extends AbstractSubscriberCsvWriter {
                     String.class,
                     String.class,
                     String.class,
-                    Long.class
+                    Long.class,
+                    String.class,
+                    String.class,
+                    String.class
             };
         }
     }

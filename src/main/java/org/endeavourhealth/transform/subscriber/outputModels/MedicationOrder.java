@@ -34,8 +34,7 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
                             Long medicationStatementId,
                             String originalTerm,
                             Double ageAtEvent,
-                            String issueMethod,
-                            Boolean isPrimary) throws Exception {
+                            String issueMethod) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -55,8 +54,7 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
                 convertLong(medicationStatementId),
                 originalTerm,
                 convertDouble(ageAtEvent),
-                issueMethod,
-                convertBoolean(isPrimary));
+                issueMethod);
     }
 
     @Override
@@ -80,8 +78,7 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
                 "medication_statement_id",
                 "original_term",
                 "age_at_event",
-                "issue_method",
-                "is_primary"
+                "issue_method"
         };
     }
 
@@ -106,8 +103,7 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
                 Long.class,
                 String.class,
                 String.class,
-                String.class,
-                Boolean.TYPE
+                String.class
         };
     }
 }
