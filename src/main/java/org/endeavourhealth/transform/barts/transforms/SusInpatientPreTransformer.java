@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class SusInpatientPreTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(SusOutpatientTailPreTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SusInpatientPreTransformer.class);
 
     private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
 
