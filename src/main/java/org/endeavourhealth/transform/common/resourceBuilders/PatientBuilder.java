@@ -468,6 +468,19 @@ public class PatientBuilder extends ResourceBuilderBase
         }
     }
 
+    public void setTestPatient(Boolean testPatient, CsvCell... sourceCells) {
+
+        if (testPatient != null) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.patient, FhirExtensionUri.PATIENT_IS_TEST_PATIENT, testPatient.booleanValue());
+
+            auditBooleanExtension(extension, sourceCells);
+
+        } else {
+
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
+        }
+    }
+
     /**
      * use speaksEnglish
      */

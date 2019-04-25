@@ -65,7 +65,8 @@ public class SRRotaTransformer {
         CsvCell sessionName = parser.getName();
         if (!sessionName.isEmpty()) {
             //the FHIR description of "Comment" seems appropriate to store the category
-            scheduleBuilder.addComment(sessionName.getString(), sessionName);
+            //scheduleBuilder.addComment(sessionName.getString(), sessionName);
+            scheduleBuilder.setScheduleName(sessionName.getString(), sessionName);
         }
 
         CsvCell profileIdOwner = parser.getIDProfileOwner();

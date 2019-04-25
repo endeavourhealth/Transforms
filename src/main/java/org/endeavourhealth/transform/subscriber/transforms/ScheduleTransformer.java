@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
+import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
@@ -30,7 +31,7 @@ public class ScheduleTransformer extends AbstractTransformer {
         Date startDate = null;
         String type = null;
         String location = null;
-        String comments = null;
+        String name = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -70,7 +71,13 @@ public class ScheduleTransformer extends AbstractTransformer {
             }
         }
 
-        comments = fhir.getComment();
+        Extension scheduleNameRef = ExtensionConverter.findExtension(fhir, FhirExtensionUri.SCHEDULE_NAME);
+        if (scheduleNameRef != null) {
+            StringType ref = (StringType) scheduleNameRef.getValue();
+            if (ref.getValue() != null) {
+                name = ref.getValue();
+            }
+        }
 
         org.endeavourhealth.transform.subscriber.outputModels.Schedule model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Schedule)csvWriter;
@@ -80,6 +87,6 @@ public class ScheduleTransformer extends AbstractTransformer {
             startDate,
             type,
             location,
-            comments);
+            name);
     }
 }

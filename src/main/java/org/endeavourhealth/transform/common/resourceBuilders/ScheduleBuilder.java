@@ -58,6 +58,16 @@ public class ScheduleBuilder extends ResourceBuilderBase {
         }
     }
 
+    public void setScheduleName(String scheduleName, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(scheduleName)) {
+            ExtensionConverter.removeExtension(this.schedule, FhirExtensionUri.SCHEDULE_NAME);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.schedule, FhirExtensionUri.SCHEDULE_NAME, scheduleName);
+            auditReferenceExtension(extension, sourceCells);
+        }
+    }
+
     public void addComment(String comment, CsvCell... sourceCells) {
 
         //note this will append to any existing comment, with a newline char between

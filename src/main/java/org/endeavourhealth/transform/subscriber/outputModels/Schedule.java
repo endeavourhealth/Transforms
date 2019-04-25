@@ -22,7 +22,7 @@ public class Schedule extends AbstractSubscriberCsvWriter {
                             Date startDate,
                             String type,
                             String location,
-                            String comments) throws Exception {
+                            String name) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -31,7 +31,7 @@ public class Schedule extends AbstractSubscriberCsvWriter {
                 convertDate(startDate),
                 type,
                 location,
-                comments);
+                name);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class Schedule extends AbstractSubscriberCsvWriter {
                 "start_date",
                 "type",
                 "location",
-                "comments"
+                "name"
         };
     }
 
