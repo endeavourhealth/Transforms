@@ -5,6 +5,8 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -46,6 +48,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         String quantityUnit = null;
         int authorisationTypeId;
         String originalTerm = null;
+        Integer bnfReference = null;
         Double ageAtEvent = null;
         String issueMethod = null;
 
@@ -129,6 +132,17 @@ public class MedicationStatementTransformer extends AbstractTransformer {
 
         authorisationTypeId = authorisationType.ordinal();
 
+        // TODO Finalise the use of core_concept_id and the IM (rather than dmdId) in order to look
+        //  up the BNF Chapter in that table in the reference DB, by using the ACTUAL Snomed code
+
+        // This line will need changing
+        Long snomedCode = dmdId;
+
+        // These lines are fine
+        SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
+        String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCode.toString());
+        bnfReference = Integer.parseInt(fullBnfChapterCodeString.substring(0,6));
+
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
@@ -155,8 +169,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             quantityUnit,
             authorisationTypeId,
             originalTerm,
+            bnfReference,
             ageAtEvent,
             issueMethod);
     }
 }
-

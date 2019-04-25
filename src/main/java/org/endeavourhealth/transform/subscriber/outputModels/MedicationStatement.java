@@ -33,6 +33,7 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
                             String quantityUnit,
                             int authorisationTypeId,
                             String originalTerm,
+                            Integer bnfReference,
                             Double ageAtEvent,
                             String issueMethod) throws Exception {
 
@@ -53,6 +54,7 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
                 quantityUnit,
                 "" + authorisationTypeId,
                 originalTerm,
+                convertInt(bnfReference),
                 convertDouble(ageAtEvent),
                 issueMethod);
     }
@@ -77,6 +79,7 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
                 "quantity_unit",
                 "medication_statement_authorisation_type_id",
                 "original_term",
+                "bnf_reference",
                 "age_at_event",
                 "issue_method"
         };
@@ -102,6 +105,7 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
                 String.class,
                 Integer.TYPE,
                 String.class,
+                Integer.class,
                 String.class,
                 String.class
         };
