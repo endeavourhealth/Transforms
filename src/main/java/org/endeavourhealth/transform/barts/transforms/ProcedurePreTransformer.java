@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingProcedureDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
+import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.*;
@@ -64,15 +65,18 @@ public class ProcedurePreTransformer {
         String procCd = parser.getProcedureCode().getString();
         obj.setProcCd(procCd);
 
-        //proceCdType is either "OPCS4" or "SNOMED CT"
+        //proceCdType is either "OPCS4" or "SNOMED CT". Snomed description Ids are used.
         String procCdType = parser.getProcedureCodeType().getString();
         obj.setProcCdType(procCdType);
 
-        String procTerm;
+        String procTerm = "";
         if (procCdType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
             procTerm = TerminologyService.lookupOpcs4ProcedureName(procCd);
         } else {
-            procTerm = TerminologyService.lookupSnomedTerm(procCd);
+            SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(procCd);
+            if (snomedCode != null) {
+                procTerm = snomedCode.getTerm();
+            }
         }
         obj.setProcTerm(procTerm);
 
