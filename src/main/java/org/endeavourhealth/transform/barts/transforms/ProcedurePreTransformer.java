@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingProcedureDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -62,22 +63,26 @@ public class ProcedurePreTransformer {
         obj.setCreateDtTm(parser.getCreateDateTime().getDate());
         obj.setFreeTextComment(parser.getComment().getString());
 
-        String procCd = parser.getProcedureCode().getString();
-        obj.setProcCd(procCd);
-
         //proceCdType is either "OPCS4" or "SNOMED CT". Snomed description Ids are used.
         String procCdType = parser.getProcedureCodeType().getString();
         obj.setProcCdType(procCdType);
 
         String procTerm = "";
+        String procCd = parser.getProcedureCode().getString();
+
         if (procCdType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
             procTerm = TerminologyService.lookupOpcs4ProcedureName(procCd);
         } else {
             SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(procCd);
             if (snomedCode != null) {
                 procTerm = snomedCode.getTerm();
+                procCd = snomedCode.getConceptCode();  //update the code to be an actual Snomed ConceptId
+            } else {
+                throw new TransformException("Unable to match Snomed Description Id [" + procCd + "]");
             }
         }
+
+        obj.setProcCd(procCd);
         obj.setProcTerm(procTerm);
 
         String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
