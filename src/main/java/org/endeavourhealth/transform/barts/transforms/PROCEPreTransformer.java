@@ -62,11 +62,12 @@ public class PROCEPreTransformer {
                 return;
             }
             stagingPROCE.setProcedureDtTm(procDate);
+
             if (parser.getProcedureTypeCode() == null ) {
                 TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure TypeCode", procId);
                 return;
             }
-            stagingPROCE.setProcedureType(parser.getProcedureTypeCode().getString());
+
             String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(parser.getConceptCodeIdentifier());
             if (codeId == null) {
                 TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure Code", procId );
@@ -76,6 +77,7 @@ public class PROCEPreTransformer {
 
             String procTerm;
             String codeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(parser.getConceptCodeIdentifier());
+            stagingPROCE.setProcedureType(codeType);
             if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 procTerm = TerminologyService.lookupOpcs4ProcedureName(codeId);
             } else {
