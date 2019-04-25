@@ -20,8 +20,8 @@ public class EpisodeOfCare extends AbstractSubscriberCsvWriter {
                             long organisationId,
                             long patientId,
                             long personId,
-                            Integer registrationTypeId,
-                            Integer registrationStatusId,
+                            Integer registrationTypeConceptId,
+                            Integer registrationStatusConceptId,
                             Date dateRegistered,
                             Date dateRegisteredEnd,
                             Long usualGpPractitionerId) throws Exception {
@@ -31,8 +31,8 @@ public class EpisodeOfCare extends AbstractSubscriberCsvWriter {
                 "" + organisationId,
                 "" + patientId,
                 "" + personId,
-                convertInt(registrationTypeId),
-                convertInt(registrationStatusId),
+                convertInt(registrationTypeConceptId),
+                convertInt(registrationStatusConceptId),
                 convertDate(dateRegistered),
                 convertDate(dateRegisteredEnd),
                 convertLong(usualGpPractitionerId));
@@ -46,8 +46,8 @@ public class EpisodeOfCare extends AbstractSubscriberCsvWriter {
                 "organization_id",
                 "patient_id",
                 "person_id",
-                "registration_type_id",
-                "registration_status_id",
+                "registration_type_concept_id",
+                "registration_status_concept_id",
                 "date_registered",
                 "date_registered_end",
                 "usual_gp_practitioner_id"

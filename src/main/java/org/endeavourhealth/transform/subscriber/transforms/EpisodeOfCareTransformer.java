@@ -33,8 +33,8 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         long organisationId;
         long patientId;
         long personId;
-        Integer registrationTypeId = null;
-        Integer registrationStatusId = null;
+        Integer registrationTypeConceptId = null;
+        Integer registrationStatusConceptId = null;
         Date dateRegistered = null;
         Date dateRegisteredEnd = null;
         Long usualGpPractitionerId = null;
@@ -61,11 +61,17 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
             }
         }
 
+        // TODO Code needs to be changed to use the IM for
+        //  Registration Type Concept Id
+
         if (regTypeExtension != null) {
             Coding coding = (Coding)regTypeExtension.getValue();
             RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
-            registrationTypeId = new Integer(fhirRegistrationType.ordinal());
+            registrationTypeConceptId = new Integer(fhirRegistrationType.ordinal());
         }
+
+        // TODO Code needs to be changed to use the IM for
+        //  Registration Status Concept Id
 
         //reg status is stored in a contained list with an extension giving the internal reference to it
         Extension regStatusExtension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_STATUS);
@@ -85,7 +91,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
                         CodeableConcept codeableConcept = entry.getFlag();
                         String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
                         RegistrationStatus status = RegistrationStatus.fromCode(code);
-                        registrationStatusId = new Integer(status.ordinal());
+                        registrationStatusConceptId = new Integer(status.ordinal());
                     }
 
                     break;
@@ -115,8 +121,8 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
             organisationId,
             patientId,
             personId,
-            registrationTypeId,
-            registrationStatusId,
+            registrationTypeConceptId,
+            registrationStatusConceptId,
             dateRegistered,
             dateRegisteredEnd,
             usualGpPractitionerId);
