@@ -40,14 +40,16 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
-        Long dmdId = null;
+        // Long dmdId = null;
         Boolean isActive = null;
         Date cancellationDate = null;
         String dose = null;
         BigDecimal quantityValue = null;
         String quantityUnit = null;
-        int authorisationTypeId;
-        String originalTerm = null;
+        Integer medicationStatementAuthorisationTypeConceptId;
+        Integer coreConceptId;
+        Integer nonCoreConceptId;
+        // String originalTerm = null;
         Integer bnfReference = null;
         Double ageAtEvent = null;
         String issueMethod = null;
@@ -68,14 +70,17 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
+        /*
         dmdId = CodeableConceptHelper.findSnomedConceptId(fhir.getMedicationCodeableConcept());
+        */
 
+        /*
         //add term too, for easy display of results
         originalTerm = fhir.getMedicationCodeableConcept().getText();
         //if we failed to find one, it's because of a change in how the CodeableConcept was generated, so find the term differently
         if (Strings.isNullOrEmpty(originalTerm)) {
             originalTerm = CodeableConceptHelper.findSnomedConceptText(fhir.getMedicationCodeableConcept());
-        }
+        }*/
 
         if (fhir.hasStatus()) {
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
@@ -130,14 +135,22 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             }
         }
 
-        authorisationTypeId = authorisationType.ordinal();
+        // TODO Code needs to be amended to use the IM for
+        //  Authorisation Type
+        medicationStatementAuthorisationTypeConceptId = authorisationType.ordinal();
 
-        // TODO Finalise the use of core_concept_id and the IM (rather than dmdId) in order to look
+        // TODO Code needs to be added to use the IM for
+        //  Core Concept Id
+        coreConceptId = null;
+
+        // TODO Code needs to be added to use the IM for
+        //  Non Core Concept Id
+        nonCoreConceptId = null;
+
+        // TODO Finalise the use of coreConceptId and the IM (rather than dmdId) in order to look
         //  up the BNF Chapter in that table in the reference DB, by using the ACTUAL Snomed code
-
         // This line will need changing
-        Long snomedCode = dmdId;
-
+        Long snomedCode = null; // dmdId;
         // These lines are fine
         SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
         String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCode.toString());
@@ -161,14 +174,14 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             practitionerId,
             clinicalEffectiveDate,
             datePrecisionId,
-            dmdId,
             isActive,
             cancellationDate,
             dose,
             quantityValue,
             quantityUnit,
-            authorisationTypeId,
-            originalTerm,
+            medicationStatementAuthorisationTypeConceptId,
+            coreConceptId,
+            nonCoreConceptId,
             bnfReference,
             ageAtEvent,
             issueMethod);
