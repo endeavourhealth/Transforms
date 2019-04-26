@@ -56,6 +56,10 @@ public class SusOutpatientPreTransformer {
         stagingCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
         String consultantStr = parser.getConsultantCode().getString();
         stagingCds.setConsultantCode(consultantStr);
+        if (parser.getPrimaryProcedureOPCS().isEmpty()) {
+            LOG.warn("No primary procedure for " +  parser.getCdsUniqueId());
+            return;
+        }
         String opcsCode = parser.getPrimaryProcedureOPCS().getString();
         opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
         stagingCds.setPrimaryProcedureOpcsCode(opcsCode);

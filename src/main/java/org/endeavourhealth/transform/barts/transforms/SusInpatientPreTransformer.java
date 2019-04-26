@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsSusHelper;
@@ -56,6 +57,10 @@ public class SusInpatientPreTransformer {
         stagingCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
         String consultantStr = parser.getConsultantCode().getString();
         stagingCds.setConsultantCode(consultantStr);
+        if (parser.getPrimaryProcedureOPCS().isEmpty()) {
+            LOG.warn("No PrimaryProcedureOPCS Code for " +  parser.getCdsUniqueId());
+            return;
+        }
         String opcsCode = parser.getPrimaryProcedureOPCS().getString();
         opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
         stagingCds.setPrimaryProcedureOpcsCode(opcsCode);
@@ -64,8 +69,8 @@ public class SusInpatientPreTransformer {
         if (personnelIdStr!=null) {
             stagingCds.setLookupConsultantPersonnelId(Integer.parseInt(personnelIdStr));
         }
-        //TODO lookup person
-       // stagingCds.setLookupPersonId(parser.get);
+       stagingCds.setLookupPersonId(Integer.parseInt(csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
+               parser.getLocalPatientId().getString())));
 
         UUID serviceId = csvHelper.getServiceId();
 
@@ -78,7 +83,7 @@ public class SusInpatientPreTransformer {
         if (parser.getPrimaryProcedureDate().isEmpty()) {
             LOG.warn("Missing primary date for " + parser.getCdsUniqueId());
             return;
-        } //TODO review handling of empty dates
+        } //Empty primary dates seem to be when we also have missing primary code. So should no longer see these.
         stagingCds.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
         stagingCds.setRecordChecksum(stagingCds.hashCode());
         csvHelper.submitToThreadPool(new SusInpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));

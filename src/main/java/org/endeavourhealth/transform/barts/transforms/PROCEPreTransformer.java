@@ -106,7 +106,6 @@ public class PROCEPreTransformer {
             stagingPROCE.setLookupNhsNumber("0");
             stagingPROCE.setLookupDateOfBirth(new Date());
         }
-        //TODO lookup_nhs and lookup_dob - how from enc?
 
         csvHelper.submitToThreadPool(new PROCEPreTransformer.saveDataCallable(parser.getCurrentState(), stagingPROCE, serviceId));
     }
