@@ -62,8 +62,7 @@ public class SURCPPreTransformer {
                 CernerCodeValueRef codeValueRef = csvHelper.lookupCodeRef(200L, procedureCodeCell);
                 if (codeValueRef != null) {
                     String codeLookupTerm = codeValueRef.getCodeDispTxt();
-                    //TODO - add term to new lookup term member
-                    //stagingSURCP.setLookupProcedureCodeTerm(codeLookupTerm);
+                    stagingSURCP.setLookupProcedureCodeTerm(codeLookupTerm);
                 }
             }
 
