@@ -87,11 +87,6 @@ public class SURCPPreTransformer {
 
             stagingSURCP.setRecordChecksum(stagingSURCP.hashCode());
 
-            //TODO - auditing for each class
-//            ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-//            auditWrapper.auditValue(parser.getSurgicalCaseProcedureId().getPublishedFileId(), parser.getSurgicalCaseProcedureId().getRecordNumber(), parser.getSurgicalCaseProcedureId().getColIndex(), "SurgicalCaseProcedureId");
-//
-//            stagingSURCP.setAudit(auditWrapper);
         }
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
         auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
