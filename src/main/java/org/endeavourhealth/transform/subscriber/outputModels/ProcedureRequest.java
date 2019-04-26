@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.subscriber.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import java.util.Date;
 
 public class ProcedureRequest extends AbstractSubscriberCsvWriter {
@@ -17,33 +18,37 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
     }
 
     public void writeUpsert(long id,
-                            long organisationId,
+                            long organizationId,
                             long patientId,
                             long personId,
                             Long encounterId,
                             Long practitionerId,
                             Date clinicalEffectiveDate,
                             Integer datePrecisionId,
-                            Long snomedConceptId,
-                            Integer procedureRequestStatusId,
-                            String originalCode,
-                            String originalTerm,
+                            // Long snomedConceptId,
+                            Integer procedureRequestStatusConceptId,
+                            // String originalCode,
+                            // String originalTerm,
+                            Integer coreConceptId,
+                            Integer nonCoreConceptId,
                             Double ageAtEvent,
                             Boolean isPrimary) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
-                "" + organisationId,
+                "" + organizationId,
                 "" + patientId,
                 "" + personId,
                 convertLong(encounterId),
                 convertLong(practitionerId),
                 convertDate(clinicalEffectiveDate),
                 convertInt(datePrecisionId),
-                convertLong(snomedConceptId),
-                convertInt(procedureRequestStatusId),
-                originalCode,
-                originalTerm,
+                // convertLong(snomedConceptId),
+                convertInt(procedureRequestStatusConceptId),
+                // originalCode,
+                // originalTerm,
+                convertInt(coreConceptId),
+                convertInt(nonCoreConceptId),
                 convertDouble(ageAtEvent),
                 convertBoolean(isPrimary));
     }
@@ -60,10 +65,9 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                 "practitioner_id",
                 "clinical_effective_date",
                 "date_precision_id",
-                "snomed_concept_id",
-                "procedure_request_status_id",
-                "original_code",
-                "original_term",
+                "procedure_request_status_concept_id",
+                "core_concept_id",
+                "non_core_concept_id",
                 "age_at_event",
                 "is_primary"
         };
@@ -81,10 +85,9 @@ public class ProcedureRequest extends AbstractSubscriberCsvWriter {
                 Long.class,
                 Date.class,
                 Integer.class,
-                Long.class,
                 Integer.class,
-                String.class,
-                String.class,
+                Integer.class,
+                Integer.class,
                 String.class,
                 Boolean.TYPE
         };

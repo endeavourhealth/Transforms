@@ -27,22 +27,24 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         ProcedureRequest fhir = (ProcedureRequest)resource;
 
         long id;
-        long organisationId;
+        long organizationId;
         long patientId;
         long personId;
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
-        Long snomedConceptId = null;
-        Integer procedureRequestStatusId = null;
-        String originalCode = null;
-        String originalTerm = null;
+        // Long snomedConceptId = null;
+        Integer procedureRequestStatusConceptId = null;
+        // String originalCode = null;
+        // String originalTerm = null;
+        Integer coreConceptId = null;
+        Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
         Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
@@ -62,6 +64,7 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
+        /*
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
         if (codes == null) {
             return;
@@ -69,10 +72,21 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         snomedConceptId = codes.getSnomedConceptId();
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
+         */
 
+        // TODO Code needs to be amended to use the IM for
+        //  Request Status
         if (fhir.hasStatus()) {
-            procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
+            procedureRequestStatusConceptId = new Integer(fhir.getStatus().ordinal());
         }
+
+        // TODO Code needs to be added to use the IM for
+        //  Core Concept Id
+        coreConceptId = null;
+
+        // TODO Code needs to be added to use the IM for
+        //  Non Core Concept Id
+        nonCoreConceptId = null;
 
         if (fhir.getSubjectTarget() != null) {
             Patient patient = (Patient) fhir.getSubjectTarget();
@@ -90,19 +104,17 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         org.endeavourhealth.transform.subscriber.outputModels.ProcedureRequest model
                 = (org.endeavourhealth.transform.subscriber.outputModels.ProcedureRequest)csvWriter;
         model.writeUpsert(id,
-            organisationId,
+            organizationId,
             patientId,
             personId,
             encounterId,
             practitionerId,
             clinicalEffectiveDate,
             datePrecisionId,
-            snomedConceptId,
-            procedureRequestStatusId,
-            originalCode,
-            originalTerm,
+            procedureRequestStatusConceptId,
+            coreConceptId,
+            nonCoreConceptId,
             ageAtEvent,
             isPrimary);
     }
 }
-
