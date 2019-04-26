@@ -4,6 +4,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingSURCPDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURCP;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.SURCP;
 import org.endeavourhealth.transform.common.*;
@@ -92,7 +93,14 @@ public class SURCPPreTransformer {
 //
 //            stagingSURCP.setAudit(auditWrapper);
         }
-
+        ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
+        auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
+        auditWrapper.auditValue(parser.getActiveIndicator().getPublishedFileId(), parser.getActiveIndicator().getRecordNumber(), parser.getActiveIndicator().getColIndex(), "ActiveInd");
+        auditWrapper.auditValue(parser.getSurgeonPersonnelId().getPublishedFileId(), parser.getSurgeonPersonnelId().getRecordNumber(), parser.getSurgeonPersonnelId().getColIndex(), "SurgeonPersonnelId");
+        auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
+        auditWrapper.auditValue(parser.getSurgicalCaseProcedureId().getPublishedFileId(), parser.getSurgicalCaseProcedureId().getRecordNumber(), parser.getSurgicalCaseProcedureId().getColIndex(), "SurgicalCaseProcedureId");
+        auditWrapper.auditValue(parser.getProcedureCode().getPublishedFileId(), parser.getProcedureCode().getRecordNumber(), parser.getProcedureCode().getColIndex(), "ProcedureCode");
+        stagingSURCP.setAudit(auditWrapper);
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SURCPPreTransformer.saveDataCallable(parser.getCurrentState(), stagingSURCP, serviceId));
     }
