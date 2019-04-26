@@ -22,4 +22,5 @@ public class MessageFormat {
     public static final String ADASTRA_CSV = "ADASTRACSV";
     public static final String JSON_API = "JSON_API";
     public static final String PCR_CSV = "PCR_CSV";
+    public static final String SUBSCRIBER_CSV = "SUBSCRIBER_CSV";
 }
