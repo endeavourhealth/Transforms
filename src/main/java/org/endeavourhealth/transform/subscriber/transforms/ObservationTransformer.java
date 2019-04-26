@@ -32,31 +32,33 @@ public class ObservationTransformer extends AbstractTransformer {
         Observation fhir = (Observation)resource;
 
         long id;
-        long organisationId;
+        long organizationId;
         long patientId;
         long personId;
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
-        Long snomedConceptId = null;
+        // Long snomedConceptId = null;
         BigDecimal resultValue = null;
         String resultValueUnits = null;
         Date resultDate = null;
         String resultString = null;
         Long resultConceptId = null;
-        String originalCode = null;
+        // String originalCode = null;
         boolean isProblem = false;
-        String originalTerm = null;
+        // String originalTerm = null;
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
+        Integer coreConceptId = null;
+        Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
         Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
@@ -80,13 +82,14 @@ public class ObservationTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        /* ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
         if (codes == null) {
             return;
         }
         snomedConceptId = codes.getSnomedConceptId();
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
+        */
 
         if (fhir.hasValue()) {
             Type value = fhir.getValue();
@@ -112,8 +115,6 @@ public class ObservationTransformer extends AbstractTransformer {
             }
         }
 
-
-
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
             BooleanType b = (BooleanType)reviewExtension.getValue();
@@ -127,6 +128,14 @@ public class ObservationTransformer extends AbstractTransformer {
             Reference parentReference = (Reference)parentExtension.getValue();
             parentObservationId = findEnterpriseId(params, parentReference);
         }
+
+        // TODO Code needs to be added to use the IM for
+        //  Core Concept Id
+        coreConceptId = null;
+
+        // TODO Code needs to be added to use the IM for
+        //  Non Core Concept Id
+        nonCoreConceptId = null;
 
         if (fhir.getSubjectTarget() != null) {
             Patient patient = (Patient) fhir.getSubjectTarget();
@@ -154,32 +163,27 @@ public class ObservationTransformer extends AbstractTransformer {
         org.endeavourhealth.transform.subscriber.outputModels.Observation model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
-            organisationId,
+            organizationId,
             patientId,
             personId,
             encounterId,
             practitionerId,
             clinicalEffectiveDate,
             datePrecisionId,
-            snomedConceptId,
             resultValue,
             resultValueUnits,
             resultDate,
             resultString,
             resultConceptId,
-            originalCode,
             isProblem,
-            originalTerm,
             isReview,
             problemEndDate,
             parentObservationId,
+            coreConceptId,
+            nonCoreConceptId,
             ageAtEvent,
             episodicityConceptId,
             isPrimary);
     }
 
-
 }
-
-
-

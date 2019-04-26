@@ -127,6 +127,7 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
             }
         }
 
+        /*
         org.endeavourhealth.transform.subscriber.outputModels.Observation model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
@@ -152,9 +153,6 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
                 ageAtEvent,
                 episodicityConceptId,
                 isPrimary);
+         */
     }
 }
-
-
-
-
