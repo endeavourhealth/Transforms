@@ -56,6 +56,7 @@ public class SusEmergencyPreTransformer {
         String consultantStr = parser.getConsultantCode().getString();
         stagingCds.setConsultantCode(consultantStr);
         String opcsCode = parser.getPrimaryProcedureOPCS().getString();
+        opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
         stagingCds.setPrimaryProcedureOpcsCode(opcsCode);
         stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
         String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, consultantStr);

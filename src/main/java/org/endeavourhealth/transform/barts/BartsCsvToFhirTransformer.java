@@ -137,10 +137,13 @@ public abstract class BartsCsvToFhirTransformer {
             SusEmergencyPreTransformer.transform(getParsers(parserMap,"SusEmergency",true),fhirResourceFiler,csvHelper);
             SURCPPreTransformer.transform(getParsers(parserMap,"SURCP",true), fhirResourceFiler,csvHelper);
             SURCCPreTransformer.transform(getParsers(parserMap,"SURCC",true), fhirResourceFiler,csvHelper);
+            fhirResourceFiler.waitUntilEverythingIsSaved();
 
+            //TODO - call into staging stored procedure
+            fhirResourceFiler.waitUntilEverythingIsSaved();
 
+            //TODO - Procedure data transformation on final target table for exchange
            // PROCETransformer.transform(getParsers(parserMap, "PROCE", true), fhirResourceFiler, csvHelper);
-
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //DIAGNOSES
