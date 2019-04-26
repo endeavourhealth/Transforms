@@ -139,11 +139,13 @@ public abstract class BartsCsvToFhirTransformer {
             SURCCPreTransformer.transform(getParsers(parserMap,"SURCC",true), fhirResourceFiler,csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            //TODO - call into staging stored procedure
-            fhirResourceFiler.waitUntilEverythingIsSaved();
+            //PROCEDURES - execute the staging to target stored proc
+            //TODO:->  csvHelper.processStagingForTarget();
 
-            //TODO - Procedure data transformation on final target table for exchange
-           // PROCETransformer.transform(getParsers(parserMap, "PROCE", true), fhirResourceFiler, csvHelper);
+            //TODO - Procedure data transformation on final target table for exchange using:
+            //List<RdbmsStagingTarget> getTargetProcedures(UUID exchangeId, UUID serviceId)
+
+            // PROCETransformer.transform(getParsers(parserMap, "PROCE", true), fhirResourceFiler, csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //DIAGNOSES

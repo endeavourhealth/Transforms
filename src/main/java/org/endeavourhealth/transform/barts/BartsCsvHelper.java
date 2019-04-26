@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
+import org.endeavourhealth.core.database.dal.publisherStaging.StagingTargetDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -68,6 +69,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private Hl7ResourceIdDalI hl7ReceiverDal = DalProvider.factoryHL7ResourceDal();
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+    private StagingTargetDalI stagingRepository = DalProvider.factoryStagingTargetDalI();
 
     private Map<String, CernerCodeValueRef> cernerCodes = new ConcurrentHashMap<>();
     private Map<Long, List<CernerCodeValueRef>> cernerCodesBySet = new ConcurrentHashMap<>();
@@ -167,6 +169,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         }
 
         return ret;
+    }
+
+    public void processStagingForTarget () throws Exception {
+
+        stagingRepository.processStagingForTarget(this.exchangeId, this.serviceId);
     }
 
     public List<Resource> retrieveResourceByPatient(UUID patientId) throws Exception {
