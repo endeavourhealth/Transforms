@@ -39,26 +39,30 @@ public class EncounterTransformer extends AbstractTransformer {
         Encounter fhir = (Encounter)resource;
 
         long id;
-        long organisationId;
+        long organizationId;
         long patientId;
         long personId;
         Long practitionerId = null;
         Long appointmentId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
-        Long snomedConceptId = null;
-        String originalCode = null;
-        String originalTerm = null;
+        // Long snomedConceptId = null;
+        // String originalCode = null;
+        // String originalTerm = null;
         Long episodeOfCareId = null;
         Long serviceProviderOrganisationId = null;
+        Integer coreConceptId = null;
+        Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
+        String type = null;
+        String subtype = null;
         Boolean isPrimary = null;
         String admissionMethod = null;
         Date endDate = null;
         String institutionLocationId = null;
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
@@ -97,12 +101,13 @@ public class EncounterTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
+        /*
         //changing to use our information model to get the concept ID for the consultation type based on the textual term
         originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
             EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
             snomedConceptId = ret.getCode();
-        }
+        }*/
 
         /*if (fhir.hasExtension()) {
 
@@ -142,9 +147,25 @@ public class EncounterTransformer extends AbstractTransformer {
             serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
         }
 
+        // TODO Code needs to be added to use the IM for
+        //  Core Concept Id
+        coreConceptId = null;
+
+        // TODO Code needs to be added to use the IM for
+        //  Non Core Concept Id
+        nonCoreConceptId = null;
+
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
+
+        // TODO Code needs to be added to use the IM for
+        //  Encounter Type
+        type = null;
+
+        // TODO Code needs to be added to use the IM for
+        //  Encounter Subtype
+        subtype = null;
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
         if (isPrimaryExtension != null) {
@@ -191,19 +212,20 @@ public class EncounterTransformer extends AbstractTransformer {
         org.endeavourhealth.transform.subscriber.outputModels.Encounter model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Encounter)csvWriter;
         model.writeUpsert(id,
-            organisationId,
+            organizationId,
             patientId,
             personId,
             practitionerId,
             appointmentId,
             clinicalEffectiveDate,
             datePrecisionId,
-            snomedConceptId,
-            originalCode,
-            originalTerm,
             episodeOfCareId,
             serviceProviderOrganisationId,
+            coreConceptId,
+            nonCoreConceptId,
             ageAtEvent,
+            type,
+            subtype,
             isPrimary,
             admissionMethod,
             endDate,
@@ -211,7 +233,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
         //we also need to populate the two new encounter tables
         tranformExtraEncounterTables(resource, params,
-                id, organisationId, patientId, personId, practitionerId,
+                id, organizationId, patientId, personId, practitionerId,
                 episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
                 serviceProviderOrganisationId);
     }
