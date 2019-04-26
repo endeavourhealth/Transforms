@@ -75,7 +75,7 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
          */
 
         // TODO Code needs to be amended to use the IM for
-        //  Request Status
+        //  Procedure Request Status
         if (fhir.hasStatus()) {
             procedureRequestStatusConceptId = new Integer(fhir.getStatus().ordinal());
         }

@@ -39,16 +39,18 @@ public class ReferralRequestTransformer extends AbstractTransformer {
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
-        Long snomedConceptId = null;
+        // Long snomedConceptId = null;
         Long requesterOrganizationId = null;
         Long recipientOrganizationId = null;
-        Integer priorityId = null;
-        Integer typeId = null;
+        Integer referralRequestPriorityConceptId = null;
+        Integer referralRequestTypeConceptId = null;
         String mode = null;
-        Boolean outgoing = null;
-        String originalCode = null;
-        String originalTerm = null;
+        Boolean outgoingReferral = null;
+        // String originalCode = null;
+        // String originalTerm = null;
         boolean isReview = false;
+        Integer coreConceptId = null;
+        Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
         Boolean isPrimary = null;
 
@@ -77,6 +79,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
+        /*
         //changed where the observation code is stored
         if (fhir.hasServiceRequested()) {
             if (fhir.getServiceRequested().size() > 1) {
@@ -91,7 +94,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             snomedConceptId = codes.getSnomedConceptId();
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
-        }
+        }*/
         /*Long snomedConceptId = findSnomedConceptId(fhir.getType());
         model.setSnomedConceptId(snomedConceptId);*/
 
@@ -104,7 +107,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                 requesterOrganizationId = transformOnDemandAndMapId(requesterReference, params);
 
             } else if (resourceType == ResourceType.Practitioner) {
-                requesterOrganizationId = findOrganisationEnterpriseIdFromPractictioner(requesterReference, fhir, params);
+                requesterOrganizationId = findOrganisationEnterpriseIdFromPractitioner(requesterReference, fhir, params);
             }
         }
 
@@ -135,15 +138,15 @@ public class ReferralRequestTransformer extends AbstractTransformer {
         Reference practitionerReference = null;
 
         if (requesterOrganizationId != null) {
-            outgoing = requesterOrganizationId.longValue() == organizationId;
+            outgoingReferral = requesterOrganizationId.longValue() == organizationId;
 
         } else if (recipientOrganizationId != null) {
-            outgoing = recipientOrganizationId.longValue() != organizationId;
+            outgoingReferral = recipientOrganizationId.longValue() != organizationId;
         }
 
         //if we're an outgoing referral, then populate the practitioner ID from the practitioner in the requester field
-        if (outgoing != null
-            && outgoing.booleanValue()
+        if (outgoingReferral != null
+            && outgoingReferral.booleanValue()
             && fhir.hasRequester()) {
 
             Reference requesterReference = fhir.getRequester();
@@ -153,8 +156,8 @@ public class ReferralRequestTransformer extends AbstractTransformer {
         }
 
         //if we're an incoming referral then populate the practitioner ID using the practitioner in the recipient field
-        if (outgoing != null
-                && !outgoing.booleanValue()
+        if (outgoingReferral != null
+                && !outgoingReferral.booleanValue()
                 && fhir.hasRecipient()) {
 
             for (Reference recipientReference : fhir.getRecipient()) {
@@ -168,21 +171,25 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
+        // TODO Code needs to be amended to use the IM for
+        //  Referral Request Priority
         if (fhir.hasPriority()) {
             CodeableConcept codeableConcept = fhir.getPriority();
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralPriority fhirReferralPriority = ReferralPriority.fromCode(coding.getCode());
-                priorityId = fhirReferralPriority.ordinal();
+                referralRequestPriorityConceptId = fhirReferralPriority.ordinal();
             }
         }
 
+        // TODO Code needs to be amended to use the IM for
+        //  Referral Request Type
         if (fhir.hasType()) {
             CodeableConcept codeableConcept = fhir.getType();
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
-                typeId = fhirReferralType.ordinal();
+                referralRequestTypeConceptId = fhirReferralType.ordinal();
             }
         }
 
@@ -208,6 +215,14 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             }
         }
 
+        // TODO Code needs to be added to use the IM for
+        //  Core Concept Id
+        coreConceptId = null;
+
+        // TODO Code needs to be added to use the IM for
+        //  Non Core Concept Id
+        nonCoreConceptId = null;
+
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
@@ -230,21 +245,20 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             practitionerId,
             clinicalEffectiveDate,
             datePrecisionId,
-            snomedConceptId,
             requesterOrganizationId,
             recipientOrganizationId,
-            priorityId,
-            typeId,
+            referralRequestPriorityConceptId,
+            referralRequestTypeConceptId,
             mode,
-            outgoing,
-            originalCode,
-            originalTerm,
+            outgoingReferral,
             isReview,
+            coreConceptId,
+            nonCoreConceptId,
             ageAtEvent,
             isPrimary);
     }
 
-    private Long findOrganisationEnterpriseIdFromPractictioner(Reference practitionerReference,
+    private Long findOrganisationEnterpriseIdFromPractitioner(Reference practitionerReference,
                                                                ReferralRequest fhir,
                                                                SubscriberTransformParams params) throws Exception {
 
@@ -262,4 +276,3 @@ public class ReferralRequestTransformer extends AbstractTransformer {
     }
 
 }
-
