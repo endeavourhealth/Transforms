@@ -36,7 +36,7 @@ public class AppointmentTransformer extends AbstractTransformer {
         Date startDate = null;
         Integer plannedDuration = null;
         Integer actualDuration = null;
-        int statusId;
+        int appointmentStatusConceptId;
         Integer patientWait = null;
         Integer patientDelay = null;
         Date sentIn = null;
@@ -96,8 +96,11 @@ public class AppointmentTransformer extends AbstractTransformer {
             actualDuration = Integer.valueOf(duration);
         }
 
+        // TODO Code needs to be changed to use the IM for
+        //  Appointment Status Concept Id
+
         Appointment.AppointmentStatus status = fhir.getStatus();
-        statusId = status.ordinal();
+        appointmentStatusConceptId = status.ordinal();
 
         if (fhir.hasExtension()) {
             for (Extension extension: fhir.getExtension()) {
@@ -149,7 +152,7 @@ public class AppointmentTransformer extends AbstractTransformer {
             startDate,
             plannedDuration,
             actualDuration,
-            statusId,
+            appointmentStatusConceptId,
             patientWait,
             patientDelay,
             sentIn,
@@ -158,7 +161,4 @@ public class AppointmentTransformer extends AbstractTransformer {
             cancelledDate);
     }
 
-
-
 }
-
