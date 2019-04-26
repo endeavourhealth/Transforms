@@ -17,7 +17,7 @@ public class Appointment extends AbstractSubscriberCsvWriter {
     }
 
     public void writeUpsert(long id,
-                            long organisationId,
+                            long organizationId,
                             long patientId,
                             long personId,
                             Long practitionerId,
@@ -35,7 +35,7 @@ public class Appointment extends AbstractSubscriberCsvWriter {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
-                "" + organisationId,
+                "" + organizationId,
                 "" + patientId,
                 "" + personId,
                 convertLong(practitionerId),

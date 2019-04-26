@@ -27,22 +27,24 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         AllergyIntolerance fhir = (AllergyIntolerance)resource;
 
         long id;
-        long organisationId;
+        long organizationId;
         long patientId;
         long personId;
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
-        Long snomedConceptId = null;
-        String originalCode = null;
-        String originalTerm = null;
+        // Long snomedConceptId = null;
+        // String originalCode = null;
+        // String originalTerm = null;
         boolean isReview = false;
+        Integer coreConceptId = null;
+        Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
         Boolean isPrimary = null;
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
@@ -69,13 +71,13 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
 
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getSubstance());
+        /* ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getSubstance());
         if (codes == null) {
             return;
         }
         snomedConceptId = codes.getSnomedConceptId();
         originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();
+        originalTerm = codes.getOriginalTerm();*/
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
@@ -84,6 +86,14 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
                 isReview = b.getValue();
             }
         }
+
+        // TODO Code needs to be added to use the IM for
+        //  Core Concept Id
+        coreConceptId = null;
+
+        // TODO Code needs to be added to use the IM for
+        //  Non Core Concept Id
+        nonCoreConceptId = null;
 
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
@@ -100,20 +110,18 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         org.endeavourhealth.transform.subscriber.outputModels.AllergyIntolerance model
                 = (org.endeavourhealth.transform.subscriber.outputModels.AllergyIntolerance)csvWriter;
         model.writeUpsert(id,
-            organisationId,
+            organizationId,
             patientId,
             personId,
             encounterId,
             practitionerId,
             clinicalEffectiveDate,
             datePrecisionId,
-            snomedConceptId,
-            originalCode,
-            originalTerm,
             isReview,
+            coreConceptId,
+            nonCoreConceptId,
             ageAtEvent,
             isPrimary);
     }
 
 }
-

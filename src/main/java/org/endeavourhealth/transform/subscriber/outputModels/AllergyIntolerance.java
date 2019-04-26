@@ -17,33 +17,37 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
     }
 
     public void writeUpsert(long id,
-                            long organisationId,
+                            long organizationId,
                             long patientId,
                             long personId,
                             Long encounterId,
                             Long practitionerId,
                             Date clinicalEffectiveDate,
                             Integer datePrecisionId,
-                            Long snomedConceptId,
-                            String originalCode,
-                            String originalTerm,
+                            // Long snomedConceptId,
+                            // String originalCode,
+                            // String originalTerm,
                             boolean isReview,
+                            Integer coreConceptId,
+                            Integer nonCoreConceptId,
                             Double ageAtEvent,
                             Boolean isPrimary) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
-                "" + organisationId,
+                "" + organizationId,
                 "" + patientId,
                 "" + personId,
                 convertLong(encounterId),
                 convertLong(practitionerId),
                 convertDate(clinicalEffectiveDate),
                 convertInt(datePrecisionId),
-                convertLong(snomedConceptId),
-                originalCode,
-                originalTerm,
+                // convertLong(snomedConceptId),
+                // originalCode,
+                // originalTerm,
                 convertBoolean(isReview),
+                convertInt(coreConceptId),
+                convertInt(nonCoreConceptId),
                 convertDouble(ageAtEvent),
                 convertBoolean(isPrimary));
     }
@@ -60,12 +64,11 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 "practitioner_id",
                 "clinical_effective_date",
                 "date_precision_id",
-                "snomed_concept_id",
-                "original_code",
-                "original_term",
                 "is_review",
+                "core_concept_id",
+                "non_core_concept_id",
                 "age_at_event",
-                "isPrimary"
+                "is_primary"
         };
     }
 
@@ -81,10 +84,9 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 Long.class,
                 Date.class,
                 Integer.class,
-                Long.class,
-                String.class,
-                String.class,
                 Boolean.TYPE,
+                Integer.class,
+                Integer.class,
                 String.class,
                 Boolean.TYPE,
         };

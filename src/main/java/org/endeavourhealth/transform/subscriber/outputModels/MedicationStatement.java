@@ -18,7 +18,7 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
     }
 
     public void writeUpsert(long id,
-                            long organisationId,
+                            long organizationId,
                             long patientId,
                             long personId,
                             Long encounterId,
@@ -39,7 +39,7 @@ public class MedicationStatement extends AbstractSubscriberCsvWriter {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
-                "" + organisationId,
+                "" + organizationId,
                 "" + patientId,
                 "" + personId,
                 convertLong(encounterId),

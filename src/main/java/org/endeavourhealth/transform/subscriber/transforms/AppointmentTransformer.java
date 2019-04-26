@@ -28,7 +28,7 @@ public class AppointmentTransformer extends AbstractTransformer {
         Appointment fhir = (Appointment)resource;
 
         long id;
-        long organisationId;
+        long organizationId;
         long patientId;
         long personId;
         Long practitionerId = null;
@@ -63,7 +63,7 @@ public class AppointmentTransformer extends AbstractTransformer {
         }
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
@@ -144,7 +144,7 @@ public class AppointmentTransformer extends AbstractTransformer {
         org.endeavourhealth.transform.subscriber.outputModels.Appointment model
                 = (org.endeavourhealth.transform.subscriber.outputModels.Appointment)csvWriter;
         model.writeUpsert(id,
-            organisationId,
+            organizationId,
             patientId,
             personId,
             practitionerId,

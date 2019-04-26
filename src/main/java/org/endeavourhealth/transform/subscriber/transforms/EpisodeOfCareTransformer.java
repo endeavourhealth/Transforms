@@ -30,7 +30,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         EpisodeOfCare fhirEpisode = (EpisodeOfCare)resource;
 
         long id;
-        long organisationId;
+        long organizationId;
         long patientId;
         long personId;
         Integer registrationTypeConceptId = null;
@@ -41,7 +41,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         //Long managingOrganisationId = null;
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
@@ -118,7 +118,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         org.endeavourhealth.transform.subscriber.outputModels.EpisodeOfCare model
                 = (org.endeavourhealth.transform.subscriber.outputModels.EpisodeOfCare)csvWriter;
         model.writeUpsert(id,
-            organisationId,
+            organizationId,
             patientId,
             personId,
             registrationTypeConceptId,

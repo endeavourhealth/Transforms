@@ -33,7 +33,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         MedicationStatement fhir = (MedicationStatement)resource;
 
         long id;
-        long organisationId;
+        long organizationId;
         long patientId;
         long personId;
         Long encounterId = null;
@@ -53,7 +53,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         String issueMethod = null;
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
@@ -154,7 +154,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         org.endeavourhealth.transform.subscriber.outputModels.MedicationStatement model
                 = (org.endeavourhealth.transform.subscriber.outputModels.MedicationStatement)csvWriter;
         model.writeUpsert(id,
-            organisationId,
+            organizationId,
             patientId,
             personId,
             encounterId,

@@ -17,7 +17,7 @@ public class EpisodeOfCare extends AbstractSubscriberCsvWriter {
     }
 
     public void writeUpsert(long id,
-                            long organisationId,
+                            long organizationId,
                             long patientId,
                             long personId,
                             Integer registrationTypeConceptId,
@@ -28,7 +28,7 @@ public class EpisodeOfCare extends AbstractSubscriberCsvWriter {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
-                "" + organisationId,
+                "" + organizationId,
                 "" + patientId,
                 "" + personId,
                 convertInt(registrationTypeConceptId),
