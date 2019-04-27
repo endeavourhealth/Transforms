@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
@@ -69,9 +70,12 @@ public class SusInpatientPreTransformer {
         if (personnelIdStr!=null) {
             stagingCds.setLookupConsultantPersonnelId(Integer.parseInt(personnelIdStr));
         }
-       stagingCds.setLookupPersonId(Integer.parseInt(csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
-               parser.getLocalPatientId().getString())));
-
+       //stagingCds.setLookupPersonId(Integer.parseInt(
+             String internalId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
+               parser.getLocalPatientId().getString());
+        if (internalId!=null && StringUtils.isNumeric(internalId)) {
+            stagingCds.setLookupPersonId(Integer.parseInt(internalId));
+        }
         UUID serviceId = csvHelper.getServiceId();
 
 
