@@ -54,7 +54,7 @@ public class SusEmergency extends AbstractFixedParser {
     public CsvCell getCdsActivityDate() {return super.getCell("CDSActivityDate");}
     public CsvCell getCdsUpdateType() { return super.getCell("CDSUpdateType");}
     public CsvCell getPersonBirthDate() { return super.getCell("PersonBirthDate");}
-    public CsvCell getConsultantCode() { return super.getCell("ConsultantCode");}
+    public CsvCell getConsultantCode() { return super.getCell("AEStaffMemberCode");}
     public CsvCell getLocalPatientId() { return super.getCell("LocalPatientID");}
 
     public CsvCell getCdsUniqueId() {return super.getCell("CDSUniqueIdentifier");}
