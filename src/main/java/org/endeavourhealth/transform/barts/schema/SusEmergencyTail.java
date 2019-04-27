@@ -47,7 +47,7 @@ public class SusEmergencyTail extends AbstractFixedParser {
     public CsvCell getResponsiblePersonnelId() {
         return super.getCell("Responsible_HCP_Personal_ID");
     }
-    public CsvCell getCdsUpdateType() { return super.getCell("CDS_UpdateType");}
+    public CsvCell getCdsUpdateType() { return super.getCell("CDS_Update_Type");}
     public CsvCell getLocalPatientId() { return super.getCell("Local_Patient_ID");}
 
     public CsvCell getNhsNumber() { return super.getCell("NHS_Number");}
