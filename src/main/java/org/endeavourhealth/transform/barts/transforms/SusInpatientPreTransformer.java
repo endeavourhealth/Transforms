@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -127,8 +128,14 @@ public class SusInpatientPreTransformer {
                 if (Strings.isNullOrEmpty(dateStr)) {
                     stagingCds3.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
                 } else {
+                    try {
                     Date date = dateFormat.parse(dateStr);
                     stagingCds3.setProcedureDate(date);
+                    } catch (ParseException p) {
+                        LOG.debug("Unparseable date found " + dateStr );
+                        stagingCds3.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
+                    }
+
                 }
             }
             stagingCds3.setProcedureOpcsCode(code);
