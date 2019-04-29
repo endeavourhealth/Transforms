@@ -1,12 +1,14 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -79,22 +81,36 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        /*
+
         //changed where the observation code is stored
         if (fhir.hasServiceRequested()) {
+
             if (fhir.getServiceRequested().size() > 1) {
                 throw new TransformException("Transform doesn't support referrals with multiple service codes " + fhir.getId());
             }
-            CodeableConcept fhirServiceRequested = fhir.getServiceRequested().get(0);
 
+            CodeableConcept fhirServiceRequested = fhir.getServiceRequested().get(0);
             ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhirServiceRequested);
             if (codes == null) {
                 return;
             }
-            snomedConceptId = codes.getSnomedConceptId();
-            originalCode = codes.getOriginalCode();
-            originalTerm = codes.getOriginalTerm();
-        }*/
+            //snomedConceptId = codes.getSnomedConceptId();
+            //originalCode = codes.getOriginalCode();
+            //originalTerm = codes.getOriginalTerm();
+            
+            Coding coding = CodeableConceptHelper.findOriginalCoding(fhirServiceRequested);
+            String codingSystem = coding.getSystem();
+            String scheme = getScheme(codingSystem);
+            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, codes.getOriginalCode());
+            if (coreConceptId == null) {
+                throw new org.endeavourhealth.core.exceptions.TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            }
+
+            nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, codes.getOriginalCode());
+            if (nonCoreConceptId == null) {
+                throw new org.endeavourhealth.core.exceptions.TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            }
+        }
         /*Long snomedConceptId = findSnomedConceptId(fhir.getType());
         model.setSnomedConceptId(snomedConceptId);*/
 
@@ -214,14 +230,6 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                 isReview = b.getValue();
             }
         }
-
-        // TODO Code needs to be added to use the IM for
-        //  Core Concept Id
-        coreConceptId = null;
-
-        // TODO Code needs to be added to use the IM for
-        //  Non Core Concept Id
-        nonCoreConceptId = null;
 
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());

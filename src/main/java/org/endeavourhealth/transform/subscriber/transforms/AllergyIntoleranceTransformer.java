@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
 import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
@@ -9,9 +10,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.crypto.dsig.TransformException;
 import java.util.Date;
-import java.util.List;
 
 public class AllergyIntoleranceTransformer extends AbstractTransformer {
 
@@ -108,27 +107,16 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         CodeableConcept codeableConcept = fhir.getSubstance();
         Coding coding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
         String codingSystem = coding.getSystem();
-        String str = null;
-        if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) {str = "SNOMED";}
-        // else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_UK_ED_CODE)) {str = "DM+D";}
-        else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_READ2)) {str = "READ2";}
-        else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CTV3)) {str = "CTV3";}
-        else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_ICD10)) {str = "ICD10";}
-        else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_OPCS4)) {str = "OPCS4";}
-        else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {str = "BartsCerner";}
+        String scheme = getScheme(codingSystem);
 
-        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(str, originalCode);
-        if (coreConceptId == null)
-        {
-            throw new TransformException("coreConceptId is null"
-                    + " for " + fhir.getResourceType() + " " + fhir.getId());
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, originalCode);
+        if (coreConceptId == null) {
+            throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(str, originalCode);
-        if (nonCoreConceptId == null)
-        {
-            throw new TransformException("nonCoreConceptId is null"
-                    + " for " + fhir.getResourceType() + " " + fhir.getId());
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, originalCode);
+        if (nonCoreConceptId == null) {
+            throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
         if (fhir.getPatientTarget() != null) {

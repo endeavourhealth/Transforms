@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.apache.jcs.JCS;
 import org.apache.jcs.access.exception.CacheException;
 import org.endeavourhealth.common.cache.ParserPool;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -543,6 +544,26 @@ public abstract class AbstractTransformer {
             return Double.valueOf(df.format(inYears));
         }
         return null;
+    }
+
+    protected static String getScheme(String codingSystem) {
+        String str = null;
+        if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) {
+            str = "SNOMED";
+        //} else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_UK_ED_CODE)) {
+        //    str = "DM+D";
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_READ2)) {
+            str = "READ2";
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CTV3)) {
+            str = "CTV3";
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_ICD10)) {
+            str = "ICD10";
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_OPCS4)) {
+            str = "OPCS4";
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
+            str = "BartsCerner";
+        }
+        return str;
     }
 
     /*protected Long transformOnDemandAndMapId(Reference reference,
