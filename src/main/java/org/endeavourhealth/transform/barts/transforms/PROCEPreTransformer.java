@@ -26,9 +26,6 @@ public class PROCEPreTransformer {
         try {
             for (ParserI parser : parsers) {
                 while (parser.nextRecord()) {
-//                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
-//                        continue;
-//                    }
                     //no try/catch here, since any failure here means we don't want to continue
                     processRecord((PROCE) parser, fhirResourceFiler, csvHelper);
                 }
@@ -90,7 +87,12 @@ public class PROCEPreTransformer {
             stagingPROCE.setProcedureTerm(procTerm);
             stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
             String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
-            if (personId!= null) {
+            if (personId != null) {
+
+                if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                    return;
+                }
+
                 stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
 
                 //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
@@ -100,11 +102,18 @@ public class PROCEPreTransformer {
                     return;
                 }
                 stagingPROCE.setLookupMrn(mrn);
+
+            } else {
+                TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no MRN from lookup", procId);
+                return;
             }
 
-            stagingPROCE.setCheckSum(stagingPROCE.hashCode());
+            //TODO - remove these columns (mid-May)
             stagingPROCE.setLookupNhsNumber("0");
             stagingPROCE.setLookupDateOfBirth(new Date());
+
+
+            stagingPROCE.setCheckSum(stagingPROCE.hashCode());
         }
 
         csvHelper.submitToThreadPool(new PROCEPreTransformer.saveDataCallable(parser.getCurrentState(), stagingPROCE, serviceId));
