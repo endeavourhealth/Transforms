@@ -140,7 +140,7 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //PROCEDURES - execute the staging to target stored proc
-            //TODO:->  csvHelper.processStagingForTarget();
+            csvHelper.processStagingForTarget();
 
             //TODO - Procedure data transformation on final target table for exchange using:
             //List<RdbmsStagingTarget> getTargetProcedures(UUID exchangeId, UUID serviceId)
