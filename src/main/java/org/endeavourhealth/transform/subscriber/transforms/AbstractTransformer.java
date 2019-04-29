@@ -46,8 +46,8 @@ public abstract class AbstractTransformer {
             /*org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger("org.apache.jcs");
             logger.setLevel(org.apache.log4j.Level.OFF);*/
 
-            idCache = JCS.getInstance("EnterpriseResourceMap");
-            instanceCache = JCS.getInstance("EnterpriseInstanceMap");
+            idCache = JCS.getInstance("SubscriberResourceMap");
+            instanceCache = JCS.getInstance("SubscriberInstanceMap");
 
         } catch (CacheException ex) {
             throw new RuntimeException("Error initialising cache", ex);
