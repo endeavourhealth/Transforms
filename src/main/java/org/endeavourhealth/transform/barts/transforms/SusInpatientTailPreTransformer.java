@@ -40,6 +40,10 @@ public class SusInpatientTailPreTransformer {
 
 
         StagingCdsTail staging = new StagingCdsTail();
+        String personId = parser.getPersonId().getString();
+        if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+            return;
+        }
         staging.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         staging.setExchangeId(parser.getExchangeId().toString());
         staging.setDtReceived(new Date());
@@ -49,7 +53,7 @@ public class SusInpatientTailPreTransformer {
         }
         staging.setMrn(parser.getLocalPatientId().getString());
         staging.setNhsNumber(parser.getNhsNumber().getString());
-        staging.setPersonId(parser.getPersonId().getInt());
+        staging.setPersonId(Integer.parseInt(personId));
         staging.setEncounterId(parser.getEncounterId().getInt());
         staging.setResponsibleHcpPersonnelId(parser.getResponsiblePersonnelId().getInt());
 

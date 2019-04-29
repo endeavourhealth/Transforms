@@ -60,7 +60,7 @@ public class SusInpatientPreTransformer {
         String consultantStr = parser.getConsultantCode().getString();
         stagingCds.setConsultantCode(consultantStr);
         if (parser.getPrimaryProcedureOPCS().isEmpty()) {
-            LOG.warn("No PrimaryProcedureOPCS Code for " +  parser.getCdsUniqueId());
+            LOG.warn("No PrimaryProcedureOPCS Code for " + parser.getCdsUniqueId());
             return;
         }
         String opcsCode = parser.getPrimaryProcedureOPCS().getString();
@@ -68,13 +68,16 @@ public class SusInpatientPreTransformer {
         stagingCds.setPrimaryProcedureOpcsCode(opcsCode);
         stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
         String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, consultantStr);
-        if (personnelIdStr!=null) {
+        if (personnelIdStr != null) {
             stagingCds.setLookupConsultantPersonnelId(Integer.parseInt(personnelIdStr));
         }
-       //stagingCds.setLookupPersonId(Integer.parseInt(
-             String internalId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
-               parser.getLocalPatientId().getString());
-        if (internalId!=null && StringUtils.isNumeric(internalId)) {
+        //stagingCds.setLookupPersonId(Integer.parseInt(
+        String internalId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
+                parser.getLocalPatientId().getString());
+        if (!csvHelper.processRecordFilteringOnPatientId(internalId) || internalId==null) {
+            return;
+        }
+        if (internalId != null && StringUtils.isNumeric(internalId)) {
             stagingCds.setLookupPersonId(Integer.parseInt(internalId));
         }
         UUID serviceId = csvHelper.getServiceId();
@@ -106,8 +109,8 @@ public class SusInpatientPreTransformer {
             } else {//TODO review handling of empty dates
                 stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
             }
-                stagingCds2.setRecordChecksum(stagingCds.hashCode());
-                csvHelper.submitToThreadPool(new SusInpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
+            stagingCds2.setRecordChecksum(stagingCds.hashCode());
+            csvHelper.submitToThreadPool(new SusInpatientPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
 
         }
         //Rest
@@ -116,23 +119,25 @@ public class SusInpatientPreTransformer {
         List<String> otherDates = new ArrayList<>();
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         int seq = 3;
-        for (String word : BartsSusHelper.splitEqually(otherProcedureOPCS.getString(),40)) {
+        for (String word : BartsSusHelper.splitEqually(otherProcedureOPCS.getString(), 40)) {
             if (Strings.isNullOrEmpty(word)) {
                 break;
             }
             StagingCds stagingCds3 = stagingCds.clone();
             String code = word.substring(0, 4);
-            if (code.isEmpty()) {break;}
-            if (word.length()>4) {
-                String dateStr = word.substring(4,12);
+            if (code.isEmpty()) {
+                break;
+            }
+            if (word.length() > 4) {
+                String dateStr = word.substring(4, 12);
                 if (Strings.isNullOrEmpty(dateStr)) {
                     stagingCds3.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
                 } else {
                     try {
-                    Date date = dateFormat.parse(dateStr);
-                    stagingCds3.setProcedureDate(date);
+                        Date date = dateFormat.parse(dateStr);
+                        stagingCds3.setProcedureDate(date);
                     } catch (ParseException p) {
-                        LOG.debug("Unparseable date found " + dateStr );
+                        LOG.debug("Unparseable date found " + dateStr);
                         stagingCds3.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
                     }
 

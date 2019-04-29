@@ -50,8 +50,11 @@ public class SURCPPreTransformer {
 
         if (activeInd) {
 
-            stagingSURCP.setSurgicalCaseId(parser.getSurgicalCaseId().getInt());
-
+            int caseId = parser.getSurgicalCaseId().getInt();
+            stagingSURCP.setSurgicalCaseId(caseId);
+            if (csvHelper.getPersonIdFromSurccId(caseId) == null) {
+                return;
+            }
             CsvCell procedureCodeCell = parser.getProcedureCode();
             if (!procedureCodeCell.isEmpty()) {
                 stagingSURCP.setProcedureCode(procedureCodeCell.getInt());
@@ -72,12 +75,12 @@ public class SURCPPreTransformer {
             stagingSURCP.setSurgeonPersonnelId(parser.getSurgeonPersonnelId().getInt());
             Date nullDate = new Date();
             nullDate = null;
-            if (parser.getStartDateTime()!=null) {
+            if (parser.getStartDateTime() != null) {
                 stagingSURCP.setDTStart(parser.getStartDateTime().getDate());
             } else {
                 stagingSURCP.setDTStart(nullDate);
             }
-            if (parser.getStopDateTime()!=null) {
+            if (parser.getStopDateTime() != null) {
                 stagingSURCP.setDTStop(parser.getStopDateTime().getDate());
             } else {
                 stagingSURCP.setDTStop(nullDate);

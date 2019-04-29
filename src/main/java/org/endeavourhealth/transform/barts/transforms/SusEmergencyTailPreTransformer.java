@@ -40,6 +40,11 @@ public class SusEmergencyTailPreTransformer {
 
 
         StagingCdsTail staging = new StagingCdsTail();
+        String personId = parser.getPersonId().getString();
+        if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+            return;
+        }
+        staging.setPersonId(parser.getPersonId().getInt());
         staging.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         staging.setExchangeId(parser.getExchangeId().toString());
         staging.setDtReceived(new Date());
@@ -47,7 +52,7 @@ public class SusEmergencyTailPreTransformer {
         staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
         staging.setMrn(parser.getLocalPatientId().getString());
         staging.setNhsNumber(parser.getNhsNumber().getString());
-        staging.setPersonId(parser.getPersonId().getInt());
+
         staging.setEncounterId(parser.getEncounterId().getInt());
         staging.setResponsibleHcpPersonnelId(parser.getResponsiblePersonnelId().getInt());
 

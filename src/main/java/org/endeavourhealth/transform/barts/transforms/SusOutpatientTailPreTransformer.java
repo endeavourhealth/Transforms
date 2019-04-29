@@ -38,7 +38,10 @@ public class SusOutpatientTailPreTransformer {
 
     private static void processRecord(SusOutpatientTail parser, BartsCsvHelper csvHelper) throws Exception{
 
-
+        String personId = parser.getPersonId().getString();
+        if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+            return;
+        }
         StagingCdsTail staging = new StagingCdsTail();
         staging.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         staging.setExchangeId(parser.getExchangeId().toString());

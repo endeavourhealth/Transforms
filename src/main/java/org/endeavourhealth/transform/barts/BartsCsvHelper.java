@@ -96,6 +96,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private SusPatientCache susPatientCache = new SusPatientCache(this);
     private SusPatientTailCache susPatientTailCache = new SusPatientTailCache(this);
     private ThreadPool utilityThreadPool = null;
+    private Map<Integer, String> surccIdToPersonIdMap = new HashMap<>();
 
     private UUID serviceId = null;
     private UUID systemId = null;
@@ -1066,5 +1067,12 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         String month = indate.substring(indate.indexOf("-") + 1, indate.lastIndexOf("-"));
         String rest = indate.substring(indate.lastIndexOf("-"));
         return first + monthToMixedCase(month) + rest;
+    }
+    public String getPersonIdFromSurccId(int surccid) {
+        return surccIdToPersonIdMap.get(surccid);
+    }
+
+    public void savePersonIdFromSurccId(int key, String personId) {
+        surccIdToPersonIdMap.put(key,personId);
     }
 }

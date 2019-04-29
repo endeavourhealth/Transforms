@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsSusHelper;
@@ -51,7 +52,13 @@ public class SusOutpatientPreTransformer {
         stagingCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
         stagingCds.setSusRecordType(csvHelper.SUS_RECORD_TYPE_OUTPATIENT);
         stagingCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
-        stagingCds.setMrn(parser.getLocalPatientId().getString());
+        String mrn = parser.getLocalPatientId().getString();
+        stagingCds.setMrn(mrn);
+        String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, mrn);
+        if (!csvHelper.processRecordFilteringOnPatientId(personId) || personId==null) {
+            return;
+        }
+
         stagingCds.setNhsNumber(parser.getNhsNumber().getString());
         stagingCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
         String consultantStr = parser.getConsultantCode().getString();

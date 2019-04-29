@@ -68,8 +68,18 @@ public class SusEmergencyPreTransformer {
         if (personnelIdStr!=null) {
             stagingCds.setLookupConsultantPersonnelId(Integer.parseInt(personnelIdStr));
         }
-        stagingCds.setLookupPersonId(Integer.parseInt(csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
-                parser.getLocalPatientId().getString())));
+        String localPatientId=parser.getLocalPatientId().getString();
+        String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
+                localPatientId);
+        if (personId != null) {
+
+            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                return;
+            } else {
+                return;
+            }
+        }
+        stagingCds.setLookupPersonId(Integer.parseInt(personId));
 
         UUID serviceId = csvHelper.getServiceId();
 

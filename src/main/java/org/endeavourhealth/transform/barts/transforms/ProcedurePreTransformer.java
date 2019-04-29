@@ -47,6 +47,12 @@ public class ProcedurePreTransformer {
         // Observer not null conditions in DB
 
         StagingProcedure obj = new StagingProcedure();
+        String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
+        if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+            return;
+        }
+
+        obj.setPersonId(personId);
         obj.setExchangeId(parser.getExchangeId().toString());
         obj.setDateReceived(new Date());
         obj.setMrn(parser.getMrn().getString());
@@ -85,8 +91,7 @@ public class ProcedurePreTransformer {
         obj.setProcCd(procCd);
         obj.setProcTerm(procTerm);
 
-        String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
-        obj.setPersonId(personId);
+
         obj.setWard(parser.getWard().getString());
         obj.setSite(parser.getSite().getString());
         obj.setLookupPersonId(personId);
