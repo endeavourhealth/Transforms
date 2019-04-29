@@ -69,7 +69,7 @@ public class LocationTransformer extends AbstractTransformer {
                 String postcode = address.getPostalCode();
                 //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
 
-                Long propertyTypeId = IMClient.getOrCreateConceptId("Address.AddressUse." + address.getUse().toCode());
+                /* Long propertyTypeId = IMClient.getOrCreateConceptId("Address.AddressUse." + address.getUse().toCode());
                 addressWriter.writeUpsert(addressId, al1, al2, al3, al4, postcode,
                         null, null, propertyTypeId);
 
@@ -81,7 +81,7 @@ public class LocationTransformer extends AbstractTransformer {
                     if (period.hasEnd()) {
                         endDate = period.getEnd();
                     }
-                }
+                }*/
             }
         }
 
