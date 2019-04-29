@@ -372,7 +372,7 @@ public class PatientTransformer extends AbstractTransformer {
 
             //if we get null back, then we'll have deleted the patient, so just skip the ID
             if (otherPatientSearch == null) {
-                LOG.error("Failed to get patient search record for patient ID " + otherPatientId);
+                //LOG.error("Failed to get patient search record for patient ID " + otherPatientId);
                 continue;
             }
 

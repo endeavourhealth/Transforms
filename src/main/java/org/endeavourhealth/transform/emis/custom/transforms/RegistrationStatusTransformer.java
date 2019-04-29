@@ -175,7 +175,9 @@ public class RegistrationStatusTransformer {
         } else if (value == 6) { //Community Registered
             return RegistrationType.COMMUNITY;
         } else if (value == 7) { //Dummy
-            return RegistrationType.DUMMY;
+            //the dummy registration type has been removed, as we now have a patient test-patient extension
+            //return RegistrationType.DUMMY;
+            return null;
         } else if (value == 8) { //Other
             return RegistrationType.OTHER;
         } else if (value == 12) { //Walk-In Patient

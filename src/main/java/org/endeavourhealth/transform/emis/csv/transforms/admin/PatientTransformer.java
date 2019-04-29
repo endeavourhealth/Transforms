@@ -284,7 +284,12 @@ public class PatientTransformer {
         //we need to know the registration type to work out the address use
         CsvCell patientType = parser.getPatientTypedescription();
         CsvCell dummyType = parser.getDummyType();
-        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
+
+        //dummy flag can be one of two places
+        if (dummyType.getBoolean()
+                || patientType.getString().equalsIgnoreCase("Dummy")) {
+            patientBuilder.setTestPatient(true, dummyType);
+        }
 
         CsvCell houseNameFlat = parser.getHouseNameFlatNumber();
         CsvCell numberAndStreet = parser.getNumberAndStreet();
@@ -297,7 +302,10 @@ public class PatientTransformer {
         //rather than home. Emis Web stores the home address for these patients in a table we don't get in the extract
         //Address.AddressUse use = Address.AddressUse.HOME;
         Address.AddressUse use = null;
-        if (registrationType == RegistrationType.TEMPORARY) {
+
+        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
+        if (registrationType != null
+            && registrationType == RegistrationType.TEMPORARY) {
             use = Address.AddressUse.TEMP;
         } else {
             use = Address.AddressUse.HOME;
@@ -694,7 +702,9 @@ public class PatientTransformer {
         csvRegType = csvRegType.trim();
 
         if (dummyRecord || csvRegType.equalsIgnoreCase("Dummy")) {
-            return RegistrationType.DUMMY;
+            //dummy registration types are now handled in the Patient resource, as the test-patient extension
+            return null;
+            //return RegistrationType.DUMMY;
         } else if (csvRegType.equalsIgnoreCase("Emg")
                 || csvRegType.equalsIgnoreCase("Emergency")) {
             return RegistrationType.EMERGENCY;

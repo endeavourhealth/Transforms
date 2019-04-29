@@ -112,11 +112,11 @@ public class ProcedureBuilder extends ResourceBuilderBase
 
         //only use the extension to record the positive, remove for the negative
         if (isPrimary) {
-            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.PROCEDURE_IS_PRIMARY, true);
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.IS_PRIMARY, true);
             auditBooleanExtension(extension, sourceCells);
 
         } else {
-            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.PROCEDURE_IS_PRIMARY);
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.IS_PRIMARY);
         }
     }
 
