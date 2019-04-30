@@ -48,7 +48,7 @@ public class Person extends AbstractSubscriberCsvWriter {
                 null,
                 convertDate(dateOfBirth),
                 convertDate(dateOfDeath),
-                postcode.substring(0, postcode.length()/2),
+                postcode,
                 "" + ethnicCodeConceptId,
                 convertLong(registeredPracticeId));
     }

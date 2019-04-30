@@ -228,7 +228,7 @@ public class PatientTransformer extends AbstractTransformer {
                     nhsNumber,
                     dateOfBirth,
                     dateOfDeath,
-                    postcode,
+                    postcodePrefix,
                     Integer.parseInt(ethnicCodeConceptId),
                     registeredPracticeId);
 
@@ -243,7 +243,7 @@ public class PatientTransformer extends AbstractTransformer {
                         nhsNumber,
                         dateOfBirth,
                         dateOfDeath,
-                        postcode,
+                        postcodePrefix,
                         Integer.parseInt(ethnicCodeConceptId),
                         registeredPracticeId);
             }
