@@ -20,6 +20,8 @@ public class PRSNLREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PRSNLREFTransformer.class);
 
     public static final String MAPPING_ID_PERSONNEL_NAME_TO_ID = "PersonnelNameToId";
+    public static final String MAPPING_ID_CONSULTANT_TO_ID = "ConsultantToId";
+
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -142,6 +144,7 @@ public class PRSNLREFTransformer {
 
         String freeTextName = sb.toString();
         csvHelper.saveInternalId(MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
+        csvHelper.saveInternalId(MAPPING_ID_CONSULTANT_TO_ID, consultantNHSCode.getString(),personnelIdCell.getString());
     }
 
     /*private static void createPractitioner(PRSNLREF parser,

@@ -75,8 +75,6 @@ public class SusOutpatientPreTransformer {
         if (personnelIdStr != null) {
             stagingCds.setLookupConsultantPersonnelId(Integer.parseInt(personnelIdStr));
         }
-        //TODO lookup person
-        // stagingCds.setLookupPersonId(parser.get);
 
         UUID serviceId = csvHelper.getServiceId();
 
