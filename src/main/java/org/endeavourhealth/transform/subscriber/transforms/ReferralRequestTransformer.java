@@ -187,25 +187,37 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
-        // TODO Code needs to be amended to use the IM for
+        // TODO Code needs to be reviewed to use the IM for
         //  Referral Request Priority
         if (fhir.hasPriority()) {
             CodeableConcept codeableConcept = fhir.getPriority();
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralPriority fhirReferralPriority = ReferralPriority.fromCode(coding.getCode());
-                referralRequestPriorityConceptId = fhirReferralPriority.ordinal();
+                Integer referralRequestPriorityId = fhirReferralPriority.ordinal();
+
+                referralRequestPriorityConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_RFP", referralRequestPriorityId.toString());
+                if (referralRequestPriorityConceptId == null) {
+                    throw new TransformException("referralRequestPriorityConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+                }
+
             }
         }
 
-        // TODO Code needs to be amended to use the IM for
+        // TODO Code needs to be reviewed to use the IM for
         //  Referral Request Type
         if (fhir.hasType()) {
             CodeableConcept codeableConcept = fhir.getType();
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
-                referralRequestTypeConceptId = fhirReferralType.ordinal();
+                Integer referralRequestTypeId = fhirReferralType.ordinal();
+
+                referralRequestTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_RFT", referralRequestTypeId.toString());
+                if (referralRequestTypeConceptId == null) {
+                    throw new TransformException("referralRequestTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+                }
+
             }
         }
 

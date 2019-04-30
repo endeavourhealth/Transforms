@@ -550,8 +550,6 @@ public abstract class AbstractTransformer {
         String str = null;
         if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) {
             str = "SNOMED";
-        //} else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_UK_ED_CODE)) {
-        //    str = "DM+D";
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_READ2)) {
             str = "READ2";
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CTV3)) {

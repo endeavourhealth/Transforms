@@ -31,12 +31,12 @@ public class Patient extends AbstractSubscriberCsvWriter {
                                          String title,
                                          String firstNames,
                                          String lastName,
-                                         int genderConceptId,
+                                         Integer genderConceptId,
                                          String nhsNumber,
                                          Date dateOfBirth,
                                          Date dateOfDeath,
                                          String postcode,
-                                         int ethnicCodeConceptId,
+                                         Integer ethnicCodeConceptId,
                                          Long registeredPracticeId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
@@ -46,12 +46,12 @@ public class Patient extends AbstractSubscriberCsvWriter {
                 null,
                 null,
                 null,
-                "" + genderConceptId,
+                convertInt(genderConceptId),
                 null,
                 convertDate(dateOfBirth),
                 convertDate(dateOfDeath),
                 postcode,
-                "" + ethnicCodeConceptId,
+                convertInt(ethnicCodeConceptId),
                 convertLong(registeredPracticeId));
     }
 
@@ -62,12 +62,12 @@ public class Patient extends AbstractSubscriberCsvWriter {
                                         String title,
                                         String firstNames,
                                         String lastName,
-                                        int genderConceptId,
+                                        Integer genderConceptId,
                                         String nhsNumber,
                                         Date dateOfBirth,
                                         Date dateOfDeath,
                                         String postcode,
-                                        int ethnicCodeConceptId,
+                                        Integer ethnicCodeConceptId,
                                         Long registeredPracticeId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
@@ -77,12 +77,12 @@ public class Patient extends AbstractSubscriberCsvWriter {
                 title,
                 firstNames,
                 lastName,
-                "" + genderConceptId,
+                convertInt(genderConceptId),
                 nhsNumber,
                 convertDate(dateOfBirth),
                 convertDate(dateOfDeath),
                 postcode,
-                "" + ethnicCodeConceptId,
+                convertInt(ethnicCodeConceptId),
                 convertLong(registeredPracticeId));
     }
 
@@ -116,12 +116,12 @@ public class Patient extends AbstractSubscriberCsvWriter {
                 String.class,
                 String.class,
                 String.class,
-                Integer.TYPE,
+                Integer.class,
                 String.class,
                 Date.class,
                 Date.class,
                 String.class,
-                Integer.TYPE,
+                Integer.class,
                 Long.TYPE,
         };
     }

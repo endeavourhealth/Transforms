@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
@@ -85,18 +86,24 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         String scheme = getScheme(codingSystem);
         coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, code.getOriginalCode());
         if (coreConceptId == null) {
-            throw new org.endeavourhealth.core.exceptions.TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
         nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, code.getOriginalCode());
         if (nonCoreConceptId == null) {
-            throw new org.endeavourhealth.core.exceptions.TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        // TODO Code needs to be amended to use the IM for
+        // TODO Code needs to be reviewed to use the IM for
         //  Procedure Request Status
         if (fhir.hasStatus()) {
-            procedureRequestStatusConceptId = new Integer(fhir.getStatus().ordinal());
+            Integer procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
+
+            procedureRequestStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_PRS", procedureRequestStatusId.toString());
+            if (procedureRequestStatusConceptId == null) {
+                throw new TransformException("procedureRequestStatusConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            }
+
         }
 
         if (fhir.getSubjectTarget() != null) {

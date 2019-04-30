@@ -21,7 +21,9 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseAgeUp
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.QueryDocument.*;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
@@ -81,7 +83,7 @@ public class PatientTransformer extends AbstractTransformer {
         long id;
         long organizationId;
         long personId;
-        int genderConceptId;
+        Integer genderConceptId = null;
         String pseudoId = null;
         String nhsNumber = null;
         Integer ageYears = null;
@@ -93,7 +95,7 @@ public class PatientTransformer extends AbstractTransformer {
         String postcodePrefix = null;
         String lsoaCode = null;
         String msoaCode = null;
-        String ethnicCodeConceptId = null;
+        Integer ethnicCodeConceptId = null;
         String wardCode = null;
         String localAuthorityCode = null;
         Long registeredPracticeId = null;
@@ -127,12 +129,20 @@ public class PatientTransformer extends AbstractTransformer {
             dateOfDeath = d.getValue();
         }
 
-        if (fhirPatient.hasGender()) {
-            genderConceptId = fhirPatient.getGender().ordinal();
+        // TODO Code needs to be reviewed to use the IM for
+        //  Gender Concept Id
 
-        } else {
-            genderConceptId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
-        }
+        if (fhirPatient.hasGender()) {
+            Integer genderId = fhirPatient.getGender().ordinal();
+
+            genderConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_AG", genderId.toString());
+            if (genderConceptId == null) {
+                throw new TransformException("genderConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
+            }
+
+        } /*else {
+            Integer genderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
+        }*/
 
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
         if (fhirAddress != null) {
@@ -156,10 +166,19 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
+        // TODO Code needs to be reviewed to use the IM for
+        //  Ethnic Code Concept Id
+
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
-            ethnicCodeConceptId = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
+            String ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
+
+            ethnicCodeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_EC", ethnicCodeId);
+            if (ethnicCodeConceptId == null) {
+                throw new TransformException("ethnicConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
+            }
+
         }
 
         if (fhirPatient.hasCareProvider()) {
@@ -229,7 +248,7 @@ public class PatientTransformer extends AbstractTransformer {
                     dateOfBirth,
                     dateOfDeath,
                     postcodePrefix,
-                    Integer.parseInt(ethnicCodeConceptId),
+                    ethnicCodeConceptId,
                     registeredPracticeId);
 
             //if our patient record is the one that should define the person record, then write that too
@@ -244,7 +263,7 @@ public class PatientTransformer extends AbstractTransformer {
                         dateOfBirth,
                         dateOfDeath,
                         postcodePrefix,
-                        Integer.parseInt(ethnicCodeConceptId),
+                        ethnicCodeConceptId,
                         registeredPracticeId);
             }
 
@@ -273,7 +292,7 @@ public class PatientTransformer extends AbstractTransformer {
                     dateOfBirth,
                     dateOfDeath,
                     postcode,
-                    Integer.parseInt(ethnicCodeConceptId),
+                    ethnicCodeConceptId,
                     registeredPracticeId);
 
             //if our patient record is the one that should define the person record, then write that too
@@ -288,7 +307,7 @@ public class PatientTransformer extends AbstractTransformer {
                         dateOfBirth,
                         dateOfDeath,
                         postcode,
-                        Integer.parseInt(ethnicCodeConceptId),
+                        ethnicCodeConceptId,
                         registeredPracticeId);
             }
         }

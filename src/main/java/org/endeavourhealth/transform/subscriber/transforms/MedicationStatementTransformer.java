@@ -155,9 +155,14 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             }
         }
 
-        // TODO Code needs to be amended to use the IM for
+        // TODO Code needs to be reviewed to use the IM for
         //  Authorisation Type
-        medicationStatementAuthorisationTypeConceptId = authorisationType.ordinal();
+        Integer medicationStatementAuthorisationTypeId = authorisationType.ordinal();
+
+        medicationStatementAuthorisationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_MSAT", medicationStatementAuthorisationTypeId.toString());
+        if (medicationStatementAuthorisationTypeConceptId == null) {
+            throw new TransformException("medicationStatementAuthorisationTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
 
         // TODO Finalise the use of coreConceptId and the IM (rather than dmdId) in order to look
         //  up the BNF Chapter in that table in the reference DB, by using the ACTUAL Snomed code

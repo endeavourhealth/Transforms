@@ -6,6 +6,8 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -61,16 +63,22 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
             }
         }
 
-        // TODO Code needs to be changed to use the IM for
+        // TODO Code needs to be reviewed to use the IM for
         //  Registration Type Concept Id
 
         if (regTypeExtension != null) {
             Coding coding = (Coding)regTypeExtension.getValue();
             RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
-            registrationTypeConceptId = new Integer(fhirRegistrationType.ordinal());
+            Integer registrationTypeId = new Integer(fhirRegistrationType.ordinal());
+
+            registrationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_RT", registrationTypeId.toString());
+            if (registrationTypeConceptId == null) {
+                throw new TransformException("registrationTypeConceptId is null for " + fhirEpisode.getResourceType() + " " + fhirEpisode.getId());
+            }
+
         }
 
-        // TODO Code needs to be changed to use the IM for
+        // TODO Code needs to be reviewed to use the IM for
         //  Registration Status Concept Id
 
         //reg status is stored in a contained list with an extension giving the internal reference to it
@@ -91,7 +99,13 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
                         CodeableConcept codeableConcept = entry.getFlag();
                         String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
                         RegistrationStatus status = RegistrationStatus.fromCode(code);
-                        registrationStatusConceptId = new Integer(status.ordinal());
+                        Integer registrationStatusId = new Integer(status.ordinal());
+
+                        registrationStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_RS", registrationStatusId.toString());
+                        if (registrationStatusConceptId == null) {
+                            throw new TransformException("registrationStatusConceptId is null for " + fhirEpisode.getResourceType() + " " + fhirEpisode.getId());
+                        }
+
                     }
 
                     break;
