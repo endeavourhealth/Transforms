@@ -98,13 +98,13 @@ public class PROCEPreTransformer {
                 //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
                 String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
                 if (mrn == null) {
-                    TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no MRN from lookup", procId);
+                    TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no MRN from lookup for person {}", procId, personId);
                     return;
                 }
                 stagingPROCE.setLookupMrn(mrn);
 
             } else {
-                TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no MRN from lookup", procId);
+                TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no personId to look up", procId);
                 return;
             }
 
