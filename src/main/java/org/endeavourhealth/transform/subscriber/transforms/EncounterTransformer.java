@@ -9,7 +9,9 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.outputModels.EncounterDetail;
 import org.endeavourhealth.transform.subscriber.outputModels.EncounterRaw;
@@ -157,8 +159,15 @@ public class EncounterTransformer extends AbstractTransformer {
         originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
             EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
-            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("SNOMED", ret.toString());
-            // snomedConceptId = ret.getCode();
+            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.SNOMED, String.valueOf(ret.getCode()));
+            if (coreConceptId == null) {
+                throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            }
+
+            nonCoreConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.SNOMED, String.valueOf(ret.getCode()));
+            if (nonCoreConceptId == null) {
+                throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            }
         }
 
         if (fhir.hasExtension()) {
@@ -166,15 +175,19 @@ public class EncounterTransformer extends AbstractTransformer {
             if (extension != null) {
                 CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
 
-                coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode
-                        ("SNOMED", codeableConcept.toString());
+                coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.SNOMED, codeableConcept.getText());
+                if (coreConceptId == null) {
+                    throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+                }
                 // snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
 
                 //add the raw original code and term, to assist in data checking and results display
                 originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
                 // originalTerm = codeableConcept.getText();
-                nonCoreConceptId = IMClient.getConceptIdForSchemeCode
-                        ("SNOMED", originalCode);
+                nonCoreConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.SNOMED, originalCode);
+                if (nonCoreConceptId == null) {
+                    throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+                }
             }
         }
 
