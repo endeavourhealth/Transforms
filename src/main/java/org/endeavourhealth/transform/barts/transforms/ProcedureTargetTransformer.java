@@ -109,7 +109,7 @@ public class ProcedureTargetTransformer {
                     = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
 
             // can be either of these three coded types
-            String procedureCodeType = procedure.getProcedureType();
+            String procedureCodeType = procedure.getProcedureType().trim();
             if (procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED) ||
                     procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED_CT)) {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
@@ -137,12 +137,18 @@ public class ProcedureTargetTransformer {
             // notes / free text
             String freeText = procedure.getFreeText();
             if (!Strings.isNullOrEmpty(freeText)) {
-                procedureBuilder.addNotes(freeText);
+                procedureBuilder.addNotes("Notes: "+freeText);
             }
             // qualifier text as more notes
             String qualifierText = procedure.getQualifier();
             if (!Strings.isNullOrEmpty(qualifierText)) {
-                procedureBuilder.addNotes(qualifierText);
+                procedureBuilder.addNotes("Qualifier: " +qualifierText);
+            }
+
+            //location text / codes as more notes
+            String locationText = procedure.getLocation();
+            if (!Strings.isNullOrEmpty(locationText)) {
+                procedureBuilder.addNotes("Location(s): "+locationText);
             }
 
             // sequence number, primary and parent procedure
