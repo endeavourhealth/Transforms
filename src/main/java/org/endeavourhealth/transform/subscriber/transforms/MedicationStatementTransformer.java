@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -159,7 +160,8 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         //  Authorisation Type
         Integer medicationStatementAuthorisationTypeId = authorisationType.ordinal();
 
-        medicationStatementAuthorisationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_MSAT", medicationStatementAuthorisationTypeId.toString());
+        medicationStatementAuthorisationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
+                IMConstant.FHIR_MED_STATEMENT_AUTH_TYPE, medicationStatementAuthorisationTypeId.toString());
         if (medicationStatementAuthorisationTypeConceptId == null) {
             throw new TransformException("medicationStatementAuthorisationTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }

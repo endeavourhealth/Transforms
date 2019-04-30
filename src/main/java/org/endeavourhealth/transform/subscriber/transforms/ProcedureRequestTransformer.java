@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -99,7 +100,8 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         if (fhir.hasStatus()) {
             Integer procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
 
-            procedureRequestStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_PRS", procedureRequestStatusId.toString());
+            procedureRequestStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
+                    IMConstant.FHIR_PROCEDURE_REQUEST_STATUS, procedureRequestStatusId.toString());
             if (procedureRequestStatusConceptId == null) {
                 throw new TransformException("procedureRequestStatusConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
             }

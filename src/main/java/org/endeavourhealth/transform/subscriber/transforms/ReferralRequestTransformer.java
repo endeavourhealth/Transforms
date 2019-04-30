@@ -9,6 +9,7 @@ import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -196,7 +197,8 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                 ReferralPriority fhirReferralPriority = ReferralPriority.fromCode(coding.getCode());
                 Integer referralRequestPriorityId = fhirReferralPriority.ordinal();
 
-                referralRequestPriorityConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_RFP", referralRequestPriorityId.toString());
+                referralRequestPriorityConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
+                        IMConstant.FHIR_REFERRAL_PRIORITY, referralRequestPriorityId.toString());
                 if (referralRequestPriorityConceptId == null) {
                     throw new TransformException("referralRequestPriorityConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
                 }
@@ -213,7 +215,8 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
                 Integer referralRequestTypeId = fhirReferralType.ordinal();
 
-                referralRequestTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_RFT", referralRequestTypeId.toString());
+                referralRequestTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
+                        IMConstant.FHIR_REFERRAL_TYPE, referralRequestTypeId.toString());
                 if (referralRequestTypeConceptId == null) {
                     throw new TransformException("referralRequestTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
                 }

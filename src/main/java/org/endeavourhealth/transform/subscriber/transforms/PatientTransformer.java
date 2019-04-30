@@ -24,6 +24,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Enterpri
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
@@ -135,7 +136,7 @@ public class PatientTransformer extends AbstractTransformer {
         if (fhirPatient.hasGender()) {
             Integer genderId = fhirPatient.getGender().ordinal();
 
-            genderConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_AG", genderId.toString());
+            genderConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_ADMINISTRATIVE_GENDER, genderId.toString());
             if (genderConceptId == null) {
                 throw new TransformException("genderConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
             }
@@ -174,7 +175,7 @@ public class PatientTransformer extends AbstractTransformer {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
             String ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
 
-            ethnicCodeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_EC", ethnicCodeId);
+            ethnicCodeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_ETHNIC_CATEGORY, ethnicCodeId);
             if (ethnicCodeConceptId == null) {
                 throw new TransformException("ethnicConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
             }

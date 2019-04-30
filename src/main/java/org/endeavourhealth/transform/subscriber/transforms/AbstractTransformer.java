@@ -16,6 +16,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchEx
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.FhirToSubscriberCsvTransformer;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -549,17 +550,17 @@ public abstract class AbstractTransformer {
     protected static String getScheme(String codingSystem) {
         String str = null;
         if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) {
-            str = "SNOMED";
+            str = IMConstant.SNOMED;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_READ2)) {
-            str = "READ2";
+            str = IMConstant.READ2;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CTV3)) {
-            str = "CTV3";
+            str = IMConstant.CTV3;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_ICD10)) {
-            str = "ICD10";
+            str = IMConstant.ICD10;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_OPCS4)) {
-            str = "OPCS4";
+            str = IMConstant.OPCS4;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
-            str = "BartsCerner";
+            str = IMConstant.BARTS_CERNER;
         }
         return str;
     }
