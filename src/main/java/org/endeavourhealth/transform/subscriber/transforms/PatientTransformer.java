@@ -81,7 +81,7 @@ public class PatientTransformer extends AbstractTransformer {
         long id;
         long organizationId;
         long personId;
-        int patientGenderId;
+        int genderConceptId;
         String pseudoId = null;
         String nhsNumber = null;
         Integer ageYears = null;
@@ -93,7 +93,7 @@ public class PatientTransformer extends AbstractTransformer {
         String postcodePrefix = null;
         String lsoaCode = null;
         String msoaCode = null;
-        String ethnicCode = null;
+        String ethnicCodeConceptId = null;
         String wardCode = null;
         String localAuthorityCode = null;
         Long registeredPracticeId = null;
@@ -128,10 +128,10 @@ public class PatientTransformer extends AbstractTransformer {
         }
 
         if (fhirPatient.hasGender()) {
-            patientGenderId = fhirPatient.getGender().ordinal();
+            genderConceptId = fhirPatient.getGender().ordinal();
 
         } else {
-            patientGenderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
+            genderConceptId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
         }
 
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
@@ -159,7 +159,7 @@ public class PatientTransformer extends AbstractTransformer {
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
-            ethnicCode = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
+            ethnicCodeConceptId = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
         }
 
         if (fhirPatient.hasCareProvider()) {
@@ -192,7 +192,7 @@ public class PatientTransformer extends AbstractTransformer {
             //if pseudonymised, all non-male/non-female genders should be treated as female
             if (fhirPatient.getGender() != Enumerations.AdministrativeGender.FEMALE
                     && fhirPatient.getGender() != Enumerations.AdministrativeGender.MALE) {
-                patientGenderId = Enumerations.AdministrativeGender.FEMALE.ordinal();
+                genderConceptId = Enumerations.AdministrativeGender.FEMALE.ordinal();
             }
 
             LinkDistributorConfig mainPseudoSalt = getMainSaltConfig(params.getEnterpriseConfigName());
@@ -218,44 +218,33 @@ public class PatientTransformer extends AbstractTransformer {
                 }
             }
 
-            EnterpriseAgeUpdaterlDalI enterpriseAgeUpdaterlDal = DalProvider.factoryEnterpriseAgeUpdaterlDal(params.getEnterpriseConfigName());
-            Integer[] ageValues = enterpriseAgeUpdaterlDal.calculateAgeValuesAndUpdateTable(id, dateOfBirth, dateOfDeath);
-            ageYears = ageValues[EnterpriseAge.UNIT_YEARS];
-            ageMonths = ageValues[EnterpriseAge.UNIT_MONTHS];
-            ageWeeks = ageValues[EnterpriseAge.UNIT_WEEKS];
-
             patientWriter.writeUpsertPseudonymised(id,
                     organizationId,
                     personId,
-                    patientGenderId,
-                    pseudoId,
-                    ageYears,
-                    ageMonths,
-                    ageWeeks,
+                    title,
+                    firstNames,
+                    lastName,
+                    genderConceptId,
+                    nhsNumber,
+                    dateOfBirth,
                     dateOfDeath,
-                    postcodePrefix,
-                    lsoaCode,
-                    msoaCode,
-                    ethnicCode,
-                    wardCode,
-                    localAuthorityCode,
+                    postcode,
+                    Integer.parseInt(ethnicCodeConceptId),
                     registeredPracticeId);
 
             //if our patient record is the one that should define the person record, then write that too
             if (shouldWritePersonRecord) {
-                personWriter.writeUpsertPseudonymised(personId,
-                        patientGenderId,
-                        pseudoId,
-                        ageYears,
-                        ageMonths,
-                        ageWeeks,
+                personWriter.writeUpsertPseudonymised(id,
+                        organizationId,
+                        title,
+                        firstNames,
+                        lastName,
+                        genderConceptId,
+                        nhsNumber,
+                        dateOfBirth,
                         dateOfDeath,
-                        postcodePrefix,
-                        lsoaCode,
-                        msoaCode,
-                        ethnicCode,
-                        wardCode,
-                        localAuthorityCode,
+                        postcode,
+                        Integer.parseInt(ethnicCodeConceptId),
                         registeredPracticeId);
             }
 
@@ -276,38 +265,31 @@ public class PatientTransformer extends AbstractTransformer {
             patientWriter.writeUpsertIdentifiable(id,
                     organizationId,
                     personId,
-                    patientGenderId,
+                    title,
+                    firstNames,
+                    lastName,
+                    genderConceptId,
                     nhsNumber,
                     dateOfBirth,
                     dateOfDeath,
                     postcode,
-                    lsoaCode,
-                    msoaCode,
-                    ethnicCode,
-                    wardCode,
-                    localAuthorityCode,
-                    registeredPracticeId,
-                    title,
-                    firstNames,
-                    lastName);
+                    Integer.parseInt(ethnicCodeConceptId),
+                    registeredPracticeId);
 
             //if our patient record is the one that should define the person record, then write that too
             if (shouldWritePersonRecord) {
-                personWriter.writeUpsertIdentifiable(personId,
-                        patientGenderId,
+                personWriter.writeUpsertIdentifiable(id,
+                        organizationId,
+                        title,
+                        firstNames,
+                        lastName,
+                        genderConceptId,
                         nhsNumber,
                         dateOfBirth,
                         dateOfDeath,
                         postcode,
-                        lsoaCode,
-                        msoaCode,
-                        ethnicCode,
-                        wardCode,
-                        localAuthorityCode,
-                        registeredPracticeId,
-                        title,
-                        firstNames,
-                        lastName);
+                        Integer.parseInt(ethnicCodeConceptId),
+                        registeredPracticeId);
             }
         }
     }
