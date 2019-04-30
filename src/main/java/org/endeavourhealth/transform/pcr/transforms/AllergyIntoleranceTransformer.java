@@ -167,11 +167,11 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
 
 
         //allergy status
-        if (fhir.hasStatus()) {
+        /* if (fhir.hasStatus()) {
             AllergyIntolerance.AllergyIntoleranceStatus status = fhir.getStatus();
             statusConceptId = IMClient.getOrCreateConceptId("Allergy.Status" + status.toCode());
             //statusConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-        }
+        }*/
 
         org.endeavourhealth.transform.pcr.outputModels.Allergy model
                 = (org.endeavourhealth.transform.pcr.outputModels.Allergy)csvWriter;

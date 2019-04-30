@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURC
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.SURCP;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
@@ -62,7 +63,7 @@ public class SURCPPreTransformer {
 
             //get lookup term from non 0 code
             if (!BartsCsvHelper.isEmptyOrIsZero(procedureCodeCell)) {
-                CernerCodeValueRef codeValueRef = csvHelper.lookupCodeRef(200L, procedureCodeCell);
+                CernerCodeValueRef codeValueRef = csvHelper.lookupCodeRef(CodeValueSet.PROCEDURE_ORDERS, procedureCodeCell);
                 if (codeValueRef != null) {
                     String codeLookupTerm = codeValueRef.getCodeDispTxt();
                     stagingSURCP.setLookupProcedureCodeTerm(codeLookupTerm);

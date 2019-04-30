@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -187,9 +185,10 @@ public class SRPatientRegistrationTransformer {
                 }
 
                 //if registration type is not dummy remove the test patient extension
-                if (regType != null && regType != RegistrationType.DUMMY) {
+                //the above code never returns the Dummy reg type, so removed this. Just trust the TestPatient field on SRPatient
+                /*if (regType != null && regType != RegistrationType.DUMMY) {
                     ExtensionConverter.removeExtension(patientBuilder.getResource(), FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
-                }
+                }*/
             }
         }
 

@@ -26,170 +26,103 @@ public class Patient extends AbstractSubscriberCsvWriter {
 
 
     public void writeUpsertPseudonymised(long id,
-                            long organizationId,
-                            long personId,
-                            int patientGenderId,
-                            String pseudoId,
-                            Integer ageYears,
-                            Integer ageMonths,
-                            Integer ageWeeks,
-                            Date dateOfDeath,
-                            String postcodePrefix,
-                            String lsoaCode,
-                            String msoaCode,
-                             String ethnicCode,
-                             String wardCode,
-                             String localAuthorityCode,
-                             Long registeredPracticeId) throws Exception {
+                                         long organizationId,
+                                         long personId,
+                                         String title,
+                                         String firstNames,
+                                         String lastName,
+                                         Integer genderConceptId,
+                                         String nhsNumber,
+                                         Date dateOfBirth,
+                                         Date dateOfDeath,
+                                         String postcode,
+                                         Integer ethnicCodeConceptId,
+                                         Long registeredPracticeId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
-                        "" + id,
-                        "" + organizationId,
-                        "" + personId,
-                        "" + patientGenderId,
-                        pseudoId,
-                        convertInt(ageYears),
-                        convertInt(ageMonths),
-                        convertInt(ageWeeks),
-                        convertDate(dateOfDeath),
-                        postcodePrefix,
-                        lsoaCode,
-                        msoaCode,
-                        ethnicCode,
-                        wardCode,
-                        localAuthorityCode,
-                        convertLong(registeredPracticeId));
+                "" + id,
+                "" + organizationId,
+                "" + personId,
+                null,
+                null,
+                null,
+                convertInt(genderConceptId),
+                null,
+                convertDate(dateOfBirth),
+                convertDate(dateOfDeath),
+                postcode,
+                convertInt(ethnicCodeConceptId),
+                convertLong(registeredPracticeId));
     }
 
 
     public void writeUpsertIdentifiable(long id,
                                         long organizationId,
                                         long personId,
-                                        int patientGenderId,
+                                        String title,
+                                        String firstNames,
+                                        String lastName,
+                                        Integer genderConceptId,
                                         String nhsNumber,
                                         Date dateOfBirth,
                                         Date dateOfDeath,
                                         String postcode,
-                                        String lsoaCode,
-                                        String msoaCode,
-                                        String ethnicCode,
-                                        String wardCode,
-                                        String localAuthorityCode,
-                                        Long registeredPracticeId,
-                                        String title,
-                                        String firstNames,
-                                        String lastName) throws Exception {
+                                        Integer ethnicCodeConceptId,
+                                        Long registeredPracticeId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
                 "" + organizationId,
                 "" + personId,
-                "" + patientGenderId,
+                title,
+                firstNames,
+                lastName,
+                convertInt(genderConceptId),
                 nhsNumber,
                 convertDate(dateOfBirth),
                 convertDate(dateOfDeath),
                 postcode,
-                lsoaCode,
-                msoaCode,
-                ethnicCode,
-                wardCode,
-                localAuthorityCode,
-                convertLong(registeredPracticeId),
-                title,
-                firstNames,
-                lastName);
+                convertInt(ethnicCodeConceptId),
+                convertLong(registeredPracticeId));
     }
 
     @Override
     public String[] getCsvHeaders() {
-        if (isPseduonymised()) {
-            return new String[] {
-                    "save_mode",
-                    "id",
-                    "organization_id",
-                    "person_id",
-                    "patient_gender_id",
-                    "pseudo_id",
-                    "age_years",
-                    "age_months",
-                    "age_weeks",
-                    "date_of_death",
-                    "postcode_prefix",
-                    "lsoa_code",
-                    "msoa_code",
-                    "ethnic_code",
-                    "ward_code",
-                    "local_authority_code",
-                    "registered_practice_organization_id"
-            };
-        } else {
-            return new String[]{
-                    "save_mode",
-                    "id",
-                    "organization_id",
-                    "person_id",
-                    "patient_gender_id",
-                    "nhs_number",
-                    "date_of_birth",
-                    "date_of_death",
-                    "postcode",
-                    "lsoa_code",
-                    "msoa_code",
-                    "ethnic_code",
-                    "ward_code",
-                    "local_authority_code",
-                    "registered_practice_organization_id",
-                    "title",
-                    "first_names",
-                    "last_name"
-            };
-        }
+        return new String[]{
+                "save_mode",
+                "id",
+                "organization_id",
+                "person_id",
+                "title",
+                "first_names",
+                "last_name",
+                "gender_concept_id",
+                "nhs_number",
+                "date_of_birth",
+                "date_of_death",
+                "postcode",
+                "ethnic_code_concept_id",
+                "registered_practice_organization_id"
+        };
     }
 
     @Override
     public Class[] getColumnTypes() {
-        if (isPseduonymised()) {
-            return new Class[] {
-                    String.class,
-                    Long.TYPE,
-                    Long.TYPE,
-                    Long.TYPE,
-                    Integer.TYPE,
-                    String.class,
-                    Integer.class,
-                    Integer.class,
-                    Integer.class,
-                    Date.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    Long.class
-            };
-        } else {
-            return new Class[] {
-                    String.class,
-                    Long.TYPE,
-                    Long.TYPE,
-                    Long.TYPE,
-                    Integer.TYPE,
-                    String.class,
-                    Date.class,
-                    Date.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    String.class,
-                    Long.class,
-                    String.class,
-                    String.class,
-                    String.class
-            };
-        }
+        return new Class[] {
+                String.class,
+                Long.TYPE,
+                Long.TYPE,
+                Long.TYPE,
+                String.class,
+                String.class,
+                String.class,
+                Integer.class,
+                String.class,
+                Date.class,
+                Date.class,
+                String.class,
+                Integer.class,
+                Long.TYPE,
+        };
     }
-
 }

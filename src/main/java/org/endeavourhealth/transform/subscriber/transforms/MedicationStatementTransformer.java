@@ -8,6 +8,8 @@ import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -82,6 +84,24 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             originalTerm = CodeableConceptHelper.findSnomedConceptText(fhir.getMedicationCodeableConcept());
         }*/
 
+        ObservationCodeHelper code = ObservationCodeHelper.extractCodeFields(fhir.getMedicationCodeableConcept());
+        if (code == null) {
+            return;
+        }
+        CodeableConcept concept = fhir.getMedicationCodeableConcept();
+        Coding coding = CodeableConceptHelper.findOriginalCoding(concept);
+        String codingSystem = coding.getSystem();
+        String scheme = getScheme(codingSystem);
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        if (coreConceptId == null) {
+            throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
+
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        if (nonCoreConceptId == null) {
+            throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
+
         if (fhir.hasStatus()) {
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
             isActive = Boolean.valueOf(fhirStatus == MedicationStatement.MedicationStatementStatus.ACTIVE);
@@ -135,17 +155,14 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             }
         }
 
-        // TODO Code needs to be amended to use the IM for
+        // TODO Code needs to be reviewed to use the IM for
         //  Authorisation Type
-        medicationStatementAuthorisationTypeConceptId = authorisationType.ordinal();
+        Integer medicationStatementAuthorisationTypeId = authorisationType.ordinal();
 
-        // TODO Code needs to be added to use the IM for
-        //  Core Concept Id
-        coreConceptId = null;
-
-        // TODO Code needs to be added to use the IM for
-        //  Non Core Concept Id
-        nonCoreConceptId = null;
+        medicationStatementAuthorisationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_MSAT", medicationStatementAuthorisationTypeId.toString());
+        if (medicationStatementAuthorisationTypeConceptId == null) {
+            throw new TransformException("medicationStatementAuthorisationTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
 
         // TODO Finalise the use of coreConceptId and the IM (rather than dmdId) in order to look
         //  up the BNF Chapter in that table in the reference DB, by using the ACTUAL Snomed code

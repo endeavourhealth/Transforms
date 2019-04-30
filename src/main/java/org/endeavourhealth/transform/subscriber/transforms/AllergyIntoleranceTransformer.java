@@ -1,7 +1,8 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -87,13 +88,36 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             }
         }
 
-        // TODO Code needs to be added to use the IM for
-        //  Core Concept Id
-        coreConceptId = null;
+        // TODO Code needs to be reviewed to use the IM for
+        //  Core Concept Id and Non Core Concept Id
 
-        // TODO Code needs to be added to use the IM for
-        //  Non Core Concept Id
-        nonCoreConceptId = null;
+        String originalCode = null;
+        // String originalTerm = null;
+        // Long snomedConceptId = null;
+
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getSubstance());
+        if (codes == null) {
+            return;
+        }
+
+        originalCode = codes.getOriginalCode();
+        // originalTerm = codes.getOriginalTerm();
+        // snomedConceptId = codes.getSnomedConceptId();
+
+        CodeableConcept codeableConcept = fhir.getSubstance();
+        Coding coding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
+        String codingSystem = coding.getSystem();
+        String scheme = getScheme(codingSystem);
+
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, originalCode);
+        if (coreConceptId == null) {
+            throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
+
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, originalCode);
+        if (nonCoreConceptId == null) {
+            throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
 
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());

@@ -1,7 +1,10 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -73,20 +76,35 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
          */
-
-        // TODO Code needs to be amended to use the IM for
-        //  Procedure Request Status
-        if (fhir.hasStatus()) {
-            procedureRequestStatusConceptId = new Integer(fhir.getStatus().ordinal());
+        ObservationCodeHelper code = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        if (code == null) {
+            return;
+        }
+        CodeableConcept concept = fhir.getCode();
+        Coding coding = CodeableConceptHelper.findOriginalCoding(concept);
+        String codingSystem = coding.getSystem();
+        String scheme = getScheme(codingSystem);
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        if (coreConceptId == null) {
+            throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        // TODO Code needs to be added to use the IM for
-        //  Core Concept Id
-        coreConceptId = null;
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        if (nonCoreConceptId == null) {
+            throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
 
-        // TODO Code needs to be added to use the IM for
-        //  Non Core Concept Id
-        nonCoreConceptId = null;
+        // TODO Code needs to be reviewed to use the IM for
+        //  Procedure Request Status
+        if (fhir.hasStatus()) {
+            Integer procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
+
+            procedureRequestStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_PRS", procedureRequestStatusId.toString());
+            if (procedureRequestStatusConceptId == null) {
+                throw new TransformException("procedureRequestStatusConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            }
+
+        }
 
         if (fhir.getSubjectTarget() != null) {
             Patient patient = (Patient) fhir.getSubjectTarget();

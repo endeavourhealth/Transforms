@@ -21,7 +21,9 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseAgeUp
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.QueryDocument.*;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
@@ -81,7 +83,7 @@ public class PatientTransformer extends AbstractTransformer {
         long id;
         long organizationId;
         long personId;
-        int patientGenderId;
+        Integer genderConceptId = null;
         String pseudoId = null;
         String nhsNumber = null;
         Integer ageYears = null;
@@ -93,7 +95,7 @@ public class PatientTransformer extends AbstractTransformer {
         String postcodePrefix = null;
         String lsoaCode = null;
         String msoaCode = null;
-        String ethnicCode = null;
+        Integer ethnicCodeConceptId = null;
         String wardCode = null;
         String localAuthorityCode = null;
         Long registeredPracticeId = null;
@@ -127,12 +129,20 @@ public class PatientTransformer extends AbstractTransformer {
             dateOfDeath = d.getValue();
         }
 
-        if (fhirPatient.hasGender()) {
-            patientGenderId = fhirPatient.getGender().ordinal();
+        // TODO Code needs to be reviewed to use the IM for
+        //  Gender Concept Id
 
-        } else {
-            patientGenderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
-        }
+        if (fhirPatient.hasGender()) {
+            Integer genderId = fhirPatient.getGender().ordinal();
+
+            genderConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_AG", genderId.toString());
+            if (genderConceptId == null) {
+                throw new TransformException("genderConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
+            }
+
+        } /*else {
+            Integer genderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
+        }*/
 
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
         if (fhirAddress != null) {
@@ -156,10 +166,19 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
+        // TODO Code needs to be reviewed to use the IM for
+        //  Ethnic Code Concept Id
+
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
-            ethnicCode = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
+            String ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
+
+            ethnicCodeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_EC", ethnicCodeId);
+            if (ethnicCodeConceptId == null) {
+                throw new TransformException("ethnicConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
+            }
+
         }
 
         if (fhirPatient.hasCareProvider()) {
@@ -192,7 +211,7 @@ public class PatientTransformer extends AbstractTransformer {
             //if pseudonymised, all non-male/non-female genders should be treated as female
             if (fhirPatient.getGender() != Enumerations.AdministrativeGender.FEMALE
                     && fhirPatient.getGender() != Enumerations.AdministrativeGender.MALE) {
-                patientGenderId = Enumerations.AdministrativeGender.FEMALE.ordinal();
+                genderConceptId = Enumerations.AdministrativeGender.FEMALE.ordinal();
             }
 
             LinkDistributorConfig mainPseudoSalt = getMainSaltConfig(params.getEnterpriseConfigName());
@@ -218,44 +237,33 @@ public class PatientTransformer extends AbstractTransformer {
                 }
             }
 
-            EnterpriseAgeUpdaterlDalI enterpriseAgeUpdaterlDal = DalProvider.factoryEnterpriseAgeUpdaterlDal(params.getEnterpriseConfigName());
-            Integer[] ageValues = enterpriseAgeUpdaterlDal.calculateAgeValuesAndUpdateTable(id, dateOfBirth, dateOfDeath);
-            ageYears = ageValues[EnterpriseAge.UNIT_YEARS];
-            ageMonths = ageValues[EnterpriseAge.UNIT_MONTHS];
-            ageWeeks = ageValues[EnterpriseAge.UNIT_WEEKS];
-
             patientWriter.writeUpsertPseudonymised(id,
                     organizationId,
                     personId,
-                    patientGenderId,
-                    pseudoId,
-                    ageYears,
-                    ageMonths,
-                    ageWeeks,
+                    title,
+                    firstNames,
+                    lastName,
+                    genderConceptId,
+                    nhsNumber,
+                    dateOfBirth,
                     dateOfDeath,
                     postcodePrefix,
-                    lsoaCode,
-                    msoaCode,
-                    ethnicCode,
-                    wardCode,
-                    localAuthorityCode,
+                    ethnicCodeConceptId,
                     registeredPracticeId);
 
             //if our patient record is the one that should define the person record, then write that too
             if (shouldWritePersonRecord) {
-                personWriter.writeUpsertPseudonymised(personId,
-                        patientGenderId,
-                        pseudoId,
-                        ageYears,
-                        ageMonths,
-                        ageWeeks,
+                personWriter.writeUpsertPseudonymised(id,
+                        organizationId,
+                        title,
+                        firstNames,
+                        lastName,
+                        genderConceptId,
+                        nhsNumber,
+                        dateOfBirth,
                         dateOfDeath,
                         postcodePrefix,
-                        lsoaCode,
-                        msoaCode,
-                        ethnicCode,
-                        wardCode,
-                        localAuthorityCode,
+                        ethnicCodeConceptId,
                         registeredPracticeId);
             }
 
@@ -276,38 +284,31 @@ public class PatientTransformer extends AbstractTransformer {
             patientWriter.writeUpsertIdentifiable(id,
                     organizationId,
                     personId,
-                    patientGenderId,
+                    title,
+                    firstNames,
+                    lastName,
+                    genderConceptId,
                     nhsNumber,
                     dateOfBirth,
                     dateOfDeath,
                     postcode,
-                    lsoaCode,
-                    msoaCode,
-                    ethnicCode,
-                    wardCode,
-                    localAuthorityCode,
-                    registeredPracticeId,
-                    title,
-                    firstNames,
-                    lastName);
+                    ethnicCodeConceptId,
+                    registeredPracticeId);
 
             //if our patient record is the one that should define the person record, then write that too
             if (shouldWritePersonRecord) {
-                personWriter.writeUpsertIdentifiable(personId,
-                        patientGenderId,
+                personWriter.writeUpsertIdentifiable(id,
+                        organizationId,
+                        title,
+                        firstNames,
+                        lastName,
+                        genderConceptId,
                         nhsNumber,
                         dateOfBirth,
                         dateOfDeath,
                         postcode,
-                        lsoaCode,
-                        msoaCode,
-                        ethnicCode,
-                        wardCode,
-                        localAuthorityCode,
-                        registeredPracticeId,
-                        title,
-                        firstNames,
-                        lastName);
+                        ethnicCodeConceptId,
+                        registeredPracticeId);
             }
         }
     }

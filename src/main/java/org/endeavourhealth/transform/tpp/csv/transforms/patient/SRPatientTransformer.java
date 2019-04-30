@@ -188,15 +188,16 @@ public class SRPatientTransformer {
         }
 
         CsvCell testPatientCell = parser.getTestPatient();
-        if (!testPatientCell.isEmpty()) {
+        patientBuilder.setTestPatient(testPatientCell.getBoolean(), testPatientCell);
 
+        /*if (!testPatientCell.isEmpty()) {
             String value = testPatientCell.getString();
             if (Boolean.parseBoolean(value)) {
                 patientBuilder.setTestPatient(Boolean.TRUE, testPatientCell);
             } else {
                 patientBuilder.setTestPatient(Boolean.FALSE, testPatientCell);
             }
-        }
+        }*/
     }
 
     private static NhsNumberVerificationStatus mapSpindeMatchedStatus(CsvCell spineMatched) {

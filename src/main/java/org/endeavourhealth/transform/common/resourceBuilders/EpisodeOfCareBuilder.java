@@ -145,10 +145,15 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
     }
 
     public void setRegistrationType(RegistrationType registrationType, CsvCell... sourceCells) {
-        Coding coding = CodingHelper.createCoding(registrationType);
-        Extension extension = ExtensionConverter.createOrUpdateExtension(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE, coding);
+        if (registrationType == null) {
+            ExtensionConverter.removeExtension(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
 
-        auditCodingExtension(extension, sourceCells);
+        } else {
+            Coding coding = CodingHelper.createCoding(registrationType);
+            Extension extension = ExtensionConverter.createOrUpdateExtension(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE, coding);
+
+            auditCodingExtension(extension, sourceCells);
+        }
     }
 
     //reg status is now stored in a contained list

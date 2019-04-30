@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
@@ -90,6 +91,24 @@ public class ObservationTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
         */
+        ObservationCodeHelper code = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        if (code == null) {
+            return;
+        }
+        CodeableConcept concept = fhir.getCode();
+        Coding coding = CodeableConceptHelper.findOriginalCoding(concept);
+        String codingSystem = coding.getSystem();
+        String scheme = getScheme(codingSystem);
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        if (coreConceptId == null) {
+            throw new org.endeavourhealth.core.exceptions.TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
+
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        if (nonCoreConceptId == null) {
+            throw new org.endeavourhealth.core.exceptions.TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
+
 
         if (fhir.hasValue()) {
             Type value = fhir.getValue();
@@ -128,14 +147,6 @@ public class ObservationTransformer extends AbstractTransformer {
             Reference parentReference = (Reference)parentExtension.getValue();
             parentObservationId = findEnterpriseId(params, parentReference);
         }
-
-        // TODO Code needs to be added to use the IM for
-        //  Core Concept Id
-        coreConceptId = null;
-
-        // TODO Code needs to be added to use the IM for
-        //  Non Core Concept Id
-        nonCoreConceptId = null;
 
         if (fhir.getSubjectTarget() != null) {
             Patient patient = (Patient) fhir.getSubjectTarget();

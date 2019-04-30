@@ -7,6 +7,8 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -86,6 +88,25 @@ public class MedicationOrderTransformer extends AbstractTransformer {
             originalTerm = CodeableConceptHelper.findSnomedConceptText(fhir.getMedicationCodeableConcept());
         }*/
 
+        ObservationCodeHelper code = ObservationCodeHelper.extractCodeFields(fhir.getMedicationCodeableConcept());
+        if (code == null) {
+            return;
+        }
+        CodeableConcept concept = fhir.getMedicationCodeableConcept();
+        Coding coding = CodeableConceptHelper.findOriginalCoding(concept);
+        String codingSystem = coding.getSystem();
+        String scheme = getScheme(codingSystem);
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        if (coreConceptId == null) {
+            throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
+
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        if (nonCoreConceptId == null) {
+            throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+        }
+
+
         if (fhir.hasDosageInstruction()) {
             if (fhir.getDosageInstruction().size() > 1) {
                 throw new TransformException("Cannot support MedicationStatements with more than one dose " + fhir.getId());
@@ -143,14 +164,6 @@ public class MedicationOrderTransformer extends AbstractTransformer {
                 }
             }
         }
-
-        // TODO Code needs to be added to use the IM for
-        //  Core Concept Id
-        coreConceptId = null;
-
-        // TODO Code needs to be added to use the IM for
-        //  Non Core Concept Id
-        nonCoreConceptId = null;
 
         // TODO Finalise the use of core_concept_id and the IM (rather than dmdId) in order to look
         //  up the BNF Chapter in that table in the reference DB, by using the ACTUAL Snomed code

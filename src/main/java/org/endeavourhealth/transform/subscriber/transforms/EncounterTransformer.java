@@ -9,6 +9,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.outputModels.EncounterDetail;
 import org.endeavourhealth.transform.subscriber.outputModels.EncounterRaw;
@@ -147,13 +148,35 @@ public class EncounterTransformer extends AbstractTransformer {
             serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
         }
 
-        // TODO Code needs to be added to use the IM for
-        //  Core Concept Id
-        coreConceptId = null;
+        // TODO Code needs to be reviewed to use the IM for
+        //  Core Concept Id and Non Core Concept ID
+        Long snomedConceptId = null;
+        String originalCode = null;
+        String originalTerm = null;
 
-        // TODO Code needs to be added to use the IM for
-        //  Non Core Concept Id
-        nonCoreConceptId = null;
+        originalTerm = findEncounterTypeTerm(fhir, params);
+        if (!Strings.isNullOrEmpty(originalTerm)) {
+            EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
+            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("SNOMED", ret.toString());
+            // snomedConceptId = ret.getCode();
+        }
+
+        if (fhir.hasExtension()) {
+            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
+            if (extension != null) {
+                CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+
+                coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode
+                        ("SNOMED", codeableConcept.toString());
+                // snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
+
+                //add the raw original code and term, to assist in data checking and results display
+                originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
+                // originalTerm = codeableConcept.getText();
+                nonCoreConceptId = IMClient.getConceptIdForSchemeCode
+                        ("SNOMED", originalCode);
+            }
+        }
 
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
