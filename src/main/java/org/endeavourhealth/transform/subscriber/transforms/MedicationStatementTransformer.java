@@ -166,13 +166,12 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             throw new TransformException("medicationStatementAuthorisationTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        // TODO Finalise the use of coreConceptId and the IM (rather than dmdId) in order to look
-        //  up the BNF Chapter in that table in the reference DB, by using the ACTUAL Snomed code
-        // This line will need changing
-        Long snomedCode = null; // dmdId;
-        // These lines are fine
+        //  Finalised the use of coreConceptId and the IM in order to look up the BNF
+        //  Chapter in that table in the reference DB, by using the actual Snomed code
+        String snomedCodeString = IMClient.getCodeForConceptId(coreConceptId);
+
         SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
-        String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCode.toString());
+        String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCodeString);
         bnfReference = Integer.parseInt(fullBnfChapterCodeString.substring(0,6));
 
         if (fhir.getPatientTarget() != null) {
