@@ -56,6 +56,7 @@ public class SusInpatient extends AbstractFixedParser {
     public CsvCell getCdsUpdateType() { return super.getCell("CDSUpdateType");}
     public CsvCell getPersonBirthDate() { return super.getCell("PersonBirthDate");}
     public CsvCell getConsultantCode() { return super.getCell("ConsultantCode");}
+    public CsvCell getWithheldFlag() { return super.getCell("WithheldFlag");}
 
 //    public CsvCell getCDSRecordType() {
 //        return super.getCell("CDSRecordType");

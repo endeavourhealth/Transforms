@@ -47,6 +47,9 @@ public class SusInpatientPreTransformer {
             return;
         }
 
+        if (parser.getWithheldFlag().getIntAsBoolean()) {
+            return;
+        }
         StagingCds stagingCds = new StagingCds();
         stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCds.setExchangeId(parser.getExchangeId().toString());

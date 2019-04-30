@@ -58,6 +58,8 @@ public class SusEmergency extends AbstractFixedParser {
     public CsvCell getLocalPatientId() { return super.getCell("LocalPatientID");}
 
     public CsvCell getCdsUniqueId() {return super.getCell("CDSUniqueIdentifier");}
+    public CsvCell getWithheldFlag() { return super.getCell("WithheldFlag");}
+
 
     /*public Date getArrivalDate() throws TransformException {
         return super.getDate("ArrivalDate");

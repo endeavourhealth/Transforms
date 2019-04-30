@@ -46,7 +46,9 @@ public class SusOutpatientPreTransformer {
         if (primaryProcedureCell.isEmpty()) {
             return;
         }
-
+        if (parser.getWithheldFlag().getIntAsBoolean()) {
+            return;
+        }
         StagingCds stagingCds = new StagingCds();
         stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCds.setExchangeId(parser.getExchangeId().toString());
