@@ -112,9 +112,8 @@ public class PROCEPreTransformer {
             stagingPROCE.setLookupNhsNumber("0");
             stagingPROCE.setLookupDateOfBirth(new Date());
 
-
-            stagingPROCE.setCheckSum(stagingPROCE.hashCode());
         }
+        stagingPROCE.setCheckSum(stagingPROCE.hashCode());
 
         csvHelper.submitToThreadPool(new PROCEPreTransformer.saveDataCallable(parser.getCurrentState(), stagingPROCE, serviceId));
     }

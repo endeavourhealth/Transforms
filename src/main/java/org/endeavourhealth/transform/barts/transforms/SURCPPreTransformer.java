@@ -88,9 +88,8 @@ public class SURCPPreTransformer {
             }
             stagingSURCP.setWoundClassCode(parser.getWoundClassCode().getString());
 
-            stagingSURCP.setRecordChecksum(stagingSURCP.hashCode());
-
         }
+        stagingSURCP.setRecordChecksum(stagingSURCP.hashCode());
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
         auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
         auditWrapper.auditValue(parser.getActiveIndicator().getPublishedFileId(), parser.getActiveIndicator().getRecordNumber(), parser.getActiveIndicator().getColIndex(), "ActiveInd");
