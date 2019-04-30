@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -159,18 +160,18 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         //  Authorisation Type
         Integer medicationStatementAuthorisationTypeId = authorisationType.ordinal();
 
-        medicationStatementAuthorisationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_MSAT", medicationStatementAuthorisationTypeId.toString());
+        medicationStatementAuthorisationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
+                IMConstant.FHIR_MED_STATEMENT_AUTH_TYPE, medicationStatementAuthorisationTypeId.toString());
         if (medicationStatementAuthorisationTypeConceptId == null) {
             throw new TransformException("medicationStatementAuthorisationTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        // TODO Finalise the use of coreConceptId and the IM (rather than dmdId) in order to look
-        //  up the BNF Chapter in that table in the reference DB, by using the ACTUAL Snomed code
-        // This line will need changing
-        Long snomedCode = null; // dmdId;
-        // These lines are fine
+        //  Finalised the use of coreConceptId and the IM in order to look up the BNF
+        //  Chapter in that table in the reference DB, by using the actual Snomed code
+        String snomedCodeString = IMClient.getCodeForConceptId(coreConceptId);
+
         SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
-        String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCode.toString());
+        String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCodeString);
         bnfReference = Integer.parseInt(fullBnfChapterCodeString.substring(0,6));
 
         if (fhir.getPatientTarget() != null) {

@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -103,7 +104,7 @@ public class AppointmentTransformer extends AbstractTransformer {
         Appointment.AppointmentStatus status = fhir.getStatus();
         Integer appointmentStatusId = status.ordinal();
 
-        appointmentStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_AS", appointmentStatusId.toString());
+        appointmentStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_APPOINTMENT_STATUS, appointmentStatusId.toString());
         if (appointmentStatusConceptId == null) {
             throw new TransformException("appointmentStatusConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }

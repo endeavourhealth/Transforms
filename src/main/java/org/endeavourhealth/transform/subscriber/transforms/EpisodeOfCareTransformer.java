@@ -8,6 +8,7 @@ import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -71,7 +72,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
             RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
             Integer registrationTypeId = new Integer(fhirRegistrationType.ordinal());
 
-            registrationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_RT", registrationTypeId.toString());
+            registrationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_REGISTRATION_TYPE, registrationTypeId.toString());
             if (registrationTypeConceptId == null) {
                 throw new TransformException("registrationTypeConceptId is null for " + fhirEpisode.getResourceType() + " " + fhirEpisode.getId());
             }
@@ -101,7 +102,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
                         RegistrationStatus status = RegistrationStatus.fromCode(code);
                         Integer registrationStatusId = new Integer(status.ordinal());
 
-                        registrationStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode("FHIR_RS", registrationStatusId.toString());
+                        registrationStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_REGISTRATION_STATUS, registrationStatusId.toString());
                         if (registrationStatusConceptId == null) {
                             throw new TransformException("registrationStatusConceptId is null for " + fhirEpisode.getResourceType() + " " + fhirEpisode.getId());
                         }
