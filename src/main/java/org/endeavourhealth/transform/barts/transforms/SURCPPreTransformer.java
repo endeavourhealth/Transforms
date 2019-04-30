@@ -48,11 +48,11 @@ public class SURCPPreTransformer {
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingSURCP.setActiveInd(activeInd);
+        int caseId = parser.getSurgicalCaseId().getInt();
+        stagingSURCP.setSurgicalCaseId(caseId);
 
         if (activeInd) {
 
-            int caseId = parser.getSurgicalCaseId().getInt();
-            stagingSURCP.setSurgicalCaseId(caseId);
             if (csvHelper.getPersonIdFromSurccId(caseId) == null) {
                 return;
             }
