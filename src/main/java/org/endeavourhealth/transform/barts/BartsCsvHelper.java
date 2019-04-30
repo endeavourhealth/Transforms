@@ -18,6 +18,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNom
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.core.database.rdbms.publisherStaging.models.RdbmsStagingTarget;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -47,8 +48,10 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvHelper.class);
 
     public static final String CODE_TYPE_SNOMED = "SNOMED";
+    public static final String CODE_TYPE_SNOMED_CT = "SNOMED CT";
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
     public static final String CODE_TYPE_OPCS_4 = "OPCS4";
+    public static final String CODE_TYPE_CERNER = "CERNER";
     public static final String SUS_RECORD_TYPE_INPATIENT = "InPatient";
     public static final String SUS_RECORD_TYPE_OUTPATIENT = "OutPatient";
     public static final String SUS_RECORD_TYPE_EMERGENCY = "Emergency";
@@ -175,6 +178,12 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public void processStagingForTarget () throws Exception {
 
         stagingRepository.processStagingForTarget(this.exchangeId, this.serviceId);
+    }
+
+    public List<RdbmsStagingTarget> retrieveTargetProcedures() throws Exception {
+
+        List<RdbmsStagingTarget> ret = stagingRepository.getTargetProcedures(this.exchangeId, this.serviceId);
+        return ret;
     }
 
     public List<Resource> retrieveResourceByPatient(UUID patientId) throws Exception {
