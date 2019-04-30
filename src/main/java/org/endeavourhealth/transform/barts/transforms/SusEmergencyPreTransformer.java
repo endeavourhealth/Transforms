@@ -166,7 +166,7 @@ public class SusEmergencyPreTransformer {
             StagingCds cdsRemainder = commonContent.clone();
 
             String opcsCode = word.substring(0, 4);
-            if (opcsCode.isEmpty()) {
+            if (opcsCode.isEmpty() || opcsCode.trim().length()==0) {
                 break;
             }
             opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
