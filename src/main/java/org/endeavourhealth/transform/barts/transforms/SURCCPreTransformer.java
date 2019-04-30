@@ -6,10 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURC
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.SURCC;
-import org.endeavourhealth.transform.common.AbstractCsvCallable;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,10 +39,10 @@ public class SURCCPreTransformer {
 
         StagingSURCC stagingSURCC = new StagingSURCC();
         stagingSURCC.setExchangeId(parser.getExchangeId().toString());
-        stagingSURCC.setDTReceived(new Date());
+        stagingSURCC.setDtReceived(new Date());
 
         stagingSURCC.setSurgicalCaseId(parser.getSurgicalCaseId().getInt());
-        stagingSURCC.setDTExtract(parser.getExtractDateTime().getDate());
+        stagingSURCC.setDtExtract(parser.getExtractDateTime().getDate());
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingSURCC.setActiveInd(activeInd);
@@ -55,29 +52,33 @@ public class SURCCPreTransformer {
             if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
                 return;
             }
+
+            //cache the person ID for our case ID, so the CURCP parser can look it up
             csvHelper.savePersonIdFromSurccId(parser.getSurgicalCaseId().getInt(), personId);
+
             stagingSURCC.setPersonId(Integer.parseInt(personId));
             stagingSURCC.setEncounterId(parser.getEncounterId().getInt());
-            if (stagingSURCC.getDTCancelled() != null) {
-                stagingSURCC.setDTCancelled(parser.getCancelledDateTime().getDate());
+
+            CsvCell cancelledCell = parser.getCancelledDateTime();
+            if (cancelledCell.isEmpty()) {
+                stagingSURCC.setDtCancelled(cancelledCell.getDateTime());
             }
+
             stagingSURCC.setInstitutionCode(parser.getInstitutionCode().getString());
             stagingSURCC.setDepartmentCode(parser.getDepartmentCode().getString());
             stagingSURCC.setSurgicalAreaCode(parser.getSurgicalAreaCode().getString());
             stagingSURCC.setTheatreNumberCode(parser.getTheatreNumberCode().getString());
+
+            ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
+            auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
+            auditWrapper.auditValue(parser.getActiveIndicator().getPublishedFileId(), parser.getActiveIndicator().getRecordNumber(), parser.getActiveIndicator().getColIndex(), "ActiveInd");
+            auditWrapper.auditValue(parser.getPersonId().getPublishedFileId(), parser.getPersonId().getRecordNumber(), parser.getPersonId().getColIndex(), "PersonId");
+            auditWrapper.auditValue(parser.getEncounterId().getPublishedFileId(), parser.getEncounterId().getRecordNumber(), parser.getEncounterId().getColIndex(), "EncounterId");
+            auditWrapper.auditValue(parser.getInstitutionCode().getPublishedFileId(), parser.getInstitutionCode().getRecordNumber(), parser.getInstitutionCode().getColIndex(), "InstitutionCode");
+            auditWrapper.auditValue(parser.getDepartmentCode().getPublishedFileId(), parser.getDepartmentCode().getRecordNumber(), parser.getDepartmentCode().getColIndex(), "DepartmentCode");
+            auditWrapper.auditValue(parser.getTheatreNumberCode().getPublishedFileId(), parser.getTheatreNumberCode().getRecordNumber(), parser.getTheatreNumberCode().getColIndex(), "TheatreNumberCode");
+            stagingSURCC.setAudit(auditWrapper);
         }
-        stagingSURCC.setRecordChecksum(stagingSURCC.hashCode());
-
-        ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-        auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
-        auditWrapper.auditValue(parser.getActiveIndicator().getPublishedFileId(), parser.getActiveIndicator().getRecordNumber(), parser.getActiveIndicator().getColIndex(), "ActiveInd");
-        auditWrapper.auditValue(parser.getPersonId().getPublishedFileId(), parser.getPersonId().getRecordNumber(), parser.getPersonId().getColIndex(), "PersonId");
-        auditWrapper.auditValue(parser.getEncounterId().getPublishedFileId(), parser.getEncounterId().getRecordNumber(), parser.getEncounterId().getColIndex(), "EncounterId");
-        auditWrapper.auditValue(parser.getInstitutionCode().getPublishedFileId(), parser.getInstitutionCode().getRecordNumber(), parser.getInstitutionCode().getColIndex(), "InstitutionCode");
-        auditWrapper.auditValue(parser.getDepartmentCode().getPublishedFileId(), parser.getDepartmentCode().getRecordNumber(), parser.getDepartmentCode().getColIndex(), "DepartmentCode");
-        auditWrapper.auditValue(parser.getTheatreNumberCode().getPublishedFileId(), parser.getTheatreNumberCode().getRecordNumber(), parser.getTheatreNumberCode().getColIndex(), "TheatreNumberCode");
-        stagingSURCC.setAudit(auditWrapper);
-
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SURCCPreTransformer.saveDataCallable(parser.getCurrentState(), stagingSURCC, serviceId));
@@ -100,6 +101,7 @@ public class SURCCPreTransformer {
         public Object call() throws Exception {
 
             try {
+                obj.setRecordChecksum(obj.hashCode());
                 repository.save(obj, serviceId);
 
             } catch (Throwable t) {

@@ -1,9 +1,9 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingProcedureDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -54,20 +54,23 @@ public class ProcedurePreTransformer {
 
         obj.setPersonId(personId);
         obj.setExchangeId(parser.getExchangeId().toString());
-        obj.setDateReceived(new Date());
+        obj.setDtReceived(new Date());
         obj.setMrn(parser.getMrn().getString());
         obj.setNhsNumber(parser.getNHSNo());
         obj.setDateOfBirth(parser.getDOB());
         obj.setEncounterId(parser.getEncounterId().getInt()); // Remember encounter ids from Procedure have a trailing .00
         obj.setConsultant(parser.getConsultant().getString());
-        Date procDate = csvHelper.parseDate(parser.getProcedureDateTime());
-        if (procDate==null ) {
+
+        CsvCell dtCell = parser.getProcedureDateTime();
+        if (dtCell.isEmpty()) {
+            //TODO - is this needed? Have we any evidence of empty dates in this file?
             return;
         }
-        obj.setProcDtTm(procDate);
+
+        obj.setProcDtTm(BartsCsvHelper.parseDate(dtCell));
         obj.setUpdatedBy(parser.getUpdatedBy().getString());
         obj.setCreateDtTm(parser.getCreateDateTime().getDate());
-        obj.setFreeTextComment(parser.getComment().getString());
+        obj.setComments(parser.getComment().getString());
 
         //proceCdType is either "OPCS4" or "SNOMED CT". Snomed description Ids are used.
         String procCdType = parser.getProcedureCodeType().getString();
@@ -78,32 +81,39 @@ public class ProcedurePreTransformer {
 
         if (procCdType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
             procTerm = TerminologyService.lookupOpcs4ProcedureName(procCd);
-        } else {
-            SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(procCd);
-            if (snomedCode != null) {
-                procTerm = snomedCode.getTerm();
-                procCd = snomedCode.getConceptCode();  //update the code to be an actual Snomed ConceptId
-            } else {
-                throw new TransformException("Unable to match Snomed Description Id [" + procCd + "]");
+            if (Strings.isNullOrEmpty(procTerm)) {
+                throw new Exception("Failed to find term for OPCS-4 code [" + procCd + "]");
             }
+
+        } else if (procCdType.equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT)) {
+            //note, although the column says it's Snomed, it's actually a Snomed description ID, not a concept ID
+            SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(procCd);
+            if (snomedCode == null) {
+                throw new Exception("Failed to find term for Snomed description ID [" + procCd + "]");
+            }
+            procTerm = snomedCode.getTerm();
+            procCd = snomedCode.getConceptCode();  //update the code to be an actual Snomed ConceptId
+
+        } else {
+            throw new Exception("Unexpected coding scheme " + procCdType);
         }
 
         obj.setProcCd(procCd);
         obj.setProcTerm(procTerm);
 
-
         obj.setWard(parser.getWard().getString());
         obj.setSite(parser.getSite().getString());
         obj.setLookupPersonId(personId);
-        String consultantStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_CONSULTANT_TO_ID, parser.getConsultant().getString());
-        if (consultantStr!=null) {
-            obj.setLookupConsultantPersonnelId(Integer.parseInt(consultantStr));
+
+        String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_CONSULTANT_TO_ID, parser.getConsultant().getString());
+        if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
+            obj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
         }
-        String recordedBy = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID,parser.getUpdatedBy().getString());
-        if (recordedBy!=null) {
-            obj.setLookuprecordedByPersonnelId(Integer.parseInt(recordedBy));
+
+        String recordedByPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID,parser.getUpdatedBy().getString());
+        if (!Strings.isNullOrEmpty(recordedByPersonnelId)) {
+            obj.setLookupRecordedByPersonnelId(Integer.valueOf(recordedByPersonnelId));
         }
-        obj.setCheckSum();
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new ProcedurePreTransformer.saveDataCallable(parser.getCurrentState(), obj, serviceId));
@@ -126,6 +136,7 @@ public class ProcedurePreTransformer {
         public Object call() throws Exception {
 
             try {
+                obj.setCheckSum(obj.hashCode());
                 repository.save(obj, serviceId);
 
             } catch (Throwable t) {

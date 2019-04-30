@@ -135,8 +135,9 @@ public abstract class BartsCsvToFhirTransformer {
             SusInpatientPreTransformer.transform(getParsers(parserMap, "SusInpatient", true), fhirResourceFiler,csvHelper);
             SusOutpatientPreTransformer.transform(getParsers(parserMap, "SusOutpatient", true), fhirResourceFiler,csvHelper);
             SusEmergencyPreTransformer.transform(getParsers(parserMap,"SusEmergency",true),fhirResourceFiler,csvHelper);
+            SURCCPreTransformer.transform(getParsers(parserMap,"SURCC",true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
             SURCPPreTransformer.transform(getParsers(parserMap,"SURCP",true), fhirResourceFiler,csvHelper);
-            SURCCPreTransformer.transform(getParsers(parserMap,"SURCC",true), fhirResourceFiler,csvHelper);
+
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //PROCEDURES - execute the staging to target stored proc

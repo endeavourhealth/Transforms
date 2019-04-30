@@ -41,63 +41,63 @@ public class SURCPPreTransformer {
 
         StagingSURCP stagingSURCP = new StagingSURCP();
         stagingSURCP.setExchangeId(parser.getExchangeId().toString());
-        stagingSURCP.setDTReceived(new Date());
+        stagingSURCP.setDtReceived(new Date());
 
         stagingSURCP.setSurgicalCaseProcedureId(parser.getSurgicalCaseProcedureId().getInt());
-        stagingSURCP.setDTExtract(parser.getExtractDateTime().getDate());
+        stagingSURCP.setDtExtract(parser.getExtractDateTime().getDate());
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingSURCP.setActiveInd(activeInd);
-        int caseId = parser.getSurgicalCaseId().getInt();
-        stagingSURCP.setSurgicalCaseId(caseId);
 
         if (activeInd) {
 
+            int caseId = parser.getSurgicalCaseId().getInt();
+            stagingSURCP.setSurgicalCaseId(caseId);
             if (csvHelper.getPersonIdFromSurccId(caseId) == null) {
                 return;
             }
-            CsvCell procedureCodeCell = parser.getProcedureCode();
-            if (!procedureCodeCell.isEmpty()) {
-                stagingSURCP.setProcedureCode(procedureCodeCell.getInt());
-            }
 
-            //get lookup term from non 0 code
+            CsvCell procedureCodeCell = parser.getProcedureCode();
             if (!BartsCsvHelper.isEmptyOrIsZero(procedureCodeCell)) {
+
+                stagingSURCP.setProcedureCode(procedureCodeCell.getInt());
+
+                //get lookup term from non 0 code
                 CernerCodeValueRef codeValueRef = csvHelper.lookupCodeRef(CodeValueSet.PROCEDURE_ORDERS, procedureCodeCell);
-                if (codeValueRef != null) {
-                    String codeLookupTerm = codeValueRef.getCodeDispTxt();
-                    stagingSURCP.setLookupProcedureCodeTerm(codeLookupTerm);
+                if (codeValueRef == null) {
+                    throw new Exception("Failed to find CVREF record for code " + procedureCodeCell.getString());
                 }
+                String codeLookupTerm = codeValueRef.getCodeDispTxt();
+                stagingSURCP.setLookupProcedureCodeTerm(codeLookupTerm);
             }
 
             stagingSURCP.setProcedureText(parser.getProcedureText().getString());
             stagingSURCP.setModifierText(parser.getModifierText().getString());
             stagingSURCP.setPrimaryProcedureIndicator(parser.getPrimaryProcedureIndicator().getInt());
             stagingSURCP.setSurgeonPersonnelId(parser.getSurgeonPersonnelId().getInt());
-            Date nullDate = new Date();
-            nullDate = null;
-            if (parser.getStartDateTime() != null) {
-                stagingSURCP.setDTStart(parser.getStartDateTime().getDate());
-            } else {
-                stagingSURCP.setDTStart(nullDate);
+
+            CsvCell startCell = parser.getStartDateTime();
+            if (!startCell.isEmpty()) {
+                stagingSURCP.setDtStart(startCell.getDateTime());
             }
-            if (parser.getStopDateTime() != null) {
-                stagingSURCP.setDTStop(parser.getStopDateTime().getDate());
-            } else {
-                stagingSURCP.setDTStop(nullDate);
+
+            CsvCell stopCell = parser.getStopDateTime();
+            if (!stopCell.isEmpty()) {
+                stagingSURCP.setDtStop(stopCell.getDateTime());
             }
+
             stagingSURCP.setWoundClassCode(parser.getWoundClassCode().getString());
 
+            ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
+            auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
+            auditWrapper.auditValue(parser.getActiveIndicator().getPublishedFileId(), parser.getActiveIndicator().getRecordNumber(), parser.getActiveIndicator().getColIndex(), "ActiveInd");
+            auditWrapper.auditValue(parser.getSurgeonPersonnelId().getPublishedFileId(), parser.getSurgeonPersonnelId().getRecordNumber(), parser.getSurgeonPersonnelId().getColIndex(), "SurgeonPersonnelId");
+            auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
+            auditWrapper.auditValue(parser.getSurgicalCaseProcedureId().getPublishedFileId(), parser.getSurgicalCaseProcedureId().getRecordNumber(), parser.getSurgicalCaseProcedureId().getColIndex(), "SurgicalCaseProcedureId");
+            auditWrapper.auditValue(parser.getProcedureCode().getPublishedFileId(), parser.getProcedureCode().getRecordNumber(), parser.getProcedureCode().getColIndex(), "ProcedureCode");
+            stagingSURCP.setAudit(auditWrapper);
         }
-        stagingSURCP.setRecordChecksum(stagingSURCP.hashCode());
-        ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-        auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
-        auditWrapper.auditValue(parser.getActiveIndicator().getPublishedFileId(), parser.getActiveIndicator().getRecordNumber(), parser.getActiveIndicator().getColIndex(), "ActiveInd");
-        auditWrapper.auditValue(parser.getSurgeonPersonnelId().getPublishedFileId(), parser.getSurgeonPersonnelId().getRecordNumber(), parser.getSurgeonPersonnelId().getColIndex(), "SurgeonPersonnelId");
-        auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
-        auditWrapper.auditValue(parser.getSurgicalCaseProcedureId().getPublishedFileId(), parser.getSurgicalCaseProcedureId().getRecordNumber(), parser.getSurgicalCaseProcedureId().getColIndex(), "SurgicalCaseProcedureId");
-        auditWrapper.auditValue(parser.getProcedureCode().getPublishedFileId(), parser.getProcedureCode().getRecordNumber(), parser.getProcedureCode().getColIndex(), "ProcedureCode");
-        stagingSURCP.setAudit(auditWrapper);
+
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SURCPPreTransformer.saveDataCallable(parser.getCurrentState(), stagingSURCP, serviceId));
     }
@@ -119,6 +119,7 @@ public class SURCPPreTransformer {
         public Object call() throws Exception {
 
             try {
+                obj.setRecordChecksum(obj.hashCode());
                 repository.save(obj, serviceId);
 
             } catch (Throwable t) {

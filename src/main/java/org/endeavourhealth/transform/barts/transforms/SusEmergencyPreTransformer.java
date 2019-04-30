@@ -13,9 +13,6 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +20,7 @@ import java.util.UUID;
 public class SusEmergencyPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyPreTransformer.class);
 
-        private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
+    private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -44,100 +41,154 @@ public class SusEmergencyPreTransformer {
 
     private static void processRecord(SusEmergency parser, BartsCsvHelper csvHelper) throws Exception {
 
+        //if no procedures, then nothing to save
+        CsvCell primaryProcedureCell = parser.getPrimaryProcedureOPCS();
+        if (primaryProcedureCell.isEmpty()) {
+            return;
+        }
+
         StagingCds stagingCds = new StagingCds();
         stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCds.setExchangeId(parser.getExchangeId().toString());
         stagingCds.setDtReceived(new Date());
         stagingCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
-        stagingCds.setSusRecordType(csvHelper.SUS_RECORD_TYPE_EMERGENCY);
+        stagingCds.setSusRecordType(BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY);
         stagingCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
         stagingCds.setMrn(parser.getLocalPatientId().getString());
         stagingCds.setNhsNumber(parser.getNhsNumber().getString());
         stagingCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
         String consultantStr = parser.getConsultantCode().getString();
         stagingCds.setConsultantCode(consultantStr);
-        if (parser.getPrimaryProcedureOPCS().isEmpty()) {
-            LOG.warn("No PrimaryProcedureOPCS Code for " +  parser.getCdsUniqueId());
-            return;
-        }
-        String opcsCode = parser.getPrimaryProcedureOPCS().getString();
-        opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
-        stagingCds.setPrimaryProcedureOpcsCode(opcsCode);
-        stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
+
         String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_CONSULTANT_TO_ID, consultantStr);
-        if (personnelIdStr!=null) {
-            stagingCds.setLookupConsultantPersonnelId(Integer.parseInt(personnelIdStr));
+        if (!Strings.isNullOrEmpty(personnelIdStr)) {
+            stagingCds.setLookupConsultantPersonnelId(Integer.valueOf(personnelIdStr));
         }
-        String localPatientId=parser.getLocalPatientId().getString();
-        String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID,
-                localPatientId);
-        if (personId != null) {
+
+        String localPatientId = parser.getLocalPatientId().getString();
+        String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, localPatientId);
+        if (!Strings.isNullOrEmpty(personId)) {
+            stagingCds.setLookupPersonId(Integer.valueOf(personId));
 
             if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
                 return;
-            } else {
-                return;
             }
         }
-        stagingCds.setLookupPersonId(Integer.parseInt(personId));
 
-        UUID serviceId = csvHelper.getServiceId();
+        //primary procedure
+        parsePrimaryProcedure(parser, stagingCds, csvHelper);
 
+        //Secondary
+        parseSecondaryProcedure(parser, stagingCds, csvHelper);
 
-        // loop through proc codes. Primary and secondary first then the list
-        //Primary
-        stagingCds.setProcedureOpcsCode(opcsCode);
-        stagingCds.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
-        stagingCds.setProcedureSeqNbr(1);
+        //Rest
+        parseRemaningProcedures(parser, stagingCds, csvHelper);
+
+    }
+
+    private static void parsePrimaryProcedure(SusEmergency parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+        StagingCds cdsPrimary = commonContent.clone();
+
+        String opcsCode = parser.getPrimaryProcedureOPCS().getString();
+        opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
+        cdsPrimary.setProcedureOpcsCode(opcsCode);
+
+        String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
+        if (!Strings.isNullOrEmpty(term)) {
+            throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
+        }
+        cdsPrimary.setLookupProcedureOpcsTerm(term);
+
+        cdsPrimary.setProcedureSeqNbr(1);
+
         if (parser.getPrimaryProcedureDate().isEmpty()) {
+            //TODO - how is this logging going to be picked up? Shouldn't this be logged using TransformWarning, so it's in the DB?
             LOG.warn("Missing primary date for " + parser.getCdsUniqueId());
             return;
         }
-        stagingCds.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
-        stagingCds.setRecordChecksum(stagingCds.hashCode());
-        csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds, serviceId));
+        cdsPrimary.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
 
-        //Secondary
-        if (!parser.getSecondaryProcedureOPCS().isEmpty()) {
-            StagingCds stagingCds2 = stagingCds.clone();
-            opcsCode = parser.getSecondaryProcedureOPCS().getString();
-            stagingCds2.setProcedureOpcsCode(opcsCode);
-            stagingCds2.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(opcsCode));
-            stagingCds2.setProcedureSeqNbr(2);
-            if (parser.getSecondaryProcedureDate().isEmpty()) {
-                LOG.warn("Missing secondary date for " + parser.getCdsUniqueId());
-                stagingCds2.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
-            } else {
-                stagingCds2.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
-            }
-                stagingCds2.setRecordChecksum(stagingCds.hashCode());
-                csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds2, serviceId));
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), cdsPrimary, serviceId));
 
+        //for secondary etc. we set the primary opcs code on a separate column so set on the common object
+        commonContent.setPrimaryProcedureOpcsCode(opcsCode);
+
+    }
+
+    private static void parseSecondaryProcedure(SusEmergency parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+        CsvCell secondaryProcedureCell = parser.getSecondaryProcedureOPCS();
+        if (secondaryProcedureCell.isEmpty()) {
+            //if no secondary procedure, then we're finished
+            return;
         }
-        //Rest
+
+        StagingCds cdsSecondary = commonContent.clone();
+
+        String opcsCode = secondaryProcedureCell.getString();
+        opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
+        cdsSecondary.setProcedureOpcsCode(opcsCode);
+
+        String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
+        if (!Strings.isNullOrEmpty(term)) {
+            throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
+        }
+        cdsSecondary.setLookupProcedureOpcsTerm(term);
+        cdsSecondary.setProcedureSeqNbr(2);
+
+        if (parser.getSecondaryProcedureDate().isEmpty()) {
+            //TODO - how is this logging going to be picked up? Shouldn't it be logged using TransformWarning?
+            LOG.warn("Missing secondary date for " + parser.getCdsUniqueId());
+            cdsSecondary.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
+        } else {
+            cdsSecondary.setProcedureDate(parser.getSecondaryProcedureDate().getDate());
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), cdsSecondary, serviceId));
+
+    }
+
+    private static void parseRemaningProcedures(SusEmergency parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
         CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
-        List<String> otherProcs = new ArrayList<>();
-        List<String> otherDates = new ArrayList<>();
-        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        if (otherProcedureOPCS.isEmpty()) {
+            return;
+        }
+
         int seq = 3;
-        for (String word : BartsSusHelper.splitEqually(otherProcedureOPCS.getString(),40)) {
+        for (String word : BartsSusHelper.splitEqually(otherProcedureOPCS.getString(), 40)) {
             if (Strings.isNullOrEmpty(word)) {
                 break;
             }
-            StagingCds stagingCds3 = stagingCds.clone();
-            String code = word.substring(0, 4);
-            if (code.isEmpty()) {break;}
-            if (word.length()>4) {
-                String dateStr = word.substring(4);
-                if (Strings.isNullOrEmpty(dateStr)) {break;}
-                Date date = dateFormat.parse(dateStr);
-                stagingCds3.setProcedureDate(date);
+            StagingCds cdsRemainder = commonContent.clone();
+
+            String opcsCode = word.substring(0, 4);
+            if (opcsCode.isEmpty()) {
+                break;
             }
-            stagingCds3.setProcedureOpcsCode(code);
-            stagingCds3.setLookupProcedureOpcsTerm(TerminologyService.lookupOpcs4ProcedureName(code));
-            stagingCds3.setProcedureSeqNbr(seq);
-            stagingCds3.setRecordChecksum(stagingCds.hashCode());
-            csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), stagingCds3, serviceId));
+            opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
+            cdsRemainder.setProcedureOpcsCode(opcsCode);
+
+            if (word.length() > 4) {
+                String dateStr = word.substring(4);
+                if (Strings.isNullOrEmpty(dateStr)) {
+                    //TODO - why are we breaking out here? If there's no date for the primary or secondary procedures we log stuff out - in this case we don't. Why not?
+                    break;
+                }
+                Date date = parser.getDateFormat().parse(dateStr);
+                cdsRemainder.setProcedureDate(date);
+            }
+
+            String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
+            if (!Strings.isNullOrEmpty(term)) {
+                throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
+            }
+            cdsRemainder.setLookupProcedureOpcsTerm(term);
+
+            cdsRemainder.setProcedureSeqNbr(seq);
+
+            UUID serviceId = csvHelper.getServiceId();
+            csvHelper.submitToThreadPool(new SusEmergencyPreTransformer.saveDataCallable(parser.getCurrentState(), cdsRemainder, serviceId));
             seq++;
         }
     }
@@ -159,6 +210,7 @@ public class SusEmergencyPreTransformer {
         public Object call() throws Exception {
 
             try {
+                obj.setRecordChecksum(obj.hashCode());
                 repository.save(obj, serviceId);
 
             } catch (Throwable t) {

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingPROCEDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingPROCE;
@@ -50,22 +51,22 @@ public class PROCEPreTransformer {
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingPROCE.setActiveInd(activeInd);
-        UUID serviceId = csvHelper.getServiceId();
+
+
         //only set additional values if active
         if (activeInd) {
             stagingPROCE.setEncounterId(parser.getEncounterId().getInt());
+
             Date procDate = csvHelper.parseDate(parser.getProcedureDateTime());
+            //explicitly been told that if a PROCE record has no date, then skip it
             if (procDate == null) {
                 return;
             }
             stagingPROCE.setProcedureDtTm(procDate);
 
-            if (parser.getProcedureTypeCode() == null ) {
-                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure TypeCode", procId);
-                return;
-            }
-
             String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(parser.getConceptCodeIdentifier());
+
+            //TODO - isn't this lack of a code a fatal error? Shouldn't we throw an exception? Have we any evidence this ever happens?
             if (codeId == null) {
                 TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure Code", procId );
                 return;
@@ -77,15 +78,23 @@ public class PROCEPreTransformer {
             stagingPROCE.setProcedureType(codeType);
             if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
                 procTerm = TerminologyService.lookupOpcs4ProcedureName(codeId);
-            } else {
+                if (Strings.isNullOrEmpty(procTerm)) {
+                    throw new Exception("Failed to find term for OPCS-4 code " + codeId);
+                }
+
+            } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
                 procTerm = TerminologyService.lookupSnomedTerm(codeId);
+                if (Strings.isNullOrEmpty(procTerm)) {
+                    throw new Exception("Failed to find term for Snomed code " + codeId);
+                }
+
+            } else {
+                throw new Exception("Unexpected code type " + codeType);
             }
-            if (procTerm == null) {
-                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure term", procId );
-                return;
-            }
+
             stagingPROCE.setProcedureTerm(procTerm);
             stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
+
             String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
             if (personId != null) {
 
@@ -109,12 +118,14 @@ public class PROCEPreTransformer {
             }
 
             //TODO - remove these columns (mid-May)
-            stagingPROCE.setLookupNhsNumber("0");
-            stagingPROCE.setLookupDateOfBirth(new Date());
+            stagingPROCE.setLookupNhsNumber(null);
+            stagingPROCE.setLookupDateOfBirth(null);
+
+
 
         }
-        stagingPROCE.setCheckSum(stagingPROCE.hashCode());
 
+        UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new PROCEPreTransformer.saveDataCallable(parser.getCurrentState(), stagingPROCE, serviceId));
     }
 
@@ -135,6 +146,7 @@ public class PROCEPreTransformer {
         public Object call() throws Exception {
 
             try {
+                obj.setCheckSum(obj.hashCode());
                 repository.save(obj, serviceId);
 
             } catch (Throwable t) {

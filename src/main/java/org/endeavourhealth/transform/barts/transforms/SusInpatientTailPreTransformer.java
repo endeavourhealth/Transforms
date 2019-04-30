@@ -47,19 +47,15 @@ public class SusInpatientTailPreTransformer {
         staging.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         staging.setExchangeId(parser.getExchangeId().toString());
         staging.setDtReceived(new Date());
-        staging.setSusRecordType(csvHelper.SUS_RECORD_TYPE_INPATIENT);
-        if (parser.getCdsUpdateType() != null) {
-            staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
-        }
+        staging.setSusRecordType(BartsCsvHelper.SUS_RECORD_TYPE_INPATIENT);
+        staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
         staging.setMrn(parser.getLocalPatientId().getString());
         staging.setNhsNumber(parser.getNhsNumber().getString());
         staging.setPersonId(Integer.parseInt(personId));
         staging.setEncounterId(parser.getEncounterId().getInt());
         staging.setResponsibleHcpPersonnelId(parser.getResponsiblePersonnelId().getInt());
 
-
         UUID serviceId = csvHelper.getServiceId();
-        staging.setRecordChecksum(staging.hashCode());
         csvHelper.submitToThreadPool(new SusInpatientTailPreTransformer.saveDataCallable(parser.getCurrentState(), staging, serviceId));
 
     }
@@ -82,6 +78,7 @@ public class SusInpatientTailPreTransformer {
         public Object call() throws Exception {
 
             try {
+                obj.setRecordChecksum(obj.hashCode());
                 repository.save(obj, serviceId);
 
             } catch (Throwable t) {
