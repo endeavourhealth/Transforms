@@ -94,7 +94,7 @@ public class SusEmergencyPreTransformer {
         cdsPrimary.setProcedureOpcsCode(opcsCode);
 
         String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
-        if (!Strings.isNullOrEmpty(term)) {
+        if (Strings.isNullOrEmpty(term)) {
             throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
         }
         cdsPrimary.setLookupProcedureOpcsTerm(term);
@@ -130,7 +130,7 @@ public class SusEmergencyPreTransformer {
         cdsSecondary.setProcedureOpcsCode(opcsCode);
 
         String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
-        if (!Strings.isNullOrEmpty(term)) {
+        if (Strings.isNullOrEmpty(term)) {
             throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
         }
         cdsSecondary.setLookupProcedureOpcsTerm(term);
@@ -180,7 +180,7 @@ public class SusEmergencyPreTransformer {
             }
 
             String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
-            if (!Strings.isNullOrEmpty(term)) {
+            if (Strings.isNullOrEmpty(term)) {
                 throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
             }
             cdsRemainder.setLookupProcedureOpcsTerm(term);
