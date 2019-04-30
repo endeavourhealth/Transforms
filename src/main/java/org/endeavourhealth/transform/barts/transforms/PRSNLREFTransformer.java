@@ -144,7 +144,9 @@ public class PRSNLREFTransformer {
 
         String freeTextName = sb.toString();
         csvHelper.saveInternalId(MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
-        csvHelper.saveInternalId(MAPPING_ID_CONSULTANT_TO_ID, consultantNHSCode.getString(),personnelIdCell.getString());
+        if (!consultantNHSCode.isEmpty()) {
+            csvHelper.saveInternalId(MAPPING_ID_CONSULTANT_TO_ID, consultantNHSCode.getString(), personnelIdCell.getString());
+        }
     }
 
     /*private static void createPractitioner(PRSNLREF parser,
