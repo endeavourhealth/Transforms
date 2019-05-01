@@ -177,7 +177,8 @@ public class SusEmergencyPreTransformer {
             cdsRemainder.setProcedureOpcsCode(opcsCode);
 
             if (word.length() > 4) {
-                String dateStr = word.substring(4);
+                String dateStr = word.substring(4, 12);
+                dateStr = dateStr.trim();
                 if (!Strings.isNullOrEmpty(dateStr)) {
                     Date date = parser.getDateFormat().parse(dateStr);
                     cdsRemainder.setProcedureDate(date);
