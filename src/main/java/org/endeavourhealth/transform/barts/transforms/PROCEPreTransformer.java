@@ -66,11 +66,9 @@ public class PROCEPreTransformer {
 
             String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(parser.getConceptCodeIdentifier());
 
-            //TODO - isn't this lack of a code a fatal error? Shouldn't we throw an exception? Have we any evidence this ever happens?
             if (codeId == null) {
-                TransformWarnings.log(LOG,csvHelper,"PROCE record {} has no procedure Code", procId );
-                return;
-            }
+                throw new Exception("Missing procedure code for procid " + procId);
+                }
             stagingPROCE.setProcedureCode(codeId);
 
             String procTerm;
