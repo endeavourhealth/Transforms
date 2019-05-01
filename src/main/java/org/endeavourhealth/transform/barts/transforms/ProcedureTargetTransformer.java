@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+import static org.endeavourhealth.transform.barts.CodeValueSet.SURGEON_SPECIALITY_GROUP;
+
 public class ProcedureTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTargetTransformer.class);
@@ -151,7 +153,7 @@ public class ProcedureTargetTransformer {
             }
 
             //TODO: determine usefullness of updating linked encounter if already has org data
-            // this is Service Resource cerner coded data set 221
+            // this is Service Resource cerner coded data set 221 - new extension?
 //            String locationText = procedure.getLocation();
 //            if (!Strings.isNullOrEmpty(locationText)) {
 //
@@ -183,16 +185,16 @@ public class ProcedureTargetTransformer {
 //            }
 //
 
-            String specialityCode = procedure.getSpecialty();
-            if (!Strings.isNullOrEmpty(specialityCode)) {
+            // this is the speciality group code of the surgeon
+            String specialtyCode = procedure.getSpecialty();
+            if (!Strings.isNullOrEmpty(specialtyCode)) {
 
-                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(357L, specialityCode);
+                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(SURGEON_SPECIALITY_GROUP, specialtyCode);
                 if (codeRef != null) {
-                    String specialityTerm = codeRef.getCodeDispTxt();
-                }
+                    String specialtyGroupTerm = codeRef.getCodeDispTxt();
 
-                //TODO: Work out where to put speciality code and looked up term as Encounter does not
-                // have a speciality - new extension?
+                    procedureBuilder.setSpecialtyGroup(specialtyGroupTerm);
+                }
             }
 
             // sequence number, primary and parent procedure

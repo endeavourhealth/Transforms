@@ -32,4 +32,5 @@ public class CodeValueSet {
     public static final Long CLINICAL_EVENT_CLASS = 53L;
     public static final Long ADDRESS_TYPE = 212L;
     public static final Long PROCEDURE_ORDERS = 200L;
+    public static final Long SURGEON_SPECIALITY_GROUP = 357L;
 }

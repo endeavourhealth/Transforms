@@ -100,6 +100,11 @@ public class ProcedureBuilder extends ResourceBuilderBase
         auditIntegerExtension(extension,sourceCells);
     }
 
+    public void setSpecialtyGroup(String specialtyGroup, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateStringExtension(getResource(),FhirExtensionUri.PROCEDURE_SPECIALITY_GROUP,specialtyGroup);
+        auditIntegerExtension(extension,sourceCells);
+    }
+
     public void setIsReview(boolean isReview, CsvCell... sourceCells) {
         createOrUpdateIsReviewExtension(isReview, sourceCells);
     }
