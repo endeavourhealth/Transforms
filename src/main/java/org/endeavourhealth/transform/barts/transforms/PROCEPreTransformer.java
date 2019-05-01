@@ -70,10 +70,13 @@ public class PROCEPreTransformer {
             }
             stagingPROCE.setProcedureDtTm(procDate);
 
-            String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(parser.getConceptCodeIdentifier());
-
-            if (codeId == null) {
-                throw new Exception("Missing procedure code for procid " + procId);
+            CsvCell conceptCell = parser.getConceptCodeIdentifier();
+            String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(conceptCell);
+            if (Strings.isNullOrEmpty(codeId)) {
+                //a very small number of PROCE records have no code (e.g. procedure ID 427665727) but we can't do anything with it
+                TransformWarnings.log(LOG, csvHelper, "Procedure has no concept code {} so will be skipped", conceptCell);
+                return;
+                //throw new Exception("Missing procedure code for procid " + procId);
             }
             stagingPROCE.setProcedureCode(codeId);
 

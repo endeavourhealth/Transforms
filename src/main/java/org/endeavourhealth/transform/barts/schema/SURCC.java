@@ -20,7 +20,7 @@ public class SURCC extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[] {
+        return new String[]{
                 "#SURGICAL_CASE_ID",
                 "EXTRACT_DT_TM",
                 "ACTIVE_IND",
@@ -62,35 +62,49 @@ public class SURCC extends AbstractCsvParser {
         };
     }
 
-    public CsvCell getSurgicalCaseId() {return super.getCell("#SURGICAL_CASE_ID"); }
+    public CsvCell getSurgicalCaseId() {
+        return super.getCell("#SURGICAL_CASE_ID");
+    }
+
     public CsvCell getActiveIndicator() {
         return super.getCell("ACTIVE_IND");
     }
+
     public CsvCell getExtractDateTime() {
         return super.getCell("EXTRACT_DT_TM");
     }
+
     public CsvCell getPersonId() {
         return super.getCell("PERSON_ID");
     }
+
     public CsvCell getEncounterId() {
         return super.getCell("ENCNTR_ID");
     }
+
     public CsvCell getCancelledDateTime() {
         return super.getCell("CANCELLED_DT_TM");
     }
+
     public CsvCell getInstitutionCode() {
         return super.getCell("INSTITUTION_CD");
     }
+
     public CsvCell getDepartmentCode() {
         return super.getCell("DEPT_CD");
     }
+
     public CsvCell getSurgicalAreaCode() {
         return super.getCell("SURGICAL_AREA_CD");
     }
+
     public CsvCell getTheatreNumberCode() {
         return super.getCell("THEATRE_NBR_CD");
     }
-    public CsvCell getSpecialityCode() { return super.getCell("SURGICAL_CASE_SPECIALTY_CD"); }
+
+    public CsvCell getSpecialityCode() {
+        return super.getCell("SURGICAL_CASE_SPECIALTY_CD");
+    }
 
     @Override
     protected boolean isFileAudited() {
