@@ -106,11 +106,10 @@ public class SusEmergencyPreTransformer {
         cdsPrimary.setProcedureSeqNbr(1);
 
         CsvCell dateCell = parser.getPrimaryProcedureDate();
-        if (dateCell.isEmpty()) {
-            TransformWarnings.log(LOG, csvHelper, "Missing primary procedure date {} for emergency CDS record", dateCell);
-            return;
+        //date is null in some cases, but that's fine, as the SQL SP will fall back on CDS activity date
+        if (!dateCell.isEmpty()) {
+            cdsPrimary.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
         }
-        cdsPrimary.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SaveDataCallable(parser.getCurrentState(), cdsPrimary, serviceId));
@@ -141,15 +140,15 @@ public class SusEmergencyPreTransformer {
         cdsSecondary.setProcedureSeqNbr(2);
 
         CsvCell dateCell = parser.getSecondaryProcedureDate();
-        if (dateCell.isEmpty()) {
-            TransformWarnings.log(LOG, csvHelper, "Missing secondary procedure date {} for emergency CDS record", dateCell);
-            dateCell = parser.getPrimaryProcedureDate();
-            if (dateCell.isEmpty()) {
-                TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date {} is empty", dateCell);
-                return;
+        if (!dateCell.isEmpty()) {
+            cdsSecondary.setProcedureDate(dateCell.getDate());
+        } else {
+            //if we have no secondary date, use the primary date
+            CsvCell primaryDateCell = parser.getPrimaryProcedureDate();
+            if (!primaryDateCell.isEmpty()) {
+                cdsSecondary.setProcedureDate(primaryDateCell.getDate());
             }
         }
-        cdsSecondary.setProcedureDate(dateCell.getDate());
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SaveDataCallable(parser.getCurrentState(), cdsSecondary, serviceId));
@@ -186,14 +185,11 @@ public class SusEmergencyPreTransformer {
                 Date date = parser.getDateFormat().parse(dateStr);
                 cdsRemainder.setProcedureDate(date);
             } else {
-                TransformWarnings.log(LOG, csvHelper, "Missing " + seq + " procedure date {} for emergency CDS record", otherProcedureOPCS);
+                //if we have no secondary date, use the primary date
                 CsvCell dateCell = parser.getPrimaryProcedureDate();
-                if (dateCell.isEmpty()) {
-                    TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date {} is empty", dateCell);
-                    continue;
+                if (!dateCell.isEmpty()) {
+                    cdsRemainder.setProcedureDate(dateCell.getDate());
                 }
-
-                cdsRemainder.setProcedureDate(dateCell.getDate());
             }
 
             String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);

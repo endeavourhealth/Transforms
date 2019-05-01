@@ -49,18 +49,41 @@ public class SusOutpatient extends AbstractFixedParser {
         return super.getCell("CDSRecordType");
     }
 
-    public CsvCell getCdsUniqueId() {return super.getCell("CDSUniqueIdentifier");}
+    public CsvCell getCdsUniqueId() {
+        return super.getCell("CDSUniqueIdentifier");
+    }
 
-    public CsvCell getPatientLocalId() {return super.getCell("LocalPatientID");}
+    public CsvCell getPatientLocalId() {
+        return super.getCell("LocalPatientID");
+    }
 
-    public CsvCell getNhsNumber() {return super.getCell("NHSNumber");}
+    public CsvCell getNhsNumber() {
+        return super.getCell("NHSNumber");
+    }
 
-    public CsvCell getCdsActivityDate() {return super.getCell("CDSActivityDate");}
-    public CsvCell getCdsUpdateType() { return super.getCell("CDSUpdateType");}
-    public CsvCell getPersonBirthDate() { return super.getCell("PersonBirthDate");}
-    public CsvCell getConsultantCode() { return super.getCell("ConsultantCode");}
-    public CsvCell getLocalPatientId() { return super.getCell("LocalPatientID");}
-    public CsvCell getWithheldFlag() { return super.getCell("WithheldFlag");}
+    public CsvCell getCdsActivityDate() {
+        return super.getCell("CDSActivityDate");
+    }
+
+    public CsvCell getCdsUpdateType() {
+        return super.getCell("CDSUpdateType");
+    }
+
+    public CsvCell getPersonBirthDate() {
+        return super.getCell("PersonBirthDate");
+    }
+
+    public CsvCell getConsultantCode() {
+        return super.getCell("ConsultantCode");
+    }
+
+    public CsvCell getLocalPatientId() {
+        return super.getCell("LocalPatientID");
+    }
+
+    public CsvCell getWithheldFlag() {
+        return super.getCell("WithheldFlag");
+    }
 
 
 

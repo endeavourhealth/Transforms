@@ -105,11 +105,10 @@ public class SusOutpatientPreTransformer {
         cdsPrimary.setProcedureSeqNbr(1);
 
         CsvCell dateCell = parser.getPrimaryProcedureDate();
-        if (dateCell.isEmpty()) {
-            TransformWarnings.log(LOG, csvHelper, "Missing primary procedure date {} for outpatient CDS record", dateCell);
-            return;
+        //date is null in some cases, but that's fine, as the SQL SP will fall back on CDS activity date
+        if (!dateCell.isEmpty()) {
+            cdsPrimary.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
         }
-        cdsPrimary.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SaveDataCallable(parser.getCurrentState(), cdsPrimary, serviceId));
@@ -185,14 +184,11 @@ public class SusOutpatientPreTransformer {
                 Date date = parser.getDateFormat().parse(dateStr);
                 cdsRemainder.setProcedureDate(date);
             } else {
-                TransformWarnings.log(LOG, csvHelper, "Missing " + seq + " procedure date {} for outpatient CDS record", otherProcedureOPCS);
+                //if we have no secondary date, use the primary date
                 CsvCell dateCell = parser.getPrimaryProcedureDate();
-                if (dateCell.isEmpty()) {
-                    TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date {} is empty", dateCell);
-                    continue;
+                if (!dateCell.isEmpty()) {
+                    cdsRemainder.setProcedureDate(dateCell.getDate());
                 }
-
-                cdsRemainder.setProcedureDate(dateCell.getDate());
             }
 
             String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);

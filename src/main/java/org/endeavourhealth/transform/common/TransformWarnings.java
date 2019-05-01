@@ -48,9 +48,6 @@ public class TransformWarnings {
         logger.warn(warningText, (Object[])parameters);
 
         //record in the DB
-        if (warningText.length() > 255) {
-            warningText = warningText.substring(0, 255);
-        }
         dal.recordWarning(serviceId, systemId, exchangeId, publishedFileId, recordNumber, warningText, parameters);
 
         //substitute the parameters into the warning String
