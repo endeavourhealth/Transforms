@@ -20,6 +20,7 @@ public class PROCEPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCEPreTransformer.class);
 
     private static StagingPROCEDalI repository = DalProvider.factoryBartsStagingPROCEDalI();
+
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -57,6 +58,11 @@ public class PROCEPreTransformer {
         if (activeInd) {
             stagingPROCE.setEncounterId(parser.getEncounterId().getInt());
 
+            CsvCell sliceCell = parser.getEncounterSliceID();
+            if (!sliceCell.isEmpty()) {
+                stagingPROCE.setEncounterSliceId(sliceCell.getInt());
+            }
+
             Date procDate = csvHelper.parseDate(parser.getProcedureDateTime());
             //explicitly been told that if a PROCE record has no date, then skip it
             if (procDate == null) {
@@ -68,7 +74,7 @@ public class PROCEPreTransformer {
 
             if (codeId == null) {
                 throw new Exception("Missing procedure code for procid " + procId);
-                }
+            }
             stagingPROCE.setProcedureCode(codeId);
 
             String procTerm;
@@ -118,7 +124,6 @@ public class PROCEPreTransformer {
             //TODO - remove these columns (mid-May)
             stagingPROCE.setLookupNhsNumber(null);
             stagingPROCE.setLookupDateOfBirth(null);
-
 
 
         }
