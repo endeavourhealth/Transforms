@@ -139,15 +139,15 @@ public class SusOutpatientPreTransformer {
         cdsSecondary.setProcedureSeqNbr(2);
 
         CsvCell dateCell = parser.getSecondaryProcedureDate();
-        if (dateCell.isEmpty()) {
-            TransformWarnings.log(LOG, csvHelper, "Missing secondary procedure date {} for outpatient CDS record", dateCell);
-            dateCell = parser.getPrimaryProcedureDate();
-            if (dateCell.isEmpty()) {
-                TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date {} is empty", dateCell);
-                return;
+        if (!dateCell.isEmpty()) {
+            cdsSecondary.setProcedureDate(dateCell.getDate());
+        } else {
+            //if we have no secondary date, use the primary date
+            CsvCell primaryDateCell = parser.getPrimaryProcedureDate();
+            if (!primaryDateCell.isEmpty()) {
+                cdsSecondary.setProcedureDate(primaryDateCell.getDate());
             }
         }
-        cdsSecondary.setProcedureDate(dateCell.getDate());
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SaveDataCallable(parser.getCurrentState(), cdsSecondary, serviceId));
