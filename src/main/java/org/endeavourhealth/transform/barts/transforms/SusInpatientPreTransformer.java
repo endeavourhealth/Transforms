@@ -174,12 +174,13 @@ public class SusInpatientPreTransformer {
 
             if (word.length() > 4) {
                 String dateStr = word.substring(4);
-                if (Strings.isNullOrEmpty(dateStr)) {
-                    //TODO - why are we breaking out here? If there's no date for the primary or secondary procedures we log stuff out - in this case we don't. Why not?
-                    break;
+                if (Strings.isNullOrEmpty(dateStr) || dateStr.trim().length()==0) {
+                    //If no date use the primary procedure date
+                    cdsRemainder.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
+                } else {
+                    Date date = parser.getDateFormat().parse(dateStr);
+                    cdsRemainder.setProcedureDate(date);
                 }
-                Date date = parser.getDateFormat().parse(dateStr);
-                cdsRemainder.setProcedureDate(date);
             }
 
             String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
