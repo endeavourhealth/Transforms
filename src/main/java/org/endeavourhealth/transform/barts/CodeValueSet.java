@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts;
 
 public class CodeValueSet {
 
+
     // Static values to hold the code set values
     public static final Long LOCATION_NAME = 220L;
     public static final Long NHS_NUMBER_STATUS = 29882L;
