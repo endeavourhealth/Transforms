@@ -181,6 +181,8 @@ public class SusInpatientPreTransformer {
                     Date date = parser.getDateFormat().parse(dateStr);
                     cdsRemainder.setProcedureDate(date);
                 }
+            } else {
+                cdsRemainder.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
             }
 
             String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
