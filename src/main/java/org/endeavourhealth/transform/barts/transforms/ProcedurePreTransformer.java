@@ -62,10 +62,11 @@ public class ProcedurePreTransformer {
         obj.setConsultant(parser.getConsultant().getString());
 
         CsvCell dtCell = parser.getProcedureDateTime();
-        if (dtCell.isEmpty()) {
-            //TODO - is this needed? Have we any evidence of empty dates in this file?
+
+        //taken out until we see this happening. Not happy with the possibility of silently ignoring rows until we know we need to
+        /*if (dtCell.isEmpty()) {
             return;
-        }
+        }*/
 
         obj.setProcDtTm(BartsCsvHelper.parseDate(dtCell));
         obj.setUpdatedBy(parser.getUpdatedBy().getString());
