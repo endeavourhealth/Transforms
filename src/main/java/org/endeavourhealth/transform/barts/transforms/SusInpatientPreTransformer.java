@@ -175,23 +175,24 @@ public class SusInpatientPreTransformer {
             opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
             cdsRemainder.setProcedureOpcsCode(opcsCode);
 
+            String dateStr = null;
             if (word.length() > 4) {
-                String dateStr = word.substring(4, 12);
+                dateStr = word.substring(4, 12);
                 dateStr = dateStr.trim();
-                if (!Strings.isNullOrEmpty(dateStr)) {
-                    Date date = parser.getDateFormat().parse(dateStr);
-                    cdsRemainder.setProcedureDate(date);
-                } else {
-                    TransformWarnings.log(LOG, csvHelper, "Missing " + seq + " procedure date {} for inpatient CDS record", otherProcedureOPCS);
-                    CsvCell dateCell = parser.getPrimaryProcedureDate();
-                    if (dateCell.isEmpty()) {
-                        TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date {} is empty", dateCell);
-                        continue;
-                    }
+            }
 
-                    cdsRemainder.setProcedureDate(dateCell.getDate());
+            if (!Strings.isNullOrEmpty(dateStr)) {
+                Date date = parser.getDateFormat().parse(dateStr);
+                cdsRemainder.setProcedureDate(date);
+            } else {
+                TransformWarnings.log(LOG, csvHelper, "Missing " + seq + " procedure date {} for inpatient CDS record", otherProcedureOPCS);
+                CsvCell dateCell = parser.getPrimaryProcedureDate();
+                if (dateCell.isEmpty()) {
+                    TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date {} is empty", dateCell);
+                    continue;
                 }
 
+                cdsRemainder.setProcedureDate(dateCell.getDate());
             }
 
             String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
