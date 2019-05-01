@@ -37,7 +37,7 @@ public class ProcedureTargetTransformer {
     }
 
 
-    public static void createProcedures (FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    public static void createProcedures(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         // retrieve the target procedures for the current exchangeId
         List<RdbmsStagingTarget> targetProcedures = csvHelper.retrieveTargetProcedures();
@@ -72,41 +72,39 @@ public class ProcedureTargetTransformer {
             procedureBuilder.setPerformed(procedureDateTime);
 
             // set the patient reference
-            int personId = procedure.getPersonId();
-            Reference patientReference
-                    = ReferenceHelper.createReference(ResourceType.Patient, String.valueOf(personId));
+            Integer personId = procedure.getPersonId();
+            if (personId == null) {
+                TransformWarnings.log(LOG, csvHelper, "Missing person ID in procedure_target");
+                return;
+            }
+            Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
             procedureBuilder.setPatient(patientReference);
 
             // status is always completed
             procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
 
             // set the encounter reference
-            int encounterId = procedure.getEncounterId();
-            if (encounterId > 0) {
-                Reference encounterReference
-                        = ReferenceHelper.createReference(ResourceType.Encounter, String.valueOf(encounterId));
+            Integer encounterId = procedure.getEncounterId();
+            if (encounterId != null) {
+                Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, String.valueOf(encounterId));
                 procedureBuilder.setEncounter(encounterReference);
             }
 
             // performer and recorder
-            int performerPersonnelId = procedure.getPerformerPersonnelId();
-            if (performerPersonnelId > 0) {
-
-                Reference practitionerPerformerReference
-                        = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
+            Integer performerPersonnelId = procedure.getPerformerPersonnelId();
+            if (performerPersonnelId != null) {
+                Reference practitionerPerformerReference = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
                 procedureBuilder.addPerformer(practitionerPerformerReference);
             }
-            int recordedByPersonneId = procedure.getRecordByPersonnelId();
-            if (recordedByPersonneId > 0) {
 
-                Reference practitionerRecorderReference
-                        = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(recordedByPersonneId));
+            Integer recordedByPersonneId = procedure.getRecordByPersonnelId();
+            if (recordedByPersonneId != null) {
+                Reference practitionerRecorderReference = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(recordedByPersonneId));
                 procedureBuilder.setRecordedBy(practitionerRecorderReference);
             }
 
             // coded concept
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
 
             // can be either of these three coded types
             String procedureCodeType = procedure.getProcedureType().trim();
@@ -137,34 +135,35 @@ public class ProcedureTargetTransformer {
             // notes / free text
             String freeText = procedure.getFreeText();
             if (!Strings.isNullOrEmpty(freeText)) {
-                procedureBuilder.addNotes("Notes: "+freeText);
+                procedureBuilder.addNotes("Notes: " + freeText);
             }
             // qualifier text as more notes
             String qualifierText = procedure.getQualifier();
             if (!Strings.isNullOrEmpty(qualifierText)) {
-                procedureBuilder.addNotes("Qualifier: " +qualifierText);
+                procedureBuilder.addNotes("Qualifier: " + qualifierText);
             }
 
             //location text / codes as more notes
             String locationText = procedure.getLocation();
             if (!Strings.isNullOrEmpty(locationText)) {
-                procedureBuilder.addNotes("Location(s): "+locationText);
+                procedureBuilder.addNotes("Location(s): " + locationText);
             }
 
             // sequence number, primary and parent procedure
-            int sequenceNumber = procedure.getProcedureSeqNbr();
-            procedureBuilder.setSequenceNumber(sequenceNumber);
-            if (sequenceNumber == 1) {
+            Integer sequenceNumber = procedure.getProcedureSeqNbr();
+            if (sequenceNumber != null) {
+                procedureBuilder.setSequenceNumber(sequenceNumber);
+                if (sequenceNumber == 1) {
+                    procedureBuilder.createOrUpdateIsPrimaryExtension(true);
 
-                procedureBuilder.createOrUpdateIsPrimaryExtension(true);
-            } else {
-                // parent resource
-                String parentProcedureId = procedure.getParentProcedureUniqueId();
-                if (!Strings.isNullOrEmpty(parentProcedureId)) {
+                } else {
+                    // parent resource
+                    String parentProcedureId = procedure.getParentProcedureUniqueId();
+                    if (!Strings.isNullOrEmpty(parentProcedureId)) {
 
-                    Reference parentProcedureReference
-                            = ReferenceHelper.createReference(ResourceType.Procedure, parentProcedureId);
-                    procedureBuilder.setParentResource(parentProcedureReference);
+                        Reference parentProcedureReference = ReferenceHelper.createReference(ResourceType.Procedure, parentProcedureId);
+                        procedureBuilder.setParentResource(parentProcedureReference);
+                    }
                 }
             }
 
