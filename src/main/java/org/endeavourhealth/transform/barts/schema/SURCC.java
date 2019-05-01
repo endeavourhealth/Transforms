@@ -90,6 +90,7 @@ public class SURCC extends AbstractCsvParser {
     public CsvCell getTheatreNumberCode() {
         return super.getCell("THEATRE_NBR_CD");
     }
+    public CsvCell getSpecialityCode() { return super.getCell("SURGICAL_CASE_SPECIALTY_CD"); }
 
     @Override
     protected boolean isFileAudited() {

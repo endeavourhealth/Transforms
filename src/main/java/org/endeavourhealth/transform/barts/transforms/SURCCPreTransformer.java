@@ -68,6 +68,7 @@ public class SURCCPreTransformer {
             stagingSURCC.setDepartmentCode(parser.getDepartmentCode().getString());
             stagingSURCC.setSurgicalAreaCode(parser.getSurgicalAreaCode().getString());
             stagingSURCC.setTheatreNumberCode(parser.getTheatreNumberCode().getString());
+            stagingSURCC.setSpecialtyCode(parser.getSpecialityCode().getString());
 
             ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
             auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
@@ -77,6 +78,7 @@ public class SURCCPreTransformer {
             auditWrapper.auditValue(parser.getInstitutionCode().getPublishedFileId(), parser.getInstitutionCode().getRecordNumber(), parser.getInstitutionCode().getColIndex(), "InstitutionCode");
             auditWrapper.auditValue(parser.getDepartmentCode().getPublishedFileId(), parser.getDepartmentCode().getRecordNumber(), parser.getDepartmentCode().getColIndex(), "DepartmentCode");
             auditWrapper.auditValue(parser.getTheatreNumberCode().getPublishedFileId(), parser.getTheatreNumberCode().getRecordNumber(), parser.getTheatreNumberCode().getColIndex(), "TheatreNumberCode");
+            auditWrapper.auditValue(parser.getSpecialityCode().getPublishedFileId(), parser.getSpecialityCode().getRecordNumber(), parser.getSpecialityCode().getColIndex(), "SpecialtyCode");
             stagingSURCC.setAudit(auditWrapper);
         }
 

@@ -74,7 +74,7 @@ public class ProcedureTargetTransformer {
             // set the patient reference
             Integer personId = procedure.getPersonId();
             if (personId == null) {
-                TransformWarnings.log(LOG, csvHelper, "Missing person ID in procedure_target");
+                TransformWarnings.log(LOG, csvHelper, "Missing person ID in procedure_target for Procedure Id: {}", uniqueId);
                 return;
             }
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
@@ -148,6 +148,41 @@ public class ProcedureTargetTransformer {
             if (!Strings.isNullOrEmpty(locationText)) {
                 procedureBuilder.addNotes("Location(s): " + locationText);
             }
+
+            //TODO: determine usefullness of updating linked encounter if already has org data
+            // this is Service Resource cerner coded data set 221
+//            String locationText = procedure.getLocation();
+//            if (!Strings.isNullOrEmpty(locationText)) {
+//
+//                // retrieve the existing Encounter resource to update the location details
+//                Encounter existingEncounter
+//                        = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, uniqueId);
+//
+//                if (existingEncounter != null) {
+//                    EncounterBuilder encounterBuilder = new EncounterBuilder(existingEncounter);
+//
+//                    try {
+//                        // is the location an Id?
+//                        Integer.parseInt(locationText);
+//
+//                        CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(221L, locationText);
+//                        if (codeRef != null) {
+//                            String locationName = codeRef.getCodeDispTxt();
+//                        }
+//
+//
+//                    } catch (Exception ex) {
+//                        //the location is text only
+//                        String locationName = locationText;
+//                    }
+//
+//                    // save the updated Encounter
+//                    //fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
+//                }
+//            }
+//
+//            // //TODO: Data not set at source for this
+//            String speciality = procedure.getSpeciality();
 
             // sequence number, primary and parent procedure
             Integer sequenceNumber = procedure.getProcedureSeqNbr();
