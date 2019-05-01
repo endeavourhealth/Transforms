@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.publisherStaging.models.RdbmsStagingTarget;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -181,8 +182,18 @@ public class ProcedureTargetTransformer {
 //                }
 //            }
 //
-//            // //TODO: Data not set at source for this
-//            String speciality = procedure.getSpeciality();
+
+            String specialityCode = procedure.getSpecialty();
+            if (!Strings.isNullOrEmpty(specialityCode)) {
+
+                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(357L, specialityCode);
+                if (codeRef != null) {
+                    String specialityTerm = codeRef.getCodeDispTxt();
+                }
+
+                //TODO: Work out where to put speciality code and looked up term as Encounter does not
+                // have a speciality - new extension?
+            }
 
             // sequence number, primary and parent procedure
             Integer sequenceNumber = procedure.getProcedureSeqNbr();
