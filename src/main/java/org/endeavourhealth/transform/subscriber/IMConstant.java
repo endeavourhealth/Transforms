@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.subscriber;
 
 public class IMConstant {
 
+
     public static final String SNOMED = "SNOMED";
     public static final String DMD = "DM+D";
     public static final String READ2 = "READ2";
