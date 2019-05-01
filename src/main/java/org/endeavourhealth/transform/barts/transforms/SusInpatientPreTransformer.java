@@ -106,7 +106,7 @@ public class SusInpatientPreTransformer {
 
         CsvCell dateCell = parser.getPrimaryProcedureDate();
         if (dateCell.isEmpty()) {
-            TransformWarnings.log(LOG, csvHelper, "Missing primary procedure date for inpatient CDS record", dateCell);
+            TransformWarnings.log(LOG, csvHelper, "Missing primary procedure date {} for inpatient CDS record", dateCell);
             return;
         }
         cdsPrimary.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
@@ -141,10 +141,10 @@ public class SusInpatientPreTransformer {
 
         CsvCell dateCell = parser.getSecondaryProcedureDate();
         if (dateCell.isEmpty()) {
-            TransformWarnings.log(LOG, csvHelper, "Missing secondary procedure date for inpatient CDS record", dateCell);
+            TransformWarnings.log(LOG, csvHelper, "Missing secondary procedure date for {} inpatient CDS record", dateCell);
             dateCell = parser.getPrimaryProcedureDate();
             if (dateCell.isEmpty()) {
-                TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date is empty", dateCell);
+                TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date {} is empty", dateCell);
                 return;
             }
         }
@@ -181,10 +181,10 @@ public class SusInpatientPreTransformer {
                     Date date = parser.getDateFormat().parse(dateStr);
                     cdsRemainder.setProcedureDate(date);
                 } else {
-                    TransformWarnings.log(LOG, csvHelper, "Missing " + seq + " procedure date for inpatient CDS record", otherProcedureOPCS);
+                    TransformWarnings.log(LOG, csvHelper, "Missing " + seq + " procedure date {} for inpatient CDS record", otherProcedureOPCS);
                     CsvCell dateCell = parser.getPrimaryProcedureDate();
                     if (dateCell.isEmpty()) {
-                        TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date is empty", dateCell);
+                        TransformWarnings.log(LOG, csvHelper, "Skipping secondary procedure because primary date {} is empty", dateCell);
                         continue;
                     }
 
