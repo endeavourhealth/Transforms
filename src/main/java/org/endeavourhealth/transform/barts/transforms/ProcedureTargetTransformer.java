@@ -44,6 +44,10 @@ public class ProcedureTargetTransformer {
 
         // retrieve the target procedures for the current exchangeId
         List<StagingTarget> targetProcedures = csvHelper.retrieveTargetProcedures();
+        if (targetProcedures == null) {
+            return;
+        }
+
         for (StagingTarget procedure : targetProcedures) {
 
             String uniqueId = procedure.getUniqueId();
