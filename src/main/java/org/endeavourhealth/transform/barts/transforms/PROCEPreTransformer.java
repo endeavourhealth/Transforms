@@ -75,7 +75,7 @@ public class PROCEPreTransformer {
             String codeId = csvHelper.getProcedureOrDiagnosisConceptCode(conceptCell);
             if (Strings.isNullOrEmpty(codeId)) {
                 //a very small number of PROCE records have no code (e.g. procedure ID 427665727) but we can't do anything with it
-                TransformWarnings.log(LOG, csvHelper, "Procedure has no concept code {} so will be skipped", conceptCell);
+                TransformWarnings.log(LOG, csvHelper, "Procedure {} has no concept code so will be skipped", procedureIdCell);
                 return;
                 //throw new Exception("Missing procedure code for procid " + procId);
             }
@@ -119,13 +119,13 @@ public class PROCEPreTransformer {
                 //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
                 String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
                 if (mrn == null) {
-                    TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no MRN from lookup for person {}", procedureIdCell, personId);
+                    TransformWarnings.log(LOG, csvHelper, "PROCE {} has no MRN from lookup for person {}", procedureIdCell, personId);
                     return;
                 }
                 stagingPROCE.setLookupMrn(mrn);
 
             } else {
-                TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no personId to look up", procedureIdCell);
+                TransformWarnings.log(LOG, csvHelper, "PROCE {} has no personId to look up", procedureIdCell);
                 return;
             }
 
