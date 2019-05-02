@@ -51,6 +51,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public static final String CODE_TYPE_SNOMED_CT = "SNOMED CT";
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
     public static final String CODE_TYPE_OPCS_4 = "OPCS4";
+    public static final String CODE_TYPE_HRG = "HRG";
     public static final String CODE_TYPE_CERNER = "CERNER";
     public static final String SUS_RECORD_TYPE_INPATIENT = "InPatient";
     public static final String SUS_RECORD_TYPE_OUTPATIENT = "OutPatient";
@@ -262,7 +263,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
             String ret = conceptCodeIdentifier.substring(0, index);
             if (ret.equals(CODE_TYPE_SNOMED)
                     || ret.equals(CODE_TYPE_ICD_10)
-                    || ret.equalsIgnoreCase(CODE_TYPE_OPCS_4)) {
+                    || ret.equalsIgnoreCase(CODE_TYPE_OPCS_4)
+                    || ret.equalsIgnoreCase(CODE_TYPE_HRG)) {
                 return ret;
             } else {
                 throw new IllegalArgumentException("Unexpected code type [" + ret + "]");

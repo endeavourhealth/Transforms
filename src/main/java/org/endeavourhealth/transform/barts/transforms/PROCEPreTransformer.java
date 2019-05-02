@@ -47,8 +47,9 @@ public class PROCEPreTransformer {
         stagingPROCE.setActiveInd(parser.getActiveIndicator().getIntAsBoolean());
         stagingPROCE.setExchangeId(parser.getExchangeId().toString());
         stagingPROCE.setDtReceived(new Date());
-        int procId = parser.getProcedureID().getInt();
-        stagingPROCE.setProcedureId(procId);
+
+        CsvCell procedureIdCell = parser.getProcedureID();
+        stagingPROCE.setProcedureId(procedureIdCell.getInt());
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingPROCE.setActiveInd(activeInd);
@@ -95,6 +96,10 @@ public class PROCEPreTransformer {
                     throw new Exception("Failed to find term for Snomed code " + codeId);
                 }
 
+            } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_HRG)) {
+                TransformWarnings.log(LOG, csvHelper, "PROCE record {} has HRG code in concept cell {}", procedureIdCell, conceptCell);
+                return;
+
             } else {
                 throw new Exception("Unexpected code type " + codeType);
             }
@@ -114,13 +119,13 @@ public class PROCEPreTransformer {
                 //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
                 String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
                 if (mrn == null) {
-                    TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no MRN from lookup for person {}", procId, personId);
+                    TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no MRN from lookup for person {}", procedureIdCell, personId);
                     return;
                 }
                 stagingPROCE.setLookupMrn(mrn);
 
             } else {
-                TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no personId to look up", procId);
+                TransformWarnings.log(LOG, csvHelper, "PROCE record {} has no personId to look up", procedureIdCell);
                 return;
             }
 
