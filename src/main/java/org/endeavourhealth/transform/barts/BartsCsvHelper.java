@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingTargetDalI;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingTarget;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -18,7 +19,6 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNom
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.core.database.rdbms.publisherStaging.models.RdbmsStagingTarget;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -180,9 +180,9 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         stagingRepository.processStagingForTarget(this.exchangeId, this.serviceId);
     }
 
-    public List<RdbmsStagingTarget> retrieveTargetProcedures() throws Exception {
+    public List<StagingTarget> retrieveTargetProcedures() throws Exception {
 
-        List<RdbmsStagingTarget> ret = stagingRepository.getTargetProcedures(this.exchangeId, this.serviceId);
+        List<StagingTarget> ret = stagingRepository.getTargetProcedures(this.exchangeId, this.serviceId);
         return ret;
     }
 

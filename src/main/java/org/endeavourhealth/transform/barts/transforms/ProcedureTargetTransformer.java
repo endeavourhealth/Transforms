@@ -3,8 +3,8 @@ package org.endeavourhealth.transform.barts.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingTarget;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.rdbms.publisherStaging.models.RdbmsStagingTarget;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -43,8 +43,8 @@ public class ProcedureTargetTransformer {
     public static void createProcedures(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         // retrieve the target procedures for the current exchangeId
-        List<RdbmsStagingTarget> targetProcedures = csvHelper.retrieveTargetProcedures();
-        for (RdbmsStagingTarget procedure : targetProcedures) {
+        List<StagingTarget> targetProcedures = csvHelper.retrieveTargetProcedures();
+        for (StagingTarget procedure : targetProcedures) {
 
             String uniqueId = procedure.getUniqueId();
             boolean isDeleted = procedure.getIsDeleted();
