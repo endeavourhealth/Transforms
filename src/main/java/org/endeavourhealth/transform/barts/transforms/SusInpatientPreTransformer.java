@@ -168,6 +168,7 @@ public class SusInpatientPreTransformer {
             StagingCds cdsRemainder = commonContent.clone();
 
             String opcsCode = word.substring(0, 4);
+            opcsCode = opcsCode.trim(); //because we sometimes get just three chars e.g. S41
             if (opcsCode.isEmpty()) {
                 break;
             }

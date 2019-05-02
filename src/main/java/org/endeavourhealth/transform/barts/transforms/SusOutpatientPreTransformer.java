@@ -168,7 +168,8 @@ public class SusOutpatientPreTransformer {
             StagingCds cdsRemainder = commonContent.clone();
 
             String opcsCode = word.substring(0, 4);
-            if (opcsCode.isEmpty() || opcsCode.trim().length()==0) {
+            opcsCode = opcsCode.trim(); //because we sometimes get just three chars e.g. S41
+            if (opcsCode.isEmpty()) {
                 break;
             }
             opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);

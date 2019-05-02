@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.subscriber;
 
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.transform.subscriber.outputModels.OutputContainer;
 import org.hl7.fhir.instance.model.Reference;
 
@@ -8,6 +10,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SubscriberTransformParams {
 
@@ -19,7 +22,7 @@ public class SubscriberTransformParams {
     private final OutputContainer outputContainer;
     private final Map<String, ResourceWrapper> allResources;
     private final Set<String> resourcesTransformed;
-    private final boolean useInstanceMapping;
+    private final Map<String, SubscriberId> subscriberIdMap;
 
     private int batchSize;
     private Long enterpriseOrganisationId = null;
@@ -28,8 +31,7 @@ public class SubscriberTransformParams {
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
     public SubscriberTransformParams(UUID serviceId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
-                                     OutputContainer outputContainer, Map<String, ResourceWrapper> allResources, String exchangeBody,
-                                     boolean useInstanceMapping) {
+                                     OutputContainer outputContainer, Map<String, ResourceWrapper> allResources, String exchangeBody) {
         this.serviceId = serviceId;
         this.protocolId = protocolId;
         this.exchangeId = exchangeId;
@@ -39,12 +41,10 @@ public class SubscriberTransformParams {
         this.allResources = allResources;
         this.exchangeBody = exchangeBody;
         this.resourcesTransformed = new HashSet<>();
-        this.useInstanceMapping = useInstanceMapping;
+        this.subscriberIdMap = new ConcurrentHashMap<>();
     }
 
-    public boolean isUseInstanceMapping() {
-        return useInstanceMapping;
-    }
+
 
     public String getExchangeBody() {
         return exchangeBody;
@@ -129,5 +129,27 @@ public class SubscriberTransformParams {
         }
 
         return done;
+    }
+
+    public void addAndUpdateSubscriberId(ResourceWrapper resourceWrapper, SubscriberId subscriberId) {
+        if (subscriberId == null) {
+            throw new RuntimeException("Can't cache null subscriber IDs");
+        }
+
+        //if we've just deleted the resource, set the datetime to null so that if the resource is un-deleted,
+        //we know that it must be next sent as an insert rather than an update
+        if (resourceWrapper.isDeleted()) {
+            subscriberId.setDtUpdatedPreviouslySent(null);
+
+        } else {
+            subscriberId.setDtUpdatedPreviouslySent(resourceWrapper.getCreatedAt());
+        }
+
+        String reference = ReferenceHelper.createResourceReference(resourceWrapper.getResourceType(), resourceWrapper.getResourceId().toString());
+        subscriberIdMap.put(reference, subscriberId);
+    }
+
+    public Map<String, SubscriberId> getSubscriberIdMap() {
+        return subscriberIdMap;
     }
 }

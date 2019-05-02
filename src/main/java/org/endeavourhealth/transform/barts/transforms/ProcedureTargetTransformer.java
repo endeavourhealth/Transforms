@@ -78,7 +78,7 @@ public class ProcedureTargetTransformer {
             Integer personId = procedure.getPersonId();
             if (personId == null) {
                 TransformWarnings.log(LOG, csvHelper, "Missing person ID in procedure_target for Procedure Id: {}", uniqueId);
-                return;
+                continue;
             }
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
             procedureBuilder.setPatient(patientReference);
@@ -202,7 +202,7 @@ public class ProcedureTargetTransformer {
             if (sequenceNumber != null) {
                 procedureBuilder.setSequenceNumber(sequenceNumber);
                 if (sequenceNumber == 1) {
-                    procedureBuilder.createOrUpdateIsPrimaryExtension(true);
+                    procedureBuilder.setIsPrimary(true);
 
                 } else {
                     // parent resource

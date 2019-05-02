@@ -356,7 +356,7 @@ public class PROCETransformer {
         //sequence number ONE is primary
         if (sequenceNumberCell.getInt() == 1) {
             //procedureBuilder.setIsPrimary(true, sequenceNumberCell);
-            procedureBuilder.createOrUpdateIsPrimaryExtension(true, sequenceNumberCell);
+            procedureBuilder.setIsPrimary(true, sequenceNumberCell);
 
         } else {
             //if secondary, use the pre-cached PROCEDURE_ID to link this procedure to its primary

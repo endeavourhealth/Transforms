@@ -209,19 +209,19 @@ public abstract class ResourceBuilderBase {
         auditBooleanExtension(extension, sourceCells);
     }
 
-    public void createOrUpdateEncounterExtension(Reference reference, CsvCell... sourceCells) {
+    protected void createOrUpdateEncounterExtension(Reference reference, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.ASSOCIATED_ENCOUNTER, reference);
 
         auditReferenceExtension(extension, sourceCells);
     }
 
-    public void createOrUpdateParentResourceExtension(Reference reference, CsvCell... sourceCells) {
+    protected void createOrUpdateParentResourceExtension(Reference reference, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.PARENT_RESOURCE, reference);
 
         auditReferenceExtension(extension, sourceCells);
     }
 
-    public void createOrUpdateIsPrimaryExtension(boolean isPrimary, CsvCell... sourceCells) {
+    protected void createOrUpdateIsPrimaryExtension(boolean isPrimary, CsvCell... sourceCells) {
 
         if (isPrimary) {
             Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.IS_PRIMARY, true);
