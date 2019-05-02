@@ -74,7 +74,9 @@ public class SURCPPreTransformer {
             stagingSURCP.setProcedureText(parser.getProcedureText().getString());
             stagingSURCP.setModifierText(parser.getModifierText().getString());
             stagingSURCP.setPrimaryProcedureIndicator(parser.getPrimaryProcedureIndicator().getInt());
-            stagingSURCP.setSurgeonPersonnelId(parser.getSurgeonPersonnelId().getInt());
+            if (!BartsCsvHelper.isEmptyOrIsZero(parser.getSurgeonPersonnelId())) {
+                stagingSURCP.setSurgeonPersonnelId(parser.getSurgeonPersonnelId().getInt());
+            }
 
             CsvCell startCell = parser.getStartDateTime();
             if (!startCell.isEmpty()) {
