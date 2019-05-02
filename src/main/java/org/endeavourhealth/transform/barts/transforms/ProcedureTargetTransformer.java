@@ -48,6 +48,8 @@ public class ProcedureTargetTransformer {
             return;
         }
 
+        TransformWarnings.log(LOG, null, "Target Procedures to transform to FHIR: {} for exchangeId: {}", targetProcedures.size(),csvHelper.getExchangeId());
+
         for (StagingTarget procedure : targetProcedures) {
 
             String uniqueId = procedure.getUniqueId();
