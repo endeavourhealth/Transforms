@@ -10,8 +10,9 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInstanceMappingDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberResourceMappingDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
@@ -136,8 +137,8 @@ public abstract class AbstractTransformer {
     public static Long findEnterpriseId(EnterpriseTransformParams params, String resourceType, String resourceId) throws Exception {
         Long ret = checkCacheForId(params.getEnterpriseConfigName(), resourceType, resourceId);
         if (ret == null) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-            ret = enterpriseIdDal.findEnterpriseId(resourceType, resourceId);
+            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
+            ret = enterpriseIdDal.findEnterpriseIdOldWay(resourceType, resourceId);
             //ret = idMappingRepository.getEnterpriseIdMappingId(enterpriseTableName, resourceType, resourceId);
         }
         return ret;
@@ -159,8 +160,8 @@ public abstract class AbstractTransformer {
     public static Long findOrCreateEnterpriseId(EnterpriseTransformParams params, String resourceType, String resourceId) throws Exception {
         Long ret = checkCacheForId(params.getEnterpriseConfigName(), resourceType, resourceId);
         if (ret == null) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-            ret = enterpriseIdDal.findOrCreateEnterpriseId(resourceType, resourceId);
+            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
+            ret = enterpriseIdDal.findOrCreateEnterpriseIdOldWay(resourceType, resourceId);
 
             addIdToCache(params.getEnterpriseConfigName(), resourceType, resourceId, ret);
         }
@@ -283,8 +284,8 @@ public abstract class AbstractTransformer {
 
         //look up any resources we need
         if (!resourcesToFindOnDb.isEmpty()) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(enterpriseConfigName);
-            enterpriseIdDal.findEnterpriseIds(resourcesToFindOnDb, ret);
+            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
+            enterpriseIdDal.findEnterpriseIdsOldWay(resourcesToFindOnDb, ret);
 
             //add them to our cache
             for (ResourceWrapper resource: resourcesToFindOnDb) {
@@ -295,8 +296,8 @@ public abstract class AbstractTransformer {
 
         //lookup and create any resources we need
         if (!resourcesToFindOrCreateOnDb.isEmpty()) {
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(enterpriseConfigName);
-            enterpriseIdDal.findOrCreateEnterpriseIds(resourcesToFindOrCreateOnDb, ret);
+            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
+            enterpriseIdDal.findOrCreateEnterpriseIdsOldWay(resourcesToFindOrCreateOnDb, ret);
 
             //add them to our cache
             for (ResourceWrapper resource: resourcesToFindOrCreateOnDb) {
@@ -322,7 +323,7 @@ public abstract class AbstractTransformer {
         UUID mappedResourceId = checkInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId);
         if (mappedResourceId == null) {
 
-            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+            SubscriberInstanceMappingDalI instanceMapper = DalProvider.factorySubscriberInstanceMappingDal(params.getEnterpriseConfigName());
             mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
 
             //if we've not got a mapping, then we need to create one from our resource data
@@ -443,7 +444,7 @@ public abstract class AbstractTransformer {
                 UUID mappedResourceId = checkInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId);
                 if (mappedResourceId == null) {
 
-                    EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+                    SubscriberInstanceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberInstanceMappingDal(params.getEnterpriseConfigName());
                     mappedResourceId = enterpriseIdDal.findInstanceMappedId(resourceType, resourceId);
 
                     //if we've not got a mapping, then we need to create one from our resource data

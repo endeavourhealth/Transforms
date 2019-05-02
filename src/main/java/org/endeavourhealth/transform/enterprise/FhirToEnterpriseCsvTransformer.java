@@ -11,8 +11,10 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInstanceMappingDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberOrgMappingDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -113,8 +115,8 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
     private static Long findEnterpriseOrgId(UUID serviceId, EnterpriseTransformParams params, List<ResourceWrapper> resources) throws Exception {
 
         //if we've previously transformed for our ODS code, then we'll have a mapping to the enterprise ID for that ODS code
-        EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-        Long enterpriseOrganisationId = enterpriseIdDal.findEnterpriseOrganisationId(serviceId.toString());
+        SubscriberOrgMappingDalI subscriberOrgDal = DalProvider.factorySubscriberOrgMappingDal(params.getEnterpriseConfigName());
+        Long enterpriseOrganisationId = subscriberOrgDal.findEnterpriseOrganisationId(serviceId.toString());
         if (enterpriseOrganisationId != null) {
             return enterpriseOrganisationId;
         }
@@ -162,20 +164,20 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
             //we need to see if our organisation is mapped to another instance of the same place,
             //in which case we need to use the enterprise ID of that other instance
-            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-            UUID mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
+            SubscriberInstanceMappingDalI instanceMappingDal = DalProvider.factorySubscriberInstanceMappingDal(params.getEnterpriseConfigName());
+            UUID mappedResourceId = instanceMappingDal.findInstanceMappedId(resourceType, resourceId);
 
             //if we've not got a mapping, then we need to create one from our resource data
             if (mappedResourceId == null) {
                 Resource fhir = resourceRepository.getCurrentVersionAsResource(serviceId, resourceType, resourceId.toString());
                 String mappingValue = AbstractTransformer.findInstanceMappingValue(fhir, params);
-                mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+                mappedResourceId = instanceMappingDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
             }
 
             //if our mapped resource ID is different to our proper ID, then there's a different instance of our organisation
             //already on the database. So we want to "take over" that organisation record, with our own instance
             if (!mappedResourceId.equals(resourceId)) {
-                instanceMapper.takeOverInstanceMapping(resourceType, mappedResourceId, resourceId);
+                instanceMappingDal.takeOverInstanceMapping(resourceType, mappedResourceId, resourceId);
             }
         }
 
@@ -184,7 +186,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
         //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
-        enterpriseIdDal.saveEnterpriseOrganisationId(serviceId.toString(), enterpriseOrganisationId);
+        subscriberOrgDal.saveEnterpriseOrganisationId(serviceId.toString(), enterpriseOrganisationId);
 
         //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
         String orgReferenceValue = ReferenceHelper.createResourceReference(resourceType, resourceId.toString());
@@ -306,8 +308,8 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
                 return;
             }
 
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-            Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
+            SubscriberPersonMappingDalI personMappingDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
+            Long enterprisePersonId = personMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
             params.setEnterprisePersonId(enterprisePersonId);
         }
 

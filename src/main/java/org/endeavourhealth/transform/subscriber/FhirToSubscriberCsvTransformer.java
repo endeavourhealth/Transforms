@@ -11,8 +11,8 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
-import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.*;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -68,18 +68,12 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         //how do the above work when we only retrieve the CURRENT version of each resource?
         //we don't actually know what we sent to the subscriber before...
 
-        //this has been on for a year, so turn on permanently
-        boolean useInstanceMapping = true;
-        /*boolean useInstanceMapping = false;
-        if (config.has("instance_mapping")) {
-            useInstanceMapping = config.get("instance_mapping").asBoolean();
-        }*/
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
         OutputContainer data = new OutputContainer(pseudonymised);
-        SubscriberTransformParams params = new SubscriberTransformParams(serviceId, protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody, useInstanceMapping);
+        SubscriberTransformParams params = new SubscriberTransformParams(serviceId, protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
@@ -94,10 +88,40 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             transformResources(resources, params);
 
             byte[] bytes = data.writeToZip();
-            return Base64.getEncoder().encodeToString(bytes);
+            String ret = Base64.getEncoder().encodeToString(bytes);
+
+            //update the state table so we know the datetime of each resource we just transformed, so the event log is maintained properly
+            //TODO - if the queue reader is killed or fails after this point, our event log will be wrong, since we'll think we sent something when we didn't
+            updateSubscriberStateTable(params);
+
+            return ret;
 
         } catch (Exception ex) {
             throw new TransformException("Exception transforming batch " + batchId, ex);
+        }
+    }
+
+    private static void updateSubscriberStateTable(SubscriberTransformParams params) throws Exception {
+
+        SubscriberResourceMappingDalI resourceMappingDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
+
+        Map<String, SubscriberId> map = params.getSubscriberIdMap();
+
+        Map<String, SubscriberId> batch = new HashMap<>();
+        for (String key: map.keySet()) {
+            SubscriberId id = map.get(key);
+
+            batch.put(key, id);
+
+            if (batch.size() > params.getBatchSize()) {
+                resourceMappingDal.updateDtUpdatedForSubscriber(batch);
+                batch = new HashMap<>();
+            }
+        }
+
+        //and do any remaining ones
+        if (!batch.isEmpty()) {
+            resourceMappingDal.updateDtUpdatedForSubscriber(batch);
         }
     }
 
@@ -116,11 +140,14 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         return i.intValue();
     }*/
 
+    /**
+     * finds or creates the ID for the organization that all this data is for
+     */
     private static Long findEnterpriseOrgId(UUID serviceId, SubscriberTransformParams params, List<ResourceWrapper> resources) throws Exception {
 
         //if we've previously transformed for our ODS code, then we'll have a mapping to the enterprise ID for that ODS code
-        EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-        Long enterpriseOrganisationId = enterpriseIdDal.findEnterpriseOrganisationId(serviceId.toString());
+        SubscriberOrgMappingDalI subscriberInstanceMappingDal = DalProvider.factorySubscriberOrgMappingDal(params.getEnterpriseConfigName());
+        Long enterpriseOrganisationId = subscriberInstanceMappingDal.findEnterpriseOrganisationId(serviceId.toString());
         if (enterpriseOrganisationId != null) {
             return enterpriseOrganisationId;
         }
@@ -164,33 +191,31 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         UUID resourceId = UUID.fromString(comps.getId());
         //LOG.info("Managing organisation is " + resourceType + " " + resourceId);
 
-        if (params.isUseInstanceMapping()) {
+        //we need to see if our organisation is mapped to another instance of the same place,
+        //in which case we need to use the enterprise ID of that other instance
+        SubscriberInstanceMappingDalI instanceMapper = DalProvider.factorySubscriberInstanceMappingDal(params.getEnterpriseConfigName());
+        UUID mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
 
-            //we need to see if our organisation is mapped to another instance of the same place,
-            //in which case we need to use the enterprise ID of that other instance
-            EnterpriseIdDalI instanceMapper = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-            UUID mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
+        //if we've not got a mapping, then we need to create one from our resource data
+        if (mappedResourceId == null) {
+            Resource fhir = resourceRepository.getCurrentVersionAsResource(serviceId, resourceType, resourceId.toString());
+            String mappingValue = AbstractTransformer.findInstanceMappingValue(fhir, params);
+            mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
+        }
 
-            //if we've not got a mapping, then we need to create one from our resource data
-            if (mappedResourceId == null) {
-                Resource fhir = resourceRepository.getCurrentVersionAsResource(serviceId, resourceType, resourceId.toString());
-                String mappingValue = AbstractTransformer.findInstanceMappingValue(fhir, params);
-                mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
-            }
-
-            //if our mapped resource ID is different to our proper ID, then there's a different instance of our organisation
-            //already on the database. So we want to "take over" that organisation record, with our own instance
-            if (!mappedResourceId.equals(resourceId)) {
-                instanceMapper.takeOverInstanceMapping(resourceType, mappedResourceId, resourceId);
-            }
+        //if our mapped resource ID is different to our proper ID, then there's a different instance of our organisation
+        //already on the database. So we want to "take over" that organisation record, with our own instance
+        if (!mappedResourceId.equals(resourceId)) {
+            instanceMapper.takeOverInstanceMapping(resourceType, mappedResourceId, resourceId);
         }
 
         //generate (or find) an enterprise ID for our organization
-        enterpriseOrganisationId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId.toString());
+        SubscriberId subscriberId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId.toString());
+        enterpriseOrganisationId = subscriberId.getSubscriberId();
         //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
         //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
-        enterpriseIdDal.saveEnterpriseOrganisationId(serviceId.toString(), enterpriseOrganisationId);
+        subscriberInstanceMappingDal.saveEnterpriseOrganisationId(serviceId.toString(), enterpriseOrganisationId);
 
         //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
         String orgReferenceValue = ReferenceHelper.createResourceReference(resourceType, resourceId.toString());
@@ -310,8 +335,8 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
                 return;
             }
 
-            EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-            Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
+            SubscriberPersonMappingDalI subscriberPersonMappingDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
+            Long enterprisePersonId = subscriberPersonMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
             params.setEnterprisePersonId(enterprisePersonId);
         }
 
@@ -465,61 +490,58 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
-    private static boolean transformResources(ResourceType resourceType,
+    private static void transformResources(ResourceType resourceType,
                                          List<ResourceWrapper> resources,
                                          ThreadPool threadPool,
                                          SubscriberTransformParams params) throws Exception {
 
         //find all the ones we want to transform
         List<ResourceWrapper> resourcesToTransform = new ArrayList<>();
-        HashSet<ResourceWrapper> hsResourcesToTransform = new HashSet<>();
 
-        for (ResourceWrapper resource: resources) {
-            if (resource.getResourceType().equals(resourceType.toString())) {
-                resourcesToTransform.add(resource);
-                hsResourcesToTransform.add(resource);
-            }
-        }
-
-        if (resourcesToTransform.isEmpty()) {
-            return false;
-        }
-
-        //remove all the resources we're going to, so we can check for ones we missed at the end
-        //removeAll is really slow, so changing to be faster
-        //resources.removeAll(resourcesToTransform);
         for (int i=resources.size()-1; i>=0; i--) {
-            ResourceWrapper r = resources.get(i);
-            if (hsResourcesToTransform.contains(r)) {
+            ResourceWrapper resource = resources.get(i);
+            String resourceResourceType = resource.getResourceType();
+
+            //if it matches our type, then remove from the original list
+            if (resourceResourceType.equals(resourceType.toString())) {
+                resourcesToTransform.add(resource);
                 resources.remove(i);
             }
         }
 
-        //we use this function with a null transformer for resources we want to ignore
+        if (resourcesToTransform.isEmpty()) {
+            return;
+        }
+
+        AbstractSubscriberCsvWriter csvWriter = findCsvWriterForResourceType(resourceType, params);
+
+        //transform in batches
+        List<ResourceWrapper> batch = new ArrayList<>();
         AbstractTransformer transformer = createTransformerForResourceType(resourceType);
-        if (transformer != null) {
 
-            AbstractSubscriberCsvWriter csvWriter = findCsvWriterForResourceType(resourceType, params);
+        //some resource types don't have a transformer, so just return out
+        if (transformer == null) {
+            return;
+        }
 
-            //transform in batches
-            List<ResourceWrapper> batch = new ArrayList<>();
-            for (ResourceWrapper resource: resourcesToTransform) {
+        for (ResourceWrapper resource: resourcesToTransform) {
 
-                batch.add(resource);
+            batch.add(resource);
 
-                if (batch.size() >= params.getBatchSize()) {
-                    addBatchToThreadPool(transformer, csvWriter, batch, threadPool, params);
-                    batch = new ArrayList<>();
-                }
-            }
-
-            //don't forget to do any in the last batch
-            if (!batch.isEmpty()) {
+            if (batch.size() >= params.getBatchSize()) {
                 addBatchToThreadPool(transformer, csvWriter, batch, threadPool, params);
+
+                //create a new batch and transformer
+                batch = new ArrayList<>();
+                transformer = createTransformerForResourceType(resourceType);
             }
         }
 
-        return true;
+        //don't forget to do any in the last batch
+        if (!batch.isEmpty()) {
+            addBatchToThreadPool(transformer, csvWriter, batch, threadPool, params);
+        }
+
     }
 
     private static void addBatchToThreadPool(AbstractTransformer transformer,

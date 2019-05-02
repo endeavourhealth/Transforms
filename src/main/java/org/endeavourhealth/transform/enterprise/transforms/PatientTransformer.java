@@ -18,8 +18,8 @@ import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseAgeUpdaterlDalI;
-import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
@@ -73,8 +73,8 @@ public class PatientTransformer extends AbstractTransformer {
             discoveryPersonId = pair.getNewPersonId();
         }
 
-        EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
-        Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
+        SubscriberPersonMappingDalI personMappingDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
+        Long enterprisePersonId = personMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
 
         long id;
         long organizationId;

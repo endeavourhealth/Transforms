@@ -17,10 +17,8 @@ import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
 import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
-import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseAgeUpdaterlDalI;
-import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
-import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.im.client.IMClient;
@@ -31,8 +29,8 @@ import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
 import org.endeavourhealth.transform.ui.helpers.NameHelper;
 import org.endeavourhealth.transform.ui.models.types.UIHumanName;
-import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +76,7 @@ public class PatientTransformer extends AbstractTransformer {
             discoveryPersonId = pair.getNewPersonId();
         }
 
-        EnterpriseIdDalI enterpriseIdDal = DalProvider.factoryEnterpriseIdDal(params.getEnterpriseConfigName());
+        SubscriberPersonMappingDalI enterpriseIdDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
         Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
 
         long id;
