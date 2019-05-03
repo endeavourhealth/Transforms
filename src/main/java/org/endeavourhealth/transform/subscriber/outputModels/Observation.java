@@ -124,7 +124,6 @@ public class Observation extends AbstractSubscriberCsvWriter {
                 Long.class,
                 Integer.class,
                 Integer.class,
-                Integer.class,
                 String.class,
                 Long.class,
                 Boolean.TYPE,

@@ -88,34 +88,26 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             }
         }
 
-        // TODO Code needs to be reviewed to use the IM for
-        //  Core Concept Id and Non Core Concept Id
-
-        String originalCode = null;
-        // String originalTerm = null;
-        // Long snomedConceptId = null;
-
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getSubstance());
         if (codes == null) {
             return;
         }
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getSubstance());
+        String originalCode = codes.getOriginalCode();
+        if (originalCoding == null) {
+            originalCoding = fhir.getSubstance().getCoding().get(0);
+            originalCode = fhir.getSubstance().getCoding().get(0).getCode();
+        }
 
-        originalCode = codes.getOriginalCode();
-        // originalTerm = codes.getOriginalTerm();
-        // snomedConceptId = codes.getSnomedConceptId();
-
-        CodeableConcept codeableConcept = fhir.getSubstance();
-        Coding coding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
-        String codingSystem = coding.getSystem();
-        String scheme = getScheme(codingSystem);
-
-        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, originalCode);
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (coreConceptId == null) {
+            LOG.warn("coreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
             throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, originalCode);
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (nonCoreConceptId == null) {
+            LOG.warn("nonCoreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
             throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 

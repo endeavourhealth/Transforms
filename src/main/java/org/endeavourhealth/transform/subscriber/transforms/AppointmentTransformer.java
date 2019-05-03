@@ -98,14 +98,10 @@ public class AppointmentTransformer extends AbstractTransformer {
             actualDuration = Integer.valueOf(duration);
         }
 
-        // TODO Code needs to be reviewed to use the IM for
-        //  Appointment Status Concept Id
-
         Appointment.AppointmentStatus status = fhir.getStatus();
-        Integer appointmentStatusId = status.ordinal();
-
-        appointmentStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_APPOINTMENT_STATUS, appointmentStatusId.toString());
+        appointmentStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_APPOINTMENT_STATUS, status.toCode());
         if (appointmentStatusConceptId == null) {
+            LOG.warn("coreConceptId is null using scheme: " + IMConstant.FHIR_APPOINTMENT_STATUS + " code: " + status.toCode());
             throw new TransformException("appointmentStatusConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 

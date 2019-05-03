@@ -132,9 +132,7 @@ public class PatientTransformer extends AbstractTransformer {
         //  Gender Concept Id
 
         if (fhirPatient.hasGender()) {
-            Integer genderId = fhirPatient.getGender().ordinal();
-
-            genderConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_ADMINISTRATIVE_GENDER, genderId.toString());
+            genderConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_ADMINISTRATIVE_GENDER, fhirPatient.getGender().toCode());
             if (genderConceptId == null) {
                 throw new TransformException("genderConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
             }
