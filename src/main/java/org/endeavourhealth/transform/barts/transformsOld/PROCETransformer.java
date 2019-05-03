@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.barts.transforms;
+package org.endeavourhealth.transform.barts.transformsOld;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
@@ -12,6 +12,7 @@ import org.endeavourhealth.transform.barts.cache.SusPatientCache;
 import org.endeavourhealth.transform.barts.cache.SusPatientCacheEntry;
 import org.endeavourhealth.transform.barts.cache.SusTailCacheEntry;
 import org.endeavourhealth.transform.barts.schema.PROCE;
+import org.endeavourhealth.transform.barts.transforms.PRSNLREFTransformer;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -29,8 +30,13 @@ import java.util.List;
 
 import static org.apache.commons.lang3.time.DateUtils.isSameDay;
 
-//TODO   NEEDS TO BE TOTALLY
-// REWRITTEN TO READ FROM PRIMARY STAGING TABLES
+//
+//   Not currently used. Replaced by PROCEpre and staging process
+//
+//
+
+
+
 public class PROCETransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCETransformer.class);
     private static final String TWO_DECIMAL_PLACES = ".00";

@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class SusEmergencyCareDataSetTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyCareDataSetTransformer.class);
-
+// No obvious need for this transformer yet
 
     public static void transformProcedures(List<ParserI> parsers,
                                            FhirResourceFiler fhirResourceFiler,
@@ -41,7 +41,6 @@ public class SusEmergencyCareDataSetTransformer {
 
     private static Map<String, SusTailCacheEntry> processTails(ParserI parser, Map<String, List<ParserI>> parserMap) throws Exception {
 
-        //TODO Emergency care data is not like InPatient. Needs a rewrite
 
        // SusInpatientTail tailParser = (SusInpatientTail)BartsCsvToFhirTransformer.findTailFile(parserMap, "SusEmergencyCareDataSetTail", parser.getFilePath());
        // Map<String, SusTailCacheEntry> tailsCache = new HashMap<>();

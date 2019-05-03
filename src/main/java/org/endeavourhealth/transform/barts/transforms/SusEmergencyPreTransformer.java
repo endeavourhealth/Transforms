@@ -66,6 +66,9 @@ public class SusEmergencyPreTransformer {
         String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_CONSULTANT_TO_ID, consultantStr);
         if (!Strings.isNullOrEmpty(personnelIdStr)) {
             stagingCds.setLookupConsultantPersonnelId(Integer.valueOf(personnelIdStr));
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Failed to find personid for procedure id {}", parser.getCdsUniqueId());
+            return;
         }
 
         String localPatientId = parser.getLocalPatientId().getString();
