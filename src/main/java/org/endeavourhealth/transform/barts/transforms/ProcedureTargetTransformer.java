@@ -55,8 +55,6 @@ public class ProcedureTargetTransformer {
             String uniqueId = procedure.getUniqueId();
             boolean isDeleted = procedure.getIsDeleted();
 
-            LOG.debug("Transforming procedureId: "+uniqueId+"  Stage 1");
-
             if (isDeleted) {
 
                 // retrieve the existing Procedure resource to perform the deletion on
@@ -75,8 +73,6 @@ public class ProcedureTargetTransformer {
                 continue;
             }
 
-            LOG.debug("Transforming procedureId: "+uniqueId+"  Stage 2");
-
             // create the FHIR Procedure resource - NOTE //TODO: no individual audit cells set
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
             procedureBuilder.setId(uniqueId);
@@ -92,8 +88,6 @@ public class ProcedureTargetTransformer {
             }
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
             procedureBuilder.setPatient(patientReference);
-
-            LOG.debug("Transforming procedureId: "+uniqueId+"  Stage 3");
 
             // status is always completed
             procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
@@ -120,8 +114,6 @@ public class ProcedureTargetTransformer {
                         = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(recordedByPersonneId));
                 procedureBuilder.setRecordedBy(practitionerRecorderReference);
             }
-
-            LOG.debug("Transforming procedureId: "+uniqueId+"  Stage 4");
 
             // coded concept
             CodeableConceptBuilder codeableConceptBuilder
@@ -152,8 +144,6 @@ public class ProcedureTargetTransformer {
             String procedureTerm = procedure.getProcedureTerm();
             codeableConceptBuilder.setCodingDisplay(procedureTerm);
             codeableConceptBuilder.setText(procedureTerm);
-
-            LOG.debug("Transforming procedureId: "+uniqueId+"  Stage 5");
 
             // notes / free text
             String freeText = procedure.getFreeText();
@@ -217,8 +207,6 @@ public class ProcedureTargetTransformer {
                 }
             }
 
-            LOG.debug("Transforming procedureId: "+uniqueId+"  Stage 6");
-
             // sequence number, primary and parent procedure
             Integer sequenceNumber = procedure.getProcedureSeqNbr();
             if (sequenceNumber != null) {
@@ -237,7 +225,6 @@ public class ProcedureTargetTransformer {
                 }
             }
 
-            LOG.debug("Transforming procedureId: "+uniqueId+"  Stage 7");
             fhirResourceFiler.savePatientResource(null, procedureBuilder);
 
             LOG.debug("Transforming procedureId: "+uniqueId+"  Filed");
