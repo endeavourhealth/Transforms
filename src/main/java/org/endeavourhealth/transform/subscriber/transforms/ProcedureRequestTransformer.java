@@ -77,31 +77,32 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
          */
-        ObservationCodeHelper code = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-        if (code == null) {
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        if (codes == null) {
             return;
         }
-        CodeableConcept concept = fhir.getCode();
-        Coding coding = CodeableConceptHelper.findOriginalCoding(concept);
-        String codingSystem = coding.getSystem();
-        String scheme = getScheme(codingSystem);
-        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
+        String originalCode = codes.getOriginalCode();
+        if (originalCoding == null) {
+            originalCoding = fhir.getCode().getCoding().get(0);
+            originalCode = fhir.getCode().getCoding().get(0).getCode();
+        }
+
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (coreConceptId == null) {
-            throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            LOG.warn("coreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
+            throw new org.endeavourhealth.core.exceptions.TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (nonCoreConceptId == null) {
-            throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            LOG.warn("nonCoreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
+            throw new org.endeavourhealth.core.exceptions.TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        // TODO Code needs to be reviewed to use the IM for
-        //  Procedure Request Status
         if (fhir.hasStatus()) {
-            Integer procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
-
             procedureRequestStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
-                    IMConstant.FHIR_PROCEDURE_REQUEST_STATUS, procedureRequestStatusId.toString());
+                    IMConstant.FHIR_PROCEDURE_REQUEST_STATUS, fhir.getStatus().toCode());
             if (procedureRequestStatusConceptId == null) {
                 throw new TransformException("procedureRequestStatusConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
             }

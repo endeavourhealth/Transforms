@@ -6,6 +6,7 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -83,32 +84,28 @@ public class ObservationTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        /* ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
         if (codes == null) {
             return;
         }
-        snomedConceptId = codes.getSnomedConceptId();
-        originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();
-        */
-        ObservationCodeHelper code = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-        if (code == null) {
-            return;
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
+        String originalCode = codes.getOriginalCode();
+        if (originalCoding == null) {
+            originalCoding = fhir.getCode().getCoding().get(0);
+            originalCode = fhir.getCode().getCoding().get(0).getCode();
         }
-        CodeableConcept concept = fhir.getCode();
-        Coding coding = CodeableConceptHelper.findOriginalCoding(concept);
-        String codingSystem = coding.getSystem();
-        String scheme = getScheme(codingSystem);
-        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, code.getOriginalCode());
+
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (coreConceptId == null) {
+            LOG.warn("coreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
             throw new org.endeavourhealth.core.exceptions.TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (nonCoreConceptId == null) {
+            LOG.warn("nonCoreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
             throw new org.endeavourhealth.core.exceptions.TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
-
 
         if (fhir.hasValue()) {
             Type value = fhir.getValue();

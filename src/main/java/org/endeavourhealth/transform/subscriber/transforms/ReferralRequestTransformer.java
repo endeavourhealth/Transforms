@@ -95,21 +95,23 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             if (codes == null) {
                 return;
             }
-            //snomedConceptId = codes.getSnomedConceptId();
-            //originalCode = codes.getOriginalCode();
-            //originalTerm = codes.getOriginalTerm();
-            
-            Coding coding = CodeableConceptHelper.findOriginalCoding(fhirServiceRequested);
-            String codingSystem = coding.getSystem();
-            String scheme = getScheme(codingSystem);
-            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, codes.getOriginalCode());
-            if (coreConceptId == null) {
-                throw new org.endeavourhealth.core.exceptions.TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhirServiceRequested);
+            String originalCode = codes.getOriginalCode();
+            if (originalCoding == null) {
+                originalCoding = fhirServiceRequested.getCoding().get(0);
+                originalCode = fhirServiceRequested.getCoding().get(0).getCode();
             }
 
-            nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, codes.getOriginalCode());
+            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
+            if (coreConceptId == null) {
+                LOG.warn("coreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
+                throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            }
+
+            nonCoreConceptId = IMClient.getConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
             if (nonCoreConceptId == null) {
-                throw new org.endeavourhealth.core.exceptions.TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+                LOG.warn("nonCoreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
+                throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
             }
         }
         /*Long snomedConceptId = findSnomedConceptId(fhir.getType());
@@ -206,17 +208,14 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             }
         }
 
-        // TODO Code needs to be reviewed to use the IM for
-        //  Referral Request Type
         if (fhir.hasType()) {
             CodeableConcept codeableConcept = fhir.getType();
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
-                Integer referralRequestTypeId = fhirReferralType.ordinal();
 
                 referralRequestTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
-                        IMConstant.FHIR_REFERRAL_TYPE, referralRequestTypeId.toString());
+                        IMConstant.FHIR_REFERRAL_TYPE, fhirReferralType.getCode());
                 if (referralRequestTypeConceptId == null) {
                     throw new TransformException("referralRequestTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
                 }

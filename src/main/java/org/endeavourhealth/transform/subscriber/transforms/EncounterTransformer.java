@@ -159,13 +159,17 @@ public class EncounterTransformer extends AbstractTransformer {
         originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
             EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
-            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.SNOMED, String.valueOf(ret.getCode()));
+            snomedConceptId = ret.getCode();
+
+            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.SNOMED, String.valueOf(snomedConceptId));
             if (coreConceptId == null) {
+                LOG.warn("coreConceptId is null using scheme: " + IMConstant.SNOMED + " code: " + snomedConceptId);
                 throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
             }
 
-            nonCoreConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.SNOMED, String.valueOf(ret.getCode()));
+            nonCoreConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.SNOMED, String.valueOf(snomedConceptId));
             if (nonCoreConceptId == null) {
+                LOG.warn("nonCoreConceptId is null using scheme: " + IMConstant.SNOMED + " code: " + snomedConceptId);
                 throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
             }
         }
@@ -174,18 +178,19 @@ public class EncounterTransformer extends AbstractTransformer {
             Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
             if (extension != null) {
                 CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
+                Coding originalCoding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
+                String originalScheme = getScheme(originalCoding.getSystem());
+                originalCode = originalCoding.getCode();
 
-                coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.SNOMED, codeableConcept.getText());
+                coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(originalScheme, originalCode);
                 if (coreConceptId == null) {
+                    LOG.warn("coreConceptId is null using scheme: " + originalScheme + " code: " + originalCode);
                     throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
                 }
-                // snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
 
-                //add the raw original code and term, to assist in data checking and results display
-                originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
-                // originalTerm = codeableConcept.getText();
-                nonCoreConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.SNOMED, originalCode);
+                nonCoreConceptId = IMClient.getConceptIdForSchemeCode(originalScheme, originalCode);
                 if (nonCoreConceptId == null) {
+                    LOG.warn("nonCoreConceptId is null using scheme: " + originalScheme + " code: " + originalCode);
                     throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
                 }
             }
@@ -268,10 +273,10 @@ public class EncounterTransformer extends AbstractTransformer {
             institutionLocationId);
 
         //we also need to populate the two new encounter tables
-        tranformExtraEncounterTables(resource, params,
-                id, organizationId, patientId, personId, practitionerId,
-                episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
-                serviceProviderOrganisationId);
+        //tranformExtraEncounterTables(resource, params,
+        //        id, organizationId, patientId, personId, practitionerId,
+        //        episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
+        //        serviceProviderOrganisationId);
     }
 
     private void tranformExtraEncounterTables(Resource resource, SubscriberTransformParams params,

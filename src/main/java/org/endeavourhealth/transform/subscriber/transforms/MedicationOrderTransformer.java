@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
@@ -88,21 +89,26 @@ public class MedicationOrderTransformer extends AbstractTransformer {
             originalTerm = CodeableConceptHelper.findSnomedConceptText(fhir.getMedicationCodeableConcept());
         }*/
 
-        ObservationCodeHelper code = ObservationCodeHelper.extractCodeFields(fhir.getMedicationCodeableConcept());
-        if (code == null) {
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getMedicationCodeableConcept());
+        if (codes == null) {
             return;
         }
-        CodeableConcept concept = fhir.getMedicationCodeableConcept();
-        Coding coding = CodeableConceptHelper.findOriginalCoding(concept);
-        String codingSystem = coding.getSystem();
-        String scheme = getScheme(codingSystem);
-        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getMedicationCodeableConcept());
+        String originalCode = codes.getOriginalCode();
+        if (originalCoding == null) {
+            originalCoding = fhir.getMedicationCodeableConcept().getCoding().get(0);
+            originalCode = fhir.getMedicationCodeableConcept().getCoding().get(0).getCode();
+        }
+
+        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (coreConceptId == null) {
+            LOG.warn("coreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
             throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
-        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(scheme, code.getOriginalCode());
+        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (nonCoreConceptId == null) {
+            LOG.warn("nonCoreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
             throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
@@ -165,13 +171,17 @@ public class MedicationOrderTransformer extends AbstractTransformer {
             }
         }
 
-        //  Finalised the use of coreConceptId and the IM in order to look up the BNF
+        //  TODO Finalised the use of coreConceptId and the IM in order to look up the BNF
         //  Chapter in that table in the reference DB, by using the actual Snomed code
+        /*
         String snomedCodeString = IMClient.getCodeForConceptId(coreConceptId);
 
         SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
         String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCodeString);
-        bnfReference = Integer.parseInt(fullBnfChapterCodeString.substring(0,6));
+        if (fullBnfChapterCodeString != null && fullBnfChapterCodeString.length() > 7) {
+            bnfReference = Integer.parseInt(fullBnfChapterCodeString.substring(0,6));
+        }
+        */
 
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());

@@ -587,7 +587,7 @@ public abstract class AbstractTransformer {
         if (patient.getBirthDate() != null) {
             LocalDate date = patient.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             Period diff = Period.between(date, LocalDate.now());
-            if (diff.getMonths() == 0) {
+            if (diff.getYears() == 0 && diff.getMonths() == 0) {
                 diff.plusMonths(1);
             }
             Double inYears = diff.getYears() + ((double) diff.getMonths()) / 12;
@@ -611,6 +611,9 @@ public abstract class AbstractTransformer {
             str = IMConstant.OPCS4;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
             str = IMConstant.BARTS_CERNER;
+        }
+        if (str == null) {
+            str = codingSystem;
         }
         return str;
     }
