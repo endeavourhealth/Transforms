@@ -39,6 +39,9 @@ public class SURCPPreTransformer {
 
     private static void processRecord(SURCP parser, BartsCsvHelper csvHelper) throws Exception {
 
+        if (parser.getProcStartDtTm().isEmpty()) {
+            return;
+        }
         StagingSURCP stagingSURCP = new StagingSURCP();
         stagingSURCP.setExchangeId(parser.getExchangeId().toString());
         stagingSURCP.setDtReceived(new Date());

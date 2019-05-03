@@ -83,6 +83,7 @@ public class SURCP extends AbstractCsvParser {
     public CsvCell getWoundClassCode() {
         return super.getCell("WOUND_CLASS_CD");
     }
+    public CsvCell getProcStartDtTm() { return super.getCell("PROC_START_DT_TM");}
 
     @Override
     protected boolean isFileAudited() {

@@ -106,6 +106,10 @@ public class SURCC extends AbstractCsvParser {
         return super.getCell("SURGICAL_CASE_SPECIALTY_CD");
     }
 
+    public CsvCell getSurgeryStartDtTm() { return super.getCell("SURGERY_START_DT_TM");}
+
+
+
     @Override
     protected boolean isFileAudited() {
         return true;
