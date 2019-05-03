@@ -75,6 +75,9 @@ public class SusOutpatientPreTransformer {
             if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
                 return;
             }
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Failed to find personid for procedure id {}", parser.getCdsUniqueId());
+            return;
         }
 
         //primary procedure
