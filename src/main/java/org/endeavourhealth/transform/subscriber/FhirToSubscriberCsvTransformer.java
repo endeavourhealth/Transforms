@@ -54,7 +54,8 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
         JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
 
-        boolean pseudonymised = config.has("pseudonymisation");
+        boolean pseudonymised = config.has("pseudonymised")
+                && config.get("pseudonymised").asBoolean();
         //boolean pseudonymised = config.get("pseudonymised").asBoolean();
 
         int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;

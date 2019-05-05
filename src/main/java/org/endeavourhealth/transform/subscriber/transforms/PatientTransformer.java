@@ -967,7 +967,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             ret = new ArrayList<>();
 
             JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-            JsonNode linkDistributorsNode = config.get("linkedDistributors");
+            JsonNode linkDistributorsNode = config.get("pseudo_salts");
 
             if (linkDistributorsNode != null) {
                 String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
