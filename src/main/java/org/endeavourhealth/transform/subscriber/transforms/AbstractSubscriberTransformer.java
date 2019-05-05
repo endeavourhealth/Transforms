@@ -20,7 +20,8 @@ import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.FhirToSubscriberCsvTransformer;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.EventLog;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +33,9 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-public abstract class AbstractTransformer {
+public abstract class AbstractSubscriberTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractSubscriberTransformer.class);
     private static final ParserPool PARSER_POOL = new ParserPool();
 
     //private static final EnterpriseIdMapRepository idMappingRepository = new EnterpriseIdMapRepository();
@@ -58,17 +59,19 @@ public abstract class AbstractTransformer {
         }
     }
 
-    public void transformResources(List<ResourceWrapper> resources,
-                                    AbstractSubscriberCsvWriter csvWriter,
-                                   SubscriberTransformParams params) throws Exception {
+    public void transformResources(List<ResourceWrapper> resources, SubscriberTransformParams params) throws Exception {
 
         //find or create subscriber DB IDs for each of our resources
-        Map<ResourceWrapper, SubscriberId> enterpriseIds = mapIds(params.getEnterpriseConfigName(), resources, shouldAlwaysTransform(), params);
+        Map<String, SubscriberId> idsForMainTable = mapIds(params.getEnterpriseConfigName(), getMainSubscriberTableId(), resources, shouldAlwaysTransform(), params);
 
         for (ResourceWrapper resource: resources) {
 
             try {
-                SubscriberId subscriberId = enterpriseIds.get(resource);
+                ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
+                String resourceId = resource.getResourceId().toString();
+                String sourceId = ReferenceHelper.createResourceReference(resourceType, resourceId);
+
+                SubscriberId subscriberId = idsForMainTable.get(sourceId);
                 if (subscriberId == null) {
                     //if we've got a null enterprise ID, then it means the ID mapper doesn't want us to do anything
                     //with the resource (e.g. ihe resource is a duplicate instance of another Organisation that is already transformed)
@@ -77,27 +80,11 @@ public abstract class AbstractTransformer {
 
                 //check to see if we've already transformed this resource in this batch already,
                 //which can happen for dependent items like orgs and practitioners
-                ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
-                String resourceId = resource.getResourceId().toString();
-                Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceId);
-
-                if (params.hasResourceBeenTransformedAddIfNot(resourceReference)) {
+                if (params.hasResourceBeenTransformedAddIfNot(sourceId)) {
                     continue;
                 }
 
-                if (resource.isDeleted()) {
-//TODO - if deleting a Patient resource, we should delete all patient contacts and addresses (and UPRNs?)
-                    transformResourceDelete(subscriberId.getSubscriberId(), csvWriter, params);
-
-                } else {
-                    Resource fhir = FhirResourceHelper.deserialiseResouce(resource);
-                    transformResource(subscriberId.getSubscriberId(), fhir, csvWriter, params);
-                }
-
-                //TODO - write event log
-
-                //cache our subscriber ID so we can get our event log right next time
-                params.addAndUpdateSubscriberId(resource, subscriberId);
+                transformResource(subscriberId, resource, params);
 
             } catch (Exception ex) {
                 throw new TransformException("Exception transforming " + resource.getResourceType() + " " + resource.getResourceId(), ex);
@@ -105,20 +92,48 @@ public abstract class AbstractTransformer {
         }
     }
 
+    protected static void writeEventLog(SubscriberTransformParams params, ResourceWrapper resourceWrapper, SubscriberId subscriberId) throws Exception {
+
+        long id = subscriberId.getSubscriberId();
+
+        //mode is worked out from what we previously sent (unless it's a delete)
+        byte event;
+        if (resourceWrapper.isDeleted()) {
+            event = EventLog.EVENT_LOG_DELETE;
+        } else if (subscriberId.getDtUpdatedPreviouslySent() == null) {
+            event = EventLog.EVENT_LOG_INSERT;
+        } else {
+            event = EventLog.EVENT_LOG_UPDATE;
+        }
+
+        byte tableId = subscriberId.getSubscriberTable();
+
+        EventLog eventLog = params.getOutputContainer().getEventLog();
+        eventLog.writeUpsert(id, new Date(), event, tableId);
+
+
+        //if we've just deleted the resource, set the datetime to null so that if the resource is un-deleted,
+        //we know that it must be next sent as an insert rather than an update
+        if (resourceWrapper.isDeleted()) {
+            subscriberId.setDtUpdatedPreviouslySent(null);
+
+        } else {
+            subscriberId.setDtUpdatedPreviouslySent(resourceWrapper.getCreatedAt());
+        }
+
+        //cache our subscriber ID so we can get our event log right next time
+        params.addSubscriberId(subscriberId);
+    }
+
     //defines whether the resources covered by this transformer should ALWAYS be transformed (e.g. patient data)
     //or only transformed if something refers to it (e.g. orgs and practitioners)
     public abstract boolean shouldAlwaysTransform();
 
-    protected abstract void transformResource(Long enterpriseId,
-                                   Resource resource,
-                                   AbstractSubscriberCsvWriter csvWriter, SubscriberTransformParams params) throws Exception;
+    protected abstract void transformResource(SubscriberId subscriberId,
+                                              ResourceWrapper resourceWrapper,
+                                              SubscriberTransformParams params) throws Exception;
 
-    protected void transformResourceDelete(Long enterpriseId,
-                                           AbstractSubscriberCsvWriter csvWriter,
-                                           SubscriberTransformParams params) throws Exception {
-
-        csvWriter.writeDelete(enterpriseId);
-    }
+    protected abstract SubscriberTableId getMainSubscriberTableId();
 
     protected static Integer convertDatePrecision(TemporalPrecisionEnum precision) throws Exception {
         return Integer.valueOf(precision.getCalendarConstant());
@@ -132,8 +147,8 @@ public abstract class AbstractTransformer {
         return findEnterpriseId(params, resourceType, resourceId);
     }*/
 
-    protected static Long findEnterpriseId(SubscriberTransformParams params, Reference reference) throws Exception {
-        SubscriberId ret = findSubscriberId(params, reference);
+    protected static Long findEnterpriseId(SubscriberTransformParams params, SubscriberTableId subscriberTable, Reference reference) throws Exception {
+        SubscriberId ret = findSubscriberId(params, subscriberTable, reference.getReference());
         if (ret != null) {
             return ret.getSubscriberId();
         } else {
@@ -141,8 +156,8 @@ public abstract class AbstractTransformer {
         }
     }
 
-    public static Long findEnterpriseId(SubscriberTransformParams params, String resourceType, String resourceId) throws Exception {
-        SubscriberId ret = findSubscriberId(params, resourceType, resourceId);
+    public static Long findEnterpriseId(SubscriberTransformParams params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
+        SubscriberId ret = findSubscriberId(params, subscriberTable, sourceId);
         if (ret != null) {
             return ret.getSubscriberId();
         } else {
@@ -150,23 +165,23 @@ public abstract class AbstractTransformer {
         }
     }
 
-    protected static SubscriberId findSubscriberId(SubscriberTransformParams params, Reference reference) throws Exception {
-        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
-        String resourceType = comps.getResourceType().toString();
-        String resourceId = comps.getId();
-        return findSubscriberId(params, resourceType, resourceId);
+    protected static SubscriberId findSubscriberId(SubscriberTransformParams params, SubscriberTableId subscriberTable, Reference reference) throws Exception {
+        return findSubscriberId(params, subscriberTable, reference.getReference());
     }
 
-    public static SubscriberId findSubscriberId(SubscriberTransformParams params, String resourceType, String resourceId) throws Exception {
-        SubscriberId ret = checkCacheForId(params.getEnterpriseConfigName(), resourceType, resourceId);
+    public static SubscriberId findSubscriberId(SubscriberTransformParams params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
+
+        SubscriberId ret = checkCacheForId(params.getEnterpriseConfigName(), subscriberTable, sourceId);
         if (ret == null) {
             SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
-            ret = enterpriseIdDal.findSubscriberId(resourceType, resourceId);
-            //ret = idMappingRepository.getEnterpriseIdMappingId(enterpriseTableName, resourceType, resourceId);
+            ret = enterpriseIdDal.findSubscriberId(subscriberTable.getId(), sourceId);
+            if (ret != null) {
+                addIdToCache(params.getEnterpriseConfigName(), subscriberTable, sourceId, ret);
+            }
         }
-
         return ret;
     }
+
 
     /*protected static Long findOrCreateEnterpriseId(SubscriberTransformParams params, ResourceWrapper resource) throws Exception {
         String resourceType = resource.getResourceType();
@@ -181,36 +196,46 @@ public abstract class AbstractTransformer {
         return findOrCreateEnterpriseId(params, resourceType, resourceId);
     }*/
 
-    public static SubscriberId findOrCreateEnterpriseId(SubscriberTransformParams params, String resourceType, String resourceId) throws Exception {
-        SubscriberId ret = checkCacheForId(params.getEnterpriseConfigName(), resourceType, resourceId);
+    public static SubscriberId findOrCreateSubscriberId(SubscriberTransformParams params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
+        SubscriberId ret = checkCacheForId(params.getEnterpriseConfigName(), subscriberTable, sourceId);
         if (ret == null) {
             SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
-            ret = enterpriseIdDal.findOrCreateSubscriberId(resourceType, resourceId);
+            ret = enterpriseIdDal.findOrCreateSubscriberId(subscriberTable.getId(), sourceId);
 
-            addIdToCache(params.getEnterpriseConfigName(), resourceType, resourceId, ret);
+            addIdToCache(params.getEnterpriseConfigName(), subscriberTable, sourceId, ret);
         }
         return ret;
     }
 
-    private static String createCacheKey(String enterpriseConfigName, String resourceType, String resourceId) {
+    private static String createSubscriberIdCacheKey(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId) {
         StringBuilder sb = new StringBuilder();
         sb.append(enterpriseConfigName);
         sb.append(":");
-        sb.append(resourceType);
-        sb.append("/");
-        sb.append(resourceId);
+        sb.append(subscriberTableId.getId());
+        sb.append(":");
+        sb.append(sourceId);
         return sb.toString();
     }
 
-    private static SubscriberId checkCacheForId(String enterpriseConfigName, String resourceType, String resourceId) throws Exception {
-        return (SubscriberId)idCache.get(createCacheKey(enterpriseConfigName, resourceType, resourceId));
+    private static String createInstanceMapCacheKey(String enterpriseConfigName, ResourceType resourceType, UUID resourceId) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(enterpriseConfigName);
+        sb.append(":");
+        sb.append(resourceType.toString());
+        sb.append(":");
+        sb.append(resourceId.toString());
+        return sb.toString();
     }
 
-    private static void addIdToCache(String enterpriseConfigName, String resourceType, String resourceId, SubscriberId toCache) throws Exception {
+    private static SubscriberId checkCacheForId(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId) throws Exception {
+        return (SubscriberId)idCache.get(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId));
+    }
+
+    private static void addIdToCache(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId, SubscriberId toCache) throws Exception {
         if (toCache == null) {
             return;
         }
-        idCache.put(createCacheKey(enterpriseConfigName, resourceType, resourceId), toCache);
+        idCache.put(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId), toCache);
     }
 
     /*public static Resource deserialiseResouce(ResourceByExchangeBatch resourceByExchangeBatch) throws Exception {
@@ -277,37 +302,39 @@ public abstract class AbstractTransformer {
         }
     }*/
 
-    private static Map<ResourceWrapper, SubscriberId> mapIds(String enterpriseConfigName, List<ResourceWrapper> resources, boolean createIfNotFound, SubscriberTransformParams params) throws Exception {
+    private static Map<String, SubscriberId> mapIds(String enterpriseConfigName, SubscriberTableId mainTable, List<ResourceWrapper> resources, boolean createIfNotFound, SubscriberTransformParams params) throws Exception {
 
-        Map<ResourceWrapper, SubscriberId> ret = new HashMap<>();
+        Map<String, SubscriberId> ret = new HashMap<>();
 
-        //first, try to find existing IDs for our resources in our memory cache
-        findEnterpriseIdsInCache(enterpriseConfigName, resources, ret);
+        //then work out what resources we need to hit the DB for
+        List<String> resourcesToFindOnDb = new ArrayList<>();
+        List<String> resourcesToFindOrCreateOnDb = new ArrayList<>();
 
-        List<ResourceWrapper> resourcesToFindOnDb = new ArrayList<>();
-        List<ResourceWrapper> resourcesToFindOrCreateOnDb = new ArrayList<>();
+        for (ResourceWrapper wrapper: resources) {
 
-        for (ResourceWrapper resource: resources) {
+            String sourceId = ReferenceHelper.createResourceReference(wrapper.getResourceType(), wrapper.getResourceId().toString());
 
-            //if our memory cache contained this ID, then skip it
-            if (ret.containsKey(resource)) {
+            //check our cache for an ID
+            SubscriberId cachedId = checkCacheForId(enterpriseConfigName, mainTable, sourceId);
+            if (cachedId != null) {
+                ret.put(sourceId, cachedId);
                 continue;
             }
 
             //if this resource is mapped to a different instance of the same concept (e.g. it's a duplicate instance
             //of an organisation), then we don't want to generate an ID for it
-            if (isResourceMappedToAnotherInstance(resource, params)) {
+            if (isResourceMappedToAnotherInstance(wrapper, params)) {
                 continue;
             }
 
             //if we didn't find an ID in memory, then we'll either want to simply find on the DB or find and create on the DB
-            if (resource.isDeleted()
+            if (wrapper.isDeleted()
                     || !createIfNotFound) {
 
-                resourcesToFindOnDb.add(resource);
+                resourcesToFindOnDb.add(sourceId);
             } else {
 
-                resourcesToFindOrCreateOnDb.add(resource);
+                resourcesToFindOrCreateOnDb.add(sourceId);
             }
         }
 
@@ -315,28 +342,28 @@ public abstract class AbstractTransformer {
 
         //look up any resources we need
         if (!resourcesToFindOnDb.isEmpty()) {
-            Map<ResourceWrapper, SubscriberId> foundMap = enterpriseIdDal.findSubscriberIds(resourcesToFindOnDb);
-            for (ResourceWrapper resource: resourcesToFindOnDb) {
-                SubscriberId foundId = foundMap.get(resource);
+            Map<String, SubscriberId> foundMap = enterpriseIdDal.findSubscriberIds(mainTable.getId(), resourcesToFindOnDb);
+            for (String sourceId: resourcesToFindOnDb) {
+                SubscriberId foundId = foundMap.get(sourceId);
                 if (foundId != null) {
-                    ret.put(resource, foundId);
+                    ret.put(sourceId, foundId);
 
                     //add them to our cache
-                    addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), foundId);
+                    addIdToCache(enterpriseConfigName, mainTable, sourceId, foundId);
                 }
             }
         }
 
         //lookup and create any resources we need
         if (!resourcesToFindOrCreateOnDb.isEmpty()) {
-            Map<ResourceWrapper, SubscriberId> createdMap = enterpriseIdDal.findOrCreateSubscriberIds(resourcesToFindOrCreateOnDb);
-            for (ResourceWrapper resource: resourcesToFindOrCreateOnDb) {
-                SubscriberId foundId = createdMap.get(resource);
+            Map<String, SubscriberId> createdMap = enterpriseIdDal.findOrCreateSubscriberIds(mainTable.getId(), resourcesToFindOrCreateOnDb);
+            for (String sourceId: resourcesToFindOrCreateOnDb) {
+                SubscriberId foundId = createdMap.get(sourceId);
                 if (foundId != null) {
-                    ret.put(resource, foundId);
+                    ret.put(sourceId, foundId);
 
                     //add them to our cache
-                    addIdToCache(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString(), foundId);
+                    addIdToCache(enterpriseConfigName, mainTable, sourceId, foundId);
                 }
             }
         }
@@ -437,15 +464,6 @@ public abstract class AbstractTransformer {
         }
     }
 
-    private static void findEnterpriseIdsInCache(String enterpriseConfigName, List<ResourceWrapper> resources, Map<ResourceWrapper, SubscriberId> ids) throws Exception {
-
-        for (ResourceWrapper resource: resources) {
-            SubscriberId cachedId = checkCacheForId(enterpriseConfigName, resource.getResourceType(), resource.getResourceId().toString());
-            if (cachedId != null) {
-                ids.put(resource, cachedId);
-            }
-        }
-    }
 
     /**
      * transforms a dependent resource not necessarily in the exchcnge batch we're currently transforming,
@@ -454,16 +472,24 @@ public abstract class AbstractTransformer {
     protected Long transformOnDemandAndMapId(Reference reference,
                                              SubscriberTransformParams params) throws Exception {
 
-        //if we've already generated (now or in the past) an ID for this resource we must have previously transformed it
-        //so we don't need to forcibly transform it now
-        SubscriberId existingEnterpriseId = findSubscriberId(params, reference);
-        if (existingEnterpriseId != null) {
-            return existingEnterpriseId.getSubscriberId();
-        }
-
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
         ResourceType resourceType = comps.getResourceType();
         UUID resourceId = UUID.fromString(comps.getId());
+        String sourceId = reference.getReference();
+
+        AbstractSubscriberTransformer transformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(resourceType);
+        if (transformer == null) {
+            //some resource types don't have a transformer, but we shouldn't be calling this for them
+            throw new TransformException("No transformer found for resource " + reference.getReference());
+        }
+
+        //if we've already generated (now or in the past) an ID for this resource we must have previously transformed it
+        //so we don't need to forcibly transform it now
+        SubscriberTableId mainTable = transformer.getMainSubscriberTableId();
+        SubscriberId existingEnterpriseId = findSubscriberId(params, mainTable, sourceId);
+        if (existingEnterpriseId != null) {
+            return existingEnterpriseId.getSubscriberId();
+        }
 
         //we've have multiple threads potentially trying to transform the same dependent resource (e.g. practitioner)
         //so we need to sync on something to ensure we only
@@ -500,13 +526,13 @@ public abstract class AbstractTransformer {
                 //if our mapped ID is different to our proper ID, then we don't need to transform that
                 //other resource, as it will already have been done, so we can just return it's Enterprise ID
                 if (!mappedResourceId.equals(resourceId)) {
-                    SubscriberId mappedInstanceEnterpriseId = findSubscriberId(params, resourceType.toString(), mappedResourceId.toString());
+                    SubscriberId mappedInstanceEnterpriseId = findSubscriberId(params, mainTable, sourceId);
                     if (mappedInstanceEnterpriseId == null) {
                         //if we've just started processing the first exchange for an org that's taking over the
                         //instance map, there's a chance we'll catch it mid-way through taking over, in which
                         //case we should just give a second and try again, throwing an error if we fail
                         Thread.sleep(1000);
-                        mappedInstanceEnterpriseId = findSubscriberId(params, resourceType.toString(), mappedResourceId.toString());
+                        mappedInstanceEnterpriseId = findSubscriberId(params, mainTable, sourceId);
                         if (mappedInstanceEnterpriseId == null) {
                             throw new TransformException("Failed to find enterprise ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
                         }
@@ -515,10 +541,10 @@ public abstract class AbstractTransformer {
                 }
             }
 
-            if (params.hasResourceBeenTransformedAddIfNot(reference)) {
+            if (params.hasResourceBeenTransformedAddIfNot(sourceId)) {
                 //if we've already transformed the resource, which could happen because the transform is multi-threaded,
                 //then have another look for the enterprise ID as it must exist by now
-                SubscriberId subscriberIdJustCreated = findSubscriberId(params, reference);
+                SubscriberId subscriberIdJustCreated = findSubscriberId(params, mainTable, sourceId);
                 if (subscriberIdJustCreated == null) {
                     throw new Exception("Failed to find ID for resource just transformed " + reference);
                 }
@@ -534,11 +560,6 @@ public abstract class AbstractTransformer {
                 return null;
             }*/
 
-            AbstractTransformer transformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(resourceType);
-            if (transformer == null) {
-                //some resource types don't have a transformer, but we shouldn't be calling this for them
-                throw new TransformException("No transformer found for resource " + reference.getReference());
-            }
 
             //record in the DB that we've explicitly added this resource to this exchange batch,
             //so we have an audit of this, and can recover if we kill the queue reader at this point.
@@ -546,25 +567,9 @@ public abstract class AbstractTransformer {
             exchangeBatchExtraResourceDalI.saveExtraResource(params.getExchangeId(), params.getBatchId(), resourceType, resourceId);
 
             //then generate the new ID
-            SubscriberId subscriberId = findOrCreateEnterpriseId(params, resourceType.toString(), wrapper.getResourceId().toString());
+            SubscriberId subscriberId = findOrCreateSubscriberId(params, mainTable, sourceId);
 
-            //and transform the resource
-            AbstractSubscriberCsvWriter csvWriter = FhirToSubscriberCsvTransformer.findCsvWriterForResourceType(resourceType, params);
-
-            if (wrapper.isDeleted()) {
-//TODO - if deleting a Patient resource, we should delete all patient contacts and addresses (and UPRNs?)
-                transformResourceDelete(subscriberId.getSubscriberId(), csvWriter, params);
-
-            } else {
-                Resource fhir = FhirResourceHelper.deserialiseResouce(wrapper);
-                transformResource(subscriberId.getSubscriberId(), fhir, csvWriter, params);
-            }
-
-
-            //TODO - write event log
-
-            //cache our subscriber ID so we can get our event log right next time
-            params.addAndUpdateSubscriberId(wrapper, subscriberId);
+            transformResource(subscriberId, wrapper, params);
 
             return subscriberId.getSubscriberId();
 
@@ -574,12 +579,12 @@ public abstract class AbstractTransformer {
     }
 
     private static UUID checkInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId) {
-        Object key = createCacheKey(enterpriseConfigName, resourceType.toString(), resourceId.toString());
+        Object key = createInstanceMapCacheKey(enterpriseConfigName, resourceType, resourceId);
         return (UUID)instanceCache.get(key);
     }
 
     private static void addToInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId, UUID mappedResourceId) throws Exception {
-        Object key = createCacheKey(enterpriseConfigName, resourceType.toString(), resourceId.toString());
+        Object key = createInstanceMapCacheKey(enterpriseConfigName, resourceType, resourceId);
         instanceCache.put(key, mappedResourceId);
     }
 

@@ -3,18 +3,21 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class AppointmentTransformer extends AbstractTransformer {
+public class AppointmentTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AppointmentTransformer.class);
 
@@ -22,12 +25,21 @@ public class AppointmentTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        Appointment fhir = (Appointment)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.Appointment model = params.getOutputContainer().getAppointments();
+
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        Appointment fhir = (Appointment) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         long id;
         long organizationId;
@@ -64,7 +76,7 @@ public class AppointmentTransformer extends AbstractTransformer {
             return;
         }
 
-        id = enterpriseId.longValue();
+        id = subscriberId.getSubscriberId();
         organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
@@ -143,25 +155,31 @@ public class AppointmentTransformer extends AbstractTransformer {
             }
         }
 
+        model.writeUpsert(subscriberId,
+                organizationId,
+                patientId,
+                personId,
+                practitionerId,
+                scheduleId,
+                startDate,
+                plannedDuration,
+                actualDuration,
+                appointmentStatusConceptId,
+                patientWait,
+                patientDelay,
+                sentIn,
+                left,
+                sourceId,
+                cancelledDate);
 
-        org.endeavourhealth.transform.subscriber.outputModels.Appointment model
-                = (org.endeavourhealth.transform.subscriber.outputModels.Appointment)csvWriter;
-        model.writeUpsert(id,
-            organizationId,
-            patientId,
-            personId,
-            practitionerId,
-            scheduleId,
-            startDate,
-            plannedDuration,
-            actualDuration,
-            appointmentStatusConceptId,
-            patientWait,
-            patientDelay,
-            sentIn,
-            left,
-            sourceId,
-            cancelledDate);
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
     }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.APPOINTMENT;
+    }
+
 
 }

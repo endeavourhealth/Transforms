@@ -2,10 +2,13 @@ package org.endeavourhealth.transform.subscriber.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class ImmunisationTransformer extends AbstractTransformer {
+public class ImmunisationTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ImmunisationTransformer.class);
 
@@ -21,12 +24,21 @@ public class ImmunisationTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        Immunization fhir = (Immunization)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.Observation model = params.getOutputContainer().getObservations();
+
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        Immunization fhir = (Immunization) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         long id;
         long organisationId;
@@ -52,14 +64,14 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
         Boolean isPrimary = null;
 
-        id = enterpriseId.longValue();
+        id = subscriberId.getSubscriberId();
         organisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = findEnterpriseId(params, SubscriberTableId.ENCOUNTER, encounterReference);
         }
 
         if (fhir.hasPerformer()) {
@@ -92,7 +104,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = findEnterpriseId(params, parentReference);
+            parentObservationId = findEnterpriseId(params, SubscriberTableId.OBSERVATION, parentReference);
         }
 
         if (fhir.getPatientTarget() != null) {
@@ -117,10 +129,9 @@ public class ImmunisationTransformer extends AbstractTransformer {
             }
         }
 
+        //TODO finish
         /*
-        org.endeavourhealth.transform.subscriber.outputModels.Observation model
-                = (org.endeavourhealth.transform.subscriber.outputModels.Observation)csvWriter;
-        model.writeUpsert(id,
+        model.writeUpsert(subscriberId,
                 organisationId,
                 patientId,
                 personId,
@@ -144,5 +155,15 @@ public class ImmunisationTransformer extends AbstractTransformer {
                 episodicityConceptId,
                 isPrimary);
          */
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
     }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.OBSERVATION;
+    }
+
+
 }

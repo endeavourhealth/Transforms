@@ -1,22 +1,23 @@
-package org.endeavourhealth.transform.subscriber.outputModels;
+package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
 import java.util.Date;
 
-public class Encounter extends AbstractSubscriberCsvWriter {
+public class Encounter extends AbstractTargetTable {
 
-    public Encounter(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
-        super(fileName, csvFormat, dateFormat, timeFormat);
+    public Encounter(CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+        super(csvFormat, dateFormat, timeFormat);
     }
 
-    public void writeDelete(long id) throws Exception {
+    public void writeDelete(SubscriberId subscriberId) throws Exception {
 
-        super.printRecord(OutputContainer.DELETE,
-                "" + id);
+        super.printRecord("" + EventLog.EVENT_LOG_DELETE,
+                "" + subscriberId.getSubscriberId());
     }
 
-    public void writeUpsert(long id,
+    public void writeUpsert(SubscriberId subscriberId,
                             long organizationId,
                             long patientId,
                             long personId,
@@ -39,8 +40,8 @@ public class Encounter extends AbstractSubscriberCsvWriter {
                             Date endDate,
                             String institutionLocationId) throws Exception {
 
-        super.printRecord(OutputContainer.UPSERT,
-                "" + id,
+        super.printRecord(getEventTypeDesc(subscriberId),
+                "" + subscriberId.getSubscriberId(),
                 "" + organizationId,
                 "" + patientId,
                 "" + personId,
@@ -91,9 +92,14 @@ public class Encounter extends AbstractSubscriberCsvWriter {
     }
 
     @Override
+    public SubscriberTableId getTableId() {
+        return SubscriberTableId.ENCOUNTER;
+    }
+
+    @Override
     public Class[] getColumnTypes() {
         return new Class[] {
-                String.class,
+                Byte.TYPE,
                 Long.TYPE,
                 Long.TYPE,
                 Long.TYPE,

@@ -47,18 +47,42 @@ public class SusEmergency extends AbstractFixedParser {
     public CsvCell getCDSRecordType() {
         return super.getCell("CDSRecordType");
     }
-    public CsvCell getPatientLocalId() {return super.getCell("LocalPatientID");}
 
-    public CsvCell getNhsNumber() {return super.getCell("NHSNumber");}
+    public CsvCell getPatientLocalId() {
+        return super.getCell("LocalPatientID");
+    }
 
-    public CsvCell getCdsActivityDate() {return super.getCell("CDSActivityDate");}
-    public CsvCell getCdsUpdateType() { return super.getCell("CDSUpdateType");}
-    public CsvCell getPersonBirthDate() { return super.getCell("PersonBirthDate");}
-    public CsvCell getConsultantCode() { return super.getCell("AEStaffMemberCode");}
-    public CsvCell getLocalPatientId() { return super.getCell("LocalPatientID");}
+    public CsvCell getNhsNumber() {
+        return super.getCell("NHSNumber");
+    }
 
-    public CsvCell getCdsUniqueId() {return super.getCell("CDSUniqueIdentifier");}
-    public CsvCell getWithheldFlag() { return super.getCell("WithheldFlag");}
+    public CsvCell getCdsActivityDate() {
+        return super.getCell("CDSActivityDate");
+    }
+
+    public CsvCell getCdsUpdateType() {
+        return super.getCell("CDSUpdateType");
+    }
+
+    public CsvCell getPersonBirthDate() {
+        return super.getCell("PersonBirthDate");
+    }
+
+    public CsvCell getConsultantCode() {
+        return super.getCell("AEStaffMemberCode");
+    }
+
+    public CsvCell getLocalPatientId() {
+        return super.getCell("LocalPatientID");
+    }
+
+    public CsvCell getCdsUniqueId() {
+        return super.getCell("CDSUniqueIdentifier");
+    }
+
+    public CsvCell getWithheldFlag() {
+        return super.getCell("WithheldFlag");
+    }
 
 
     /*public Date getArrivalDate() throws TransformException {

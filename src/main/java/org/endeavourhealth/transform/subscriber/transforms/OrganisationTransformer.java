@@ -4,35 +4,45 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OrganisationTransformer extends AbstractTransformer {
+public class OrganisationTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
 
     public boolean shouldAlwaysTransform() {
         return false;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        Organization fhir = (Organization)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.Organization model = params.getOutputContainer().getOrganisations();
 
-        long id;
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        Organization fhir = (Organization)FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+
         String odsCode = null;
         String name = null;
         String typeCode = null;
         String typeDesc = null;
         String postcode = null;
         Long parentOrganisationId = null;
-
-        id = enterpriseId.longValue();
 
         //LOG.trace("Transforming Organization " + fhir.getId() + " as enterprise ID " + id);
 
@@ -98,15 +108,22 @@ public class OrganisationTransformer extends AbstractTransformer {
             }
         }
 
-        org.endeavourhealth.transform.subscriber.outputModels.Organization model
-                = (org.endeavourhealth.transform.subscriber.outputModels.Organization)csvWriter;
-        model.writeUpsert(id,
+        model.writeUpsert(subscriberId,
             odsCode,
             name,
             typeCode,
             typeDesc,
             postcode,
             parentOrganisationId);
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
+
+    }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.ORGANIZATION;
     }
 
 }

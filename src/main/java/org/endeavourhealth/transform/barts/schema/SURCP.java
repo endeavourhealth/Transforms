@@ -20,9 +20,9 @@ public class SURCP extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[] {
+        return new String[]{
                 "#SURGICAL_CASE_PROC_ID",
-                "EXTRACT_DT_TM","ACTIVE_IND",
+                "EXTRACT_DT_TM", "ACTIVE_IND",
                 "SURGICAL_CASE_ID",
                 "ORDER_ID",
                 "SCH_PROC_CD",
@@ -49,12 +49,15 @@ public class SURCP extends AbstractCsvParser {
     public CsvCell getSurgicalCaseProcedureId() {
         return super.getCell("#SURGICAL_CASE_PROC_ID");
     }
+
     public CsvCell getSurgicalCaseId() {
         return super.getCell("SURGICAL_CASE_ID");
     }
+
     public CsvCell getActiveIndicator() {
         return super.getCell("ACTIVE_IND");
     }
+
     public CsvCell getExtractDateTime() {
         return super.getCell("EXTRACT_DT_TM");
     }
@@ -62,28 +65,34 @@ public class SURCP extends AbstractCsvParser {
     public CsvCell getProcedureCode() {
         return super.getCell("PROC_CD");
     }
+
     public CsvCell getProcedureText() {
         return super.getCell("PROC_TXT");
     }
+
     public CsvCell getModifierText() {
         return super.getCell("MODIFIER_TXT");
     }
+
     public CsvCell getPrimaryProcedureIndicator() {
         return super.getCell("PRIMARY_PROC_IND");
     }
+
     public CsvCell getSurgeonPersonnelId() {
         return super.getCell("PRIMARY_SURGEON_PRSNL_ID");
     }
+
     public CsvCell getStartDateTime() {
         return super.getCell("PROC_START_DT_TM");
     }
+
     public CsvCell getStopDateTime() {
         return super.getCell("PROC_STOP_DT_TM");
     }
+
     public CsvCell getWoundClassCode() {
         return super.getCell("WOUND_CLASS_CD");
     }
-    public CsvCell getProcStartDtTm() { return super.getCell("PROC_START_DT_TM");}
 
     @Override
     protected boolean isFileAudited() {

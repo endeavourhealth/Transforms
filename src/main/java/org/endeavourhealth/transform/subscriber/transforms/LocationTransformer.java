@@ -1,25 +1,37 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LocationTransformer extends AbstractTransformer {
+public class LocationTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LocationTransformer.class);
 
     public boolean shouldAlwaysTransform() {
         return false;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        Location fhir = (Location)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.Location model = params.getOutputContainer().getLocations();
+
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        Location fhir = (Location) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         long id;
         String name = null;
@@ -28,7 +40,7 @@ public class LocationTransformer extends AbstractTransformer {
         String postcode = null;
         Long managingOrganisationId = null;
 
-        id = enterpriseId.longValue();
+        id = subscriberId.getSubscriberId();
 
 
         if (fhir.hasName()) {
@@ -64,14 +76,21 @@ public class LocationTransformer extends AbstractTransformer {
             managingOrganisationId = transformOnDemandAndMapId(reference, params);
         }
 
-        org.endeavourhealth.transform.subscriber.outputModels.Location model
-                = (org.endeavourhealth.transform.subscriber.outputModels.Location)csvWriter;
-        model.writeUpsert(id,
-            name,
-            typeCode,
-            typeDesc,
-            postcode,
-            managingOrganisationId);
+        model.writeUpsert(subscriberId,
+                name,
+                typeCode,
+                typeDesc,
+                postcode,
+                managingOrganisationId);
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
     }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.LOCATION;
+    }
+
 
 }

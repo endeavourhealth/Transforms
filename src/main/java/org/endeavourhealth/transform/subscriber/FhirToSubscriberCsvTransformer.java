@@ -19,8 +19,8 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
-import org.endeavourhealth.transform.subscriber.outputModels.OutputContainer;
+import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.endeavourhealth.transform.subscriber.transforms.*;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Reference;
@@ -72,8 +72,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
-        OutputContainer data = new OutputContainer(pseudonymised);
-        SubscriberTransformParams params = new SubscriberTransformParams(serviceId, protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody);
+        SubscriberTransformParams params = new SubscriberTransformParams(serviceId, protocolId, exchangeId, batchId, configName, resourcesMap, exchangeBody, pseudonymised);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
@@ -87,6 +86,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         try {
             transformResources(resources, params);
 
+            OutputContainer data = params.getOutputContainer();
             byte[] bytes = data.writeToZip();
             String ret = Base64.getEncoder().encodeToString(bytes);
 
@@ -105,17 +105,16 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
         SubscriberResourceMappingDalI resourceMappingDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
 
-        Map<String, SubscriberId> map = params.getSubscriberIdMap();
+        List<SubscriberId> map = params.getSubscriberIds();
 
-        Map<String, SubscriberId> batch = new HashMap<>();
-        for (String key: map.keySet()) {
-            SubscriberId id = map.get(key);
+        List<SubscriberId> batch = new ArrayList<>();
+        for (SubscriberId id: map) {
 
-            batch.put(key, id);
+            batch.add(id);
 
             if (batch.size() > params.getBatchSize()) {
                 resourceMappingDal.updateDtUpdatedForSubscriber(batch);
-                batch = new HashMap<>();
+                batch = new ArrayList<>();
             }
         }
 
@@ -199,7 +198,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         //if we've not got a mapping, then we need to create one from our resource data
         if (mappedResourceId == null) {
             Resource fhir = resourceRepository.getCurrentVersionAsResource(serviceId, resourceType, resourceId.toString());
-            String mappingValue = AbstractTransformer.findInstanceMappingValue(fhir, params);
+            String mappingValue = AbstractSubscriberTransformer.findInstanceMappingValue(fhir, params);
             mappedResourceId = instanceMapper.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
         }
 
@@ -210,7 +209,8 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
 
         //generate (or find) an enterprise ID for our organization
-        SubscriberId subscriberId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId.toString());
+        String sourceId = orgReference.getReference();
+        SubscriberId subscriberId = AbstractSubscriberTransformer.findOrCreateSubscriberId(params, SubscriberTableId.ORGANIZATION, sourceId);
         enterpriseOrganisationId = subscriberId.getSubscriberId();
         //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
@@ -316,7 +316,8 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
         String discoveryPatientId = findPatientId(resources);
         if (!Strings.isNullOrEmpty(discoveryPatientId)) {
-            Long enterprisePatientId = AbstractTransformer.findEnterpriseId(params, ResourceType.Patient.toString(), discoveryPatientId);
+            String sourceId = ReferenceHelper.createResourceReference(ResourceType.Patient.toString(), discoveryPatientId);
+            Long enterprisePatientId = AbstractSubscriberTransformer.findEnterpriseId(params, SubscriberTableId.PATIENT, sourceId);
             if (enterprisePatientId == null) {
                 //with the Homerton data, we just get data from a point in time, not historic data too, so we have some episodes of
                 //care where we don't have patients. If we're in this situation, then don't send over the data.
@@ -378,7 +379,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
-    public static AbstractSubscriberCsvWriter findCsvWriterForResourceType(ResourceType resourceType, SubscriberTransformParams params) throws Exception {
+    /*public static AbstractSubscriberCsvWriter findCsvWriterForResourceType(ResourceType resourceType, SubscriberTransformParams params) throws Exception {
 
         OutputContainer data = params.getOutputContainer();
 
@@ -432,9 +433,9 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         } else {
             throw new TransformException("Unhandled resource type " + resourceType);
         }
-    }
+    }*/
 
-    public static org.endeavourhealth.transform.subscriber.transforms.AbstractTransformer createTransformerForResourceType(ResourceType resourceType) throws Exception {
+    public static AbstractSubscriberTransformer createTransformerForResourceType(ResourceType resourceType) throws Exception {
         if (resourceType == ResourceType.Organization) {
             return new OrganisationTransformer();
         } else if (resourceType == ResourceType.Location) {
@@ -482,9 +483,6 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         } else if (resourceType == ResourceType.Slot) {
             //slots are handled in the appointment transformer, so have no dedicated one
             return null;
-        } else if (resourceType == ResourceType.Location) {
-            //locations are handled in the organisation transformer, so have no dedicated one
-            return null;
         } else {
             throw new TransformException("Unhandled resource type " + resourceType);
         }
@@ -513,11 +511,9 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             return;
         }
 
-        AbstractSubscriberCsvWriter csvWriter = findCsvWriterForResourceType(resourceType, params);
-
         //transform in batches
         List<ResourceWrapper> batch = new ArrayList<>();
-        AbstractTransformer transformer = createTransformerForResourceType(resourceType);
+        AbstractSubscriberTransformer transformer = createTransformerForResourceType(resourceType);
 
         //some resource types don't have a transformer, so just return out
         if (transformer == null) {
@@ -529,7 +525,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             batch.add(resource);
 
             if (batch.size() >= params.getBatchSize()) {
-                addBatchToThreadPool(transformer, csvWriter, batch, threadPool, params);
+                addBatchToThreadPool(transformer, batch, threadPool, params);
 
                 //create a new batch and transformer
                 batch = new ArrayList<>();
@@ -539,21 +535,17 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
         //don't forget to do any in the last batch
         if (!batch.isEmpty()) {
-            addBatchToThreadPool(transformer, csvWriter, batch, threadPool, params);
+            addBatchToThreadPool(transformer, batch, threadPool, params);
         }
 
     }
 
-    private static void addBatchToThreadPool(AbstractTransformer transformer,
-                                             AbstractSubscriberCsvWriter csvWriter,
+    private static void addBatchToThreadPool(AbstractSubscriberTransformer transformer,
                                              List<ResourceWrapper> resources,
                                              ThreadPool threadPool,
                                              SubscriberTransformParams params) throws Exception {
 
-        TransformResourceCallable callable = new TransformResourceCallable(transformer,
-                                                                        resources,
-                                                                        csvWriter,
-                                                                        params);
+        TransformResourceCallable callable = new TransformResourceCallable(transformer, resources, params);
         List<ThreadPoolError> errors = threadPool.submit(callable);
         handleErrors(errors);
     }
@@ -635,25 +627,22 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
     static class TransformResourceCallable implements Callable {
 
-        private AbstractTransformer transformer = null;
+        private AbstractSubscriberTransformer transformer = null;
         private List<ResourceWrapper> resources = null;
-        private AbstractSubscriberCsvWriter csvWriter = null;
         private SubscriberTransformParams params = null;
 
-        public TransformResourceCallable(AbstractTransformer transformer,
+        public TransformResourceCallable(AbstractSubscriberTransformer transformer,
                                          List<ResourceWrapper> resources,
-                                         AbstractSubscriberCsvWriter csvWriter,
                                          SubscriberTransformParams params) {
 
             this.transformer = transformer;
             this.resources = resources;
-            this.csvWriter = csvWriter;
             this.params = params;
         }
 
         @Override
         public Object call() throws Exception {
-            transformer.transformResources(resources, csvWriter, params);
+            transformer.transformResources(resources, params);
             return null;
         }
     }

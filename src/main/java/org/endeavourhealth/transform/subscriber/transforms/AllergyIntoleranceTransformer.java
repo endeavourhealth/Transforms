@@ -1,18 +1,23 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class AllergyIntoleranceTransformer extends AbstractTransformer {
+public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AllergyIntoleranceTransformer.class);
 
@@ -20,12 +25,21 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        AllergyIntolerance fhir = (AllergyIntolerance)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.AllergyIntolerance model = params.getOutputContainer().getAllergyIntolerances();
+
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        AllergyIntolerance fhir = (AllergyIntolerance)FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         long id;
         long organizationId;
@@ -44,7 +58,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         Double ageAtEvent = null;
         Boolean isPrimary = null;
 
-        id = enterpriseId.longValue();
+        id = subscriberId.getSubscriberId();
         organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
@@ -53,7 +67,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             for (Extension extension: fhir.getExtension()) {
                 if (extension.getUrl().equals(FhirExtensionUri.ASSOCIATED_ENCOUNTER)) {
                     Reference encounterReference = (Reference)extension.getValue();
-                    encounterId = findEnterpriseId(params, encounterReference);
+                    encounterId = findEnterpriseId(params, SubscriberTableId.ENCOUNTER, encounterReference);
                 }
             }
         }
@@ -123,9 +137,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             }
         }
 
-        org.endeavourhealth.transform.subscriber.outputModels.AllergyIntolerance model
-                = (org.endeavourhealth.transform.subscriber.outputModels.AllergyIntolerance)csvWriter;
-        model.writeUpsert(id,
+        model.writeUpsert(subscriberId,
             organizationId,
             patientId,
             personId,
@@ -138,6 +150,15 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             nonCoreConceptId,
             ageAtEvent,
             isPrimary);
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
     }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.ALLERGY_INTOLERANEE;
+    }
+
 
 }

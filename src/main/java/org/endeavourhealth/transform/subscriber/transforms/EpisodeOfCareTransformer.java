@@ -6,11 +6,14 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,19 +21,28 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-public class EpisodeOfCareTransformer extends AbstractTransformer {
+public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareTransformer.class);
 
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        EpisodeOfCare fhirEpisode = (EpisodeOfCare)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.EpisodeOfCare model = params.getOutputContainer().getEpisodesOfCare();
+
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        EpisodeOfCare fhirEpisode = (EpisodeOfCare) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         long id;
         long organizationId;
@@ -43,7 +55,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         Long usualGpPractitionerId = null;
         //Long managingOrganisationId = null;
 
-        id = enterpriseId.longValue();
+        id = subscriberId.getSubscriberId();
         organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
@@ -121,17 +133,26 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
             dateRegisteredEnd = period.getEnd();
         }
 
-        org.endeavourhealth.transform.subscriber.outputModels.EpisodeOfCare model
-                = (org.endeavourhealth.transform.subscriber.outputModels.EpisodeOfCare)csvWriter;
-        model.writeUpsert(id,
-            organizationId,
-            patientId,
-            personId,
-            registrationTypeConceptId,
-            registrationStatusConceptId,
-            dateRegistered,
-            dateRegisteredEnd,
-            usualGpPractitionerId);
+        model.writeUpsert(subscriberId,
+                organizationId,
+                patientId,
+                personId,
+                registrationTypeConceptId,
+                registrationStatusConceptId,
+                dateRegistered,
+                dateRegisteredEnd,
+                usualGpPractitionerId);
+
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
     }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.EPISODE_OF_CARE;
+    }
+
+
 }
 

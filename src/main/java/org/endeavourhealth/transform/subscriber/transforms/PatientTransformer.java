@@ -7,7 +7,6 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.LibraryRepositoryHelper;
@@ -15,30 +14,39 @@ import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
 import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
 import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.PatientAddress;
+import org.endeavourhealth.transform.subscriber.targetTables.PatientContact;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.endeavourhealth.transform.ui.helpers.NameHelper;
 import org.endeavourhealth.transform.ui.models.types.UIHumanName;
 import org.hl7.fhir.instance.model.*;
-import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class PatientTransformer extends AbstractTransformer {
+public class PatientTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
+
+    private static final String PREFIX_PSEUDO_ID = "-PSEUDO-";
+    private static final String PREFIX_ADDRESS_ID = "-ADDR-";
+    private static final String PREFIX_TELECOM_ID = "-TELECOM-";
 
     /*private static final String PSEUDO_KEY_NHS_NUMBER = "NHSNumber";
     private static final String PSEUDO_KEY_PATIENT_NUMBER = "PatientNumber";
@@ -54,16 +62,42 @@ public class PatientTransformer extends AbstractTransformer {
     //private static byte[] saltBytes = null;
     //private static ResourceRepository resourceRepository = new ResourceRepository();
 
+
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        Patient fhirPatient = (Patient)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.Patient patientWriter = params.getOutputContainer().getPatients();
+        org.endeavourhealth.transform.subscriber.targetTables.Person personWriter = params.getOutputContainer().getPersons();
+        Patient previousVersion = findPreviousVersionSent(resourceWrapper, subscriberId);
+
+        if (resourceWrapper.isDeleted()) {
+
+            //delete the patient
+            patientWriter.writeDelete(subscriberId);
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            //if we've previously sent the patient, we'll also need to delete any dependent entities
+            if (previousVersion != null) {
+                deletePseudoIds(previousVersion, resourceWrapper, params);
+                deleteAddresses(previousVersion, resourceWrapper, params);
+                deleteTelecoms(previousVersion, resourceWrapper, params);
+            }
+
+
+            //TODO - how to manage delete for person record?
+
+            return;
+        }
+
+        Patient fhirPatient = (Patient) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        //TODO - if deleting a Patient resource, we should delete all patient contacts and addresses (and UPRNs?)
+
 
 
         String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
@@ -79,41 +113,28 @@ public class PatientTransformer extends AbstractTransformer {
         SubscriberPersonMappingDalI enterpriseIdDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
         Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
 
-        long id;
         long organizationId;
         long personId;
-        Integer genderConceptId = null;
-        String pseudoId = null;
-        String nhsNumber = null;
-        Integer ageYears = null;
-        Integer ageMonths = null;
-        Integer ageWeeks = null;
-        Date dateOfBirth = null;
-        Date dateOfDeath = null;
-        String postcode = null;
-        String postcodePrefix = null;
-        String lsoaCode = null;
-        String msoaCode = null;
-        Integer ethnicCodeConceptId = null;
-        String wardCode = null;
-        String localAuthorityCode = null;
-        Long registeredPracticeId = null;
-        String targetSaltKeyName = null;
-        String targetSkid = null;
         String title = null;
         String firstNames = null;
         String lastName = null;
+        Integer genderConceptId = null;
+        String nhsNumber = null;
+        Date dateOfBirth = null;
+        Date dateOfDeath = null;
+        Long currentAddressId = null;
+        Integer ethnicCodeConceptId = null;
+        Long registeredPracticeId = null;
 
-        id = enterpriseId.longValue();
+        //transform our dependent objects first, as we need the address ID
+        transformPseudoIds(fhirPatient, resourceWrapper, params);
+        currentAddressId = transformAddresses(fhirPatient, previousVersion, resourceWrapper, params);
+        transformTelecoms(fhirPatient, previousVersion, resourceWrapper, params);
+
+
         organizationId = params.getEnterpriseOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
 
-        //Calendar cal = Calendar.getInstance();
-
-        dateOfBirth = fhirPatient.getBirthDate();
-        /*cal.setTime(dob);
-        int yearOfBirth = cal.get(Calendar.YEAR);
-        model.setYearOfBirth(yearOfBirth);*/
 
         if (fhirPatient.hasDeceasedDateTimeType()) {
             dateOfDeath = fhirPatient.getDeceasedDateTimeType().getValue();
@@ -121,37 +142,22 @@ public class PatientTransformer extends AbstractTransformer {
             int yearOfDeath = cal.get(Calendar.YEAR);
             model.setYearOfDeath(new Integer(yearOfDeath));*/
         } else if (fhirPatient.hasDeceased()
-                && fhirPatient.getDeceased() instanceof DateType) {
+            && fhirPatient.getDeceased() instanceof DateType) {
             //should always be a DATE TIME type, but a bug in the CSV->FHIR transform
             //means we've got data with a DATE type too
             DateType d = (DateType)fhirPatient.getDeceased();
             dateOfDeath = d.getValue();
         }
 
-        // TODO Code needs to be reviewed to use the IM for
-        //  Gender Concept Id
 
-        if (fhirPatient.hasGender()) {
-            genderConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_ADMINISTRATIVE_GENDER, fhirPatient.getGender().toCode());
-            if (genderConceptId == null) {
-                throw new TransformException("genderConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
-            }
-
-        } /*else {
-            Integer genderId = Enumerations.AdministrativeGender.UNKNOWN.ordinal();
-        }*/
-
-        Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
+        /*Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
         if (fhirAddress != null) {
             postcode = fhirAddress.getPostalCode();
             postcodePrefix = findPostcodePrefix(postcode);
-
-            /*HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
-            householdId = householdIdDal.findOrCreateHouseholdId(fhirAddress);*/
-        }
+        }*/
 
         //if we've found a postcode, then get the LSOA etc. for it
-        if (!Strings.isNullOrEmpty(postcode)) {
+        /*if (!Strings.isNullOrEmpty(postcode)) {
             PostcodeDalI postcodeDal = DalProvider.factoryPostcodeDal();
             PostcodeLookup postcodeReference = postcodeDal.getPostcodeReference(postcode);
             if (postcodeReference != null) {
@@ -161,7 +167,7 @@ public class PatientTransformer extends AbstractTransformer {
                 localAuthorityCode = postcodeReference.getLocalAuthorityCode();
                 //townsendScore = postcodeReference.getTownsendScore();
             }
-        }
+        }*/
 
         // TODO Code needs to be reviewed to use the IM for
         //  Ethnic Code Concept Id
@@ -169,13 +175,12 @@ public class PatientTransformer extends AbstractTransformer {
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
-            String ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, EthnicCategory.ASIAN_BANGLADESHI.getSystem());
+            String ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
 
             ethnicCodeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_ETHNIC_CATEGORY, ethnicCodeId);
             if (ethnicCodeConceptId == null) {
                 throw new TransformException("ethnicConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
             }
-
         }
 
         if (fhirPatient.hasCareProvider()) {
@@ -184,7 +189,7 @@ public class PatientTransformer extends AbstractTransformer {
             if (orgReference != null) {
                 //added try/catch to track down a bug in Cerner->FHIR->Enterprise
                 try {
-                    registeredPracticeId = super.findEnterpriseId(params, orgReference);
+                    registeredPracticeId = super.findEnterpriseId(params, SubscriberTableId.ORGANIZATION, orgReference);
                 } catch (Throwable t) {
                     LOG.error("Error finding enterprise ID for reference " + orgReference.getReference());
                     throw t;
@@ -192,82 +197,40 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
-        //check if our patient demographics also should be used as the person demographics. This is typically
-        //true if our patient record is at a GP practice.
-        boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
+        if (fhirPatient.hasBirthDate()) {
+            if (!params.isPseudonymised()) {
+                dateOfBirth = fhirPatient.getBirthDate();
 
-        org.endeavourhealth.transform.subscriber.outputModels.Patient patientWriter
-                = (org.endeavourhealth.transform.subscriber.outputModels.Patient)csvWriter;
-        org.endeavourhealth.transform.subscriber.outputModels.Person personWriter
-                = params.getOutputContainer().getPersons();
-        org.endeavourhealth.transform.subscriber.outputModels.LinkDistributor linkDistributorWriter
-                = params.getOutputContainer().getLinkDistributors();
+            } else {
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(fhirPatient.getBirthDate());
+                cal.set(Calendar.DAY_OF_MONTH, 1);
+                dateOfBirth = cal.getTime();
+            }
+        }
 
-        if (patientWriter.isPseduonymised()) {
+        // TODO Code needs to be reviewed to use the IM for
+        //  Gender Concept Id
+        if (fhirPatient.hasGender()) {
+
+            Enumerations.AdministrativeGender gender = fhirPatient.getGender();
 
             //if pseudonymised, all non-male/non-female genders should be treated as female
-            if (fhirPatient.getGender() != Enumerations.AdministrativeGender.FEMALE
-                    && fhirPatient.getGender() != Enumerations.AdministrativeGender.MALE) {
-                genderConceptId = Enumerations.AdministrativeGender.FEMALE.ordinal();
-            }
-
-            LinkDistributorConfig mainPseudoSalt = getMainSaltConfig(params.getEnterpriseConfigName());
-            pseudoId = pseudonymiseUsingConfig(fhirPatient, mainPseudoSalt);
-            //pseudoId = pseudonymise(fhirPatient, getEncryptedSalt(params.getEnterpriseConfigName()));
-
-            if (pseudoId != null) {
-
-                //only persist the pseudo ID if it's non-null
-                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
-                pseudoIdDal.storePseudoId(fhirPatient.getId(), pseudoId);
-
-                //generate any other pseudo mappings - the table uses the main pseudo ID as the source key, so this
-                //can only be done if we've successfully generated a main pseudo ID
-                List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
-                for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
-                    targetSaltKeyName = ldConfig.getSaltKeyName();
-                    targetSkid = pseudonymiseUsingConfig(fhirPatient, ldConfig);
-
-                    linkDistributorWriter.writeUpsert(pseudoId,
-                            targetSaltKeyName,
-                            targetSkid);
+            if (params.isPseudonymised()) {
+                if (gender != Enumerations.AdministrativeGender.FEMALE
+                        && gender != Enumerations.AdministrativeGender.MALE) {
+                    gender = Enumerations.AdministrativeGender.FEMALE;
                 }
             }
 
-            patientWriter.writeUpsertPseudonymised(id,
-                    organizationId,
-                    personId,
-                    title,
-                    firstNames,
-                    lastName,
-                    genderConceptId,
-                    nhsNumber,
-                    dateOfBirth,
-                    dateOfDeath,
-                    postcodePrefix,
-                    ethnicCodeConceptId,
-                    registeredPracticeId);
-
-            //if our patient record is the one that should define the person record, then write that too
-            if (shouldWritePersonRecord) {
-                personWriter.writeUpsertPseudonymised(id,
-                        organizationId,
-                        title,
-                        firstNames,
-                        lastName,
-                        genderConceptId,
-                        nhsNumber,
-                        dateOfBirth,
-                        dateOfDeath,
-                        postcodePrefix,
-                        ethnicCodeConceptId,
-                        registeredPracticeId);
+            genderConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_ADMINISTRATIVE_GENDER, gender.toCode());
+            if (genderConceptId == null) {
+                throw new TransformException("genderConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId() + " and gender [" + gender.toCode() + "]");
             }
+        }
 
-        } else {
-
-            nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
-
+        //only present name fields if non-pseudonymised
+        if (!params.isPseudonymised()) {
             UIHumanName name = NameHelper.getUsualOrOfficialName(fhirPatient.getName());
             if (name != null) {
                 title = name.getPrefix();
@@ -277,10 +240,39 @@ public class PatientTransformer extends AbstractTransformer {
                 firstNames = firstNames.trim();
                 lastName = name.getFamilyName();
             }
+        }
 
-            patientWriter.writeUpsertIdentifiable(id,
+        //only present name fields if non-pseudonymised
+        if (!params.isPseudonymised()) {
+            nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
+        }
+
+        patientWriter.writeUpsert(subscriberId,
+                organizationId,
+                personId,
+                title,
+                firstNames,
+                lastName,
+                genderConceptId,
+                nhsNumber,
+                dateOfBirth,
+                dateOfDeath,
+                currentAddressId,
+                ethnicCodeConceptId,
+                registeredPracticeId);
+
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
+
+        //check if our patient demographics also should be used as the person demographics. This is typically
+        //true if our patient record is at a GP practice.
+        boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
+
+        //if our patient record is the one that should define the person record, then write that too
+        if (shouldWritePersonRecord) {
+            personWriter.writeUpsert(subscriberId,
                     organizationId,
-                    personId,
                     title,
                     firstNames,
                     lastName,
@@ -288,28 +280,327 @@ public class PatientTransformer extends AbstractTransformer {
                     nhsNumber,
                     dateOfBirth,
                     dateOfDeath,
-                    postcode,
+                    currentAddressId,
                     ethnicCodeConceptId,
                     registeredPracticeId);
 
-            //if our patient record is the one that should define the person record, then write that too
-            if (shouldWritePersonRecord) {
-                personWriter.writeUpsertIdentifiable(id,
-                        organizationId,
-                        title,
-                        firstNames,
-                        lastName,
-                        genderConceptId,
-                        nhsNumber,
-                        dateOfBirth,
-                        dateOfDeath,
-                        postcode,
-                        ethnicCodeConceptId,
-                        registeredPracticeId);
+            //TODO - how to write event log for person record?
+        }
+
+    }
+
+    private void transformTelecoms(Patient currentPatient, Patient previousPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+
+        PatientContact writer = params.getOutputContainer().getPatientContacts();
+
+        //update all addresses, delete any extra
+        if (currentPatient.hasTelecom()) {
+            for (int i = 0; i < currentPatient.getTelecom().size(); i++) {
+                ContactPoint telecom = currentPatient.getTelecom().get(i);
+
+                String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
+                SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+
+                long organisationId = params.getEnterpriseOrganisationId();
+                long patientId = params.getEnterprisePatientId();
+                long personId = params.getEnterprisePersonId();
+                Integer useConceptId = null;
+                Integer typeConceptId = null;
+                Date startDate = null;
+                Date endDate = null;
+                String value = null;
+
+                useConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.FHIR_TELECOM_USE, telecom.getUse().toCode());
+                typeConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.FHIR_TELECOM_SYSTEM, telecom.getSystem().toCode());
+
+                if (!params.isPseudonymised()) {
+                    value = telecom.getValue();
+                }
+
+                writer.writeUpsert(subTableId,
+                        organisationId,
+                        patientId,
+                        personId,
+                        useConceptId,
+                        typeConceptId,
+                        startDate,
+                        endDate,
+                        value);
+
+                writeEventLog(params, resourceWrapper, subTableId);
+            }
+        }
+
+        //and make sure to delete any that we previously sent over that are no longer present
+        //i.e. if we previously had five addresses and now only have three, we need to delete four and five
+        if (previousPatient != null
+                && previousPatient.hasTelecom()) {
+            int start = 0;
+            if (currentPatient.hasTelecom()) {
+                start = currentPatient.getTelecom().size();
+            }
+
+            for (int i=start; i<previousPatient.getTelecom().size(); i++) {
+
+                String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
+                SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+
+                writer.writeDelete(subTableId);
+
+                writeEventLog(params, resourceWrapper, subTableId);
             }
         }
     }
 
+    private void deleteTelecoms(Patient previousVersion, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+        if (!previousVersion.hasTelecom()) {
+            return;
+        }
+
+        PatientContact writer = params.getOutputContainer().getPatientContacts();
+
+        for (int i=0; i < previousVersion.getTelecom().size(); i++) {
+
+            String sourceId = ReferenceHelper.createReferenceExternal(previousVersion).getReference() + PREFIX_TELECOM_ID + i;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+
+            writer.writeDelete(subTableId);
+
+            writeEventLog(params, resourceWrapper, subTableId);
+        }
+    }
+
+    private void deleteAddresses(Patient previousVersion, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+
+        if (!previousVersion.hasAddress()) {
+            return;
+        }
+
+        PatientAddress writer = params.getOutputContainer().getPatientAddresses();
+
+        for (int i=0; i < previousVersion.getAddress().size(); i++) {
+
+            String sourceId = ReferenceHelper.createReferenceExternal(previousVersion).getReference() + PREFIX_ADDRESS_ID + i;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
+
+            writer.writeDelete(subTableId);
+
+            writeEventLog(params, resourceWrapper, subTableId);
+        }
+    }
+
+    private Long transformAddresses(Patient currentPatient, Patient previousPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+
+        PatientAddress writer = params.getOutputContainer().getPatientAddresses();
+
+        Long currentAddressId = null;
+
+        //update all addresses, delete any extra
+        if (currentPatient.hasAddress()) {
+
+            Address currentAddress = AddressHelper.findHomeAddress(currentPatient);
+
+            for (int i = 0; i < currentPatient.getAddress().size(); i++) {
+                Address address = currentPatient.getAddress().get(i);
+
+                String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
+                SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
+
+                //if this address is our current home one, then assign the ID
+                if (address == currentAddress) {
+                    currentAddressId = new Long(subTableId.getSubscriberId());
+                }
+
+                long organisationId = params.getEnterpriseOrganisationId();
+                long patientId = params.getEnterprisePatientId();
+                long personId = params.getEnterprisePersonId();
+                String addressLine1 = null;
+                String addressLine2 = null;
+                String addressLine3 = null;
+                String addressLine4 = null;
+                String city = null;
+                String postcode = null;
+                Integer typeConceptId = null;
+                Date startDate = null;
+                Date endDate = null;
+                String lsoa2001 = null;
+                String lsoa2011 = null;
+                String msoa2001 = null;
+                String msoa2011 = null;
+                String ward = null;
+                String localAuthority = null;
+
+                if (!params.isPseudonymised()) {
+                    addressLine1 = getAddressLine(address, 0);
+                    addressLine2 = getAddressLine(address, 1);
+                    addressLine3 = getAddressLine(address, 2);
+                    addressLine4 = getAddressLine(address, 3);
+                    city = address.getCity();
+                    postcode = address.getPostalCode();
+
+                } else {
+                    //if pseudonymised, just carry over the first half of the postcode
+                    postcode = findPostcodePrefix(address.getPostalCode());
+                }
+
+                typeConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.FHIR_ADDRESS_TYPE, address.getType().toCode());
+
+                if (address.hasPeriod()) {
+                    startDate = address.getPeriod().getStart();
+                    endDate = address.getPeriod().getEnd();
+                }
+
+                PostcodeDalI postcodeDal = DalProvider.factoryPostcodeDal();
+                PostcodeLookup postcodeReference = postcodeDal.getPostcodeReference(address.getPostalCode());
+                if (postcodeReference != null) {
+                    lsoa2001 = postcodeReference.getLsoa2001Code();
+                    lsoa2011 = postcodeReference.getLsoa2011Code();
+                    msoa2001 = postcodeReference.getMsoa2001Code();
+                    msoa2011 = postcodeReference.getMsoa2011Code();
+                    ward = postcodeReference.getWardCode();
+                    localAuthority = postcodeReference.getLocalAuthorityCode();
+                }
+
+                writer.writeUpsert(subTableId,
+                        organisationId,
+                        patientId,
+                        personId,
+                        addressLine1,
+                        addressLine2,
+                        addressLine3,
+                        addressLine4,
+                        city,
+                        postcode,
+                        typeConceptId,
+                        startDate,
+                        endDate,
+                        lsoa2001,
+                        lsoa2011,
+                        msoa2001,
+                        msoa2011,
+                        ward,
+                        localAuthority);
+
+                writeEventLog(params, resourceWrapper, subTableId);
+            }
+        }
+
+        //and make sure to delete any that we previously sent over that are no longer present
+        //i.e. if we previously had five addresses and now only have three, we need to delete four and five
+        if (previousPatient != null
+                && previousPatient.hasAddress()) {
+            int start = 0;
+            if (currentPatient.hasAddress()) {
+                start = currentPatient.getAddress().size();
+            }
+
+            for (int i=start; i<previousPatient.getAddress().size(); i++) {
+
+                String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
+                SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
+
+                writer.writeDelete(subTableId);
+
+                writeEventLog(params, resourceWrapper, subTableId);
+            }
+        }
+
+        return currentAddressId;
+    }
+
+    private static String getAddressLine(Address address, int num) {
+        if (num >= address.getLine().size()) {
+            return null;
+        } else {
+            StringType st = address.getLine().get(num);
+            return st.toString();
+        }
+    }
+
+    private Patient findPreviousVersionSent(ResourceWrapper resourceWrapper, SubscriberId subscriberId) throws Exception {
+
+        //if we've a null datetime, it means we've never sent for this patient or
+        //the last thing we sent was a delete
+        Date dtLastSent = subscriberId.getDtUpdatedPreviouslySent();
+        if (dtLastSent == null) {
+            return null;
+        }
+
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> history = resourceDal.getResourceHistory(resourceWrapper.getServiceId(), resourceWrapper.getResourceType(), resourceWrapper.getResourceId());
+
+        //history is most-recent-first
+        for (ResourceWrapper wrapper: history) {
+            if (wrapper.getCreatedAt().equals(dtLastSent)) {
+                return (Patient)FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
+            }
+        }
+
+        throw new Exception("Failed to find previous version of " + resourceWrapper.getResourceType() + " " + resourceWrapper.getResourceId() + " for dtLastSent " + dtLastSent);
+    }
+
+
+    private void deletePseudoIds(Patient previousVersion, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+
+        org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
+
+        List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
+        for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+            String saltKeyName = ldConfig.getSaltKeyName();
+
+            //create a unique source ID from the patient UUID plus the salt key name
+            String sourceId = ReferenceHelper.createReferenceExternal(previousVersion).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
+
+            pseudoIdWriter.writeDelete(subTableId);
+
+            writeEventLog(params, resourceWrapper, subTableId);
+        }
+
+    }
+
+
+
+    private void transformPseudoIds(Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+
+        org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
+
+        List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
+        for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+            String saltKeyName = ldConfig.getSaltKeyName();
+            String pseudoId = pseudonymiseUsingConfig(fhirPatient, ldConfig);
+
+            //create a unique source ID from the patient UUID plus the salt key name
+            String sourceId = ReferenceHelper.createReferenceExternal(fhirPatient).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
+            SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
+
+            if (!Strings.isNullOrEmpty(pseudoId)) {
+
+                pseudoIdWriter.writeUpsert(subTableId,
+                        params.getEnterprisePatientId(),
+                        saltKeyName,
+                        pseudoId);
+
+                writeEventLog(params, resourceWrapper, subTableId);
+
+                //TODO - pseudo ID map table needs salt key name on it
+                //only persist the pseudo ID if it's non-null
+                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
+                pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), params.getEnterprisePatientId(), saltKeyName, pseudoId);
+
+            } else {
+
+                pseudoIdWriter.writeDelete(subTableId);
+
+                writeEventLog(params, resourceWrapper, subTableId);
+            }
+        }
+    }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.PATIENT;
+    }
 
 
     private Reference findOrgReference(Patient fhirPatient, SubscriberTransformParams params) throws Exception {

@@ -1,18 +1,17 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class MedicationStatementTransformer extends AbstractTransformer {
+public class MedicationStatementTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(MedicationStatementTransformer.class);
 
@@ -28,12 +27,22 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        MedicationStatement fhir = (MedicationStatement)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.MedicationStatement model = params.getOutputContainer().getMedicationStatements();
+
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+
+        MedicationStatement fhir = (MedicationStatement) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         long id;
         long organizationId;
@@ -57,7 +66,6 @@ public class MedicationStatementTransformer extends AbstractTransformer {
         Double ageAtEvent = null;
         String issueMethod = null;
 
-        id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
@@ -187,9 +195,7 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             issueMethod = fhir.getNote();
         }
 
-        org.endeavourhealth.transform.subscriber.outputModels.MedicationStatement model
-                = (org.endeavourhealth.transform.subscriber.outputModels.MedicationStatement)csvWriter;
-        model.writeUpsert(id,
+        model.writeUpsert(subscriberId,
             organizationId,
             patientId,
             personId,
@@ -208,5 +214,14 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             bnfReference,
             ageAtEvent,
             issueMethod);
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
+
+    }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.MEDICATION_STATEMENT;
     }
 }

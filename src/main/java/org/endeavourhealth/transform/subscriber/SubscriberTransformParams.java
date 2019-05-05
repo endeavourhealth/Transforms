@@ -1,16 +1,11 @@
 package org.endeavourhealth.transform.subscriber;
 
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.transform.subscriber.outputModels.OutputContainer;
-import org.hl7.fhir.instance.model.Reference;
+import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class SubscriberTransformParams {
 
@@ -22,7 +17,9 @@ public class SubscriberTransformParams {
     private final OutputContainer outputContainer;
     private final Map<String, ResourceWrapper> allResources;
     private final Set<String> resourcesTransformed;
-    private final Map<String, SubscriberId> subscriberIdMap;
+    private final List<SubscriberId> subscriberIdsUpdated;
+    private final ReentrantLock lock;
+    private final boolean isPseudonymised;
 
     private int batchSize;
     private Long enterpriseOrganisationId = null;
@@ -31,20 +28,25 @@ public class SubscriberTransformParams {
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
     public SubscriberTransformParams(UUID serviceId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
-                                     OutputContainer outputContainer, Map<String, ResourceWrapper> allResources, String exchangeBody) {
+                                     Map<String, ResourceWrapper> allResources, String exchangeBody, boolean isPseudonymised) throws Exception {
         this.serviceId = serviceId;
         this.protocolId = protocolId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.enterpriseConfigName = enterpriseConfigName;
-        this.outputContainer = outputContainer;
+        this.outputContainer = new OutputContainer();
         this.allResources = allResources;
         this.exchangeBody = exchangeBody;
         this.resourcesTransformed = new HashSet<>();
-        this.subscriberIdMap = new ConcurrentHashMap<>();
+        this.subscriberIdsUpdated = new ArrayList<>();
+        this.lock = new ReentrantLock();
+        this.isPseudonymised = isPseudonymised;
     }
 
 
+    public boolean isPseudonymised() {
+        return isPseudonymised;
+    }
 
     public String getExchangeBody() {
         return exchangeBody;
@@ -119,37 +121,32 @@ public class SubscriberTransformParams {
         this.enterprisePersonId = enterprisePersonId;
     }
 
-    public boolean hasResourceBeenTransformedAddIfNot(Reference reference) {
+    public boolean hasResourceBeenTransformedAddIfNot(String sourceId) {
         //we have to use the Strings as the Reference class doesn't have hashCode or equals functions implmented
-        String referenceVal = reference.getReference();
-        boolean done = this.resourcesTransformed.contains(referenceVal);
+        boolean done = this.resourcesTransformed.contains(sourceId);
 
         if (!done) {
-            this.resourcesTransformed.add(referenceVal);
+            this.resourcesTransformed.add(sourceId);
         }
 
         return done;
     }
 
-    public void addAndUpdateSubscriberId(ResourceWrapper resourceWrapper, SubscriberId subscriberId) {
+    public void addSubscriberId(SubscriberId subscriberId) {
         if (subscriberId == null) {
             throw new RuntimeException("Can't cache null subscriber IDs");
         }
 
-        //if we've just deleted the resource, set the datetime to null so that if the resource is un-deleted,
-        //we know that it must be next sent as an insert rather than an update
-        if (resourceWrapper.isDeleted()) {
-            subscriberId.setDtUpdatedPreviouslySent(null);
-
-        } else {
-            subscriberId.setDtUpdatedPreviouslySent(resourceWrapper.getCreatedAt());
+        //called from multiple threads, so need to lock
+        try {
+            lock.lock();
+            subscriberIdsUpdated.add(subscriberId);
+        } finally {
+            lock.unlock();
         }
-
-        String reference = ReferenceHelper.createResourceReference(resourceWrapper.getResourceType(), resourceWrapper.getResourceId().toString());
-        subscriberIdMap.put(reference, subscriberId);
     }
 
-    public Map<String, SubscriberId> getSubscriberIdMap() {
-        return subscriberIdMap;
+    public List<SubscriberId> getSubscriberIds() {
+        return subscriberIdsUpdated;
     }
 }

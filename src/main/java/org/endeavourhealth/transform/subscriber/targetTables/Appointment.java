@@ -1,22 +1,23 @@
-package org.endeavourhealth.transform.subscriber.outputModels;
+package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
 import java.util.Date;
 
-public class Appointment extends AbstractSubscriberCsvWriter {
+public class Appointment extends AbstractTargetTable {
 
-    public Appointment(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
-        super(fileName, csvFormat, dateFormat, timeFormat);
+    public Appointment(CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+        super(csvFormat, dateFormat, timeFormat);
     }
 
-    public void writeDelete(long id) throws Exception {
+    public void writeDelete(SubscriberId subscriberId) throws Exception {
 
-        super.printRecord(OutputContainer.DELETE,
-                "" + id);
+        super.printRecord("" + EventLog.EVENT_LOG_DELETE,
+                "" + subscriberId.getSubscriberId());
     }
 
-    public void writeUpsert(long id,
+    public void writeUpsert(SubscriberId subscriberId,
                             long organizationId,
                             long patientId,
                             long personId,
@@ -33,8 +34,8 @@ public class Appointment extends AbstractSubscriberCsvWriter {
                             String sourceId,
                             Date cancelledDate) throws Exception {
 
-        super.printRecord(OutputContainer.UPSERT,
-                "" + id,
+        super.printRecord(getEventTypeDesc(subscriberId),
+                "" + subscriberId.getSubscriberId(),
                 "" + organizationId,
                 "" + patientId,
                 "" + personId,
@@ -76,9 +77,14 @@ public class Appointment extends AbstractSubscriberCsvWriter {
     }
 
     @Override
+    public SubscriberTableId getTableId() {
+        return SubscriberTableId.APPOINTMENT;
+    }
+
+    @Override
     public Class[] getColumnTypes() {
         return new Class[] {
-                String.class,
+                Byte.TYPE,
                 Long.TYPE,
                 Long.TYPE,
                 Long.TYPE,

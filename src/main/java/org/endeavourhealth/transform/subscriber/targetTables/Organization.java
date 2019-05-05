@@ -1,20 +1,21 @@
-package org.endeavourhealth.transform.subscriber.outputModels;
+package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
-public class Organization extends AbstractSubscriberCsvWriter {
+public class Organization extends AbstractTargetTable {
 
-    public Organization(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
-        super(fileName, csvFormat, dateFormat, timeFormat);
+    public Organization(CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+        super(csvFormat, dateFormat, timeFormat);
     }
 
-    public void writeDelete(long id) throws Exception {
+    public void writeDelete(SubscriberId subscriberId) throws Exception {
 
-        super.printRecord(OutputContainer.DELETE,
-                "" + id);
+        super.printRecord("" + EventLog.EVENT_LOG_DELETE,
+                "" + subscriberId.getSubscriberId());
     }
 
-    public void writeUpsert(long id,
+    public void writeUpsert(SubscriberId subscriberId,
                           String odsCode,
                           String name,
                           String typeCode,
@@ -22,8 +23,8 @@ public class Organization extends AbstractSubscriberCsvWriter {
                           String postcode,
                           Long parentOrganisationId) throws Exception {
 
-        super.printRecord(OutputContainer.UPSERT,
-                "" + id,
+        super.printRecord(getEventTypeDesc(subscriberId),
+                "" + subscriberId.getSubscriberId(),
                 odsCode,
                 name,
                 typeCode,
@@ -47,9 +48,14 @@ public class Organization extends AbstractSubscriberCsvWriter {
     }
 
     @Override
+    public SubscriberTableId getTableId() {
+        return SubscriberTableId.ORGANIZATION;
+    }
+
+    @Override
     public Class[] getColumnTypes() {
         return new Class[] {
-                String.class,
+                Byte.TYPE,
                 Long.TYPE,
                 String.class,
                 String.class,

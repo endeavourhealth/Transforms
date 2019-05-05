@@ -2,30 +2,41 @@ package org.endeavourhealth.transform.subscriber.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class ScheduleTransformer extends AbstractTransformer {
+public class ScheduleTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleTransformer.class);
 
     public boolean shouldAlwaysTransform() {
         return false;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        Schedule fhir = (Schedule)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.Schedule model = params.getOutputContainer().getSchedules();
 
-        long id;
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        Schedule fhir = (Schedule) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
         long organisationId;
         Long practitionerId = null;
         Date startDate = null;
@@ -33,7 +44,6 @@ public class ScheduleTransformer extends AbstractTransformer {
         String location = null;
         String name = null;
 
-        id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
 
         if (fhir.hasActor()) {
@@ -79,14 +89,22 @@ public class ScheduleTransformer extends AbstractTransformer {
             }
         }
 
-        org.endeavourhealth.transform.subscriber.outputModels.Schedule model
-                = (org.endeavourhealth.transform.subscriber.outputModels.Schedule)csvWriter;
-        model.writeUpsert(id,
+
+        model.writeUpsert(subscriberId,
             organisationId,
             practitionerId,
             startDate,
             type,
             location,
             name);
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
+
+    }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.SCHEDULE;
     }
 }

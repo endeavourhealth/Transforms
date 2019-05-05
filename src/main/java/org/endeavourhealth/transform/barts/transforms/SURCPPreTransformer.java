@@ -39,9 +39,6 @@ public class SURCPPreTransformer {
 
     private static void processRecord(SURCP parser, BartsCsvHelper csvHelper) throws Exception {
 
-        if (parser.getProcStartDtTm().isEmpty()) {
-            return;
-        }
         StagingSURCP stagingSURCP = new StagingSURCP();
         stagingSURCP.setExchangeId(parser.getExchangeId().toString());
         stagingSURCP.setDtReceived(new Date());
@@ -89,6 +86,12 @@ public class SURCPPreTransformer {
             CsvCell stopCell = parser.getStopDateTime();
             if (!stopCell.isEmpty()) {
                 stagingSURCP.setDtStop(stopCell.getDateTime());
+            }
+
+            //if no start or end, then the surgery hasn't happened yes, so skip
+            if (stagingSURCP.getDtStart() == null
+                    && stagingSURCP.getDtStop() == null) {
+                return;
             }
 
             stagingSURCP.setWoundClassCode(parser.getWoundClassCode().getString());

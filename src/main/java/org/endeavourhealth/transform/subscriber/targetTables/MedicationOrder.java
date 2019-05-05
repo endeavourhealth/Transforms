@@ -1,23 +1,24 @@
-package org.endeavourhealth.transform.subscriber.outputModels;
+package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class MedicationOrder extends AbstractSubscriberCsvWriter {
+public class MedicationOrder extends AbstractTargetTable {
 
-    public MedicationOrder(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
-        super(fileName, csvFormat, dateFormat, timeFormat);
+    public MedicationOrder(CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+        super(csvFormat, dateFormat, timeFormat);
     }
 
-    public void writeDelete(long id) throws Exception {
+    public void writeDelete(SubscriberId subscriberId) throws Exception {
 
-        super.printRecord(OutputContainer.DELETE,
-                "" + id);
+        super.printRecord("" + EventLog.EVENT_LOG_DELETE,
+                "" + subscriberId.getSubscriberId());
     }
 
-    public void writeUpsert(long id,
+    public void writeUpsert(SubscriberId subscriberId,
                             long organizationId,
                             long patientId,
                             long personId,
@@ -39,8 +40,8 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
                             Double ageAtEvent,
                             String issueMethod) throws Exception {
 
-        super.printRecord(OutputContainer.UPSERT,
-                "" + id,
+        super.printRecord(getEventTypeDesc(subscriberId),
+                "" + subscriberId.getSubscriberId(),
                 "" + organizationId,
                 "" + patientId,
                 "" + personId,
@@ -90,9 +91,14 @@ public class MedicationOrder extends AbstractSubscriberCsvWriter {
     }
 
     @Override
+    public SubscriberTableId getTableId() {
+        return SubscriberTableId.MEDICATION_ORDER;
+    }
+
+    @Override
     public Class[] getColumnTypes() {
         return new Class[] {
-                String.class,
+                Byte.TYPE,
                 Long.TYPE,
                 Long.TYPE,
                 Long.TYPE,

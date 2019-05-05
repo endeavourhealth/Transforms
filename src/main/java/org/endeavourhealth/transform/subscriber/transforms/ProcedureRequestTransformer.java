@@ -3,19 +3,22 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class ProcedureRequestTransformer extends AbstractTransformer {
+public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureRequestTransformer.class);
 
@@ -23,14 +26,22 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        ProcedureRequest fhir = (ProcedureRequest)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.ProcedureRequest model = params.getOutputContainer().getProcedureRequests();
 
-        long id;
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        ProcedureRequest fhir = (ProcedureRequest) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
         long organizationId;
         long patientId;
         long personId;
@@ -47,14 +58,13 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         Double ageAtEvent = null;
         Boolean isPrimary = null;
 
-        id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = findEnterpriseId(params, SubscriberTableId.ENCOUNTER, encounterReference);
         }
 
         if (fhir.hasOrderer()) {
@@ -122,9 +132,7 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
             }
         }
 
-        org.endeavourhealth.transform.subscriber.outputModels.ProcedureRequest model
-                = (org.endeavourhealth.transform.subscriber.outputModels.ProcedureRequest)csvWriter;
-        model.writeUpsert(id,
+        model.writeUpsert(subscriberId,
             organizationId,
             patientId,
             personId,
@@ -137,5 +145,10 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
             nonCoreConceptId,
             ageAtEvent,
             isPrimary);
+    }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.PROCEDURE_REQUEST;
     }
 }

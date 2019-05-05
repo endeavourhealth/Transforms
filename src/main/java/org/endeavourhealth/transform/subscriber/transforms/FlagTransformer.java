@@ -1,16 +1,18 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Flag;
-import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class FlagTransformer extends AbstractTransformer {
+public class FlagTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlagTransformer.class);
 
@@ -18,12 +20,21 @@ public class FlagTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        Flag fhir = (Flag)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.Flag model = params.getOutputContainer().getFlags();
+
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        Flag fhir = (Flag) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         long id;
         long organisationId;
@@ -34,7 +45,7 @@ public class FlagTransformer extends AbstractTransformer {
         boolean isActive = true;
         String flagText = null;
 
-        id = enterpriseId.longValue();
+        id = subscriberId.getSubscriberId();
         organisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
@@ -53,9 +64,7 @@ public class FlagTransformer extends AbstractTransformer {
             flagText = fhir.getCode().getText();
         }
 
-        org.endeavourhealth.transform.subscriber.outputModels.Flag model
-                = (org.endeavourhealth.transform.subscriber.outputModels.Flag)csvWriter;
-        model.writeUpsert(id,
+        model.writeUpsert(subscriberId,
                 organisationId,
                 patientId,
                 personId,
@@ -63,5 +72,16 @@ public class FlagTransformer extends AbstractTransformer {
                 datePrecisionId,
                 isActive,
                 flagText);
+
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
     }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.FLAG;
+    }
+
+
 }

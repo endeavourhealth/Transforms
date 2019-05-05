@@ -195,7 +195,7 @@ public class PatientTransformer extends AbstractTransformer {
 
                 //only persist the pseudo ID if it's non-null
                 PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
-                pseudoIdDal.storePseudoId(fhirPatient.getId(), pseudoId);
+                pseudoIdDal.storePseudoIdOldWay(fhirPatient.getId(), pseudoId);
 
                 //generate any other pseudo mappings - the table uses the main pseudo ID as the source key, so this
                 //can only be done if we've successfully generated a main pseudo ID

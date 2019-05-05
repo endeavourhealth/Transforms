@@ -7,24 +7,23 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
-import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
-import org.endeavourhealth.transform.subscriber.outputModels.EncounterDetail;
-import org.endeavourhealth.transform.subscriber.outputModels.EncounterRaw;
-import org.endeavourhealth.transform.subscriber.outputModels.OutputContainer;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class EncounterTransformer extends AbstractTransformer {
+public class EncounterTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EncounterTransformer.class);
 
@@ -34,14 +33,22 @@ public class EncounterTransformer extends AbstractTransformer {
         return true;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        Encounter fhir = (Encounter)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.Encounter model = params.getOutputContainer().getEncounters();
 
-        long id;
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        Encounter fhir = (Encounter) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
         long organizationId;
         long patientId;
         long personId;
@@ -64,7 +71,6 @@ public class EncounterTransformer extends AbstractTransformer {
         Date endDate = null;
         String institutionLocationId = null;
 
-        id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
@@ -94,7 +100,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
         if (fhir.hasAppointment()) {
             Reference appointmentReference = fhir.getAppointment();
-            appointmentId = findEnterpriseId(params, appointmentReference);
+            appointmentId = findEnterpriseId(params, SubscriberTableId.APPOINTMENT, appointmentReference);
         }
 
         if (fhir.hasPeriod()) {
@@ -139,12 +145,12 @@ public class EncounterTransformer extends AbstractTransformer {
 
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
-            episodeOfCareId = findEnterpriseId(params, episodeReference);
+            episodeOfCareId = findEnterpriseId(params, SubscriberTableId.EPISODE_OF_CARE, episodeReference);
         }
 
         if (fhir.hasServiceProvider()) {
             Reference orgReference = fhir.getServiceProvider();
-            serviceProviderOrganisationId = findEnterpriseId(params, orgReference);
+            serviceProviderOrganisationId = findEnterpriseId(params, SubscriberTableId.ORGANIZATION, orgReference);
         }
         if (serviceProviderOrganisationId == null) {
             serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
@@ -250,9 +256,8 @@ public class EncounterTransformer extends AbstractTransformer {
             }
         }
 
-        org.endeavourhealth.transform.subscriber.outputModels.Encounter model
-                = (org.endeavourhealth.transform.subscriber.outputModels.Encounter)csvWriter;
-        model.writeUpsert(id,
+
+        model.writeUpsert(subscriberId,
             organizationId,
             patientId,
             personId,
@@ -279,98 +284,14 @@ public class EncounterTransformer extends AbstractTransformer {
         //        serviceProviderOrganisationId);
     }
 
-    private void tranformExtraEncounterTables(Resource resource, SubscriberTransformParams params,
-                                              long id, long organisationId, long patientId, long personId, Long practitionerId,
-                                              Long episodeOfCareId, Date clinicalEffectiveDate, Integer datePrecisionId, Long appointmentId,
-                                              Long serviceProviderOrganisationId) throws Exception {
 
-        Encounter fhir = (Encounter)resource;
-
-        Long recordingPractitionerId = findRecordingPractitionerId(fhir, params);
-        Date recordingDate = findRecordingDate(fhir);
-        Long locationId = findLocationId(fhir, params);
-        Date endDate = findEndDate(fhir);
-        Integer durationMins = findDuration(clinicalEffectiveDate, endDate);
-        Long completionStatusConceptId = null; //leave these concepts as null for now, until we know the rules
-        Long healthcareServiceTypeConceptId = null;
-        Long interactionModeConceptId = null;
-        Long administrativeActionConceptId = null;
-        Long purposeConceptId = null;
-        Long dispositionConceptId = null;
-        Long siteOfCareTypeConceptId = null;
-        Long patientStatusConceptId = null;
-        String fhirAdtMessageCode = findAdtMessageCode(fhir);
-        String fhirClass = findClass(fhir);
-        String fhirType = findType(fhir);
-        String fhirStatus = findStatus(fhir);
-
-        Long fhirSnomedConceptId = null;
-        String fhirOriginalCode = null;
-        String fhirOriginalTerm = null;
-
-        CodeableConcept codeableConcept = findSourceCodeableConcept(fhir);
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(codeableConcept);
-        if (codes != null) {
-            //unlike Observations etc., we still DO want to send this record to our subscriber even if not coded
-            fhirSnomedConceptId = codes.getSnomedConceptId();
-            fhirOriginalCode = codes.getOriginalCode();
-            fhirOriginalTerm = codes.getOriginalTerm();
-        }
-
-        OutputContainer outputContainer = params.getOutputContainer();
-
-        EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
-        encounterDetail.writeUpsert(id,
-                        organisationId,
-                        patientId,
-                        personId,
-                        practitionerId,
-                        episodeOfCareId,
-                        clinicalEffectiveDate,
-                        datePrecisionId,
-                        recordingPractitionerId,
-                        recordingDate,
-                        appointmentId,
-                        serviceProviderOrganisationId,
-                        locationId,
-                        endDate,
-                        durationMins,
-                        completionStatusConceptId,
-                        healthcareServiceTypeConceptId,
-                        interactionModeConceptId,
-                        administrativeActionConceptId,
-                        purposeConceptId,
-                        dispositionConceptId,
-                        siteOfCareTypeConceptId,
-                        patientStatusConceptId);
-
-
-        EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
-        encounterRaw.writeUpsert(id,
-                        organisationId,
-                        patientId,
-                        personId,
-                        practitionerId,
-                        episodeOfCareId,
-                        clinicalEffectiveDate,
-                        datePrecisionId,
-                        recordingPractitionerId,
-                        recordingDate,
-                        appointmentId,
-                        serviceProviderOrganisationId,
-                        locationId,
-                        endDate,
-                        durationMins,
-                        fhirAdtMessageCode,
-                        fhirClass,
-                        fhirType,
-                        fhirStatus,
-                        fhirSnomedConceptId,
-                        fhirOriginalCode,
-                        fhirOriginalTerm);
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.ENCOUNTER;
     }
 
-    private Integer findDuration(Date startDate, Date endDate) {
+
+    /*private Integer findDuration(Date startDate, Date endDate) {
         if (startDate == null
                 || endDate == null) {
             return null;
@@ -380,7 +301,7 @@ public class EncounterTransformer extends AbstractTransformer {
         long secDiff = msDiff / 1000;
         long minDur = secDiff / 60;
         return new Integer((int)minDur);
-    }
+    }*/
 
 
     private static CodeableConcept findSourceCodeableConcept(Encounter fhir) {
@@ -827,22 +748,5 @@ public class EncounterTransformer extends AbstractTransformer {
         return ret;
     }*/
 
-    @Override
-    protected void transformResourceDelete(Long enterpriseId,
-                                           AbstractSubscriberCsvWriter csvWriter,
-                                           SubscriberTransformParams params) throws Exception {
-
-        //we need to override this function as we also need to send the delete to the other two encounter tables
-        super.transformResourceDelete(enterpriseId, csvWriter, params);
-
-        OutputContainer outputContainer = params.getOutputContainer();
-
-        EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
-        encounterRaw.writeDelete(enterpriseId);
-
-        EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
-        encounterDetail.writeDelete(enterpriseId);
-
-    }
 
 }

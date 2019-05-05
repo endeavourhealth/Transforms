@@ -2,33 +2,42 @@ package org.endeavourhealth.transform.subscriber.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.outputModels.AbstractSubscriberCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PractitionerTransformer extends AbstractTransformer {
+public class PractitionerTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransformer.class);
 
     public boolean shouldAlwaysTransform() {
         return false;
     }
 
-    protected void transformResource(Long enterpriseId,
-                                     Resource resource,
-                                     AbstractSubscriberCsvWriter csvWriter,
-                                     SubscriberTransformParams params) throws Exception {
+    @Override
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        Practitioner fhir = (Practitioner)resource;
+        org.endeavourhealth.transform.subscriber.targetTables.Practitioner model = params.getOutputContainer().getPractitioners();
 
-        long id;
-        long organizaationId;
+        if (resourceWrapper.isDeleted()) {
+            model.writeDelete(subscriberId);
+
+            //write the event log entry
+            writeEventLog(params, resourceWrapper, subscriberId);
+
+            return;
+        }
+
+        Practitioner fhir = (Practitioner) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        long organizationId;
         String name = null;
         String roleCode = null;
         String roleDesc = null;
-
-        id = enterpriseId.longValue();
 
         if (fhir.hasName()) {
             HumanName fhirName = fhir.getName();
@@ -76,15 +85,23 @@ public class PractitionerTransformer extends AbstractTransformer {
             practitionerEnterpriseOrgId = params.getEnterpriseOrganisationId();
         }
 
-        organizaationId = practitionerEnterpriseOrgId.longValue();
+        organizationId = practitionerEnterpriseOrgId.longValue();
 
-        org.endeavourhealth.transform.subscriber.outputModels.Practitioner model
-                = (org.endeavourhealth.transform.subscriber.outputModels.Practitioner)csvWriter;
-        model.writeUpsert(id,
-            organizaationId,
+
+        model.writeUpsert(subscriberId,
+            organizationId,
             name,
             roleCode,
             roleDesc);
+
+        //write the event log entry
+        writeEventLog(params, resourceWrapper, subscriberId);
+
+    }
+
+    @Override
+    protected SubscriberTableId getMainSubscriberTableId() {
+        return SubscriberTableId.PRACTITIONER;
     }
 
     private static String createNameFromElements(HumanName name) {

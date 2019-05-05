@@ -1,22 +1,24 @@
-package org.endeavourhealth.transform.subscriber.outputModels;
+package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
-public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
+public class Observation extends AbstractTargetTable {
 
-    public AllergyIntolerance(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
-        super(fileName, csvFormat, dateFormat, timeFormat);
+    public Observation(CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+        super(csvFormat, dateFormat, timeFormat);
     }
 
-    public void writeDelete(long id) throws Exception {
+    public void writeDelete(SubscriberId subscriberId) throws Exception {
 
-        super.printRecord(OutputContainer.DELETE,
-                "" + id);
+        super.printRecord("" + EventLog.EVENT_LOG_DELETE,
+                "" + subscriberId.getSubscriberId());
     }
 
-    public void writeUpsert(long id,
+    public void writeUpsert(SubscriberId subscriberId,
                             long organizationId,
                             long patientId,
                             long personId,
@@ -25,16 +27,25 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                             Date clinicalEffectiveDate,
                             Integer datePrecisionId,
                             // Long snomedConceptId,
+                            BigDecimal resultValue,
+                            String resultValueUnits,
+                            Date resultDate,
+                            String resultText,
+                            Long resultConceptId,
                             // String originalCode,
+                            boolean isProblem,
                             // String originalTerm,
                             boolean isReview,
+                            Date problemEndDate,
+                            Long parentObservationId,
                             Integer coreConceptId,
                             Integer nonCoreConceptId,
                             Double ageAtEvent,
+                            Long episodicityConceptId,
                             Boolean isPrimary) throws Exception {
 
-        super.printRecord(OutputContainer.UPSERT,
-                "" + id,
+        super.printRecord(getEventTypeDesc(subscriberId),
+                "" + subscriberId.getSubscriberId(),
                 "" + organizationId,
                 "" + patientId,
                 "" + personId,
@@ -43,14 +54,24 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 convertDate(clinicalEffectiveDate),
                 convertInt(datePrecisionId),
                 // convertLong(snomedConceptId),
+                convertBigDecimal(resultValue),
+                resultValueUnits,
+                convertDate(resultDate),
+                resultText,
+                convertLong(resultConceptId),
                 // originalCode,
+                convertBoolean(isProblem),
                 // originalTerm,
                 convertBoolean(isReview),
+                convertDate(problemEndDate),
+                convertLong(parentObservationId),
                 convertInt(coreConceptId),
                 convertInt(nonCoreConceptId),
                 convertDouble(ageAtEvent),
+                convertLong(episodicityConceptId),
                 convertBoolean(isPrimary));
     }
+
 
     @Override
     public String[] getCsvHeaders() {
@@ -64,18 +85,32 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 "practitioner_id",
                 "clinical_effective_date",
                 "date_precision_id",
+                "result_value",
+                "result_value_units",
+                "result_date",
+                "result_text",
+                "result_concept_id",
+                "is_problem",
                 "is_review",
+                "problem_end_date",
+                "parent_observation_id",
                 "core_concept_id",
                 "non_core_concept_id",
                 "age_at_event",
+                "episodicity_concept_id",
                 "is_primary"
         };
     }
 
     @Override
+    public SubscriberTableId getTableId() {
+        return SubscriberTableId.OBSERVATION;
+    }
+
+    @Override
     public Class[] getColumnTypes() {
         return new Class[] {
-                String.class,
+                Byte.TYPE,
                 Long.TYPE,
                 Long.TYPE,
                 Long.TYPE,
@@ -84,10 +119,20 @@ public class AllergyIntolerance extends AbstractSubscriberCsvWriter {
                 Long.class,
                 Date.class,
                 Integer.class,
+                BigDecimal.class,
+                String.class,
+                Date.class,
+                String.class,
+                Long.class,
                 Boolean.TYPE,
+                Boolean.TYPE,
+                Date.class,
+                Long.class,
+                Integer.class,
                 Integer.class,
                 Integer.class,
                 String.class,
+                Long.class,
                 Boolean.TYPE,
         };
     }

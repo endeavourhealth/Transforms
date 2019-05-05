@@ -37,9 +37,6 @@ public class SURCCPreTransformer {
 
     private static void processRecord(SURCC parser, BartsCsvHelper csvHelper) throws Exception {
 
-        if (parser.getSurgeryStartDtTm().isEmpty()) {
-            return;
-        }
         StagingSURCC stagingSURCC = new StagingSURCC();
         stagingSURCC.setExchangeId(parser.getExchangeId().toString());
         stagingSURCC.setDtReceived(new Date());
@@ -53,6 +50,14 @@ public class SURCCPreTransformer {
         if (activeInd) {
             String personId = parser.getPersonId().getString();
             if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                return;
+            }
+
+            //if no start or end, then the surgery hasn't happened yet, so skip
+            CsvCell startCell = parser.getSurgeryStartDtTm();
+            CsvCell stopCell = parser.getSurgeryStopDtTm();
+            if (startCell.isEmpty()
+                    && stopCell.isEmpty()) {
                 return;
             }
 
