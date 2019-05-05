@@ -583,7 +583,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 writeEventLog(params, resourceWrapper, subTableId);
 
-                //TODO - pseudo ID map table needs salt key name on it
                 //only persist the pseudo ID if it's non-null
                 PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
                 pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), params.getEnterprisePatientId(), saltKeyName, pseudoId);
