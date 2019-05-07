@@ -277,7 +277,9 @@ public abstract class AbstractSubscriberTransformer {
                                            SubscriberTransformParams params) throws Exception {
 
         ResourceWrapper ret = findResourceWrapper(reference, params);
-        if (ret.isDeleted()) {
+        //the above fn returns null if it's deleted
+        //if (ret.isDeleted()) {
+        if (ret == null) {
             return null;
         } else {
             return FhirResourceHelper.deserialiseResouce(ret);
@@ -569,7 +571,11 @@ public abstract class AbstractSubscriberTransformer {
             //then generate the new ID
             SubscriberId subscriberId = findOrCreateSubscriberId(params, mainTable, sourceId);
 
-            transformResource(subscriberId, wrapper, params);
+            //if the resource is deleted, the wrapper will be null (rather than an empty wrapper). Since we've never
+            //sent anything over for this resource before, we don't need to call into the transform to send over a delete or anything.
+            if (wrapper != null) {
+                transformResource(subscriberId, wrapper, params);
+            }
 
             return subscriberId.getSubscriberId();
 
