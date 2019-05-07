@@ -125,14 +125,16 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         Integer ethnicCodeConceptId = null;
         Long registeredPracticeId = null;
 
-        //transform our dependent objects first, as we need the address ID
-        transformPseudoIds(fhirPatient, resourceWrapper, params);
-        currentAddressId = transformAddresses(fhirPatient, previousVersion, resourceWrapper, params);
-        transformTelecoms(fhirPatient, previousVersion, resourceWrapper, params);
-
 
         organizationId = params.getEnterpriseOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
+
+
+        //transform our dependent objects first, as we need the address ID
+        transformPseudoIds(subscriberId.getSubscriberId(), personId, fhirPatient, resourceWrapper, params);
+        currentAddressId = transformAddresses(subscriberId.getSubscriberId(), personId, fhirPatient, previousVersion, resourceWrapper, params);
+        transformTelecoms(subscriberId.getSubscriberId(), personId, fhirPatient, previousVersion, resourceWrapper, params);
+
 
 
         if (fhirPatient.hasDeceasedDateTimeType()) {
@@ -285,7 +287,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     }
 
-    private void transformTelecoms(Patient currentPatient, Patient previousPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, Patient previousPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
         PatientContact writer = params.getOutputContainer().getPatientContacts();
 
@@ -298,8 +300,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
 
                 long organisationId = params.getEnterpriseOrganisationId();
-                long patientId = params.getEnterprisePatientId();
-                long personId = params.getEnterprisePersonId();
                 Integer useConceptId = null;
                 Integer typeConceptId = null;
                 Date startDate = null;
@@ -320,8 +320,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 writer.writeUpsert(subTableId,
                         organisationId,
-                        patientId,
-                        personId,
+                        subscriberPatientId,
+                        subscriberPersonId,
                         useConceptId,
                         typeConceptId,
                         startDate,
@@ -386,7 +386,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private Long transformAddresses(Patient currentPatient, Patient previousPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    private Long transformAddresses(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, Patient previousPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
         PatientAddress writer = params.getOutputContainer().getPatientAddresses();
 
@@ -409,8 +409,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 }
 
                 long organisationId = params.getEnterpriseOrganisationId();
-                long patientId = params.getEnterprisePatientId();
-                long personId = params.getEnterprisePersonId();
                 String addressLine1 = null;
                 String addressLine2 = null;
                 String addressLine3 = null;
@@ -461,8 +459,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 writer.writeUpsert(subTableId,
                         organisationId,
-                        patientId,
-                        personId,
+                        subscriberPatientId,
+                        subscriberPersonId,
                         addressLine1,
                         addressLine2,
                         addressLine3,
@@ -556,7 +554,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
 
 
-    private void transformPseudoIds(Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    private void transformPseudoIds(long subscriberPatientId, long subscriberPersonId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
@@ -572,13 +570,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             if (!Strings.isNullOrEmpty(pseudoId)) {
 
                 pseudoIdWriter.writeUpsert(subTableId,
-                        params.getEnterprisePatientId(),
+                        subscriberPatientId,
                         saltKeyName,
                         pseudoId);
 
                 //only persist the pseudo ID if it's non-null
                 PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
-                pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), params.getEnterprisePatientId(), saltKeyName, pseudoId);
+                pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), subscriberPatientId, saltKeyName, pseudoId);
 
             } else {
 
