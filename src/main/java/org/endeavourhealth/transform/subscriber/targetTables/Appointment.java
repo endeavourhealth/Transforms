@@ -13,7 +13,7 @@ public class Appointment extends AbstractTargetTable {
 
     public void writeDelete(SubscriberId subscriberId) throws Exception {
 
-        super.printRecord("" + EventLog.EVENT_LOG_DELETE,
+        super.printRecord(convertBoolean(true),
                 "" + subscriberId.getSubscriberId());
     }
 
@@ -34,7 +34,7 @@ public class Appointment extends AbstractTargetTable {
                             String sourceId,
                             Date cancelledDate) throws Exception {
 
-        super.printRecord(getEventTypeDesc(subscriberId),
+        super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 "" + organizationId,
                 "" + patientId,
@@ -56,7 +56,7 @@ public class Appointment extends AbstractTargetTable {
     @Override
     public String[] getCsvHeaders() {
         return new String[] {
-                "save_mode",
+                "is_delete",
                 "id",
                 "organization_id",
                 "patient_id",

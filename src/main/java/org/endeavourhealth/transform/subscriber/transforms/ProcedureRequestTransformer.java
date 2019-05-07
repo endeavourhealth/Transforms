@@ -34,9 +34,6 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
 
-            //write the event log entry
-            writeEventLog(params, resourceWrapper, subscriberId);
-
             return;
         }
 

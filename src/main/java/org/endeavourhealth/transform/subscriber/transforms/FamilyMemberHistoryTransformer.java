@@ -33,9 +33,6 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
 
-            //write the event log entry
-            writeEventLog(params, resourceWrapper, subscriberId);
-
             return;
         }
 
@@ -172,8 +169,6 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
                 isPrimary);
          */
 
-        //write the event log entry
-        writeEventLog(params, resourceWrapper, subscriberId);
     }
 
     @Override

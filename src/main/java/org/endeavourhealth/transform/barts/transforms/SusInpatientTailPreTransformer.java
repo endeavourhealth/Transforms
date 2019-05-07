@@ -1,24 +1,17 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsTailDalI;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsTail;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.SusInpatientTail;
-import org.endeavourhealth.transform.common.AbstractCsvCallable;
-import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
-public class SusInpatientTailPreTransformer {
+public class SusInpatientTailPreTransformer extends CdsTailPreTransformerBase {
     private static final Logger LOG = LoggerFactory.getLogger(SusInpatientTailPreTransformer.class);
-    private static StagingCdsTailDalI repository = DalProvider.factoryStagingCdsTailDalI();
+    //private static StagingCdsTailDalI repository = DalProvider.factoryStagingCdsTailDalI();
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -27,7 +20,7 @@ public class SusInpatientTailPreTransformer {
 
             while (parser.nextRecord()) {
                 try {
-                    processRecord((org.endeavourhealth.transform.barts.schema.SusInpatientTail) parser, csvHelper);
+                    processTailRecord((SusInpatientTail)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_INPATIENT);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -36,7 +29,7 @@ public class SusInpatientTailPreTransformer {
         }
     }
 
-    private static void processRecord(SusInpatientTail parser, BartsCsvHelper csvHelper) throws Exception{
+    /*private static void processRecord(SusInpatientTail parser, BartsCsvHelper csvHelper) throws Exception{
 
 
         StagingCdsTail staging = new StagingCdsTail();
@@ -88,7 +81,7 @@ public class SusInpatientTailPreTransformer {
 
             return null;
         }
-    }
+    }*/
 }
 
 

@@ -33,9 +33,6 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
 
-            //write the event log entry
-            writeEventLog(params, resourceWrapper, subscriberId);
-
             return;
         }
 
@@ -218,8 +215,6 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
                 ageAtEvent,
                 issueMethod);
 
-        //write the event log entry
-        writeEventLog(params, resourceWrapper, subscriberId);
 
     }
 

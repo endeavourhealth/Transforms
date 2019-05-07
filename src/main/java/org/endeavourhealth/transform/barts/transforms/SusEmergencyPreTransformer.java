@@ -1,26 +1,18 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsSusHelper;
 import org.endeavourhealth.transform.barts.schema.SusEmergency;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
-public class SusEmergencyPreTransformer {
+public class SusEmergencyPreTransformer extends CdsPreTransformerBase {
     private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyPreTransformer.class);
 
-    private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
+    //private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -29,17 +21,16 @@ public class SusEmergencyPreTransformer {
 
             while (parser.nextRecord()) {
                 try {
-                    processRecord((SusEmergency) parser, csvHelper);
+                    processProcedures((SusEmergency)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
         }
-
     }
 
-    private static void processRecord(SusEmergency parser, BartsCsvHelper csvHelper) throws Exception {
+    /*private static void processRecord(SusEmergency parser, BartsCsvHelper csvHelper) throws Exception {
 
         //if no procedures, then nothing to save
         CsvCell primaryProcedureCell = parser.getPrimaryProcedureOPCS();
@@ -159,7 +150,7 @@ public class SusEmergencyPreTransformer {
     }
 
     private static void parseRemainingProcedures(SusEmergency parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
-        CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
+        CsvCell otherProcedureOPCS = parser.getAdditionalSecondaryProceduresOPCS();
         if (otherProcedureOPCS.isEmpty()) {
             return;
         }
@@ -237,5 +228,5 @@ public class SusEmergencyPreTransformer {
 
             return null;
         }
-    }
+    }*/
 }

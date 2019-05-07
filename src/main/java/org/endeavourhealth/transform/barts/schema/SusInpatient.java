@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class SusInpatient extends AbstractFixedParser {
+public class SusInpatient extends AbstractFixedParser implements CdsRecordI {
     private static final Logger LOG = LoggerFactory.getLogger(SusInpatient.class);
 
     public SusInpatient(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
@@ -49,7 +49,7 @@ public class SusInpatient extends AbstractFixedParser {
         return super.getCell("SecondaryProcedureDate");
     }
 
-    public CsvCell getAdditionalecondaryProceduresOPCS() {
+    public CsvCell getAdditionalSecondaryProceduresOPCS() {
         return super.getCell("2nd50thSecondaryProceduresOPCS");
     }
 

@@ -39,7 +39,7 @@ public class PatientAddress extends AbstractTargetTable {
     @Override
     public String[] getCsvHeaders() {
         return new String[] {
-                "save_mode",
+                "is_delete",
                 "id",
                 "organization_id",
                 "patient_id",
@@ -50,7 +50,7 @@ public class PatientAddress extends AbstractTargetTable {
                 "address_line_4",
                 "city",
                 "postcode",
-                "type_concept_id",
+                "use_concept_id",
                 "start_date",
                 "end_date",
                 "lsoa_2001_code",
@@ -69,7 +69,7 @@ public class PatientAddress extends AbstractTargetTable {
 
     public void writeDelete(SubscriberId subscriberId) throws Exception {
         super.printRecord(
-                "" + EventLog.EVENT_LOG_DELETE,
+                convertBoolean(true),
                 "" + subscriberId.getSubscriberId()
         );
     }
@@ -84,7 +84,7 @@ public class PatientAddress extends AbstractTargetTable {
                             String addressLine4,
                             String city,
                             String postcode,
-                            Integer typeConceptId,
+                            Integer useConceptId,
                             Date startDate,
                             Date endDate,
                             String lsoa2001,
@@ -95,7 +95,7 @@ public class PatientAddress extends AbstractTargetTable {
                             String localAuthority) throws Exception {
 
         super.printRecord(
-                getEventTypeDesc(subscriberId),
+                convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 "" + organisationId,
                 "" + patientId,
@@ -106,7 +106,7 @@ public class PatientAddress extends AbstractTargetTable {
                 addressLine4,
                 city,
                 postcode,
-                convertInt(typeConceptId),
+                convertInt(useConceptId),
                 convertDate(startDate),
                 convertDate(endDate),
                 lsoa2001,

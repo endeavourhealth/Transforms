@@ -25,9 +25,6 @@ public class LocationTransformer extends AbstractSubscriberTransformer {
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
 
-            //write the event log entry
-            writeEventLog(params, resourceWrapper, subscriberId);
-
             return;
         }
 
@@ -83,8 +80,6 @@ public class LocationTransformer extends AbstractSubscriberTransformer {
                 postcode,
                 managingOrganisationId);
 
-        //write the event log entry
-        writeEventLog(params, resourceWrapper, subscriberId);
     }
 
     @Override

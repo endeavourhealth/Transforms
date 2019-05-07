@@ -32,9 +32,6 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
 
-            //write the event log entry
-            writeEventLog(params, resourceWrapper, subscriberId);
-
             return;
         }
         Specimen fhir = (Specimen)FhirResourceHelper.deserialiseResouce(resourceWrapper);
@@ -164,9 +161,6 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
                 episodicityConceptId,
                 isPrimary);
          */
-
-        //write the event log entry
-        writeEventLog(params, resourceWrapper, subscriberId);
 
 
     }

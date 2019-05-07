@@ -12,7 +12,7 @@ public class PseudoId extends AbstractTargetTable {
     public void writeDelete(SubscriberId subscriberId) throws Exception {
 
         super.printRecord(
-                "" + EventLog.EVENT_LOG_DELETE,
+                convertBoolean(true),
                 "" + subscriberId.getSubscriberId()
         );
     }
@@ -21,7 +21,7 @@ public class PseudoId extends AbstractTargetTable {
     public void writeUpsert(SubscriberId subscriberId, long patientId, String saltKeyName, String pseudoId) throws Exception {
 
         super.printRecord(
-                getEventTypeDesc(subscriberId),
+                convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 convertLong(patientId),
                 saltKeyName,
@@ -44,7 +44,7 @@ public class PseudoId extends AbstractTargetTable {
     @Override
     public String[] getCsvHeaders() {
         return new String[] {
-                "save_mode",
+                "is_delete",
                 "source_skid",
                 "target_salt_key_name",
                 "target_skid"

@@ -1,23 +1,17 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.BartsSusHelper;
 import org.endeavourhealth.transform.barts.schema.SusOutpatient;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
-public class SusOutpatientPreTransformer {
+public class SusOutpatientPreTransformer extends CdsPreTransformerBase {
     private static final Logger LOG = LoggerFactory.getLogger(SusOutpatientPreTransformer.class);
 
     private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
@@ -29,7 +23,7 @@ public class SusOutpatientPreTransformer {
 
             while (parser.nextRecord()) {
                 try {
-                    processRecord((org.endeavourhealth.transform.barts.schema.SusOutpatient) parser, csvHelper);
+                    processProcedures((SusOutpatient)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT);
 
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -39,7 +33,7 @@ public class SusOutpatientPreTransformer {
     }
 
 
-    private static void processRecord(SusOutpatient parser, BartsCsvHelper csvHelper) throws Exception {
+    /*private static void processRecord(SusOutpatient parser, BartsCsvHelper csvHelper) throws Exception {
 
         //if no procedures, then nothing to save
         CsvCell primaryProcedureCell = parser.getPrimaryProcedureOPCS();
@@ -158,7 +152,7 @@ public class SusOutpatientPreTransformer {
     }
 
     private static void parseRemainingProcedures(SusOutpatient parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
-        CsvCell otherProcedureOPCS = parser.getAdditionalecondaryProceduresOPCS();
+        CsvCell otherProcedureOPCS = parser.getAdditionalSecondaryProceduresOPCS();
         if (otherProcedureOPCS.isEmpty()) {
             return;
         }
@@ -236,5 +230,5 @@ public class SusOutpatientPreTransformer {
 
             return null;
         }
-    }
+    }*/
 }

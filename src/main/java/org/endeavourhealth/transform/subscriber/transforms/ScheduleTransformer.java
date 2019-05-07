@@ -29,9 +29,6 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
 
-            //write the event log entry
-            writeEventLog(params, resourceWrapper, subscriberId);
-
             return;
         }
 
@@ -98,8 +95,6 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
             location,
             name);
 
-        //write the event log entry
-        writeEventLog(params, resourceWrapper, subscriberId);
 
     }
 

@@ -11,7 +11,7 @@ public class Organization extends AbstractTargetTable {
 
     public void writeDelete(SubscriberId subscriberId) throws Exception {
 
-        super.printRecord("" + EventLog.EVENT_LOG_DELETE,
+        super.printRecord(convertBoolean(true),
                 "" + subscriberId.getSubscriberId());
     }
 
@@ -23,7 +23,7 @@ public class Organization extends AbstractTargetTable {
                           String postcode,
                           Long parentOrganisationId) throws Exception {
 
-        super.printRecord(getEventTypeDesc(subscriberId),
+        super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 odsCode,
                 name,
@@ -36,7 +36,7 @@ public class Organization extends AbstractTargetTable {
     @Override
     public String[] getCsvHeaders() {
         return new String[] {
-                "save_mode",
+                "is_delete",
                 "id",
                 "ods_code",
                 "name",

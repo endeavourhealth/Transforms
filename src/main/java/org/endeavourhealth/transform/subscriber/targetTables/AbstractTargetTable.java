@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
-import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.transform.common.AbstractCsvWriter;
 
 public abstract class AbstractTargetTable extends AbstractCsvWriter {
@@ -19,12 +18,12 @@ public abstract class AbstractTargetTable extends AbstractCsvWriter {
     public abstract String[] getCsvHeaders();
     public abstract SubscriberTableId getTableId();
 
-    protected String getEventTypeDesc(SubscriberId subscriberId) {
+    /*protected String getEventTypeDesc(SubscriberId subscriberId) {
         if (subscriberId.getDtUpdatedPreviouslySent() == null) {
             return "" + EventLog.EVENT_LOG_INSERT;
 
         } else {
             return "" + EventLog.EVENT_LOG_UPDATE;
         }
-    }
+    }*/
 }

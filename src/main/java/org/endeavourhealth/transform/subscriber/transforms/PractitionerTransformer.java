@@ -26,9 +26,6 @@ public class PractitionerTransformer extends AbstractSubscriberTransformer {
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
 
-            //write the event log entry
-            writeEventLog(params, resourceWrapper, subscriberId);
-
             return;
         }
 
@@ -94,8 +91,6 @@ public class PractitionerTransformer extends AbstractSubscriberTransformer {
             roleCode,
             roleDesc);
 
-        //write the event log entry
-        writeEventLog(params, resourceWrapper, subscriberId);
 
     }
 

@@ -20,7 +20,6 @@ import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.FhirToSubscriberCsvTransformer;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
-import org.endeavourhealth.transform.subscriber.targetTables.EventLog;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -92,7 +91,7 @@ public abstract class AbstractSubscriberTransformer {
         }
     }
 
-    protected static void writeEventLog(SubscriberTransformParams params, ResourceWrapper resourceWrapper, SubscriberId subscriberId) throws Exception {
+    /*protected static void writeEventLog(SubscriberTransformParams params, ResourceWrapper resourceWrapper, SubscriberId subscriberId) throws Exception {
 
         long id = subscriberId.getSubscriberId();
 
@@ -123,7 +122,7 @@ public abstract class AbstractSubscriberTransformer {
 
         //cache our subscriber ID so we can get our event log right next time
         params.addSubscriberId(subscriberId);
-    }
+    }*/
 
     //defines whether the resources covered by this transformer should ALWAYS be transformed (e.g. patient data)
     //or only transformed if something refers to it (e.g. orgs and practitioners)

@@ -34,9 +34,6 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
 
             model.writeDelete(subscriberId);
 
-            //write the event log entry
-            writeEventLog(params, resourceWrapper, subscriberId);
-
             return;
         }
 
@@ -172,9 +169,6 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
                 episodicityConceptId,
                 isPrimary);
          */
-
-        //write the event log entry
-        writeEventLog(params, resourceWrapper, subscriberId);
 
     }
 

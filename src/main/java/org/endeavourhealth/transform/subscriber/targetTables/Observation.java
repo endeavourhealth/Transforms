@@ -14,7 +14,7 @@ public class Observation extends AbstractTargetTable {
 
     public void writeDelete(SubscriberId subscriberId) throws Exception {
 
-        super.printRecord("" + EventLog.EVENT_LOG_DELETE,
+        super.printRecord(convertBoolean(true),
                 "" + subscriberId.getSubscriberId());
     }
 
@@ -44,7 +44,7 @@ public class Observation extends AbstractTargetTable {
                             Long episodicityConceptId,
                             Boolean isPrimary) throws Exception {
 
-        super.printRecord(getEventTypeDesc(subscriberId),
+        super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 "" + organizationId,
                 "" + patientId,
@@ -76,7 +76,7 @@ public class Observation extends AbstractTargetTable {
     @Override
     public String[] getCsvHeaders() {
         return new String[] {
-                "save_mode",
+                "is_delete",
                 "id",
                 "organization_id",
                 "patient_id",

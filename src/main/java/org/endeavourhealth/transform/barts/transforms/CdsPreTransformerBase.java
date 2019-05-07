@@ -1,37 +1,30 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.schema.SusInpatient;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.barts.BartsSusHelper;
+import org.endeavourhealth.transform.barts.schema.CdsRecordI;
+import org.endeavourhealth.transform.common.AbstractCsvCallable;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.CsvCurrentState;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.Date;
+import java.util.UUID;
 
-public class SusInpatientPreTransformer extends CdsPreTransformerBase {
-    private static final Logger LOG = LoggerFactory.getLogger(SusInpatientPreTransformer.class);
+public abstract class CdsPreTransformerBase {
+    private static final Logger LOG = LoggerFactory.getLogger(CdsPreTransformerBase.class);
 
-    //private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
+    private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
 
-    public static void transform(List<ParserI> parsers,
-                                 FhirResourceFiler fhirResourceFiler,
-                                 BartsCsvHelper csvHelper) throws Exception {
-        for (ParserI parser : parsers) {
-
-            while (parser.nextRecord()) {
-                try {
-                    processProcedures((SusInpatient)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_INPATIENT);
-
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
-            }
-        }
-
-    }
-
-    /*private static void processRecord(SusInpatient parser, BartsCsvHelper csvHelper) throws Exception {
+    protected static void processProcedures(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
 
         //if no procedures, then nothing to save
         CsvCell primaryProcedureCell = parser.getPrimaryProcedureOPCS();
@@ -41,13 +34,12 @@ public class SusInpatientPreTransformer extends CdsPreTransformerBase {
         if (parser.getWithheldFlag().getIntAsBoolean()) {
             return;
         }
-
         StagingCds stagingCds = new StagingCds();
         stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
-        stagingCds.setExchangeId(parser.getExchangeId().toString());
+        stagingCds.setExchangeId(csvHelper.getExchangeId().toString());
         stagingCds.setDtReceived(new Date());
         stagingCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
-        stagingCds.setSusRecordType(BartsCsvHelper.SUS_RECORD_TYPE_INPATIENT);
+        stagingCds.setSusRecordType(susRecordType);
         stagingCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
         stagingCds.setMrn(parser.getLocalPatientId().getString());
         stagingCds.setNhsNumber(parser.getNhsNumber().getString());
@@ -84,7 +76,8 @@ public class SusInpatientPreTransformer extends CdsPreTransformerBase {
 
     }
 
-    private static void parsePrimaryProcedure(SusInpatient parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+
+    private static void parsePrimaryProcedure(CdsRecordI parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
         StagingCds cdsPrimary = commonContent.clone();
 
         String opcsCode = parser.getPrimaryProcedureOPCS().getString();
@@ -102,7 +95,7 @@ public class SusInpatientPreTransformer extends CdsPreTransformerBase {
         CsvCell dateCell = parser.getPrimaryProcedureDate();
         //date is null in some cases, but that's fine, as the SQL SP will fall back on CDS activity date
         if (!dateCell.isEmpty()) {
-            cdsPrimary.setProcedureDate(parser.getPrimaryProcedureDate().getDate());
+            cdsPrimary.setProcedureDate(dateCell.getDate());
         }
 
         UUID serviceId = csvHelper.getServiceId();
@@ -113,7 +106,7 @@ public class SusInpatientPreTransformer extends CdsPreTransformerBase {
 
     }
 
-    private static void parseSecondaryProcedure(SusInpatient parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+    private static void parseSecondaryProcedure(CdsRecordI parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
         CsvCell secondaryProcedureCell = parser.getSecondaryProcedureOPCS();
         if (secondaryProcedureCell.isEmpty()) {
             //if no secondary procedure, then we're finished
@@ -149,7 +142,7 @@ public class SusInpatientPreTransformer extends CdsPreTransformerBase {
 
     }
 
-    private static void parseRemainingProcedures(SusInpatient parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+    private static void parseRemainingProcedures(CdsRecordI parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
         CsvCell otherProcedureOPCS = parser.getAdditionalSecondaryProceduresOPCS();
         if (otherProcedureOPCS.isEmpty()) {
             return;
@@ -228,5 +221,5 @@ public class SusInpatientPreTransformer extends CdsPreTransformerBase {
 
             return null;
         }
-    }*/
+    }
 }

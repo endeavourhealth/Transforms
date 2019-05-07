@@ -13,7 +13,7 @@ public class ReferralRequest extends AbstractTargetTable {
 
     public void writeDelete(SubscriberId subscriberId) throws Exception {
 
-        super.printRecord("" + EventLog.EVENT_LOG_DELETE,
+        super.printRecord(convertBoolean(true),
                 "" + subscriberId.getSubscriberId());
     }
 
@@ -40,7 +40,7 @@ public class ReferralRequest extends AbstractTargetTable {
                             Double ageAtEvent,
                             Boolean isPrimary) throws Exception {
 
-        super.printRecord(getEventTypeDesc(subscriberId),
+        super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 "" + organizationId,
                 "" + patientId,
@@ -68,7 +68,7 @@ public class ReferralRequest extends AbstractTargetTable {
     @Override
     public String[] getCsvHeaders() {
         return new String[] {
-                "save_mode",
+                "is_delete",
                 "id",
                 "organization_id",
                 "patient_id",

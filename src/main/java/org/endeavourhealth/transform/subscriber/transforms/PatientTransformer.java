@@ -79,7 +79,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
             //delete the patient
             patientWriter.writeDelete(subscriberId);
-            writeEventLog(params, resourceWrapper, subscriberId);
 
             //if we've previously sent the patient, we'll also need to delete any dependent entities
             if (previousVersion != null) {
@@ -262,9 +261,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 registeredPracticeId);
 
 
-        //write the event log entry
-        writeEventLog(params, resourceWrapper, subscriberId);
-
         //check if our patient demographics also should be used as the person demographics. This is typically
         //true if our patient record is at a GP practice.
         boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
@@ -317,6 +313,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                     value = telecom.getValue();
                 }
 
+                if (telecom.hasPeriod()) {
+                    startDate = telecom.getPeriod().getStart();
+                    endDate = telecom.getPeriod().getEnd();
+                }
+
                 writer.writeUpsert(subTableId,
                         organisationId,
                         patientId,
@@ -327,7 +328,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         endDate,
                         value);
 
-                writeEventLog(params, resourceWrapper, subTableId);
             }
         }
 
@@ -347,7 +347,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 writer.writeDelete(subTableId);
 
-                writeEventLog(params, resourceWrapper, subTableId);
             }
         }
     }
@@ -366,7 +365,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
             writer.writeDelete(subTableId);
 
-            writeEventLog(params, resourceWrapper, subTableId);
         }
     }
 
@@ -385,7 +383,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
             writer.writeDelete(subTableId);
 
-            writeEventLog(params, resourceWrapper, subTableId);
         }
     }
 
@@ -420,7 +417,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 String addressLine4 = null;
                 String city = null;
                 String postcode = null;
-                Integer typeConceptId = null;
+                Integer useConceptId = null;
                 Date startDate = null;
                 Date endDate = null;
                 String lsoa2001 = null;
@@ -443,7 +440,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                     postcode = findPostcodePrefix(address.getPostalCode());
                 }
 
-                typeConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.FHIR_ADDRESS_TYPE, address.getType().toCode());
+                Address.AddressUse use = address.getUse();
+                useConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.FHIR_ADDRESS_USE, use.toCode());
 
                 if (address.hasPeriod()) {
                     startDate = address.getPeriod().getStart();
@@ -471,7 +469,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         addressLine4,
                         city,
                         postcode,
-                        typeConceptId,
+                        useConceptId,
                         startDate,
                         endDate,
                         lsoa2001,
@@ -481,7 +479,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         ward,
                         localAuthority);
 
-                writeEventLog(params, resourceWrapper, subTableId);
             }
         }
 
@@ -501,7 +498,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 writer.writeDelete(subTableId);
 
-                writeEventLog(params, resourceWrapper, subTableId);
             }
         }
 
@@ -554,7 +550,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
             pseudoIdWriter.writeDelete(subTableId);
 
-            writeEventLog(params, resourceWrapper, subTableId);
         }
 
     }
@@ -581,8 +576,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         saltKeyName,
                         pseudoId);
 
-                writeEventLog(params, resourceWrapper, subTableId);
-
                 //only persist the pseudo ID if it's non-null
                 PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
                 pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), params.getEnterprisePatientId(), saltKeyName, pseudoId);
@@ -591,7 +584,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 pseudoIdWriter.writeDelete(subTableId);
 
-                writeEventLog(params, resourceWrapper, subTableId);
             }
         }
     }
