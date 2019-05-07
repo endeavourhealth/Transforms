@@ -56,10 +56,12 @@ public class SURCCPreTransformer {
             //if no start or end, then the surgery hasn't happened yet, so skip
             CsvCell startCell = parser.getSurgeryStartDtTm();
             CsvCell stopCell = parser.getSurgeryStopDtTm();
-            if (startCell.isEmpty()
-                    && stopCell.isEmpty()) {
-                return;
-            }
+           if (!startCell.isEmpty()) {
+               stagingSURCC.setDtStart(startCell.getDateTime());
+           }
+           if (!stopCell.isEmpty()) {
+               stagingSURCC.setDtStop(stopCell.getDateTime());
+           }
 
             //cache the person ID for our case ID, so the CURCP parser can look it up
             csvHelper.savePersonIdFromSurccId(parser.getSurgicalCaseId().getInt(), personId);
