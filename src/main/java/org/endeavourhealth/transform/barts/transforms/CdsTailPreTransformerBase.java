@@ -4,7 +4,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsTailDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsTail;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.schema.CdsTailIRecordI;
+import org.endeavourhealth.transform.barts.schema.CdsTailRecordI;
 import org.endeavourhealth.transform.common.AbstractCsvCallable;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.slf4j.Logger;
@@ -18,7 +18,7 @@ public class CdsTailPreTransformerBase {
 
     private static StagingCdsTailDalI repository = DalProvider.factoryStagingCdsTailDalI();
 
-    protected static void processTailRecord(CdsTailIRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception{
+    protected static void processTailRecord(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception{
 
         StagingCdsTail staging = new StagingCdsTail();
         String personId = parser.getPersonId().getString();

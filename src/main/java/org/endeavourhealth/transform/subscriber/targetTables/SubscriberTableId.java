@@ -2,10 +2,9 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 public enum SubscriberTableId {
 
-    EVENT_LOG((byte)1, "event_log"),
     PATIENT((byte)2, "patient"),
     PERSON((byte)3, "person"),
-    ALLERGY_INTOLERANEE((byte)4, "allergyIntolerance"),
+    ALLERGY_INTOLERANCE((byte)4, "allergy_intolerance"),
     ENCOUNTER((byte)5, "encounter"),
     EPISODE_OF_CARE((byte)6, "episode_of_care"),
     FLAG((byte)7, "flag"),

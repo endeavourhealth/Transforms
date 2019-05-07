@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class SusEmergencyTail extends AbstractFixedParser implements CdsTailIRecordI {
+public class SusEmergencyTail extends AbstractFixedParser implements CdsTailRecordI {
     private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyTail.class);
 
     public SusEmergencyTail(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {

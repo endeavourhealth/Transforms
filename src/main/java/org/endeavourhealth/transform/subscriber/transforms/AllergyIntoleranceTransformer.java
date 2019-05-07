@@ -152,7 +152,7 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
 
     @Override
     protected SubscriberTableId getMainSubscriberTableId() {
-        return SubscriberTableId.ALLERGY_INTOLERANEE;
+        return SubscriberTableId.ALLERGY_INTOLERANCE;
     }
 
 

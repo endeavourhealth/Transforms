@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.barts.schema;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 
-public interface CdsTailIRecordI {
+public interface CdsTailRecordI {
 
     CsvCell getPersonId();
     CsvCell getCdsUniqueId();

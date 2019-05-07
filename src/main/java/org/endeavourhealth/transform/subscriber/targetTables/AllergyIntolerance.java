@@ -77,7 +77,7 @@ public class AllergyIntolerance extends AbstractTargetTable {
 
     @Override
     public SubscriberTableId getTableId() {
-        return SubscriberTableId.ALLERGY_INTOLERANEE;
+        return SubscriberTableId.ALLERGY_INTOLERANCE;
     }
 
     @Override
