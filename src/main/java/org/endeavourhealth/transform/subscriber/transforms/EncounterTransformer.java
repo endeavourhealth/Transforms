@@ -155,24 +155,24 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         // TODO Code needs to be reviewed to use the IM for
         //  Core Concept Id and Non Core Concept ID
-        Long snomedConceptId = null;
         String originalCode = null;
         String originalTerm = null;
 
         originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
-            EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
-            snomedConceptId = ret.getCode();
+            encounterCodeDal.findOrCreateCode(originalTerm);
+            //snomedConceptId = ret.getCode();
 
-            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.SNOMED, String.valueOf(snomedConceptId));
+            originalTerm = originalTerm.toLowerCase();
+            coreConceptId = IMClient.getMappedCoreConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
             if (coreConceptId == null) {
-                LOG.warn("coreConceptId is null using scheme: " + IMConstant.SNOMED + " code: " + snomedConceptId);
+                LOG.warn("coreConceptId is null using type: " + IMConstant.DCE_Type_of_encounter + " term: " + originalTerm);
                 throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
             }
 
-            nonCoreConceptId = IMClient.getConceptIdForSchemeCode(IMConstant.SNOMED, String.valueOf(snomedConceptId));
+            nonCoreConceptId = IMClient.getConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
             if (nonCoreConceptId == null) {
-                LOG.warn("nonCoreConceptId is null using scheme: " + IMConstant.SNOMED + " code: " + snomedConceptId);
+                LOG.warn("nonCoreConceptId is null using type: " + IMConstant.DCE_Type_of_encounter + " term: " + originalTerm);
                 throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
             }
         }
@@ -181,19 +181,17 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
             if (extension != null) {
                 CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-                Coding originalCoding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
-                String originalScheme = getScheme(originalCoding.getSystem());
-                originalCode = originalCoding.getCode();
 
-                coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(originalScheme, originalCode);
+                originalTerm = codeableConcept.getText().toLowerCase();
+                coreConceptId = IMClient.getMappedCoreConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
                 if (coreConceptId == null) {
-                    LOG.warn("coreConceptId is null using scheme: " + originalScheme + " code: " + originalCode);
+                    LOG.warn("coreConceptId is null using type: " + IMConstant.DCE_Type_of_encounter + " term: " + originalTerm);
                     throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
                 }
 
-                nonCoreConceptId = IMClient.getConceptIdForSchemeCode(originalScheme, originalCode);
+                nonCoreConceptId = IMClient.getConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
                 if (nonCoreConceptId == null) {
-                    LOG.warn("nonCoreConceptId is null using scheme: " + originalScheme + " code: " + originalCode);
+                    LOG.warn("nonCoreConceptId is null using type: " + IMConstant.DCE_Type_of_encounter + " term: " + originalTerm);
                     throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
                 }
             }
