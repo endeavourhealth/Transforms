@@ -47,7 +47,7 @@ public class Flag extends AbstractTargetTable {
                 "patient_id",
                 "person_id",
                 "effective_date",
-                "date_precision_id",
+                "date_precision_concept_id",
                 "is_active",
                 "flag_text"
         };

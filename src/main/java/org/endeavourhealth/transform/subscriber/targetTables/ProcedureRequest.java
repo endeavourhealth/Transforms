@@ -64,7 +64,7 @@ public class ProcedureRequest extends AbstractTargetTable {
                 "encounter_id",
                 "practitioner_id",
                 "clinical_effective_date",
-                "date_precision_id",
+                "date_precision_concept_id",
                 "procedure_request_status_concept_id",
                 "core_concept_id",
                 "non_core_concept_id",

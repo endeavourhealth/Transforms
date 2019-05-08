@@ -76,7 +76,7 @@ public class Encounter extends AbstractTargetTable {
                 "practitioner_id",
                 "appointment_id",
                 "clinical_effective_date",
-                "date_precision_id",
+                "date_precision_concept_id",
                 "episode_of_care_id",
                 "service_provider_organization_id",
                 "core_concept_id",

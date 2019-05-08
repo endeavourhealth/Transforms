@@ -66,7 +66,7 @@ public class AllergyIntolerance extends AbstractTargetTable {
                 "encounter_id",
                 "practitioner_id",
                 "clinical_effective_date",
-                "date_precision_id",
+                "date_precision_concept_id",
                 "is_review",
                 "core_concept_id",
                 "non_core_concept_id",

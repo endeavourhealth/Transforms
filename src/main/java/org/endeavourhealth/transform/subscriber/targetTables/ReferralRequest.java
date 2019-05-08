@@ -76,7 +76,7 @@ public class ReferralRequest extends AbstractTargetTable {
                 "encounter_id",
                 "practitioner_id",
                 "clinical_effective_date",
-                "date_precision_id",
+                "date_precision_concept_id",
                 "requester_organization_id",
                 "recipient_organization_id",
                 "referral_request_priority_concept_id",

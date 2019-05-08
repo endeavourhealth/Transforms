@@ -75,7 +75,7 @@ public class MedicationOrder extends AbstractTargetTable {
                 "encounter_id",
                 "practitioner_id",
                 "clinical_effective_date",
-                "date_precision_id",
+                "date_precision_concept_id",
                 "dose",
                 "quantity_value",
                 "quantity_unit",
