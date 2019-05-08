@@ -45,7 +45,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         Long snomedConceptId = null;
         BigDecimal resultValue = null;
         String resultValueUnits = null;
@@ -82,7 +82,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
             if (event.hasDateTimeElement()) {
                 DateTimeType dt = event.getDateTimeElement();
                 clinicalEffectiveDate = dt.getValue();
-                datePrecisionId = convertDatePrecision(dt.getPrecision());
+                datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
             }
         }
 
@@ -145,7 +145,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
                 encounterId,
                 practitionerId,
                 clinicalEffectiveDate,
-                datePrecisionId,
+                datePrecisionConceptId,
                 snomedConceptId,
                 resultValue,
                 resultValueUnits,

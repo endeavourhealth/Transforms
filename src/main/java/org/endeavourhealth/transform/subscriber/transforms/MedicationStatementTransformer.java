@@ -48,7 +48,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         // Long dmdId = null;
         Boolean isActive = null;
         Date cancellationDate = null;
@@ -75,7 +75,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         if (fhir.hasDateAssertedElement()) {
             DateTimeType dt = fhir.getDateAssertedElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
         }
 
         /*
@@ -199,7 +199,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
             encounterId,
             practitionerId,
             clinicalEffectiveDate,
-            datePrecisionId,
+            datePrecisionConceptId,
             isActive,
             cancellationDate,
             dose,

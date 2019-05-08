@@ -45,7 +45,7 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         // Long snomedConceptId = null;
         // String originalCode = null;
         // String originalTerm = null;
@@ -79,7 +79,7 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
         if (fhir.hasOnset()) {
             DateTimeType dt = fhir.getOnsetElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
 
         }
 
@@ -141,7 +141,7 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
             encounterId,
             practitionerId,
             clinicalEffectiveDate,
-            datePrecisionId,
+            datePrecisionConceptId,
             isReview,
             coreConceptId,
             nonCoreConceptId,

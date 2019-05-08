@@ -38,7 +38,7 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
         long patientId;
         long personId;
         Date effectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         boolean isActive = true;
         String flagText = null;
 
@@ -50,7 +50,7 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasPeriod()) {
             DateTimeType dt = fhir.getPeriod().getStartElement();
             effectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
         }
 
         if (fhir.hasStatus()) {
@@ -66,7 +66,7 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
                 patientId,
                 personId,
                 effectiveDate,
-                datePrecisionId,
+                datePrecisionConceptId,
                 isActive,
                 flagText);
 

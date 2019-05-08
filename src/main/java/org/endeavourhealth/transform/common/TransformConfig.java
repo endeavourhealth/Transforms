@@ -32,6 +32,7 @@ public class TransformConfig {
     private String resourceCacheTempPath;
     private boolean isLive;
     private int resourceSaveBatchSize;
+    private boolean allowMissingConceptIdsInSubscriberTransform;
 
     //singleton
     private static TransformConfig instance;
@@ -161,6 +162,17 @@ public class TransformConfig {
                 }
             }
 
+            node = json.get("subscriber");
+            if (node != null) {
+
+                JsonNode subNode = node.get("allow_missing_concepts");
+                if (subNode != null) {
+                    this.allowMissingConceptIdsInSubscriberTransform = subNode.asBoolean();
+                }
+            }
+
+
+
             node = json.get("drain_queue_on_failure");
             if (node != null) {
                 for (int i=0; i<node.size(); i++) {
@@ -254,5 +266,9 @@ public class TransformConfig {
 
     public String getCernerPatientIdFile() {
         return cernerPatientIdFile;
+    }
+
+    public boolean isAllowMissingConceptIdsInSubscriberTransform() {
+        return allowMissingConceptIdsInSubscriberTransform;
     }
 }

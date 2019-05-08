@@ -45,9 +45,10 @@ public class PseudoId extends AbstractTargetTable {
     public String[] getCsvHeaders() {
         return new String[] {
                 "is_delete",
-                "source_skid",
-                "target_salt_key_name",
-                "target_skid"
+                "id",
+                "patient_id",
+                "salt_key_name",
+                "pseudo_id"
         };
     }
 

@@ -43,7 +43,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         Long snomedConceptId = null;
         BigDecimal resultValue = null;
         String resultValueUnits = null;
@@ -81,7 +81,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
             if (fhirCollection.hasCollectedDateTimeType()) {
                 DateTimeType dt = fhirCollection.getCollectedDateTimeType();
                 clinicalEffectiveDate = dt.getValue();
-                datePrecisionId = convertDatePrecision(dt.getPrecision());
+                datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
             }
 
             if (fhirCollection.hasCollector()) {
@@ -144,7 +144,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
                 encounterId,
                 practitionerId,
                 clinicalEffectiveDate,
-                datePrecisionId,
+                datePrecisionConceptId,
                 snomedConceptId,
                 resultValue,
                 resultValueUnits,

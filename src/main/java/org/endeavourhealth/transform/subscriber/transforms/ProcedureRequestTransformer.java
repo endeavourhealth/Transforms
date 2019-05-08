@@ -45,7 +45,7 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         // Long snomedConceptId = null;
         Integer procedureRequestStatusConceptId = null;
         // String originalCode = null;
@@ -72,7 +72,7 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasScheduledDateTimeType()) {
             DateTimeType dt = fhir.getScheduledDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
         }
 
         /*
@@ -136,7 +136,7 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
             encounterId,
             practitionerId,
             clinicalEffectiveDate,
-            datePrecisionId,
+            datePrecisionConceptId,
             procedureRequestStatusConceptId,
             coreConceptId,
             nonCoreConceptId,

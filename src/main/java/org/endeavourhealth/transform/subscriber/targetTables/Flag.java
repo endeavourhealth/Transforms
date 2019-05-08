@@ -22,7 +22,7 @@ public class Flag extends AbstractTargetTable {
                             long patientId,
                             long personId,
                             Date effectiveDate,
-                            Integer datePrecisionId,
+                            Integer datePrecisionConceptId,
                             Boolean isActive,
                             String flagText
     ) throws Exception {
@@ -33,7 +33,7 @@ public class Flag extends AbstractTargetTable {
                 "" + patientId,
                 "" + personId,
                 convertDate(effectiveDate),
-                convertInt(datePrecisionId),
+                convertInt(datePrecisionConceptId),
                 convertBoolean(isActive),
                 flagText);
     }

@@ -47,7 +47,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         Long snomedConceptId = null;
         BigDecimal resultValue = null;
         String resultValueUnits = null;
@@ -82,7 +82,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasOnsetDateTimeType()) {
             DateTimeType dt = fhir.getOnsetDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
@@ -152,7 +152,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
                 encounterId,
                 practitionerId,
                 clinicalEffectiveDate,
-                datePrecisionId,
+                datePrecisionConceptId,
                 snomedConceptId,
                 resultValue,
                 resultValueUnits,

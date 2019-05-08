@@ -17,6 +17,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberResou
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.FhirToSubscriberCsvTransformer;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
@@ -135,7 +136,31 @@ public abstract class AbstractSubscriberTransformer {
     protected abstract SubscriberTableId getMainSubscriberTableId();
 
     protected static Integer convertDatePrecision(TemporalPrecisionEnum precision) throws Exception {
-        return Integer.valueOf(precision.getCalendarConstant());
+        String code = null;
+        if (precision == TemporalPrecisionEnum.YEAR) {
+            code = "year";
+
+        } else if (precision == TemporalPrecisionEnum.MONTH) {
+            code = "month";
+
+        } else if (precision == TemporalPrecisionEnum.DAY) {
+            code = "day";
+
+        } else if (precision == TemporalPrecisionEnum.MINUTE) {
+            code = "minute";
+
+        } else if (precision == TemporalPrecisionEnum.SECOND) {
+            code = "second";
+
+        } else if (precision == TemporalPrecisionEnum.MILLI) {
+            code = "millisecond";
+
+        } else {
+            throw new Exception("Unknown date time " + precision);
+        }
+
+        return IMClient.getConceptIdForSchemeCode(IMConstant.FHIR_DATETIME_PRECISION, code);
+        //return Integer.valueOf(precision.getCalendarConstant());
     }
 
 

@@ -44,7 +44,7 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         Long snomedConceptId = null;
         BigDecimal resultValue = null;
         String resultValueUnits = null;
@@ -79,7 +79,7 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getVaccineCode());
@@ -135,7 +135,7 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
                 encounterId,
                 practitionerId,
                 clinicalEffectiveDate,
-                datePrecisionId,
+                datePrecisionConceptId,
                 snomedConceptId,
                 resultValue,
                 resultValueUnits,

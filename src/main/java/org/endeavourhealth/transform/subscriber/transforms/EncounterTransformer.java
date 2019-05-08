@@ -9,7 +9,6 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
-import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
@@ -52,7 +51,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         Long practitionerId = null;
         Long appointmentId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         // Long snomedConceptId = null;
         // String originalCode = null;
         // String originalTerm = null;
@@ -104,7 +103,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             Period period = fhir.getPeriod();
             DateTimeType dt = period.getStartElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
         }
 
         /*
@@ -259,7 +258,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             practitionerId,
             appointmentId,
             clinicalEffectiveDate,
-            datePrecisionId,
+            datePrecisionConceptId,
             episodeOfCareId,
             serviceProviderOrganisationId,
             coreConceptId,
@@ -275,7 +274,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         //we also need to populate the two new encounter tables
         //tranformExtraEncounterTables(resource, params,
         //        id, organizationId, patientId, personId, practitionerId,
-        //        episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
+        //        episodeOfCareId, clinicalEffectiveDate, datePrecisionConceptId, appointmentId,
         //        serviceProviderOrganisationId);
     }
 
@@ -496,7 +495,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
     /*private void transformEncounterRaw(Long enterpriseId, Resource resource, SubscriberTransformParams params,
                                        long id, long organisationId, long patientId, long personId, long practitionerId,
-                                       long episodeOfCareId, Date clinicalEffectiveDate, Integer datePrecisionId, Long appointmentId,
+                                       long episodeOfCareId, Date clinicalEffectiveDate, Integer datePrecisionConceptId, Long appointmentId,
                                        Long serviceProviderOrganisationId, Long recordingPractitionerId, Date recordingDate,
                                        Long locationId, Date endDate, Integer duration, Integer durationUnit) throws Exception {
 

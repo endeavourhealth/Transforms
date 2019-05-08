@@ -45,7 +45,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         Long snomedConceptId = null;
         BigDecimal resultValue = null;
         String resultValueUnits = null;
@@ -83,7 +83,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
         }
 
         if (fhir.getCondition().size() > 1) {
@@ -151,7 +151,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
                 encounterId,
                 practitionerId,
                 clinicalEffectiveDate,
-                datePrecisionId,
+                datePrecisionConceptId,
                 snomedConceptId,
                 resultValue,
                 resultValueUnits,

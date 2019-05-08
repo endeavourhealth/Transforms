@@ -45,7 +45,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         // Long dmdId = null;
         String dose = null;
         BigDecimal quantityValue = null;
@@ -77,7 +77,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasDateWrittenElement()) {
             DateTimeType dt = fhir.getDateWrittenElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
         }
 
         /*
@@ -202,7 +202,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
                 encounterId,
                 practitionerId,
                 clinicalEffectiveDate,
-                datePrecisionId,
+                datePrecisionConceptId,
                 dose,
                 quantityValue,
                 quantityUnit,

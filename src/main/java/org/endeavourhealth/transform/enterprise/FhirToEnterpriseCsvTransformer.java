@@ -280,10 +280,14 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //if we transformed a patient resource, we need to guarantee that the patient is fully transformed before continuing
         //so we need to close the thread pool and wait. Then re-open for any remaining resources.
         if (didPatient) {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
+
+            //don't close, just drain
+            List<ThreadPoolError> errors = threadPool.waitUntilEmpty();
             handleErrors(errors);
 
-            threadPool = new ThreadPool(threads, 1000);
+            /*List<ThreadPoolError> errors = threadPool.waitAndStop();
+            handleErrors(errors);
+            threadPool = new ThreadPool(threads, 1000);*/
         }
 
         //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources

@@ -22,6 +22,7 @@ public class IMConstant {
     public static final String FHIR_ADDRESS_USE = "FHIR_AU";
     public static final String FHIR_TELECOM_SYSTEM = "FHIR_CPS";
     public static final String FHIR_TELECOM_USE = "FHIR_CPU";
+    public static final String FHIR_DATETIME_PRECISION = "DS_DATE_PREC";
 
     public static final String DCE_Type_of_encounter = "DCE_Type_of_encounter";
 

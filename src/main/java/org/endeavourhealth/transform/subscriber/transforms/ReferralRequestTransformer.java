@@ -49,7 +49,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
-        Integer datePrecisionId = null;
+        Integer datePrecisionConceptId = null;
         // Long snomedConceptId = null;
         Long requesterOrganizationId = null;
         Long recipientOrganizationId = null;
@@ -86,7 +86,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
         }
 
 
@@ -271,7 +271,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             encounterId,
             practitionerId,
             clinicalEffectiveDate,
-            datePrecisionId,
+            datePrecisionConceptId,
             requesterOrganizationId,
             recipientOrganizationId,
             referralRequestPriorityConceptId,
