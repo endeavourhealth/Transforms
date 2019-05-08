@@ -57,14 +57,27 @@ public class ProcedureBuilder extends ResourceBuilderBase
         auditValue("performedDateTime", sourceCells);
     }
 
-    public void setEnded(DateTimeType dateTimeType, CsvCell... sourceCells) throws Exception{
-        Period period =  new Period();
-        if (this.procedure.hasPerformedDateTimeType()) {
-            period.setStartElement(this.procedure.getPerformedDateTimeType());
+    public void setPerformed(DateTimeType start, DateTimeType end, CsvCell... sourceCells) {
+        Period period = new Period();
+        if (end == null) {
+            end = new DateTimeType();
         }
-        period.setEndElement(dateTimeType);
-        this.procedure.setPerformed(period);
+            period.setStartElement(start);
+            period.setEndElement(end);
+            this.procedure.setPerformed(period);
+            auditValue("performedPeriod", sourceCells);
     }
+
+
+//    public void setEnded(DateTimeType dateTimeType, CsvCell... sourceCells) throws Exception{
+//        Period period =  new Period();
+//        if (this.procedure.hasPerformedDateTimeType()) {
+//            period.setStartElement(this.procedure.getPerformedDateTimeType());
+//        }
+//        period.setEndElement(dateTimeType);
+//        this.procedure.setPerformed(period);
+//        auditValue("performedPeriod", sourceCells);
+//    }
 
     public void addPerformer(Reference practitionerReference, CsvCell... sourceCells) {
         Procedure.ProcedurePerformerComponent fhirPerformer = this.procedure.addPerformer();

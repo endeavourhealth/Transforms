@@ -18,6 +18,8 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import static org.endeavourhealth.transform.barts.CodeValueSet.SURGEON_SPECIALITY_GROUP;
@@ -76,12 +78,17 @@ public class ProcedureTargetTransformer {
             // create the FHIR Procedure resource - NOTE //TODO: no individual audit cells set
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
             procedureBuilder.setId(uniqueId);
-
             DateTimeType procedureDateTime = new DateTimeType(procedure.getDtPerformed());
-            procedureBuilder.setPerformed(procedureDateTime);
+            DateTimeType procedureDateTimeEnd = new DateTimeType();
+            if (procedure.getDtEnded() != null) {
+                 procedureDateTimeEnd = new DateTimeType(procedure.getDtEnded());
+            } else {
+               Date end = procedureDateTime.getValue();
+               procedureDateTimeEnd.setValue(setTime235959(end));
+            }
 
-            DateTimeType procedureDateTimeEnd = new DateTimeType(procedure.getDtEnded());
-            procedureBuilder.setEnded(procedureDateTime);
+            procedureBuilder.setPerformed(procedureDateTime,procedureDateTimeEnd);
+
 
             // set the patient reference
             Integer personId = procedure.getPersonId();
@@ -234,7 +241,15 @@ public class ProcedureTargetTransformer {
         }
     }
 
-
+    public static Date setTime235959(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MILLISECOND, 0);
+        return cal.getTime();
+    }
 //
 //
 //    public static void createProcedure(PROCE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
