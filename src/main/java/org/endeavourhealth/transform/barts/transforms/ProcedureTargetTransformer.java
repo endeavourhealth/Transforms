@@ -52,10 +52,10 @@ public class ProcedureTargetTransformer {
 
         TransformWarnings.log(LOG, csvHelper, "Target Procedures to transform to FHIR: {} for exchangeId: {}", targetProcedures.size(), csvHelper.getExchangeId());
 
-        for (StagingTarget procedure : targetProcedures) {
+        for (StagingTarget targetProcedure : targetProcedures) {
 
-            String uniqueId = procedure.getUniqueId();
-            boolean isDeleted = procedure.getIsDeleted();
+            String uniqueId = targetProcedure.getUniqueId();
+            boolean isDeleted = targetProcedure.isDeleted();
 
             if (isDeleted) {
 
@@ -78,20 +78,18 @@ public class ProcedureTargetTransformer {
             // create the FHIR Procedure resource - NOTE //TODO: no individual audit cells set
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
             procedureBuilder.setId(uniqueId);
-            DateTimeType procedureDateTime = new DateTimeType(procedure.getDtPerformed());
-            DateTimeType procedureDateTimeEnd = new DateTimeType();
-            if (procedure.getDtEnded() != null) {
-                 procedureDateTimeEnd = new DateTimeType(procedure.getDtEnded());
-            } else {
-               Date end = procedureDateTime.getValue();
-               procedureDateTimeEnd.setValue(setTime235959(end));
+
+            //we always have a performed date, so no error handling required
+            DateTimeType procedureDateTime = new DateTimeType(targetProcedure.getDtPerformed());
+            procedureBuilder.setPerformed(procedureDateTime);
+
+            if (targetProcedure.getDtEnded() != null) {
+                DateTimeType dt = new DateTimeType(targetProcedure.getDtEnded());
+                procedureBuilder.setEnded(dt);
             }
 
-            procedureBuilder.setPerformed(procedureDateTime,procedureDateTimeEnd);
-
-
             // set the patient reference
-            Integer personId = procedure.getPersonId();
+            Integer personId = targetProcedure.getPersonId();
             if (personId == null) {
                 TransformWarnings.log(LOG, csvHelper, "Missing person ID in procedure_target for Procedure Id: {}", uniqueId);
                 continue;
@@ -103,7 +101,7 @@ public class ProcedureTargetTransformer {
             procedureBuilder.setStatus(Procedure.ProcedureStatus.COMPLETED);
 
             // set the encounter reference
-            Integer encounterId = procedure.getEncounterId();
+            Integer encounterId = targetProcedure.getEncounterId();
             if (encounterId != null) {
                 Reference encounterReference
                         = ReferenceHelper.createReference(ResourceType.Encounter, String.valueOf(encounterId));
@@ -111,14 +109,14 @@ public class ProcedureTargetTransformer {
             }
 
             // performer and recorder
-            Integer performerPersonnelId = procedure.getPerformerPersonnelId();
+            Integer performerPersonnelId = targetProcedure.getPerformerPersonnelId();
             if (performerPersonnelId != null) {
                 Reference practitionerPerformerReference
                         = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
                 procedureBuilder.addPerformer(practitionerPerformerReference);
             }
 
-            Integer recordedByPersonneId = procedure.getRecordByPersonnelId();
+            Integer recordedByPersonneId = targetProcedure.getRecordeByPersonnelId();
             if (recordedByPersonneId != null) {
                 Reference practitionerRecorderReference
                         = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(recordedByPersonneId));
@@ -130,7 +128,7 @@ public class ProcedureTargetTransformer {
                     = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
 
             // can be either of these three coded types
-            String procedureCodeType = procedure.getProcedureType().trim();
+            String procedureCodeType = targetProcedure.getProcedureType().trim();
             if (procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED) ||
                     procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED_CT)) {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
@@ -143,7 +141,7 @@ public class ProcedureTargetTransformer {
             } else {
                 throw new TransformException("Unknown Procedure Target code type [" + procedureCodeType + "]");
             }
-            String procedureCode = procedure.getProcedureCode();
+            String procedureCode = targetProcedure.getProcedureCode();
             if (!Strings.isNullOrEmpty(procedureCode)) {
 
                 codeableConceptBuilder.setCodingCode(procedureCode);
@@ -151,23 +149,23 @@ public class ProcedureTargetTransformer {
                 TransformWarnings.log(LOG, csvHelper, "Procedure Code is empty in Procedure Target for Procedure Id: {}", uniqueId);
                 continue;
             }
-            String procedureTerm = procedure.getProcedureTerm();
+            String procedureTerm = targetProcedure.getProcedureTerm();
             codeableConceptBuilder.setCodingDisplay(procedureTerm);
             codeableConceptBuilder.setText(procedureTerm);
 
             // notes / free text
-            String freeText = procedure.getFreeText();
+            String freeText = targetProcedure.getFreeText();
             if (!Strings.isNullOrEmpty(freeText)) {
                 procedureBuilder.addNotes("Notes: " + freeText);
             }
             // qualifier text as more notes
-            String qualifierText = procedure.getQualifier();
+            String qualifierText = targetProcedure.getQualifier();
             if (!Strings.isNullOrEmpty(qualifierText)) {
                 procedureBuilder.addNotes("Qualifier: " + qualifierText);
             }
 
             //location text / codes as more notes
-            String locationText = procedure.getLocation();
+            String locationText = targetProcedure.getLocation();
             if (!Strings.isNullOrEmpty(locationText)) {
                 procedureBuilder.addNotes("Location(s): " + locationText);
             }
@@ -206,7 +204,7 @@ public class ProcedureTargetTransformer {
 //
 
             // this is the speciality group code of the surgeon
-            String specialtyCode = procedure.getSpecialty();
+            String specialtyCode = targetProcedure.getSpecialty();
             if (!Strings.isNullOrEmpty(specialtyCode)) {
 
                 CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(SURGEON_SPECIALITY_GROUP, specialtyCode);
@@ -218,7 +216,7 @@ public class ProcedureTargetTransformer {
             }
 
             // sequence number, primary and parent procedure
-            Integer sequenceNumber = procedure.getProcedureSeqNbr();
+            Integer sequenceNumber = targetProcedure.getProcedureSeqNbr();
             if (sequenceNumber != null) {
                 procedureBuilder.setSequenceNumber(sequenceNumber);
                 if (sequenceNumber == 1) {
@@ -226,7 +224,7 @@ public class ProcedureTargetTransformer {
 
                 } else {
                     // parent resource
-                    String parentProcedureId = procedure.getParentProcedureUniqueId();
+                    String parentProcedureId = targetProcedure.getParentProcedureUniqueId();
                     if (!Strings.isNullOrEmpty(parentProcedureId)) {
 
                         Reference parentProcedureReference = ReferenceHelper.createReference(ResourceType.Procedure, parentProcedureId);
