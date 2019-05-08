@@ -80,6 +80,9 @@ public class ProcedureTargetTransformer {
             DateTimeType procedureDateTime = new DateTimeType(procedure.getDtPerformed());
             procedureBuilder.setPerformed(procedureDateTime);
 
+            DateTimeType procedureDateTimeEnd = new DateTimeType(procedure.getDtEnded());
+            procedureBuilder.setEnded(procedureDateTime);
+
             // set the patient reference
             Integer personId = procedure.getPersonId();
             if (personId == null) {
