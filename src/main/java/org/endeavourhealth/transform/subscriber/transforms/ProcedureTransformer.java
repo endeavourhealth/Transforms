@@ -83,6 +83,13 @@ public class ProcedureTransformer extends AbstractSubscriberTransformer {
             DateTimeType dt = fhir.getPerformedDateTimeType();
             clinicalEffectiveDate = dt.getValue();
             datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+        } else if (fhir.hasPerformedPeriod()) {
+            Period p = fhir.getPerformedPeriod();
+            if (p.hasStart()) {
+                DateTimeType dt = fhir.getPerformedPeriod().getStartElement();
+                clinicalEffectiveDate = dt.getValue();
+                datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            }
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());

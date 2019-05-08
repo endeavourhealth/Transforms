@@ -52,32 +52,75 @@ public class ProcedureBuilder extends ResourceBuilderBase
     }
 
     public void setPerformed(DateTimeType dateTimeType, CsvCell... sourceCells) {
+        Period period = getOrCreatePerformedPeriod();
+
+        if (dateTimeType != null) {
+            period.setStartElement(dateTimeType);
+
+            auditValue("performedPeriod.start", sourceCells);
+
+        } else {
+            period.setStartElement(null);
+
+            //no audit required for setting to null
+        }
+    }
+
+    public void setEnded(DateTimeType dateTimeType, CsvCell... sourceCells) {
+
+        Period period = getOrCreatePerformedPeriod();
+
+        if (dateTimeType != null) {
+            period.setEndElement(dateTimeType);
+
+            auditValue("performedPeriod.end", sourceCells);
+
+        } else {
+            period.setEndElement(null);
+
+            //no audit required for setting to null
+        }
+    }
+
+    private Period getOrCreatePerformedPeriod() {
+        Period ret = null;
+
+        //if updating an old-style procedure we may need to upgrade the DateTimeType to a Period, since Procedure supports both
+        if (procedure.hasPerformed()) {
+            Type performed = procedure.getPerformed();
+            if (performed instanceof Period) {
+                ret = (Period)performed;
+
+            } else if (performed instanceof DateTimeType) {
+                ret = new Period();
+                ret.setStartElement((DateTimeType)performed); //carry over start date
+                procedure.setPerformed(ret);
+
+            } else {
+                throw new RuntimeException("Unexpected type " + performed.getClass());
+            }
+        } else {
+            ret = new Period();
+            procedure.setPerformed(ret);
+        }
+
+        return ret;
+    }
+
+    /*public void setPerformed(DateTimeType dateTimeType, CsvCell... sourceCells) {
         this.procedure.setPerformed(dateTimeType);
 
         auditValue("performedDateTime", sourceCells);
     }
 
-    public void setPerformed(DateTimeType start, DateTimeType end, CsvCell... sourceCells) {
-        Period period = new Period();
-        if (end == null) {
-            end = new DateTimeType();
+    public void setEnded(DateTimeType dateTimeType, CsvCell... sourceCells) throws Exception{
+        Period period =  new Period();
+        if (this.procedure.hasPerformedDateTimeType()) {
+            period.setStartElement(this.procedure.getPerformedDateTimeType());
         }
-            period.setStartElement(start);
-            period.setEndElement(end);
-            this.procedure.setPerformed(period);
-            auditValue("performedPeriod", sourceCells);
-    }
-
-
-//    public void setEnded(DateTimeType dateTimeType, CsvCell... sourceCells) throws Exception{
-//        Period period =  new Period();
-//        if (this.procedure.hasPerformedDateTimeType()) {
-//            period.setStartElement(this.procedure.getPerformedDateTimeType());
-//        }
-//        period.setEndElement(dateTimeType);
-//        this.procedure.setPerformed(period);
-//        auditValue("performedPeriod", sourceCells);
-//    }
+        period.setEndElement(dateTimeType);
+        this.procedure.setPerformed(period);
+    }*/
 
     public void addPerformer(Reference practitionerReference, CsvCell... sourceCells) {
         Procedure.ProcedurePerformerComponent fhirPerformer = this.procedure.addPerformer();
