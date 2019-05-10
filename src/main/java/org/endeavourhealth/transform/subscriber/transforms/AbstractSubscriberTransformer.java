@@ -135,7 +135,9 @@ public abstract class AbstractSubscriberTransformer {
 
     protected abstract SubscriberTableId getMainSubscriberTableId();
 
-    protected static Integer convertDatePrecision(SubscriberTransformParams params, TemporalPrecisionEnum precision) throws Exception {
+
+
+    protected static Integer convertDatePrecision(SubscriberTransformParams params, Resource fhirResource, TemporalPrecisionEnum precision) throws Exception {
         String code = null;
         if (precision == TemporalPrecisionEnum.YEAR) {
             code = "year";
@@ -159,7 +161,7 @@ public abstract class AbstractSubscriberTransformer {
             throw new Exception("Unknown date time " + precision);
         }
 
-        return IMHelper.getIMConcept(params, IMConstant.FHIR_DATETIME_PRECISION, code);
+        return IMHelper.getIMConcept(params, fhirResource, IMConstant.FHIR_DATETIME_PRECISION, code);
         //return Integer.valueOf(precision.getCalendarConstant());
     }
 
@@ -623,6 +625,9 @@ public abstract class AbstractSubscriberTransformer {
         instanceCache.put(key, mappedResourceId);
     }
 
+    /**
+     * TODO - all the places that call this will never work because they assume the patient resource is loaded
+     */
     protected static Double getPatientAgeInMonths(Patient patient) {
         if (patient.getBirthDate() != null) {
             LocalDate date = patient.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();

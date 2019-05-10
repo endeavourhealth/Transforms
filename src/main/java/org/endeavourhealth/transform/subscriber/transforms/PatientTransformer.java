@@ -21,7 +21,6 @@ import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.subscriber.IMConstant;
@@ -178,10 +177,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
             String ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
 
-            ethnicCodeConceptId = IMHelper.getIMMappedConcept(params, IMConstant.FHIR_ETHNIC_CATEGORY, ethnicCodeId);
-            if (ethnicCodeConceptId == null) {
-                throw new TransformException("ethnicConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId());
-            }
+            ethnicCodeConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ETHNIC_CATEGORY, ethnicCodeId);
         }
 
         if (fhirPatient.hasCareProvider()) {
@@ -224,10 +220,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 }
             }
 
-            genderConceptId = IMHelper.getIMMappedConcept(params, IMConstant.FHIR_ADMINISTRATIVE_GENDER, gender.toCode());
-            if (genderConceptId == null) {
-                throw new TransformException("genderConceptId is null for " + fhirPatient.getResourceType() + " " + fhirPatient.getId() + " and gender [" + gender.toCode() + "]");
-            }
+            genderConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ADMINISTRATIVE_GENDER, gender.toCode());
         }
 
         //only present name fields if non-pseudonymised
@@ -306,8 +299,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 Date endDate = null;
                 String value = null;
 
-                useConceptId = IMHelper.getIMConcept(params, IMConstant.FHIR_TELECOM_USE, telecom.getUse().toCode());
-                typeConceptId = IMHelper.getIMConcept(params, IMConstant.FHIR_TELECOM_SYSTEM, telecom.getSystem().toCode());
+                useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_USE, telecom.getUse().toCode());
+                typeConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_SYSTEM, telecom.getSystem().toCode());
 
                 if (!params.isPseudonymised()) {
                     value = telecom.getValue();
@@ -439,7 +432,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 }
 
                 Address.AddressUse use = address.getUse();
-                useConceptId = IMHelper.getIMConcept(params, IMConstant.FHIR_ADDRESS_USE, use.toCode());
+                useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_ADDRESS_USE, use.toCode());
 
                 if (address.hasPeriod()) {
                     startDate = address.getPeriod().getStart();

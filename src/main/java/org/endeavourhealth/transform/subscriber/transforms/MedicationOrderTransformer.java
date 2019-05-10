@@ -6,8 +6,8 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -77,7 +77,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasDateWrittenElement()) {
             DateTimeType dt = fhir.getDateWrittenElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
         }
 
         /*
@@ -92,20 +92,16 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
             originalTerm = CodeableConceptHelper.findSnomedConceptText(fhir.getMedicationCodeableConcept());
         }*/
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getMedicationCodeableConcept());
-        if (codes == null) {
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getMedicationCodeableConcept());
+        if (originalCoding == null) {
+            TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
         }
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getMedicationCodeableConcept());
-        String originalCode = codes.getOriginalCode();
-        if (originalCoding == null) {
-            originalCoding = fhir.getMedicationCodeableConcept().getCoding().get(0);
-            originalCode = fhir.getMedicationCodeableConcept().getCoding().get(0).getCode();
-        }
+        String originalCode = originalCoding.getCode();
 
-        coreConceptId = IMHelper.getIMMappedConcept(params, getScheme(originalCoding.getSystem()), originalCode);
-
-        nonCoreConceptId = IMHelper.getIMConcept(params, getScheme(originalCoding.getSystem()), originalCode);
+        String conceptScheme = getScheme(originalCoding.getSystem());
+        coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
 
         if (fhir.hasDosageInstruction()) {
             if (fhir.getDosageInstruction().size() > 1) {
@@ -168,7 +164,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         //  TODO Finalised the use of coreConceptId and the IM in order to look up the BNF
         //  Chapter in that table in the reference DB, by using the actual Snomed code
         /*
-        String snomedCodeString = IMClient.getCodeForConceptId(coreConceptId);
+        String snomedCodeString = IMHelper.getCodeForConceptId(coreConceptId);
 
         SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
         String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCodeString);

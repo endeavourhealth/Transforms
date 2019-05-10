@@ -6,8 +6,8 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -37,7 +37,6 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
 
         AllergyIntolerance fhir = (AllergyIntolerance)FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
-        long id;
         long organizationId;
         long patientId;
         long personId;
@@ -45,16 +44,11 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionConceptId = null;
-        // Long snomedConceptId = null;
-        // String originalCode = null;
-        // String originalTerm = null;
         boolean isReview = false;
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
-        Boolean isPrimary = null;
 
-        id = subscriberId.getSubscriberId();
         organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
@@ -78,17 +72,9 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
         if (fhir.hasOnset()) {
             DateTimeType dt = fhir.getOnsetElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
 
         }
-
-        /* ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getSubstance());
-        if (codes == null) {
-            return;
-        }
-        snomedConceptId = codes.getSnomedConceptId();
-        originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();*/
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
@@ -98,47 +84,34 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
             }
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getSubstance());
-        if (codes == null) {
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getSubstance());
+        if (originalCoding == null) {
+            TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
         }
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getSubstance());
-        String originalCode = codes.getOriginalCode();
-        if (originalCoding == null) {
-            originalCoding = fhir.getSubstance().getCoding().get(0);
-            originalCode = fhir.getSubstance().getCoding().get(0).getCode();
-        }
+        String originalCode = originalCoding.getCode();
 
-        coreConceptId = IMHelper.getIMMappedConcept(params, getScheme(originalCoding.getSystem()), originalCode);
-
-        nonCoreConceptId = IMHelper.getIMConcept(params, getScheme(originalCoding.getSystem()), originalCode);
+        String conceptScheme = getScheme(originalCoding.getSystem());
+        coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
 
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
 
-        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
-        if (isPrimaryExtension != null) {
-            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
-            if (b.getValue() != null) {
-                isPrimary = b.getValue();
-            }
-        }
-
-        model.writeUpsert(subscriberId,
-            organizationId,
-            patientId,
-            personId,
-            encounterId,
-            practitionerId,
-            clinicalEffectiveDate,
-            datePrecisionConceptId,
-            isReview,
-            coreConceptId,
-            nonCoreConceptId,
-            ageAtEvent,
-            isPrimary);
-
+        model.writeUpsert(
+                subscriberId,
+                organizationId,
+                patientId,
+                personId,
+                encounterId,
+                practitionerId,
+                clinicalEffectiveDate,
+                datePrecisionConceptId,
+                isReview,
+                coreConceptId,
+                nonCoreConceptId,
+                ageAtEvent);
     }
 
     @Override

@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 public class AllergyIntolerance extends AbstractTargetTable {
@@ -31,8 +32,7 @@ public class AllergyIntolerance extends AbstractTargetTable {
                             boolean isReview,
                             Integer coreConceptId,
                             Integer nonCoreConceptId,
-                            Double ageAtEvent,
-                            Boolean isPrimary) throws Exception {
+                            Double ageAtEvent) throws Exception {
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
@@ -49,8 +49,7 @@ public class AllergyIntolerance extends AbstractTargetTable {
                 convertBoolean(isReview),
                 convertInt(coreConceptId),
                 convertInt(nonCoreConceptId),
-                convertDouble(ageAtEvent),
-                convertBoolean(isPrimary));
+                convertDouble(ageAtEvent));
     }
 
 
@@ -70,8 +69,7 @@ public class AllergyIntolerance extends AbstractTargetTable {
                 "is_review",
                 "core_concept_id",
                 "non_core_concept_id",
-                "age_at_event",
-                "is_primary"
+                "age_at_event"
         };
     }
 
@@ -95,8 +93,7 @@ public class AllergyIntolerance extends AbstractTargetTable {
                 Boolean.TYPE,
                 Integer.class,
                 Integer.class,
-                String.class,
-                Boolean.TYPE,
+                BigDecimal.class
         };
     }
 }

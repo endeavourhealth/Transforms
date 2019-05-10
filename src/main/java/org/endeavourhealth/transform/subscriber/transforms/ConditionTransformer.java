@@ -1,13 +1,14 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
-import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
+import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -40,32 +41,30 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
 
         Condition fhir = (Condition) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
-        long id;
-        long organisationId;
+        long organizationId;
         long patientId;
         long personId;
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionConceptId = null;
-        Long snomedConceptId = null;
+        // Long snomedConceptId = null;
         BigDecimal resultValue = null;
         String resultValueUnits = null;
         Date resultDate = null;
         String resultString = null;
-        Long resultConcptId = null;
-        String originalCode = null;
+        Long resultConceptId = null;
         boolean isProblem = false;
-        String originalTerm = null;
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
+        Integer coreConceptId = null;
+        Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
-        Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Integer episodicityConceptId = null;
         Boolean isPrimary = null;
 
-        id = subscriberId.getSubscriberId();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
@@ -82,16 +81,20 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasOnsetDateTimeType()) {
             DateTimeType dt = fhir.getOnsetDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-        if (codes == null) {
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
+        if (originalCoding == null) {
+            TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
         }
-        snomedConceptId = codes.getSnomedConceptId();
-        originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();
+        String originalCode = originalCoding.getCode();
+
+        String conceptScheme = getScheme(originalCoding.getSystem());
+        coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+
 
         //if it's a problem set the boolean to say so
         if (fhir.hasMeta()) {
@@ -130,9 +133,8 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         if (episodicityExtension != null) {
 
             StringType episodicityType = (StringType) episodicityExtension.getValue();
-            // episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            episodicityConceptId  = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            //IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
+
+            //IMHelper.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
             //TODO do we know how extension uri is mapped?
         }
 
@@ -144,31 +146,29 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        //TODO - finish
-        /*model.writeUpsert(subscriberId,
-                organisationId,
+        model.writeUpsert(subscriberId,
+                organizationId,
                 patientId,
                 personId,
                 encounterId,
                 practitionerId,
                 clinicalEffectiveDate,
                 datePrecisionConceptId,
-                snomedConceptId,
                 resultValue,
                 resultValueUnits,
                 resultDate,
                 resultString,
-                resultConcptId,
-                originalCode,
+                resultConceptId,
                 isProblem,
-                originalTerm,
                 isReview,
                 problemEndDate,
                 parentObservationId,
+                coreConceptId,
+                nonCoreConceptId,
                 ageAtEvent,
                 episodicityConceptId,
                 isPrimary);
-         */
+
 
     }
 

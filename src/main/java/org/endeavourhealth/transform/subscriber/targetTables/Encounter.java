@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 public class Encounter extends AbstractTargetTable {
@@ -25,9 +26,6 @@ public class Encounter extends AbstractTargetTable {
                             Long appointmentId,
                             Date clinicalEffectiveDate,
                             Integer datePrecisionConceptId,
-                            // Long snomedConceptId,
-                            // String originalCode,
-                            // String originalTerm,
                             Long episodeOfCareId,
                             Long serviceProviderOrganisationId,
                             Integer coreConceptId,
@@ -35,7 +33,6 @@ public class Encounter extends AbstractTargetTable {
                             Double ageAtEvent,
                             String type,
                             String subtype,
-                            Boolean isPrimary,
                             String admissionMethod,
                             Date endDate,
                             String institutionLocationId) throws Exception {
@@ -59,7 +56,6 @@ public class Encounter extends AbstractTargetTable {
                 convertDouble(ageAtEvent),
                 type,
                 subtype,
-                convertBoolean(isPrimary),
                 admissionMethod,
                 convertDate(endDate),
                 institutionLocationId);
@@ -84,7 +80,6 @@ public class Encounter extends AbstractTargetTable {
                 "age_at_event",
                 "type",
                 "sub_type",
-                "is_primary",
                 "admission_method",
                 "end_date",
                 "institution_location_id"
@@ -112,10 +107,9 @@ public class Encounter extends AbstractTargetTable {
                 Long.class,
                 Integer.class,
                 Integer.class,
+                BigDecimal.class,
                 String.class,
                 String.class,
-                String.class,
-                Boolean.TYPE,
                 String.class,
                 Date.class,
                 String.class

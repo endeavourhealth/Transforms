@@ -24,7 +24,8 @@ public class Schedule extends AbstractTargetTable {
                             String location,
                             String name) throws Exception {
 
-        super.printRecord(convertBoolean(false),
+        super.printRecord(
+                convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 "" + organisationId,
                 convertLong(practitionerId),

@@ -92,7 +92,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             String ret = Base64.getEncoder().encodeToString(bytes);
 
             //update the state table so we know the datetime of each resource we just transformed, so the event log is maintained properly
-            //TODO - if the queue reader is killed or fails after this point, our event log will be wrong, since we'll think we sent something when we didn't
+            //TODO - if the queue reader is killed or fails after this point, we won't accurately know what we previously sent, since we'll think we sent something when we didn't
             updateSubscriberStateTable(params);
 
             return ret;

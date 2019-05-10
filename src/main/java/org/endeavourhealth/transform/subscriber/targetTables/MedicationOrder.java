@@ -116,7 +116,7 @@ public class MedicationOrder extends AbstractTargetTable {
                 Integer.class,
                 Integer.class,
                 Integer.class,
-                String.class,
+                BigDecimal.class,
                 String.class
         };
     }

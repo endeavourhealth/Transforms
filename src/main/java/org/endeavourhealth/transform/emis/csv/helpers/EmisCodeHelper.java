@@ -59,6 +59,9 @@ public class EmisCodeHelper {
         //the raw CSV uses a hyphen to delimit the synonym ID from the code so detect this and substring accordingly
         //but only apply this IF the code isn't one of the Emis diagnostic order codes, which is a
         //valid Read2 code but prefixed with EMISREQ.
+        //Note: the EMISREQ codes do have a valid Read2 code after them, but it's NOT the code for the test request, it's
+        //the code of the investigation being requested. e.g. EMISREQ|424.., which is the code for "Full blood count"
+        //and not a code representing a test request
         if (!code.startsWith("EMISREQ")) {
             int index = code.indexOf("-");
             if (index > -1) {

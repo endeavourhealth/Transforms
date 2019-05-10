@@ -32,7 +32,7 @@ public class MedicationStatement extends AbstractTargetTable {
                             String dose,
                             BigDecimal quantityValue,
                             String quantityUnit,
-                            Integer medicationStatementAuthorisationTypeConceptId,
+                            Integer authorisationTypeConceptId,
                             Integer coreConceptId,
                             Integer nonCoreConceptId,
                             // String originalTerm,
@@ -55,7 +55,7 @@ public class MedicationStatement extends AbstractTargetTable {
                 dose,
                 convertBigDecimal(quantityValue),
                 quantityUnit,
-                convertInt(medicationStatementAuthorisationTypeConceptId),
+                convertInt(authorisationTypeConceptId),
                 convertInt(coreConceptId),
                 convertInt(nonCoreConceptId),
                 // originalTerm,
@@ -81,7 +81,7 @@ public class MedicationStatement extends AbstractTargetTable {
                 "dose",
                 "quantity_value",
                 "quantity_unit",
-                "medication_statement_authorisation_type_concept_id",
+                "authorisation_type_concept_id",
                 "core_concept_id",
                 "non_core_concept_id",
                 "bnf_reference",
@@ -116,7 +116,7 @@ public class MedicationStatement extends AbstractTargetTable {
                 Integer.class,
                 Integer.class,
                 Integer.class,
-                String.class,
+                BigDecimal.class,
                 String.class
         };
     }

@@ -7,9 +7,8 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -54,16 +53,14 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
         Date resultDate = null;
         String resultString = null;
         Long resultConceptId = null;
-        // String originalCode = null;
         boolean isProblem = false;
-        // String originalTerm = null;
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
-        Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Integer episodicityConceptId = null;
         Boolean isPrimary = null;
 
         organizationId = params.getEnterpriseOrganisationId().longValue();
@@ -87,23 +84,19 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasEffectiveDateTimeType()) {
             DateTimeType dt = fhir.getEffectiveDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-        if (codes == null) {
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
+        if (originalCoding == null) {
+            TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
         }
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
-        String originalCode = codes.getOriginalCode();
-        if (originalCoding == null) {
-            originalCoding = fhir.getCode().getCoding().get(0);
-            originalCode = fhir.getCode().getCoding().get(0).getCode();
-        }
+        String originalCode = originalCoding.getCode();
 
-        coreConceptId = IMHelper.getIMMappedConcept(params, getScheme(originalCoding.getSystem()), originalCode);
-
-        nonCoreConceptId = IMHelper.getIMConcept(params, getScheme(originalCoding.getSystem()), originalCode);
+        String conceptScheme = getScheme(originalCoding.getSystem());
+        coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
 
         if (fhir.hasValue()) {
             Type value = fhir.getValue();
@@ -146,16 +139,6 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
         if (fhir.getSubjectTarget() != null) {
             Patient patient = (Patient) fhir.getSubjectTarget();
             ageAtEvent = getPatientAgeInMonths(patient);
-        }
-
-        Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
-        if (episodicityExtension != null) {
-
-            StringType episodicityType = (StringType) episodicityExtension.getValue();
-            // episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            episodicityConceptId  = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            //IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
-            //TODO do we know how extension uri is mapped?
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);

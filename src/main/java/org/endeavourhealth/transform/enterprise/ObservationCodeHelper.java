@@ -50,6 +50,14 @@ public class ObservationCodeHelper {
         ret.setSnomedConceptId(CodeableConceptHelper.findSnomedConceptId(codeableConcept));
 
         Coding originalCoding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
+
+        //the above function may now return a snomed Coding if Snomed was the original scheme, but for consistency
+        //with how this used to work, if that happens, ignore it
+        if (originalCoding != null
+                && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) {
+            originalCoding = null;
+        }
+
         ret.setOriginalCode(findAndFormatOriginalCode(originalCoding));
 
         //add original term too, for easy display of results

@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 public class ProcedureRequest extends AbstractTargetTable {
@@ -25,14 +26,10 @@ public class ProcedureRequest extends AbstractTargetTable {
                             Long practitionerId,
                             Date clinicalEffectiveDate,
                             Integer datePrecisionConceptId,
-                            // Long snomedConceptId,
                             Integer procedureRequestStatusConceptId,
-                            // String originalCode,
-                            // String originalTerm,
                             Integer coreConceptId,
                             Integer nonCoreConceptId,
-                            Double ageAtEvent,
-                            Boolean isPrimary) throws Exception {
+                            Double ageAtEvent) throws Exception {
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
@@ -43,14 +40,10 @@ public class ProcedureRequest extends AbstractTargetTable {
                 convertLong(practitionerId),
                 convertDate(clinicalEffectiveDate),
                 convertInt(datePrecisionConceptId),
-                // convertLong(snomedConceptId),
                 convertInt(procedureRequestStatusConceptId),
-                // originalCode,
-                // originalTerm,
                 convertInt(coreConceptId),
                 convertInt(nonCoreConceptId),
-                convertDouble(ageAtEvent),
-                convertBoolean(isPrimary));
+                convertDouble(ageAtEvent));
     }
 
     @Override
@@ -65,11 +58,10 @@ public class ProcedureRequest extends AbstractTargetTable {
                 "practitioner_id",
                 "clinical_effective_date",
                 "date_precision_concept_id",
-                "procedure_request_status_concept_id",
+                "status_concept_id",
                 "core_concept_id",
                 "non_core_concept_id",
-                "age_at_event",
-                "is_primary"
+                "age_at_event"
         };
     }
 
@@ -93,8 +85,7 @@ public class ProcedureRequest extends AbstractTargetTable {
                 Integer.class,
                 Integer.class,
                 Integer.class,
-                String.class,
-                Boolean.TYPE
+                BigDecimal.class
         };
     }
 }

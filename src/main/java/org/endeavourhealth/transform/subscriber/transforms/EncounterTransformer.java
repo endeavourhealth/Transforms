@@ -11,8 +11,8 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -102,7 +102,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             Period period = fhir.getPeriod();
             DateTimeType dt = period.getStartElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
         }
 
         /*
@@ -162,9 +162,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             //snomedConceptId = ret.getCode();
 
             originalTerm = originalTerm.toLowerCase();
-            coreConceptId = IMClient.getMappedCoreConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
-
-            nonCoreConceptId = IMClient.getConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
+            coreConceptId = IMHelper.getIMMappedConcept(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+            nonCoreConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
         }
 
         if (fhir.hasExtension()) {
@@ -173,9 +172,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
 
                 originalTerm = codeableConcept.getText().toLowerCase();
-                coreConceptId = IMClient.getMappedCoreConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
-
-                nonCoreConceptId = IMClient.getConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
+                coreConceptId = IMHelper.getIMMappedConcept(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+                nonCoreConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
             }
         }
 
@@ -234,25 +232,25 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         }
 
 
-        model.writeUpsert(subscriberId,
-            organizationId,
-            patientId,
-            personId,
-            practitionerId,
-            appointmentId,
-            clinicalEffectiveDate,
-            datePrecisionConceptId,
-            episodeOfCareId,
-            serviceProviderOrganisationId,
-            coreConceptId,
-            nonCoreConceptId,
-            ageAtEvent,
-            type,
-            subtype,
-            isPrimary,
-            admissionMethod,
-            endDate,
-            institutionLocationId);
+        model.writeUpsert(
+                subscriberId,
+                organizationId,
+                patientId,
+                personId,
+                practitionerId,
+                appointmentId,
+                clinicalEffectiveDate,
+                datePrecisionConceptId,
+                episodeOfCareId,
+                serviceProviderOrganisationId,
+                coreConceptId,
+                nonCoreConceptId,
+                ageAtEvent,
+                type,
+                subtype,
+                admissionMethod,
+                endDate,
+                institutionLocationId);
 
         //we also need to populate the two new encounter tables
         //tranformExtraEncounterTables(resource, params,

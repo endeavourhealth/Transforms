@@ -108,11 +108,7 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
         }
 
         Appointment.AppointmentStatus status = fhir.getStatus();
-        appointmentStatusConceptId = IMHelper.getIMMappedConcept(params, IMConstant.FHIR_APPOINTMENT_STATUS, status.toCode());
-        if (appointmentStatusConceptId == null) {
-            LOG.warn("coreConceptId is null using scheme: " + IMConstant.FHIR_APPOINTMENT_STATUS + " code: " + status.toCode());
-            throw new TransformException("appointmentStatusConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-        }
+        appointmentStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_APPOINTMENT_STATUS, status.toCode());
 
         if (fhir.hasExtension()) {
             for (Extension extension: fhir.getExtension()) {

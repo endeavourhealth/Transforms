@@ -11,9 +11,9 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -57,13 +57,10 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
         Integer referralRequestTypeConceptId = null;
         String mode = null;
         Boolean outgoingReferral = null;
-        // String originalCode = null;
-        // String originalTerm = null;
         boolean isReview = false;
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
-        Boolean isPrimary = null;
 
         organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
@@ -86,7 +83,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
         }
 
 
@@ -98,20 +95,17 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             }
 
             CodeableConcept fhirServiceRequested = fhir.getServiceRequested().get(0);
-            ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhirServiceRequested);
-            if (codes == null) {
+            Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhirServiceRequested);
+            if (originalCoding == null) {
+                TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
                 return;
             }
-            Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhirServiceRequested);
-            String originalCode = codes.getOriginalCode();
-            if (originalCoding == null) {
-                originalCoding = fhirServiceRequested.getCoding().get(0);
-                originalCode = fhirServiceRequested.getCoding().get(0).getCode();
-            }
+            String originalCode = originalCoding.getCode();
 
-            coreConceptId = IMHelper.getIMMappedConcept(params, getScheme(originalCoding.getSystem()), originalCode);
 
-            nonCoreConceptId = IMHelper.getIMConcept(params, getScheme(originalCoding.getSystem()), originalCode);
+            String conceptScheme = getScheme(originalCoding.getSystem());
+            coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
+            nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
         }
         /*Long snomedConceptId = findSnomedConceptId(fhir.getType());
         model.setSnomedConceptId(snomedConceptId);*/
@@ -198,11 +192,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 ReferralPriority fhirReferralPriority = ReferralPriority.fromCode(coding.getCode());
                 Integer referralRequestPriorityId = fhirReferralPriority.ordinal();
 
-                referralRequestPriorityConceptId = IMHelper.getIMMappedConcept(params,
-                        IMConstant.FHIR_REFERRAL_PRIORITY, referralRequestPriorityId.toString());
-                if (referralRequestPriorityConceptId == null) {
-                    throw new TransformException("referralRequestPriorityConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-                }
+                referralRequestPriorityConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_PRIORITY, referralRequestPriorityId.toString());
 
             }
         }
@@ -213,11 +203,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
 
-                referralRequestTypeConceptId = IMHelper.getIMMappedConcept(params,
-                        IMConstant.FHIR_REFERRAL_TYPE, fhirReferralType.getCode());
-                if (referralRequestTypeConceptId == null) {
-                    throw new TransformException("referralRequestTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-                }
+                referralRequestTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_TYPE, fhirReferralType.getCode());
 
             }
         }
@@ -248,33 +234,25 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
 
-        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
-        if (isPrimaryExtension != null) {
-            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
-            if (b.getValue() != null) {
-                isPrimary = b.getValue();
-            }
-        }
-
-        model.writeUpsert(subscriberId,
-            organizationId,
-            patientId,
-            personId,
-            encounterId,
-            practitionerId,
-            clinicalEffectiveDate,
-            datePrecisionConceptId,
-            requesterOrganizationId,
-            recipientOrganizationId,
-            referralRequestPriorityConceptId,
-            referralRequestTypeConceptId,
-            mode,
-            outgoingReferral,
-            isReview,
-            coreConceptId,
-            nonCoreConceptId,
-            ageAtEvent,
-            isPrimary);
+        model.writeUpsert(
+                subscriberId,
+                organizationId,
+                patientId,
+                personId,
+                encounterId,
+                practitionerId,
+                clinicalEffectiveDate,
+                datePrecisionConceptId,
+                requesterOrganizationId,
+                recipientOrganizationId,
+                referralRequestPriorityConceptId,
+                referralRequestTypeConceptId,
+                mode,
+                outgoingReferral,
+                isReview,
+                coreConceptId,
+                nonCoreConceptId,
+                ageAtEvent);
 
     }
 

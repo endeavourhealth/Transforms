@@ -1,15 +1,12 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -46,14 +43,10 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionConceptId = null;
-        // Long snomedConceptId = null;
         Integer procedureRequestStatusConceptId = null;
-        // String originalCode = null;
-        // String originalTerm = null;
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
-        Boolean isPrimary = null;
 
         organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
@@ -72,40 +65,22 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasScheduledDateTimeType()) {
             DateTimeType dt = fhir.getScheduledDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
         }
 
-        /*
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-        if (codes == null) {
-            return;
-        }
-        snomedConceptId = codes.getSnomedConceptId();
-        originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();
-         */
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
-        if (codes == null) {
-            return;
-        }
         Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
-        String originalCode = codes.getOriginalCode();
         if (originalCoding == null) {
-            originalCoding = fhir.getCode().getCoding().get(0);
-            originalCode = fhir.getCode().getCoding().get(0).getCode();
+            TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+            return;
         }
+        String originalCode = originalCoding.getCode();
 
-        coreConceptId = IMHelper.getIMMappedConcept(params, getScheme(originalCoding.getSystem()), originalCode);
-
-        nonCoreConceptId = IMHelper.getIMConcept(params, getScheme(originalCoding.getSystem()), originalCode);
+        String conceptScheme = getScheme(originalCoding.getSystem());
+        coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
 
         if (fhir.hasStatus()) {
-            procedureRequestStatusConceptId = IMHelper.getIMMappedConcept(params,
-                    IMConstant.FHIR_PROCEDURE_REQUEST_STATUS, fhir.getStatus().toCode());
-            if (procedureRequestStatusConceptId == null) {
-                throw new TransformException("procedureRequestStatusConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-            }
-
+            procedureRequestStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_PROCEDURE_REQUEST_STATUS, fhir.getStatus().toCode());
         }
 
         if (fhir.getSubjectTarget() != null) {
@@ -113,27 +88,19 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
             ageAtEvent = getPatientAgeInMonths(patient);
         }
 
-        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
-        if (isPrimaryExtension != null) {
-            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
-            if (b.getValue() != null) {
-                isPrimary = b.getValue();
-            }
-        }
-
-        model.writeUpsert(subscriberId,
-            organizationId,
-            patientId,
-            personId,
-            encounterId,
-            practitionerId,
-            clinicalEffectiveDate,
-            datePrecisionConceptId,
-            procedureRequestStatusConceptId,
-            coreConceptId,
-            nonCoreConceptId,
-            ageAtEvent,
-            isPrimary);
+        model.writeUpsert(
+                subscriberId,
+                organizationId,
+                patientId,
+                personId,
+                encounterId,
+                practitionerId,
+                clinicalEffectiveDate,
+                datePrecisionConceptId,
+                procedureRequestStatusConceptId,
+                coreConceptId,
+                nonCoreConceptId,
+                ageAtEvent);
     }
 
     @Override

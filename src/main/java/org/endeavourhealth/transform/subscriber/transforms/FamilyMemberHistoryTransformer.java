@@ -1,13 +1,14 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
-import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
+import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -38,32 +39,30 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
 
         FamilyMemberHistory fhir = (FamilyMemberHistory) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
-        long id;
-        long organisationId;
+        long organizationId;
         long patientId;
         long personId;
         Long encounterId = null;
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionConceptId = null;
-        Long snomedConceptId = null;
+        // Long snomedConceptId = null;
         BigDecimal resultValue = null;
         String resultValueUnits = null;
         Date resultDate = null;
         String resultString = null;
-        Long resultConcptId = null;
-        String originalCode = null;
+        Long resultConceptId = null;
         boolean isProblem = false;
-        String originalTerm = null;
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
+        Integer coreConceptId = null;
+        Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
-        Long episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
+        Integer episodicityConceptId = null;
         Boolean isPrimary = null;
 
-        id = subscriberId.getSubscriberId();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
@@ -83,7 +82,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
         }
 
         if (fhir.getCondition().size() > 1) {
@@ -98,13 +97,17 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
 
         FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = fhir.getCondition().get(0);
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(condition.getCode());
-        if (codes == null) {
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(condition.getCode());
+        if (originalCoding == null) {
+            TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
         }
-        snomedConceptId = codes.getSnomedConceptId();
-        originalCode = codes.getOriginalCode();
-        originalTerm = codes.getOriginalTerm();
+        String originalCode = originalCoding.getCode();
+
+        String conceptScheme = getScheme(originalCoding.getSystem());
+        coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
@@ -124,16 +127,6 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
         }
 
-        Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
-        if (episodicityExtension != null) {
-
-            StringType episodicityType = (StringType) episodicityExtension.getValue();
-            // episodicityConceptId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            episodicityConceptId  = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;
-            //IMClient.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
-            //TODO do we know how extension uri is mapped?
-        }
-
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
         if (isPrimaryExtension != null) {
             BooleanType b = (BooleanType)isPrimaryExtension.getValue();
@@ -142,33 +135,28 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
             }
         }
 
-        //TODO - finish
-        /*
         model.writeUpsert(subscriberId,
-                organisationId,
+                organizationId,
                 patientId,
                 personId,
                 encounterId,
                 practitionerId,
                 clinicalEffectiveDate,
                 datePrecisionConceptId,
-                snomedConceptId,
                 resultValue,
                 resultValueUnits,
                 resultDate,
                 resultString,
-                resultConcptId,
-                originalCode,
+                resultConceptId,
                 isProblem,
-                originalTerm,
                 isReview,
                 problemEndDate,
                 parentObservationId,
+                coreConceptId,
+                nonCoreConceptId,
                 ageAtEvent,
                 episodicityConceptId,
                 isPrimary);
-         */
-
     }
 
     @Override
