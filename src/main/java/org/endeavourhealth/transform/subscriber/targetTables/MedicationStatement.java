@@ -81,7 +81,7 @@ public class MedicationStatement extends AbstractTargetTable {
                 "dose",
                 "quantity_value",
                 "quantity_unit",
-                "medication_statement_authorisation_type_id",
+                "medication_statement_authorisation_type_concept_id",
                 "core_concept_id",
                 "non_core_concept_id",
                 "bnf_reference",
