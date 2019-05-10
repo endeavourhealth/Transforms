@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.NameConverter;
+import org.endeavourhealth.common.fhir.NameHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.HumanName;
@@ -198,7 +198,7 @@ public class NameBuilder {
 
     private void updateDisplayName(CsvCell... sourceCells) {
 
-        String displayName = NameConverter.generateDisplayName(this.name);
+        String displayName = NameHelper.generateDisplayName(this.name);
         name.setText(displayName);
 
         auditNameValue("text", sourceCells);

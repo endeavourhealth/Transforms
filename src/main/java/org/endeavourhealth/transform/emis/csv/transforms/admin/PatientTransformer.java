@@ -369,7 +369,7 @@ public class PatientTransformer {
             PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
 
             if (!carerName.isEmpty()) {
-                HumanName humanName = NameConverter.convert(carerName.getString());
+                HumanName humanName = NameHelper.convert(carerName.getString());
                 contactBuilder.addContactName(humanName, carerName);
             }
 

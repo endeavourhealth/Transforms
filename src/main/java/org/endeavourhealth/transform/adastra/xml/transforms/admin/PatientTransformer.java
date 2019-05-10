@@ -32,7 +32,7 @@ public class PatientTransformer {
         uniqueIdMapper.put("patient", fhirPatient.getId());
 
         fhirPatient.getId();
-        HumanName humanName = NameConverter.convert(firstName, lastName, null);
+        HumanName humanName = NameHelper.convert(firstName, lastName, null);
         fhirPatient.addName(humanName);
 
         DateOfBirthType dateOfBirthType = patient.getDateOfBirth();

@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.NameConverter;
+import org.endeavourhealth.common.fhir.NameHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;

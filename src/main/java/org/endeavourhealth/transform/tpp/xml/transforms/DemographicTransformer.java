@@ -230,13 +230,13 @@ public class DemographicTransformer {
         String surname = tppDemographics.getSurname();
         String knownAs = tppDemographics.getKnownAs();
 
-        HumanName fhirName = NameConverter.createHumanName(HumanName.NameUse.OFFICIAL, title, firstName, middleNames, surname);
+        HumanName fhirName = NameHelper.createHumanName(HumanName.NameUse.OFFICIAL, title, firstName, middleNames, surname);
         fhirPatient.addName(fhirName);
 
         if (knownAs != null
                 && !knownAs.equalsIgnoreCase(firstName)
                 && !knownAs.equalsIgnoreCase(title + " " + firstName + " " + surname)) {
-            fhirName = NameConverter.createHumanName(HumanName.NameUse.NICKNAME, null, knownAs, null, surname);
+            fhirName = NameHelper.createHumanName(HumanName.NameUse.NICKNAME, null, knownAs, null, surname);
             fhirPatient.addName(fhirName);
         }
     }

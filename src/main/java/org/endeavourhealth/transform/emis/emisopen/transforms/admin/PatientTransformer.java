@@ -36,7 +36,7 @@ public class PatientTransformer {
         transformIdentifiers(target, source);
 
 
-        List<HumanName> names = NameConverter.convert(
+        List<HumanName> names = NameHelper.convert(
                 source.getTitle(),
                 source.getFirstNames(),
                 source.getFamilyName(),

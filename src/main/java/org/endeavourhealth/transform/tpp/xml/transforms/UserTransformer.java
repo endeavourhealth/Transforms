@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.tpp.xml.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
-import org.endeavourhealth.common.fhir.NameConverter;
+import org.endeavourhealth.common.fhir.NameHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.tpp.xml.schema.NationalIDType;
 import org.endeavourhealth.transform.tpp.xml.schema.Sex;
@@ -27,7 +27,7 @@ public class UserTransformer {
         String firstName = tppUser.getFirstName();
         String middleNames = tppUser.getMiddleNames();
         String surname = tppUser.getSurname();
-        HumanName fhirName = NameConverter.createHumanName(HumanName.NameUse.OFFICIAL, title, firstName, middleNames, surname);
+        HumanName fhirName = NameHelper.createHumanName(HumanName.NameUse.OFFICIAL, title, firstName, middleNames, surname);
         fhirPractitioner.setName(fhirName);
 
         Sex tppSex = tppUser.getGender();

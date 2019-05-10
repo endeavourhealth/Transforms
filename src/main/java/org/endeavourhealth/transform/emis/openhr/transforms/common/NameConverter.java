@@ -10,7 +10,7 @@ public class NameConverter
 {
     public static List<HumanName> convertName(OpenHR001Person sourcePerson)
     {
-        return org.endeavourhealth.common.fhir.NameConverter.convert(
+        return org.endeavourhealth.common.fhir.NameHelper.convert(
                 sourcePerson.getTitle(),
                 sourcePerson.getForenames(),
                 sourcePerson.getSurname(),

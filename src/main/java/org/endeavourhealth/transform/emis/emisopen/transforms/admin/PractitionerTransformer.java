@@ -42,7 +42,7 @@ public class PractitionerTransformer
         for (Identifier identifier : identifiers)
             practitioner.addIdentifier(identifier);
 
-        practitioner.setName(NameConverter.convert(
+        practitioner.setName(NameHelper.convert(
                 personType.getFirstNames(),
                 personType.getLastName(),
                 personType.getTitle()));

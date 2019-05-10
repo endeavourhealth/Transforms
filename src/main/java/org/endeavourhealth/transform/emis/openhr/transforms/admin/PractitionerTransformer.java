@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.emis.openhr.transforms.admin;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
-import org.endeavourhealth.common.fhir.NameConverter;
+import org.endeavourhealth.common.fhir.NameHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -43,7 +43,7 @@ public class PractitionerTransformer
         for (Identifier identifier : convertIdentifiers(userInRole.getUserIdentifier()))
             practitioner.addIdentifier(identifier);
 
-        practitioner.setName(NameConverter.convert(
+        practitioner.setName(NameHelper.convert(
                 person.getForenames(),
                 person.getSurname(),
                 person.getTitle()));
