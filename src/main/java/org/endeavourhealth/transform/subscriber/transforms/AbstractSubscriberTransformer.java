@@ -552,13 +552,17 @@ public abstract class AbstractSubscriberTransformer {
                 //if our mapped ID is different to our proper ID, then we don't need to transform that
                 //other resource, as it will already have been done, so we can just return it's Enterprise ID
                 if (!mappedResourceId.equals(resourceId)) {
-                    SubscriberId mappedInstanceEnterpriseId = findSubscriberId(params, mainTable, sourceId);
+
+                    //source ID needs changing to reflected the new ID
+                    String mappedSourceId = ReferenceHelper.createResourceReference(resourceType, mappedResourceId.toString());
+
+                    SubscriberId mappedInstanceEnterpriseId = findSubscriberId(params, mainTable, mappedSourceId);
                     if (mappedInstanceEnterpriseId == null) {
                         //if we've just started processing the first exchange for an org that's taking over the
                         //instance map, there's a chance we'll catch it mid-way through taking over, in which
                         //case we should just give a second and try again, throwing an error if we fail
                         Thread.sleep(1000);
-                        mappedInstanceEnterpriseId = findSubscriberId(params, mainTable, sourceId);
+                        mappedInstanceEnterpriseId = findSubscriberId(params, mainTable, mappedSourceId);
                         if (mappedInstanceEnterpriseId == null) {
                             throw new TransformException("Failed to find enterprise ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
                         }
