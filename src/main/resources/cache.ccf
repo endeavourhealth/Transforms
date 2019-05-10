@@ -116,3 +116,28 @@ jcs.region.PcrInstanceMap.cacheattributes.DiskUsagePatternName=UPDATE
 jcs.region.PcrInstanceMap.elementattributes=org.apache.jcs.engine.ElementAttributes
 jcs.region.PcrInstanceMap.elementattributes.IsEternal=false
 
+# MEMORY ONLY CACHE FOR EDS to Enterprise ID MAPPING
+jcs.region.SubscriberResourceMap=
+jcs.region.SubscriberResourceMap.cacheattributes=org.apache.jcs.engine.CompositeCacheAttributes
+jcs.region.SubscriberResourceMap.cacheattributes.MaxObjects=1000000
+jcs.region.SubscriberResourceMap.cacheattributes.MemoryCacheName=org.apache.jcs.engine.memory.lru.LRUMemoryCache
+jcs.region.SubscriberResourceMap.cacheattributes.UseMemoryShrinker=true
+jcs.region.SubscriberResourceMap.cacheattributes.MaxMemoryIdleTimeSeconds=3600
+jcs.region.SubscriberResourceMap.cacheattributes.ShrinkerIntervalSeconds=60
+jcs.region.SubscriberResourceMap.cacheattributes.MaxSpoolPerRun=500
+jcs.region.SubscriberResourceMap.cacheattributes.DiskUsagePatternName=UPDATE
+jcs.region.SubscriberResourceMap.elementattributes=org.apache.jcs.engine.ElementAttributes
+jcs.region.SubscriberResourceMap.elementattributes.IsEternal=false
+
+# MEMORY ONLY CACHE FOR Enterprise Instance MAPPING
+jcs.region.SubscriberInstanceMap=
+jcs.region.SubscriberInstanceMap.cacheattributes=org.apache.jcs.engine.CompositeCacheAttributes
+jcs.region.SubscriberInstanceMap.cacheattributes.MaxObjects=100000
+jcs.region.SubscriberInstanceMap.cacheattributes.MemoryCacheName=org.apache.jcs.engine.memory.lru.LRUMemoryCache
+jcs.region.SubscriberInstanceMap.cacheattributes.UseMemoryShrinker=true
+jcs.region.SubscriberInstanceMap.cacheattributes.MaxMemoryIdleTimeSeconds=3600
+jcs.region.SubscriberInstanceMap.cacheattributes.ShrinkerIntervalSeconds=60
+jcs.region.SubscriberInstanceMap.cacheattributes.MaxSpoolPerRun=500
+jcs.region.SubscriberInstanceMap.cacheattributes.DiskUsagePatternName=UPDATE
+jcs.region.SubscriberInstanceMap.elementattributes=org.apache.jcs.engine.ElementAttributes
+jcs.region.SubscriberInstanceMap.elementattributes.IsEternal=false

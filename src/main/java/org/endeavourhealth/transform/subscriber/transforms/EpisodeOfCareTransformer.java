@@ -10,8 +10,8 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -77,7 +77,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
             Coding coding = (Coding)regTypeExtension.getValue();
             RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
 
-            registrationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_REGISTRATION_TYPE, fhirRegistrationType.getCode());
+            registrationTypeConceptId = IMHelper.getIMMappedConcept(params, IMConstant.FHIR_REGISTRATION_TYPE, fhirRegistrationType.getCode());
             if (registrationTypeConceptId == null) {
                 throw new TransformException("registrationTypeConceptId is null for " + fhirEpisode.getResourceType() + " " + fhirEpisode.getId());
             }
@@ -102,7 +102,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                         CodeableConcept codeableConcept = entry.getFlag();
                         String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
                         RegistrationStatus status = RegistrationStatus.fromCode(code);
-                        registrationStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_REGISTRATION_STATUS, status.getCode());
+                        registrationStatusConceptId = IMHelper.getIMMappedConcept(params, IMConstant.FHIR_REGISTRATION_STATUS, status.getCode());
                         if (registrationStatusConceptId == null) {
                             throw new TransformException("registrationStatusConceptId is null for " + fhirEpisode.getResourceType() + " " + fhirEpisode.getId());
                         }

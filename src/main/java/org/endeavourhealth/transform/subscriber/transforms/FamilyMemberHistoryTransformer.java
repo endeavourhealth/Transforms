@@ -83,7 +83,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
         }
 
         if (fhir.getCondition().size() > 1) {

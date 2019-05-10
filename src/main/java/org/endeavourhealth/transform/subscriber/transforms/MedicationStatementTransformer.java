@@ -7,8 +7,8 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
@@ -75,7 +75,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         if (fhir.hasDateAssertedElement()) {
             DateTimeType dt = fhir.getDateAssertedElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
         }
 
         /*
@@ -101,17 +101,9 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
             originalCode = fhir.getMedicationCodeableConcept().getCoding().get(0).getCode();
         }
 
-        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
-        if (coreConceptId == null) {
-            LOG.warn("coreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
-            //throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-        }
+        coreConceptId = IMHelper.getIMMappedConcept(params, getScheme(originalCoding.getSystem()), originalCode);
 
-        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
-        if (nonCoreConceptId == null) {
-            LOG.warn("nonCoreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
-            //throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-        }
+        nonCoreConceptId = IMHelper.getIMConcept(params, getScheme(originalCoding.getSystem()), originalCode);
 
         if (fhir.hasStatus()) {
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
@@ -166,7 +158,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
             }
         }
 
-        medicationStatementAuthorisationTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
+        medicationStatementAuthorisationTypeConceptId = IMHelper.getIMMappedConcept(params,
                 IMConstant.FHIR_MED_STATEMENT_AUTH_TYPE, authorisationType.getCode());
         if (medicationStatementAuthorisationTypeConceptId == null) {
             throw new TransformException("medicationStatementAuthorisationTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());

@@ -73,7 +73,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
-        SubscriberTransformParams params = new SubscriberTransformParams(serviceId, protocolId, exchangeId, batchId, configName, resourcesMap, exchangeBody, pseudonymised);
+        SubscriberTransformParams params = new SubscriberTransformParams(serviceId, systemId, protocolId, exchangeId, batchId, configName, resourcesMap, exchangeBody, pseudonymised);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setEnterpriseOrganisationId(enterpriseOrgId);

@@ -2,14 +2,16 @@ package org.endeavourhealth.transform.subscriber;
 
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class SubscriberTransformParams {
+public class SubscriberTransformParams implements HasServiceSystemAndExchangeIdI {
 
     private final UUID serviceId;
+    private final UUID systemId;
     private final UUID protocolId;
     private final UUID exchangeId;
     private final UUID batchId;
@@ -27,9 +29,10 @@ public class SubscriberTransformParams {
     private Long enterprisePersonId = null;
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-    public SubscriberTransformParams(UUID serviceId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
+    public SubscriberTransformParams(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
                                      Map<String, ResourceWrapper> allResources, String exchangeBody, boolean isPseudonymised) throws Exception {
         this.serviceId = serviceId;
+        this.systemId = systemId;
         this.protocolId = protocolId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
@@ -52,14 +55,21 @@ public class SubscriberTransformParams {
         return exchangeBody;
     }
 
+    @Override
     public UUID getServiceId() {
         return serviceId;
+    }
+
+    @Override
+    public UUID getSystemId() {
+        return systemId;
     }
 
     public UUID getProtocolId() {
         return protocolId;
     }
 
+    @Override
     public UUID getExchangeId() {
         return exchangeId;
     }

@@ -81,7 +81,7 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasEffectiveDateTimeType()) {
             DateTimeType dt = fhir.getEffectiveDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());

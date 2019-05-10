@@ -50,7 +50,7 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasPeriod()) {
             DateTimeType dt = fhir.getPeriod().getStartElement();
             effectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
         }
 
         if (fhir.hasStatus()) {

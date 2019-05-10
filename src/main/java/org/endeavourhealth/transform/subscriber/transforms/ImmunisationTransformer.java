@@ -79,7 +79,7 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getVaccineCode());

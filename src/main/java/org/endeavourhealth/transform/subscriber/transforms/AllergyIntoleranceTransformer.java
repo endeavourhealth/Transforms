@@ -5,9 +5,8 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
@@ -79,7 +78,7 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
         if (fhir.hasOnset()) {
             DateTimeType dt = fhir.getOnsetElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
 
         }
 
@@ -110,17 +109,9 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
             originalCode = fhir.getSubstance().getCoding().get(0).getCode();
         }
 
-        coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
-        if (coreConceptId == null) {
-            LOG.warn("coreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
-            //throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-        }
+        coreConceptId = IMHelper.getIMMappedConcept(params, getScheme(originalCoding.getSystem()), originalCode);
 
-        nonCoreConceptId = IMClient.getConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
-        if (nonCoreConceptId == null) {
-            LOG.warn("nonCoreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
-            //throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-        }
+        nonCoreConceptId = IMHelper.getIMConcept(params, getScheme(originalCoding.getSystem()), originalCode);
 
         if (fhir.getPatientTarget() != null) {
             ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());

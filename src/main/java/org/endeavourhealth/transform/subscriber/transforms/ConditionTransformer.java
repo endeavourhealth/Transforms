@@ -82,7 +82,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasOnsetDateTimeType()) {
             DateTimeType dt = fhir.getOnsetDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
         }
 
         ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());

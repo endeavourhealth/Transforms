@@ -82,7 +82,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
             if (event.hasDateTimeElement()) {
                 DateTimeType dt = event.getDateTimeElement();
                 clinicalEffectiveDate = dt.getValue();
-                datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+                datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
             }
         }
 

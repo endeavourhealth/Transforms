@@ -7,8 +7,8 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -108,7 +108,7 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
         }
 
         Appointment.AppointmentStatus status = fhir.getStatus();
-        appointmentStatusConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(IMConstant.FHIR_APPOINTMENT_STATUS, status.toCode());
+        appointmentStatusConceptId = IMHelper.getIMMappedConcept(params, IMConstant.FHIR_APPOINTMENT_STATUS, status.toCode());
         if (appointmentStatusConceptId == null) {
             LOG.warn("coreConceptId is null using scheme: " + IMConstant.FHIR_APPOINTMENT_STATUS + " code: " + status.toCode());
             throw new TransformException("appointmentStatusConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());

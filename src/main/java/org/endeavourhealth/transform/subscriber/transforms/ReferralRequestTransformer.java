@@ -11,8 +11,8 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
@@ -86,7 +86,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
         }
 
 
@@ -109,17 +109,9 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 originalCode = fhirServiceRequested.getCoding().get(0).getCode();
             }
 
-            coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
-            if (coreConceptId == null) {
-                LOG.warn("coreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
-                throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-            }
+            coreConceptId = IMHelper.getIMMappedConcept(params, getScheme(originalCoding.getSystem()), originalCode);
 
-            nonCoreConceptId = IMClient.getConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
-            if (nonCoreConceptId == null) {
-                LOG.warn("nonCoreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
-                throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-            }
+            nonCoreConceptId = IMHelper.getIMConcept(params, getScheme(originalCoding.getSystem()), originalCode);
         }
         /*Long snomedConceptId = findSnomedConceptId(fhir.getType());
         model.setSnomedConceptId(snomedConceptId);*/
@@ -206,7 +198,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 ReferralPriority fhirReferralPriority = ReferralPriority.fromCode(coding.getCode());
                 Integer referralRequestPriorityId = fhirReferralPriority.ordinal();
 
-                referralRequestPriorityConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
+                referralRequestPriorityConceptId = IMHelper.getIMMappedConcept(params,
                         IMConstant.FHIR_REFERRAL_PRIORITY, referralRequestPriorityId.toString());
                 if (referralRequestPriorityConceptId == null) {
                     throw new TransformException("referralRequestPriorityConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
@@ -221,7 +213,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
 
-                referralRequestTypeConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(
+                referralRequestTypeConceptId = IMHelper.getIMMappedConcept(params,
                         IMConstant.FHIR_REFERRAL_TYPE, fhirReferralType.getCode());
                 if (referralRequestTypeConceptId == null) {
                     throw new TransformException("referralRequestTypeConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());

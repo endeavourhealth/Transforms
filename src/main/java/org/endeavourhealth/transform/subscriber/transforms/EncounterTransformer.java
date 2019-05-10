@@ -10,7 +10,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.IMConstant;
@@ -103,7 +102,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             Period period = fhir.getPeriod();
             DateTimeType dt = period.getStartElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
         }
 
         /*
@@ -164,16 +163,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
             originalTerm = originalTerm.toLowerCase();
             coreConceptId = IMClient.getMappedCoreConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
-            if (coreConceptId == null) {
-                LOG.warn("coreConceptId is null using type: " + IMConstant.DCE_Type_of_encounter + " term: " + originalTerm);
-                throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-            }
 
             nonCoreConceptId = IMClient.getConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
-            if (nonCoreConceptId == null) {
-                LOG.warn("nonCoreConceptId is null using type: " + IMConstant.DCE_Type_of_encounter + " term: " + originalTerm);
-                throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-            }
         }
 
         if (fhir.hasExtension()) {
@@ -183,16 +174,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
                 originalTerm = codeableConcept.getText().toLowerCase();
                 coreConceptId = IMClient.getMappedCoreConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
-                if (coreConceptId == null) {
-                    LOG.warn("coreConceptId is null using type: " + IMConstant.DCE_Type_of_encounter + " term: " + originalTerm);
-                    throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-                }
 
                 nonCoreConceptId = IMClient.getConceptIdForTypeTerm(IMConstant.DCE_Type_of_encounter, originalTerm);
-                if (nonCoreConceptId == null) {
-                    LOG.warn("nonCoreConceptId is null using type: " + IMConstant.DCE_Type_of_encounter + " term: " + originalTerm);
-                    throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
-                }
             }
         }
 

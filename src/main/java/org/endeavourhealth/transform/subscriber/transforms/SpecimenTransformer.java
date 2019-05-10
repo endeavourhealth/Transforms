@@ -81,7 +81,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
             if (fhirCollection.hasCollectedDateTimeType()) {
                 DateTimeType dt = fhirCollection.getCollectedDateTimeType();
                 clinicalEffectiveDate = dt.getValue();
-                datePrecisionConceptId = convertDatePrecision(dt.getPrecision());
+                datePrecisionConceptId = convertDatePrecision(params, dt.getPrecision());
             }
 
             if (fhirCollection.hasCollector()) {

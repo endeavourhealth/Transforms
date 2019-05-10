@@ -29,6 +29,7 @@ public class PractitionerTransformer extends AbstractTransformer {
         String roleDesc = null;
 
         id = enterpriseId.longValue();
+        //LOG.debug("Transforming " + resource.getResourceType() + " " + resource.getId() + " -> " + id);
 
         if (fhir.hasName()) {
             HumanName fhirName = fhir.getName();
@@ -62,9 +63,12 @@ public class PractitionerTransformer extends AbstractTransformer {
                 }
             }
 
+
+
             if (role.hasManagingOrganization()) {
                 Reference organisationReference = role.getManagingOrganization();
                 practitionerEnterpriseOrgId = transformOnDemandAndMapId(organisationReference, params);
+                //LOG.debug("Transformed managing org " + organisationReference.getReference() + " -> " + practitionerEnterpriseOrgId);
             }
             //LOG.trace("Got role with org ID " + practitionerEnterpriseOrgId + " from " + organisationReference);
         }
@@ -74,6 +78,7 @@ public class PractitionerTransformer extends AbstractTransformer {
         if (practitionerEnterpriseOrgId == null) {
             //LOG.trace("No role, so setting to the enterpriseOrganisationUuid " + enterpriseOrganisationUuid);
             practitionerEnterpriseOrgId = params.getEnterpriseOrganisationId();
+            //LOG.debug("Had no managing org so used main org -> " + practitionerEnterpriseOrgId);
         }
 
         organizaationId = practitionerEnterpriseOrgId.longValue();
