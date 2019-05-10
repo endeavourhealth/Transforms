@@ -162,8 +162,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             //snomedConceptId = ret.getCode();
 
             originalTerm = originalTerm.toLowerCase();
-            coreConceptId = IMHelper.getIMMappedConcept(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-            nonCoreConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+            coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+            nonCoreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
         }
 
         if (fhir.hasExtension()) {
@@ -172,8 +172,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
 
                 originalTerm = codeableConcept.getText().toLowerCase();
-                coreConceptId = IMHelper.getIMMappedConcept(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-                nonCoreConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+                coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+                nonCoreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
             }
         }
 

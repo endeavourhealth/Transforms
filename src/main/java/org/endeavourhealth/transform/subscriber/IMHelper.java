@@ -97,6 +97,46 @@ public class IMHelper {
         }
     }
 
+    public static Integer getIMMappedConceptForTypeTerm(SubscriberTransformParams params, Resource fhirResource, String type, String term) throws Exception {
+        String key = createCacheKey(type, term);
+        Integer ret = mappedCache.get(key);
+        if (ret == null) {
+            ret = getIMMappedConceptForTypeTermWithRetry(type, term);
+            if (ret == null) {
+                //if null, we may let it slide if in testing, just logging it out
+                if (TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
+                    TransformWarnings.log(LOG, params, "Null mapped IM concept for type {} and term {} for resource {} {}", term, type, fhirResource.getResourceType(), fhirResource.getId());
+                } else {
+                    throw new TransformException("Null mapped IM concept for type " + type + " and term " + term + " for resource " + fhirResource.getResourceType() + " " + fhirResource.getId());
+                }
+
+            } else {
+                mappedCache.put(key, ret);
+            }
+        }
+        return ret;
+    }
+
+    private static Integer getIMMappedConceptForTypeTermWithRetry(String type, String term) throws Exception {
+
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = 5;
+
+        while (true) {
+            lives --;
+            try {
+                return IMClient.getMappedCoreConceptIdForTypeTerm(type, term);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw ex;
+                }
+
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+            }
+        }
+    }
+
+
     private static String createCacheKey(String scheme, String code) {
         return scheme + ":" + code;
     }
