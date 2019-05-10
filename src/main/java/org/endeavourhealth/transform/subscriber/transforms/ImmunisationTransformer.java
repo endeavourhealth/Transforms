@@ -105,8 +105,10 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
             parentObservationId = findEnterpriseId(params, SubscriberTableId.OBSERVATION, parentReference);
         }
 
-        if (fhir.getPatientTarget() != null) {
-            ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+        if (fhir.getPatient() != null) {
+            Reference ref = fhir.getPatient();
+            Patient patient = getCachedPatient(ref, params);
+            ageAtEvent = getPatientAgeInDecimalYears(patient);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);

@@ -173,8 +173,10 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         }
         */
 
-        if (fhir.getPatientTarget() != null) {
-            ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+        if (fhir.getPatient() != null) {
+            Reference ref = fhir.getPatient();
+            Patient patient = getCachedPatient(ref, params);
+            ageAtEvent = getPatientAgeInDecimalYears(patient);
         }
 
         if (fhir.getNote() != null && fhir.getNote().length() > 0) {

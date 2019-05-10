@@ -111,9 +111,10 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
             parentObservationId = findEnterpriseId(params, SubscriberTableId.OBSERVATION, parentReference);
         }
 
-        if (fhir.getSubjectTarget() != null) {
-            Patient patient = (Patient) fhir.getSubjectTarget();
-            ageAtEvent = getPatientAgeInMonths(patient);
+        if (fhir.getSubject() != null) {
+            Reference ref = fhir.getSubject();
+            Patient patient = getCachedPatient(ref, params);
+            ageAtEvent = getPatientAgeInDecimalYears(patient);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);

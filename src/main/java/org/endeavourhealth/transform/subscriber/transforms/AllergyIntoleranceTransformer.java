@@ -95,8 +95,10 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
         nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
 
-        if (fhir.getPatientTarget() != null) {
-            ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+        if (fhir.getPatient() != null) {
+            Reference ref = fhir.getPatient();
+            Patient patient = getCachedPatient(ref, params);
+            ageAtEvent = getPatientAgeInDecimalYears(patient);
         }
 
         model.writeUpsert(

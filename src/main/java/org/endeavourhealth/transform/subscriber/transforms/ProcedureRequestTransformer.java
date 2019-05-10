@@ -83,9 +83,10 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
             procedureRequestStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_PROCEDURE_REQUEST_STATUS, fhir.getStatus().toCode());
         }
 
-        if (fhir.getSubjectTarget() != null) {
-            Patient patient = (Patient) fhir.getSubjectTarget();
-            ageAtEvent = getPatientAgeInMonths(patient);
+        if (fhir.getSubject() != null) {
+            Reference ref = fhir.getSubject();
+            Patient patient = getCachedPatient(ref, params);
+            ageAtEvent = getPatientAgeInDecimalYears(patient);
         }
 
         model.writeUpsert(

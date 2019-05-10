@@ -177,8 +177,10 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        if (fhir.getPatientTarget() != null) {
-            ageAtEvent = getPatientAgeInMonths(fhir.getPatientTarget());
+        if (fhir.getPatient() != null) {
+            Reference ref = fhir.getPatient();
+            Patient patient = getCachedPatient(ref, params);
+            ageAtEvent = getPatientAgeInDecimalYears(patient);
         }
 
         // TODO Code needs to be added to use the IM for

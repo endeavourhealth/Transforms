@@ -43,6 +43,8 @@ public abstract class AbstractSubscriberTransformer {
     private static JCS instanceCache = null;
     private static final ReentrantLock onDemandLock = new ReentrantLock();
 
+    private HashMap<String, Patient> patients = new HashMap<>();
+
     static {
         try {
 
@@ -625,10 +627,7 @@ public abstract class AbstractSubscriberTransformer {
         instanceCache.put(key, mappedResourceId);
     }
 
-    /**
-     * TODO - all the places that call this will never work because they assume the patient resource is loaded
-     */
-    protected static Double getPatientAgeInMonths(Patient patient) {
+    protected static Double getPatientAgeInDecimalYears(Patient patient) {
         if (patient.getBirthDate() != null) {
             LocalDate date = patient.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             Period diff = Period.between(date, LocalDate.now());
@@ -640,6 +639,20 @@ public abstract class AbstractSubscriberTransformer {
             return Double.valueOf(df.format(inYears));
         }
         return null;
+    }
+
+    protected Patient getCachedPatient(Reference patient, SubscriberTransformParams params) throws Exception {
+
+        Patient ret = patients.get(patient.getReference());
+        if (ret != null) {
+            return ret;
+        }
+
+        transformOnDemandAndMapId(patient, params);
+        ret = (Patient) findResource(patient, params);
+        patients.put(patient.getReference(), ret);
+
+        return ret;
     }
 
     protected static String getScheme(String codingSystem) {
