@@ -1,14 +1,29 @@
 package org.endeavourhealth.transform.ui.helpers;
 
-import org.endeavourhealth.common.utility.StreamExtension;
+import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.transform.ui.models.types.UIAddress;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.StringType;
 
 import java.util.List;
 
-public class AddressHelper {
-	public static UIAddress getHomeAddress(List<Address> addresses) {
+public class UIAddressHelper {
+
+
+	public static UIAddress getHomeAddress(Patient patient) {
+
+		//got inconsistencies between this class and everywhere else, so changing
+		//to use common function for getting "best" name for a patient, which also factors
+		//in that names may have end dates
+		Address addr = AddressHelper.findHomeAddress(patient);
+		if (addr != null) {
+			return transform(addr);
+		} else {
+			return null;
+		}
+
+		/*List<Address> addresses = patient.getAddress();
 		if (addresses == null)
 			return null;
 
@@ -30,7 +45,7 @@ public class AddressHelper {
 		if (homeAddress == null)
 			return null;
 
-		return transform(homeAddress);
+		return transform(homeAddress);*/
 	}
 
 	public static UIAddress transform(Address homeAddress) {

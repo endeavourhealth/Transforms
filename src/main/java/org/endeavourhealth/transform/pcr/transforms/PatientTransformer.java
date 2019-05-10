@@ -18,10 +18,11 @@ import org.endeavourhealth.transform.pcr.FhirToPcrCsvTransformer;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.pcr.outputModels.*;
+import org.endeavourhealth.transform.ui.helpers.UIAddressHelper;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Practitioner;
-import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -305,10 +306,10 @@ public class PatientTransformer extends AbstractTransformer {
         // For referential integrity we need to write the address first so the patientAddress can refer to it
         org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = outputContainer.getAddresses();
         List<StringType> addressList = fhirAddress.getLine();
-        String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 0);
-        String al2 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 1);
-        String al3 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 2);
-        String al4 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 3);
+        String al1 = UIAddressHelper.getLine(addressList, 0);
+        String al2 = UIAddressHelper.getLine(addressList, 1);
+        String al3 = UIAddressHelper.getLine(addressList, 2);
+        String al4 = UIAddressHelper.getLine(addressList, 3);
         String postcode = fhirAddress.getPostalCode();
         //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
         Long propertyTypeId = FhirToPcrCsvTransformer.IM_PLACE_HOLDER;

@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.ui.transforms.admin;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.transform.ui.helpers.AddressHelper;
 import org.endeavourhealth.transform.ui.helpers.IdentifierHelper;
+import org.endeavourhealth.transform.ui.helpers.UIAddressHelper;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIOrganisation;
 import org.endeavourhealth.transform.ui.models.types.UIAddress;
 import org.hl7.fhir.instance.model.Address;
@@ -35,7 +35,7 @@ public class UIOrganisationTransform {
 
 		private static UIAddress getAddress(List<Address> address) {
     	if (address != null && address.size() > 0)
-    		return AddressHelper.transform(address.get(0));
+    		return UIAddressHelper.transform(address.get(0));
 
     	return null;
 		}

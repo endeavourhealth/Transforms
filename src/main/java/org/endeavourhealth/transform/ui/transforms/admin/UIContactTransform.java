@@ -29,8 +29,8 @@ public class UIContactTransform {
 
 	private static UIContact transform(Patient.ContactComponent contact) {
 
-		UIHumanName name = NameHelper.transform(contact.getName());
-		UIAddress homeAddress = AddressHelper.transform(contact.getAddress());
+		UIHumanName name = UINameHelper.transform(contact.getName());
+		UIAddress homeAddress = UIAddressHelper.transform(contact.getAddress());
 
 		return new UIContact()
 				.setName(name)

@@ -1,21 +1,36 @@
 package org.endeavourhealth.transform.ui.helpers;
 
+import org.endeavourhealth.common.fhir.NameHelper;
 import org.endeavourhealth.transform.ui.models.types.UIHumanName;
 import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.StringType;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class NameHelper {
+public class UINameHelper {
 
-    public static UIHumanName getUsualOrOfficialName(List<HumanName> names) {
+    public static UIHumanName getUsualOrOfficialName(Patient patient) {
+
+        //got inconsistencies between this class and everywhere else, so changing
+        //to use common function for getting "best" name for a patient, which also factors
+        //in that names may have end dates
+        HumanName hn = NameHelper.findName(patient);
+        if (hn != null) {
+            return transform(hn);
+        } else {
+            return null;
+        }
+
+        /*
+        List<HumanName> names = patient.getName();
         HumanName name = getNameByUse(names, HumanName.NameUse.USUAL);
 
         if (name == null)
             name = getNameByUse(names, HumanName.NameUse.OFFICIAL);
 
-        return transform(name);
+        return transform(name);*/
     }
 
     public static UIHumanName transform(HumanName name) {
@@ -24,9 +39,9 @@ public class NameHelper {
             nameUse = HumanName.NameUse.NULL;
 
         return new UIHumanName()
-                .setFamilyName(NameHelper.getFirst(name.getFamily()))
-                .setGivenNames(NameHelper.getAll(name.getGiven()))
-                .setPrefix(NameHelper.getFirst(name.getPrefix()))
+                .setFamilyName(UINameHelper.getFirst(name.getFamily()))
+                .setGivenNames(UINameHelper.getAll(name.getGiven()))
+                .setPrefix(UINameHelper.getFirst(name.getPrefix()))
 								.setText(name.getText())
 								.setUse(nameUse.getDisplay());
     }
@@ -43,7 +58,7 @@ public class NameHelper {
         return null;
     }
 
-    public static String getFirst(List<StringType> strings) {
+    private static String getFirst(List<StringType> strings) {
         if (strings == null)
             return null;
 
@@ -53,7 +68,7 @@ public class NameHelper {
         return strings.get(0).getValue();
     }
 
-    public static List<String> getAll(List<StringType> strings) {
+    private static List<String> getAll(List<StringType> strings) {
         if (strings == null)
             return null;
 

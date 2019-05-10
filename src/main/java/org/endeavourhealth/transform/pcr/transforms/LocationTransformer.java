@@ -1,10 +1,13 @@
 package org.endeavourhealth.transform.pcr.transforms;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.pcr.PcrTransformParams;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
-import org.hl7.fhir.instance.model.*;
+import org.endeavourhealth.transform.ui.helpers.UIAddressHelper;
+import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Location;
+import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.StringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,10 +65,10 @@ public class LocationTransformer extends AbstractTransformer {
                 addressId = Long.parseLong(address.getId());
                 org.endeavourhealth.transform.pcr.outputModels.Address addressWriter = (org.endeavourhealth.transform.pcr.outputModels.Address) csvWriter;
                 List<StringType> addressList = address.getLine();
-                String al1 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 0);
-                String al2 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 1);
-                String al3 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 2);
-                String al4 = org.endeavourhealth.transform.ui.helpers.AddressHelper.getLine(addressList, 3);
+                String al1 = UIAddressHelper.getLine(addressList, 0);
+                String al2 = UIAddressHelper.getLine(addressList, 1);
+                String al3 = UIAddressHelper.getLine(addressList, 2);
+                String al4 = UIAddressHelper.getLine(addressList, 3);
                 String postcode = address.getPostalCode();
                 //TODO get uprn (OS ref) and approximation. See TODO in Address outputModel
 

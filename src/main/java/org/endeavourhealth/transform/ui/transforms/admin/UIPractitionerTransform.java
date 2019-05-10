@@ -2,7 +2,7 @@ package org.endeavourhealth.transform.ui.transforms.admin;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.ui.helpers.IdentifierHelper;
-import org.endeavourhealth.transform.ui.helpers.NameHelper;
+import org.endeavourhealth.transform.ui.helpers.UINameHelper;
 import org.endeavourhealth.transform.ui.models.resources.admin.UIPractitioner;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Practitioner;
@@ -14,7 +14,7 @@ public class UIPractitionerTransform {
 
         return new UIPractitioner()
                 .setId(practitioner.getId())
-                .setName(NameHelper.transform(practitioner.getName()))
+                .setName(UINameHelper.transform(practitioner.getName()))
                 .setActive(practitioner.getActive())
 								.setGpCode(getGpCode(practitioner.getIdentifier()));
     }

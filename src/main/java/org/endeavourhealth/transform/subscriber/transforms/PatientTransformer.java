@@ -31,8 +31,6 @@ import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.PatientAddress;
 import org.endeavourhealth.transform.subscriber.targetTables.PatientContact;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
-import org.endeavourhealth.transform.ui.helpers.NameHelper;
-import org.endeavourhealth.transform.ui.models.types.UIHumanName;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -225,15 +223,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         //only present name fields if non-pseudonymised
         if (!params.isPseudonymised()) {
-            UIHumanName name = NameHelper.getUsualOrOfficialName(fhirPatient.getName());
-            if (name != null) {
-                title = name.getPrefix();
-                for (String given : name.getGivenNames()) {
-                    firstNames += given + " ";
-                }
-                firstNames = firstNames.trim();
-                lastName = name.getFamilyName();
-            }
+            title = NameHelper.findPrefix(fhirPatient);
+            firstNames = NameHelper.findForenames(fhirPatient);
+            lastName = NameHelper.findSurname(fhirPatient);
         }
 
         //only present name fields if non-pseudonymised

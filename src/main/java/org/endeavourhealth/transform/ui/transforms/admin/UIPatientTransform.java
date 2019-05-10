@@ -22,8 +22,8 @@ public class UIPatientTransform {
 
 	public static UIPatient transform(UUID serviceId, Patient patient, ReferencedResources referencedResources) {
 
-		UIHumanName name = NameHelper.getUsualOrOfficialName(patient.getName());
-		UIAddress homeAddress = AddressHelper.getHomeAddress(patient.getAddress());
+		UIHumanName name = UINameHelper.getUsualOrOfficialName(patient);
+		UIAddress homeAddress = UIAddressHelper.getHomeAddress(patient);
 
 		return new UIPatient()
 				.setId(patient.getId())
@@ -49,7 +49,7 @@ public class UIPatientTransform {
 	private static List<UIHumanName> getAllNames(List<HumanName> names) {
 		List<UIHumanName> result = new ArrayList<>();
 		for (HumanName name : names) {
-			result.add(NameHelper.transform(name));
+			result.add(UINameHelper.transform(name));
 		}
 
 		return result;
