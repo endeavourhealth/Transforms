@@ -113,13 +113,13 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
         coreConceptId = IMClient.getMappedCoreConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (coreConceptId == null) {
             LOG.warn("coreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
-            throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            //throw new TransformException("coreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
         nonCoreConceptId = IMClient.getConceptIdForSchemeCode(getScheme(originalCoding.getSystem()), originalCode);
         if (nonCoreConceptId == null) {
             LOG.warn("nonCoreConceptId is null using scheme: " + getScheme(originalCoding.getSystem()) + " code: " + originalCode);
-            throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
+            //throw new TransformException("nonCoreConceptId is null for " + fhir.getResourceType() + " " + fhir.getId());
         }
 
         if (fhir.getPatientTarget() != null) {

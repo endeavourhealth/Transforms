@@ -615,6 +615,7 @@ public abstract class AbstractSubscriberTransformer {
 
     private static void addToInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId, UUID mappedResourceId) throws Exception {
         Object key = createInstanceMapCacheKey(enterpriseConfigName, resourceType, resourceId);
+        LOG.debug("Added to cache [key:" + key + " value:" + mappedResourceId.toString() + "]");
         instanceCache.put(key, mappedResourceId);
     }
 
