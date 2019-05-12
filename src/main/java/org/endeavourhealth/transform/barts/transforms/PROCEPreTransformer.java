@@ -96,6 +96,13 @@ public class PROCEPreTransformer {
                     throw new Exception("Failed to find term for Snomed code " + codeId);
                 }
 
+            } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
+                //only a tiny number of these
+                procTerm = TerminologyService.lookupIcd10CodeDescription(codeId);
+                if (Strings.isNullOrEmpty(procTerm)) {
+                    throw new Exception("Failed to find term for ICD 10 code " + codeId);
+                }
+
             } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_HRG)) {
                 TransformWarnings.log(LOG, csvHelper, "PROCE record {} has HRG code in concept cell {}", procedureIdCell, conceptCell);
                 return;

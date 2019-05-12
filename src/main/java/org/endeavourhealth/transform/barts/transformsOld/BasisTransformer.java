@@ -369,7 +369,7 @@ public class BasisTransformer {
     /*
      *
      */
-    public static ResourceId resolvePatientResource(String scope, String uniqueId, CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, FhirResourceFiler fhirResourceFiler, String mrn, String nhsno, HumanName name, Address fhirAddress, Enumerations.AdministrativeGender gender, Date dob, ResourceId organisationResourceId, CodeableConcept maritalStatus, Identifier identifiers[], ResourceId gp, ResourceId gpPractice, CodeableConcept ethnicGroup) throws Exception {
+    /*public static ResourceId resolvePatientResource(String scope, String uniqueId, CsvCurrentState currentParserState, String primaryOrgHL7OrgOID, FhirResourceFiler fhirResourceFiler, String mrn, String nhsno, HumanName name, Address fhirAddress, Enumerations.AdministrativeGender gender, Date dob, ResourceId organisationResourceId, CodeableConcept maritalStatus, Identifier identifiers[], ResourceId gp, ResourceId gpPractice, CodeableConcept ethnicGroup) throws Exception {
         if (uniqueId == null) {
             // Default format is for Barts
             if (scope.compareToIgnoreCase("H") == 0) {
@@ -473,7 +473,7 @@ public class BasisTransformer {
             uniqueId = "PIdAssAuth=" + primaryOrgHL7OrgOID + "-PatIdValue=" + mrn;
         }
         return getResourceId(scope, "Patient", uniqueId);
-    }
+    }*/
 
     public static ResourceId getProblemResourceId(String scope, String patientId, String onsetDate, String problem) throws Exception {
         String uniqueId = "PatientId=" + patientId + "-OnsetDate=" + onsetDate + "-ProblemCode=" + problem;
