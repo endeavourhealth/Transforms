@@ -11,14 +11,14 @@ public class Person extends AbstractTargetTable {
         super(csvFormat, dateFormat, timeFormat);
     }
 
-    public void writeDelete(SubscriberId subscriberId) throws Exception {
+    public void writeDelete(Long personId) throws Exception {
 
         super.printRecord(convertBoolean(true),
-                "" + subscriberId.getSubscriberId());
+                "" + personId);
     }
 
 
-    public void writeUpsert(SubscriberId subscriberId,
+    public void writeUpsert(Long personId,
                             long organizationId,
                             String title,
                             String firstNames,
@@ -32,7 +32,7 @@ public class Person extends AbstractTargetTable {
                             Long registeredPracticeId) throws Exception {
 
         super.printRecord(convertBoolean(false),
-                "" + subscriberId.getSubscriberId(),
+                "" + personId,
                 "" + organizationId,
                 title,
                 firstNames,

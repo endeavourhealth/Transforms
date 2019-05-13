@@ -249,7 +249,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         //if our patient record is the one that should define the person record, then write that too
         if (shouldWritePersonRecord) {
-            personWriter.writeUpsert(subscriberId,
+            personWriter.writeUpsert(personId,
                     organizationId,
                     title,
                     firstNames,
@@ -262,7 +262,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                     ethnicCodeConceptId,
                     registeredPracticeId);
 
-            //TODO - how to write event log for person record?
         }
 
     }
