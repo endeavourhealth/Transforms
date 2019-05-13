@@ -138,7 +138,8 @@ public abstract class BartsCsvToFhirTransformer {
             SURCCPreTransformer.transform(getParsers(parserMap,"SURCC",true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
             SURCPPreTransformer.transform(getParsers(parserMap,"SURCP",true), fhirResourceFiler,csvHelper);
 
-            fhirResourceFiler.waitUntilEverythingIsSaved();
+            //must let all the threads doing the saving for the above finish
+            csvHelper.waitUntilThreadPoolIsEmpty();
 
             //PROCEDURES - execute the staging to target stored proc
             csvHelper.processStagingForTarget();
