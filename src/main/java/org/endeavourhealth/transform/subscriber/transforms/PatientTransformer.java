@@ -84,17 +84,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 deleteTelecoms(previousVersion, resourceWrapper, params);
             }
 
-
-            //TODO - how to manage delete for person record?
-
             return;
         }
 
         Patient fhirPatient = (Patient) FhirResourceHelper.deserialiseResouce(resourceWrapper);
-
-        //TODO - if deleting a Patient resource, we should delete all patient contacts and addresses (and UPRNs?)
-
-
 
         String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
 
