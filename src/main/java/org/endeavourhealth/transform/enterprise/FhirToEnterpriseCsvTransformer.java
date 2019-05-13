@@ -75,7 +75,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
         OutputContainer data = new OutputContainer(pseudonymised);
-        EnterpriseTransformParams params = new EnterpriseTransformParams(serviceId, protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody, useInstanceMapping);
+        EnterpriseTransformParams params = new EnterpriseTransformParams(serviceId, systemId, protocolId, exchangeId, batchId, configName, data, resourcesMap, exchangeBody, useInstanceMapping);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setEnterpriseOrganisationId(enterpriseOrgId);

@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -62,7 +63,14 @@ public class MedicationStatementTransformer extends AbstractTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        dmdId = CodeableConceptHelper.findSnomedConceptId(fhir.getMedicationCodeableConcept());
+        try {
+            dmdId = CodeableConceptHelper.findSnomedConceptId(fhir.getMedicationCodeableConcept());
+        } catch (NumberFormatException nfe) {
+            //we have had a case of Vision data containing DM+Ds that exceed max long. Until we know why and can come
+            //up with a good strategy, we'll log and skip them
+            TransformWarnings.log(LOG, params, "Invalid DM+D ID {} for {} {}", nfe.getMessage(), fhir.getResourceType(), fhir.getId());
+            return;
+        }
 
         //add term too, for easy display of results
         originalTerm = fhir.getMedicationCodeableConcept().getText();

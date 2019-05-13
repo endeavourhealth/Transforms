@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.enterprise;
 
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.hl7.fhir.instance.model.Reference;
 
@@ -9,9 +10,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-public class EnterpriseTransformParams {
+public class EnterpriseTransformParams implements HasServiceSystemAndExchangeIdI {
 
     private final UUID serviceId;
+    private final UUID systemId;
     private final UUID protocolId;
     private final UUID exchangeId;
     private final UUID batchId;
@@ -27,10 +29,11 @@ public class EnterpriseTransformParams {
     private Long enterprisePersonId = null;
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-    public EnterpriseTransformParams(UUID serviceId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
+    public EnterpriseTransformParams(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
                                      OutputContainer outputContainer, Map<String, ResourceWrapper> allResources, String exchangeBody,
                                      boolean useInstanceMapping) {
         this.serviceId = serviceId;
+        this.systemId = systemId;
         this.protocolId = protocolId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
@@ -50,14 +53,21 @@ public class EnterpriseTransformParams {
         return exchangeBody;
     }
 
+    @Override
     public UUID getServiceId() {
         return serviceId;
+    }
+
+    @Override
+    public UUID getSystemId() {
+        return null;
     }
 
     public UUID getProtocolId() {
         return protocolId;
     }
 
+    @Override
     public UUID getExchangeId() {
         return exchangeId;
     }
