@@ -183,8 +183,6 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
-        // TODO Code needs to be reviewed to use the IM for
-        //  Referral Request Priority
         if (fhir.hasPriority()) {
             CodeableConcept codeableConcept = fhir.getPriority();
             if (codeableConcept.hasCoding()) {

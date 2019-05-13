@@ -167,9 +167,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
         }*/
 
-        // TODO Code needs to be reviewed to use the IM for
-        //  Ethnic Code Concept Id
-
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
@@ -204,8 +201,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        // TODO Code needs to be reviewed to use the IM for
-        //  Gender Concept Id
         if (fhirPatient.hasGender()) {
 
             Enumerations.AdministrativeGender gender = fhirPatient.getGender();

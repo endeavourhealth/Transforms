@@ -151,15 +151,11 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
         }
 
-        // TODO Code needs to be reviewed to use the IM for
-        //  Core Concept Id and Non Core Concept ID
-        String originalCode = null;
         String originalTerm = null;
 
         originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
             encounterCodeDal.findOrCreateCode(originalTerm);
-            //snomedConceptId = ret.getCode();
 
             originalTerm = originalTerm.toLowerCase();
             coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
