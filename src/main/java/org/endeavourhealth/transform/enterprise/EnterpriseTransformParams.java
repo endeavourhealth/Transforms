@@ -60,7 +60,7 @@ public class EnterpriseTransformParams implements HasServiceSystemAndExchangeIdI
 
     @Override
     public UUID getSystemId() {
-        return null;
+        return systemId;
     }
 
     public UUID getProtocolId() {
