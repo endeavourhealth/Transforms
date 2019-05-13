@@ -112,7 +112,9 @@ public class PROCEPreTransformer {
             }
 
             stagingPROCE.setProcedureTerm(procTerm);
-            stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
+            if (parser.getCDSSequence().getInt()>0) {
+                stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
+            }
 
             String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
             if (personId != null) {

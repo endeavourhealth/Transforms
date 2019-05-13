@@ -42,8 +42,9 @@ public class SURCPPreTransformer {
         StagingSURCP stagingSURCP = new StagingSURCP();
         stagingSURCP.setExchangeId(parser.getExchangeId().toString());
         stagingSURCP.setDtReceived(new Date());
-
-        stagingSURCP.setSurgicalCaseProcedureId(parser.getSurgicalCaseProcedureId().getInt());
+        if (parser.getSurgicalCaseProcedureId().getInt()>0) {
+            stagingSURCP.setSurgicalCaseProcedureId(parser.getSurgicalCaseProcedureId().getInt());
+        }
         stagingSURCP.setDtExtract(parser.getExtractDateTime().getDate());
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
