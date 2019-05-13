@@ -112,7 +112,7 @@ public class PROCEPreTransformer {
             }
 
             stagingPROCE.setProcedureTerm(procTerm);
-            if (parser.getCDSSequence().getInt()>0) {
+            if (csvHelper.isEmptyOrIsZero(parser.getCDSSequence())) {
                 stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
             }
 
