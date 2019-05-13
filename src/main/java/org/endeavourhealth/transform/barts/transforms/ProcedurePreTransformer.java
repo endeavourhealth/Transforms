@@ -52,7 +52,7 @@ public class ProcedurePreTransformer {
             return;
         }
 
-        obj.setPersonId(personId);
+        obj.setLookupPersonId(personId);
         obj.setExchangeId(parser.getExchangeId().toString());
         obj.setDtReceived(new Date());
         obj.setMrn(parser.getMrn().getString());
@@ -104,7 +104,6 @@ public class ProcedurePreTransformer {
 
         obj.setWard(parser.getWard().getString());
         obj.setSite(parser.getSite().getString());
-        obj.setLookupPersonId(personId);
 
         String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_CONSULTANT_TO_ID, parser.getConsultant().getString());
         if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
