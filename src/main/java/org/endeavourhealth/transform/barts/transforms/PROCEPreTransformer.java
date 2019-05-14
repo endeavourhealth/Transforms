@@ -64,7 +64,8 @@ public class PROCEPreTransformer {
                 stagingPROCE.setEncounterSliceId(sliceCell.getInt());
             }
 
-            Date procDate = csvHelper.parseDate(parser.getProcedureDateTime());
+            CsvCell dateCell = parser.getProcedureDateTime();
+            Date procDate = BartsCsvHelper.parseDate(dateCell);
             //explicitly been told that if a PROCE record has no date, then skip it
             if (procDate == null) {
                 return;

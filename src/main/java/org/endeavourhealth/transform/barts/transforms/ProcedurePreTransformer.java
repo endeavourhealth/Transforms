@@ -45,9 +45,10 @@ public class ProcedurePreTransformer {
 
 
         // Observer not null conditions in DB
+        CsvCell encounterCell = parser.getEncounterIdSanitised();
 
         StagingProcedure obj = new StagingProcedure();
-        String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
+        String personId = csvHelper.findPersonIdFromEncounterId(encounterCell);
         if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
             return;
         }
@@ -56,9 +57,14 @@ public class ProcedurePreTransformer {
         obj.setExchangeId(parser.getExchangeId().toString());
         obj.setDtReceived(new Date());
         obj.setMrn(parser.getMrn().getString());
-        obj.setNhsNumber(parser.getNHSNo());
-        obj.setDateOfBirth(parser.getDOB());
-        obj.setEncounterId(parser.getEncounterId().getInt()); // Remember encounter ids from Procedure have a trailing .00
+
+        CsvCell nhsNumberCell = parser.getNhsNumberSanitised();
+        obj.setNhsNumber(nhsNumberCell.getString());
+
+        CsvCell dobCell = parser.getDateOfBirth();
+        obj.setDateOfBirth(dobCell.getDate());
+
+        obj.setEncounterId(encounterCell.getInt()); // Remember encounter ids from Procedure have a trailing .00
         obj.setConsultant(parser.getConsultant().getString());
 
         CsvCell dtCell = parser.getProcedureDateTime();

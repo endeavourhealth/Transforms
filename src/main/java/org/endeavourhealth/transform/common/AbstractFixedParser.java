@@ -4,8 +4,6 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.audit.models.PublishedFileColumn;
 import org.endeavourhealth.core.database.dal.audit.models.PublishedFileType;
-import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +11,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -49,9 +46,25 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         this.exchangeId = exchangeId;
         this.version = version;
         this.filePath = filePath;
-        this.dateFormat = new SimpleDateFormat(dateFormat);
-        this.timeFormat = new SimpleDateFormat(timeFormat);
-        this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
+
+        if (!Strings.isNullOrEmpty(dateFormat)) {
+            this.dateFormat = new SimpleDateFormat(dateFormat);
+        } else {
+            this.dateFormat = null;
+        }
+
+        if (!Strings.isNullOrEmpty(timeFormat)) {
+            this.timeFormat = new SimpleDateFormat(timeFormat);
+        } else {
+            this.timeFormat = null;
+        }
+
+        if (!Strings.isNullOrEmpty(dateFormat) && !Strings.isNullOrEmpty(timeFormat)) {
+            this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
+        } else {
+            this.dateTimeFormat = null;
+        }
+
 
         //work out the fields and validate they make sense
         Set<String> fieldSet = new HashSet<>();
@@ -207,7 +220,8 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         fieldList.put(field.getName(), field);
     }
 
-    protected String getString(String column) {
+    //removed all the below, as they allow bypassing of use of CsvCell
+    /*protected String getString(String column) {
         FixedParserField field = fieldList.get(column);
         if (field != null) {
             return getFieldValue(this.curentLine, field);
@@ -257,17 +271,6 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
             throw new FileFormatException(filePath, "Invalid date format [" + date + "]", pe);
         }
     }
-    /*public Date parseDate(String date) throws TransformException {
-        Date ret = null;
-        if (date != null && date.length() > 0) {
-            try {
-                ret = dateFormat.parse(date);
-            } catch (ParseException pe) {
-                throw new FileFormatException(filePath, "Invalid date format [" + date + "]", pe);
-            }
-        }
-        return ret;
-    }*/
 
     protected Date getTime(String column) throws TransformException {
         Date ret = null;
@@ -302,7 +305,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
             return null;
         }
         return Long.valueOf(s);
-    }
+    }*/
 
     public CsvCurrentState getCurrentState() {
         return new CsvCurrentState(filePath, currentLineNumber);

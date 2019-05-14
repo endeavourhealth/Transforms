@@ -14,8 +14,7 @@ public class CVREF extends AbstractCsvParser {
     public CVREF(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
                 BartsCsvToFhirTransformer.CSV_FORMAT,
-                BartsCsvToFhirTransformer.DATE_FORMAT,
-                BartsCsvToFhirTransformer.TIME_FORMAT);
+                null, null); //all Barts date parsing for Power Insight content should use BartsCsvHelper.parseDate(..)
     }
 
     @Override
@@ -37,7 +36,7 @@ public class CVREF extends AbstractCsvParser {
         return super.getCell("#CODE_VALUE_CD");
     }
 
-    public CsvCell getDate() {
+    public CsvCell getExtractDate() {
         return super.getCell("EXTRACT_DT_TM");
     }
 

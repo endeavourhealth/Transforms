@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,11 +38,17 @@ public class Procedure extends AbstractFixedParser {
     }
 
     public CsvCell getEncounterId() {
+        return super.getCell("Encntr_Id");
+    }
 
-        CsvCell ret =  super.getCell("Encntr_Id");
+    /**
+     * encounter ID is suffixed with ".00" so we have this version to give us a nice version to work with
+     */
+    public CsvCell getEncounterIdSanitised() {
+        CsvCell ret = getEncounterId();
         if (ret.getString().contains(".")) {
-            int i= new Double(ret.getString()).intValue();
-            ret=ret.factoryWithNewValue(ret,Integer.toString(i));
+            int i = new Double(ret.getString()).intValue();
+            ret = CsvCell.factoryWithNewValue(ret, Integer.toString(i));
         }
         return ret;
     }
@@ -68,18 +73,35 @@ public class Procedure extends AbstractFixedParser {
         return super.getCell("Updt_By");
     }
 
-    public CsvCell getWard() {return super.getCell("Ward");}
+    public CsvCell getWard() {
+        return super.getCell("Ward");
+    }
 
-    public CsvCell getSite() {return super.getCell("Site");}
+    public CsvCell getSite() {
+        return super.getCell("Site");
+    }
 
-    public Date getDOB() throws TransformException {return super.getDate("DOB");}
+    public CsvCell getDateOfBirth() throws TransformException {
+        return super.getCell("DOB");
+    }
 
-    public String getNHSNo() {
-        return super.getString("NHS_No").replaceAll("\\-", "");
+    public CsvCell getNhsNumber() {
+        return super.getCell("NHS_No");
+    }
+
+    /**
+     * nhs number is in the format nnn-nnn-nnnn so we have this fn to return a version without the dashes
+     */
+    public CsvCell getNhsNumberSanitised() {
+        CsvCell ret = getEncounterId();
+        String s = ret.getString().replaceAll("\\-", "");
+        return CsvCell.factoryWithNewValue(ret, s);
     }
 
 
-    public Date getAdmissionDateTime() throws TransformException {return super.getDateTime("Admit_Dt_Tm");}
+    /*public Date getAdmissionDateTime() throws TransformException {
+        return super.getDateTime("Admit_Dt_Tm");
+    }
 
     public String getAdmissionDateTimeAsString() throws TransformException {
         return super.getString("Admit_Dt_Tm");
@@ -99,7 +121,7 @@ public class Procedure extends AbstractFixedParser {
 
     public String getFINNo() {
         return super.getString("FIN_No");
-    }
+    }*/
 
     @Override
     protected boolean isFileAudited() {
@@ -141,29 +163,5 @@ public class Procedure extends AbstractFixedParser {
 
         return ret;
     }
-
-    /*@Override
-    protected List<FixedParserField> getFieldList(String version) {
-
-        List<FixedParserField> ret = new ArrayList<>();
-
-        ret.add(new FixedParserField("DOB",             1, 14));
-        ret.add(new FixedParserField("MRN",    13, 45));
-        ret.add(new FixedParserField("NHSNo",    59, 45));
-        ret.add(new FixedParserField("AdmissionDateTime",    105, 20));
-        ret.add(new FixedParserField("DischargeDateTime",    126, 20));
-        ret.add(new FixedParserField("Consultant",    285, 45));
-        ret.add(new FixedParserField("Procedure_DT_TM",    331, 20));
-        ret.add(new FixedParserField("ProcedureText",    352, 200));
-        ret.add(new FixedParserField("Comment",    553, 200));
-        ret.add(new FixedParserField("ProcedureCode",    754, 200));
-        ret.add(new FixedParserField("Create_DT_TM",          1139, 20));
-        ret.add(new FixedParserField("Update_DT_TM",          1160, 20));
-        ret.add(new FixedParserField("UpdatedBy",    1181, 45));
-        ret.add(new FixedParserField("EncounterId",          1227, 14));
-        ret.add(new FixedParserField("FINNo",          1242, 7));
-        
-        return ret;
-    }*/
 
 }

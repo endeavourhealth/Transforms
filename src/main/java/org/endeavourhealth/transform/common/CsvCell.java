@@ -129,8 +129,15 @@ public class CsvCell {
             throw new IllegalArgumentException("Can't get getDate on CsvCell that didn't come from a ParserI");
         }
 
+        DateFormat dateFormat = parentParser.getDateFormat();
+
+        //in Barts data, we have a special helper function for parsing dates because they use different formats
+        //and are affected by a BST issue (i.e. data is always supplied as UTC), so we give those parsers a null date format to prevent mistakes
+        if (dateFormat == null) {
+            throw new IllegalArgumentException("No date format on cell - should there be another way of parsing dates for this transform?");
+        }
+
         try {
-            DateFormat dateFormat = parentParser.getDateFormat();
             return dateFormat.parse(getString());
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid date format [" + getString() + "]", pe);
@@ -145,8 +152,15 @@ public class CsvCell {
             throw new IllegalArgumentException("Can't get getTime on CsvCell that didn't come from a ParserI");
         }
 
+        DateFormat timeFormat = parentParser.getTimeFormat();
+
+        //in Barts data, we have a special helper function for parsing dates because they use different formats
+        //and are affected by a BST issue (i.e. data is always supplied as UTC), so we give those parsers a null date format to prevent mistakes
+        if (timeFormat == null) {
+            throw new IllegalArgumentException("No date format on cell - should there be another way of parsing dates for this transform?");
+        }
+
         try {
-            DateFormat timeFormat = parentParser.getTimeFormat();
             return timeFormat.parse(getString());
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid time format [" + getString() + "]", pe);
@@ -161,8 +175,15 @@ public class CsvCell {
             throw new IllegalArgumentException("Can't get getDateTime on CsvCell that didn't come from a ParserI");
         }
 
+        DateFormat dateTimeFormat = parentParser.getDateTimeFormat();
+
+        //in Barts data, we have a special helper function for parsing dates because they use different formats
+        //and are affected by a BST issue (i.e. data is always supplied as UTC), so we give those parsers a null date format to prevent mistakes
+        if (dateTimeFormat == null) {
+            throw new IllegalArgumentException("No date format on cell - should there be another way of parsing dates for this transform?");
+        }
+
         try {
-            DateFormat dateTimeFormat = parentParser.getDateTimeFormat();
             return dateTimeFormat.parse(getString());
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid date time format [" + getString() + "]", pe);

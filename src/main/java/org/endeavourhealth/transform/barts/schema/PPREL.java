@@ -15,8 +15,7 @@ public class PPREL extends AbstractCsvParser {
     public PPREL(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
                 BartsCsvToFhirTransformer.CSV_FORMAT,
-                BartsCsvToFhirTransformer.DATE_FORMAT,
-                BartsCsvToFhirTransformer.TIME_FORMAT);
+                null, null); //all Barts date parsing for Power Insight content should use BartsCsvHelper.parseDate(..)
     }
 
 

@@ -47,7 +47,7 @@ public class CVREFTransformer {
             return;
         }
         CsvCell codeValueCode = parser.getCodeValueCode();
-        CsvCell date = parser.getDate();
+        CsvCell date = parser.getExtractDate();
         CsvCell activeInd = parser.getActiveInd();
         CsvCell codeDescTxt = parser.getCodeDescTxt();
         CsvCell codeDispTxt = parser.getCodeDispTxt();

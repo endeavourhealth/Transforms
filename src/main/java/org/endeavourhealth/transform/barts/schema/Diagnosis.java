@@ -1,13 +1,11 @@
 package org.endeavourhealth.transform.barts.schema;
 
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractFixedParser;
 import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,7 +20,8 @@ public class Diagnosis extends AbstractFixedParser {
         super(serviceId, systemId, exchangeId, version, filePath, DATE_FORMAT, TIME_FORMAT);
     }
 
-    public Long getDiagnosisId() {
+    //all the below need re-implementing using CsvCells
+    /*public Long getDiagnosisId() {
         return Long.parseLong(super.getString("diagnosis_id").trim().split("\\.")[0]);
     }
 
@@ -81,7 +80,7 @@ public class Diagnosis extends AbstractFixedParser {
 
     public String getSecondaryDescription() {
         return super.getString("secondary_descriptions").trim();
-    }
+    }*/
 
     @Override
     protected boolean isFileAudited() {
