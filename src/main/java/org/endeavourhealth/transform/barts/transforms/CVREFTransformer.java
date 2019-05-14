@@ -13,6 +13,7 @@ import org.endeavourhealth.transform.barts.schema.CVREF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -110,6 +111,23 @@ public class CVREFTransformer {
             fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
             //LOG.debug("Saved organisation");
         }
-    }
 
+        //These are used for Barts procedures to indicate Location, so create the resource for linking into
+        //Procedure resources as a Location resource reference.  We current receive procedures with either
+        // INSTITUTION, SURGAREA, DEPARTMENT or SURGOP service resource types, so only save those types
+        if (codeSetNbr.getLong().equals(CodeValueSet.SERVICE_RESOURCE)) {
+
+            if (codeMeaningTxt.getString().equalsIgnoreCase("INSTITUTION") ||
+                    codeMeaningTxt.getString().equalsIgnoreCase("SURGAREA") ||
+                    codeMeaningTxt.getString().equalsIgnoreCase("DEPARTMENT") ||
+                    codeMeaningTxt.getString().equalsIgnoreCase("SURGOP")) {
+
+                LocationBuilder locationBuilder = new LocationBuilder();
+                locationBuilder.setId(codeValueCode.getString(), codeValueCode);
+                locationBuilder.setName(codeDispTxt.getString(), codeDispTxt);
+
+                fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
+            }
+        }
+    }
 }

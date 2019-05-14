@@ -164,44 +164,26 @@ public class ProcedureTargetTransformer {
                 procedureBuilder.addNotes("Qualifier: " + qualifierText);
             }
 
-            //location text / codes as more notes
+            //We receive Cerner coded Service Resources (221) as Procedure locations, so lookup and assign as a
+            //Location reference if a valid integer code.  If simple free text, append to Procedure notes instead.
+            //The Location resources are created in the CVREFTransform
             String locationText = targetProcedure.getLocation();
             if (!Strings.isNullOrEmpty(locationText)) {
-                procedureBuilder.addNotes("Location(s): " + locationText);
-            }
 
-            //TODO: determine usefullness of updating linked encounter if already has org data
-            // this is Service Resource cerner coded data set 221 - new extension?
-//            String locationText = procedure.getLocation();
-//            if (!Strings.isNullOrEmpty(locationText)) {
-//
-//                // retrieve the existing Encounter resource to update the location details
-//                Encounter existingEncounter
-//                        = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, uniqueId);
-//
-//                if (existingEncounter != null) {
-//                    EncounterBuilder encounterBuilder = new EncounterBuilder(existingEncounter);
-//
-//                    try {
-//                        // is the location an Id?
-//                        Integer.parseInt(locationText);
-//
-//                        CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(221L, locationText);
-//                        if (codeRef != null) {
-//                            String locationName = codeRef.getCodeDispTxt();
-//                        }
-//
-//
-//                    } catch (Exception ex) {
-//                        //the location is text only
-//                        String locationName = locationText;
-//                    }
-//
-//                    // save the updated Encounter
-//                    //fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
-//                }
-//            }
-//
+                try {
+                        // is the location an Integer Id?
+                        Integer.parseInt(locationText);
+
+                        //create a reference using the code (locationText) which has been validated as an Integer
+                        Reference procedureLocation
+                            = ReferenceHelper.createReference(ResourceType.Location, locationText);
+                        procedureBuilder.setLocation(procedureLocation);
+
+                     } catch (NumberFormatException ex) {
+                        //the location is text only, so set as notes
+                        procedureBuilder.addNotes("Location(s): " + locationText);
+                    }
+            }
 
             // this is the speciality group code of the surgeon
             String specialtyCode = targetProcedure.getSpecialty();

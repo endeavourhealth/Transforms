@@ -5,6 +5,7 @@ public class CodeValueSet {
 
     // Static values to hold the code set values
     public static final Long LOCATION_NAME = 220L;
+    public static final Long SERVICE_RESOURCE = 221L;
     public static final Long NHS_NUMBER_STATUS = 29882L;
     public static final Long GENDER = 57L;
     public static final Long ETHNIC_GROUP = 27L;

@@ -269,6 +269,12 @@ public class ProcedureBuilder extends ResourceBuilderBase
         }
     }
 
+    public void setLocation(Reference referenceValue, CsvCell... sourceCells) {
+        this.procedure.setLocation(referenceValue);
+
+        auditValue("location.reference", sourceCells);
+    }
+
     @Override
     public Identifier addIdentifier() {
         return this.procedure.addIdentifier();
