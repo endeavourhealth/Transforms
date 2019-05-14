@@ -70,6 +70,7 @@ public abstract class AbstractSubscriberTransformer {
 
             try {
                 ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
+                AbstractSubscriberTransformer transformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(resourceType);
                 String resourceId = resource.getResourceId().toString();
                 String sourceId = ReferenceHelper.createResourceReference(resourceType, resourceId);
 
@@ -86,7 +87,7 @@ public abstract class AbstractSubscriberTransformer {
                     continue;
                 }
 
-                transformResource(subscriberId, resource, params);
+                transformer.transformResource(subscriberId, resource, params);
 
             } catch (Exception ex) {
                 throw new TransformException("Exception transforming " + resource.getResourceType() + " " + resource.getResourceId(), ex);

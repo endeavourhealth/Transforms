@@ -4,6 +4,7 @@ import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
@@ -88,6 +89,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
         Patient fhirPatient = (Patient) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        if (previousVersion != null) {
+            processChangeInNHSNumberAndDOB(params.getServiceId(), fhirPatient, previousVersion, resourceWrapper.getResourceId(), params);
+        }
 
         String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
 
@@ -497,7 +502,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         //history is most-recent-first
         for (ResourceWrapper wrapper: history) {
-            if (wrapper.getCreatedAt().equals(dtLastSent)) {
+            if (wrapper.getCreatedAt().compareTo(dtLastSent) == 0) {
                 return (Patient)FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
             }
         }
@@ -956,6 +961,56 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
+    private void processChangeInNHSNumberAndDOB(UUID serviceId, Patient current, Patient previous,
+                                         UUID resourceID, SubscriberTransformParams params) throws  Exception {
+
+
+        String currentNHSNumber = IdentifierHelper.findNhsNumber(current);
+        String previousNHSNumber = IdentifierHelper.findNhsNumber(previous);
+
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> resources = resourceDal.getResourcesByPatient(serviceId, resourceID);
+
+        Long enterprisePatientId = findEnterpriseId(params, SubscriberTableId.PATIENT,
+                "Patient/"+previous.getId());
+        params.setEnterprisePatientId(enterprisePatientId);
+
+        String discoveryPersonId = patientLinkDal.getPersonId(previous.getId());
+        SubscriberPersonMappingDalI subscriberPersonMappingDal =
+                DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
+        Long enterprisePersonId = subscriberPersonMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
+        params.setEnterprisePersonId(enterprisePersonId);
+
+        //NHS Number was removed, removing resources related to it
+        if (StringUtils.isEmpty(currentNHSNumber) && !StringUtils.isEmpty(previousNHSNumber)) {
+            for (ResourceWrapper resource : resources) {
+                resource.setDeleted(true);
+            }
+            transformResources(resources, params);
+        }
+        //NHS Number was added, adding resources related to it
+        else if (!StringUtils.isEmpty(currentNHSNumber) && StringUtils.isEmpty(previousNHSNumber)) {
+            transformResources(resources, params);
+        }
+
+        //DOB changed values need to reprocess specific resources for changes in age_at_event
+        if (current.getBirthDate() != previous.getBirthDate()) {
+            List<ResourceWrapper> reprocess = new ArrayList();
+            for (ResourceWrapper resource : resources) {
+                if (resource.getResourceType().equalsIgnoreCase(ResourceType.Encounter.toString()) ||
+                        resource.getResourceType().equalsIgnoreCase(ResourceType.AllergyIntolerance.toString()) ||
+                        resource.getResourceType().equalsIgnoreCase(ResourceType.MedicationStatement.toString()) ||
+                        resource.getResourceType().equalsIgnoreCase(ResourceType.MedicationOrder.toString()) ||
+                        resource.getResourceType().equalsIgnoreCase(ResourceType.Observation.toString()) ||
+                        resource.getResourceType().equalsIgnoreCase(ResourceType.ProcedureRequest.toString()) ||
+                        resource.getResourceType().equalsIgnoreCase(ResourceType.ReferralRequest.toString())) {
+
+                    reprocess.add(resource);
+                }
+            }
+            transformResources(reprocess, params);
+        }
+    }
 
 
     /*private static byte[] getEncryptedSalt() throws Exception {
