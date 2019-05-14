@@ -65,11 +65,12 @@ public class PPNAMTransformer {
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+LOG.debug("Processing PPNAM " + nameIdCell.getString() + " for Person ID " + personIdCell.getString());
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
+LOG.debug("No patient builder, so skipping");
             return;
         }
-
 
         CsvCell titleCell = parser.getTitle();
         CsvCell prefixCell = parser.getPrefix();
@@ -79,7 +80,9 @@ public class PPNAMTransformer {
         CsvCell suffixCell = parser.getSuffix();
 
         //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
-        NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
+        boolean removedExisting = NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
+LOG.debug("Removed existing = " + removedExisting);
+LOG.debug("FHIR now has " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(nameIdCell.getString(), nameIdCell);
@@ -113,13 +116,14 @@ public class PPNAMTransformer {
         CsvCell codeMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCell);
         HumanName.NameUse nameUse = convertNameUse(codeMeaningCell.getString(), isActive);
         nameBuilder.setUse(nameUse, nameTypeCell, codeMeaningCell);
-
+LOG.debug("Added all new name, FHIR now has " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
         //remove any duplicate pre-existing name that was added by the ADT feed
         HumanName humanNameAdded = nameBuilder.getNameCreated();
         removeExistingNameWithoutIdByValue(patientBuilder, humanNameAdded);
-
+LOG.debug("Removed duplicate from ADT feed, and FHIR now has " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+LOG.debug("Returned to patient cache with person ID " + personIdCell);
     }
 
     public static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, HumanName check) {

@@ -79,7 +79,7 @@ public class PROCEPreTransformer {
                 return;
             }
 
-LOG.debug("Processing procedure " + procedureIdCell.getString());
+            //LOG.debug("Processing procedure " + procedureIdCell.getString());
 
             stagingPROCE.setEncounterId(parser.getEncounterId().getInt());
 
@@ -89,12 +89,12 @@ LOG.debug("Processing procedure " + procedureIdCell.getString());
             }
 
             CsvCell dateCell = parser.getProcedureDateTime();
-LOG.debug("Date cell has [" + dateCell.getString() + "]");
+            //LOG.debug("Date cell has [" + dateCell.getString() + "]");
             Date procDate = BartsCsvHelper.parseDate(dateCell);
             //explicitly been told that if a PROCE record has no date, then skip it
-LOG.debug("Parsed procedure date = " + procDate);
+            //LOG.debug("Parsed procedure date = " + procDate);
             if (procDate == null) {
-LOG.debug("Skipping this procedure");
+                //LOG.debug("Skipping this procedure");
                 return;
             }
             stagingPROCE.setProcedureDtTm(procDate);
@@ -149,7 +149,7 @@ LOG.debug("Skipping this procedure");
             stagingPROCE.setLookupNhsNumber(null);
             stagingPROCE.setLookupDateOfBirth(null);
 
-LOG.debug("Adding to thread thing with checksum " + stagingPROCE.hashCode());
+            //LOG.debug("Adding to thread thing with checksum " + stagingPROCE.hashCode());
         }
 
         UUID serviceId = csvHelper.getServiceId();
