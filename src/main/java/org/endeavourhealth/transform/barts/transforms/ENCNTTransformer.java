@@ -52,9 +52,6 @@ public class ENCNTTransformer {
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         CsvCell activeCell = parser.getActiveIndicator();
 
-        //this will save a little bit of DB reading when we get to the PROCE and DIAGN transforms
-        csvHelper.cacheEncounterIdToPersonId(encounterIdCell, personIdCell);
-
         //cache our extract date for later
         CsvCell extractDateTimeCell = parser.getExtractDateTime();
         csvHelper.cacheExtractDateTime(extractDateTimeCell);

@@ -777,9 +777,9 @@ public class BasisTransformer {
 
 
 
-    public static void deletePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
+    /*public static void deletePatientResource(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
         fhirResourceFiler.deletePatientResource(parserState, false, resourceBuilders);
-    }
+    }*/
 
     /*public static void deletePatientResourceMapIds(FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState, ResourceBuilderBase... resourceBuilders) throws Exception {
         fhirResourceFiler.deletePatientResource(parserState, true, resourceBuilders);

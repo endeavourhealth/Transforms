@@ -83,7 +83,7 @@ public abstract class BartsCsvToFhirTransformer {
             csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
             PRSNLREFTransformer.transform(getParsers(parserMap, "PRSNLREF", true), fhirResourceFiler, csvHelper);
 
-            //patient PRE transformers - to cache stuff fast
+            //patient PRE transformers - to save and cache stuff fast (mostly PPxxx ID to Person ID mappings)
             PPALIPreTransformer.transform(getParsers(parserMap, "PPALI", false), fhirResourceFiler, csvHelper); //this must be FIRST
             PPADDPreTransformer.transform(getParsers(parserMap, "PPADD", false), fhirResourceFiler, csvHelper);
             PPNAMPreTransformer.transform(getParsers(parserMap, "PPNAM", false), fhirResourceFiler, csvHelper);
@@ -94,7 +94,7 @@ public abstract class BartsCsvToFhirTransformer {
             PPATITransformer.transform(getParsers(parserMap, "PPATI", true), fhirResourceFiler, csvHelper);
             PPALITransformer.transform(getParsers(parserMap, "PPALI", true), fhirResourceFiler, csvHelper);
             PPADDTransformer.transform(getParsers(parserMap, "PPADD", true), fhirResourceFiler, csvHelper);
-            //PPINFTransformer.transform(getParsers(parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper);
+            //PPINFTransformer.transform(getParsers(parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper); //nothing interesting in this file
             PPNAMTransformer.transform(getParsers(parserMap, "PPNAM", true), fhirResourceFiler, csvHelper);
             PPPHOTransformer.transform(getParsers(parserMap, "PPPHO", true), fhirResourceFiler, csvHelper);
             PPRELTransformer.transform(getParsers(parserMap, "PPREL", true), fhirResourceFiler, csvHelper);
@@ -109,25 +109,30 @@ public abstract class BartsCsvToFhirTransformer {
             //pre-transformers, must be done before encounter ones
             CLEVEPreTransformer.transform(getParsers(parserMap, "CLEVE", false), fhirResourceFiler, csvHelper);
             DIAGNPreTransformer.transform(getParsers(parserMap, "DIAGN", false), fhirResourceFiler, csvHelper);
-            PROCEPreTransformer.transform(getParsers(parserMap, "PROCE", false), fhirResourceFiler, csvHelper);
+
 
             ENCNTPreTransformer.transform(getParsers(parserMap, "ENCNT", false), fhirResourceFiler, csvHelper);
 
             // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
-            ENCNTTransformer.transform(getParsers(parserMap, "ENCNT", true), fhirResourceFiler, csvHelper);
+            //taking our saving of Encounters and Episodes until we get time to work out how it should be modelled,
+            //from what files and how/why things don't seem to match up to the ADT feed. Note the ENCNTPreTransformer
+            //is still necessary as that creates the internal ID mappings to get from Encounter ID to Person ID, needed
+            //for processing a number of other files
+            /*ENCNTTransformer.transform(getParsers(parserMap, "ENCNT", true), fhirResourceFiler, csvHelper);
             AEATTTransformer.transform(getParsers(parserMap, "AEATT", true), fhirResourceFiler, csvHelper);
             IPEPITransformer.transform(getParsers(parserMap, "IPEPI", true), fhirResourceFiler, csvHelper);
             IPWDSTransformer.transform(getParsers(parserMap, "IPWDS", true), fhirResourceFiler, csvHelper);
             OPATTTransformer.transform(getParsers(parserMap, "OPATT", true), fhirResourceFiler, csvHelper);
-            //ENCINFTransformer.transform(getParsers(parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper);
+            //ENCINFTransformer.transform(getParsers(parserMap, "ENCINF", csvHelper), fhirResourceFiler, csvHelper); //not interesting
 
             csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler);
-            csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler);
+            csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler);*/
 
             //subsequent transforms may refer to Encounter resources, so ensure they're all on the DB before continuing
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //PROCEDURES - the order is significant, going from less to more rich files
+            PROCEPreTransformer.transform(getParsers(parserMap, "PROCE", false), fhirResourceFiler, csvHelper);
             ProcedurePreTransformer.transform(getParsers(parserMap, "Procedure", true), fhirResourceFiler, csvHelper);
             SusInpatientTailPreTransformer.transform(getParsers(parserMap, "SusInpatientTail", true), fhirResourceFiler,csvHelper);
             SusOutpatientTailPreTransformer.transform(getParsers(parserMap, "SusOutpatientTail", true), fhirResourceFiler,csvHelper);

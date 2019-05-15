@@ -57,8 +57,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public static final String SUS_RECORD_TYPE_OUTPATIENT = "OutPatient";
     public static final String SUS_RECORD_TYPE_EMERGENCY = "Emergency";
 
-
     private static final String PPREL_TO_RELATIONSHIP_TYPE = "PPREL_ID_TO_TYPE";
+    private static final String ENCOUNTER_ID_TO_PERSON_ID = "ENCNTR_ID_TO_PERSON_ID";
 
     //the daily files have dates formatted different to the bulks, so we need to support both
     private static SimpleDateFormat DATE_FORMAT_DAILY = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
@@ -85,8 +85,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
     private Map<String, String> snomedDescToConceptCache = new ConcurrentHashMap<>();
 
-    private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
-    private Map<Long, String> encounterIdToNhsNumberMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
+    //private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
+    //private Map<Long, String> encounterIdToNhsNumberMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
 
     private Map<Long, ReferenceList> clinicalEventChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
@@ -425,13 +425,18 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         resourceIds.put(resourceIdLookup, resourceId);
     }*/
 
-    public void cacheEncounterIdToPersonId(CsvCell encounterIdCell, CsvCell personIdCell) {
-        Long encounterId = encounterIdCell.getLong();
+    public void saveEncounterIdToPersonId(CsvCell encounterIdCell, CsvCell personIdCell) throws Exception {
+        String encounterId = encounterIdCell.getString();
         String personId = personIdCell.getString();
-        encounterIdToPersonIdMap.put(encounterId, personId);
+        saveInternalId(ENCOUNTER_ID_TO_PERSON_ID, encounterId, personId);
     }
 
     public String findPersonIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
+        return getInternalId(ENCOUNTER_ID_TO_PERSON_ID, encounterIdCell.getString());
+    }
+
+    /*public String findPersonIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
+
         Long encounterId = encounterIdCell.getLong();
         String ret = encounterIdToPersonIdMap.get(encounterId);
         if (ret == null
@@ -453,8 +458,10 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         }
 
         return ret;
-    }
-    public String findNhsNumberFromEncounterId(CsvCell encounterIdCell) throws Exception {
+    }*/
+
+
+    /*public String findNhsNumberFromEncounterId(CsvCell encounterIdCell) throws Exception {
         Long encounterId = encounterIdCell.getLong();
         String ret = encounterIdToNhsNumberMap.get(encounterId);
         if (ret == null
@@ -476,7 +483,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         }
 
         return ret;
-    }
+    }*/
 
     public void cacheParentChildClinicalEventLink(CsvCell childEventIdCell, CsvCell parentEventIdCell) throws Exception {
         Long parentEventId = parentEventIdCell.getLong();

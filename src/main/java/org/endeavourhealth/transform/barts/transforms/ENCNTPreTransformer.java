@@ -83,6 +83,9 @@ public class ENCNTPreTransformer {
 
             try {
 
+                //update the internal ID map with our encounter to person mapping
+                csvHelper.saveEncounterIdToPersonId(encounterIdCell, personIdCell);
+
                 //99%+ of ENCNT records have a VISIT ID, but some don't, so we can't use them
                 //also, VISIT IDs starting "RES_" seem to be used as placeholders, across multiple patients
                 if (!visitIdCell.isEmpty()
