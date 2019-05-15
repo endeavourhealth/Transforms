@@ -302,7 +302,7 @@ public abstract class AbstractSubscriberTransformer {
         return ret;
     }
 
-    protected static Resource findResource(Reference reference,
+    public static Resource findResource(Reference reference,
                                            SubscriberTransformParams params) throws Exception {
 
         ResourceWrapper ret = findResourceWrapper(reference, params);

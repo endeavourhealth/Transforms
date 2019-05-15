@@ -284,7 +284,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         return null;
     }
 
-    private static Patient findPatient(List<ResourceWrapper> resourceWrappers) throws Exception {
+    private static Patient findPatient(List<ResourceWrapper> resourceWrappers, SubscriberTransformParams params) throws Exception {
 
         for (ResourceWrapper resourceWrapper: resourceWrappers) {
             if (resourceWrapper.isDeleted()) {
@@ -303,7 +303,8 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
                 if (Strings.isNullOrEmpty(patientId)) {
                     continue;
                 }
-
+                Reference patient = ReferenceHelper.createReference(ResourceType.Patient, patientId);
+                resource = AbstractSubscriberTransformer.findResource(patient, params);
                 return (Patient) resource;
 
             } catch (PatientResourceException ex) {
@@ -379,7 +380,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             }
         }
 
-        Patient patient = findPatient(resources);
+        Patient patient = findPatient(resources, params);
         if (patient != null && StringUtils.isNotEmpty(IdentifierHelper.findNhsNumber(patient))) {
             transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
             transformResources(ResourceType.Appointment, resources, threadPool, params);
@@ -398,25 +399,25 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             transformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
             transformResources(ResourceType.Specimen, resources, threadPool, params);
             transformResources(ResourceType.Flag, resources, threadPool, params);
-        }
 
-        //for these resource types, call with a null transformer as they're actually transformed when
-        //doing one of the above entities, but we want to remove them from the resources list
-        transformResources(ResourceType.Slot, resources, threadPool, params);
+            //for these resource types, call with a null transformer as they're actually transformed when
+            //doing one of the above entities, but we want to remove them from the resources list
+            transformResources(ResourceType.Slot, resources, threadPool, params);
 
-        //close the thread pool
-        errors = threadPool.waitAndStop();
-        handleErrors(errors);
+            //close the thread pool
+            errors = threadPool.waitAndStop();
+            handleErrors(errors);
 
-        //if there's anything left in the list, then we've missed a resource type
-        if (!resources.isEmpty()) {
-            Set<String> resourceTypesMissed = new HashSet<>();
-            for (ResourceWrapper resource: resources) {
-                String resourceType = resource.getResourceType();
-                resourceTypesMissed.add(resourceType);
+            //if there's anything left in the list, then we've missed a resource type
+            if (!resources.isEmpty()) {
+                Set<String> resourceTypesMissed = new HashSet<>();
+                for (ResourceWrapper resource: resources) {
+                    String resourceType = resource.getResourceType();
+                    resourceTypesMissed.add(resourceType);
+                }
+                String s = String.join(", ", resourceTypesMissed);
+                throw new TransformException("Transform to Enterprise doesn't handle " + s + " resource type(s)");
             }
-            String s = String.join(", ", resourceTypesMissed);
-            throw new TransformException("Transform to Enterprise doesn't handle " + s + " resource type(s)");
         }
     }
 
