@@ -58,25 +58,24 @@ public class PROCEPreTransformer {
         if (activeInd) {
 
             String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
-            if (personId != null) {
-
-                if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
-                    return;
-                }
-
-                stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
-
-                //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
-                String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
-                if (mrn == null) {
-                    TransformWarnings.log(LOG, csvHelper, "PROCE {} has no MRN from lookup for person {}", procedureIdCell, personId);
-                    return;
-                }
-                stagingPROCE.setLookupMrn(mrn);
-
-            } else {
-                TransformWarnings.log(LOG, csvHelper, "PROCE {} has no personId to look up", procedureIdCell);
+            if (Strings.isNullOrEmpty(personId)) {
+                TransformWarnings.log(LOG, csvHelper, "No person ID found for PROCE {}", procedureIdCell);
                 return;
+            }
+
+            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                TransformWarnings.log(LOG, csvHelper, "Skipping PROCE {} as not part of filtered subset", procedureIdCell);
+                return;
+            }
+
+            stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
+
+            //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
+            String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
+            if (mrn != null) {
+                stagingPROCE.setLookupMrn(mrn);
+            } else {
+                TransformWarnings.log(LOG, csvHelper, "PROCE {} has no MRN from lookup for person {}", procedureIdCell, personId);
             }
 
             //LOG.debug("Processing procedure " + procedureIdCell.getString());

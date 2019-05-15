@@ -29,6 +29,7 @@ public class SURCCPreTransformer {
 
                 //filter on patients
                 if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                    TransformWarnings.log(LOG, csvHelper, "Skipping SURCC {} as not part of filtered subset", ((SURCC) parser).getSurgicalCaseId());
                     continue;
                 }
                 processRecord((SURCC) parser, csvHelper);

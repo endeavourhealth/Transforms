@@ -66,8 +66,10 @@ public class PPADDTransformer {
         }
 
         CsvCell personIdCell = parser.getPersonId();
+        LOG.trace("Processing PPADD " + addressIdCell.getString() + " for Person ID " + personIdCell.getString());
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
+            LOG.trace("No patient builder, so skipping");
             return;
         }
 
@@ -79,8 +81,11 @@ public class PPADDTransformer {
         //with type "e-mail", but also have this email duplicated in the PPPHO file (where email is normally recorded)
         //so ignore any PPADD records for emails
         if (typeDesc.equalsIgnoreCase("e-mail")) {
+            LOG.trace("Skipping address record as type is " + typeDesc);
             return;
         }
+
+        LOG.trace("FHIR resource = " + patientBuilder.toString() + " starts with " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
 
         CsvCell line1 = parser.getAddressLine1();
         CsvCell line2 = parser.getAddressLine2();
@@ -91,7 +96,8 @@ public class PPADDTransformer {
         CsvCell postcode = parser.getPostcode();
 
         //we always fully re-create the address, so remove it from the patient
-        AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
+        boolean removedExisting = AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
+        LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
         addressBuilder.setId(addressIdCell.getString(), addressIdCell);
@@ -132,12 +138,16 @@ public class PPADDTransformer {
             addressBuilder.setType(type, typeCell, typeDescCell);
         }
 
+        LOG.trace("Added new name, FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
+
         //remove any instance of the address added by the ADT feed
         Address addressCreated = addressBuilder.getAddressCreated();
         removeExistingAddressWithoutIdByValue(patientBuilder, addressCreated);
+        LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+        LOG.trace("Returned to patient cache with person ID " + personIdCell);
     }
 
     private static Address.AddressType convertAddressType(String typeDesc) throws TransformException {

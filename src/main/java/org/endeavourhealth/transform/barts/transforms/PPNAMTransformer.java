@@ -73,8 +73,8 @@ public class PPNAMTransformer {
             return;
         }
 
-        LOG.trace("FHIR resource = " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId());
-        LOG.trace("FHIR starts with " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+        LOG.trace("FHIR resource = " + patientBuilder.toString() + " starts with " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+
         CsvCell titleCell = parser.getTitle();
         CsvCell prefixCell = parser.getPrefix();
         CsvCell firstNameCell = parser.getFirstName();
@@ -118,7 +118,7 @@ public class PPNAMTransformer {
         CsvCell codeMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCell);
         HumanName.NameUse nameUse = convertNameUse(codeMeaningCell.getString(), isActive);
         nameBuilder.setUse(nameUse, nameTypeCell, codeMeaningCell);
-        LOG.trace("Added all new name, FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+        LOG.trace("Added new name, FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
 
         //remove any duplicate pre-existing name that was added by the ADT feed
         HumanName humanNameAdded = nameBuilder.getNameCreated();

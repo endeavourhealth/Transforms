@@ -60,10 +60,12 @@ public class SURCPPreTransformer {
             //we want to filter to a subset of patients
             String personIdStr = csvHelper.findPersonIdFromSurgicalCaseId(surgicalCaseIdCell);
             if (Strings.isNullOrEmpty(personIdStr)) {
+                TransformWarnings.log(LOG, csvHelper, "No person ID found for SURCP {}", procedureIdCell);
                 return;
             }
 
             if (!csvHelper.processRecordFilteringOnPatientId(personIdStr)) {
+                TransformWarnings.log(LOG, csvHelper, "Skipping SURCP {} as not part of filtered subset", procedureIdCell);
                 return;
             }
 

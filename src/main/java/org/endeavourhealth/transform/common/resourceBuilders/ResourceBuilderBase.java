@@ -314,4 +314,13 @@ public abstract class ResourceBuilderBase {
     /*public void removeAudit(String auditJsonPrefix) {
         auditWrapper.removeAudit(auditJsonPrefix);
     }*/
+
+    @Override
+    public String toString() {
+        if (getResource() == null) {
+            return "Builder:<NULL RESOUREC>";
+        } else {
+            return "Builder:" + getResource().getResourceType() + " " + getResource().getId();
+        }
+    }
 }
