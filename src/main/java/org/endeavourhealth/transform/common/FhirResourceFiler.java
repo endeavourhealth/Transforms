@@ -89,6 +89,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void saveAdminResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         saveAdminResource(parserState, true, resources);
     }
+
     public void saveAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, false, resources);
         ExchangeBatch batch = getAdminBatch();
@@ -98,6 +99,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void deleteAdminResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         deleteAdminResource(parserState, true, resources);
     }
+
     public void deleteAdminResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, true, resources);
         ExchangeBatch batch = getAdminBatch();
@@ -107,6 +109,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void savePatientResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         savePatientResource(parserState, true, resources);
     }
+
     public void savePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, false, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
@@ -116,6 +119,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     public void deletePatientResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         deletePatientResource(parserState, true, resources);
     }
+
     public void deletePatientResource(CsvCurrentState parserState, boolean mapIds, ResourceBuilderBase... resources) throws Exception {
         validateResources(serviceId, mapIds, true, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
@@ -134,7 +138,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             return;
         }
 
-        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
 
             //validate we're treating the resource properly as admin / patient
             Resource resource = resourceBuilder.getResource();
@@ -200,9 +204,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
     private void addToFilingQueue(CsvCurrentState parserState, boolean isDelete,
                                   ExchangeBatch exchangeBatch, ResourceBuilderBase[] resourceBuilders) throws Exception {
 
-        for (ResourceBuilderBase builder: resourceBuilders) {
+        for (ResourceBuilderBase builder : resourceBuilders) {
             ResourceJob job = new ResourceJob(parserState, isDelete, exchangeBatch, builder);
-LOG.debug("Adding filing job for " + builder.getResource().getResourceType() + " " + builder.getResource().getId() + " isDelete = " + isDelete);
+            LOG.trace("Adding filing job for " + builder.getResource().getResourceType() + " " + builder.getResource().getId() + " isDelete = " + isDelete);
             addToFilingQueue(job);
         }
     }
@@ -235,7 +239,7 @@ LOG.debug("Adding filing job for " + builder.getResource().getResourceType() + "
 
     private void runNextSaveResourceTask() throws Exception {
 
-LOG.debug("Running next save resource task");
+        LOG.trace("Running next save resource task");
         try {
             resourceTaskLock.lock();
 
@@ -321,7 +325,7 @@ LOG.debug("Running next save resource task");
      */
     private UUID findEdsPatientId(boolean mapIds, ResourceBuilderBase... resourceBuilders) throws Exception {
 
-        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
 
             try {
 
@@ -370,7 +374,7 @@ LOG.debug("Running next save resource task");
 
         //if we get here, something is wrong since we've failed to find a patient ID
         LOG.error("No patient reference found for resources:");
-        for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
             Resource resource = resourceBuilder.getResource();
             LOG.error("" + FhirSerializationHelper.serializeResource(resource));
         }
@@ -485,20 +489,20 @@ LOG.debug("Running next save resource task");
             return;
         }
 
-        for (ThreadPoolError error: errors) {
+        for (ThreadPoolError error : errors) {
 
             Throwable cause = error.getException();
 
             //if the exception is one of our special types, then we
             if (cause instanceof FilingAndMappingException) {
-                FilingAndMappingException filingAndMappingException = (FilingAndMappingException)cause;
+                FilingAndMappingException filingAndMappingException = (FilingAndMappingException) cause;
                 List<CsvCurrentState> parserStates = filingAndMappingException.getParserStates();
                 Throwable innerCause = cause.getCause();
 
                 if (parserStates != null
-                    && !parserStates.isEmpty()) {
+                        && !parserStates.isEmpty()) {
 
-                    for (CsvCurrentState parserState: parserStates) {
+                    for (CsvCurrentState parserState : parserStates) {
                         logTransformRecordError(innerCause, parserState);
                     }
 
@@ -512,9 +516,9 @@ LOG.debug("Running next save resource task");
             //the cause may be an Exception or Error so we need to explicitly
             //cast to the right type to throw it without changing the method signature
             if (cause instanceof Exception) {
-                throw (Exception)cause;
+                throw (Exception) cause;
             } else if (cause instanceof Error) {
-                throw (Error)cause;
+                throw (Error) cause;
             }
         }
     }
@@ -738,7 +742,8 @@ LOG.debug("Running next save resource task");
 
         private List<ResourceJob> jobs = new ArrayList<>();
 
-        public MapIdTask() { }
+        public MapIdTask() {
+        }
 
         public void addJob(ResourceJob job) {
             jobs.add(job);
@@ -761,7 +766,7 @@ LOG.debug("Running next save resource task");
 
             List<ResourceBuilderBase> resourceBuilders = new ArrayList<>();
 
-            for (ResourceJob job: jobs) {
+            for (ResourceJob job : jobs) {
                 ResourceBuilderBase resourceBuilder = job.getResourceBuilder();
                 Resource resource = resourceBuilder.getResource();
                 resources.add(resource);
@@ -779,7 +784,7 @@ LOG.debug("Running next save resource task");
                 String err = "Exception mapping resources: ";
                 List<CsvCurrentState> parserStates = new ArrayList<>();
                 StringBuilder sb = new StringBuilder();
-                for (Resource resource: resources) {
+                for (Resource resource : resources) {
                     err += resource.getResourceType() + "/" + resource.getId() + " ";
                     if (parserStates != null) {
                         ResourceJob job = hmJobsByResource.get(resource);
@@ -800,7 +805,7 @@ LOG.debug("Running next save resource task");
             }
 
             //then bump onto the filing queue
-            for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+            for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
                 Resource resource = resourceBuilder.getResource();
                 boolean isDefinitelyNewResource = definitelyNewResources.contains(resource);
 
@@ -834,7 +839,7 @@ LOG.debug("Running next save resource task");
                 String clsName = "org.endeavourhealth.transform.common.resourceValidators.ResourceValidator" + resource.getClass().getSimpleName();
                 try {
                     Class cls = Class.forName(clsName);
-                    validator = (ResourceValidatorBase)cls.newInstance();
+                    validator = (ResourceValidatorBase) cls.newInstance();
                     resourceValidators.put(resourceCls, validator);
 
                 } catch (Exception ex) {
@@ -891,13 +896,13 @@ LOG.debug("Running next save resource task");
         public Object call() throws Exception {
 
             try {
-LOG.debug("In save resource task for " + jobs.size() + " jobs");
+                LOG.trace("In save resource task for " + jobs.size() + " jobs");
                 Map<Resource, ExchangeBatch> hmResourcesAndBatches = new HashMap<>();
                 Set<Resource> definitelyNewResources = new HashSet<>();
                 Map<String, ResourceFieldMappingAudit> hmAuditsByResourceId = new HashMap<>();
 
-                for (ResourceJob job: jobs) {
-LOG.debug("Saving " + job);
+                for (ResourceJob job : jobs) {
+                    LOG.trace("Saving " + job);
                     //save the exchange batch if it needs saving
                     ExchangeBatch exchangeBatch = job.getExchangeBatch();
                     ResourceBuilderBase builder = job.getResourceBuilder();
@@ -907,9 +912,9 @@ LOG.debug("Saving " + job);
                     //go through the ID mapping process, but this needs doing every time
                     try {
                         Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(serviceId);
-if (!pastMergeReferences.isEmpty()) {
-    LOG.debug("Applying merge " + pastMergeReferences.size() + " mappings");
-}
+                        if (!pastMergeReferences.isEmpty()) {
+                            LOG.trace("Applying merge " + pastMergeReferences.size() + " mappings");
+                        }
 
                         IdHelper.applyExternalReferenceMappings(resource, pastMergeReferences, false);
                     } catch (Exception ex) {
@@ -937,11 +942,11 @@ if (!pastMergeReferences.isEmpty()) {
                 } else {
                     wrappersUpdated = storageService.saveResources(exchangeId, hmResourcesAndBatches, definitelyNewResources);
                 }
-LOG.debug("Done save and " + wrappersUpdated.size() + " wrappers were updated");
+                LOG.trace("Done save and " + wrappersUpdated.size() + " wrappers were updated");
                 //store our audit trail if we actually saved the resource
                 SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
                 Map<ResourceWrapper, ResourceFieldMappingAudit> hmAuditsToSave = new HashMap<>();
-                for (ResourceWrapper wrapper: wrappersUpdated) {
+                for (ResourceWrapper wrapper : wrappersUpdated) {
                     ResourceFieldMappingAudit audit = hmAuditsByResourceId.get(wrapper.getResourceId().toString());
                     if (audit != null) {
                         hmAuditsToSave.put(wrapper, audit);
@@ -962,7 +967,7 @@ LOG.debug("Done save and " + wrappersUpdated.size() + " wrappers were updated");
                 String err = "Exception filing resources: ";
                 List<CsvCurrentState> parserStates = new ArrayList<>();
                 StringBuilder sb = new StringBuilder();
-                for (ResourceJob job: jobs) {
+                for (ResourceJob job : jobs) {
                     ResourceBuilderBase builder = job.getResourceBuilder();
                     Resource resource = builder.getResource();
                     err += resource.getResourceType() + "/" + resource.getId() + " ";

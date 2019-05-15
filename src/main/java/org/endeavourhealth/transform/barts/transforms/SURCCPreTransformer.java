@@ -25,12 +25,13 @@ public class SURCCPreTransformer {
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
-                try {
-                    processRecord((SURCC) parser, csvHelper);
+                //no try/catch as records in this file aren't independent and can't be re-processed on their own
 
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                //filter on patients
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                    continue;
                 }
+                processRecord((SURCC) parser, csvHelper);
             }
         }
     }
@@ -41,7 +42,8 @@ public class SURCCPreTransformer {
         stagingSURCC.setExchangeId(parser.getExchangeId().toString());
         stagingSURCC.setDtReceived(new Date());
 
-        stagingSURCC.setSurgicalCaseId(parser.getSurgicalCaseId().getInt());
+        CsvCell surgicalCaseIdCell = parser.getSurgicalCaseId();
+        stagingSURCC.setSurgicalCaseId(surgicalCaseIdCell.getInt());
 
         CsvCell extractedDateCell = parser.getExtractDateTime();
         stagingSURCC.setDtExtract(BartsCsvHelper.parseDate(extractedDateCell));
@@ -50,10 +52,7 @@ public class SURCCPreTransformer {
         stagingSURCC.setActiveInd(activeInd);
 
         if (activeInd) {
-            String personId = parser.getPersonId().getString();
-            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
-                return;
-            }
+            CsvCell personIdCell = parser.getPersonId();
 
             //if no start or end, then the surgery hasn't happened yet, so skip
             CsvCell startCell = parser.getSurgeryStartDtTm();
@@ -69,9 +68,9 @@ public class SURCCPreTransformer {
             }
 
             //cache the person ID for our case ID, so the CURCP parser can look it up
-            csvHelper.savePersonIdFromSurccId(parser.getSurgicalCaseId().getInt(), personId);
+            csvHelper.saveSurgicalCaseIdToPersonId(surgicalCaseIdCell, personIdCell);
 
-            stagingSURCC.setPersonId(Integer.parseInt(personId));
+            stagingSURCC.setPersonId(personIdCell.getInt());
             stagingSURCC.setEncounterId(parser.getEncounterId().getInt());
 
             CsvCell cancelledCell = parser.getCancelledDateTime();

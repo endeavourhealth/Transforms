@@ -21,7 +21,8 @@ public class SURCP extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
         return new String[]{
                 "#SURGICAL_CASE_PROC_ID",
-                "EXTRACT_DT_TM", "ACTIVE_IND",
+                "EXTRACT_DT_TM",
+                "ACTIVE_IND",
                 "SURGICAL_CASE_ID",
                 "ORDER_ID",
                 "SCH_PROC_CD",

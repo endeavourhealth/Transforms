@@ -199,7 +199,7 @@ public class PROCETransformer {
                 procCode = csvHelper.lookupSnomedConceptIdFromDescId(procCode);
             }
 
-            CsvCell sequenceNumberCell = parser.getCDSSequence();
+            CsvCell sequenceNumberCell = parser.getSequenceNumber();
 
             List<String> procCodes = new ArrayList<>();
             // Get data from SUS file caches for OPCS4
@@ -352,7 +352,7 @@ public class PROCETransformer {
 
     private static void processSequenceNumber(PROCE parser, ProcedureBuilder procedureBuilder, BartsCsvHelper csvHelper) throws Exception {
 
-        CsvCell sequenceNumberCell = parser.getCDSSequence();
+        CsvCell sequenceNumberCell = parser.getSequenceNumber();
         if (BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)) {
             return;
         }

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingSURCPDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURCP;
@@ -27,12 +28,10 @@ public class SURCPPreTransformer {
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
-                try {
-                    processRecord((SURCP) parser, csvHelper);
+                //no try/catch as records in this file aren't independent and can't be re-processed on their own
 
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
+                //can't filter on patients here, as we don't have a person ID cell, so this is done lower down
+                processRecord((SURCP) parser, csvHelper);
             }
         }
     }
@@ -42,9 +41,9 @@ public class SURCPPreTransformer {
         StagingSURCP stagingSURCP = new StagingSURCP();
         stagingSURCP.setExchangeId(parser.getExchangeId().toString());
         stagingSURCP.setDtReceived(new Date());
-        if (!csvHelper.isEmptyOrIsZero(parser.getSurgicalCaseProcedureId())) {
-            stagingSURCP.setSurgicalCaseProcedureId(parser.getSurgicalCaseProcedureId().getInt());
-        }
+
+        CsvCell procedureIdCell = parser.getSurgicalCaseProcedureId();
+        stagingSURCP.setSurgicalCaseProcedureId(procedureIdCell.getInt());
 
         CsvCell extractedDateCell = parser.getExtractDateTime();
         stagingSURCP.setDtExtract(BartsCsvHelper.parseDate(extractedDateCell));
@@ -54,9 +53,17 @@ public class SURCPPreTransformer {
 
         if (activeInd) {
 
-            int caseId = parser.getSurgicalCaseId().getInt();
-            stagingSURCP.setSurgicalCaseId(caseId);
-            if (csvHelper.getPersonIdFromSurccId(caseId) == null) {
+            CsvCell surgicalCaseIdCell = parser.getSurgicalCaseId();
+            stagingSURCP.setSurgicalCaseId(surgicalCaseIdCell.getInt());
+
+            //we don't strictly need the person ID for loading the staging table, but we do if
+            //we want to filter to a subset of patients
+            String personIdStr = csvHelper.findPersonIdFromSurgicalCaseId(surgicalCaseIdCell);
+            if (Strings.isNullOrEmpty(personIdStr)) {
+                return;
+            }
+
+            if (!csvHelper.processRecordFilteringOnPatientId(personIdStr)) {
                 return;
             }
 
@@ -77,8 +84,10 @@ public class SURCPPreTransformer {
             stagingSURCP.setProcedureText(parser.getProcedureText().getString());
             stagingSURCP.setModifierText(parser.getModifierText().getString());
             stagingSURCP.setPrimaryProcedureIndicator(parser.getPrimaryProcedureIndicator().getInt());
-            if (!BartsCsvHelper.isEmptyOrIsZero(parser.getSurgeonPersonnelId())) {
-                stagingSURCP.setSurgeonPersonnelId(parser.getSurgeonPersonnelId().getInt());
+
+            CsvCell surgeonIdCell = parser.getSurgeonPersonnelId();
+            if (!BartsCsvHelper.isEmptyOrIsZero(surgeonIdCell)) {
+                stagingSURCP.setSurgeonPersonnelId(surgeonIdCell.getInt());
             }
 
             CsvCell startCell = parser.getStartDateTime();

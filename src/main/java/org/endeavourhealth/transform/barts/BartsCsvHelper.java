@@ -59,6 +59,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
     private static final String PPREL_TO_RELATIONSHIP_TYPE = "PPREL_ID_TO_TYPE";
     private static final String ENCOUNTER_ID_TO_PERSON_ID = "ENCNTR_ID_TO_PERSON_ID";
+    private static final String SURGICAL_CASE_ID_TO_PERSON_ID = "SURCC_ID_TO_PERSON_ID";
 
     //the daily files have dates formatted different to the bulks, so we need to support both
     private static SimpleDateFormat DATE_FORMAT_DAILY = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
@@ -100,7 +101,6 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private SusPatientCache susPatientCache = new SusPatientCache(this);
     private SusPatientTailCache susPatientTailCache = new SusPatientTailCache(this);
     private ThreadPool utilityThreadPool = null;
-    private Map<Integer, String> surccIdToPersonIdMap = new HashMap<>();
 
     private UUID serviceId = null;
     private UUID systemId = null;
@@ -1093,6 +1093,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
             return true;
         }
 
+        //many files have an empty person ID when they're being deleted, and we don't want to skip processing them
+        if (Strings.isNullOrEmpty(personId)) {
+            return true;
+        }
+
         return personIdsToFilterOn.contains(personId);
     }
 
@@ -1142,11 +1147,16 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         String rest = indate.substring(indate.lastIndexOf("-"));
         return first + monthToMixedCase(month) + rest;
     }
-    public String getPersonIdFromSurccId(int surccid) {
-        return surccIdToPersonIdMap.get(surccid);
+
+
+    public void saveSurgicalCaseIdToPersonId(CsvCell surgicalCaseIdCell, CsvCell personIdCell) throws Exception {
+        String surgicalCaseId = surgicalCaseIdCell.getString();
+        String personId = personIdCell.getString();
+        saveInternalId(SURGICAL_CASE_ID_TO_PERSON_ID, surgicalCaseId, personId);
     }
 
-    public void savePersonIdFromSurccId(int key, String personId) {
-        surccIdToPersonIdMap.put(key,personId);
+    public String findPersonIdFromSurgicalCaseId(CsvCell surgicalCaseIdCell) throws Exception {
+        return getInternalId(SURGICAL_CASE_ID_TO_PERSON_ID, surgicalCaseIdCell.getString());
     }
+
 }

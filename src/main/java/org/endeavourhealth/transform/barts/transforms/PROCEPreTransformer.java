@@ -140,14 +140,12 @@ public class PROCEPreTransformer {
             }
 
             stagingPROCE.setProcedureTerm(procTerm);
-            if (!BartsCsvHelper.isEmptyOrIsZero(parser.getCDSSequence())) {
-                stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
+
+            CsvCell sequenceNumberCell = parser.getSequenceNumber();
+            //there are a small number of PROCE records with a zero sequence number, so ignore it
+            if (!BartsCsvHelper.isEmptyOrIsZero(sequenceNumberCell)) {
+                stagingPROCE.setProcedureSeqNo(sequenceNumberCell.getInt());
             }
-
-
-            //TODO - remove these columns (mid-May)
-            stagingPROCE.setLookupNhsNumber(null);
-            stagingPROCE.setLookupDateOfBirth(null);
 
             //LOG.debug("Adding to thread thing with checksum " + stagingPROCE.hashCode());
         }

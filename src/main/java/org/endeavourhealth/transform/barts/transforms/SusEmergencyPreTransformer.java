@@ -20,12 +20,8 @@ public class SusEmergencyPreTransformer extends CdsPreTransformerBase {
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
-                try {
-                    processProcedures((SusEmergency)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY);
-
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
+                //no try/catch here, since any failure here means we don't want to continue
+                processProcedures((SusEmergency)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY);
             }
         }
     }

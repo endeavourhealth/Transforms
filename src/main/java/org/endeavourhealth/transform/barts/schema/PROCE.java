@@ -55,7 +55,7 @@ public class PROCE extends AbstractCsvParser {
         return super.getCell("ENCNTR_SLICE_ID");
     }
 
-    public CsvCell getCDSSequence() {
+    public CsvCell getSequenceNumber() {
         return super.getCell("PROCEDURE_SEQ_NBR");
     }
 

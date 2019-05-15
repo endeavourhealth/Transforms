@@ -31,8 +31,9 @@ public class PPNAMTransformer {
 
         for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
-
                 //no try/catch as records in this file aren't independent and can't be re-processed on their own
+
+                //filter on patients
                 if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
@@ -65,15 +66,15 @@ public class PPNAMTransformer {
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-LOG.debug("Processing PPNAM " + nameIdCell.getString() + " for Person ID " + personIdCell.getString());
+        LOG.trace("Processing PPNAM " + nameIdCell.getString() + " for Person ID " + personIdCell.getString());
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
-LOG.debug("No patient builder, so skipping");
+            LOG.trace("No patient builder, so skipping");
             return;
         }
 
-LOG.debug("FHIR resource = " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId());
-LOG.debug("FHIR starts with " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
+        LOG.trace("FHIR resource = " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId());
+        LOG.trace("FHIR starts with " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
         CsvCell titleCell = parser.getTitle();
         CsvCell prefixCell = parser.getPrefix();
         CsvCell firstNameCell = parser.getFirstName();
@@ -83,7 +84,7 @@ LOG.debug("FHIR starts with " + ((Patient)patientBuilder.getResource()).getName(
 
         //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
         boolean removedExisting = NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
-LOG.debug("Removed existing = " + removedExisting + " leaving " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
+        LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(nameIdCell.getString(), nameIdCell);
@@ -117,14 +118,16 @@ LOG.debug("Removed existing = " + removedExisting + " leaving " + ((Patient)pati
         CsvCell codeMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCell);
         HumanName.NameUse nameUse = convertNameUse(codeMeaningCell.getString(), isActive);
         nameBuilder.setUse(nameUse, nameTypeCell, codeMeaningCell);
-LOG.debug("Added all new name, FHIR now has " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
+        LOG.trace("Added all new name, FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+
         //remove any duplicate pre-existing name that was added by the ADT feed
         HumanName humanNameAdded = nameBuilder.getNameCreated();
         removeExistingNameWithoutIdByValue(patientBuilder, humanNameAdded);
-LOG.debug("Removed duplicate from ADT feed, and FHIR now has " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
+        LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
-LOG.debug("Returned to patient cache with person ID " + personIdCell);
+        LOG.trace("Returned to patient cache with person ID " + personIdCell);
     }
 
     public static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, HumanName check) {
