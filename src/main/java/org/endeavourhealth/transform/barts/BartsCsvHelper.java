@@ -65,7 +65,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private static SimpleDateFormat DATE_FORMAT_DAILY = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static SimpleDateFormat DATE_FORMAT_BULK = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
     private static SimpleDateFormat DATE_FORMAT_CLEVE = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-    private static SimpleDateFormat DATE_FORMAT_CLEVE2 = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss");
+    private static SimpleDateFormat DATE_FORMAT_PROCEDURE = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss");
 
     private static Date cachedEndOfTime = null;
     private static Date cachedStartOfTime = null;
@@ -723,22 +723,24 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
             } catch (ParseException ex) {
                 try {
-                    d = DATE_FORMAT_BULK.parse(dateString);
+                    //bulk extracts used a different date format and weren't affected by BST issue
                     adjustForBst = false;
+                    d = DATE_FORMAT_BULK.parse(dateString);
 
                 } catch (ParseException ex2) {
-
-                    //I have no idea if the weird CLEVE dates are affected by the BST issue or not
-                    //so we need to investigate to find out if they are or not. But I don't have time to
-                    //work that out now, so pushing this back until we actually start processing the CLEVE files
-                    throw new RuntimeException("Need to work out if CLEVE dates are affected by the BST issue (DAB-75)", ex2);
-                    /*adjustForBst = true or false??;
                     try {
-                        d = DATE_FORMAT_CLEVE.parse(dateString);
-                    } catch (ParseException ex3) {
+                        //fixed width files (e.g. procedure) use a third format and aren't affected by BST issue
                         String date3 = formatAllcapsMonth(dateString);
-                        d = DATE_FORMAT_CLEVE2.parse(date3);
-                    }*/
+                        d = DATE_FORMAT_PROCEDURE.parse(date3);
+                        adjustForBst = false;
+
+                    } catch (ParseException ex3) {
+                        //I have no idea if the weird CLEVE dates are affected by the BST issue or not
+                        //so we need to investigate to find out if they are or not. But I don't have time to
+                        //work that out now, so pushing this back until we actually start processing the CLEVE files
+                        d = DATE_FORMAT_CLEVE.parse(dateString);
+                        adjustForBst = false;
+                    }
                 }
             }
         }
