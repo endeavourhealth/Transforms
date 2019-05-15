@@ -72,6 +72,8 @@ LOG.debug("No patient builder, so skipping");
             return;
         }
 
+LOG.debug("FHIR resource = " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId());
+LOG.debug("FHIR starts with " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
         CsvCell titleCell = parser.getTitle();
         CsvCell prefixCell = parser.getPrefix();
         CsvCell firstNameCell = parser.getFirstName();
@@ -81,8 +83,7 @@ LOG.debug("No patient builder, so skipping");
 
         //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
         boolean removedExisting = NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
-LOG.debug("Removed existing = " + removedExisting);
-LOG.debug("FHIR now has " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
+LOG.debug("Removed existing = " + removedExisting + " leaving " + ((Patient)patientBuilder.getResource()).getName().size() + " names");
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(nameIdCell.getString(), nameIdCell);
