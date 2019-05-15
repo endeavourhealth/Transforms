@@ -284,46 +284,6 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         return null;
     }
 
-    private static Patient findPatient(List<ResourceWrapper> resourceWrappers, SubscriberTransformParams params) throws Exception {
-
-        for (ResourceWrapper resourceWrapper: resourceWrappers) {
-            if (resourceWrapper.isDeleted()) {
-                continue;
-            }
-
-            String resourceTypeStr = resourceWrapper.getResourceType();
-            ResourceType resourceType = ResourceType.valueOf(resourceTypeStr);
-            if (!FhirResourceFiler.isPatientResource(resourceType)) {
-                continue;
-            }
-
-            try {
-                Resource resource = FhirResourceHelper.deserialiseResouce(resourceWrapper);
-                String patientId = IdHelper.getPatientId(resource);
-                if (Strings.isNullOrEmpty(patientId)) {
-                    continue;
-                }
-                Reference patient = ReferenceHelper.createReference(ResourceType.Patient, patientId);
-                resource = AbstractSubscriberTransformer.findResource(patient, params);
-                return (Patient) resource;
-
-            } catch (PatientResourceException ex) {
-                //we've had this exception because a batch has ended up containing JUST
-                //a Slot resource, which means we can't get the patient ID. The matching Appointment
-                //resource was created in a separate exchange_batch, but errors meant this data was
-                //split into a separate batch. This being the case, the Slot will already have been sent
-                //to the subscriber, because that's manually done when the appointment is done. So we
-                //can safely ignore this
-                if (resourceType != ResourceType.Slot) {
-                    throw ex;
-                }
-            }
-        }
-
-        return null;
-    }
-
-
     private static void transformResources(List<ResourceWrapper> resources,
                                           SubscriberTransformParams params) throws Exception {
 
@@ -380,7 +340,9 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             }
         }
 
-        Patient patient = findPatient(resources, params);
+        Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
+        Patient patient = (Patient) AbstractSubscriberTransformer.findResource(patientRef, params);
+
         if (patient != null && StringUtils.isNotEmpty(IdentifierHelper.findNhsNumber(patient))) {
             transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
             transformResources(ResourceType.Appointment, resources, threadPool, params);
