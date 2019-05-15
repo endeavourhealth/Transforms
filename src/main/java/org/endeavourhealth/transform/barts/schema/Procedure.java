@@ -93,7 +93,7 @@ public class Procedure extends AbstractFixedParser {
      * nhs number is in the format nnn-nnn-nnnn so we have this fn to return a version without the dashes
      */
     public CsvCell getNhsNumberSanitised() {
-        CsvCell ret = getEncounterId();
+        CsvCell ret = getNhsNumber();
         String s = ret.getString().replaceAll("\\-", "");
         return CsvCell.factoryWithNewValue(ret, s);
     }
