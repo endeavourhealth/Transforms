@@ -59,7 +59,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
         // String originalTerm = null;
-        Integer bnfReference = null;
+        String bnfReference = null;
         Double ageAtEvent = null;
         String issueMethod = null;
 
@@ -164,23 +164,27 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        //  TODO Finalised the use of coreConceptId and the IM in order to look up the BNF
-        //   Chapter in that table in the reference DB, by using the actual Snomed code
+        //  TODO Finalised and tested the use of originalCoding, or the IM, in order to look up
+        //   the BNF Chapter in that table in the reference DB, by using the actual Snomed code
         String snomedCodeString = null;
 
-        if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)){
-
+         if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)){
             snomedCodeString = originalCoding.getCode();
+            // LOG.info("originalCode snomedCodeString: " + snomedCodeString);
         }
         else {
             snomedCodeString = IMHelper.getIMSnomedCodeForConceptId(params, fhir, coreConceptId);
+            // LOG.info("IM snomedCodeString: " + snomedCodeString);
         }
 
         if (snomedCodeString != null) {
             SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
             String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCodeString);
+            //LOG.info("fullBnfChapterCodeString: " + fullBnfChapterCodeString);
+
             if (fullBnfChapterCodeString != null && fullBnfChapterCodeString.length() > 7) {
-                bnfReference = Integer.parseInt(fullBnfChapterCodeString.substring(0, 6));
+                bnfReference = fullBnfChapterCodeString.substring(0, 6);
+                //LOG.info("bnfReference: " + bnfReference);
             }
         }
 
@@ -215,13 +219,11 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
                 ageAtEvent,
                 issueMethod);
 
-
     }
 
     @Override
     protected SubscriberTableId getMainSubscriberTableId() {
         return SubscriberTableId.MEDICATION_ORDER;
     }
-
 
 }

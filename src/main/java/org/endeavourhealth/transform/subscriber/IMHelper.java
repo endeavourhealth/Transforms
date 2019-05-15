@@ -22,8 +22,11 @@ public class IMHelper {
 
     public static Integer getIMMappedConcept(SubscriberTransformParams params, Resource fhirResource, String scheme, String code) throws Exception {
         String key = createCacheKey(scheme, code);
-        Integer ret = mappedCache.get(key);
-        if (ret == null) {
+        Integer ret = null;
+        if (code != null) {
+            ret = mappedCache.get(key);
+        }
+        if (ret == null & code != null) {
             ret = getIMMappedConceptWithRetry(scheme, code);
             if (ret == null) {
                 //if null, we may let it slide if in testing, just logging it out
@@ -61,8 +64,11 @@ public class IMHelper {
 
     public static Integer getIMConcept(SubscriberTransformParams params, Resource fhirResource, String scheme, String code) throws Exception {
         String key = createCacheKey(scheme, code);
-        Integer ret = coreCache.get(key);
-        if (ret == null) {
+        Integer ret = null;
+        if (code != null) {
+            ret = coreCache.get(key);
+        }
+        if (ret == null & code != null) {
             ret = getConceptIdForSchemeCodeWithRetry(scheme, code);
             if (ret == null) {
                 //if null, we may let it slide if in testing, just logging it out
@@ -100,8 +106,11 @@ public class IMHelper {
 
     public static Integer getIMMappedConceptForTypeTerm(SubscriberTransformParams params, Resource fhirResource, String type, String term) throws Exception {
         String key = createCacheKey(type, term);
-        Integer ret = mappedCache.get(key);
-        if (ret == null) {
+        Integer ret = null;
+        if (term != null) {
+            ret = mappedCache.get(key);
+        }
+        if (ret == null && term != null) {
             ret = getIMMappedConceptForTypeTermWithRetry(type, term);
             if (ret == null) {
                 //if null, we may let it slide if in testing, just logging it out
@@ -139,8 +148,13 @@ public class IMHelper {
 
     public static String getIMSnomedCodeForConceptId(SubscriberTransformParams params, Resource fhirResource, Integer conceptId) throws Exception {
         Integer key = conceptId;
-        String ret = snomedCodeCache.get(key);
-        if (ret == null) {
+        String ret = null;
+
+        if (key != null) {
+            ret = snomedCodeCache.get(key);
+        }
+
+        if (ret == null && conceptId != null) {
             ret = getIMSnomedCodeForConceptIdWithRetry(conceptId);
             if (ret == null) {
                 //if null, we may let it slide if in testing, just logging it out

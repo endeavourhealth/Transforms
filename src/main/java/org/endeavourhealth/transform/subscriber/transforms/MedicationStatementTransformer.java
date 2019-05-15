@@ -62,7 +62,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
         // String originalTerm = null;
-        Integer bnfReference = null;
+        String bnfReference = null;
         Double ageAtEvent = null;
         String issueMethod = null;
 
@@ -160,8 +160,8 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
 
         authorisationTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_MED_STATEMENT_AUTH_TYPE, authorisationType.getCode());
 
-        //  TODO Finalised the use of coreConceptId and the IM in order to look up the BNF
-        //   Chapter in that table in the reference DB, by using the actual Snomed code
+        //  TODO Finalised and tested the use of originalCoding, or the IM, in order to look up
+        //   the BNF Chapter in that table in the reference DB, by using the actual Snomed code
         String snomedCodeString = null;
 
         if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)){
@@ -176,7 +176,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
             SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
             String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCodeString);
             if (fullBnfChapterCodeString != null && fullBnfChapterCodeString.length() > 7) {
-                bnfReference = Integer.parseInt(fullBnfChapterCodeString.substring(0, 6));
+                bnfReference = fullBnfChapterCodeString.substring(0, 6);
             }
         }
 
@@ -189,6 +189,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         if (fhir.getNote() != null && fhir.getNote().length() > 0) {
             issueMethod = fhir.getNote();
         }
+
 
         model.writeUpsert(subscriberId,
             organizationId,
@@ -210,11 +211,11 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
             ageAtEvent,
             issueMethod);
 
-
     }
 
     @Override
     protected SubscriberTableId getMainSubscriberTableId() {
         return SubscriberTableId.MEDICATION_STATEMENT;
     }
+
 }

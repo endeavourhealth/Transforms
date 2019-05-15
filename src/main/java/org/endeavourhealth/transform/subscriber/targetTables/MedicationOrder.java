@@ -36,7 +36,7 @@ public class MedicationOrder extends AbstractTargetTable {
                             Integer coreConceptId,
                             Integer nonCoreConceptId,
                             // String originalTerm,
-                            Integer bnfReference,
+                            String bnfReference,
                             Double ageAtEvent,
                             String issueMethod) throws Exception {
 
@@ -59,7 +59,7 @@ public class MedicationOrder extends AbstractTargetTable {
                 convertInt(coreConceptId),
                 convertInt(nonCoreConceptId),
                 // originalTerm,
-                convertInt(bnfReference),
+                bnfReference,
                 convertDouble(ageAtEvent),
                 issueMethod);
     }
@@ -115,7 +115,7 @@ public class MedicationOrder extends AbstractTargetTable {
                 Long.class,
                 Integer.class,
                 Integer.class,
-                Integer.class,
+                String.class,
                 BigDecimal.class,
                 String.class
         };

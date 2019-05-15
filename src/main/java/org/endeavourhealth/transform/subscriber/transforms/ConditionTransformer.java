@@ -8,13 +8,13 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -134,10 +134,13 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
         if (episodicityExtension != null) {
 
+            //  TODO Coded and first test of the use of IM to populate episodicityConceptId
             StringType episodicityType = (StringType) episodicityExtension.getValue();
-
-            //IMHelper.getConceptId("FhirExtensionUri.PROBLEM_EPISODICITY");
-            //TODO do we know how extension uri is mapped?
+            LOG.info("episodicityType: " + episodicityType);
+            String episodicity = episodicityType.toString();
+            LOG.info("episodicity: " + episodicity);
+            episodicityConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.FHIR_CONDITION_EPISODICITY, episodicity);
+            LOG.info("episodicityConceptId: " + episodicityConceptId);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
