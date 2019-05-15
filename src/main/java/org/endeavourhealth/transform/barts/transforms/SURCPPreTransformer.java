@@ -45,7 +45,9 @@ public class SURCPPreTransformer {
         if (!csvHelper.isEmptyOrIsZero(parser.getSurgicalCaseProcedureId())) {
             stagingSURCP.setSurgicalCaseProcedureId(parser.getSurgicalCaseProcedureId().getInt());
         }
-        stagingSURCP.setDtExtract(parser.getExtractDateTime().getDate());
+
+        CsvCell extractedDateCell = parser.getExtractDateTime();
+        stagingSURCP.setDtExtract(BartsCsvHelper.parseDate(extractedDateCell));
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingSURCP.setActiveInd(activeInd);
@@ -81,12 +83,14 @@ public class SURCPPreTransformer {
 
             CsvCell startCell = parser.getStartDateTime();
             if (!startCell.isEmpty()) {
-                stagingSURCP.setDtStart(startCell.getDateTime());
+                Date d = BartsCsvHelper.parseDate(startCell);
+                stagingSURCP.setDtStart(d);
             }
 
             CsvCell stopCell = parser.getStopDateTime();
             if (!stopCell.isEmpty()) {
-                stagingSURCP.setDtStop(stopCell.getDateTime());
+                Date d = BartsCsvHelper.parseDate(stopCell);
+                stagingSURCP.setDtStop(d);
             }
 
 

@@ -54,9 +54,33 @@ public class PROCEPreTransformer {
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingPROCE.setActiveInd(activeInd);
 
-
         //only set additional values if active
         if (activeInd) {
+
+            String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
+            if (personId != null) {
+
+                if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                    return;
+                }
+
+                stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
+
+                //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
+                String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
+                if (mrn == null) {
+                    TransformWarnings.log(LOG, csvHelper, "PROCE {} has no MRN from lookup for person {}", procedureIdCell, personId);
+                    return;
+                }
+                stagingPROCE.setLookupMrn(mrn);
+
+            } else {
+                TransformWarnings.log(LOG, csvHelper, "PROCE {} has no personId to look up", procedureIdCell);
+                return;
+            }
+
+            //LOG.debug("Processing procedure " + procedureIdCell.getString());
+
             stagingPROCE.setEncounterId(parser.getEncounterId().getInt());
 
             CsvCell sliceCell = parser.getEncounterSliceID();
@@ -64,9 +88,13 @@ public class PROCEPreTransformer {
                 stagingPROCE.setEncounterSliceId(sliceCell.getInt());
             }
 
-            Date procDate = csvHelper.parseDate(parser.getProcedureDateTime());
+            CsvCell dateCell = parser.getProcedureDateTime();
+            //LOG.debug("Date cell has [" + dateCell.getString() + "]");
+            Date procDate = BartsCsvHelper.parseDate(dateCell);
             //explicitly been told that if a PROCE record has no date, then skip it
+            //LOG.debug("Parsed procedure date = " + procDate);
             if (procDate == null) {
+                //LOG.debug("Skipping this procedure");
                 return;
             }
             stagingPROCE.setProcedureDtTm(procDate);
@@ -112,37 +140,16 @@ public class PROCEPreTransformer {
             }
 
             stagingPROCE.setProcedureTerm(procTerm);
-            if (csvHelper.isEmptyOrIsZero(parser.getCDSSequence())) {
+            if (BartsCsvHelper.isEmptyOrIsZero(parser.getCDSSequence())) {
                 stagingPROCE.setProcedureSeqNo(parser.getCDSSequence().getInt());
             }
 
-            String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
-            if (personId != null) {
-
-                if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
-                    return;
-                }
-
-                stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
-
-                //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
-                String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
-                if (mrn == null) {
-                    TransformWarnings.log(LOG, csvHelper, "PROCE {} has no MRN from lookup for person {}", procedureIdCell, personId);
-                    return;
-                }
-                stagingPROCE.setLookupMrn(mrn);
-
-            } else {
-                TransformWarnings.log(LOG, csvHelper, "PROCE {} has no personId to look up", procedureIdCell);
-                return;
-            }
 
             //TODO - remove these columns (mid-May)
             stagingPROCE.setLookupNhsNumber(null);
             stagingPROCE.setLookupDateOfBirth(null);
 
-
+            //LOG.debug("Adding to thread thing with checksum " + stagingPROCE.hashCode());
         }
 
         UUID serviceId = csvHelper.getServiceId();

@@ -699,6 +699,62 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
             return null;
         }
 
+        Date d;
+        boolean adjustForBst;
+
+        String dateString = cell.getString();
+
+        //quick and dirty check first before we try parsing. Only this format has dots in it.
+        if (dateString.contains(".")) {
+            d = DATE_FORMAT_BULK.parse(dateString);
+            adjustForBst = false;
+
+        } else {
+            try {
+                d = DATE_FORMAT_DAILY.parse(dateString);
+                adjustForBst = true;
+
+            } catch (ParseException ex) {
+                try {
+                    d = DATE_FORMAT_BULK.parse(dateString);
+                    adjustForBst = false;
+
+                } catch (ParseException ex2) {
+
+                    //I have no idea if the weird CLEVE dates are affected by the BST issue or not
+                    //so we need to investigate to find out if they are or not. But I don't have time to
+                    //work that out now, so pushing this back until we actually start processing the CLEVE files
+                    throw new RuntimeException("Need to work out if CLEVE dates are affected by the BST issue (DAB-75)", ex2);
+                    /*adjustForBst = true or false??;
+                    try {
+                        d = DATE_FORMAT_CLEVE.parse(dateString);
+                    } catch (ParseException ex3) {
+                        String date3 = formatAllcapsMonth(dateString);
+                        d = DATE_FORMAT_CLEVE2.parse(date3);
+                    }*/
+                }
+            }
+        }
+
+        //DAB-75 data entered during BST is an hour out in the extracts, so we need to move forwards to correct it
+        if (adjustForBst) {
+            if (BstHelper.isBst(d)) {
+                Calendar cal = BstHelper.borrowCalendar(); //cheaper than creating a new calendar
+                cal.setTime(d);
+                cal.add(Calendar.HOUR_OF_DAY, 1);
+                d = cal.getTime();
+                BstHelper.returnCalendar(cal);
+            }
+        }
+
+        return d;
+    }
+    /*public static Date parseDate(CsvCell cell) throws ParseException {
+
+        if (cell.isEmpty()) {
+            return null;
+        }
+
         String dateString = cell.getString();
         // try to avoid expected ParseExceptions by guessing the correct dateFormat
         if (dateString.contains(".")) {
@@ -730,7 +786,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
             }
         }
-    }
+    }*/
 
 
     private static String monthToMixedCase(String month) {

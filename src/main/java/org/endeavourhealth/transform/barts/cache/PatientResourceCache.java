@@ -3,10 +3,7 @@ package org.endeavourhealth.transform.barts.cache;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ResourceCache;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Identifier;
@@ -19,14 +16,18 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 public class PatientResourceCache {
     private static final Logger LOG = LoggerFactory.getLogger(PatientResourceCache.class);
 
     private final BartsCsvHelper csvHelper;
-    private ResourceCache<Long, PatientBuilder> patientBuildersByPersonId = new ResourceCache<>();
-    //private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
-    private Set<Long> personIdsJustDeleted = new HashSet<>();
+
+    //changed both of these to use UUID rather than person ID as its possible for two person IDs to go to the same UUID if they've merged
+    private ResourceCache<UUID, PatientBuilder> patientBuildersByPatientUuid = new ResourceCache<>();
+    private Set<UUID> patientUuidsJustDeleted = new HashSet<>();
+    /*private Map<Long, PatientBuilder> patientBuildersByPersonId = new HashMap<>();
+    private Set<Long> personIdsJustDeleted = new HashSet<>();*/
 
     public PatientResourceCache(BartsCsvHelper csvHelper) {
         this.csvHelper = csvHelper;
@@ -43,12 +44,14 @@ public class PatientResourceCache {
         Long personId = personIdCell.getLong();
 
         //if we know we've deleted it, return null
-        if (personIdsJustDeleted.contains(personId)) {
+        UUID globallyUniqueId = IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personId.toString());
+        if (globallyUniqueId != null
+                && patientUuidsJustDeleted.contains(globallyUniqueId)) {
             return null;
         }
 
         //check the cache
-        PatientBuilder cachedResource = patientBuildersByPersonId.getAndRemoveFromCache(personId);
+        PatientBuilder cachedResource = patientBuildersByPatientUuid.getAndRemoveFromCache(globallyUniqueId);
         if (cachedResource != null) {
             return cachedResource;
         }
@@ -95,16 +98,16 @@ public class PatientResourceCache {
     }
 
     public void returnPatientBuilder(Long personId, PatientBuilder patientBuilder) throws Exception {
-        patientBuildersByPersonId.addToCache(personId, patientBuilder);
+        UUID globallyUniqueId = IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personId.toString());
+        patientBuildersByPatientUuid.addToCache(globallyUniqueId, patientBuilder);
     }
 
     public void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        LOG.trace("Saving " + patientBuildersByPersonId.size() + " patients to the DB");
+        LOG.trace("Saving " + patientBuildersByPatientUuid.size() + " patients to the DB");
 
-        for (Long personId: patientBuildersByPersonId.keySet()) {
-            PatientBuilder patientBuilder = patientBuildersByPersonId.getAndRemoveFromCache(personId);
-            //PatientBuilder patientBuilder = patientBuildersByPersonId.get(personId);
+        for (UUID patientUuid: patientBuildersByPatientUuid.keySet()) {
+            PatientBuilder patientBuilder = patientBuildersByPatientUuid.getAndRemoveFromCache(patientUuid);
 
             boolean performIdMapping = !patientBuilder.isIdMapped();
             fhirResourceFiler.savePatientResource(null, performIdMapping, patientBuilder);
@@ -113,7 +116,7 @@ public class PatientResourceCache {
         LOG.trace("Finishing saving patients to the DB");
 
         //clear down as everything has been saved
-        patientBuildersByPersonId.clear();
+        patientBuildersByPatientUuid.clear();
     }
 
     public void deletePatient(PatientBuilder patientBuilder, CsvCell personIdCell, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState) throws Exception {
@@ -125,27 +128,16 @@ public class PatientResourceCache {
 
         //record that we know it's deleted
         Long personId = personIdCell.getLong();
-        personIdsJustDeleted.add(personId);
+        UUID globallyUniqueId = IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personId.toString());
+        patientUuidsJustDeleted.add(globallyUniqueId);
 
         //remove from the cache
-        patientBuildersByPersonId.removeFromCache(personId);
-        //patientBuildersByPersonId.remove(personId);
+        patientBuildersByPatientUuid.removeFromCache(globallyUniqueId);
 
         boolean mapIds = !patientBuilder.isIdMapped();
         fhirResourceFiler.deletePatientResource(parserState, mapIds, patientBuilder);
     }
 
 
-    /**
-     * if we have had an error that's caused us to drop out of the transform, we can call this to tidy up
-     * anything we've saved to the audit.queued_message table
-     */
-    public void cleanUpResourceCache() {
-        try {
-            patientBuildersByPersonId.clear();
-        } catch (Exception ex) {
-            LOG.error("Error cleaning up cache", ex);
-        }
-    }
 
 }

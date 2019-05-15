@@ -42,7 +42,9 @@ public class SURCCPreTransformer {
         stagingSURCC.setDtReceived(new Date());
 
         stagingSURCC.setSurgicalCaseId(parser.getSurgicalCaseId().getInt());
-        stagingSURCC.setDtExtract(parser.getExtractDateTime().getDate());
+
+        CsvCell extractedDateCell = parser.getExtractDateTime();
+        stagingSURCC.setDtExtract(BartsCsvHelper.parseDate(extractedDateCell));
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingSURCC.setActiveInd(activeInd);
@@ -55,13 +57,16 @@ public class SURCCPreTransformer {
 
             //if no start or end, then the surgery hasn't happened yet, so skip
             CsvCell startCell = parser.getSurgeryStartDtTm();
+            if (!startCell.isEmpty()) {
+                Date d = BartsCsvHelper.parseDate(startCell);
+                stagingSURCC.setDtStart(d);
+            }
+
             CsvCell stopCell = parser.getSurgeryStopDtTm();
-           if (!startCell.isEmpty()) {
-               stagingSURCC.setDtStart(startCell.getDateTime());
-           }
-           if (!stopCell.isEmpty()) {
-               stagingSURCC.setDtStop(stopCell.getDateTime());
-           }
+            if (!stopCell.isEmpty()) {
+                Date d = BartsCsvHelper.parseDate(stopCell);
+                stagingSURCC.setDtStop(d);
+            }
 
             //cache the person ID for our case ID, so the CURCP parser can look it up
             csvHelper.savePersonIdFromSurccId(parser.getSurgicalCaseId().getInt(), personId);
@@ -70,8 +75,9 @@ public class SURCCPreTransformer {
             stagingSURCC.setEncounterId(parser.getEncounterId().getInt());
 
             CsvCell cancelledCell = parser.getCancelledDateTime();
-            if (cancelledCell.isEmpty()) {
-                stagingSURCC.setDtCancelled(cancelledCell.getDateTime());
+            if (!cancelledCell.isEmpty()) {
+                Date d = BartsCsvHelper.parseDate(cancelledCell);
+                stagingSURCC.setDtCancelled(d);
             }
 
             stagingSURCC.setInstitutionCode(parser.getInstitutionCode().getString());

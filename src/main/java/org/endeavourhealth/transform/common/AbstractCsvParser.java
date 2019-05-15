@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common;
 
+import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -54,15 +55,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                              String version, String filePath, CSVFormat csvFormat,
                              String dateFormat, String timeFormat) {
 
-        this.serviceId = serviceId;
-        this.systemId = systemId;
-        this.exchangeId = exchangeId;
-        this.version = version;
-        this.filePath = filePath;
-        this.csvFormat = csvFormat;
-        this.dateFormat = new SimpleDateFormat(dateFormat);
-        this.timeFormat = new SimpleDateFormat(timeFormat);
-        this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
+        this(serviceId, systemId, exchangeId, version, filePath, csvFormat, dateFormat, timeFormat, null);
     }
 
     public AbstractCsvParser(UUID serviceId, UUID systemId, UUID exchangeId,
@@ -75,10 +68,26 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         this.version = version;
         this.filePath = filePath;
         this.csvFormat = csvFormat;
-        this.dateFormat = new SimpleDateFormat(dateFormat);
-        this.timeFormat = new SimpleDateFormat(timeFormat);
-        this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
         this.encoding = encoding;
+
+        if (!Strings.isNullOrEmpty(dateFormat)) {
+            this.dateFormat = new SimpleDateFormat(dateFormat);
+        } else {
+            this.dateFormat = null;
+        }
+
+        if (!Strings.isNullOrEmpty(timeFormat)) {
+            this.timeFormat = new SimpleDateFormat(timeFormat);
+        } else {
+            this.timeFormat = null;
+        }
+
+        if (!Strings.isNullOrEmpty(dateFormat) && !Strings.isNullOrEmpty(timeFormat)) {
+            this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
+        } else {
+            this.dateTimeFormat = null;
+        }
+
     }
 
     @Override

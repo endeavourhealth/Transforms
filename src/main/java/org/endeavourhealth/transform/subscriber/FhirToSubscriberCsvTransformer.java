@@ -63,13 +63,6 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             batchSize = config.get("transform_batch_size").asInt();
         }
 
-        //TODO - detect if NHS number was previously added and now is deleted
-        //TODO - detect if NHS number was previously present and now is deleted
-        //TODO - detect if DoB has changed
-        //how do the above work when we only retrieve the CURRENT version of each resource?
-        //we don't actually know what we sent to the subscriber before...
-
-
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
 
@@ -326,7 +319,9 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
                 return;
                 //throw new TransformException("No enterprise patient ID found for discovery patient " + discoveryPatientId);
             }
-            params.setEnterprisePatientId(enterprisePatientId);
+            if (params.getEnterprisePatientId() == null) {
+                params.setEnterprisePatientId(enterprisePatientId);
+            }
 
             String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
 
@@ -339,7 +334,9 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
             SubscriberPersonMappingDalI subscriberPersonMappingDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
             Long enterprisePersonId = subscriberPersonMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
-            params.setEnterprisePersonId(enterprisePersonId);
+            if (params.getEnterprisePersonId() == null) {
+                params.setEnterprisePersonId(enterprisePersonId);
+            }
         }
 
         transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
