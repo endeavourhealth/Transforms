@@ -19,6 +19,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
+import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
@@ -33,6 +34,7 @@ import org.endeavourhealth.transform.subscriber.targetTables.PatientAddress;
 import org.endeavourhealth.transform.subscriber.targetTables.PatientContact;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -968,44 +970,69 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         String currentNHSNumber = IdentifierHelper.findNhsNumber(current);
         String previousNHSNumber = IdentifierHelper.findNhsNumber(previous);
 
+        ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI =
+                DalProvider.factoryExchangeBatchExtraResourceDal(params.getEnterpriseConfigName());
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+
         List<ResourceWrapper> resources = resourceDal.getResourcesByPatient(serviceId, resourceID);
 
         Long enterprisePatientId = findEnterpriseId(params, SubscriberTableId.PATIENT,
-                "Patient/"+previous.getId());
-        params.setEnterprisePatientId(enterprisePatientId);
+                ReferenceHelper.createResourceReference(ResourceType.Patient, previous.getId()));
+        if (params.getEnterprisePatientId() == null) {
+            params.setEnterprisePatientId(enterprisePatientId);
+        }
 
         String discoveryPersonId = patientLinkDal.getPersonId(previous.getId());
         SubscriberPersonMappingDalI subscriberPersonMappingDal =
                 DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
         Long enterprisePersonId = subscriberPersonMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
-        params.setEnterprisePersonId(enterprisePersonId);
+        if (params.getEnterprisePersonId() == null) {
+            params.setEnterprisePersonId(enterprisePersonId);
+        }
 
         //NHS Number was removed, removing resources related to it
         if (StringUtils.isEmpty(currentNHSNumber) && !StringUtils.isEmpty(previousNHSNumber)) {
-            for (ResourceWrapper resource : resources) {
-                resource.setDeleted(true);
+            for (ResourceWrapper wrapper : resources) {
+                wrapper.setDeleted(true);
+                Resource resource = FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
+                exchangeBatchExtraResourceDalI.saveExtraResource(
+                        params.getExchangeId(), params.getBatchId(), resource.getResourceType(), wrapper.getResourceId());
             }
             transformResources(resources, params);
         }
         //NHS Number was added, adding resources related to it
         else if (!StringUtils.isEmpty(currentNHSNumber) && StringUtils.isEmpty(previousNHSNumber)) {
+            for (ResourceWrapper wrapper : resources) {
+                Resource resource = FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
+                exchangeBatchExtraResourceDalI.saveExtraResource(
+                        params.getExchangeId(), params.getBatchId(), resource.getResourceType(), wrapper.getResourceId());
+            }
             transformResources(resources, params);
         }
 
         //DOB changed values need to reprocess specific resources for changes in age_at_event
-        if (current.getBirthDate() != previous.getBirthDate()) {
-            List<ResourceWrapper> reprocess = new ArrayList();
-            for (ResourceWrapper resource : resources) {
-                if (resource.getResourceType().equalsIgnoreCase(ResourceType.Encounter.toString()) ||
-                        resource.getResourceType().equalsIgnoreCase(ResourceType.AllergyIntolerance.toString()) ||
-                        resource.getResourceType().equalsIgnoreCase(ResourceType.MedicationStatement.toString()) ||
-                        resource.getResourceType().equalsIgnoreCase(ResourceType.MedicationOrder.toString()) ||
-                        resource.getResourceType().equalsIgnoreCase(ResourceType.Observation.toString()) ||
-                        resource.getResourceType().equalsIgnoreCase(ResourceType.ProcedureRequest.toString()) ||
-                        resource.getResourceType().equalsIgnoreCase(ResourceType.ReferralRequest.toString())) {
+        if (((current.getBirthDate() == null) != (previous.getBirthDate() == null))
+                || (current.getBirthDate() != null && previous.getBirthDate() != null
+                && current.getBirthDate().equals(previous.getBirthDate()))) {
 
-                    reprocess.add(resource);
+            List<ResourceWrapper> reprocess = new ArrayList();
+
+            List<ResourceType> ageRelatedResourceTypes = new ArrayList();
+            ageRelatedResourceTypes.add(ResourceType.Encounter);
+            ageRelatedResourceTypes.add(ResourceType.AllergyIntolerance);
+            ageRelatedResourceTypes.add(ResourceType.MedicationStatement);
+            ageRelatedResourceTypes.add(ResourceType.MedicationOrder);
+            ageRelatedResourceTypes.add(ResourceType.Observation);
+            ageRelatedResourceTypes.add(ResourceType.ProcedureRequest);
+            ageRelatedResourceTypes.add(ResourceType.ReferralRequest);
+
+            for (ResourceWrapper resource : resources) {
+                for (ResourceType type : ageRelatedResourceTypes) {
+                    if (type.toString().equalsIgnoreCase(resource.getResourceType())) {
+                        reprocess.add(resource);
+                        exchangeBatchExtraResourceDalI.saveExtraResource(
+                                params.getExchangeId(), params.getBatchId(), type, resource.getResourceId());
+                    }
                 }
             }
             transformResources(reprocess, params);

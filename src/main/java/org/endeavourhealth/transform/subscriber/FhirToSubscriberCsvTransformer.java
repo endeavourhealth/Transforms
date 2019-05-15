@@ -2,7 +2,9 @@ package org.endeavourhealth.transform.subscriber;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
+import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -282,6 +284,44 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         return null;
     }
 
+    private static Patient findPatient(List<ResourceWrapper> resourceWrappers) throws Exception {
+
+        for (ResourceWrapper resourceWrapper: resourceWrappers) {
+            if (resourceWrapper.isDeleted()) {
+                continue;
+            }
+
+            String resourceTypeStr = resourceWrapper.getResourceType();
+            ResourceType resourceType = ResourceType.valueOf(resourceTypeStr);
+            if (!FhirResourceFiler.isPatientResource(resourceType)) {
+                continue;
+            }
+
+            try {
+                Resource resource = FhirResourceHelper.deserialiseResouce(resourceWrapper);
+                String patientId = IdHelper.getPatientId(resource);
+                if (Strings.isNullOrEmpty(patientId)) {
+                    continue;
+                }
+
+                return (Patient) resource;
+
+            } catch (PatientResourceException ex) {
+                //we've had this exception because a batch has ended up containing JUST
+                //a Slot resource, which means we can't get the patient ID. The matching Appointment
+                //resource was created in a separate exchange_batch, but errors meant this data was
+                //split into a separate batch. This being the case, the Slot will already have been sent
+                //to the subscriber, because that's manually done when the appointment is done. So we
+                //can safely ignore this
+                if (resourceType != ResourceType.Slot) {
+                    throw ex;
+                }
+            }
+        }
+
+        return null;
+    }
+
 
     private static void transformResources(List<ResourceWrapper> resources,
                                           SubscriberTransformParams params) throws Exception {
@@ -339,23 +379,26 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             }
         }
 
-        transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
-        transformResources(ResourceType.Appointment, resources, threadPool, params);
-        transformResources(ResourceType.Encounter, resources, threadPool, params);
-        transformResources(ResourceType.Condition, resources, threadPool, params);
-        transformResources(ResourceType.Procedure, resources, threadPool, params);
-        transformResources(ResourceType.ReferralRequest, resources, threadPool, params);
-        transformResources(ResourceType.ProcedureRequest, resources, threadPool, params);
-        transformResources(ResourceType.Observation, resources, threadPool, params);
-        transformResources(ResourceType.MedicationStatement, resources, threadPool, params);
-        transformResources(ResourceType.MedicationOrder, resources, threadPool, params);
-        transformResources(ResourceType.Immunization, resources, threadPool, params);
-        transformResources(ResourceType.FamilyMemberHistory, resources, threadPool, params);
-        transformResources(ResourceType.AllergyIntolerance, resources, threadPool, params);
-        transformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);
-        transformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
-        transformResources(ResourceType.Specimen, resources, threadPool, params);
-        transformResources(ResourceType.Flag, resources, threadPool, params);
+        Patient patient = findPatient(resources);
+        if (patient != null && StringUtils.isNotEmpty(IdentifierHelper.findNhsNumber(patient))) {
+            transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
+            transformResources(ResourceType.Appointment, resources, threadPool, params);
+            transformResources(ResourceType.Encounter, resources, threadPool, params);
+            transformResources(ResourceType.Condition, resources, threadPool, params);
+            transformResources(ResourceType.Procedure, resources, threadPool, params);
+            transformResources(ResourceType.ReferralRequest, resources, threadPool, params);
+            transformResources(ResourceType.ProcedureRequest, resources, threadPool, params);
+            transformResources(ResourceType.Observation, resources, threadPool, params);
+            transformResources(ResourceType.MedicationStatement, resources, threadPool, params);
+            transformResources(ResourceType.MedicationOrder, resources, threadPool, params);
+            transformResources(ResourceType.Immunization, resources, threadPool, params);
+            transformResources(ResourceType.FamilyMemberHistory, resources, threadPool, params);
+            transformResources(ResourceType.AllergyIntolerance, resources, threadPool, params);
+            transformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);
+            transformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
+            transformResources(ResourceType.Specimen, resources, threadPool, params);
+            transformResources(ResourceType.Flag, resources, threadPool, params);
+        }
 
         //for these resource types, call with a null transformer as they're actually transformed when
         //doing one of the above entities, but we want to remove them from the resources list
