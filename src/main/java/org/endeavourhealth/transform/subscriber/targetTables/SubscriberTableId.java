@@ -20,7 +20,8 @@ public enum SubscriberTableId {
     SCHEDULE((byte)17, "schedule"),
     APPOINTMENT((byte)18, "appointment"),
     PATIENT_CONTACT((byte)19, "patient_contact"),
-    PATIENT_ADDRESS((byte)20, "patient_address");
+    PATIENT_ADDRESS((byte)20, "patient_address"),
+    DIAGNOSTIC_ORDER((byte)21, "diagnostic_order");
 
     private byte id;
     private String name;

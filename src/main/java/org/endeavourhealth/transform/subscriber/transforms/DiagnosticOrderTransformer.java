@@ -28,7 +28,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
     @Override
     protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
-        org.endeavourhealth.transform.subscriber.targetTables.Observation model = params.getOutputContainer().getObservations();
+        org.endeavourhealth.transform.subscriber.targetTables.DiagnosticOrder model = params.getOutputContainer().getDiagnosticOrder();
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
@@ -152,7 +152,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
 
     @Override
     protected SubscriberTableId getMainSubscriberTableId() {
-        return SubscriberTableId.OBSERVATION;
+        return SubscriberTableId.DIAGNOSTIC_ORDER;
     }
 
 
