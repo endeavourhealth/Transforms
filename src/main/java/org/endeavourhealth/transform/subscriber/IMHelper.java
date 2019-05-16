@@ -146,6 +146,48 @@ public class IMHelper {
         }
     }
 
+    public static Integer getIMConceptForTypeTerm(SubscriberTransformParams params, Resource fhirResource, String type, String term) throws Exception {
+        String key = createCacheKey(type, term);
+        Integer ret = null;
+        if (term != null) {
+            ret = coreCache.get(key);
+        }
+        if (ret == null && term != null) {
+            ret = getIMConceptForTypeTermWithRetry(type, term);
+            if (ret == null) {
+                //if null, we may let it slide if in testing, just logging it out
+                if (TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
+                    TransformWarnings.log(LOG, params, "Null IM concept for type {} and term {} for resource {} {}", term, type, fhirResource.getResourceType(), fhirResource.getId());
+                } else {
+                    throw new TransformException("Null IM concept for type " + type + " and term " + term + " for resource " + fhirResource.getResourceType() + " " + fhirResource.getId());
+                }
+
+            } else {
+                coreCache.put(key, ret);
+            }
+        }
+        return ret;
+    }
+
+    private static Integer getIMConceptForTypeTermWithRetry(String type, String term) throws Exception {
+
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = 5;
+
+        while (true) {
+            lives --;
+            try {
+                return IMClient.getConceptIdForTypeTerm(type, term);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw ex;
+                }
+
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+            }
+        }
+    }
+
     public static String getIMSnomedCodeForConceptId(SubscriberTransformParams params, Resource fhirResource, Integer conceptId) throws Exception {
         Integer key = conceptId;
         String ret = null;
