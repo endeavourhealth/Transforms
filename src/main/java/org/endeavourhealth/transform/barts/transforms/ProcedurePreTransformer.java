@@ -49,7 +49,14 @@ public class ProcedurePreTransformer {
 
         StagingProcedure obj = new StagingProcedure();
         String personId = csvHelper.findPersonIdFromEncounterId(encounterCell);
+
+        if (Strings.isNullOrEmpty(personId)) {
+            TransformWarnings.log(LOG, csvHelper, "No person ID found for Procedure for encounter ID {}", encounterCell);
+            return;
+        }
+
         if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+            TransformWarnings.log(LOG, csvHelper, "Skipping Procedure with encounter ID {} as not part of filtered subset", encounterCell);
             return;
         }
 
