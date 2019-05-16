@@ -340,8 +340,11 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             }
         }
 
-        Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
-        Patient patient = (Patient) AbstractSubscriberTransformer.findResource(patientRef, params);
+        Patient patient = null;
+        if (StringUtils.isNotEmpty(discoveryPatientId)) {
+            Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
+            patient = (Patient) AbstractSubscriberTransformer.findResource(patientRef, params);
+        }
 
         if (patient != null && StringUtils.isNotEmpty(IdentifierHelper.findNhsNumber(patient))) {
             transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
