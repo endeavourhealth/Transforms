@@ -112,6 +112,7 @@ public abstract class BartsCsvToFhirTransformer {
 
 
             ENCNTPreTransformer.transform(getParsers(parserMap, "ENCNT", false), fhirResourceFiler, csvHelper);
+            fhirResourceFiler.waitUntilEverythingIsSaved(); //the above may update existing resources, so let it fully finish
 
             // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
             //taking our saving of Encounters and Episodes until we get time to work out how it should be modelled,

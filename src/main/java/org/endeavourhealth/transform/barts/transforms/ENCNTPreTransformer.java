@@ -1,16 +1,25 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.barts.schema.ENCNT;
 import org.endeavourhealth.transform.common.*;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.UUID;
 
 public class ENCNTPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ENCNTTransformer.class);
@@ -53,7 +62,7 @@ public class ENCNTPreTransformer {
         CsvCell finCell = parser.getMillenniumFinancialNumberIdentifier();
         CsvCell visitIdCell = parser.getVisitId();
 
-        PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), personIdCell, encounterIdCell, episodeIdCell, finCell, visitIdCell, csvHelper);
+        PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), personIdCell, encounterIdCell, episodeIdCell, finCell, visitIdCell, csvHelper, fhirResourceFiler);
 
         csvHelper.submitToThreadPool(callable);
     }
@@ -67,8 +76,9 @@ public class ENCNTPreTransformer {
         private CsvCell finCell;
         private CsvCell visitIdCell;
         private BartsCsvHelper csvHelper;
+        private FhirResourceFiler fhirResourceFiler;
 
-        public PreTransformCallable(CsvCurrentState parserState, CsvCell personIdCell, CsvCell encounterIdCell, CsvCell episodeIdCell, CsvCell finCell, CsvCell visitIdCell, BartsCsvHelper csvHelper) {
+        public PreTransformCallable(CsvCurrentState parserState, CsvCell personIdCell, CsvCell encounterIdCell, CsvCell episodeIdCell, CsvCell finCell, CsvCell visitIdCell, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) {
             super(parserState);
             this.personIdCell = personIdCell;
             this.encounterIdCell = encounterIdCell;
@@ -76,12 +86,22 @@ public class ENCNTPreTransformer {
             this.finCell = finCell;
             this.visitIdCell = visitIdCell;
             this.csvHelper = csvHelper;
+            this.fhirResourceFiler = fhirResourceFiler;
         }
 
         @Override
         public Object call() throws Exception {
 
             try {
+
+                //see if the person ID has changed for this encounter - if it has, then
+                //we'll need to move all dependent objects to the new patient
+                String existingPersonId = csvHelper.findPersonIdFromEncounterId(encounterIdCell);
+                if (!Strings.isNullOrEmpty(existingPersonId)
+                        && !existingPersonId.equals(personIdCell.getString())) {
+
+                    moveEncounterDependentData(existingPersonId);
+                }
 
                 //update the internal ID map with our encounter to person mapping
                 csvHelper.saveEncounterIdToPersonId(encounterIdCell, personIdCell);
@@ -116,6 +136,67 @@ public class ENCNTPreTransformer {
             }
 
             return null;
+        }
+
+        /**
+         * if an ENCNT record is moved from on person record to another, we need to manually move any dependent
+         * resources (e.g. procedures)
+         */
+        private void moveEncounterDependentData(String existingPersonId) throws Exception {
+            UUID patientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, existingPersonId);
+            if (patientUuid == null) {
+                return;
+            }
+
+            UUID newPatientUuid = IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
+            Reference newPatientReference = ReferenceHelper.createReference(ResourceType.Patient, newPatientUuid.toString());
+
+            UUID encounterUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Encounter, encounterIdCell.getString());
+            if (encounterUuid == null) {
+                return;
+            }
+            String encounterReferenceValue = ReferenceHelper.createResourceReference(ResourceType.Encounter, encounterUuid.toString());
+
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+            List<ResourceWrapper> resources = resourceDal.getResourcesByPatient(csvHelper.getServiceId(), patientUuid);
+            for (ResourceWrapper resourceWrapper: resources) {
+                Resource resource = FhirSerializationHelper.deserializeResource(resourceWrapper.getResourceData());
+
+                if (resource.getResourceType() == ResourceType.Patient
+                        || resource.getResourceType() == ResourceType.EpisodeOfCare) {
+                    //ignore these because they're not dependent on encounters
+
+                } else if (resource.getResourceType() == ResourceType.Encounter) {
+                    Encounter encounter = (Encounter)resource;
+                    if (encounter.getId().equals(encounterUuid.toString())) {
+                        EncounterBuilder builder = new EncounterBuilder(encounter);
+                        builder.setPatient(newPatientReference);
+                        fhirResourceFiler.savePatientResource(null, false, builder);
+                    }
+
+                } else if (resource.getResourceType() == ResourceType.Procedure) {
+                    Procedure procedure = (Procedure)resource;
+                    if (procedure.hasEncounter()
+                            && procedure.getEncounter().getReference().equals(encounterReferenceValue)) {
+                        ProcedureBuilder builder = new ProcedureBuilder(procedure);
+                        builder.setPatient(newPatientReference);
+                        fhirResourceFiler.savePatientResource(null, false, builder);
+                    }
+
+                } else if (resource.getResourceType() == ResourceType.Condition) {
+                    Condition condition = (Condition)resource;
+                    if (condition.hasEncounter()
+                            && condition.getEncounter().getReference().equals(encounterReferenceValue)) {
+                        ConditionBuilder builder = new ConditionBuilder(condition);
+                        builder.setPatient(newPatientReference);
+                        fhirResourceFiler.savePatientResource(null, false, builder);
+                    }
+
+                } else {
+                    //most resources haven't had the right stuff above implemented, so
+                    throw new Exception("Unhandled resource type " + resource.getResourceType() + " when moving encounter to another patient " + existingPersonId + " -> " + personIdCell.getString());
+                }
+            }
         }
     }
 }
