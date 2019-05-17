@@ -729,17 +729,17 @@ public class SRCodeTransformer {
 
         String readV3Code = parser.getCTV3Code().getString();
         if (!Strings.isNullOrEmpty(readV3Code)
-                && Read2.isProcedure(readV3Code)
+                && Read2.isProcedure(readV3Code) //TODO - change to a CTV3 version (using hierarchy not code letters)
                 && !isBPCode(readV3Code)
                 && (parser.getNumericValue().isEmpty())) {
             return ResourceType.Procedure;
-        } else if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())) {
+        } else if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())) { //TODO - change to use CTV3 hierarchy AND check for PAST SRProblem records
             return ResourceType.Condition;
         } else if ((!Strings.isNullOrEmpty(readV3Code)
                 && csvHelper.isAllergyCode(readV3Code, parser.getCTV3Text().getString()))) {
             return ResourceType.AllergyIntolerance;
         } else if (!Strings.isNullOrEmpty(readV3Code)
-                && Read2.isFamilyHistory(readV3Code)) {
+                && Read2.isFamilyHistory(readV3Code)) { //TODO - change to a CTV3 version (using hierarchy not code letters)
             return ResourceType.FamilyMemberHistory;
         } else {
             return ResourceType.Observation;

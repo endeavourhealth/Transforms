@@ -355,6 +355,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public boolean isProblemObservationGuid(CsvCell problemGuid) {
         return problemReadCodes.containsKey(problemGuid.getLong());
+
+        //TODO - what if we're processing an UPDATED SRCode record without an updated SRPRoblem record in the same extract?
+        //This code needs to check the DB to see if the existing observation is already saved as a problem
     }
 
     public void cacheMedicalRecordStatus(CsvCell patientGuid, CsvCell dateCell, CsvCell medicalRecordStatusCell) {

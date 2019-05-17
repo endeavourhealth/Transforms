@@ -43,6 +43,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAuditorCallbackI {
     private static final Logger LOG = LoggerFactory.getLogger(BartsCsvHelper.class);
@@ -80,7 +81,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private Map<Long, List<CernerCodeValueRef>> cernerCodesBySet = new ConcurrentHashMap<>();
     private Map<Long, CernerNomenclatureRef> nomenclatureCache = new ConcurrentHashMap<>();
     private Map<String, CernerNomenclatureRef> nomenclatureCacheByValueTxt = new ConcurrentHashMap<>();
-    private Map<String, String> internalIdMapCache = new ConcurrentHashMap<>();
+    private Map<String, String> internalIdMapCache = new HashMap<>(); //contains nulls so a regular map but uses the cacheLock
+    private ReentrantLock cacheLock = new ReentrantLock();
     private Map<Long, SnomedLookup> cleveSnomedConceptMappings = new ConcurrentHashMap<>();
     private String cachedBartsOrgRefId = null;
 
@@ -155,22 +157,36 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         internalIdDal.save(serviceId, idType, sourceId, destinationId);
 
-        //just replace in the cache
-        internalIdMapCache.put(cacheKey, destinationId);
+        //add/replace in the cache
+        try {
+            cacheLock.lock();
+            internalIdMapCache.put(cacheKey, destinationId);
+        } finally {
+            cacheLock.unlock();
+        }
     }
 
     public String getInternalId(String idType, String sourceId) throws Exception {
         String cacheKey = idType + "|" + sourceId;
-        String cachedId = internalIdMapCache.get(cacheKey);
-        if (!Strings.isNullOrEmpty(cachedId)) {
-            return cachedId;
+
+        //check the cache - note we cache null lookups in the cache
+        try {
+            cacheLock.lock();
+            if (internalIdMapCache.containsKey(cacheKey)) {
+                return internalIdMapCache.get(cacheKey);
+            }
+        } finally {
+            cacheLock.unlock();
         }
 
         String ret = internalIdDal.getDestinationId(serviceId, idType, sourceId);
 
-        //if found, stick in our cache
-        if (!Strings.isNullOrEmpty(ret)) {
+        //add to the cache - note we cache lookup failures too
+        try {
+            cacheLock.lock();
             internalIdMapCache.put(cacheKey, ret);
+        } finally {
+            cacheLock.unlock();
         }
 
         return ret;
