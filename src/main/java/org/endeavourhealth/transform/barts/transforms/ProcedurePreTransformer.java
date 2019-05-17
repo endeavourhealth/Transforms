@@ -117,7 +117,7 @@ public class ProcedurePreTransformer {
         obj.setWard(parser.getWard().getString());
         obj.setSite(parser.getSite().getString());
 
-        String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_CONSULTANT_TO_ID, parser.getConsultant().getString());
+        String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, parser.getConsultant().getString());
         if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
             obj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
         }
