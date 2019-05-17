@@ -35,7 +35,7 @@ public class SusInpatientTailPreTransformer extends CdsTailPreTransformerBase {
         }
         staging.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         staging.setExchangeId(parser.getExchangeId().toString());
-        staging.setDtReceived(new Date());
+        staging.setDtReceived(csvHelper.getDataDate());
         staging.setSusRecordType(BartsCsvHelper.SUS_RECORD_TYPE_INPATIENT);
         staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
         staging.setMrn(parser.getLocalPatientId().getString());

@@ -36,7 +36,7 @@ public class SusEmergencyTailPreTransformer extends CdsTailPreTransformerBase {
         staging.setPersonId(parser.getPersonId().getInt());
         staging.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         staging.setExchangeId(parser.getExchangeId().toString());
-        staging.setDtReceived(new Date());
+        staging.setDtReceived(csvHelper.getDataDate());
         staging.setSusRecordType(BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT);
         staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
         staging.setMrn(parser.getLocalPatientId().getString());

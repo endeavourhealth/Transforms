@@ -6,6 +6,9 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
@@ -85,6 +88,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private ReentrantLock cacheLock = new ReentrantLock();
     private Map<Long, SnomedLookup> cleveSnomedConceptMappings = new ConcurrentHashMap<>();
     private String cachedBartsOrgRefId = null;
+    private Date cachedDataDate = null;
 
     private Map<String, String> snomedDescToConceptCache = new ConcurrentHashMap<>();
 
@@ -137,6 +141,22 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
     public String getPrimaryOrgHL7OrgOID() {
         return primaryOrgHL7OrgOID;
+    }
+
+    /**
+     * returns the original date of the data in the exchange (i.e. when actually sent to DDS)
+     */
+    public Date getDataDate() throws Exception {
+        if (cachedDataDate == null) {
+            ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
+            Exchange x = exchangeDal.getExchange(exchangeId);
+            cachedDataDate = x.getHeaderAsDate(HeaderKeys.DataDate);
+
+            if (cachedDataDate == null) {
+                throw new Exception("Failed to find data date for exchange " + exchangeId);
+            }
+        }
+        return cachedDataDate;
     }
 
 

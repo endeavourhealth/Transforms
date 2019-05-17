@@ -42,7 +42,7 @@ public class SusOutpatientPreTransformer extends CdsPreTransformerBase {
         StagingCds stagingCds = new StagingCds();
         stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCds.setExchangeId(parser.getExchangeId().toString());
-        stagingCds.setDtReceived(new Date());
+        stagingCds.setDtReceived(csvHelper.getDataDate());
         stagingCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
         stagingCds.setSusRecordType(BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT);
         stagingCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());

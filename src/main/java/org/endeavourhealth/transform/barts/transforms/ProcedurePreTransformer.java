@@ -11,7 +11,6 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,7 +61,7 @@ public class ProcedurePreTransformer {
 
         obj.setLookupPersonId(personId);
         obj.setExchangeId(parser.getExchangeId().toString());
-        obj.setDtReceived(new Date());
+        obj.setDtReceived(csvHelper.getDataDate());
         obj.setMrn(parser.getMrn().getString());
 
         CsvCell nhsNumberCell = parser.getNhsNumberSanitised();

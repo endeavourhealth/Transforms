@@ -46,7 +46,7 @@ public class PROCEPreTransformer {
 
         stagingPROCE.setActiveInd(parser.getActiveIndicator().getIntAsBoolean());
         stagingPROCE.setExchangeId(parser.getExchangeId().toString());
-        stagingPROCE.setDtReceived(new Date());
+        stagingPROCE.setDtReceived(csvHelper.getDataDate());
 
         CsvCell procedureIdCell = parser.getProcedureID();
         stagingPROCE.setProcedureId(procedureIdCell.getInt());

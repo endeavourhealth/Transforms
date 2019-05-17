@@ -40,7 +40,7 @@ public class SURCPPreTransformer {
 
         StagingSURCP stagingSURCP = new StagingSURCP();
         stagingSURCP.setExchangeId(parser.getExchangeId().toString());
-        stagingSURCP.setDtReceived(new Date());
+        stagingSURCP.setDtReceived(csvHelper.getDataDate());
 
         CsvCell procedureIdCell = parser.getSurgicalCaseProcedureId();
         stagingSURCP.setSurgicalCaseProcedureId(procedureIdCell.getInt());

@@ -37,7 +37,7 @@ public abstract class CdsPreTransformerBase {
         StagingCds stagingCds = new StagingCds();
         stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCds.setExchangeId(csvHelper.getExchangeId().toString());
-        stagingCds.setDtReceived(new Date());
+        stagingCds.setDtReceived(csvHelper.getDataDate());
         stagingCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
         stagingCds.setSusRecordType(susRecordType);
         stagingCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());

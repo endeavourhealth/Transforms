@@ -10,7 +10,6 @@ import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.UUID;
 
 public class CdsTailPreTransformerBase {
@@ -28,7 +27,7 @@ public class CdsTailPreTransformerBase {
         staging.setPersonId(parser.getPersonId().getInt());
         staging.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         staging.setExchangeId(csvHelper.getExchangeId().toString());
-        staging.setDtReceived(new Date());
+        staging.setDtReceived(csvHelper.getDataDate());
         staging.setSusRecordType(susRecordType);
         staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
         staging.setMrn(parser.getLocalPatientId().getString());
