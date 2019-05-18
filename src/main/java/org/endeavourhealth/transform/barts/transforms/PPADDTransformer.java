@@ -97,7 +97,7 @@ public class PPADDTransformer {
 
         //we always fully re-create the address, so remove it from the patient
         boolean removedExisting = AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
-        LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+        //LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
         addressBuilder.setId(addressIdCell.getString(), addressIdCell);
@@ -138,16 +138,16 @@ public class PPADDTransformer {
             addressBuilder.setType(type, typeCell, typeDescCell);
         }
 
-        LOG.trace("Added new name, FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
+        //LOG.trace("Added new address, FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
 
         //remove any instance of the address added by the ADT feed
         Address addressCreated = addressBuilder.getAddressCreated();
         removeExistingAddressWithoutIdByValue(patientBuilder, addressCreated);
-        LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
+        //LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
-        LOG.trace("Returned to patient cache with person ID " + personIdCell);
+        LOG.trace("Returned to patient cache with person ID " + personIdCell + " with " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
     }
 
     private static Address.AddressType convertAddressType(String typeDesc) throws TransformException {

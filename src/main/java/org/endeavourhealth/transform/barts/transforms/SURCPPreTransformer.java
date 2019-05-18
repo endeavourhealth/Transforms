@@ -51,10 +51,14 @@ public class SURCPPreTransformer {
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingSURCP.setActiveInd(activeInd);
 
+        LOG.trace("Processing SURCP procedure ID " + procedureIdCell.getString() + " active ind = " + activeInd);
+
         if (activeInd) {
 
             CsvCell surgicalCaseIdCell = parser.getSurgicalCaseId();
             stagingSURCP.setSurgicalCaseId(surgicalCaseIdCell.getInt());
+
+            LOG.trace("Surgical case ID " + surgicalCaseIdCell.getString());
 
             //we don't strictly need the person ID for loading the staging table, but we do if
             //we want to filter to a subset of patients
@@ -119,6 +123,7 @@ public class SURCPPreTransformer {
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SURCPPreTransformer.saveDataCallable(parser.getCurrentState(), stagingSURCP, serviceId));
+        LOG.trace("Added SURCP procedure ID " + procedureIdCell.getString() + " to thread pool");
     }
 
     private static class saveDataCallable extends AbstractCsvCallable {
@@ -140,6 +145,7 @@ public class SURCPPreTransformer {
             try {
                 obj.setRecordChecksum(obj.hashCode());
                 repository.save(obj, serviceId);
+                LOG.trace("Saved SURCP procedure ID " + obj.getSurgicalCaseProcedureId());
 
             } catch (Throwable t) {
                 LOG.error("", t);

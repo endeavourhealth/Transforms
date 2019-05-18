@@ -84,7 +84,7 @@ public class PPNAMTransformer {
 
         //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
         boolean removedExisting = NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
-        LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+        //LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(nameIdCell.getString(), nameIdCell);
@@ -118,16 +118,16 @@ public class PPNAMTransformer {
         CsvCell codeMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCell);
         HumanName.NameUse nameUse = convertNameUse(codeMeaningCell.getString(), isActive);
         nameBuilder.setUse(nameUse, nameTypeCell, codeMeaningCell);
-        LOG.trace("Added new name, FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+        //LOG.trace("Added new name, FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
 
         //remove any duplicate pre-existing name that was added by the ADT feed
         HumanName humanNameAdded = nameBuilder.getNameCreated();
         removeExistingNameWithoutIdByValue(patientBuilder, humanNameAdded);
-        LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+        //LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
-        LOG.trace("Returned to patient cache with person ID " + personIdCell);
+        LOG.trace("Returned to patient cache with person ID " + personIdCell + " and " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
     }
 
     public static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, HumanName check) {
