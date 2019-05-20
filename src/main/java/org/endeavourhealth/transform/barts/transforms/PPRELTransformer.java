@@ -17,6 +17,7 @@ import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -162,7 +163,7 @@ public class PPRELTransformer {
         }
 
         CsvCell startDate = parser.getBeginEffectiveDateTime();
-        if (!startDate.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) {
             Date d = BartsCsvHelper.parseDate(startDate);
             contactBuilder.setStartDate(d, startDate);
         }
@@ -175,25 +176,45 @@ public class PPRELTransformer {
             addressBuilder.setUse(Address.AddressUse.OLD);
         }
 
+        //the PPREL file has two codes, one defining the relationship to the patient (e.g. self, mother)
+        //and one defining the type of relationship (e.g. next of kin). In typical Cerner style, this isn't
+        //as clear-cut as it sounds and they often have the same thing, so we combine both into the same
+        //field and remove duplicates
+        List<String> types = new ArrayList<>();
+        List<CsvCell> cells = new ArrayList<>();
+
         CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(relationshipToPatientCell)) {
 
-            CsvCell relationshupToPatientDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
-            String relationshipToPatientDesc = relationshupToPatientDescCell.getString();
+            CsvCell cvRefCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
+            String cvRefStr = cvRefCell.getString();
 
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
-            codeableConceptBuilder.setText(relationshipToPatientDesc, relationshupToPatientDescCell);
+            types.add(cvRefStr);
+            cells.add(relationshipToPatientCell);
+            cells.add(cvRefCell);
         }
 
         CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
         if (!BartsCsvHelper.isEmptyOrIsZero(relationshipTypeCell)) {
 
-            CsvCell relationshipTypeDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.PERSON_RELATIONSHIP_TYPE, relationshipTypeCell);
-            String relationshipTypeDesc = relationshipTypeDescCell.getString();
+            CsvCell cvRefCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.PERSON_RELATIONSHIP_TYPE, relationshipTypeCell);
+            String cvRefStr = cvRefCell.getString();
+
+            //often both fields point to the same term, so don't duplicate it
+            if (!types.contains(cvRefStr)) {
+                types.add(cvRefStr);
+            }
+            cells.add(relationshipTypeCell);
+            cells.add(cvRefCell);
+        }
+
+        if (!types.isEmpty()) {
+            String typeStr = String.join(", ", types);
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
-            codeableConceptBuilder.setText(relationshipTypeDesc, relationshipTypeDescCell);
+            codeableConceptBuilder.setText(typeStr, cells.toArray(new CsvCell[]{}));
         }
+
 
         //PPNAM transformer removes any names added by the ADT transform, so we would need to do the same if the ADT
         //feed populated relationships. In place of that, just validate that there are no relationships without IDs
