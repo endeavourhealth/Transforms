@@ -68,7 +68,7 @@ public class PROCEPreTransformer {
                 return;
             }
 
-            stagingPROCE.setLookupPersonId(Integer.parseInt(personId));
+            stagingPROCE.setLookupPersonId(Integer.valueOf(personId));
 
             //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
             String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId);
@@ -170,7 +170,6 @@ public class PROCEPreTransformer {
         public Object call() throws Exception {
 
             try {
-                obj.setCheckSum(obj.hashCode());
                 repository.save(obj, serviceId);
 
             } catch (Throwable t) {

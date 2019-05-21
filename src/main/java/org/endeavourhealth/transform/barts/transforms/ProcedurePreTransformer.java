@@ -59,7 +59,7 @@ public class ProcedurePreTransformer {
             return;
         }
 
-        obj.setLookupPersonId(personId);
+        obj.setLookupPersonId(Integer.valueOf(personId));
         obj.setExchangeId(parser.getExchangeId().toString());
         obj.setDtReceived(csvHelper.getDataDate());
         obj.setMrn(parser.getMrn().getString());
@@ -148,7 +148,6 @@ public class ProcedurePreTransformer {
         public Object call() throws Exception {
 
             try {
-                obj.setCheckSum(obj.hashCode());
                 repository.save(obj, serviceId);
 
             } catch (Throwable t) {

@@ -119,7 +119,6 @@ public class SURCCPreTransformer {
         public Object call() throws Exception {
 
             try {
-                obj.setRecordChecksum(obj.hashCode());
                 repository.save(obj, serviceId);
 
             } catch (Throwable t) {

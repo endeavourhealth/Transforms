@@ -143,7 +143,6 @@ public class SURCPPreTransformer {
         public Object call() throws Exception {
 
             try {
-                obj.setRecordChecksum(obj.hashCode());
                 repository.save(obj, serviceId);
                 LOG.trace("Saved SURCP procedure ID " + obj.getSurgicalCaseProcedureId());
 
