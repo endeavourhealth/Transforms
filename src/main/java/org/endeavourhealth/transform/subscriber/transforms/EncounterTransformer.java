@@ -156,7 +156,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         // TODO 16/05/19 Following discussion between Rich, Drew and James in the office, Rich to review classification of
         //  the IM data for Encounter, definition of types, and therefore the calls to access it for coreConceptId and
-        //  nonCoreConceptId, and what need to be populated for type and subtype (or whether a single field is enough).
+        //  nonCoreConceptId, and what needs to be populated for type and subtype (or whether a single field is enough).
         //  Code below will need to be modified at the outcome of this.
 
         String originalTerm = null;
@@ -172,6 +172,15 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             // nonCoreConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.SNOMED, snomedCode.toString());
             coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
             nonCoreConceptId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+
+            // Using test data, coreConceptId and nonCoreConceptId are null in 123/614 rows, logging to see why
+            if (coreConceptId == null) {
+                LOG.info("Encounter coreConceptId is null where originalTerm (got from findEncounterTypeTerm(fhir, params)) is: " + originalTerm);
+            }
+
+            if (nonCoreConceptId == null) {
+                LOG.info("Encounter nonCoreConceptId is null where originalTerm (got from findEncounterTypeTerm(fhir, params)) is: " + originalTerm);
+            }
 
             /* Integer typeId;
             Integer subTypeId;
@@ -201,6 +210,15 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
                 nonCoreConceptId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
 
+                // Using test data, coreConceptId and nonCoreConceptId are null in 123/614 rows, logging to see why
+                if (coreConceptId == null) {
+                    LOG.info("Encounter coreConceptId is null where originalTerm (got from codeableConcept.getText().toLowerCase()) is: " + originalTerm);
+                }
+
+                if (nonCoreConceptId == null) {
+                    LOG.info("Encounter nonCoreConceptId is null where originalTerm (got from codeableConcept.getText().toLowerCase()) is: " + originalTerm);
+                }
+
                 /* Integer typeId;
                 Integer subTypeId;
                 typeId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
@@ -211,6 +229,21 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 type = null;
                 subtype = null;
             }
+        }
+
+        // Using test data, coreConceptId and nonCoreConceptId are null in 123/614 rows, logging to see why
+        boolean fhirHasExtensionWhichIsNotNull = false;
+        if (fhir.hasExtension()) {
+
+            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
+            if (extension != null) {
+                fhirHasExtensionWhichIsNotNull = true;
+            }
+        }
+
+        if (Strings.isNullOrEmpty(originalTerm) && !(fhirHasExtensionWhichIsNotNull)) {
+            LOG.info("Encounter coreConceptId is null because it does not have a term in it, or an extension with it.");
+            LOG.info("Encounter nonCoreConceptId is null because it does not have a term in it, or an extension with it.");
         }
 
         if (fhir.getPatient() != null) {
