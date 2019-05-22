@@ -92,10 +92,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         Patient fhirPatient = (Patient) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
-        if (previousVersion != null) {
-            processChangeInNHSNumberAndDOB(params.getServiceId(), fhirPatient, previousVersion, resourceWrapper.getResourceId(), params);
-        }
-
         String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
 
         //when the person ID table was populated, patients who had been deleted weren't added,
@@ -125,6 +121,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         organizationId = params.getEnterpriseOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
+
+        if (previousVersion != null) {
+            processChangesFromPreviousVersion(params.getServiceId(), fhirPatient, previousVersion,
+                    resourceWrapper.getResourceId(), personId, params);
+        }
 
 
         //transform our dependent objects first, as we need the address ID
@@ -963,8 +964,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void processChangeInNHSNumberAndDOB(UUID serviceId, Patient current, Patient previous,
-                                         UUID resourceID, SubscriberTransformParams params) throws  Exception {
+    private void processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, UUID resourceID,
+                                                   long personId, SubscriberTransformParams params) throws  Exception {
 
 
         String currentNHSNumber = IdentifierHelper.findNhsNumber(current);
@@ -1000,8 +1001,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
             transformResources(resources, params);
         }
-        //NHS Number was added, adding resources related to it
-        else if (!StringUtils.isEmpty(currentNHSNumber) && StringUtils.isEmpty(previousNHSNumber)) {
+        //NHS Number was added or person id changed, adding resources related to it
+        else if(((!StringUtils.isEmpty(currentNHSNumber) && StringUtils.isEmpty(previousNHSNumber))
+                || enterprisePersonId != personId)) {
             for (ResourceWrapper wrapper : resources) {
                 Resource resource = FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
                 exchangeBatchExtraResourceDalI.saveExtraResource(
