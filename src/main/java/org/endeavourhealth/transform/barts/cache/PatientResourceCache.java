@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts.cache;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
@@ -110,7 +111,10 @@ public class PatientResourceCache {
             PatientBuilder patientBuilder = patientBuildersByPatientUuid.getAndRemoveFromCache(patientUuid);
 
             boolean performIdMapping = !patientBuilder.isIdMapped();
-LOG.debug("Saving " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId() + " map IDs = " + performIdMapping);
+
+String json = FhirSerializationHelper.serializeResource(patientBuilder.getResource());
+LOG.trace("Saving " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId() + " map IDs = " + performIdMapping + "\n" + json);
+
             fhirResourceFiler.savePatientResource(null, performIdMapping, patientBuilder);
         }
 
@@ -118,6 +122,24 @@ LOG.debug("Saving " + patientBuilder.getResource().getResourceType() + " " + pat
 
         //clear down as everything has been saved
         patientBuildersByPatientUuid.clear();
+    }
+
+    public void dumpCacheContents() throws Exception {
+        if (!LOG.isTraceEnabled()) {
+            return;
+        }
+
+        LOG.trace("Dumping patient resource cache, size " + patientBuildersByPatientUuid.size());
+
+        for (UUID patientUuid: patientBuildersByPatientUuid.keySet()) {
+            PatientBuilder patientBuilder = patientBuildersByPatientUuid.getAndRemoveFromCache(patientUuid);
+
+            String json = FhirSerializationHelper.serializeResource(patientBuilder.getResource());
+            LOG.trace("Got " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId() + "\n" + json);
+
+            patientBuildersByPatientUuid.addToCache(patientUuid, patientBuilder);
+        }
+
     }
 
     public void deletePatient(PatientBuilder patientBuilder, CsvCell personIdCell, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState) throws Exception {
