@@ -63,152 +63,157 @@ public class PPATITransformer {
             return;
         }
 
-        //let the PPALI transform add the MRN identifier, since the MRN on PPATI can be duplicated (e.g. MRN 9571132)
-        /*CsvCell mrnCell = parser.getLocalPatientId();
-        if (!mrnCell.isEmpty()) {
-            addOrUpdateIdentifier(patientBuilder, mrnCell.getString(), mrnCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
-        }*/
+        try {
 
-        CsvCell nhsNumberCell = parser.getNhsNumber();
-        if (!nhsNumberCell.isEmpty()) {
-            String nhsNumber = nhsNumberCell.getString();
-            nhsNumber = nhsNumber.replace("-", ""); //Cerner NHS numbers are tokenised with hyphens, so remove
+            //let the PPALI transform add the MRN identifier, since the MRN on PPATI can be duplicated (e.g. MRN 9571132)
+            /*CsvCell mrnCell = parser.getLocalPatientId();
+            if (!mrnCell.isEmpty()) {
+                addOrUpdateIdentifier(patientBuilder, mrnCell.getString(), mrnCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
+            }*/
 
-            addOrUpdateIdentifier(patientBuilder, nhsNumber, nhsNumberCell, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-        }
+            CsvCell nhsNumberCell = parser.getNhsNumber();
+            if (!nhsNumberCell.isEmpty()) {
+                String nhsNumber = nhsNumberCell.getString();
+                nhsNumber = nhsNumber.replace("-", ""); //Cerner NHS numbers are tokenised with hyphens, so remove
 
-        CsvCell nhsNumberStatusCell = parser.getNhsNumberStatus();
-        if (!BartsCsvHelper.isEmptyOrIsZero(nhsNumberStatusCell)) {
+                addOrUpdateIdentifier(patientBuilder, nhsNumber, nhsNumberCell, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+            }
 
-            CsvCell cernerDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.NHS_NUMBER_STATUS, nhsNumberStatusCell);
-            if (cernerDescCell == null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for PPATI {} not found", nhsNumberStatusCell, millenniumPersonIdCell);
+            CsvCell nhsNumberStatusCell = parser.getNhsNumberStatus();
+            if (!BartsCsvHelper.isEmptyOrIsZero(nhsNumberStatusCell)) {
+
+                CsvCell cernerDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.NHS_NUMBER_STATUS, nhsNumberStatusCell);
+                if (cernerDescCell == null) {
+                    TransformWarnings.log(LOG, parser, "ERROR: cerner code {} for PPATI {} not found", nhsNumberStatusCell, millenniumPersonIdCell);
+
+                } else {
+                    NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDescCell.getString(), parser);
+                    patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell, cernerDescCell);
+                }
 
             } else {
-                NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(cernerDescCell.getString(), parser);
-                patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell, cernerDescCell);
+                //we may be updating a patient, so make sure to remove if not set
+                patientBuilder.setNhsNumberVerificationStatus(null);
             }
 
-        } else {
-            //we may be updating a patient, so make sure to remove if not set
-            patientBuilder.setNhsNumberVerificationStatus(null);
-        }
-
-        CsvCell dateOfBirthCell = parser.getDateOfBirth();
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(dateOfBirthCell)) {
-            //we need to handle multiple formats, so attempt to apply both formats here
-            Date dob = BartsCsvHelper.parseDate(dateOfBirthCell);
-            patientBuilder.setDateOfBirth(dob, dateOfBirthCell);
-
-        } else {
-            //we may be updating an existing patient
-            patientBuilder.setDateOfBirth(null);
-        }
-
-        CsvCell genderCell = parser.getGenderCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(genderCell)) {
-            CsvCell genderMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.GENDER, genderCell);
-            if (genderMeaningCell == null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner gender code {} not found", genderCell);
+            CsvCell dateOfBirthCell = parser.getDateOfBirth();
+            if (!BartsCsvHelper.isEmptyOrIsEndOfTime(dateOfBirthCell)) {
+                //we need to handle multiple formats, so attempt to apply both formats here
+                Date dob = BartsCsvHelper.parseDate(dateOfBirthCell);
+                patientBuilder.setDateOfBirth(dob, dateOfBirthCell);
 
             } else {
-                Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(genderMeaningCell.getString());
-                patientBuilder.setGender(gender, genderCell, genderMeaningCell);
+                //we may be updating an existing patient
+                patientBuilder.setDateOfBirth(null);
             }
 
-        } else {
-            //if updating a record then clear the gender if the field is empty
-            patientBuilder.setGender(null);
-        }
+            CsvCell genderCell = parser.getGenderCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(genderCell)) {
+                CsvCell genderMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.GENDER, genderCell);
+                if (genderMeaningCell == null) {
+                    TransformWarnings.log(LOG, parser, "ERROR: cerner gender code {} not found", genderCell);
 
-        CsvCell maritalStatusCode = parser.getMaritalStatusCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(maritalStatusCode)) {
-
-            CsvCell maritalMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.MARITAL_STATUS, maritalStatusCode);
-            if (maritalMeaningCell == null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner marital status {} not found", maritalStatusCode);
+                } else {
+                    Enumerations.AdministrativeGender gender = SexConverter.convertCernerSexToFhir(genderMeaningCell.getString());
+                    patientBuilder.setGender(gender, genderCell, genderMeaningCell);
+                }
 
             } else {
-                MaritalStatus maritalStatus = convertMaritalStatus(maritalMeaningCell.getString(), parser);
-                patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode, maritalMeaningCell);
+                //if updating a record then clear the gender if the field is empty
+                patientBuilder.setGender(null);
             }
-        } else {
-            //if updating a record, make sure to clear the field in this case
-            patientBuilder.setMaritalStatus(null);
-        }
 
-        CsvCell ethnicityCode = parser.getEthnicGroupCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(ethnicityCode)) {
+            CsvCell maritalStatusCode = parser.getMaritalStatusCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(maritalStatusCode)) {
 
-            CsvCell ehtnicityCell = BartsCodeableConceptHelper.getCellAlias(csvHelper, CodeValueSet.ETHNIC_GROUP, ethnicityCode);
-            if (ehtnicityCell == null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner ethnicity {} not found", ethnicityCode);
+                CsvCell maritalMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.MARITAL_STATUS, maritalStatusCode);
+                if (maritalMeaningCell == null) {
+                    TransformWarnings.log(LOG, parser, "ERROR: cerner marital status {} not found", maritalStatusCode);
+
+                } else {
+                    MaritalStatus maritalStatus = convertMaritalStatus(maritalMeaningCell.getString(), parser);
+                    patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode, maritalMeaningCell);
+                }
+            } else {
+                //if updating a record, make sure to clear the field in this case
+                patientBuilder.setMaritalStatus(null);
+            }
+
+            CsvCell ethnicityCode = parser.getEthnicGroupCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(ethnicityCode)) {
+
+                CsvCell ehtnicityCell = BartsCodeableConceptHelper.getCellAlias(csvHelper, CodeValueSet.ETHNIC_GROUP, ethnicityCode);
+                if (ehtnicityCell == null) {
+                    TransformWarnings.log(LOG, parser, "ERROR: cerner ethnicity {} not found", ethnicityCode);
+
+                } else {
+                    EthnicCategory ethnicCategory = convertEthnicCategory(ehtnicityCell.getString());
+                    patientBuilder.setEthnicity(ethnicCategory, ethnicityCode, ehtnicityCell);
+                }
 
             } else {
-                EthnicCategory ethnicCategory = convertEthnicCategory(ehtnicityCell.getString());
-                patientBuilder.setEthnicity(ethnicCategory, ethnicityCode, ehtnicityCell);
+                //if this field is empty we should clear the value from the patient
+                patientBuilder.setEthnicity(null);
             }
 
-        } else {
-            //if this field is empty we should clear the value from the patient
-            patientBuilder.setEthnicity(null);
-        }
+            //since we're working on an existing Patient resource we need to remove any existing language
+            CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, null);
 
-        //since we're working on an existing Patient resource we need to remove any existing language
-        CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, null);
+            CsvCell languageCell = parser.getFirstLanguageCode();
+            BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CodeValueSet.LANGUAGE, patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, csvHelper);
 
-        CsvCell languageCell = parser.getFirstLanguageCode();
-        BartsCodeableConceptHelper.applyCodeDescTxt(languageCell, CodeValueSet.LANGUAGE, patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, csvHelper);
+            //religion
+            CsvCell religionCell = parser.getReligionCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(religionCell)) {
+                CernerCodeValueRef cvref = csvHelper.lookupCodeRef(CodeValueSet.RELIGION, religionCell);
 
-        //religion
-        CsvCell religionCell = parser.getReligionCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(religionCell)) {
-            CernerCodeValueRef cvref = csvHelper.lookupCodeRef(CodeValueSet.RELIGION, religionCell);
+                //if possible, map the religion to the NHS data dictionary values
+                Religion fhirReligion = mapReligion(cvref);
+                if (fhirReligion != null) {
+                    patientBuilder.setReligion(fhirReligion, religionCell);
+                } else {
+                    //if not possible to map, carry the value over as free text
+                    String freeTextReligion = cvref.getCodeDispTxt();
+                    patientBuilder.setReligionFreeText(freeTextReligion, religionCell);
+                }
 
-            //if possible, map the religion to the NHS data dictionary values
-            Religion fhirReligion = mapReligion(cvref);
-            if (fhirReligion != null) {
-                patientBuilder.setReligion(fhirReligion, religionCell);
             } else {
-                //if not possible to map, carry the value over as free text
-                String freeTextReligion = cvref.getCodeDispTxt();
-                patientBuilder.setReligionFreeText(freeTextReligion, religionCell);
+                //it's an existing patient resource, so set to null as the religion field may have been cleared
+                patientBuilder.setReligion(null);
+            }
+            /*CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, null);
+            BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);*/
+
+            // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
+            CsvCell deceasedDateTimeCell = parser.getDeceasedDateTime();
+            CsvCell deceasedMethodCell = parser.getDeceasedMethodCode();
+            if (!BartsCsvHelper.isEmptyOrIsEndOfTime(deceasedDateTimeCell)) {
+
+                //could be in one of two format
+                Date dod = BartsCsvHelper.parseDate(deceasedDateTimeCell);
+                patientBuilder.setDateOfDeath(dod, deceasedDateTimeCell);
+
+            } else if (!BartsCsvHelper.isEmptyOrIsZero(deceasedMethodCell)) {
+
+                //the deceased method points to a code containing various reasons for death
+                //or a simple status of "No" to indicate they're not deceased
+                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.DECEASED_STATUS, deceasedMethodCell);
+                String codeDesc = codeRef.getCodeDispTxt();
+                if (!codeDesc.equals("No")) {
+                    patientBuilder.setDateOfDeathBoolean(true, deceasedMethodCell);
+                }
+
+            } else {
+                //if updating a record, we may have REMOVED a date of death set incorrectly, so clear the fields on the patient
+                patientBuilder.clearDateOfDeath();
             }
 
-        } else {
-            //it's an existing patient resource, so set to null as the religion field may have been cleared
-            patientBuilder.setReligion(null);
-        }
-        /*CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, null);
-        BartsCodeableConceptHelper.applyCodeDescTxt(religionCell, CodeValueSet.RELIGION, patientBuilder, CodeableConceptBuilder.Tag.Patient_Religion, csvHelper);*/
-
-        // If we have a deceased date, set that but if not and the patient is deceased just set the deceased flag
-        CsvCell deceasedDateTimeCell = parser.getDeceasedDateTime();
-        CsvCell deceasedMethodCell = parser.getDeceasedMethodCode();
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(deceasedDateTimeCell)) {
-
-            //could be in one of two format
-            Date dod = BartsCsvHelper.parseDate(deceasedDateTimeCell);
-            patientBuilder.setDateOfDeath(dod, deceasedDateTimeCell);
-
-        } else if (!BartsCsvHelper.isEmptyOrIsZero(deceasedMethodCell)) {
-
-            //the deceased method points to a code containing various reasons for death
-            //or a simple status of "No" to indicate they're not deceased
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.DECEASED_STATUS, deceasedMethodCell);
-            String codeDesc = codeRef.getCodeDispTxt();
-            if (!codeDesc.equals("No")) {
-                patientBuilder.setDateOfDeathBoolean(true, deceasedMethodCell);
-            }
-
-        } else {
-            //if updating a record, we may have REMOVED a date of death set incorrectly, so clear the fields on the patient
-            patientBuilder.clearDateOfDeath();
+        } finally {
+            //we don't save the patient here; there are subsequent transforms that work on the patients so we
+            //save patients after all of them are done
+            csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
         }
 
-        //we don't save the patient here; there are subsequent transforms that work on the patients so we
-        //save patients after all of them are done
-        csvHelper.getPatientCache().returnPatientBuilder(millenniumPersonIdCell, patientBuilder);
     }
 
     private static Religion mapReligion(CernerCodeValueRef cvref) throws Exception {

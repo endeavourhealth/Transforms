@@ -7,10 +7,7 @@ import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPADD;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.emis.emisopen.transforms.common.AddressConverter;
@@ -66,13 +63,6 @@ public class PPADDTransformer {
         }
 
         CsvCell personIdCell = parser.getPersonId();
-        LOG.trace("Processing PPADD " + addressIdCell.getString() + " for Person ID " + personIdCell.getString());
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
-        if (patientBuilder == null) {
-            LOG.trace("No patient builder, so skipping");
-            return;
-        }
-
         CsvCell typeCell = parser.getAddressTypeCode();
         CsvCell typeDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.ADDRESS_TYPE, typeCell);
         String typeDesc = typeDescCell.getString();
@@ -80,74 +70,85 @@ public class PPADDTransformer {
         //a very small number of patients (two, that I've seen) have an address recorded
         //with type "e-mail", but also have this email duplicated in the PPPHO file (where email is normally recorded)
         //so ignore any PPADD records for emails
+        //this must be done BEFORE getting the patient builder, otherwise we fail to return it
         if (typeDesc.equalsIgnoreCase("e-mail")) {
-            LOG.trace("Skipping address record as type is " + typeDesc);
+            TransformWarnings.log(LOG, csvHelper, "Skipping PPADD {} for person {} because type is {}", addressIdCell, personIdCell, typeDesc);
             return;
         }
 
-        LOG.trace("FHIR resource = " + patientBuilder.toString() + " starts with " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
-
-        CsvCell line1 = parser.getAddressLine1();
-        CsvCell line2 = parser.getAddressLine2();
-        CsvCell line3 = parser.getAddressLine3();
-        CsvCell line4 = parser.getAddressLine4();
-        CsvCell city = parser.getCity();
-        CsvCell county = parser.getCountyText();
-        CsvCell postcode = parser.getPostcode();
-
-        //we always fully re-create the address, so remove it from the patient
-        boolean removedExisting = AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
-        //LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
-
-        AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-        addressBuilder.setId(addressIdCell.getString(), addressIdCell);
-        addressBuilder.setUse(Address.AddressUse.HOME);
-        addressBuilder.addLine(line1.getString(), line1);
-        addressBuilder.addLine(line2.getString(), line2);
-        addressBuilder.addLine(line3.getString(), line3);
-        addressBuilder.addLine(line4.getString(), line4);
-        addressBuilder.setTown(city.getString(), city);
-        addressBuilder.setDistrict(county.getString(), county);
-        addressBuilder.setPostcode(postcode.getString(), postcode);
-
-        CsvCell startDate = parser.getBeginEffectiveDate();
-        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) { //there are cases with empty start dates
-            Date d = BartsCsvHelper.parseDate(startDate);
-            addressBuilder.setStartDate(d, startDate);
+        //LOG.trace("Processing PPADD " + addressIdCell.getString() + " for Person ID " + personIdCell.getString());
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
+        if (patientBuilder == null) {
+            //LOG.trace("No patient builder, so skipping");
+            return;
         }
 
-        CsvCell endDate = parser.getEndEffectiveDater();
-        //use this function to test the endDate cell, since it will have the Cerner end of time content
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
-            Date d = BartsCsvHelper.parseDate(endDate);
-            addressBuilder.setEndDate(d, endDate);
+        try {
+            //LOG.trace("FHIR resource = " + patientBuilder.toString() + " starts with " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
+
+            CsvCell line1 = parser.getAddressLine1();
+            CsvCell line2 = parser.getAddressLine2();
+            CsvCell line3 = parser.getAddressLine3();
+            CsvCell line4 = parser.getAddressLine4();
+            CsvCell city = parser.getCity();
+            CsvCell county = parser.getCountyText();
+            CsvCell postcode = parser.getPostcode();
+
+            //we always fully re-create the address, so remove it from the patient
+            boolean removedExisting = AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
+            //LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
+
+            AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
+            addressBuilder.setId(addressIdCell.getString(), addressIdCell);
+            addressBuilder.setUse(Address.AddressUse.HOME);
+            addressBuilder.addLine(line1.getString(), line1);
+            addressBuilder.addLine(line2.getString(), line2);
+            addressBuilder.addLine(line3.getString(), line3);
+            addressBuilder.addLine(line4.getString(), line4);
+            addressBuilder.setTown(city.getString(), city);
+            addressBuilder.setDistrict(county.getString(), county);
+            addressBuilder.setPostcode(postcode.getString(), postcode);
+
+            CsvCell startDate = parser.getBeginEffectiveDate();
+            if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) { //there are cases with empty start dates
+                Date d = BartsCsvHelper.parseDate(startDate);
+                addressBuilder.setStartDate(d, startDate);
+            }
+
+            CsvCell endDate = parser.getEndEffectiveDater();
+            //use this function to test the endDate cell, since it will have the Cerner end of time content
+            if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
+                Date d = BartsCsvHelper.parseDate(endDate);
+                addressBuilder.setEndDate(d, endDate);
+            }
+
+            boolean isActive = true;
+            if (addressBuilder.getAddressCreated().hasPeriod()) {
+                isActive = PeriodHelper.isActive(addressBuilder.getAddressCreated().getPeriod());
+            }
+
+            Address.AddressUse use = convertAddressUse(typeDesc, isActive);
+            if (use != null) {
+                addressBuilder.setUse(use, typeCell, typeDescCell);
+            }
+
+            Address.AddressType type = convertAddressType(typeDesc);
+            if (type != null) {
+                addressBuilder.setType(type, typeCell, typeDescCell);
+            }
+
+            //LOG.trace("Added new address, FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
+
+            //remove any instance of the address added by the ADT feed
+            Address addressCreated = addressBuilder.getAddressCreated();
+            removeExistingAddressWithoutIdByValue(patientBuilder, addressCreated);
+            //LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
+
+        } finally {
+            //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+            csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+            //LOG.trace("Returned to patient cache with person ID " + personIdCell + " with " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
         }
-
-        boolean isActive = true;
-        if (addressBuilder.getAddressCreated().hasPeriod()) {
-            isActive = PeriodHelper.isActive(addressBuilder.getAddressCreated().getPeriod());
-        }
-
-        Address.AddressUse use = convertAddressUse(typeDesc, isActive);
-        if (use != null) {
-            addressBuilder.setUse(use, typeCell, typeDescCell);
-        }
-
-        Address.AddressType type = convertAddressType(typeDesc);
-        if (type != null) {
-            addressBuilder.setType(type, typeCell, typeDescCell);
-        }
-
-        //LOG.trace("Added new address, FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
-
-        //remove any instance of the address added by the ADT feed
-        Address addressCreated = addressBuilder.getAddressCreated();
-        removeExistingAddressWithoutIdByValue(patientBuilder, addressCreated);
-        //LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
-
-        //no need to save the resource now, as all patient resources are saved at the end of the PP... files
-        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
-        LOG.trace("Returned to patient cache with person ID " + personIdCell + " with " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
     }
 
     private static Address.AddressType convertAddressType(String typeDesc) throws TransformException {

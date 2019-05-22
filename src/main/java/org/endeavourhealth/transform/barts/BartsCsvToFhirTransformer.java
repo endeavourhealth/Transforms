@@ -91,20 +91,13 @@ public abstract class BartsCsvToFhirTransformer {
             PPRELPreTransformer.transform(getParsers(parserMap, "PPREL", false), fhirResourceFiler, csvHelper);
 
             //patient transformers
-            csvHelper.getPatientCache().dumpCacheContents();
             PPATITransformer.transform(getParsers(parserMap, "PPATI", true), fhirResourceFiler, csvHelper);
-            csvHelper.getPatientCache().dumpCacheContents();
             PPALITransformer.transform(getParsers(parserMap, "PPALI", true), fhirResourceFiler, csvHelper);
-            csvHelper.getPatientCache().dumpCacheContents();
             PPADDTransformer.transform(getParsers(parserMap, "PPADD", true), fhirResourceFiler, csvHelper);
-            csvHelper.getPatientCache().dumpCacheContents();
             //PPINFTransformer.transform(getParsers(parserMap, "PPINF", csvHelper), fhirResourceFiler, csvHelper); //nothing interesting in this file
             PPNAMTransformer.transform(getParsers(parserMap, "PPNAM", true), fhirResourceFiler, csvHelper);
-            csvHelper.getPatientCache().dumpCacheContents();
             PPPHOTransformer.transform(getParsers(parserMap, "PPPHO", true), fhirResourceFiler, csvHelper);
-            csvHelper.getPatientCache().dumpCacheContents();
             PPRELTransformer.transform(getParsers(parserMap, "PPREL", true), fhirResourceFiler, csvHelper);
-            csvHelper.getPatientCache().dumpCacheContents();
             PPAGPTransformer.transform(getParsers(parserMap, "PPAGP", true), fhirResourceFiler, csvHelper);
 
             //we're now good to save our patient resources

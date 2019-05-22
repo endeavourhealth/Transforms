@@ -111,118 +111,121 @@ public class PPRELTransformer {
             return;
         }
 
-        //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
-        PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
+        try {
+            //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
+            PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
 
 
-        PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
-        contactBuilder.setId(relationshipIdCell.getString(), relationshipIdCell);
+            PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
+            contactBuilder.setId(relationshipIdCell.getString(), relationshipIdCell);
 
-        NameBuilder nameBuilder = new NameBuilder(contactBuilder);
-        nameBuilder.setUse(HumanName.NameUse.USUAL);
-        nameBuilder.addPrefix(title.getString(), title);
-        nameBuilder.addGiven(firstName.getString(), firstName);
-        nameBuilder.addGiven(middleName.getString(), middleName);
-        nameBuilder.addFamily(lastName.getString(), lastName);
+            NameBuilder nameBuilder = new NameBuilder(contactBuilder);
+            nameBuilder.setUse(HumanName.NameUse.USUAL);
+            nameBuilder.addPrefix(title.getString(), title);
+            nameBuilder.addGiven(firstName.getString(), firstName);
+            nameBuilder.addGiven(middleName.getString(), middleName);
+            nameBuilder.addFamily(lastName.getString(), lastName);
 
-        AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
-        addressBuilder.setUse(Address.AddressUse.HOME);
-        addressBuilder.addLine(line1.getString(), line1);
-        addressBuilder.addLine(line2.getString(), line2);
-        addressBuilder.addLine(line3.getString(), line3);
-        addressBuilder.addLine(line4.getString(), line4);
-        addressBuilder.setTown(city.getString(), city);
-        addressBuilder.setPostcode(postcode.getString(), postcode);
+            AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
+            addressBuilder.setUse(Address.AddressUse.HOME);
+            addressBuilder.addLine(line1.getString(), line1);
+            addressBuilder.addLine(line2.getString(), line2);
+            addressBuilder.addLine(line3.getString(), line3);
+            addressBuilder.addLine(line4.getString(), line4);
+            addressBuilder.setTown(city.getString(), city);
+            addressBuilder.setPostcode(postcode.getString(), postcode);
 
-        if (!homePhone.isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME, homePhone);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, homePhone);
-            contactPointBuilder.setValue(homePhone.getString(), homePhone);
-        }
-
-        if (!mobilePhone.isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE, mobilePhone);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, mobilePhone);
-            contactPointBuilder.setValue(mobilePhone.getString(), mobilePhone);
-        }
-
-        if (!workPhone.isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK, workPhone);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, workPhone);
-            contactPointBuilder.setValue(workPhone.getString(), workPhone);
-        }
-
-        if (!emailAddress.isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME, emailAddress);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL, emailAddress);
-            contactPointBuilder.setValue(emailAddress.getString(), emailAddress);
-        }
-
-        CsvCell startDate = parser.getBeginEffectiveDateTime();
-        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) {
-            Date d = BartsCsvHelper.parseDate(startDate);
-            contactBuilder.setStartDate(d, startDate);
-        }
-
-        CsvCell endDate = parser.getEndEffectiveDateTime();
-        //use this function to test the endDate cell, since it will have the Cerner end of time content
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
-            Date d = BartsCsvHelper.parseDate(endDate);
-            contactBuilder.setEndDate(d, endDate);
-            addressBuilder.setUse(Address.AddressUse.OLD);
-        }
-
-        //the PPREL file has two codes, one defining the relationship to the patient (e.g. self, mother)
-        //and one defining the type of relationship (e.g. next of kin). In typical Cerner style, this isn't
-        //as clear-cut as it sounds and they often have the same thing, so we combine both into the same
-        //field and remove duplicates
-        List<String> types = new ArrayList<>();
-        List<CsvCell> cells = new ArrayList<>();
-
-        CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(relationshipToPatientCell)) {
-
-            CsvCell cvRefCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
-            String cvRefStr = cvRefCell.getString();
-
-            types.add(cvRefStr);
-            cells.add(relationshipToPatientCell);
-            cells.add(cvRefCell);
-        }
-
-        CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(relationshipTypeCell)) {
-
-            CsvCell cvRefCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.PERSON_RELATIONSHIP_TYPE, relationshipTypeCell);
-            String cvRefStr = cvRefCell.getString();
-
-            //often both fields point to the same term, so don't duplicate it
-            if (!types.contains(cvRefStr)) {
-                types.add(cvRefStr);
+            if (!homePhone.isEmpty()) {
+                ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+                contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME, homePhone);
+                contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, homePhone);
+                contactPointBuilder.setValue(homePhone.getString(), homePhone);
             }
-            cells.add(relationshipTypeCell);
-            cells.add(cvRefCell);
+
+            if (!mobilePhone.isEmpty()) {
+                ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+                contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE, mobilePhone);
+                contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, mobilePhone);
+                contactPointBuilder.setValue(mobilePhone.getString(), mobilePhone);
+            }
+
+            if (!workPhone.isEmpty()) {
+                ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+                contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK, workPhone);
+                contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE, workPhone);
+                contactPointBuilder.setValue(workPhone.getString(), workPhone);
+            }
+
+            if (!emailAddress.isEmpty()) {
+                ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+                contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME, emailAddress);
+                contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL, emailAddress);
+                contactPointBuilder.setValue(emailAddress.getString(), emailAddress);
+            }
+
+            CsvCell startDate = parser.getBeginEffectiveDateTime();
+            if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) {
+                Date d = BartsCsvHelper.parseDate(startDate);
+                contactBuilder.setStartDate(d, startDate);
+            }
+
+            CsvCell endDate = parser.getEndEffectiveDateTime();
+            //use this function to test the endDate cell, since it will have the Cerner end of time content
+            if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
+                Date d = BartsCsvHelper.parseDate(endDate);
+                contactBuilder.setEndDate(d, endDate);
+                addressBuilder.setUse(Address.AddressUse.OLD);
+            }
+
+            //the PPREL file has two codes, one defining the relationship to the patient (e.g. self, mother)
+            //and one defining the type of relationship (e.g. next of kin). In typical Cerner style, this isn't
+            //as clear-cut as it sounds and they often have the same thing, so we combine both into the same
+            //field and remove duplicates
+            List<String> types = new ArrayList<>();
+            List<CsvCell> cells = new ArrayList<>();
+
+            CsvCell relationshipToPatientCell = parser.getRelationshipToPatientCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(relationshipToPatientCell)) {
+
+                CsvCell cvRefCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.RELATIONSHIP_TO_PATIENT, relationshipToPatientCell);
+                String cvRefStr = cvRefCell.getString();
+
+                types.add(cvRefStr);
+                cells.add(relationshipToPatientCell);
+                cells.add(cvRefCell);
+            }
+
+            CsvCell relationshipTypeCell = parser.getPersonRelationTypeCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(relationshipTypeCell)) {
+
+                CsvCell cvRefCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.PERSON_RELATIONSHIP_TYPE, relationshipTypeCell);
+                String cvRefStr = cvRefCell.getString();
+
+                //often both fields point to the same term, so don't duplicate it
+                if (!types.contains(cvRefStr)) {
+                    types.add(cvRefStr);
+                }
+                cells.add(relationshipTypeCell);
+                cells.add(cvRefCell);
+            }
+
+            if (!types.isEmpty()) {
+                String typeStr = String.join(", ", types);
+
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
+                codeableConceptBuilder.setText(typeStr, cells.toArray(new CsvCell[]{}));
+            }
+
+
+            //PPNAM transformer removes any names added by the ADT transform, so we would need to do the same if the ADT
+            //feed populated relationships. In place of that, just validate that there are no relationships without IDs
+            //in case the ADT feed is ever updated to add them - this will highlight that we need to remove duplciates here
+            checkForRelationshipsWithoutIds(patientBuilder);
+
+        } finally {
+            //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+            csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
         }
-
-        if (!types.isEmpty()) {
-            String typeStr = String.join(", ", types);
-
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
-            codeableConceptBuilder.setText(typeStr, cells.toArray(new CsvCell[]{}));
-        }
-
-
-        //PPNAM transformer removes any names added by the ADT transform, so we would need to do the same if the ADT
-        //feed populated relationships. In place of that, just validate that there are no relationships without IDs
-        //in case the ADT feed is ever updated to add them - this will highlight that we need to remove duplciates here
-        checkForRelationshipsWithoutIds(patientBuilder);
-
-        //no need to save the resource now, as all patient resources are saved at the end of the PP... files
-        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
     private static void checkForRelationshipsWithoutIds(PatientBuilder patientBuilder) throws Exception {

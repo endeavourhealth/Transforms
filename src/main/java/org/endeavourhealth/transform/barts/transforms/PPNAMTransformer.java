@@ -66,68 +66,71 @@ public class PPNAMTransformer {
         }
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        LOG.trace("Processing PPNAM " + nameIdCell.getString() + " for Person ID " + personIdCell.getString());
+        //LOG.trace("Processing PPNAM " + nameIdCell.getString() + " for Person ID " + personIdCell.getString());
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
-            LOG.trace("No patient builder, so skipping");
+            //LOG.trace("No patient builder, so skipping");
             return;
         }
 
-        LOG.trace("FHIR resource = " + patientBuilder.toString() + " starts with " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+        try {
+            //LOG.trace("FHIR resource = " + patientBuilder.toString() + " starts with " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
 
-        CsvCell titleCell = parser.getTitle();
-        CsvCell prefixCell = parser.getPrefix();
-        CsvCell firstNameCell = parser.getFirstName();
-        CsvCell middleNameCell = parser.getMiddleName();
-        CsvCell lastNameCell = parser.getLastName();
-        CsvCell suffixCell = parser.getSuffix();
+            CsvCell titleCell = parser.getTitle();
+            CsvCell prefixCell = parser.getPrefix();
+            CsvCell firstNameCell = parser.getFirstName();
+            CsvCell middleNameCell = parser.getMiddleName();
+            CsvCell lastNameCell = parser.getLastName();
+            CsvCell suffixCell = parser.getSuffix();
 
-        //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
-        boolean removedExisting = NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
-        //LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+            //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
+            boolean removedExisting = NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
+            //LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
 
-        NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-        nameBuilder.setId(nameIdCell.getString(), nameIdCell);
+            NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+            nameBuilder.setId(nameIdCell.getString(), nameIdCell);
 
-        nameBuilder.addPrefix(titleCell.getString(), titleCell);
-        nameBuilder.addPrefix(prefixCell.getString(), prefixCell);
-        nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
-        nameBuilder.addGiven(middleNameCell.getString(), middleNameCell);
-        nameBuilder.addFamily(lastNameCell.getString(), lastNameCell);
-        nameBuilder.addSuffix(suffixCell.getString(), suffixCell);
+            nameBuilder.addPrefix(titleCell.getString(), titleCell);
+            nameBuilder.addPrefix(prefixCell.getString(), prefixCell);
+            nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
+            nameBuilder.addGiven(middleNameCell.getString(), middleNameCell);
+            nameBuilder.addFamily(lastNameCell.getString(), lastNameCell);
+            nameBuilder.addSuffix(suffixCell.getString(), suffixCell);
 
-        CsvCell startDate = parser.getBeginEffectiveDate();
-        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) { //possible to get empty start dates
-            Date d = BartsCsvHelper.parseDate(startDate);
-            nameBuilder.setStartDate(d, startDate);
+            CsvCell startDate = parser.getBeginEffectiveDate();
+            if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) { //possible to get empty start dates
+                Date d = BartsCsvHelper.parseDate(startDate);
+                nameBuilder.setStartDate(d, startDate);
+            }
+
+            CsvCell endDate = parser.getEndEffectiveDater();
+            //use this function to test the endDate cell, since it will have the Cerner end of time content
+            if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
+                Date d = BartsCsvHelper.parseDate(endDate);
+                nameBuilder.setEndDate(d, endDate);
+            }
+
+            boolean isActive = true;
+            if (nameBuilder.getNameCreated().hasPeriod()) {
+                isActive = PeriodHelper.isActive(nameBuilder.getNameCreated().getPeriod());
+            }
+
+            CsvCell nameTypeCell = parser.getNameTypeCode();
+            CsvCell codeMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCell);
+            HumanName.NameUse nameUse = convertNameUse(codeMeaningCell.getString(), isActive);
+            nameBuilder.setUse(nameUse, nameTypeCell, codeMeaningCell);
+            //LOG.trace("Added new name, FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+
+            //remove any duplicate pre-existing name that was added by the ADT feed
+            HumanName humanNameAdded = nameBuilder.getNameCreated();
+            removeExistingNameWithoutIdByValue(patientBuilder, humanNameAdded);
+            //LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+
+        } finally {
+            //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+            csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+            //LOG.trace("Returned to patient cache with person ID " + personIdCell + " and " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
         }
-
-        CsvCell endDate = parser.getEndEffectiveDater();
-        //use this function to test the endDate cell, since it will have the Cerner end of time content
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
-            Date d = BartsCsvHelper.parseDate(endDate);
-            nameBuilder.setEndDate(d, endDate);
-        }
-
-        boolean isActive = true;
-        if (nameBuilder.getNameCreated().hasPeriod()) {
-            isActive = PeriodHelper.isActive(nameBuilder.getNameCreated().getPeriod());
-        }
-
-        CsvCell nameTypeCell = parser.getNameTypeCode();
-        CsvCell codeMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCell);
-        HumanName.NameUse nameUse = convertNameUse(codeMeaningCell.getString(), isActive);
-        nameBuilder.setUse(nameUse, nameTypeCell, codeMeaningCell);
-        //LOG.trace("Added new name, FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
-
-        //remove any duplicate pre-existing name that was added by the ADT feed
-        HumanName humanNameAdded = nameBuilder.getNameCreated();
-        removeExistingNameWithoutIdByValue(patientBuilder, humanNameAdded);
-        //LOG.trace("Removed duplicate from ADT feed, and FHIR now has " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
-
-        //no need to save the resource now, as all patient resources are saved at the end of the PP... files
-        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
-        LOG.trace("Returned to patient cache with person ID " + personIdCell + " and " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
     }
 
     public static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, HumanName check) {

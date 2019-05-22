@@ -61,43 +61,46 @@ public class PPAGPTransformer {
             return;
         }
 
-        //if our GP record is non-active or ended, we need to REMOVE the reference from our patient resource
-        CsvCell activeCell = parser.getActiveIndicator();
-        CsvCell endDateCell = parser.getEndEffectiveDate();
-        boolean delete = !activeCell.getIntAsBoolean()
-                || !BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell); //note that the Cerner end of time is used for active record end dates
+        try {
+            //if our GP record is non-active or ended, we need to REMOVE the reference from our patient resource
+            CsvCell activeCell = parser.getActiveIndicator();
+            CsvCell endDateCell = parser.getEndEffectiveDate();
+            boolean delete = !activeCell.getIntAsBoolean()
+                    || !BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell); //note that the Cerner end of time is used for active record end dates
 
-        //Cerner allows multiple GP records for a patient, but in all cases examined we only have one active row
-        //so ignore any ended or non-active records and simply let the active record overwrite the care provider each time
+            //Cerner allows multiple GP records for a patient, but in all cases examined we only have one active row
+            //so ignore any ended or non-active records and simply let the active record overwrite the care provider each time
 
-        //remove any existing care providers
-        patientBuilder.removeAllCareProviders();
+            //remove any existing care providers
+            patientBuilder.removeAllCareProviders();
 
-        //add the GP, if present
-        CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();
-        if (!BartsCsvHelper.isEmptyOrIsZero(personnelId)) {
+            //add the GP, if present
+            CsvCell personnelId = parser.getRegisteredGPMillenniumPersonnelId();
+            if (!BartsCsvHelper.isEmptyOrIsZero(personnelId)) {
 
-            Reference practitionerReference = csvHelper.createPractitionerReference(personnelId);
-            if (patientBuilder.isIdMapped()) {
-                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+                Reference practitionerReference = csvHelper.createPractitionerReference(personnelId);
+                if (patientBuilder.isIdMapped()) {
+                    practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+                }
+
+                patientBuilder.addCareProvider(practitionerReference, personnelId);
             }
 
-            patientBuilder.addCareProvider(practitionerReference, personnelId);
-        }
+            //add the GP practice
+            CsvCell orgIdCell = parser.getRegisteredGPPracticeMillenniumIdOrganisationCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(orgIdCell)) {
 
-        //add the GP practice
-        CsvCell orgIdCell = parser.getRegisteredGPPracticeMillenniumIdOrganisationCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(orgIdCell)) {
+                Reference orgReference = csvHelper.createOrganizationReference(orgIdCell);
+                if (patientBuilder.isIdMapped()) {
+                    orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference, csvHelper);
+                }
 
-            Reference orgReference = csvHelper.createOrganizationReference(orgIdCell);
-            if (patientBuilder.isIdMapped()) {
-                orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference, csvHelper);
+                patientBuilder.addCareProvider(orgReference, orgIdCell);
             }
 
-            patientBuilder.addCareProvider(orgReference, orgIdCell);
+        } finally {
+            csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
         }
-
-        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
     /*public static void createPatientGP(PPAGP parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {

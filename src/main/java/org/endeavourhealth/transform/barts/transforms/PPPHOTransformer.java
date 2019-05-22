@@ -79,65 +79,68 @@ public class PPPHOTransformer {
             return;
         }
 
-        //we always fully recreate the phone record on the patient so just remove any matching one already there
-        ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
+        try {
+            //we always fully recreate the phone record on the patient so just remove any matching one already there
+            ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
 
-        String number = numberCell.getString();
+            String number = numberCell.getString();
 
-        //just append the extension on to the number
-        CsvCell extensionCell = parser.getExtension();
-        if (!extensionCell.isEmpty()) {
-            number += " " + extensionCell.getString();
+            //just append the extension on to the number
+            CsvCell extensionCell = parser.getExtension();
+            if (!extensionCell.isEmpty()) {
+                number += " " + extensionCell.getString();
+            }
+
+            //and remove any instance of this phone number created by the ADT feed
+            removeExistingContactPointWithoutIdByValue(patientBuilder, number);
+
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setId(phoneIdCell.getString(), phoneIdCell);
+            contactPointBuilder.setValue(number, numberCell, extensionCell);
+
+            CsvCell startDate = parser.getBeginEffectiveDateTime();
+            if (!startDate.isEmpty()) {
+                Date d = BartsCsvHelper.parseDate(startDate);
+                contactPointBuilder.setStartDate(d, startDate);
+            }
+
+            CsvCell endDate = parser.getEndEffectiveDateTime();
+            //use this function to test the endDate cell, since it will have the Cerner end of time content
+            if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
+                Date d = BartsCsvHelper.parseDate(endDate);
+                contactPointBuilder.setEndDate(d, endDate);
+            }
+
+            boolean isActive = true;
+            if (contactPointBuilder.getContactPoint().hasPeriod()) {
+                isActive = PeriodHelper.isActive(contactPointBuilder.getContactPoint().getPeriod());
+            }
+
+            CsvCell phoneTypeCell = parser.getPhoneTypeCode();
+            CsvCell phoneTypeDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, phoneTypeCell);
+            String phoneTypeDesc = phoneTypeDescCell.getString();
+            ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc, isActive);
+            contactPointBuilder.setUse(use, phoneTypeCell, phoneTypeDescCell);
+
+            CsvCell phoneMethodCell = parser.getContactMethodCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(phoneMethodCell)) {
+
+                CsvCell phoneMethodDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_METHOD, phoneMethodCell);
+                String phoneMethodDesc = phoneMethodDescCell.getString();
+
+                ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, phoneMethodDesc);
+                contactPointBuilder.setSystem(system, phoneTypeCell, phoneMethodCell, phoneMethodDescCell);
+
+            } else {
+                //the phone method is zero for some records, but we still need to look up a system
+                ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, null);
+                contactPointBuilder.setSystem(system, phoneTypeCell);
+            }
+
+        } finally {
+            //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+            csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
         }
-
-        //and remove any instance of this phone number created by the ADT feed
-        removeExistingContactPointWithoutIdByValue(patientBuilder, number);
-
-        ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
-        contactPointBuilder.setId(phoneIdCell.getString(), phoneIdCell);
-        contactPointBuilder.setValue(number, numberCell, extensionCell);
-
-        CsvCell startDate = parser.getBeginEffectiveDateTime();
-        if (!startDate.isEmpty()) {
-            Date d = BartsCsvHelper.parseDate(startDate);
-            contactPointBuilder.setStartDate(d, startDate);
-        }
-
-        CsvCell endDate = parser.getEndEffectiveDateTime();
-        //use this function to test the endDate cell, since it will have the Cerner end of time content
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
-            Date d = BartsCsvHelper.parseDate(endDate);
-            contactPointBuilder.setEndDate(d, endDate);
-        }
-
-        boolean isActive = true;
-        if (contactPointBuilder.getContactPoint().hasPeriod()) {
-            isActive = PeriodHelper.isActive(contactPointBuilder.getContactPoint().getPeriod());
-        }
-
-        CsvCell phoneTypeCell = parser.getPhoneTypeCode();
-        CsvCell phoneTypeDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, phoneTypeCell);
-        String phoneTypeDesc = phoneTypeDescCell.getString();
-        ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc, isActive);
-        contactPointBuilder.setUse(use, phoneTypeCell, phoneTypeDescCell);
-
-        CsvCell phoneMethodCell = parser.getContactMethodCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(phoneMethodCell)) {
-
-            CsvCell phoneMethodDescCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_METHOD, phoneMethodCell);
-            String phoneMethodDesc = phoneMethodDescCell.getString();
-
-            ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, phoneMethodDesc);
-            contactPointBuilder.setSystem(system, phoneTypeCell, phoneMethodCell, phoneMethodDescCell);
-
-        } else {
-            //the phone method is zero for some records, but we still need to look up a system
-            ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, null);
-            contactPointBuilder.setSystem(system, phoneTypeCell);
-        }
-
-        //no need to save the resource now, as all patient resources are saved at the end of the PP... files
-        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
     public static void removeExistingContactPointWithoutIdByValue(PatientBuilder patientBuilder, String number) {

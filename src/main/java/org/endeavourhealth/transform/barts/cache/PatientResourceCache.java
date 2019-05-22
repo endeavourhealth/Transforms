@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.barts.cache;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
@@ -112,8 +111,8 @@ public class PatientResourceCache {
 
             boolean performIdMapping = !patientBuilder.isIdMapped();
 
-String json = FhirSerializationHelper.serializeResource(patientBuilder.getResource());
-LOG.trace("Saving " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId() + " map IDs = " + performIdMapping + "\n" + json);
+            /*String json = FhirSerializationHelper.serializeResource(patientBuilder.getResource());
+            LOG.trace("Saving " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId() + " map IDs = " + performIdMapping + "\n" + json);*/
 
             fhirResourceFiler.savePatientResource(null, performIdMapping, patientBuilder);
         }
@@ -124,7 +123,7 @@ LOG.trace("Saving " + patientBuilder.getResource().getResourceType() + " " + pat
         patientBuildersByPatientUuid.clear();
     }
 
-    public void dumpCacheContents() throws Exception {
+    /*public void dumpCacheContents() throws Exception {
         if (!LOG.isTraceEnabled()) {
             return;
         }
@@ -140,7 +139,7 @@ LOG.trace("Saving " + patientBuilder.getResource().getResourceType() + " " + pat
             patientBuildersByPatientUuid.addToCache(patientUuid, patientBuilder);
         }
 
-    }
+    }*/
 
     public void deletePatient(PatientBuilder patientBuilder, CsvCell personIdCell, FhirResourceFiler fhirResourceFiler, CsvCurrentState parserState) throws Exception {
 

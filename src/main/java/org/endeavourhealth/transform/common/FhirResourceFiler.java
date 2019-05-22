@@ -206,7 +206,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         for (ResourceBuilderBase builder : resourceBuilders) {
             ResourceJob job = new ResourceJob(parserState, isDelete, exchangeBatch, builder);
-            LOG.trace("Adding filing job for " + builder.getResource().getResourceType() + " " + builder.getResource().getId() + " isDelete = " + isDelete);
+            //LOG.trace("Adding filing job for " + builder.getResource().getResourceType() + " " + builder.getResource().getId() + " isDelete = " + isDelete);
             addToFilingQueue(job);
         }
     }
@@ -239,7 +239,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
     private void runNextSaveResourceTask() throws Exception {
 
-        LOG.trace("Running next save resource task");
+        //LOG.trace("Running next save resource task");
         try {
             resourceTaskLock.lock();
 
@@ -896,13 +896,13 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         public Object call() throws Exception {
 
             try {
-                LOG.trace("In save resource task for " + jobs.size() + " jobs");
+                //LOG.trace("In save resource task for " + jobs.size() + " jobs");
                 Map<Resource, ExchangeBatch> hmResourcesAndBatches = new HashMap<>();
                 Set<Resource> definitelyNewResources = new HashSet<>();
                 Map<String, ResourceFieldMappingAudit> hmAuditsByResourceId = new HashMap<>();
 
                 for (ResourceJob job : jobs) {
-                    LOG.trace("Saving " + job);
+                    //LOG.trace("Saving " + job);
                     //save the exchange batch if it needs saving
                     ExchangeBatch exchangeBatch = job.getExchangeBatch();
                     ResourceBuilderBase builder = job.getResourceBuilder();
@@ -912,9 +912,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                     //go through the ID mapping process, but this needs doing every time
                     try {
                         Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(serviceId);
-                        if (!pastMergeReferences.isEmpty()) {
+                        /*if (!pastMergeReferences.isEmpty()) {
                             LOG.trace("Applying merge " + pastMergeReferences.size() + " mappings");
-                        }
+                        }*/
 
                         IdHelper.applyExternalReferenceMappings(resource, pastMergeReferences, false);
                     } catch (Exception ex) {
@@ -942,7 +942,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 } else {
                     wrappersUpdated = storageService.saveResources(exchangeId, hmResourcesAndBatches, definitelyNewResources);
                 }
-                LOG.trace("Done save and " + wrappersUpdated.size() + " wrappers were updated");
+                //LOG.trace("Done save and " + wrappersUpdated.size() + " wrappers were updated");
                 //store our audit trail if we actually saved the resource
                 SourceFileMappingDalI dal = DalProvider.factorySourceFileMappingDal();
                 Map<ResourceWrapper, ResourceFieldMappingAudit> hmAuditsToSave = new HashMap<>();

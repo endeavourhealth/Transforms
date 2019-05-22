@@ -71,59 +71,64 @@ public class PPALITransformer {
             return;
         }
 
-        //we always fully re-create the Identifier on the patient so just remove any previous instance
-        IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
+        try {
 
-        //work out the system for the alias
-        CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
-        CsvCell aliasMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.ALIAS_TYPE, aliasTypeCodeCell);
-        String aliasSystem = convertAliasCode(aliasMeaningCell.getString());
+            //we always fully re-create the Identifier on the patient so just remove any previous instance
+            IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
 
-        if (aliasSystem == null) {
-            TransformWarnings.log(LOG, parser, "Unknown alias system for {}", aliasMeaningCell);
-            aliasSystem = "UNKNOWN";
-        }
+            //work out the system for the alias
+            CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
+            CsvCell aliasMeaningCell = BartsCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.ALIAS_TYPE, aliasTypeCodeCell);
+            String aliasSystem = convertAliasCode(aliasMeaningCell.getString());
 
-        //both the PPATI transform and PPALI transformers create Identifiers for the patient, although our file
-        //has more information on them, so remove any existing Identifier for the same system that DOES NOT
-        //have an ID (i.e. it didn't come from the PPALI file)
-        List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, aliasSystem);
-        for (Identifier identifier : identifiers) {
-            if (!identifier.hasId()) {
-                patientBuilder.removeIdentifier(identifier);
+            if (aliasSystem == null) {
+                TransformWarnings.log(LOG, parser, "Unknown alias system for {}", aliasMeaningCell);
+                aliasSystem = "UNKNOWN";
             }
+
+            //both the PPATI transform and PPALI transformers create Identifiers for the patient, although our file
+            //has more information on them, so remove any existing Identifier for the same system that DOES NOT
+            //have an ID (i.e. it didn't come from the PPALI file)
+            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, aliasSystem);
+            for (Identifier identifier : identifiers) {
+                if (!identifier.hasId()) {
+                    patientBuilder.removeIdentifier(identifier);
+                }
+            }
+
+            //if the alias record is an NHS number, then it's an official use. Secondary otherwise.
+            Identifier.IdentifierUse use = null;
+            if (aliasSystem.equalsIgnoreCase(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER)) {
+                use = Identifier.IdentifierUse.OFFICIAL;
+
+            } else {
+                use = Identifier.IdentifierUse.SECONDARY;
+            }
+
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.setId(aliasIdCell.getString(), aliasIdCell);
+            identifierBuilder.setUse(use);
+            identifierBuilder.setValue(aliasCell.getString(), aliasCell);
+            identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell, aliasMeaningCell);
+
+            CsvCell startDateCell = parser.getBeginEffectiveDate();
+            if (!startDateCell.isEmpty()) {
+                Date d = BartsCsvHelper.parseDate(startDateCell);
+                identifierBuilder.setStartDate(d, startDateCell);
+            }
+
+            CsvCell endDateCell = parser.getEndEffectiveDate();
+            //use this function to test the endDate cell, since it will have the Cerner end of time content
+            if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell)) {
+                Date d = BartsCsvHelper.parseDate(endDateCell);
+                identifierBuilder.setEndDate(d, endDateCell);
+            }
+
+        } finally {
+            //no need to save the resource now, as all patient resources are saved at the end of the PP... files
+            csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
         }
 
-        //if the alias record is an NHS number, then it's an official use. Secondary otherwise.
-        Identifier.IdentifierUse use = null;
-        if (aliasSystem.equalsIgnoreCase(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER)) {
-            use = Identifier.IdentifierUse.OFFICIAL;
-
-        } else {
-            use = Identifier.IdentifierUse.SECONDARY;
-        }
-
-        IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-        identifierBuilder.setId(aliasIdCell.getString(), aliasIdCell);
-        identifierBuilder.setUse(use);
-        identifierBuilder.setValue(aliasCell.getString(), aliasCell);
-        identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell, aliasMeaningCell);
-
-        CsvCell startDateCell = parser.getBeginEffectiveDate();
-        if (!startDateCell.isEmpty()) {
-            Date d = BartsCsvHelper.parseDate(startDateCell);
-            identifierBuilder.setStartDate(d, startDateCell);
-        }
-
-        CsvCell endDateCell = parser.getEndEffectiveDate();
-        //use this function to test the endDate cell, since it will have the Cerner end of time content
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell)) {
-            Date d = BartsCsvHelper.parseDate(endDateCell);
-            identifierBuilder.setEndDate(d, endDateCell);
-        }
-
-        //no need to save the resource now, as all patient resources are saved at the end of the PP... files
-        csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
     }
 
 
