@@ -74,6 +74,8 @@ public class SURCPPreTransformer {
             }
 
             CsvCell procedureCodeCell = parser.getProcedureCode();
+            String modifierText = "";
+            Integer primaryProcIndicator = null;
             if (!BartsCsvHelper.isEmptyOrIsZero(procedureCodeCell)) {
 
                 stagingSURCP.setProcedureCode(procedureCodeCell.getInt());
@@ -85,11 +87,33 @@ public class SURCPPreTransformer {
                 }
                 String codeLookupTerm = codeValueRef.getCodeDispTxt();
                 stagingSURCP.setLookupProcedureCodeTerm(codeLookupTerm);
+
+                modifierText = parser.getModifierText().getString();
+                primaryProcIndicator = parser.getPrimaryProcedureIndicator().getInt();
+            } else {
+
+                //DAB-120: try the Main procedure code first, otherwise, if "poor" data, try the sch_proc_cd
+                CsvCell schProcedureCodeCell = parser.getSchProcedureCode();
+                if (!BartsCsvHelper.isEmptyOrIsZero(schProcedureCodeCell)) {
+
+                    stagingSURCP.setProcedureCode(schProcedureCodeCell.getInt());
+
+                    //get lookup term from non 0 code
+                    CernerCodeValueRef codeValueRef = csvHelper.lookupCodeRef(CodeValueSet.PROCEDURE_ORDERS, schProcedureCodeCell);
+                    if (codeValueRef == null) {
+                        throw new Exception("Failed to find CVREF record for code " + schProcedureCodeCell.getString());
+                    }
+                    String codeLookupTerm = codeValueRef.getCodeDispTxt();
+                    stagingSURCP.setLookupProcedureCodeTerm(codeLookupTerm);
+
+                    modifierText = parser.getSchModifierText().getString();
+                    primaryProcIndicator = parser.getSchPrimaryProcedureIndicator().getInt();
+                }
             }
 
             stagingSURCP.setProcedureText(parser.getProcedureText().getString());
-            stagingSURCP.setModifierText(parser.getModifierText().getString());
-            stagingSURCP.setPrimaryProcedureIndicator(parser.getPrimaryProcedureIndicator().getInt());
+            stagingSURCP.setModifierText(modifierText);
+            stagingSURCP.setPrimaryProcedureIndicator(primaryProcIndicator);
 
             CsvCell surgeonIdCell = parser.getSurgeonPersonnelId();
             if (!BartsCsvHelper.isEmptyOrIsZero(surgeonIdCell)) {

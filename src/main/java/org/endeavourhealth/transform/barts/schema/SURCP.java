@@ -94,6 +94,16 @@ public class SURCP extends AbstractCsvParser {
         return super.getCell("WOUND_CLASS_CD");
     }
 
+    public CsvCell getSchProcedureCode() {
+        return super.getCell("SCH_PROC_CD");
+    }
+    public CsvCell getSchModifierText() {
+        return super.getCell("SCH_MODIFIER_TXT");
+    }
+    public CsvCell getSchPrimaryProcedureIndicator() { return super.getCell("SCH_PRIMARY_PROC_IND");
+    }
+
+
     @Override
     protected boolean isFileAudited() {
         return true;
