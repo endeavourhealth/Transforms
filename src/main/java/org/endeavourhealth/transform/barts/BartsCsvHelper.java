@@ -64,6 +64,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private static final String PPREL_TO_RELATIONSHIP_TYPE = "PPREL_ID_TO_TYPE";
     private static final String ENCOUNTER_ID_TO_PERSON_ID = "ENCNTR_ID_TO_PERSON_ID";
     private static final String SURGICAL_CASE_ID_TO_PERSON_ID = "SURCC_ID_TO_PERSON_ID";
+    private static final String ENCOUNTER_ID_TO_RESPONSIBLE_PESONNEL_ID = "ENCNTR_ID_TO_RESPONSIBLE_PERSONNEL_ID";
 
     //the daily files have dates formatted different to the bulks, so we need to support both
     private static SimpleDateFormat DATE_FORMAT_DAILY = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
@@ -469,6 +470,16 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
     public String findPersonIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
         return getInternalId(ENCOUNTER_ID_TO_PERSON_ID, encounterIdCell.getString());
+    }
+
+    public void saveEncounterIdToResponsiblePersonellId(CsvCell encounterIdCell, CsvCell responsiblePersonnelIdCell) throws Exception {
+        String encounterId = encounterIdCell.getString();
+        String responsiblePersonnelId = responsiblePersonnelIdCell.getString();
+        saveInternalId(ENCOUNTER_ID_TO_RESPONSIBLE_PESONNEL_ID, encounterId, responsiblePersonnelId);
+    }
+
+    public String findResponsiblePersonellIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
+        return getInternalId(ENCOUNTER_ID_TO_RESPONSIBLE_PESONNEL_ID, encounterIdCell.getString());
     }
 
     /*public String findPersonIdFromEncounterId(CsvCell encounterIdCell) throws Exception {

@@ -57,7 +57,9 @@ public class PROCEPreTransformer {
         //only set additional values if active
         if (activeInd) {
 
-            String personId = csvHelper.findPersonIdFromEncounterId(parser.getEncounterId());
+            CsvCell encounterIdCell = parser.getEncounterId();
+
+            String personId = csvHelper.findPersonIdFromEncounterId(encounterIdCell);
             if (Strings.isNullOrEmpty(personId)) {
                 TransformWarnings.log(LOG, csvHelper, "No person ID found for PROCE {}", procedureIdCell);
                 return;
@@ -80,7 +82,13 @@ public class PROCEPreTransformer {
 
             //LOG.debug("Processing procedure " + procedureIdCell.getString());
 
-            stagingPROCE.setEncounterId(parser.getEncounterId().getInt());
+            stagingPROCE.setEncounterId(encounterIdCell.getInt());
+
+            //DAB-121 enhancement to derive the responsiblePersonnelId from the encounter internal map
+            String responsiblePersonnelId = csvHelper.findResponsiblePersonellIdFromEncounterId(encounterIdCell);
+            if (!Strings.isNullOrEmpty(responsiblePersonnelId)) {
+                stagingPROCE.setLookupResponsiblePersonnelId(Integer.valueOf(responsiblePersonnelId));
+            }
 
             CsvCell sliceCell = parser.getEncounterSliceID();
             if (!sliceCell.isEmpty()) {

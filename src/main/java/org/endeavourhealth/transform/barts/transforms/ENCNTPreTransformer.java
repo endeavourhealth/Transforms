@@ -58,11 +58,21 @@ public class ENCNTPreTransformer {
 
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         CsvCell encounterIdCell = parser.getEncounterId();
+        CsvCell responsiblePersonnelIdCell = parser.getResponsibleHealthCareprovidingPersonnelIdentifier();
         CsvCell episodeIdCell = parser.getEpisodeIdentifier();
         CsvCell finCell = parser.getMillenniumFinancialNumberIdentifier();
         CsvCell visitIdCell = parser.getVisitId();
 
-        PreTransformCallable callable = new PreTransformCallable(parser.getCurrentState(), personIdCell, encounterIdCell, episodeIdCell, finCell, visitIdCell, csvHelper, fhirResourceFiler);
+        PreTransformCallable callable
+                = new PreTransformCallable(parser.getCurrentState(),
+                                           personIdCell,
+                                           encounterIdCell,
+                                           responsiblePersonnelIdCell,
+                                           episodeIdCell,
+                                           finCell,
+                                           visitIdCell,
+                                           csvHelper,
+                                           fhirResourceFiler);
 
         csvHelper.submitToThreadPool(callable);
     }
@@ -72,16 +82,26 @@ public class ENCNTPreTransformer {
 
         private CsvCell personIdCell;
         private CsvCell encounterIdCell;
+        private CsvCell responsiblePersonnelIdCell;
         private CsvCell episodeIdCell;
         private CsvCell finCell;
         private CsvCell visitIdCell;
         private BartsCsvHelper csvHelper;
         private FhirResourceFiler fhirResourceFiler;
 
-        public PreTransformCallable(CsvCurrentState parserState, CsvCell personIdCell, CsvCell encounterIdCell, CsvCell episodeIdCell, CsvCell finCell, CsvCell visitIdCell, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) {
+        public PreTransformCallable(CsvCurrentState parserState,
+                                    CsvCell personIdCell,
+                                    CsvCell encounterIdCell,
+                                    CsvCell responsiblePersonnelIdCell,
+                                    CsvCell episodeIdCell,
+                                    CsvCell finCell,
+                                    CsvCell visitIdCell,
+                                    BartsCsvHelper csvHelper,
+                                    FhirResourceFiler fhirResourceFiler) {
             super(parserState);
             this.personIdCell = personIdCell;
             this.encounterIdCell = encounterIdCell;
+            this.responsiblePersonnelIdCell = responsiblePersonnelIdCell;
             this.episodeIdCell = episodeIdCell;
             this.finCell = finCell;
             this.visitIdCell = visitIdCell;
@@ -105,6 +125,9 @@ public class ENCNTPreTransformer {
 
                 //update the internal ID map with our encounter to person mapping
                 csvHelper.saveEncounterIdToPersonId(encounterIdCell, personIdCell);
+
+                //update the internal ID map with our encounter to responsible personnel mapping - DAB-121 enhancement
+                csvHelper.saveEncounterIdToResponsiblePersonellId(encounterIdCell, responsiblePersonnelIdCell);
 
                 //99%+ of ENCNT records have a VISIT ID, but some don't, so we can't use them
                 //also, VISIT IDs starting "RES_" seem to be used as placeholders, across multiple patients
