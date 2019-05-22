@@ -164,8 +164,6 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        //  TODO Finalised and tested the use of originalCoding, or the IM, in order to look up
-        //   the BNF Chapter in that table in the reference DB, by using the actual Snomed code
         String snomedCodeString = null;
 
          if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)){

@@ -134,11 +134,10 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
         if (episodicityExtension != null) {
 
-            //  TODO Coded and first test of the use of IM to populate episodicityConceptId
             StringType episodicityType = (StringType) episodicityExtension.getValue();
             LOG.info("episodicityType: " + episodicityType);
             String episodicity = episodicityType.toString();
-            LOG.info("episodicity: " + episodicity);
+            LOG.info("episodicityString: " + episodicity);
             episodicityConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.FHIR_CONDITION_EPISODICITY, episodicity);
             LOG.info("episodicityConceptId: " + episodicityConceptId);
         }

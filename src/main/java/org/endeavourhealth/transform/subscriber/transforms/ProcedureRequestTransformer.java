@@ -81,12 +81,6 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
 
         if (fhir.hasStatus()) {
             procedureRequestStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_PROCEDURE_REQUEST_STATUS, fhir.getStatus().toCode());
-
-            // Using test data, procedureRequestStatusConceptId is null in 3/24 rows, logging to see why
-            if (procedureRequestStatusConceptId == null) {
-                LOG.info("procedureRequestStatusConceptId is null where fhir.getStatus().toCode() value is: " + fhir.getStatus().toCode());
-            }
-
         }
 
         if (fhir.getSubject() != null) {

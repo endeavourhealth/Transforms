@@ -3,11 +3,14 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -95,7 +98,19 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
             return;
         }
         String originalCode = originalCoding.getCode();
+        String conceptScheme = getScheme(originalCoding.getSystem());
 
+        coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+
+        //if it's a problem set the boolean to say so
+        if (fhir.hasMeta()) {
+            for (UriType uriType: fhir.getMeta().getProfile()) {
+                if (uriType.getValue().equals(FhirProfileUri.PROFILE_URI_PROBLEM)) {
+                    isProblem = true;
+                }
+            }
+        }
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
@@ -115,6 +130,17 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
             Reference ref = fhir.getSubject();
             Patient patient = getCachedPatient(ref, params);
             ageAtEvent = getPatientAgeInDecimalYears(patient);
+        }
+
+        Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
+        if (episodicityExtension != null) {
+
+            StringType episodicityType = (StringType) episodicityExtension.getValue();
+            LOG.info("episodicityType: " + episodicityType);
+            String episodicity = episodicityType.toString();
+            LOG.info("episodicityString: " + episodicity);
+            episodicityConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.FHIR_CONDITION_EPISODICITY, episodicity);
+            LOG.info("episodicityConceptId: " + episodicityConceptId);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
@@ -154,6 +180,5 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
     protected SubscriberTableId getMainSubscriberTableId() {
         return SubscriberTableId.DIAGNOSTIC_ORDER;
     }
-
 
 }

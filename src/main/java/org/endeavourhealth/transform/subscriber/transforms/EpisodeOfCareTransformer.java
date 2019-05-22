@@ -98,12 +98,6 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                         String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
                         RegistrationStatus status = RegistrationStatus.fromCode(code);
                         registrationStatusConceptId = IMHelper.getIMConcept(params, fhirEpisode, IMConstant.FHIR_REGISTRATION_STATUS, status.getCode());
-
-                        // Using test data, registrationStatusConceptId is null in 23/989 rows, logging to see why
-                        if (registrationStatusConceptId == null) {
-                            LOG.info("registrationStatusConceptId is null where status.getcode() value is: " + status.getCode());
-                        }
-
                     }
 
                     break;

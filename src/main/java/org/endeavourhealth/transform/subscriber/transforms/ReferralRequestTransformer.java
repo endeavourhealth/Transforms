@@ -189,14 +189,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralPriority fhirReferralPriority = ReferralPriority.fromCode(coding.getCode());
                 Integer referralRequestPriorityId = fhirReferralPriority.ordinal();
-
                 referralRequestPriorityConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_PRIORITY, referralRequestPriorityId.toString());
-
-                // Using test data, referralRequestPriorityConceptId is null in 23/146 rows, logging to see why
-                if (referralRequestPriorityConceptId == null) {
-                    LOG.info("referralRequestPriorityConceptId is null where referralRequestPriorityId.toString() value is: " + referralRequestPriorityId.toString());
-                }
-
             }
         }
 
@@ -205,14 +198,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
-
                 referralRequestTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_TYPE, fhirReferralType.getCode());
-
-                // Using test data, referralRequestTypeConceptId is null in 23/146 rows, logging to see why
-                if (referralRequestTypeConceptId == null) {
-                    LOG.info("referralRequestTypeConceptId is null where fhirReferralType.getCode() value is: " + fhirReferralType.getCode());
-                }
-
             }
         }
 
