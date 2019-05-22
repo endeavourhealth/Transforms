@@ -7,10 +7,7 @@ import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPPHO;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.ContactPoint;
@@ -55,6 +52,8 @@ public class PPPHOTransformer {
 
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
                 if (patientBuilder != null) {
+                    //LOG.trace("Deleting phone " + phoneIdCell.getString() + " which maps to person " + personIdStr + " with FHIR patient\r" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));
+
                     ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
 
                     csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
@@ -63,8 +62,18 @@ public class PPPHOTransformer {
             return;
         }
 
-        //get our patient resource builder
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+
+        //if no number, then nothing to process - seems like in some cases the Millennium user doesn't delete
+        //a phone number, but just amends it to have a blank number
+        //Do this BEFORE we get the patient builder out, otherwise it never gets returned
+        CsvCell numberCell = parser.getPhoneNumber();
+        if (numberCell.isEmpty()) {
+            TransformWarnings.log(LOG, csvHelper, "Ignoring PPPHO record {} for person ID {} because number is empty", phoneIdCell, personIdCell);
+            return;
+        }
+
+        //get our patient resource builder
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
             return;
@@ -72,13 +81,6 @@ public class PPPHOTransformer {
 
         //we always fully recreate the phone record on the patient so just remove any matching one already there
         ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
-
-        //if no number, then nothing to process - seems like in some cases the Millennium user doesn't delete
-        //a phone number, but just amends it to have a blank number
-        CsvCell numberCell = parser.getPhoneNumber();
-        if (numberCell.isEmpty()) {
-            return;
-        }
 
         String number = numberCell.getString();
 
@@ -133,8 +135,6 @@ public class PPPHOTransformer {
             ContactPoint.ContactPointSystem system = convertPhoneSystem(phoneTypeDesc, null);
             contactPointBuilder.setSystem(system, phoneTypeCell);
         }
-
-
 
         //no need to save the resource now, as all patient resources are saved at the end of the PP... files
         csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
