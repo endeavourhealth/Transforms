@@ -472,13 +472,13 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return getInternalId(ENCOUNTER_ID_TO_PERSON_ID, encounterIdCell.getString());
     }
 
-    public void saveEncounterIdToResponsiblePersonellId(CsvCell encounterIdCell, CsvCell responsiblePersonnelIdCell) throws Exception {
+    public void saveEncounterIdToResponsiblePersonnelId(CsvCell encounterIdCell, CsvCell responsiblePersonnelIdCell) throws Exception {
         String encounterId = encounterIdCell.getString();
         String responsiblePersonnelId = responsiblePersonnelIdCell.getString();
         saveInternalId(ENCOUNTER_ID_TO_RESPONSIBLE_PESONNEL_ID, encounterId, responsiblePersonnelId);
     }
 
-    public String findResponsiblePersonellIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
+    public String findResponsiblePersonnelIdFromEncounterId(CsvCell encounterIdCell) throws Exception {
         return getInternalId(ENCOUNTER_ID_TO_RESPONSIBLE_PESONNEL_ID, encounterIdCell.getString());
     }
 

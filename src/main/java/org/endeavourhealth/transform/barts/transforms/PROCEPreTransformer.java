@@ -85,7 +85,7 @@ public class PROCEPreTransformer {
             stagingPROCE.setEncounterId(encounterIdCell.getInt());
 
             //DAB-121 enhancement to derive the responsiblePersonnelId from the encounter internal map
-            String responsiblePersonnelId = csvHelper.findResponsiblePersonellIdFromEncounterId(encounterIdCell);
+            String responsiblePersonnelId = csvHelper.findResponsiblePersonnelIdFromEncounterId(encounterIdCell);
             if (!Strings.isNullOrEmpty(responsiblePersonnelId)) {
                 stagingPROCE.setLookupResponsiblePersonnelId(Integer.valueOf(responsiblePersonnelId));
             }
