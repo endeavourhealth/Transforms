@@ -27,9 +27,6 @@ public abstract class CdsPreTransformerBase {
 
     protected static void processProcedures(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
 
-        if (parser.getWithheldFlag().getIntAsBoolean()) {
-            return;
-        }
         StagingCds stagingCds = new StagingCds();
         stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCds.setExchangeId(csvHelper.getExchangeId().toString());
@@ -37,8 +34,24 @@ public abstract class CdsPreTransformerBase {
         stagingCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
         stagingCds.setSusRecordType(susRecordType);
         stagingCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
-        stagingCds.setMrn(parser.getLocalPatientId().getString());
-        stagingCds.setNhsNumber(parser.getNhsNumber().getString());
+        Boolean isWithheld = parser.getWithheldFlag().getBoolean();
+
+        stagingCds.setWithheld(isWithheld);
+        if (!isWithheld) { //LocalPatientId and nhsno should be empty if withheld. Get persondId from tail file
+            String localPatientId = parser.getLocalPatientId().getString();
+            stagingCds.setMrn(localPatientId);
+            stagingCds.setNhsNumber(parser.getNhsNumber().getString());
+            String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, localPatientId);
+            if (Strings.isNullOrEmpty(personId)) {
+                TransformWarnings.log(LOG, csvHelper, "Failed to find personid for CDS id {}", parser.getCdsUniqueId());
+                return;
+            }
+            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
+                return;
+            }
+            stagingCds.setLookupPersonId(Integer.valueOf(personId));
+        }
         stagingCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
         String consultantStr = parser.getConsultantCode().getString();
         stagingCds.setConsultantCode(consultantStr);
@@ -47,21 +60,6 @@ public abstract class CdsPreTransformerBase {
         if (!Strings.isNullOrEmpty(personnelIdStr)) {
             stagingCds.setLookupConsultantPersonnelId(Integer.valueOf(personnelIdStr));
         }
-
-        String localPatientId = parser.getLocalPatientId().getString();
-        String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, localPatientId);
-        if (Strings.isNullOrEmpty(personId)) {
-            TransformWarnings.log(LOG, csvHelper, "Failed to find personid for CDS id {}", parser.getCdsUniqueId());
-            return;
-        }
-
-        if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
-            TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
-            return;
-        }
-
-        stagingCds.setLookupPersonId(Integer.valueOf(personId));
-
 
         int procedureCount = 0;
 
