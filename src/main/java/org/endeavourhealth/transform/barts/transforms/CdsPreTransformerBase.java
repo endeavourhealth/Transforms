@@ -37,7 +37,7 @@ public abstract class CdsPreTransformerBase {
         Boolean isWithheld = parser.getWithheldFlag().getBoolean();
 
         stagingCds.setWithheld(isWithheld);
-        if (!isWithheld) { //LocalPatientId and nhsno should be empty if withheld. Get persondId from tail file
+        if (!isWithheld) { //LocalPatientId and NHS number should be empty if withheld. Get persondId from tail file
             String localPatientId = parser.getLocalPatientId().getString();
             stagingCds.setMrn(localPatientId);
             stagingCds.setNhsNumber(parser.getNhsNumber().getString());
