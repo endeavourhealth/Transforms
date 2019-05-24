@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.barts.schema;
 
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractFixedParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,66 +23,109 @@ public class Diagnosis extends AbstractFixedParser {
     }
 
     //all the below need re-implementing using CsvCells
-    /*public Long getDiagnosisId() {
-        return Long.parseLong(super.getString("diagnosis_id").trim().split("\\.")[0]);
+    public CsvCell getDiagnosisId() {
+        return super.getCell("diagnosis_id");
     }
 
-    public Date getUpdateDateTime() throws TransformException {
-        return super.getDateTime("updt_dt_tm");
+    public CsvCell getUpdateDateTime() throws TransformException {
+        return super.getCell("updt_dt_tm");
     }
 
-    public String getActiveIndicator() {
-        return super.getString("active_ind");
+    public CsvCell getActiveIndicator() {
+        return super.getCell("active_ind");
     }
 
-    public boolean isActive() {
-        int val = super.getInt("active_ind");
-        if (val == 1) {
-            return true;
-        } else {
-            return false;
-        }
+    public CsvCell isActive() {
+        return super.getCell("active_ind");
     }
 
-    public Long getPersonId() {
-        return Long.parseLong(super.getString("person_id").trim().split("\\.")[0]);
+    public CsvCell getPersonId() {
+        return super.getCell("person_id");
     }
 
-    public Long getEncounterId() {
-        return Long.parseLong(super.getString("encntr_id").trim().split("\\.")[0]);
+    public CsvCell getEncounterId() {
+        return super.getCell("encntr_id");
     }
 
-    public String getLocalPatientId() {
-        return super.getString("MRN").trim();
+    public CsvCell getLocalPatientId() {
+        return super.getCell("MRN");
     }
 
-    public String getFINNbr() {
-        return super.getString("fin").trim();
+    public CsvCell getFINNbr() {
+        return super.getCell("fin");
     }
 
-    public String getDiagnosis() {
-        return super.getString("diagnosis").trim();
+    public CsvCell getDiagnosis() {
+        return super.getCell("diagnosis");
     }
 
-    public Date getDiagnosisDate() throws TransformException {
-        return super.getDate("diag_dt");
+    public CsvCell getQualifier() {
+        return super.getCell("qualifier");
     }
 
-    public String getDiagnosisDateAsString() throws TransformException {
-        return super.getString("diag_dt");
+    public CsvCell getClassification() {
+        return super.getCell("classification");
+    }
+    public CsvCell getConfirmation() {
+        return  super.getCell("confirmation");
     }
 
-    public String getDiagnosisCode() {
-        return super.getString("diag_code").trim();
+    public CsvCell getClinService() {
+        return super.getCell("clin_service");
     }
 
-    public String getVocabulary() {
-        return super.getString("vocab").trim();
+    public CsvCell getDiagType() {
+        return super.getCell("diag_type");
     }
 
-    public String getSecondaryDescription() {
-        return super.getString("secondary_descriptions").trim();
-    }*/
+    public CsvCell getRank() {
+        return super.getCell("rank");
+    }
+
+    public CsvCell getSeverityClass() {
+        return super.getCell("severity_class");
+    }
+
+    public CsvCell getSeverity() {
+        return super.getCell("severity");
+    }
+
+    public CsvCell getCertainty() {
+        return super.getCell("certainty");
+    }
+
+    public CsvCell getProbability() {
+        return super.getCell("probability");
+    }
+
+    public CsvCell getOrgName() {
+        return super.getCell("org_name");
+    }
+
+    public CsvCell getAxis() {
+        return super.getCell("axis");
+    }
+
+
+    public CsvCell getDiagPrnsl() {
+        return super.getCell("diag_prnsl");
+    }
+
+    public CsvCell getDiagnosisDate()  {
+        return super.getCell("diag_dt");
+    }
+
+    public CsvCell getDiagnosisCode() {
+        return super.getCell("diag_code");
+    }
+
+    public CsvCell getVocabulary() {
+        return super.getCell("vocab");
+    }
+
+    public CsvCell getSecondaryDescription() {
+        return super.getCell("secondary_descriptions");
+    }
 
     @Override
     protected boolean isFileAudited() {
@@ -125,26 +170,5 @@ public class Diagnosis extends AbstractFixedParser {
 
         return ret;
     }
-
-    /*@Override
-    protected List<FixedParserField> getFieldList(String version) {
-
-        List<FixedParserField> ret = new ArrayList<>();
-
-        ret.add(new FixedParserField("DiagnosisId",             1, 14));
-        ret.add(new FixedParserField("Update_DT_TM",          16, 20));
-        ret.add(new FixedParserField("ActiveIndicator",          37, 11));
-        ret.add(new FixedParserField("PersonId",    49, 14));
-        ret.add(new FixedParserField("EncounterId",    64, 14));
-        ret.add(new FixedParserField("MRN",    79, 20));
-        ret.add(new FixedParserField("FINNbr",    100, 20));
-        ret.add(new FixedParserField("Diagnosis",    121, 150));
-        ret.add(new FixedParserField("DiagnosisDate",    314, 11));
-        ret.add(new FixedParserField("DiagnosisCode",    650, 20));
-        ret.add(new FixedParserField("Vocabulary",    671, 20));
-        ret.add(new FixedParserField("SecondaryDescription",    713, 500));
-        
-        return ret;
-    }*/
 
 }
