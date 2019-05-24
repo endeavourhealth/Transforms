@@ -147,10 +147,10 @@ public abstract class BartsCsvToFhirTransformer {
             //must let all the threads doing the saving for the above finish
             csvHelper.waitUntilThreadPoolIsEmpty();
 
-            //PROCEDURES - execute the staging to target stored proc
-            csvHelper.processStagingForTarget();
+            //PROCEDURES - execute the staging procedures to target procedures stored proc
+            csvHelper.processStagingForTargetProcedures();
 
-            //Procedure data transformation on final target staging table
+            //Procedure data transformation on final procedure target staging table
             ProcedureTargetTransformer.transform(fhirResourceFiler, csvHelper);
 
             fhirResourceFiler.waitUntilEverythingIsSaved();

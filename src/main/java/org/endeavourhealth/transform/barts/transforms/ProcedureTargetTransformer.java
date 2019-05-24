@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingTarget;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureTarget;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -45,14 +45,14 @@ public class ProcedureTargetTransformer {
     public static void createProcedures(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         // retrieve the target procedures for the current exchangeId
-        List<StagingTarget> targetProcedures = csvHelper.retrieveTargetProcedures();
+        List<StagingProcedureTarget> targetProcedures = csvHelper.retrieveTargetProcedures();
         if (targetProcedures == null) {
             return;
         }
 
         TransformWarnings.log(LOG, csvHelper, "Target Procedures to transform to FHIR: {} for exchangeId: {}", targetProcedures.size(), csvHelper.getExchangeId());
 
-        for (StagingTarget targetProcedure : targetProcedures) {
+        for (StagingProcedureTarget targetProcedure : targetProcedures) {
 
             String uniqueId = targetProcedure.getUniqueId();
             boolean isDeleted = targetProcedure.isDeleted();
@@ -116,7 +116,7 @@ public class ProcedureTargetTransformer {
                 procedureBuilder.addPerformer(practitionerPerformerReference);
             }
 
-            Integer recordedByPersonneId = targetProcedure.getRecordeByPersonnelId();
+            Integer recordedByPersonneId = targetProcedure.getRecordedByPersonnelId();
             if (recordedByPersonneId != null) {
                 Reference practitionerRecorderReference
                         = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(recordedByPersonneId));

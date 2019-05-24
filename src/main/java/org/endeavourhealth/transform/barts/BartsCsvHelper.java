@@ -14,7 +14,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingTargetDalI;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingTarget;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureTarget;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -213,14 +213,14 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return ret;
     }
 
-    public void processStagingForTarget () throws Exception {
+    public void processStagingForTargetProcedures () throws Exception {
 
-        stagingRepository.processStagingForTarget(this.exchangeId, this.serviceId);
+        stagingRepository.processStagingForTargetProcedures(this.exchangeId, this.serviceId);
     }
 
-    public List<StagingTarget> retrieveTargetProcedures() throws Exception {
+    public List<StagingProcedureTarget> retrieveTargetProcedures() throws Exception {
 
-        List<StagingTarget> ret = stagingRepository.getTargetProcedures(this.exchangeId, this.serviceId);
+        List<StagingProcedureTarget> ret = stagingRepository.getTargetProcedures(this.exchangeId, this.serviceId);
         return ret;
     }
 
