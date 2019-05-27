@@ -716,4 +716,36 @@ public class PatientTransformer {
         }
     }
 
+    /**
+     * HL7 receiver doesn't work out the system for telecoms, so attempt to work it out from the content
+     */
+    private void updateTelecomSystems(Patient patient) {
+        if (!patient.hasTelecom()) {
+            return;
+        }
+
+        for (ContactPoint telecom: patient.getTelecom()) {
+            if (telecom.getSystem() == null) {
+
+                String value = telecom.getValue();
+                if (Strings.isNullOrEmpty(value)) {
+                    continue;
+                }
+
+                boolean isAllDigits = true;
+                for (char c: value.toCharArray()) {
+                    if (!Character.isDigit(c)
+                            && !Character.isWhitespace(c)) {
+                        isAllDigits = false;
+                        break;
+                    }
+                }
+
+                if (isAllDigits) {
+                    telecom.setSystem(ContactPoint.ContactPointSystem.PHONE);
+                }
+            }
+        }
+    }
+
 }

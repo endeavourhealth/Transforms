@@ -65,7 +65,13 @@ public class PRSNLREFTransformer {
         CsvCell activeCell = parser.getActiveIndicator();
         practitionerBuilder.setActive(activeCell.getIntAsBoolean(), activeCell);
 
-        PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder);
+        //we only support one role on Practitioners for Barts, so always reuse the role object if it's present
+        //this also means we don't lose anything already on the role that we won't be able to replace (e.g. parent org) because it's only present from the ADT feed
+        PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder, practitionerBuilder.getRole());
+
+        //remove specialty and role because we always replace them
+        CodeableConceptBuilder.removeExistingCodeableConcept(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role, roleBuilder.getRole());
+        CodeableConceptBuilder.removeExistingCodeableConcept(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Specialty, roleBuilder.getSpecialty());
 
         CsvCell positionCode = parser.getMilleniumPositionCode();
         BartsCodeableConceptHelper.applyCodeDisplayTxt(positionCode, CodeValueSet.PERSONNEL_POSITION, roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role, csvHelper);

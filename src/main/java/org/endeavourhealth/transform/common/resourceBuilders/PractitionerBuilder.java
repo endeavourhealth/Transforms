@@ -42,6 +42,14 @@ public class PractitionerBuilder extends ResourceBuilderBase
         return this.practitioner.addPractitionerRole();
     }
 
+    public Practitioner.PractitionerPractitionerRoleComponent getRole() {
+        if (this.practitioner.hasPractitionerRole()) {
+            return this.practitioner.getPractitionerRole().get(0);
+        } else {
+            return null;
+        }
+    }
+
     public String getRoleJsonPrefix(Practitioner.PractitionerPractitionerRoleComponent role) {
         int index = this.practitioner.getPractitionerRole().indexOf(role);
         return "practitionerRole[" + index + "]";

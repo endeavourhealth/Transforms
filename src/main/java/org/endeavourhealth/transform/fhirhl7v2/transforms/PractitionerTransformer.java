@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerRoleBuilder;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.ArrayList;
@@ -100,12 +101,31 @@ public class PractitionerTransformer {
         }
         Practitioner.PractitionerPractitionerRoleComponent newRole = newPractitioner.getPractitionerRole().get(0);
 
-        //the below is a shortcut because we know that the Data Warehouse feed doesn't populate roles. If it ever does,
-        //then the below code will need to be changed to check for differences properly, like the other
-        //fields where both feeds overlap
-        Practitioner existingPractitioner = (Practitioner)practitionerBuilder.getResource();
-        existingPractitioner.getPractitionerRole().clear();
-        existingPractitioner.getPractitionerRole().add(newRole);
+        //the Barts transform only ever creates a single role, so we can work with that assumption to make this easier
+        //create a new role buildler, using the existing role (or null) from the existing practitioner
+        PractitionerRoleBuilder roleBuilder = new PractitionerRoleBuilder(practitionerBuilder, practitionerBuilder.getRole());
+
+        //we currently don't get any of the below from the ADT feed, but ensure that's the case.
+        if (newRole.hasSpecialty()) {
+            throw new RuntimeException("Not expecting role Specialty from ADT feed");
+        }
+        if (newRole.hasRole()) {
+            throw new RuntimeException("Not expecting role Role from ADT feed");
+        }
+        if (newRole.hasPeriod()) {
+            throw new RuntimeException("Not expecting role Period from ADT feed");
+        }
+        if (newRole.hasLocation()) {
+            throw new RuntimeException("Not expecting role Location from ADT feed");
+        }
+        if (newRole.hasHealthcareService()) {
+            throw new RuntimeException("Not expecting role HealthcareService from ADT feed");
+        }
+
+        if (newRole.hasManagingOrganization()) {
+            Reference ref = newRole.getManagingOrganization();
+            roleBuilder.setRoleManagingOrganisation(ref);
+        }
     }
 
     private static void updateName(Practitioner newPractitioner, PractitionerBuilder practitionerBuilder) {
