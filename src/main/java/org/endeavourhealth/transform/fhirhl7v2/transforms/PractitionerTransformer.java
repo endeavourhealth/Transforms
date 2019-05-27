@@ -28,12 +28,13 @@ public class PractitionerTransformer {
         PractitionerBuilder practitionerBuilder = null;
 
         if (wrapper != null
-                && wrapper.isDeleted()) {
+                && !wrapper.isDeleted()) {
             Practitioner existingPatient = (Practitioner) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
             practitionerBuilder = new PractitionerBuilder(existingPatient);
 
         } else {
             practitionerBuilder = new PractitionerBuilder();
+            practitionerBuilder.setId(resourceId.toString());
         }
 
         //postcodes are sent through with spaces, which we remove everywhere else (if present), so do the same here
@@ -140,13 +141,13 @@ public class PractitionerTransformer {
             return;
         }
 
-        Organization existingOrg = (Organization)practitionerBuilder.getResource();
+        Practitioner existingPractitioner = (Practitioner)practitionerBuilder.getResource();
 
         //now add any identifiers from the new ADT patient if they don't already exist
         for (Identifier identifier: newPractitioner.getIdentifier()) {
 
             //if the identifier already exists on the patient then we don't want to add it again
-            List<Identifier> existingIdentifiers = IdentifierHelper.findMatches(identifier, existingOrg.getIdentifier());
+            List<Identifier> existingIdentifiers = IdentifierHelper.findMatches(identifier, existingPractitioner.getIdentifier());
             if (existingIdentifiers.isEmpty()) {
 
                 //make sure to remove any other identifiers with the same system before adding the new one

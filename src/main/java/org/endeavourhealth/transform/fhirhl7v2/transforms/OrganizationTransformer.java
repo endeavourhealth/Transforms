@@ -29,12 +29,13 @@ public class OrganizationTransformer {
         OrganizationBuilder organizationBuilder = null;
 
         if (wrapper != null
-                && wrapper.isDeleted()) {
+                && !wrapper.isDeleted()) {
             Organization existingPatient = (Organization) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
             organizationBuilder = new OrganizationBuilder(existingPatient);
 
         } else {
             organizationBuilder = new OrganizationBuilder();
+            organizationBuilder.setId(resourceId.toString());
         }
 
         //postcodes are sent through with spaces, which we remove everywhere else (if present), so do the same here
@@ -81,19 +82,23 @@ public class OrganizationTransformer {
 
         Organization existingOrg = (Organization)organizationBuilder.getResource();
 
+        //we only support a single org address at any one time
+        if (newOrg.getAddress().size() > 1) {
+            throw new RuntimeException("Only one organisation address is supported");
+        }
+
         //now add any Addresses from the new ADT patient if they don't already exist
-        for (Address address: newOrg.getAddress()) {
+        Address address = newOrg.getAddress().get(0);
 
-            //if the Address already exists on the patient then we don't want to add it again
-            List<Address> existingAddresss = AddressHelper.findMatches(address, existingOrg.getAddress());
-            if (existingAddresss.isEmpty()) {
+        //if the Address already exists on the patient then we don't want to add it again
+        List<Address> existingAddresss = AddressHelper.findMatches(address, existingOrg.getAddress());
+        if (existingAddresss.isEmpty()) {
 
-                //remove any existing addresses, since we only want one at any one time
-                AddressBuilder.removeExistingAddresses(organizationBuilder);
+            //remove any existing addresses, since we only want one at any one time
+            AddressBuilder.removeExistingAddresses(organizationBuilder);
 
-                AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
-                addressBuilder.addAddressNoAudit(address);
-            }
+            AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
+            addressBuilder.addAddressNoAudit(address);
         }
     }
 

@@ -27,12 +27,13 @@ public class PatientTransformer {
         PatientBuilder patientBuilder = null;
 
         if (wrapper != null
-                && wrapper.isDeleted()) {
+                && !wrapper.isDeleted()) {
             Patient existingPatient = (Patient) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
             patientBuilder = new PatientBuilder(existingPatient);
 
         } else {
             patientBuilder = new PatientBuilder();
+            patientBuilder.setId(resourceId.toString());
         }
 
         //the HL7 Receiver brings through email addresses as Addresses, rather than as ContactPoint elements
@@ -394,10 +395,9 @@ public class PatientTransformer {
 
     private static void updateBirthDate(Patient newPatient, PatientBuilder patientBuilder) {
 
-        //if the new patient has not DoB, then don't clear anything
-        /*if (newPatient.hasBirthDate()) {
+        if (!newPatient.hasBirthDate()) {
             return;
-        }*/
+        }
 
         Date newDob = newPatient.getBirthDate();
         Date currentDob = patientBuilder.getDateOfBirth();
@@ -411,10 +411,9 @@ public class PatientTransformer {
 
     private static void updateGender(Patient newPatient, PatientBuilder patientBuilder) {
 
-        //don't update anything if we've not got a new gender
-        /*if (!newPatient.hasGender()) {
+        if (!newPatient.hasGender()) {
             return;
-        }*/
+        }
 
         Enumerations.AdministrativeGender newGender = newPatient.getGender();
         Enumerations.AdministrativeGender currentGender = patientBuilder.getGender();
@@ -706,9 +705,13 @@ public class PatientTransformer {
 
         for (Identifier identifier: patient.getIdentifier()) {
             if (identifier.getSystem().equals(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER)) {
+
                 String value = identifier.getValue();
                 value = value.replace(" ", "");
                 identifier.setValue(value);
+
+                //nhs number should also have the official use
+                identifier.setUse(Identifier.IdentifierUse.OFFICIAL);
             }
         }
     }

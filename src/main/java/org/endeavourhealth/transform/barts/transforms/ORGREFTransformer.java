@@ -6,10 +6,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.ORGREF;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.FhirResourceFilerI;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
@@ -89,6 +86,9 @@ public class ORGREFTransformer {
                 String parentId = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, parentOdsCode);
                 if (!Strings.isNullOrEmpty(parentId)) {
                     Reference reference = ReferenceHelper.createReference(ResourceType.Organization, parentId);
+                    if (organizationBuilder.isIdMapped()) {
+                        reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, csvHelper);
+                    }
                     organizationBuilder.setParentOrganisation(reference);
                 }
             }
