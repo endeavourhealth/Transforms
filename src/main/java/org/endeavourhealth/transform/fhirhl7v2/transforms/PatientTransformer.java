@@ -46,6 +46,9 @@ public class PatientTransformer {
         //postcodes are sent through with spaces, which we remove everywhere else (if present), so do the same here
         tidyPostcodes(newPatient);
 
+        //the telecom system isn't set
+        updateTelecomSystems(newPatient);
+
         updateExtensions(newPatient, patientBuilder, adtDate);
         updateGender(newPatient, patientBuilder);
         updateBirthDate(newPatient, patientBuilder);
@@ -298,15 +301,21 @@ public class PatientTransformer {
             }
 
             if (add) {
-                patientBuilder.removeCareProvider(ReferenceHelper.createReference(existingOrgRef));
+                if (existingOrgRef != null) {
+                    patientBuilder.removeCareProvider(ReferenceHelper.createReference(existingOrgRef));
+                }
                 patientBuilder.addCareProvider(ReferenceHelper.createReference(newOrgRef));
 
                 //if the org has changed, then carry over the new practitioner reference. This does mean that if
-                //the practitioner reference changes but NOT the ods one, then this update will be ignored. Howerver,
+                //the practitioner reference changes but NOT the ods one, then this update will be ignored. However,
                 //this will be corrected when the PPAGP file is next processed. The ADT and DW feeds use different
                 //ways of populating the practitioner resources, so it's not simple to compare them to see if they're the same person
-                patientBuilder.removeCareProvider(ReferenceHelper.createReference(existingPractitionerRef));
-                patientBuilder.addCareProvider(ReferenceHelper.createReference(newPractitionerRef));
+                if (existingPractitionerRef != null) {
+                    patientBuilder.removeCareProvider(ReferenceHelper.createReference(existingPractitionerRef));
+                }
+                if (newPractitionerRef != null) {
+                    patientBuilder.addCareProvider(ReferenceHelper.createReference(newPractitionerRef));
+                }
             }
         }
 
@@ -719,7 +728,7 @@ public class PatientTransformer {
     /**
      * HL7 receiver doesn't work out the system for telecoms, so attempt to work it out from the content
      */
-    private void updateTelecomSystems(Patient patient) {
+    private static void updateTelecomSystems(Patient patient) {
         if (!patient.hasTelecom()) {
             return;
         }
