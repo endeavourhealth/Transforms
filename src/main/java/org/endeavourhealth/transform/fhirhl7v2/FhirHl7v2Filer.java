@@ -15,7 +15,9 @@ import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.endeavourhealth.transform.fhirhl7v2.transforms.EncounterTransformer;
+import org.endeavourhealth.transform.fhirhl7v2.transforms.OrganizationTransformer;
 import org.endeavourhealth.transform.fhirhl7v2.transforms.PatientTransformer;
+import org.endeavourhealth.transform.fhirhl7v2.transforms.PractitionerTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -422,14 +424,23 @@ public class FhirHl7v2Filer {
         //Do this by retrieving the existing resource and checking if the systemId matches our own
         for (Resource resource: adminResources) {
 
-            if (!isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+            if (resource instanceof Practitioner) {
+                resource = PractitionerTransformer.transform((Practitioner)resource, fhirResourceFiler);
+                fhirResourceFiler.saveAdminResource(null, false, new GenericBuilder(resource));
+
+            } else if (resource instanceof Organization) {
+                resource = OrganizationTransformer.transform((Organization)resource, fhirResourceFiler);
+                fhirResourceFiler.saveAdminResource(null, false, new GenericBuilder(resource));
+
+            } else {
+                throw new TransformException("Unsupported admin resource type in HL7 feed: " + resource.getResourceType());
+            }
+
+            /*if (!isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
                 LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as been taken over by another system");
                 continue;
             }
-
-            LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId());
-            GenericBuilder builder = new GenericBuilder(resource);
-            fhirResourceFiler.saveAdminResource(null, false, builder);
+            fhirResourceFiler.saveAdminResource(null, false, new GenericBuilder(resource));*/
         }
     }
 

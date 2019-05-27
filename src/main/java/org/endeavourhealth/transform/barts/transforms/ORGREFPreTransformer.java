@@ -1,7 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.ORGREF;
@@ -17,8 +15,6 @@ import java.util.List;
 
 public class ORGREFPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ORGREFPreTransformer.class);
-
-    private static Hl7ResourceIdDalI hl7ReceiverDal = DalProvider.factoryHL7ResourceDal();
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFilerI fhirResourceFiler,

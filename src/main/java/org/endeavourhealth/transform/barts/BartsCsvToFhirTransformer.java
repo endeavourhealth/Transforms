@@ -83,6 +83,8 @@ public abstract class BartsCsvToFhirTransformer {
             NOMREFTransformer.transform(getParsers(parserMap, "NOMREF", true), fhirResourceFiler, csvHelper);
             LOREFTransformer.transform(getParsers(parserMap, "LOREF", true), fhirResourceFiler, csvHelper);
             csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
+
+            PRSNLREFPreTransformer.transform(getParsers(parserMap, "PRSNLREF", false), fhirResourceFiler, csvHelper);
             PRSNLREFTransformer.transform(getParsers(parserMap, "PRSNLREF", true), fhirResourceFiler, csvHelper);
 
             //patient PRE transformers - to save and cache stuff fast (mostly PPxxx ID to Person ID mappings)

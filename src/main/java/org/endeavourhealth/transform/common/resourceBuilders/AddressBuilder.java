@@ -233,7 +233,7 @@ public class AddressBuilder {
     }
 
     public void reset() {
-        //this.contactPoint.setId(null); //do not remove any ID as that's used to match names up
+        //this.address.setId(null); //do not remove any ID as that's used to match names up
         this.address.setPostalCode(null);
         this.address.setCity(null);
         this.address.setPeriod(null);
@@ -312,5 +312,20 @@ public class AddressBuilder {
 
             setText(otherAddress.getText());
         }
+    }
+
+    public static void removeExistingAddresses(HasAddressI parentBuilder) {
+
+        List<Address> addresses = parentBuilder.getAddresses();
+        for (Address address: addresses) {
+
+            //remove any audits we've created for the Address
+            String jsonPrefix = parentBuilder.getAddressJsonPrefix(address);
+            parentBuilder.getAuditWrapper().removeAudit(jsonPrefix);
+        }
+
+        //clear all addresses
+        parentBuilder.getAddresses().clear();
+
     }
 }

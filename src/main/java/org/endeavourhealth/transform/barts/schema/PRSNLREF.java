@@ -139,7 +139,7 @@ public class PRSNLREF extends AbstractCsvParser {
         return super.getCell("MAIN_SPECIALTY_CD");
     }
 
-    public CsvCell getGPNHSCode() {
+    public CsvCell getGmpCode() {
         return super.getCell("GMP_NHS_IDENT");
     }
 
