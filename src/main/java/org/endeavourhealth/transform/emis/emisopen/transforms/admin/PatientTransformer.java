@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.MedicalRecordType;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.RegistrationType;
 import org.endeavourhealth.transform.emis.emisopen.transforms.common.DateConverter;
+import org.endeavourhealth.transform.emis.emisopen.transforms.common.EmisOpenAddressConverter;
 import org.endeavourhealth.transform.emis.emisopen.transforms.common.SexConverter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -56,7 +57,7 @@ public class PatientTransformer {
             target.setDeceased(new DateTimeType(DateConverter.getDate(source.getDateOfDeath())));
 
         if (source.getAddress() != null) {
-            target.addAddress(org.endeavourhealth.transform.emis.emisopen.transforms.common.AddressConverter.convert(source.getAddress(), Address.AddressUse.HOME));
+            target.addAddress(EmisOpenAddressConverter.convert(source.getAddress(), Address.AddressUse.HOME));
         }
 
         String residentialInstituteCode = source.getResidentialInstitute();

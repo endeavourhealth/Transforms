@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.ContactPointHelper;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
@@ -80,8 +81,17 @@ public class PPPHOTransformer {
         }
 
         try {
+
+            //by removing from the patient and re-adding, we're constantly changing the order of the
+            //contact points, so attempt to reuse the existing one for the ID
+            ContactPointBuilder contactPointBuilder = ContactPointBuilder.findOrCreateForId(patientBuilder, phoneIdCell);
+            contactPointBuilder.reset(); //clear down as we've got a full phone record to replace all content with
+
             //we always fully recreate the phone record on the patient so just remove any matching one already there
-            ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
+            /*ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
+
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setId(phoneIdCell.getString(), phoneIdCell);*/
 
             String number = numberCell.getString();
 
@@ -91,11 +101,6 @@ public class PPPHOTransformer {
                 number += " " + extensionCell.getString();
             }
 
-            //and remove any instance of this phone number created by the ADT feed
-            removeExistingContactPointWithoutIdByValue(patientBuilder, number);
-
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
-            contactPointBuilder.setId(phoneIdCell.getString(), phoneIdCell);
             contactPointBuilder.setValue(number, numberCell, extensionCell);
 
             CsvCell startDate = parser.getBeginEffectiveDateTime();
@@ -137,13 +142,40 @@ public class PPPHOTransformer {
                 contactPointBuilder.setSystem(system, phoneTypeCell);
             }
 
+            //and remove any instance of this phone number created by the ADT feed
+            ContactPoint newOne = contactPointBuilder.getContactPoint();
+            removeExistingContactPointWithoutIdByValue(patientBuilder, newOne);
+
+
         } finally {
             //no need to save the resource now, as all patient resources are saved at the end of the PP... files
             csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
         }
     }
 
-    public static void removeExistingContactPointWithoutIdByValue(PatientBuilder patientBuilder, String number) {
+    private static void removeExistingContactPointWithoutIdByValue(PatientBuilder patientBuilder, ContactPoint newOne) {
+
+        Patient patient = (Patient) patientBuilder.getResource();
+        if (!patient.hasTelecom()) {
+            return;
+        }
+
+        List<ContactPoint> telecoms = patient.getTelecom();
+        List<ContactPoint> duplicates = ContactPointHelper.findMatches(newOne, telecoms);
+
+        for (ContactPoint duplicate: duplicates) {
+
+            //if this name has an ID it was created by this data warehouse feed, so don't try to remove it
+            if (duplicate.hasId()) {
+                continue;
+            }
+
+            //if we make it here, it's a duplicate and should be removed
+            telecoms.remove(duplicate);
+        }
+    }
+
+    /*public static void removeExistingContactPointWithoutIdByValue(PatientBuilder patientBuilder, String number) {
         Patient patient = (Patient)patientBuilder.getResource();
         if (!patient.hasTelecom()) {
             return;
@@ -166,7 +198,7 @@ public class PPPHOTransformer {
             //if we make it here, it's a duplicate and should be removed
             telecoms.remove(i);
         }
-    }
+    }*/
 
 
     private static ContactPoint.ContactPointUse convertPhoneType(String phoneType, boolean isActive) throws Exception {

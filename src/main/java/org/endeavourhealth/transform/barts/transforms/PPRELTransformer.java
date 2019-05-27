@@ -65,6 +65,19 @@ public class PPRELTransformer {
             return;
         }
 
+        //if ended, we also remove from the FHIR patient
+        CsvCell endDate = parser.getEndEffectiveDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
+            CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+            PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
+            if (patientBuilder != null) {
+                PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
+
+                csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+            }
+            return;
+        }
+
         CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
 
         //store the relationship type in the internal ID map table so the family history transformer can look it up
@@ -112,12 +125,16 @@ public class PPRELTransformer {
         }
 
         try {
-            //we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
+
+            //attempt to re-use the patient contact, otherwise we're contantly changing the order of them in the patient
+            PatientContactBuilder contactBuilder = PatientContactBuilder.findOrCreateForId(patientBuilder, relationshipIdCell);
+            contactBuilder.reset(); //we get the full record, so clear down before populating
+
+            /*//we always fully recreate the patient contact from the Barts record, so just remove any existing contact that matches on ID
             PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
 
-
             PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
-            contactBuilder.setId(relationshipIdCell.getString(), relationshipIdCell);
+            contactBuilder.setId(relationshipIdCell.getString(), relationshipIdCell);*/
 
             NameBuilder nameBuilder = new NameBuilder(contactBuilder);
             nameBuilder.setUse(HumanName.NameUse.USUAL);
@@ -126,14 +143,22 @@ public class PPRELTransformer {
             nameBuilder.addGiven(middleName.getString(), middleName);
             nameBuilder.addFamily(lastName.getString(), lastName);
 
-            AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
-            addressBuilder.setUse(Address.AddressUse.HOME);
-            addressBuilder.addLine(line1.getString(), line1);
-            addressBuilder.addLine(line2.getString(), line2);
-            addressBuilder.addLine(line3.getString(), line3);
-            addressBuilder.addLine(line4.getString(), line4);
-            addressBuilder.setTown(city.getString(), city);
-            addressBuilder.setPostcode(postcode.getString(), postcode);
+            if (line1.isEmpty()
+                    && line2.isEmpty()
+                    && line3.isEmpty()
+                    && line4.isEmpty()
+                    && city.isEmpty()
+                    && postcode.isEmpty()) {
+
+                AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
+                addressBuilder.setUse(Address.AddressUse.HOME);
+                addressBuilder.addLine(line1.getString(), line1);
+                addressBuilder.addLine(line2.getString(), line2);
+                addressBuilder.addLine(line3.getString(), line3);
+                addressBuilder.addLine(line4.getString(), line4);
+                addressBuilder.setCity(city.getString(), city);
+                addressBuilder.setPostcode(postcode.getString(), postcode);
+            }
 
             if (!homePhone.isEmpty()) {
                 ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
@@ -169,13 +194,14 @@ public class PPRELTransformer {
                 contactBuilder.setStartDate(d, startDate);
             }
 
-            CsvCell endDate = parser.getEndEffectiveDateTime();
-            //use this function to test the endDate cell, since it will have the Cerner end of time content
+            //ended relationships are now removed from the FHIR patient resource. Huge numbers of PPREL records exist
+            //for each person meaning the FHIR patient resources get filled up with a vast amount of past data,
+            //so we treat ended ones the same as deleted, and remove them from the patient resource
+            /*CsvCell endDate = parser.getEndEffectiveDateTime();
             if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
                 Date d = BartsCsvHelper.parseDate(endDate);
                 contactBuilder.setEndDate(d, endDate);
-                addressBuilder.setUse(Address.AddressUse.OLD);
-            }
+            }*/
 
             //the PPREL file has two codes, one defining the relationship to the patient (e.g. self, mother)
             //and one defining the type of relationship (e.g. next of kin). In typical Cerner style, this isn't

@@ -86,7 +86,7 @@ public class PRSNLREFTransformer {
         addressBuilder.addLine(line2.getString(), line2);
         addressBuilder.addLine(line3.getString(), line3);
         addressBuilder.addLine(line4.getString(), line4);
-        addressBuilder.setTown(city.getString(), city);
+        addressBuilder.setCity(city.getString(), city);
         addressBuilder.setPostcode(postcode.getString(), postcode);
 
         CsvCell email = parser.getEmail();

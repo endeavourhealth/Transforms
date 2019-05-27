@@ -30,7 +30,7 @@ public class PersonTransformer
             for (Identifier identifier : identifiers)
                 targetPerson.addIdentifier(identifier);
 
-        List<HumanName> names = NameConverter.convertName(sourcePerson);
+        List<HumanName> names = OpenHrNameConverter.convertName(sourcePerson);
 
         for (HumanName name : names)
             targetPerson.addName(name);

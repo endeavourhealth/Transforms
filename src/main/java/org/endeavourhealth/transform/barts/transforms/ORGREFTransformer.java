@@ -116,7 +116,7 @@ public class ORGREFTransformer {
 
         CsvCell cityCell = parser.getCityTxt();
         if (!cityCell.isEmpty()) {
-            addressBuilder.setTown(cityCell.getString(), cityCell);
+            addressBuilder.setCity(cityCell.getString(), cityCell);
         }
 
         CsvCell phoneNumberCell = parser.getPhoneNumberTxt();

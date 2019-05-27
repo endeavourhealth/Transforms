@@ -66,7 +66,7 @@ public class USERSTransformer {
         nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
         nameBuilder.addGiven(forename.getString(), forename);
         nameBuilder.addFamily(surname.getString(), surname);
-        nameBuilder.addFullName(fullName.getString(), fullName);
+        nameBuilder.setText(fullName.getString(), fullName);
 
         //TODO - what does this link to / used for? - asked Advanced
         CsvCell providerRefCell = parser.getProviderRef();

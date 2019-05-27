@@ -105,7 +105,7 @@ public class SROrganisationTransformer {
         }
         CsvCell nameOfTownCell = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setCity(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {
@@ -191,7 +191,7 @@ public class SROrganisationTransformer {
         }
         CsvCell nameOfTownCell = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setCity(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {

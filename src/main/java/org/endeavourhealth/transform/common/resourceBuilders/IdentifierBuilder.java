@@ -27,7 +27,21 @@ public class IdentifierBuilder {
         }
     }
 
-    public static boolean removeExistingIdentifierById(HasIdentifierI parentBuilder, String idValue) {
+    public static IdentifierBuilder findOrCreateForId(HasIdentifierI parentBuilder, CsvCell idCell) {
+
+        String idValue = idCell.getString();
+        Identifier identifier = findForId(parentBuilder, idValue);
+        if (identifier != null) {
+            return new IdentifierBuilder(parentBuilder, identifier);
+
+        } else {
+            IdentifierBuilder ret = new IdentifierBuilder(parentBuilder, identifier);
+            ret.setId(idValue, idCell);
+            return ret;
+        }
+    }
+
+    private static Identifier findForId(HasIdentifierI parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't remove identifier without ID");
         }
@@ -45,15 +59,21 @@ public class IdentifierBuilder {
         }
 
         if (matches.isEmpty()) {
-            return false;
+            return null;
 
         } else if (matches.size() > 1) {
             throw new IllegalArgumentException("Found " + matches.size() + " identifiers for ID " + idValue);
 
         } else {
+            return matches.get(0);
+        }
+    }
 
-            Identifier identifier = matches.get(0);
 
+    public static boolean removeExistingIdentifierById(HasIdentifierI parentBuilder, String idValue) {
+
+        Identifier identifier = findForId(parentBuilder, idValue);
+        if (identifier != null) {
             //remove any audits we've added for this Identifier
             String identifierJsonPrefix = parentBuilder.getIdentifierJsonPrefix(identifier);
             parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
@@ -61,6 +81,9 @@ public class IdentifierBuilder {
             //and remove the Identifier itself
             parentBuilder.removeIdentifier(identifier);
             return true;
+
+        } else {
+            return false;
         }
     }
 
@@ -95,6 +118,10 @@ public class IdentifierBuilder {
         }
 
         return matches;
+    }
+
+    public Identifier getIdentifier() {
+        return identifier;
     }
 
     /*public static boolean removeExistingIdentifiersBySystem(HasIdentifierI parentBuilder, String identifierSystem) {
@@ -237,4 +264,54 @@ public class IdentifierBuilder {
     }
 
 
+    public void reset() {
+        //this.identifier.setId(null); //never clear this as it's used for matching
+        this.identifier.setValue(null);
+        this.identifier.setPeriod(null);
+        this.identifier.setSystem(null);
+        this.identifier.setAssigner(null);
+        this.identifier.setType(null);
+        this.identifier.setUse(null);
+    }
+
+    public void addIdentifierNoAudit(Identifier otherIdentifier) {
+
+        if (otherIdentifier.hasId()) {
+            setId(otherIdentifier.getId());
+        }
+
+        if (otherIdentifier.hasValue()) {
+            setValue(otherIdentifier.getValue());
+        }
+
+        if (otherIdentifier.hasPeriod()) {
+            Period p = otherIdentifier.getPeriod();
+            if (p.hasStart()) {
+                setStartDate(p.getStart());
+            }
+            if (p.hasEnd()) {
+                setEndDate(p.getEnd());
+            }
+        }
+
+        if (otherIdentifier.hasSystem()) {
+            setSystem(otherIdentifier.getSystem());
+        }
+
+
+        if (otherIdentifier.hasAssigner()) {
+            //we don't use this, so don't expect to have it
+            throw new RuntimeException("Identifier has unexpected assigner property");
+        }
+
+        if (otherIdentifier.hasType()) {
+            //we don't use this, so don't expect to have it
+            throw new RuntimeException("Address has unexpected type property");
+        }
+
+        if (otherIdentifier.hasUse()) {
+            setUse(otherIdentifier.getUse());
+        }
+
+    }
 }

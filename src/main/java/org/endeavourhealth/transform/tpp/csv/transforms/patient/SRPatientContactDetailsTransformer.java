@@ -65,6 +65,11 @@ public class SRPatientContactDetailsTransformer {
             return;
         }
 
+        //ignore any empty numbers
+        CsvCell contactNumberCell = parser.getContactNumber();
+        if (contactNumberCell.isEmpty()) {
+            return;
+        }
 
         CsvCell patientIdCell = parser.getIDPatient();
         PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
@@ -72,8 +77,16 @@ public class SRPatientContactDetailsTransformer {
             return;
         }
 
+        //attempt to re-use any existing number with the same ID so we're not constantly changing the order by removing and re-adding
+        ContactPointBuilder contactPointBuilder = ContactPointBuilder.findOrCreateForId(patientBuilder, rowIdCell);
+        contactPointBuilder.reset();
+
+        /*
         //remove any existing instance of this phone number from the patient
         ContactPointBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
+
+        ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+        contactPointBuilder.setId(rowIdCell.getString(), contactNumberCell);*/
 
         ContactPoint.ContactPointUse use = null;
         ContactPoint.ContactPointSystem system = null;
@@ -116,19 +129,15 @@ public class SRPatientContactDetailsTransformer {
             }
         }
 
-        CsvCell contactNumberCell = parser.getContactNumber();
-        if (!contactNumberCell.isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
-            contactPointBuilder.setId(rowIdCell.getString(), contactNumberCell);
-            contactPointBuilder.setValue(contactNumberCell.getString(), contactNumberCell);
+        contactPointBuilder.setValue(contactNumberCell.getString(), contactNumberCell);
 
-            if (use != null) {
-                contactPointBuilder.setUse(use, contactNumberCell);
-            }
-            if (system != null) {
-                contactPointBuilder.setSystem(system, contactNumberCell);
-            }
+        if (use != null) {
+            contactPointBuilder.setUse(use, contactNumberCell);
         }
+        if (system != null) {
+            contactPointBuilder.setSystem(system, contactNumberCell);
+        }
+
         // boolean mapids = !patientBuilder.isIdMapped();
         // fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapids, patientBuilder);
         // Filing done by cache

@@ -105,7 +105,7 @@ public class SROrganisationBranchTransformer {
         }
         CsvCell nameOfTownCell = parser.getTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setCity(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell = parser.getCounty();
         if (!nameOfCountyCell.isEmpty()) {

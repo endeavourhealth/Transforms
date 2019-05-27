@@ -182,4 +182,27 @@ public class CodeableConceptBuilder {
         //finally update the text element
         setText(newTerm, sourceCells);
     }
+
+    /*public void addCodeableConceptNoAudit(CodeableConcept otherConcept) {
+
+        if (otherConcept.hasId()) {
+            throw new RuntimeException("Id field not supported when adding codeable concepts");
+        }
+
+        if (otherConcept.hasCoding()) {
+            for (Coding otherCoding: otherConcept.getCoding()) {
+                addCoding(otherCoding.getSystem());
+                if (otherCoding.hasCode()) {
+                    setCodingCode(otherCoding.getCode());
+                }
+                if (otherCoding.hasDisplay()) {
+                    setCodingDisplay(otherCoding.getDisplay());
+                }
+            }
+        }
+
+        if (otherConcept.hasText()) {
+            setText(otherConcept.getText());
+        }
+    }*/
 }

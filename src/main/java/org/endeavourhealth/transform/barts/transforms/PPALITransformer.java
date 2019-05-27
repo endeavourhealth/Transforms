@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -10,6 +11,7 @@ import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.hl7.fhir.instance.model.Identifier;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,8 +75,14 @@ public class PPALITransformer {
 
         try {
 
-            //we always fully re-create the Identifier on the patient so just remove any previous instance
+            IdentifierBuilder identifierBuilder = IdentifierBuilder.findOrCreateForId(patientBuilder, aliasIdCell);
+            identifierBuilder.reset();
+
+            /*//we always fully re-create the Identifier on the patient so just remove any previous instance
             IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
+
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.setId(aliasIdCell.getString(), aliasIdCell);*/
 
             //work out the system for the alias
             CsvCell aliasTypeCodeCell = parser.getAliasTypeCode();
@@ -86,15 +94,6 @@ public class PPALITransformer {
                 aliasSystem = "UNKNOWN";
             }
 
-            //both the PPATI transform and PPALI transformers create Identifiers for the patient, although our file
-            //has more information on them, so remove any existing Identifier for the same system that DOES NOT
-            //have an ID (i.e. it didn't come from the PPALI file)
-            List<Identifier> identifiers = IdentifierBuilder.findExistingIdentifiersForSystem(patientBuilder, aliasSystem);
-            for (Identifier identifier : identifiers) {
-                if (!identifier.hasId()) {
-                    patientBuilder.removeIdentifier(identifier);
-                }
-            }
 
             //if the alias record is an NHS number, then it's an official use. Secondary otherwise.
             Identifier.IdentifierUse use = null;
@@ -105,8 +104,6 @@ public class PPALITransformer {
                 use = Identifier.IdentifierUse.SECONDARY;
             }
 
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setId(aliasIdCell.getString(), aliasIdCell);
             identifierBuilder.setUse(use);
             identifierBuilder.setValue(aliasCell.getString(), aliasCell);
             identifierBuilder.setSystem(aliasSystem, aliasTypeCodeCell, aliasMeaningCell);
@@ -124,11 +121,39 @@ public class PPALITransformer {
                 identifierBuilder.setEndDate(d, endDateCell);
             }
 
+            //remove any duplicate pre-existing name that was added by the ADT feed
+            Identifier identifierAdded = identifierBuilder.getIdentifier();
+            removeExistingIdentifierWithoutIdByValue(patientBuilder, identifierAdded);
+
         } finally {
             //no need to save the resource now, as all patient resources are saved at the end of the PP... files
             csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
         }
 
+    }
+
+    private static void removeExistingIdentifierWithoutIdByValue(PatientBuilder patientBuilder, Identifier check) {
+
+        Patient patient = (Patient) patientBuilder.getResource();
+        if (!patient.hasIdentifier()) {
+            return;
+        }
+
+        List<Identifier> identifiers = patient.getIdentifier();
+        List<Identifier> duplicates = IdentifierHelper.findMatches(check, identifiers);
+
+        for (Identifier duplicate: duplicates) {
+
+            //if this name has an ID it was created by this data warehouse feed, so don't try to remove it
+            //note that this will also find and remove Identifiers added by the PPATI transformer,
+            //but that data is duplicated in this file
+            if (duplicate.hasId()) {
+                continue;
+            }
+
+            //if we make it here, it's a duplicate and should be removed
+            identifiers.remove(duplicate);
+        }
     }
 
 

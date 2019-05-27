@@ -6,6 +6,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.LocationType;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.MedicalRecordType;
+import org.endeavourhealth.transform.emis.emisopen.transforms.common.EmisOpenAddressConverter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ public class LocationTransformer {
         location.setName(locationType.getLocationName());
 
         if (locationType.getAddress() != null)
-            location.setAddress(org.endeavourhealth.transform.emis.emisopen.transforms.common.AddressConverter.convert(locationType.getAddress(), Address.AddressUse.WORK));
+            location.setAddress(EmisOpenAddressConverter.convert(locationType.getAddress(), Address.AddressUse.WORK));
 
         List<ContactPoint> contactPoints = ContactPointHelper.createWorkContactPoints(locationType.getTelephone1(), locationType.getTelephone2(), locationType.getFax(), locationType.getEmail());
 

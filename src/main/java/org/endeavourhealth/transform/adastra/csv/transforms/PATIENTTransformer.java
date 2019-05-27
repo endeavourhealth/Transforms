@@ -145,7 +145,7 @@ public class PATIENTTransformer {
         addressBuilder.addLine(addressBuilding.getString(), addressBuilding);
         addressBuilder.addLine(addressNoAndStreet.getString(), addressNoAndStreet);
         addressBuilder.addLine(addressLocality.getString(), addressLocality);
-        addressBuilder.setTown(addressTown.getString(), addressTown);
+        addressBuilder.setCity(addressTown.getString(), addressTown);
         addressBuilder.setPostcode(addressPostcode.getString(), addressPostcode);
 
         //remove all existing contact points for this patient

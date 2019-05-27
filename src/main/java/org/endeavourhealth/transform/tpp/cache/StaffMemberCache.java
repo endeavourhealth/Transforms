@@ -121,7 +121,7 @@ public class StaffMemberCache {
         CsvCell fullName = cachedStaff.getFullName();
         NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
         nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
-        nameBuilder.addFullName(fullName.getString(), fullName);
+        nameBuilder.setText(fullName.getString(), fullName);
 
         CsvCell userName = cachedStaff.getUserName();
         if (!userName.isEmpty()) {
