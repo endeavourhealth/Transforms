@@ -143,12 +143,12 @@ public class PPRELTransformer {
             nameBuilder.addGiven(middleName.getString(), middleName);
             nameBuilder.addFamily(lastName.getString(), lastName);
 
-            if (line1.isEmpty()
-                    && line2.isEmpty()
-                    && line3.isEmpty()
-                    && line4.isEmpty()
-                    && city.isEmpty()
-                    && postcode.isEmpty()) {
+            if (!line1.isEmpty()
+                    || !line2.isEmpty()
+                    || !line3.isEmpty()
+                    || !line4.isEmpty()
+                    || !city.isEmpty()
+                    || !postcode.isEmpty()) {
 
                 AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
                 addressBuilder.setUse(Address.AddressUse.HOME);

@@ -75,6 +75,24 @@ public class PPADDTransformer {
             return;
         }
 
+        CsvCell line1 = parser.getAddressLine1();
+        CsvCell line2 = parser.getAddressLine2();
+        CsvCell line3 = parser.getAddressLine3();
+        CsvCell line4 = parser.getAddressLine4();
+        CsvCell city = parser.getCity();
+        CsvCell county = parser.getCountyText();
+        CsvCell postcode = parser.getPostcode();
+
+        //ignore any empty records
+        if (line1.isEmpty()
+                && line2.isEmpty()
+                && line3.isEmpty()
+                && line4.isEmpty()
+                && city.isEmpty()
+                && postcode.isEmpty()) {
+            return;
+        }
+
         //LOG.trace("Processing PPADD " + addressIdCell.getString() + " for Person ID " + personIdCell.getString());
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
@@ -85,13 +103,6 @@ public class PPADDTransformer {
         try {
             //LOG.trace("FHIR resource = " + patientBuilder.toString() + " starts with " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
 
-            CsvCell line1 = parser.getAddressLine1();
-            CsvCell line2 = parser.getAddressLine2();
-            CsvCell line3 = parser.getAddressLine3();
-            CsvCell line4 = parser.getAddressLine4();
-            CsvCell city = parser.getCity();
-            CsvCell county = parser.getCountyText();
-            CsvCell postcode = parser.getPostcode();
 
             //by always removing and re-adding addresses, we're constantly changing the order, so attempt to re-use them
             AddressBuilder addressBuilder = AddressBuilder.findOrCreateForId(patientBuilder, addressIdCell);
