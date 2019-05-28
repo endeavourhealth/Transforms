@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -295,6 +297,27 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         auditValue("period.end", sourceCells);
     }
 
+    public void setLanguage(String language, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(language)) {
+            ExtensionConverter.removeExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_MAIN_LANGUAGE);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_MAIN_LANGUAGE, language);
+            int index = this.contact.getExtension().indexOf(extension);
+            auditValue("extension[" + index + "].valueString", sourceCells);
+        }
+    }
+
+    public void setDateOfBirth(Date dob, CsvCell... sourceCells) {
+        if (dob == null) {
+            ExtensionConverter.removeExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_DOB);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_DOB, new DateType(dob));
+            int index = this.contact.getExtension().indexOf(extension);
+            auditValue("extension[" + index + "].valueDate", sourceCells);
+        }
+    }
 
     public void reset() {
 
@@ -306,7 +329,22 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         this.contact.setOrganization(null);
         this.contact.getRelationship().clear();
         this.contact.getTelecom().clear();
+    }
 
+    public static void removeExistingContacts(PatientBuilder patientBuilder) {
 
+        List<Patient.ContactComponent> contacts = new ArrayList<>(patientBuilder.getPatientContactComponents()); //need to copy the array so we can remove while iterating
+        for (Patient.ContactComponent contact: contacts) {
+
+            //remove any audits we've created for the Address
+            String jsonPrefix = patientBuilder.getContactJsonPrefix(contact);
+            patientBuilder.getAuditWrapper().removeAudit(jsonPrefix);
+
+            patientBuilder.removePatientContactComponent(contact);
+        }
+    }
+
+    public Patient.ContactComponent getContact() {
+        return this.contact;
     }
 }

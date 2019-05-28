@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -53,10 +54,24 @@ public class PatientBuilder extends ResourceBuilderBase
         if (dob == null) {
             this.patient.setBirthDate(null);
 
+            //there's also an extension used to store a date and TIME of birth, so remove that too
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_BIRTH_DATE_TIME);
+
         } else {
             this.patient.setBirthDate(dob);
 
             auditValue("birthDate", sourceCells);
+
+            //if the dob has a time component, then set the Date in the date and TIME extension too
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(dob);
+            if (cal.get(Calendar.HOUR_OF_DAY) > 0
+                    || cal.get(Calendar.MINUTE) > 0) {
+                ExtensionConverter.createOrUpdateDateTimeExtension(this.patient, FhirExtensionUri.PATIENT_BIRTH_DATE_TIME, dob);
+
+            } else {
+                ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_BIRTH_DATE_TIME);
+            }
         }
     }
 

@@ -125,7 +125,9 @@ public class SRPatientTransformer {
 
         CsvCell dobCell = parser.getDateBirth();
         if (!dobCell.isEmpty()) {
-            patientBuilder.setDateOfBirth(dobCell.getDate(), dobCell);
+            //SystmOne captures time of birth too, so don't lose this by treating just as a date
+            patientBuilder.setDateOfBirth(dobCell.getDateTime(), dobCell);
+            //patientBuilder.setDateOfBirth(dobCell.getDate(), dobCell);
         }
         CsvCell dateDeathCell = parser.getDateDeath();
 

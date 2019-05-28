@@ -49,7 +49,6 @@ public class PatientTransformer {
         //the telecom system isn't set
         updateTelecomSystems(newPatient);
 
-        updateExtensions(newPatient, patientBuilder, adtDate);
         updateGender(newPatient, patientBuilder);
         updateBirthDate(newPatient, patientBuilder);
         updateMaritalStatus(newPatient, patientBuilder);
@@ -61,10 +60,101 @@ public class PatientTransformer {
         updateManagingOrganisation(newPatient, patientBuilder);
         updateCommunication(newPatient, patientBuilder);
         updateCareProviders(newPatient, patientBuilder, bundle, filer.getServiceId());
+        updateContacts(newPatient, patientBuilder);
+        updateExtensions(newPatient, patientBuilder, adtDate); //this must be done AFTER the birthDate
 
         validateEmptyPatientFields(newPatient);
 
         return (Patient)patientBuilder.getResource();
+    }
+
+    private static void updateContacts(Patient newPatient, PatientBuilder patientBuilder) {
+
+        if (!newPatient.hasContact()) {
+            return;
+        }
+
+        //we only get Contacts from the Homerton ADT feed (i.e. not Barts) so don't need to
+        //handle merging ADT contacts with Barts Data Warehouse contacts. But validate that our
+        //FHIR Patient doesn't have any contacts with an ID, which would imply this situation has changed
+        Patient existingPatient = (Patient)patientBuilder.getResource();
+        if (existingPatient.hasContact()) {
+            for (Patient.ContactComponent contact: existingPatient.getContact()) {
+                if (contact.hasId()) {
+                    throw new RuntimeException("Patient has contact with ID which is unexpected (does Barts ADT feed now contains contacts?)");
+                }
+            }
+        }
+
+        //remove all contacts
+        PatientContactBuilder.removeExistingContacts(patientBuilder);
+
+        for (Patient.ContactComponent contact: newPatient.getContact()) {
+            PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
+
+            if (contact.hasName()) {
+                HumanName name = contact.getName();
+                NameBuilder nameBuilder = new NameBuilder(contactBuilder);
+                nameBuilder.addNameNoAudit(name);
+            }
+
+            if (contact.hasRelationship()) {
+
+                //for consistency with the Barts transform, we combine multiple textual relationship types into one String
+                //e.g. Family Member, Mother
+                List<String> types = new ArrayList<>();
+
+                for (CodeableConcept cc: contact.getRelationship()) {
+                    if (cc.hasText()) {
+                        String s = cc.getText();
+                        if (!types.contains(s)) {
+                            types.add(s);
+                        }
+                    }
+                }
+
+                if (!types.isEmpty()) {
+                    String typeStr = String.join(", ", types);
+
+                    CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
+                    codeableConceptBuilder.setText(typeStr);
+                }
+            }
+
+            if (contact.hasExtension()) {
+                for (Extension extension: contact.getExtension()) {
+                    String url = extension.getUrl();
+                    if (url.equals(FhirExtensionUri.PATIENT_CONTACT_MAIN_LANGUAGE)) {
+                        StringType st = (StringType)extension.getValue();
+                        contactBuilder.setLanguage(st.getValue());
+
+                    } else if (url.equals(FhirExtensionUri.PATIENT_CONTACT_DOB)) {
+                        DateType dt = (DateType)extension.getValue();
+                        contactBuilder.setDateOfBirth(dt.getValue());
+
+                    } else {
+                        throw new RuntimeException("Unexpected extension " + url + " in ADT Patient Contact");
+                    }
+                }
+            }
+
+            if (contact.hasTelecom()) {
+                throw new RuntimeException("No expecting Telecom in ADT Patient Contact");
+            }
+            if (contact.hasAddress()) {
+                throw new RuntimeException("No expecting Address in ADT Patient Contact");
+            }
+            if (contact.hasGender()) {
+                throw new RuntimeException("No expecting Gender in ADT Patient Contact");
+            }
+            if (contact.hasOrganization()) {
+                throw new RuntimeException("No expecting Organisation in ADT Patient Contact");
+            }
+            if (contact.hasPeriod()) {
+                throw new RuntimeException("No expecting Period in ADT Patient Contact");
+            }
+
+        }
     }
 
     /**
@@ -453,7 +543,15 @@ public class PatientTransformer {
     }
 
     private static void updateTimeOfBirth(Patient newPatient, PatientBuilder patientBuilder, Date adtDate) {
-//TODO
+
+        DateTimeType dt = (DateTimeType)ExtensionConverter.findExtensionValue(newPatient, FhirExtensionUri.PATIENT_BIRTH_DATE_TIME);
+        if (dt == null) {
+            return;
+        }
+
+        //the patientBuilder funciton handles setting it on the extension etc. so we just call this function
+        Date d = dt.getValue();
+        patientBuilder.setDateOfBirth(d);
     }
 
     private static void updateReligion(Patient newPatient, PatientBuilder patientBuilder, Date adtDate) {
@@ -520,10 +618,6 @@ public class PatientTransformer {
      * ensures that fields we expect to be empty actually are
      */
     private static void validateEmptyPatientFields(Patient newPatient) {
-
-        if (newPatient.hasContact()) {
-            throw new RuntimeException("HL7 filer does not support updating patientContacts");
-        }
 
         if (newPatient.hasActiveElement()) {
             throw new RuntimeException("HL7 filer does not support updating active status");
