@@ -132,9 +132,6 @@ public class LocationTransformer {
     }
 
     private static void validateEmptyFields(Location newLocation) {
-        if (newLocation.hasDescription()) {
-            throw new RuntimeException("HL7 filer does not support updating Description element");
-        }
 
         if (newLocation.hasTelecom()) {
             throw new RuntimeException("HL7 filer does not support updating Telecom element");
@@ -177,11 +174,17 @@ public class LocationTransformer {
 
     private static void updateName(Location newLocation, LocationBuilder locationBuilder) {
         //if the ADT resource doesn't have a name, don't try to do anything to the existing identifiers.
-        if (!newLocation.hasName()) {
+        if (!newLocation.hasName()
+                && !newLocation.hasDescription()) {
             return;
         }
 
         String newName = newLocation.getName();
+
+        //the Homerton feed uses both Name and Description, but the description just appears to be a richer name
+        if (newLocation.hasDescription()) {
+            newName = newLocation.getDescription();
+        }
 
         Location existingOrg = (Location)locationBuilder.getResource();
         String existingName = existingOrg.getName();
