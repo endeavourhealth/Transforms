@@ -31,14 +31,10 @@ public abstract class BartsCsvToFhirTransformer {
                                                 .withQuote((Character)null)
                                                 .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this
 
-    /*public static final CSVFormat CSV_FORMAT_NO_HEADER = CSVFormat.DEFAULT
-            .withDelimiter('|')
-            .withEscape((Character)null)
-            .withQuote((Character)null)
-            .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this*/
-
+    //internally in the data Barts use RNJ as their ODS code (although the HL7 Receiver uses R1H)
+    public static final String PRIMARY_ORG_ODS_CODE = "RNJ";
     //public static final String PRIMARY_ORG_ODS_CODE = "R1H";
-    public static final String PRIMARY_ORG_ODS_CODE = "RNJ"; //internally in the data Barts use RNJ as their ODS code
+
     public static final String PRIMARY_ORG_HL7_OID = "2.16.840.1.113883.3.2540.1";
     public static final String BARTS_RESOURCE_ID_SCOPE = "B";
 
@@ -48,6 +44,12 @@ public abstract class BartsCsvToFhirTransformer {
 
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         LOG.info("Invoking Barts CSV transformer for " + files.size() + " files using and service " + fhirResourceFiler.getServiceId());
+
+        //if filtering by file type, we may end up with exchanges containing no files
+        if (files.isEmpty()) {
+            LOG.info("No files, so returning out");
+            return;
+        }
 
         //separate out the bulk cleve files
         /*List<ExchangePayloadFile> cleveBulks = new ArrayList<>();
@@ -81,6 +83,8 @@ public abstract class BartsCsvToFhirTransformer {
             NOMREFTransformer.transform(getParsers(parserMap, "NOMREF", true), fhirResourceFiler, csvHelper);
             LOREFTransformer.transform(getParsers(parserMap, "LOREF", true), fhirResourceFiler, csvHelper);
             csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
+
+            PRSNLREFPreTransformer.transform(getParsers(parserMap, "PRSNLREF", false), fhirResourceFiler, csvHelper);
             PRSNLREFTransformer.transform(getParsers(parserMap, "PRSNLREF", true), fhirResourceFiler, csvHelper);
 
             //patient PRE transformers - to save and cache stuff fast (mostly PPxxx ID to Person ID mappings)

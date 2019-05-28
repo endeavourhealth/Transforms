@@ -30,7 +30,22 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
     }
 
-    public static Patient.ContactComponent findExistingContactPoint(PatientBuilder parentBuilder, String idValue) {
+
+    public static PatientContactBuilder findOrCreateForId(PatientBuilder parentBuilder, CsvCell idCell) {
+
+        String idValue = idCell.getString();
+        Patient.ContactComponent patientContact = findExistingContactPoint(parentBuilder, idValue);
+        if (patientContact != null) {
+            return new PatientContactBuilder(parentBuilder, patientContact);
+
+        } else {
+            PatientContactBuilder ret = new PatientContactBuilder(parentBuilder);
+            ret.setId(idValue, idCell);
+            return ret;
+        }
+    }
+
+    private static Patient.ContactComponent findExistingContactPoint(PatientBuilder parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't look up patient contact without ID");
         }
@@ -61,17 +76,26 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         }
     }
 
+
+
     public static boolean removeExistingContactPointById(PatientBuilder parentBuilder, String idValue) {
 
         Patient.ContactComponent patientContact = findExistingContactPoint(parentBuilder, idValue);
+        if (patientContact != null) {
 
-        //remove any audits we've created for the Name
-        String identifierJsonPrefix = parentBuilder.getContactJsonPrefix(patientContact);
-        parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+            //remove any audits we've created for the Name
+            String identifierJsonPrefix = parentBuilder.getContactJsonPrefix(patientContact);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
 
-        parentBuilder.removePatientContactComponent(patientContact);
-        return true;
+            parentBuilder.removePatientContactComponent(patientContact);
+            return true;
+
+        } else {
+            return false;
+        }
     }
+
+
 
     public void setId(String idValue, CsvCell... sourceCells) {
         contact.setId(idValue);
@@ -272,4 +296,17 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
     }
 
 
+    public void reset() {
+
+        //this.contact.setId(null); //do not remove any ID as that's used to match names up
+        this.contact.setAddress(null);
+        this.contact.setName(null);
+        this.contact.setPeriod(null);
+        this.contact.setGender(null);
+        this.contact.setOrganization(null);
+        this.contact.getRelationship().clear();
+        this.contact.getTelecom().clear();
+
+
+    }
 }

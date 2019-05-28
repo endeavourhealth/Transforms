@@ -32,7 +32,22 @@ public class ContactPointBuilder {
         return contactPoint;
     }
 
-    public static boolean removeExistingContactPointById(HasContactPointI parentBuilder, String idValue) {
+    public static ContactPointBuilder findOrCreateForId(HasContactPointI parentBuilder, CsvCell idCell) {
+
+        String idValue = idCell.getString();
+        ContactPoint contactPoint = findForId(parentBuilder, idValue);
+        if (contactPoint != null) {
+            return new ContactPointBuilder(parentBuilder, contactPoint);
+
+        } else {
+            ContactPointBuilder ret = new ContactPointBuilder(parentBuilder, contactPoint);
+            ret.setId(idValue, idCell);
+            return ret;
+        }
+
+    }
+
+    private static ContactPoint findForId(HasContactPointI parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't remove patient contact without ID");
         }
@@ -50,20 +65,29 @@ public class ContactPointBuilder {
         }
 
         if (matches.isEmpty()) {
-            return false;
+            return null;
 
         } else if (matches.size() > 1) {
             throw new IllegalArgumentException("Found " + matches.size() + " contactPoints for ID " + idValue);
 
         } else {
-            ContactPoint contactPoint = matches.get(0);
+            return matches.get(0);
+        }
+    }
 
+
+    public static boolean removeExistingContactPointById(HasContactPointI parentBuilder, String idValue) {
+        ContactPoint contactPoint = findForId(parentBuilder, idValue);
+        if (contactPoint != null) {
             //remove any audits we've created for the ContactPoint
             String contactPointJsonPrefix = parentBuilder.getContactPointJsonPrefix(contactPoint);
             parentBuilder.getAuditWrapper().removeAudit(contactPointJsonPrefix);
 
             parentBuilder.removeContactPoint(contactPoint);
             return true;
+
+        } else {
+            return false;
         }
     }
 
@@ -146,5 +170,47 @@ public class ContactPointBuilder {
         getOrCreateNamePeriod().setEnd(date);
 
         auditContactPointValue("period.end", sourceCells);
+    }
+
+    public void reset() {
+        //this.contactPoint.setId(null); //do not remove any ID as that's used to match names up
+        this.contactPoint.setValue(null);
+        this.contactPoint.setUse(null);
+        this.contactPoint.setSystem(null);
+        this.contactPoint.setPeriod(null);
+        this.contactPoint.setRankElement(null); //have to set the element to null in this weird case
+    }
+
+    public void addContactPointNoAudit(ContactPoint otherContactPoint) {
+        if (otherContactPoint.hasId()) {
+            setId(otherContactPoint.getId());
+        }
+
+        if (otherContactPoint.hasValue()) {
+            setValue(otherContactPoint.getValue());
+        }
+
+        if (otherContactPoint.hasUse()) {
+            setUse(otherContactPoint.getUse());
+        }
+
+        if (otherContactPoint.hasSystem()) {
+            setSystem(otherContactPoint.getSystem());
+        }
+
+        if (otherContactPoint.hasPeriod()) {
+            Period p = otherContactPoint.getPeriod();
+            if (p.hasStart()) {
+                setStartDate(p.getStart());
+            }
+            if (p.hasEnd()) {
+                setEndDate(p.getEnd());
+            }
+        }
+
+        if (otherContactPoint.hasRank()) {
+            //we don't use rank, so throw an error if we have it set
+            throw new RuntimeException("Not expecting rank element in ContactPoint as not used");
+        }
     }
 }

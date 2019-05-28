@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.NameHelper;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -12,10 +13,8 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.emis.openhr.transforms.common.NameConverter;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Patient;
-import org.hl7.fhir.instance.model.StringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,12 +82,15 @@ public class PPNAMTransformer {
             CsvCell lastNameCell = parser.getLastName();
             CsvCell suffixCell = parser.getSuffix();
 
-            //since we're potentially updating an existing Patient resource, remove any existing name matching our ID
-            boolean removedExisting = NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
-            //LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getName().size() + " names");
+            //by always removing and re-adding the name, we're constantly changing the order of the names in the resource
+            //so attempt to reuse the HumanName by matching on the ID
+            NameBuilder nameBuilder = NameBuilder.findOrCreateForId(patientBuilder, nameIdCell);
+            nameBuilder.reset(); //we always re-populate the full record, so clear down
 
+            /*//since we're potentially updating an existing Patient resource, remove any existing name matching our ID
+            boolean removedExisting = NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
             NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-            nameBuilder.setId(nameIdCell.getString(), nameIdCell);
+            nameBuilder.setId(nameIdCell.getString(), nameIdCell);*/
 
             nameBuilder.addPrefix(titleCell.getString(), titleCell);
             nameBuilder.addPrefix(prefixCell.getString(), prefixCell);
@@ -134,6 +136,28 @@ public class PPNAMTransformer {
     }
 
     public static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, HumanName check) {
+
+        Patient patient = (Patient) patientBuilder.getResource();
+        if (!patient.hasName()) {
+            return;
+        }
+
+        List<HumanName> names = patient.getName();
+        List<HumanName> duplicates = NameHelper.findMatches(check, names);
+
+        for (HumanName duplicate: duplicates) {
+
+            //if this name has an ID it was created by this data warehouse feed, so don't try to remove it
+            if (duplicate.hasId()) {
+                continue;
+            }
+
+            //if we make it here, it's a duplicate and should be removed
+            names.remove(duplicate);
+        }
+    }
+
+    /*public static void removeExistingNameWithoutIdByValue(PatientBuilder patientBuilder, HumanName check) {
         Patient patient = (Patient) patientBuilder.getResource();
         if (!patient.hasName()) {
             return;
@@ -191,7 +215,7 @@ public class PPNAMTransformer {
                 names.remove(i);
             }
         }
-    }
+    }*/
 
 
     private static HumanName.NameUse convertNameUse(String statusCode, boolean isActive) {

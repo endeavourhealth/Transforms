@@ -129,7 +129,7 @@ public class PatientTransformer {
         addressBuilder.addLine(houseNameFlat.getString(), houseNameFlat);
         addressBuilder.addLine(numberAndStreet.getString(), numberAndStreet);
         addressBuilder.addLine(village.getString(), village);
-        addressBuilder.setTown(town.getString(), town);
+        addressBuilder.setCity(town.getString(), town);
         addressBuilder.setDistrict(county.getString(), county);
         addressBuilder.setPostcode(postcode.getString(), postcode);
 

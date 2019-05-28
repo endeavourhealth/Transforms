@@ -8,7 +8,7 @@ import org.endeavourhealth.transform.emis.emisopen.EmisOpenHelper;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.MedicalRecordType;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.PersonCategoryType;
 import org.endeavourhealth.transform.emis.emisopen.schema.eommedicalrecord38.PersonType;
-import org.endeavourhealth.transform.emis.emisopen.transforms.common.AddressConverter;
+import org.endeavourhealth.transform.emis.emisopen.transforms.common.EmisOpenAddressConverter;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ public class PractitionerTransformer
                 personType.getTitle()));
 
         if (personType.getAddress() != null)
-            AddressConverter.convert(personType.getAddress(), Address.AddressUse.WORK);
+            EmisOpenAddressConverter.convert(personType.getAddress(), Address.AddressUse.WORK);
 
         List<ContactPoint> contactPoints = ContactPointHelper.createWorkContactPoints(personType.getTelephone1(), personType.getTelephone2(), personType.getFax(), personType.getEmail());
 

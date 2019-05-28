@@ -65,7 +65,7 @@ public class PPATITransformer {
 
         try {
 
-            //let the PPALI transform add the MRN identifier, since the MRN on PPATI can be duplicated (e.g. MRN 9571132)
+            //let the PPALI transform add the MRN identifier, since the MRN in this file can be duplicated (e.g. MRN 9571132) and doesn't contain any start/end info
             /*CsvCell mrnCell = parser.getLocalPatientId();
             if (!mrnCell.isEmpty()) {
                 addOrUpdateIdentifier(patientBuilder, mrnCell.getString(), mrnCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BARTS_MRN_PATIENT_ID);
@@ -155,6 +155,8 @@ public class PPATITransformer {
                 //if this field is empty we should clear the value from the patient
                 patientBuilder.setEthnicity(null);
             }
+
+            //language
 
             //since we're working on an existing Patient resource we need to remove any existing language
             CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, null);

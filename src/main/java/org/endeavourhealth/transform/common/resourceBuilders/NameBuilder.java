@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Period;
+import org.hl7.fhir.instance.model.StringType;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,7 +30,21 @@ public class NameBuilder {
         }
     }
 
-    public static boolean removeExistingNameById(HasNameI parentBuilder, String idValue) {
+    public static NameBuilder findOrCreateForId(HasNameI parentBuilder, CsvCell idCell) {
+
+        String idValue = idCell.getString();
+        HumanName name = findForId(parentBuilder, idValue);
+        if (name != null) {
+            return new NameBuilder(parentBuilder, name);
+
+        } else {
+            NameBuilder ret = new NameBuilder(parentBuilder);
+            ret.setId(idValue, idCell);
+            return ret;
+        }
+    }
+
+    private static HumanName findForId(HasNameI parentBuilder, String idValue) {
         if (Strings.isNullOrEmpty(idValue)) {
             throw new IllegalArgumentException("Can't remove name without ID");
         }
@@ -47,13 +62,20 @@ public class NameBuilder {
         }
 
         if (matches.isEmpty()) {
-            return false;
+            return null;
 
         } else if (matches.size() > 1) {
             throw new IllegalArgumentException("Found " + matches.size() + " names for ID " + idValue);
 
         } else {
-            HumanName name = matches.get(0);
+            return matches.get(0);
+        }
+
+    }
+
+    public static boolean removeExistingNameById(HasNameI parentBuilder, String idValue) {
+        HumanName name = findForId(parentBuilder, idValue);
+        if (name != null) {
 
             //remove any audits we've created for the Name
             String identifierJsonPrefix = parentBuilder.getNameJsonPrefix(name);
@@ -61,8 +83,37 @@ public class NameBuilder {
 
             parentBuilder.removeName(name);
             return true;
+
+        } else {
+            return false;
         }
+
     }
+
+    /*public static boolean removeExistingNameWithoutId(HasNameI parentBuilder) {
+
+        List<HumanName> matches = new ArrayList<>();
+
+        List<HumanName> names = parentBuilder.getNames();
+        for (HumanName name: names) {
+            if (!name.hasId()) {
+                matches.add(name);
+            }
+        }
+
+        if (matches.isEmpty()) {
+            return false;
+        }
+
+        for (HumanName match: matches) {
+            //remove any audits we've created for the Name
+            String identifierJsonPrefix = parentBuilder.getNameJsonPrefix(match);
+            parentBuilder.getAuditWrapper().removeAudit(identifierJsonPrefix);
+
+            parentBuilder.removeName(match);
+        }
+        return true;
+    }*/
 
     public static void removeExistingNames(HasNameI parentBuilder) {
         List<HumanName> names = new ArrayList<>(parentBuilder.getNames()); //need to copy the array so we can remove while iterating
@@ -172,8 +223,7 @@ public class NameBuilder {
         updateDisplayName(sourceCells);
     }
 
-    public void addFullName(String fullName, CsvCell... sourceCells) {
-
+    public void setText(String fullName, CsvCell... sourceCells) {
         name.setText(fullName);
 
         auditNameValue("text", sourceCells);
@@ -199,9 +249,7 @@ public class NameBuilder {
     private void updateDisplayName(CsvCell... sourceCells) {
 
         String displayName = NameHelper.generateDisplayName(this.name);
-        name.setText(displayName);
-
-        auditNameValue("text", sourceCells);
+        setText(displayName, sourceCells);
     }
 
     private Period getOrCreateNamePeriod() {
@@ -229,5 +277,74 @@ public class NameBuilder {
 
     public HumanName getNameCreated() {
         return this.name;
+    }
+
+    public void addNameNoAudit(HumanName otherName) {
+
+        if (otherName.hasId()) {
+            setId(otherName.getId());
+        }
+
+        if (otherName.hasUse()) {
+            setUse(otherName.getUse());
+        }
+
+        if (otherName.hasPeriod()) {
+            Period p = otherName.getPeriod();
+            if (p.hasStart()) {
+                setStartDate(p.getStart());
+            }
+            if (p.hasEnd()) {
+                setEndDate(p.getEnd());
+            }
+        }
+
+        if (otherName.hasPrefix()) {
+            for (StringType st: otherName.getPrefix()) {
+                addPrefix(st.toString());
+            }
+        }
+
+        if (otherName.hasGiven()) {
+            for (StringType st: otherName.getGiven()) {
+                addGiven(st.toString());
+            }
+        }
+
+        if (otherName.hasFamily()) {
+            for (StringType st: otherName.getFamily()) {
+                addFamily(st.toString());
+            }
+        }
+
+        if (otherName.hasSuffix()) {
+            for (StringType st: otherName.getSuffix()) {
+                addSuffix(st.toString());
+            }
+        }
+
+        //only carry over the text if there's nothing in the other elements because the text is automatically
+        //generated when addGiven(..), addFamily(..) etc. are called
+        if (otherName.hasText()
+                && !otherName.hasPrefix()
+                && !otherName.hasGiven()
+                && !otherName.hasFamily()
+                && !otherName.hasSuffix()) {
+
+            setText(otherName.getText());
+        }
+
+    }
+
+
+    public void reset() {
+        //this.name.setId(null); //do not remove any ID as that's used to match names up
+        this.name.setUse(null);
+        this.name.setPeriod(null);
+        this.name.getPrefix().clear();
+        this.name.getGiven().clear();
+        this.name.getFamily().clear();
+        this.name.getSuffix().clear();
+        this.name.setText(null);
     }
 }

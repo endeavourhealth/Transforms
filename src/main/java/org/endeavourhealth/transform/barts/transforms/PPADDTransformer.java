@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
@@ -10,10 +11,8 @@ import org.endeavourhealth.transform.barts.schema.PPADD;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.emis.emisopen.transforms.common.AddressConverter;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Patient;
-import org.hl7.fhir.instance.model.StringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +75,24 @@ public class PPADDTransformer {
             return;
         }
 
+        CsvCell line1 = parser.getAddressLine1();
+        CsvCell line2 = parser.getAddressLine2();
+        CsvCell line3 = parser.getAddressLine3();
+        CsvCell line4 = parser.getAddressLine4();
+        CsvCell city = parser.getCity();
+        CsvCell county = parser.getCountyText();
+        CsvCell postcode = parser.getPostcode();
+
+        //ignore any empty records
+        if (line1.isEmpty()
+                && line2.isEmpty()
+                && line3.isEmpty()
+                && line4.isEmpty()
+                && city.isEmpty()
+                && postcode.isEmpty()) {
+            return;
+        }
+
         //LOG.trace("Processing PPADD " + addressIdCell.getString() + " for Person ID " + personIdCell.getString());
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
@@ -86,26 +103,24 @@ public class PPADDTransformer {
         try {
             //LOG.trace("FHIR resource = " + patientBuilder.toString() + " starts with " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
 
-            CsvCell line1 = parser.getAddressLine1();
-            CsvCell line2 = parser.getAddressLine2();
-            CsvCell line3 = parser.getAddressLine3();
-            CsvCell line4 = parser.getAddressLine4();
-            CsvCell city = parser.getCity();
-            CsvCell county = parser.getCountyText();
-            CsvCell postcode = parser.getPostcode();
 
-            //we always fully re-create the address, so remove it from the patient
+            //by always removing and re-adding addresses, we're constantly changing the order, so attempt to re-use them
+            AddressBuilder addressBuilder = AddressBuilder.findOrCreateForId(patientBuilder, addressIdCell);
+            addressBuilder.reset(); //we always fully re-populate, so clear down first
+
+            /*//we always fully re-create the address, so remove it from the patient
             boolean removedExisting = AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
             //LOG.trace("Removed existing = " + removedExisting + " leaving " + ((Patient) patientBuilder.getResource()).getAddress().size() + " addresses");
 
             AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-            addressBuilder.setId(addressIdCell.getString(), addressIdCell);
+            addressBuilder.setId(addressIdCell.getString(), addressIdCell);*/
+
             addressBuilder.setUse(Address.AddressUse.HOME);
             addressBuilder.addLine(line1.getString(), line1);
             addressBuilder.addLine(line2.getString(), line2);
             addressBuilder.addLine(line3.getString(), line3);
             addressBuilder.addLine(line4.getString(), line4);
-            addressBuilder.setTown(city.getString(), city);
+            addressBuilder.setCity(city.getString(), city);
             addressBuilder.setDistrict(county.getString(), county);
             addressBuilder.setPostcode(postcode.getString(), postcode);
 
@@ -199,6 +214,28 @@ public class PPADDTransformer {
     }
 
     public static void removeExistingAddressWithoutIdByValue(PatientBuilder patientBuilder, Address check) {
+
+        Patient patient = (Patient)patientBuilder.getResource();
+        if (!patient.hasAddress()) {
+            return;
+        }
+
+        List<Address> addresses = patient.getAddress();
+        List<Address> duplicates = AddressHelper.findMatches(check, addresses);
+
+        for (Address duplicate: duplicates) {
+
+            //if this name has an ID it was created by this data warehouse feed, so don't try to remove it
+            if (duplicate.hasId()) {
+                continue;
+            }
+
+            //if we make it here, it's a duplicate and should be removed
+            addresses.remove(duplicate);
+        }
+    }
+
+    /*public static void removeExistingAddressWithoutIdByValue(PatientBuilder patientBuilder, Address check) {
         Patient patient = (Patient)patientBuilder.getResource();
         if (!patient.hasAddress()) {
             return;
@@ -217,7 +254,7 @@ public class PPADDTransformer {
 
             if (address.hasLine()) {
                 for (StringType line: address.getLine()) {
-                    if (!AddressConverter.hasLine(check, line.toString())) {
+                    if (!EmisOpenAddressConverter.hasLine(check, line.toString())) {
                         matches = false;
                         break;
                     }
@@ -225,20 +262,20 @@ public class PPADDTransformer {
             }
 
             if (address.hasCity()) {
-                if (!AddressConverter.hasCity(check, address.getCity())) {
+                if (!EmisOpenAddressConverter.hasCity(check, address.getCity())) {
                     matches = false;
                 }
             }
 
             if (address.hasDistrict()) {
-                if (!AddressConverter.hasDistrict(check, address.getDistrict())) {
+                if (!EmisOpenAddressConverter.hasDistrict(check, address.getDistrict())) {
                     matches = false;
                 }
             }
 
             if (address.hasPostalCode()) {
                 String postcode = address.getPostalCode();
-                if (!AddressConverter.hasPostcode(check, postcode)) {
+                if (!EmisOpenAddressConverter.hasPostcode(check, postcode)) {
                     matches = false;
                 }
             }
@@ -248,61 +285,7 @@ public class PPADDTransformer {
                 addresses.remove(i);
             }
         }
-    }
-
-    /*private static void removeExistingAddressWithoutIdByValue(PatientBuilder patientBuilder, CsvCell line1, CsvCell line2, CsvCell line3, CsvCell line4, CsvCell city, CsvCell county, CsvCell postcode) {
-        Patient patient = (Patient)patientBuilder.getResource();
-        if (!patient.hasAddress()) {
-            return;
-        }
-
-        List<Address> addresses = patient.getAddress();
-        for (int i=addresses.size()-1; i>=0; i--) {
-            Address address = addresses.get(i);
-
-            //if this one has an ID it was created by this data warehouse feed, so don't try to remove it
-            if (address.hasId()) {
-                continue;
-            }
-
-            if (!line1.isEmpty()
-                    && !AddressConverter.hasLine(address, line1.getString())) {
-                continue;
-            }
-
-            if (!line2.isEmpty()
-                    && !AddressConverter.hasLine(address, line2.getString())) {
-                continue;
-            }
-
-            if (!line3.isEmpty()
-                    && !AddressConverter.hasLine(address, line3.getString())) {
-                continue;
-            }
-
-            if (!line4.isEmpty()
-                    && !AddressConverter.hasLine(address, line4.getString())) {
-                continue;
-            }
-
-            if (!city.isEmpty()
-                    && !AddressConverter.hasCity(address, city.getString())) {
-                continue;
-            }
-
-            if (!county.isEmpty()
-                    && !AddressConverter.hasDistrict(address, county.getString())) {
-                continue;
-            }
-
-            if (!postcode.isEmpty()
-                    && !AddressConverter.hasPostcode(address, postcode.getString())) {
-                continue;
-            }
-
-            //if we make it here, it's a duplicate and should be removed
-            addresses.remove(i);
-        }
     }*/
+
 
 }

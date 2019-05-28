@@ -27,7 +27,7 @@ public class PatientTransformer
         if (identifiers != null)
             identifiers.forEach(targetPatient::addIdentifier);
 
-        List<HumanName> names = NameConverter.convertName(sourcePerson);
+        List<HumanName> names = OpenHrNameConverter.convertName(sourcePerson);
 
         if (names != null)
             names.forEach(targetPatient::addName);

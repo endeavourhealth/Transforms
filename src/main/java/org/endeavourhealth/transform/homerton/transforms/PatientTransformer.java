@@ -211,7 +211,7 @@ public class PatientTransformer extends HomertonBasisTransformer {
         addressBuilder.addLine(line1Cell.getString(), line1Cell);
         addressBuilder.addLine(line2Cell.getString(), line2Cell);
         addressBuilder.addLine(line3Cell.getString(), line3Cell);
-        addressBuilder.setTown(cityCell.getString(), cityCell);
+        addressBuilder.setCity(cityCell.getString(), cityCell);
         addressBuilder.setDistrict(countyCell.getString(), countyCell);
         addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
 

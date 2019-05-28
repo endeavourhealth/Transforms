@@ -60,6 +60,10 @@ public class PatientBuilder extends ResourceBuilderBase
         }
     }
 
+    public Date getDateOfBirth() {
+        return this.patient.getBirthDate();
+    }
+
     public void clearDateOfDeath() {
 
         //if we've already set any death details, we'll have audited it. So remove them.
@@ -82,6 +86,11 @@ public class PatientBuilder extends ResourceBuilderBase
         this.patient.setDeceased(new BooleanType(deceased));
 
         auditValue("deceasedBoolean", sourceCells);
+    }
+
+
+    public Enumerations.AdministrativeGender getGender() {
+        return this.patient.getGender();
     }
 
     public void setGender(Enumerations.AdministrativeGender gender, CsvCell... sourceCells) {
@@ -139,6 +148,10 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public void removeCareProvider(Reference practitionerOrOrganizationReference) {
+
+        if (practitionerOrOrganizationReference == null) {
+            return;
+        }
 
         //if we've already set the care provider and then want to clear it, we need to remove any audits
         getAuditWrapper().removeAudit("careProvider");
@@ -225,6 +238,19 @@ public class PatientBuilder extends ResourceBuilderBase
         auditValue("contact[" + getLastAddressIndex() + "].relationship[" + index + "].text", sourceCells);
     }*/
 
+    public MaritalStatus getMaritalStatus() {
+        CodeableConcept codeableConcept = this.patient.getMaritalStatus();
+        if (codeableConcept == null) {
+            return null;
+        }
+
+        Coding coding = CodeableConceptHelper.findCoding(codeableConcept, MaritalStatus.ANNULLED.getSystem()); //can use the system from any of the enum values
+        if (coding == null) {
+            return null;
+        }
+
+        return MaritalStatus.fromCode(coding.getCode());
+    }
 
     public void setMaritalStatus(MaritalStatus fhirMaritalStatus, CsvCell... sourceCells) {
         if (fhirMaritalStatus == null) {
@@ -238,6 +264,20 @@ public class PatientBuilder extends ResourceBuilderBase
         }
     }
 
+    public EthnicCategory getEthnicity() {
+        CodeableConcept codeableConcept = (CodeableConcept)ExtensionConverter.findExtensionValue(this.patient, FhirExtensionUri.PATIENT_ETHNICITY);
+        if (codeableConcept == null) {
+            return null;
+        }
+
+        Coding coding = CodeableConceptHelper.findCoding(codeableConcept, EthnicCategory.WHITE_BRITISH.getSystem()); //can get the system URL from any of the enum
+        if (coding == null) {
+            return null;
+        }
+
+        return EthnicCategory.fromCode(coding.getCode());
+    }
+
     public void setEthnicity(EthnicCategory fhirEthnicity, CsvCell... sourceCells) {
         if (fhirEthnicity == null) {
             ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_ETHNICITY);
@@ -247,6 +287,21 @@ public class PatientBuilder extends ResourceBuilderBase
             Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_ETHNICITY, codeableConcept);
             auditCodeableConceptExtension(extension, sourceCells);
         }
+    }
+
+
+    public Religion getReligion() {
+        CodeableConcept codeableConcept = (CodeableConcept)ExtensionConverter.findExtensionValue(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+        if (codeableConcept == null) {
+            return null;
+        }
+
+        Coding coding = CodeableConceptHelper.findCoding(codeableConcept, Religion.RASTAFARI.getSystem()); //can get the system URL from any of the enum
+        if (coding == null) {
+            return null;
+        }
+
+        return Religion.fromCode(coding.getCode());
     }
 
     public void setReligion(Religion fhirReligion, CsvCell... sourceCells) {
@@ -261,7 +316,7 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     /**
-     * if possible, set the religion using on fo the Religion enum values. Only if not possible to map, use this free-text version
+     * if possible, set the religion using one of the Religion enum values. Only if not possible to map, use this free-text version
      */
     public void setReligionFreeText(String freeTextReligion, CsvCell... sourceCells) {
         if (Strings.isNullOrEmpty((freeTextReligion))) {
@@ -272,6 +327,21 @@ public class PatientBuilder extends ResourceBuilderBase
             Extension extension = ExtensionConverter.createOrUpdateExtension(this.patient, FhirExtensionUri.PATIENT_RELIGION, codeableConcept);
             auditCodeableConceptExtension(extension, sourceCells);
         }
+    }
+
+    public String getReligionFreeText() {
+        CodeableConcept codeableConcept = (CodeableConcept)ExtensionConverter.findExtensionValue(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+        if (codeableConcept == null) {
+            return null;
+        }
+
+        //check for a coding that uses our value set. If present, then we don't have a free-text religion and are using the value set
+        Coding coding = CodeableConceptHelper.findCoding(codeableConcept, Religion.RASTAFARI.getSystem()); //can get the system URL from any of the enum
+        if (coding != null) {
+            return null;
+        }
+
+        return codeableConcept.getText();
     }
 
     @Override
@@ -314,11 +384,6 @@ public class PatientBuilder extends ResourceBuilderBase
         if (this.patient.getCommunication().isEmpty()) {
             if (createIfMissing) {
                 communicationComponent = this.patient.addCommunication();
-
-                //NOTE this is an assumption that when we record a patient's language, it's the preferred one
-                //If we need more control over this, the creation of the Patient Communication should
-                //be refactored out into a PatientCommunicationBuilder class to expose this for setting differently
-                communicationComponent.setPreferred(true);
             }
         } else {
             communicationComponent = this.patient.getCommunication().get(0);
@@ -336,6 +401,12 @@ public class PatientBuilder extends ResourceBuilderBase
                 }
             }
             communicationComponent.setLanguage(new CodeableConcept());
+
+            //NOTE this is an assumption that when we record a patient's language, it's the preferred one
+            //If we need more control over this, the creation of the Patient Communication should
+            //be refactored out into a PatientCommunicationBuilder class to expose this for setting differently
+            communicationComponent.setPreferred(true);
+
             return communicationComponent.getLanguage();
 
         /*} else if (tag == CodeableConceptBuilder.Tag.Patient_Religion) {
@@ -378,6 +449,7 @@ public class PatientBuilder extends ResourceBuilderBase
             Patient.PatientCommunicationComponent communicationComponent = getOrCreateCommunicationComponent(false);
             if (communicationComponent != null) {
                 communicationComponent.setLanguage(null);
+                communicationComponent.setPreferredElement(null); //to properly null this, we need to access the element
 
                 //and remove from the patient if it's now empty
                 if (communicationComponent.isEmpty()) {

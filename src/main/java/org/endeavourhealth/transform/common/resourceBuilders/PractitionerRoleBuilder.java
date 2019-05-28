@@ -168,15 +168,35 @@ public class PractitionerRoleBuilder implements HasCodeableConceptI {
             return codeableConcept;
 
         } else if (tag == CodeableConceptBuilder.Tag.Practitioner_Specialty) {
-            if (role.hasSpecialty()
-                    && useExisting) {
-                return role.getSpecialty().get(0);
+            //although the object supports multiple specialties, we only support having one
+            if (role.hasSpecialty()) {
+                if (useExisting) {
+                    return role.getSpecialty().get(0);
+                } else {
+                    throw new IllegalArgumentException("Trying to set specialty on Practitioner Role when it already has one");
+                }
             }
 
             return role.addSpecialty();
 
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
+    }
+
+    public CodeableConcept getSpecialty() {
+        if (role.hasSpecialty()) {
+            return role.getSpecialty().get(0);
+        } else {
+            return null;
+        }
+    }
+
+    public CodeableConcept getRole() {
+        if (role.hasRole()) {
+            return role.getRole();
+        } else {
+            return null;
         }
     }
 

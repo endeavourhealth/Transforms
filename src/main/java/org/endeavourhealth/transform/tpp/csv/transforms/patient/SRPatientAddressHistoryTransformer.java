@@ -69,11 +69,15 @@ public class SRPatientAddressHistoryTransformer {
             return;
         }
 
-        //remove any existing instance of this address
+        //attempt to re-use any existing number with the same ID so we're not constantly changing the order by removing and re-adding
+        AddressBuilder addressBuilder = AddressBuilder.findOrCreateForId(patientBuilder, rowIdCell);
+        addressBuilder.reset();
+
+        /*//remove any existing instance of this address
         AddressBuilder.removeExistingAddressById(patientBuilder, rowIdCell.getString());
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-        addressBuilder.setId(rowIdCell.getString(), rowIdCell);
+        addressBuilder.setId(rowIdCell.getString(), rowIdCell);*/
 
         CsvCell dateFromCell = parser.getDateEvent();
         if (!dateFromCell.isEmpty()) {
@@ -134,7 +138,7 @@ public class SRPatientAddressHistoryTransformer {
         }
         CsvCell nameOfTownCell = parser.getNameOfTown();
         if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.setTown(nameOfTownCell.getString(), nameOfTownCell);
+            addressBuilder.setCity(nameOfTownCell.getString(), nameOfTownCell);
         }
         CsvCell nameOfCountyCell = parser.getNameOfCounty();
         if (!nameOfCountyCell.isEmpty()) {
