@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.StagingSURCPDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURCP;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
+//import org.endeavourhealth.core.database.dal.reference.CernerProcedureMapDalI;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.SURCP;
@@ -21,6 +22,7 @@ public class SURCPPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SURCPPreTransformer.class);
 
     private static StagingSURCPDalI repository = DalProvider.factoryStagingSURCPDalI();
+//    private static CernerProcedureMapDalI cernerProcedureMap  = DalProvider.factoryCernerProcedureMapDal();
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -90,6 +92,13 @@ public class SURCPPreTransformer {
 
                 modifierText = parser.getModifierText().getString();
                 primaryProcIndicator = parser.getPrimaryProcedureIndicator().getInt();
+//                String snomedConceptStr = cernerProcedureMap.getSnomedFromCernerProc(procedureCodeCell.getInt());
+//                if (!Strings.isNullOrEmpty(snomedConceptStr)) {
+//                    stagingSURCP.setProcedureCode(Integer.parseInt(snomedConceptStr));
+//                } else {
+//                    TransformWarnings.log(LOG, csvHelper,"Failed to map Barts SURCP proc code {} to SNOMED.", procedureCodeCell.getInt());
+//                }
+
             } else {
 
                 //DAB-120: try the Main procedure code first, otherwise, if "poor" data, try the sch_proc_cd
@@ -108,6 +117,12 @@ public class SURCPPreTransformer {
 
                     modifierText = parser.getSchModifierText().getString();
                     primaryProcIndicator = parser.getSchPrimaryProcedureIndicator().getInt();
+//                    String snomedConceptStr = cernerProcedureMap.getSnomedFromCernerProc(procedureCodeCell.getInt());
+//                    if (!Strings.isNullOrEmpty(snomedConceptStr)) {
+//                        stagingSURCP.setProcedureCode(Integer.parseInt(snomedConceptStr));
+//                    } else {
+//                        TransformWarnings.log(LOG, csvHelper,"Failed to map Barts SURCP proc code {} to SNOMED.", procedureCodeCell.getInt());
+//                    }
                 }
             }
 
