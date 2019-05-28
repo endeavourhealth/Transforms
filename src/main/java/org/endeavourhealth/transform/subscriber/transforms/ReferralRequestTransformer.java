@@ -37,11 +37,16 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
-
             return;
         }
 
         ReferralRequest fhir = (ReferralRequest) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        //if confidential, don't send (and remove)
+        if (isConfidential(fhir)) {
+            model.writeDelete(subscriberId);
+            return;
+        }
 
         long organizationId;
         long patientId;

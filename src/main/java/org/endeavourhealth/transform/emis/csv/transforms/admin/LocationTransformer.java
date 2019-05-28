@@ -5,6 +5,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
@@ -117,7 +118,8 @@ public class LocationTransformer {
 
         CsvCell type = parser.getLocationTypeDescription();
         if (!type.isEmpty()) {
-            locationBuilder.setTypeFreeText(type.getString(), type);
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(locationBuilder, CodeableConceptBuilder.Tag.Location_Type, true);
+            cc.setText(type.getString(), type);
         }
 
         CsvCell parentLocationGuid = parser.getParentLocationId();

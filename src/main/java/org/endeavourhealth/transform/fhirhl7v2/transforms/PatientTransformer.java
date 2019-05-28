@@ -444,10 +444,16 @@ public class PatientTransformer {
         Set<String> knownExtensions = new HashSet<>();
         knownExtensions.add(FhirExtensionUri.PATIENT_ETHNICITY);
         knownExtensions.add(FhirExtensionUri.PATIENT_RELIGION);
+        knownExtensions.add(FhirExtensionUri.PATIENT_BIRTH_DATE_TIME);
         assertNoUnexpectedExtension(newPatient, knownExtensions);
 
         updateEthnicity(newPatient, patientBuilder, adtDate);
         updateReligion(newPatient, patientBuilder, adtDate);
+        updateTimeOfBirth(newPatient, patientBuilder, adtDate);
+    }
+
+    private static void updateTimeOfBirth(Patient newPatient, PatientBuilder patientBuilder, Date adtDate) {
+//TODO
     }
 
     private static void updateReligion(Patient newPatient, PatientBuilder patientBuilder, Date adtDate) {

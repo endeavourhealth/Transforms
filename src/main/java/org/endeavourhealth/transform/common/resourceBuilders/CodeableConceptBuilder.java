@@ -42,7 +42,8 @@ public class CodeableConceptBuilder {
         Diagnostic_Report_Main_Code,
         Procedure_Request_Main_Code,
         Medication_Order_Drug_Code,
-        Medication_Statement_Drug_Code;
+        Medication_Statement_Drug_Code,
+        Location_Type
     }
 
 
@@ -114,6 +115,10 @@ public class CodeableConceptBuilder {
         }
         int index = codeableConcept.getCoding().size()-1;
         return codeableConcept.getCoding().get(index);
+    }
+
+    public boolean hasCoding() {
+        return codeableConcept.hasCoding();
     }
 
     private void addCodingAudit(Coding coding, String codingElement, CsvCell... sourceCells) {

@@ -34,11 +34,16 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
-
             return;
         }
 
         Observation fhir = (Observation)FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        //if confidential, don't send (and remove)
+        if (isConfidential(fhir)) {
+            model.writeDelete(subscriberId);
+            return;
+        }
 
         long organizationId;
         long patientId;

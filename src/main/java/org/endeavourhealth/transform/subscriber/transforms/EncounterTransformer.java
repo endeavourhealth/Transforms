@@ -9,7 +9,6 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
-import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
@@ -20,9 +19,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.criteria.CriteriaBuilder;
 import java.util.Date;
-import java.util.List;
 
 public class EncounterTransformer extends AbstractSubscriberTransformer {
 
@@ -41,11 +38,16 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
-
             return;
         }
 
         Encounter fhir = (Encounter) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        //if confidential, don't send (and remove)
+        if (isConfidential(fhir)) {
+            model.writeDelete(subscriberId);
+            return;
+        }
 
         long organizationId;
         long patientId;

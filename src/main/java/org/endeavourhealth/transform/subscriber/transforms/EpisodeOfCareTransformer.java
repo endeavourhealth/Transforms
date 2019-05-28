@@ -34,11 +34,16 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
-
             return;
         }
 
         EpisodeOfCare fhirEpisode = (EpisodeOfCare) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        //if confidential, don't send (and remove)
+        if (isConfidential(fhirEpisode)) {
+            model.writeDelete(subscriberId);
+            return;
+        }
 
         long id;
         long organizationId;

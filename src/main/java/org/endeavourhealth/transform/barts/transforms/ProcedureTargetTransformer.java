@@ -215,6 +215,11 @@ public class ProcedureTargetTransformer {
                 }
             }
 
+            if (targetProcedure.isConfidential() != null
+                    && targetProcedure.isConfidential().booleanValue()) {
+                procedureBuilder.setIsConfidential(true);
+            }
+
             fhirResourceFiler.savePatientResource(null, procedureBuilder);
 
             LOG.debug("Transforming procedureId: "+uniqueId+"  Filed");

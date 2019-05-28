@@ -316,16 +316,15 @@ public class AddressBuilder {
 
     public static void removeExistingAddresses(HasAddressI parentBuilder) {
 
-        List<Address> addresses = parentBuilder.getAddresses();
+        List<Address> addresses = new ArrayList<>(parentBuilder.getAddresses()); //need to copy the array so we can remove while iterating
         for (Address address: addresses) {
 
             //remove any audits we've created for the Address
             String jsonPrefix = parentBuilder.getAddressJsonPrefix(address);
             parentBuilder.getAuditWrapper().removeAudit(jsonPrefix);
-        }
 
-        //clear all addresses
-        parentBuilder.getAddresses().clear();
+            parentBuilder.removeAddress(address);
+        }
 
     }
 }

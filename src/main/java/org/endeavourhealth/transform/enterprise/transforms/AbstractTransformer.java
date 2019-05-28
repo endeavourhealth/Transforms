@@ -4,9 +4,7 @@ import com.google.common.base.Strings;
 import org.apache.jcs.JCS;
 import org.apache.jcs.access.exception.CacheException;
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
-import org.endeavourhealth.common.fhir.ReferenceComponents;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -85,7 +83,13 @@ public abstract class AbstractTransformer {
 
                     } else {
                         Resource fhir = FhirResourceHelper.deserialiseResouce(resource);
-                        transformResource(enterpriseId, fhir, csvWriter, params);
+                        if (isConfidential(fhir)) {
+                            transformResourceDelete(enterpriseId, csvWriter, params);
+
+                        } else {
+                            transformResource(enterpriseId, fhir, csvWriter, params);
+                        }
+
                     }
                 }
 
@@ -94,6 +98,19 @@ public abstract class AbstractTransformer {
             }
         }
     }
+
+    private boolean isConfidential(Resource fhir) {
+        DomainResource resource = (DomainResource)fhir;
+        BooleanType bt = (BooleanType)ExtensionConverter.findExtensionValue(resource, FhirExtensionUri.IS_CONFIDENTIAL);
+        if (bt == null
+                || !bt.hasValue()) {
+            return false;
+        } else {
+            return bt.getValue().booleanValue();
+        }
+    }
+
+
 
     //defines whether the resources covered by this transformer should ALWAYS be transformed (e.g. patient data)
     //or only transformed if something refers to it (e.g. orgs and practitioners)

@@ -32,11 +32,16 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
-
             return;
         }
 
         DiagnosticReport fhir = (DiagnosticReport) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        //if confidential, don't send (and remove)
+        if (isConfidential(fhir)) {
+            model.writeDelete(subscriberId);
+            return;
+        }
 
         long organizationId;
         long patientId;

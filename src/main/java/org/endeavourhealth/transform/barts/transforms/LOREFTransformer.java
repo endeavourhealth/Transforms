@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirResourceFilerI;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.hl7.fhir.instance.model.Location;
 import org.hl7.fhir.instance.model.Reference;
@@ -115,7 +116,8 @@ public class LOREFTransformer {
         CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.LOCATION_NAME, locationIdCell);
         if (codeRef != null) {
             String typeDesc = codeRef.getCodeMeaningTxt();
-            locationBuilder.setTypeFreeText(typeDesc, locationIdCell);
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(locationBuilder, CodeableConceptBuilder.Tag.Location_Type, true);
+            cc.setText(typeDesc, locationIdCell);
         }
 
         // Mode

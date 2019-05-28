@@ -11,7 +11,7 @@ import java.util.Date;
 import java.util.List;
 
 public class LocationBuilder extends ResourceBuilderBase
-                            implements HasAddressI, HasIdentifierI, HasContactPointI {
+                            implements HasAddressI, HasIdentifierI, HasContactPointI, HasCodeableConceptI {
 
     private Location location = null;
 
@@ -65,17 +65,28 @@ public class LocationBuilder extends ResourceBuilderBase
         auditStringExtension(extension, sourceCells);
     }
 
-    public void setTypeFreeText(String type, CsvCell... sourceCells) {
+    /**
+     * use CodeableConceptBuilder now to set the type
+     */
+    /*public void setTypeFreeText(String type, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(type);
         this.location.setType(codeableConcept);
 
         auditValue("type.text", sourceCells);
-    }
+    }*/
 
     public void setPartOf(Reference locationReference, CsvCell... sourceCells) {
         this.location.setPartOf(locationReference);
 
         auditValue("partOf.reference", sourceCells);
+    }
+
+    public Reference getManagingOrganisation() {
+        if (this.location.hasManagingOrganization()) {
+            return this.location.getManagingOrganization();
+        } else {
+            return null;
+        }
     }
 
     public void setManagingOrganisation(Reference organisationReference, CsvCell... sourceCells) {
@@ -84,10 +95,26 @@ public class LocationBuilder extends ResourceBuilderBase
         auditValue("managingOrganization.reference", sourceCells);
     }
 
+    public Location.LocationMode getMode() {
+        if (this.location.hasMode()) {
+            return this.location.getMode();
+        } else {
+            return null;
+        }
+    }
+
     public void setMode(Location.LocationMode mode, CsvCell... sourceCells) {
         this.location.setMode(mode);
 
         auditValue("mode", sourceCells);
+    }
+
+    public Location.LocationStatus getStatus() {
+        if (this.location.hasStatus()) {
+            return this.location.getStatus();
+        } else {
+            return null;
+        }
     }
 
     public void setStatus(Location.LocationStatus status, CsvCell... sourceCells) {
@@ -96,12 +123,25 @@ public class LocationBuilder extends ResourceBuilderBase
         auditValue("status", sourceCells);
     }
 
+    public LocationPhysicalType getPhysicalType() {
+        if (this.location.hasPhysicalType()) {
+            CodeableConcept cc = this.location.getPhysicalType();
+            Coding coding = CodeableConceptHelper.findCoding(cc, LocationPhysicalType.AMBULATORY.getSystem()); //can use any of the enum to get the system
+            if (coding != null) {
+                return LocationPhysicalType.fromCode(coding.getCode());
+            }
+        }
+
+        return null;
+    }
+
     public void setPhysicalType(LocationPhysicalType locationPhysicalType, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(locationPhysicalType);
         this.location.setPhysicalType(codeableConcept);
 
         auditValue("physicalType.value", sourceCells);
     }
+
 
     private Period findOrCreateOpenPeriod(Extension extension) {
         Period period = (Period)extension.getValue();
@@ -212,5 +252,43 @@ public class LocationBuilder extends ResourceBuilderBase
     @Override
     public void removeContactPoint(ContactPoint contactPoint) {
         this.location.getTelecom().remove(contactPoint);
+    }
+
+    @Override
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
+        if (tag == CodeableConceptBuilder.Tag.Location_Type) {
+            if (this.location.hasType()) {
+                if (useExisting) {
+                    return this.location.getType();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new code to Condition that already has one");
+                }
+            }
+            this.location.setType(new CodeableConcept());
+            return this.location.getType();
+
+        } else {
+            throw new RuntimeException("Wrong tag for locationBuilder " + tag);
+        }
+    }
+
+    @Override
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Location_Type) {
+            return "type";
+
+        } else {
+            throw new RuntimeException("Wrong tag for locationBuilder " + tag);
+        }
+    }
+
+    @Override
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Location_Type) {
+            this.location.setType(null);
+
+        } else {
+            throw new RuntimeException("Wrong tag for locationBuilder " + tag);
+        }
     }
 }

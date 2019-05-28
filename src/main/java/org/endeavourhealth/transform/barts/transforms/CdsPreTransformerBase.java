@@ -35,7 +35,8 @@ public abstract class CdsPreTransformerBase {
         stagingCds.setSusRecordType(susRecordType);
         stagingCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
 
-        boolean isWithheld = parser.getWithheldFlag().getBoolean();
+        CsvCell withheldCell = parser.getWithheldFlag();
+        boolean isWithheld = withheldCell.getBoolean();
         stagingCds.setWithheld(new Boolean(isWithheld));
 
         if (!isWithheld) { //LocalPatientId and NHS number should be empty if withheld. Get persondId from tail file

@@ -27,11 +27,16 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
-
             return;
         }
 
         Flag fhir = (Flag) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        //if confidential, don't send (and remove)
+        if (isConfidential(fhir)) {
+            model.writeDelete(subscriberId);
+            return;
+        }
 
         long id;
         long organisationId;

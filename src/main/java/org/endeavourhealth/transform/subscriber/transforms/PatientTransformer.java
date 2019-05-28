@@ -92,6 +92,12 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         Patient fhirPatient = (Patient) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
+        //if confidential, don't send (and remove)
+        if (isConfidential(fhirPatient)) {
+            //TODO - can this happen? If it does happen, does that mean we should delete ALL data for the patient?
+            throw new RuntimeException("Not sure how to handle a confidential patient resource");
+        }
+
         String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
 
         //when the person ID table was populated, patients who had been deleted weren't added,

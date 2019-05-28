@@ -15,6 +15,7 @@ import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -32,14 +33,17 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         org.endeavourhealth.transform.subscriber.targetTables.Observation model = params.getOutputContainer().getObservations();
 
         if (resourceWrapper.isDeleted()) {
-
             model.writeDelete(subscriberId);
-
             return;
         }
 
-
         Condition fhir = (Condition) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+
+        //if confidential, don't send (and remove)
+        if (isConfidential(fhir)) {
+            model.writeDelete(subscriberId);
+            return;
+        }
 
         long organizationId;
         long patientId;

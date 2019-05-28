@@ -4,10 +4,7 @@ import com.google.common.base.Strings;
 import org.apache.jcs.JCS;
 import org.apache.jcs.access.exception.CacheException;
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.FhirCodeUri;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
-import org.endeavourhealth.common.fhir.ReferenceComponents;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -58,6 +55,18 @@ public abstract class AbstractSubscriberTransformer {
 
         } catch (CacheException ex) {
             throw new RuntimeException("Error initialising cache", ex);
+        }
+    }
+
+
+    protected boolean isConfidential(Resource fhir) {
+        DomainResource resource = (DomainResource)fhir;
+        BooleanType bt = (BooleanType) ExtensionConverter.findExtensionValue(resource, FhirExtensionUri.IS_CONFIDENTIAL);
+        if (bt == null
+                || !bt.hasValue()) {
+            return false;
+        } else {
+            return bt.getValue().booleanValue();
         }
     }
 

@@ -14,10 +14,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
-import org.endeavourhealth.transform.fhirhl7v2.transforms.EncounterTransformer;
-import org.endeavourhealth.transform.fhirhl7v2.transforms.OrganizationTransformer;
-import org.endeavourhealth.transform.fhirhl7v2.transforms.PatientTransformer;
-import org.endeavourhealth.transform.fhirhl7v2.transforms.PractitionerTransformer;
+import org.endeavourhealth.transform.fhirhl7v2.transforms.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -431,6 +428,11 @@ public class FhirHl7v2Filer {
             } else if (resource instanceof Organization) {
                 resource = OrganizationTransformer.transform((Organization)resource, fhirResourceFiler);
                 fhirResourceFiler.saveAdminResource(null, false, new GenericBuilder(resource));
+
+            } else if (resource instanceof Location) {
+                resource = LocationTransformer.transform((Location) resource, fhirResourceFiler);
+                fhirResourceFiler.saveAdminResource(null, false, new GenericBuilder(resource));
+
 
             } else {
                 throw new TransformException("Unsupported admin resource type in HL7 feed: " + resource.getResourceType());
