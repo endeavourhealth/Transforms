@@ -51,10 +51,25 @@ public class LocationTransformer {
         updateAddress(newLocation, locationBuilder);
         updatePhysicalType(newLocation, locationBuilder);
         updateManagingOrganisation(newLocation, locationBuilder);
+        updatePartOf(newLocation, locationBuilder);
 
         validateEmptyFields(newLocation);
 
         return locationBuilder.getResource();
+    }
+
+    private static void updatePartOf(Location newLocation, LocationBuilder locationBuilder) {
+        if (!newLocation.hasPartOf()) {
+            return;
+        }
+
+        Reference newRef = newLocation.getPartOf();
+        Reference existingRef = locationBuilder.getPartOf();
+
+        if (existingRef == null
+                || !newRef.getReference().equals(existingRef.getReference())) { //note, need to compare inner Strings, as equals(..) isn't implemented
+            locationBuilder.setPartOf(newRef);
+        }
     }
 
     private static void updateManagingOrganisation(Location newLocation, LocationBuilder locationBuilder) {
@@ -127,10 +142,6 @@ public class LocationTransformer {
 
         if (newLocation.hasPosition()) {
             throw new RuntimeException("HL7 filer does not support updating Position element");
-        }
-
-        if (newLocation.hasPartOf()) {
-            throw new RuntimeException("HL7 filer does not support updating PartOf element");
         }
 
         if (newLocation.hasExtension()) {

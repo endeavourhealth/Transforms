@@ -81,6 +81,15 @@ public class LocationBuilder extends ResourceBuilderBase
         auditValue("partOf.reference", sourceCells);
     }
 
+
+    public Reference getPartOf() {
+        if (this.location.hasPartOf()) {
+            return this.location.getPartOf();
+        } else {
+            return null;
+        }
+    }
+
     public Reference getManagingOrganisation() {
         if (this.location.hasManagingOrganization()) {
             return this.location.getManagingOrganization();
@@ -291,4 +300,5 @@ public class LocationBuilder extends ResourceBuilderBase
             throw new RuntimeException("Wrong tag for locationBuilder " + tag);
         }
     }
+
 }

@@ -45,10 +45,25 @@ public class OrganizationTransformer {
         updateType(newOrg, organizationBuilder);
         updateName(newOrg, organizationBuilder);
         updateAddress(newOrg, organizationBuilder);
+        updatePartOf(newOrg, organizationBuilder);
 
         validateEmptyFields(newOrg);
 
         return organizationBuilder.getResource();
+    }
+
+    private static void updatePartOf(Organization newOrg, OrganizationBuilder organizationBuilder) {
+        if (!newOrg.hasPartOf()) {
+            return;
+        }
+
+        Reference newRef = newOrg.getPartOf();
+        Reference existingRef = organizationBuilder.getParentOrganisation();
+
+        if (existingRef == null
+                || !newRef.getReference().equals(existingRef.getReference())) { //note, need to compare inner Strings, as equals(..) isn't implemented
+            organizationBuilder.setParentOrganisation(newRef);
+        }
     }
 
     private static void validateEmptyFields(Organization newOrg) {
@@ -58,10 +73,6 @@ public class OrganizationTransformer {
 
         if (newOrg.hasTelecom()) {
             throw new RuntimeException("HL7 filer does not support updating Telecom element");
-        }
-
-        if (newOrg.hasPartOf()) {
-            throw new RuntimeException("HL7 filer does not support updating PartOf element");
         }
 
         if (newOrg.hasContact()) {

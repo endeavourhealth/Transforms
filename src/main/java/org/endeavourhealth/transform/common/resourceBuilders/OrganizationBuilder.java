@@ -62,6 +62,14 @@ public class OrganizationBuilder extends ResourceBuilderBase
         auditValue("partOf.reference", sourceCells);
     }
 
+    public Reference getParentOrganisation() {
+        if (this.organization.hasPartOf()) {
+            return this.organization.getPartOf();
+        } else {
+            return null;
+        }
+    }
+
     public void setType(OrganisationType fhirOrgType, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirOrgType);
         this.organization.setType(codeableConcept);
@@ -180,4 +188,6 @@ public class OrganizationBuilder extends ResourceBuilderBase
     public void removeContactPoint(ContactPoint contactPoint) {
         this.organization.getTelecom().remove(contactPoint);
     }
+
+
 }
