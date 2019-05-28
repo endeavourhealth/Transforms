@@ -24,7 +24,7 @@ public class OrganizationTransformer {
     
     public static Resource transform(Organization newOrg, FhirResourceFiler filer) throws Exception {
         UUID resourceId = UUID.fromString(newOrg.getId());
-        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(filer.getServiceId(), ResourceType.Patient.toString(), resourceId);
+        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(filer.getServiceId(), newOrg.getResourceType().toString(), resourceId);
 
         OrganizationBuilder organizationBuilder = null;
 

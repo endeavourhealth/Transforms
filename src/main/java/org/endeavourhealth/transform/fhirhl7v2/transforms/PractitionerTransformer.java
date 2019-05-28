@@ -24,7 +24,7 @@ public class PractitionerTransformer {
 
     public static Resource transform(Practitioner newPractitioner, FhirResourceFiler filer) throws Exception {
         UUID resourceId = UUID.fromString(newPractitioner.getId());
-        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(filer.getServiceId(), ResourceType.Patient.toString(), resourceId);
+        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(filer.getServiceId(), newPractitioner.getResourceType().toString(), resourceId);
 
         PractitionerBuilder practitionerBuilder = null;
 

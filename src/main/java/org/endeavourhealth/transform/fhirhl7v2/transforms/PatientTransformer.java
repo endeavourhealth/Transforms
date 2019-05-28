@@ -22,7 +22,7 @@ public class PatientTransformer {
     public static Patient updatePatient(Patient newPatient, FhirResourceFiler filer, Date adtDate, Bundle bundle) throws Exception {
 
         UUID resourceId = UUID.fromString(newPatient.getId());
-        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(filer.getServiceId(), ResourceType.Patient.toString(), resourceId);
+        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(filer.getServiceId(), newPatient.getResourceType().toString(), resourceId);
 
         PatientBuilder patientBuilder = null;
 
