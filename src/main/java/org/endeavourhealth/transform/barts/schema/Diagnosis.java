@@ -47,7 +47,19 @@ public class Diagnosis extends AbstractFixedParser {
         return super.getCell("encntr_id");
     }
 
-    public CsvCell getLocalPatientId() {
+    /**
+     * encounter ID is suffixed with ".00" so we have this version to give us a nice version to work with
+     */
+    public CsvCell getEncounterIdSanitised() {
+        CsvCell ret = getEncounterId();
+        if (ret.getString().contains(".")) {
+            int i = new Double(ret.getString()).intValue();
+            ret = CsvCell.factoryWithNewValue(ret, Integer.toString(i));
+        }
+        return ret;
+    }
+
+    public CsvCell getMRN() {
         return super.getCell("MRN");
     }
 

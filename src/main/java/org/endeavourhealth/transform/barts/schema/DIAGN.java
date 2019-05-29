@@ -80,7 +80,7 @@ public class DIAGN extends AbstractCsvParser {
         return super.getCell("CONCEPT_CKI_IDENT");
     }
 
-    public CsvCell getDiagnosicFreeText() {
+    public CsvCell getDiagnosisFreeText() {
         return super.getCell("DIAGNOSIS_TXT");
     }
 

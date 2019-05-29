@@ -186,7 +186,7 @@ public class DIAGNTransformer {
         }
         conditionBuilder.setCategory(category, sequenceNumberCell);
 
-        CsvCell diagnosisFreeText = parser.getDiagnosicFreeText();
+        CsvCell diagnosisFreeText = parser.getDiagnosisFreeText();
         if (!diagnosisFreeText.isEmpty()) {
             conditionBuilder.setNotes(diagnosisFreeText.getString(), diagnosisFreeText);
         }
