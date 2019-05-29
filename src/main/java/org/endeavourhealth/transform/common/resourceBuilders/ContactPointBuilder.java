@@ -212,5 +212,9 @@ public class ContactPointBuilder {
             //we don't use rank, so throw an error if we have it set
             throw new RuntimeException("Not expecting rank element in ContactPoint as not used");
         }
+
+        if (otherContactPoint.hasExtension()) {
+            throw new RuntimeException("ContactPoint has unexpected extension");
+        }
     }
 }

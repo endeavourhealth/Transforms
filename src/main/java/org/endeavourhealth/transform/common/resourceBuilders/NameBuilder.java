@@ -334,6 +334,10 @@ public class NameBuilder {
             setText(otherName.getText());
         }
 
+        if (otherName.hasExtension()) {
+            throw new RuntimeException("Name has unexpected extension");
+        }
+
     }
 
 

@@ -306,7 +306,11 @@ public class IdentifierBuilder {
 
         if (otherIdentifier.hasType()) {
             //we don't use this, so don't expect to have it
-            throw new RuntimeException("Address has unexpected type property");
+            throw new RuntimeException("Identifier has unexpected type property");
+        }
+
+        if (otherIdentifier.hasExtension()) {
+            throw new RuntimeException("Identifier has unexpected extension");
         }
 
         if (otherIdentifier.hasUse()) {

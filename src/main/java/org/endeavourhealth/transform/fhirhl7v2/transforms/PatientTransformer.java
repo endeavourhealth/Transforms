@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
+import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.Religion;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
@@ -40,6 +41,8 @@ public class PatientTransformer {
         //so before doing any processing, fix that
         moveEmailAddress(newPatient);
 
+        moveNhsNumberVerificationStatus(newPatient);
+
         //the ADT feed sends NHS numbers with spaces in them (or at least used to), so ensure they're all formatted without them
         tidyNhsNumbers(newPatient);
 
@@ -66,6 +69,32 @@ public class PatientTransformer {
         validateEmptyPatientFields(newPatient);
 
         return (Patient)patientBuilder.getResource();
+    }
+
+    /**
+     * the HL7 Receiver puts the NHS number verification status on the NHS Number identifier itself,
+     * so we need to move it to be an extension of the resource as a whole
+     */
+    private static void moveNhsNumberVerificationStatus(Patient newPatient) {
+        if (!newPatient.hasIdentifier()) {
+            return;
+        }
+
+        for (Identifier identifier: newPatient.getIdentifier()) {
+            if (identifier.hasExtension()) {
+                for (int i=identifier.getExtension().size()-1; i>=0; i--) {
+                    Extension extension = identifier.getExtension().get(i);
+                    if (extension.getUrl().equals(FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS)) {
+
+                        identifier.getExtension().remove(i);
+                        newPatient.getExtension().add(extension);
+
+                    } else {
+                        throw new RuntimeException("Unexpected extension " + extension.getUrl() + " on Identifier");
+                    }
+                }
+            }
+        }
     }
 
     private static void updateContacts(Patient newPatient, PatientBuilder patientBuilder) {
@@ -562,22 +591,43 @@ public class PatientTransformer {
 
     private static void updateExtensions(Patient newPatient, PatientBuilder patientBuilder, Date adtDate) {
 
-        //we have a number of known patient extensions but do not expect the ADT patients to have them
-        assertNoExtension(newPatient, FhirExtensionUri.PATIENT_RESIDENTIAL_INSTITUTE_CODE);
-        assertNoExtension(newPatient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
-        assertNoExtension(newPatient, FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
-        assertNoExtension(newPatient, FhirExtensionUri.PATIENT_SPEAKS_ENGLISH);
-        assertNoExtension(newPatient, FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS);
-
+        //we have a number of known patient extensions but validate we're not getting anything else
         Set<String> knownExtensions = new HashSet<>();
         knownExtensions.add(FhirExtensionUri.PATIENT_ETHNICITY);
         knownExtensions.add(FhirExtensionUri.PATIENT_RELIGION);
         knownExtensions.add(FhirExtensionUri.PATIENT_BIRTH_DATE_TIME);
+        knownExtensions.add(FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS);
         assertNoUnexpectedExtension(newPatient, knownExtensions);
 
         updateEthnicity(newPatient, patientBuilder, adtDate);
         updateReligion(newPatient, patientBuilder, adtDate);
         updateTimeOfBirth(newPatient, patientBuilder, adtDate);
+        updateNhsNumberVerificationStatus(newPatient, patientBuilder, adtDate);
+    }
+
+    private static void updateNhsNumberVerificationStatus(Patient newPatient, PatientBuilder patientBuilder, Date adtDate) {
+
+        CodeableConcept cc = ExtensionConverter.findExtensionValueCodeableConcept(newPatient, FhirExtensionUri.PATIENT_NHS_NUMBER_VERIFICATION_STATUS);
+        if (cc == null) {
+            return;
+        }
+
+        String newStatus = cc.getText();
+        NhsNumberVerificationStatus newStatusEnum = null;
+
+        for (NhsNumberVerificationStatus s: NhsNumberVerificationStatus.values()) {
+            if (s.getDescription().equalsIgnoreCase(newStatus)) {
+                newStatusEnum = s;
+                break;
+            }
+        }
+
+        if (newStatusEnum == null) {
+            throw new RuntimeException("Failed to find NHS number verification status for [" + newStatus + "]");
+        }
+
+        //the patientBuilder funciton handles setting it on the extension etc. so we just call this function
+        patientBuilder.setNhsNumberVerificationStatus(newStatusEnum);
     }
 
     private static void updateTimeOfBirth(Patient newPatient, PatientBuilder patientBuilder, Date adtDate) {
@@ -644,13 +694,6 @@ public class PatientTransformer {
         }
     }
 
-    private static void assertNoExtension(Patient newPatient, String extensionUrl) {
-
-        Extension extension = ExtensionConverter.findExtension(newPatient, extensionUrl);
-        if (extension != null) {
-            throw new RuntimeException("HL7 filer doesn't handle patients with extension " + extensionUrl);
-        }
-    }
 
     /**
      * ensures that fields we expect to be empty actually are

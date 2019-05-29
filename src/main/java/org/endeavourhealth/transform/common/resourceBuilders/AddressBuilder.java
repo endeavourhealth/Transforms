@@ -288,6 +288,10 @@ public class AddressBuilder {
             throw new RuntimeException("Address has unexpected state property");
         }
 
+        if (otherAddress.hasExtension()) {
+            throw new RuntimeException("Address has unexpected extension");
+        }
+
         if (otherAddress.hasType()) {
             setType(otherAddress.getType());
         }
