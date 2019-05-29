@@ -621,6 +621,9 @@ public class PatientTransformer {
         } else if (newStatus.equalsIgnoreCase("Trace not Required")) {
             newStatusEnum = NhsNumberVerificationStatus.NUMBER_NOT_PRESENT_NO_TRACE_REQUIRED;
 
+        } else if (newStatus.equalsIgnoreCase("Needs Resolution")) {
+            newStatusEnum = NhsNumberVerificationStatus.TRACE_REQUIRED;
+
         } else {
 
             for (NhsNumberVerificationStatus s : NhsNumberVerificationStatus.values()) {
