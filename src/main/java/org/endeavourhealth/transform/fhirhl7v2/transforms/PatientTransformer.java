@@ -129,8 +129,14 @@ public class PatientTransformer {
                         contactBuilder.setLanguage(st.getValue());
 
                     } else if (url.equals(FhirExtensionUri.PATIENT_CONTACT_DOB)) {
-                        DateTimeType dt = (DateTimeType)extension.getValue();
-                        contactBuilder.setDateOfBirth(dt.getValue());
+                        //we get BOTH dates and datetimes in the extension, so handle both
+                        Date d = null;
+                        if (extension.getValue() instanceof DateTimeType) {
+                            d = ((DateTimeType)extension.getValue()).getValue();
+                        } else {
+                            d = ((DateType)extension.getValue()).getValue();
+                        }
+                        contactBuilder.setDateOfBirth(d);
 
                     } else {
                         throw new RuntimeException("Unexpected extension " + url + " in ADT Patient Contact");
