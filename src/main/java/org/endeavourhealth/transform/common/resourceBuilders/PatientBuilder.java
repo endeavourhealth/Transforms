@@ -312,7 +312,8 @@ public class PatientBuilder extends ResourceBuilderBase
         }
 
         Coding coding = CodeableConceptHelper.findCoding(codeableConcept, Religion.RASTAFARI.getSystem()); //can get the system URL from any of the enum
-        if (coding == null) {
+        if (coding == null
+                || !coding.hasCode()) {
             return null;
         }
 
