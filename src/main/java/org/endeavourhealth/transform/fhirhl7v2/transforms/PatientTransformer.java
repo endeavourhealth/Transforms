@@ -185,6 +185,11 @@ public class PatientTransformer {
                     postcode = postcode.replace(" ", "");
                     address.setPostalCode(postcode);
                 }
+
+                //the state field just contains duplicated text from the other fields, so ignore
+                if (address.hasState()) {
+                    address.setState(null);
+                }
             }
         }
 
@@ -196,6 +201,11 @@ public class PatientTransformer {
                         String postcode = address.getPostalCode();
                         postcode = postcode.replace(" ", "");
                         address.setPostalCode(postcode);
+                    }
+
+                    //the state field just contains duplicated text from the other fields, so ignore
+                    if (address.hasState()) {
+                        address.setState(null);
                     }
                 }
             }
