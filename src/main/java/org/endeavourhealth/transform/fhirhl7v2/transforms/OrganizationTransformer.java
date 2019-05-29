@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.hl7.fhir.instance.model.*;
@@ -46,10 +47,24 @@ public class OrganizationTransformer {
         updateName(newOrg, organizationBuilder);
         updateAddress(newOrg, organizationBuilder);
         updatePartOf(newOrg, organizationBuilder);
+        updateTelecom(newOrg, organizationBuilder);
 
         validateEmptyFields(newOrg);
 
         return organizationBuilder.getResource();
+    }
+
+    private static void updateTelecom(Organization newOrg, OrganizationBuilder organizationBuilder) {
+        if (!newOrg.hasTelecom()) {
+            return;
+        }
+
+        ContactPointBuilder.removeExistingContactPoints(organizationBuilder);
+
+        for (ContactPoint telecom: newOrg.getTelecom()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(organizationBuilder);
+            contactPointBuilder.addContactPointNoAudit(telecom);
+        }
     }
 
     private static void updatePartOf(Organization newOrg, OrganizationBuilder organizationBuilder) {
@@ -69,10 +84,6 @@ public class OrganizationTransformer {
     private static void validateEmptyFields(Organization newOrg) {
         if (newOrg.hasActiveElement()) {
             throw new RuntimeException("HL7 filer does not support updating Active element");
-        }
-
-        if (newOrg.hasTelecom()) {
-            throw new RuntimeException("HL7 filer does not support updating Telecom element");
         }
 
         if (newOrg.hasContact()) {
