@@ -1,6 +1,9 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
+import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.CernerProcedureMapDalI;
@@ -14,6 +17,8 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.Date;
+
+import static java.lang.Integer.parseInt;
 
 public class ProcedureTransformer extends AbstractTransformer {
 
@@ -92,16 +97,13 @@ public class ProcedureTransformer extends AbstractTransformer {
         snomedConceptId = codes.getSnomedConceptId();
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
-        // Originally I put this in ObservationCodeHelper but I was concerned we might have problems with accidental effects
-        //TODO - restore this when it's been fixed to use the right coding system
-        /*if (snomedConceptId == null && CodeableConceptHelper.findOriginalCoding(fhir.getCode())!=null ) {
+        if (snomedConceptId == null && CodeableConceptHelper.findOriginalCoding(fhir.getCode()) != null) {
             Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
-            if (originalCoding != null
-                    && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)
+            if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
                     && StringUtils.isNumeric(originalCoding.getCode())) {
                 snomedConceptId = cernerProcedureMap.getSnomedFromCernerProc(parseInt(originalCoding.getCode()));
-                }
-        }*/
+            }
+        }
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
