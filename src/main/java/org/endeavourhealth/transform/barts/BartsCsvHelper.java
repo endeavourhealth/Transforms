@@ -53,6 +53,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
     public static final String CODE_TYPE_SNOMED = "SNOMED";
     public static final String CODE_TYPE_SNOMED_CT = "SNOMED CT";
+    public static final String CODE_TYPE_UK_ED_SUBSET = "UK ED Subset";
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
     public static final String CODE_TYPE_OPCS_4 = "OPCS4";
     public static final String CODE_TYPE_HRG = "HRG";

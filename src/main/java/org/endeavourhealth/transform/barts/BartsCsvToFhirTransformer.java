@@ -159,12 +159,13 @@ public abstract class BartsCsvToFhirTransformer {
 
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
+            //TODO:  work out ordering and structure of CDS file processing which contain Procedures and Diagnosis records
             //DIAGNOSES
             /*
-            DiagnosisTransformer.transform(version, getParsers(parserMap, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+            DIAGNPreTransformer.transform(getParsers(parserMap, "DIAGN", false), fhirResourceFiler, csvHelper);
+            DiagnosisPreTransformer.transform(version, getParsers(parserMap, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
             SusEmergencyTransformer.transformProcedures(getParsers(parserMap, "SusEmergency", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
             SusEmergencyCareDataSetTransformer.transformProcedures(getParsers(parserMap, "SusEmergencyCareDataSet", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
-            DIAGNTransformer.transform(getParsers(parserMap, "DIAGN", csvHelper, true), fhirResourceFiler, csvHelper);
             save all diagnoses to the DB
             fhirResourceFiler.waitUntilEverythingIsSaved();
             */
