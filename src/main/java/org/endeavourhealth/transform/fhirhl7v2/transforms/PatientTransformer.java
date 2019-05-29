@@ -129,7 +129,7 @@ public class PatientTransformer {
                         contactBuilder.setLanguage(st.getValue());
 
                     } else if (url.equals(FhirExtensionUri.PATIENT_CONTACT_DOB)) {
-                        DateType dt = (DateType)extension.getValue();
+                        DateTimeType dt = (DateTimeType)extension.getValue();
                         contactBuilder.setDateOfBirth(dt.getValue());
 
                     } else {
@@ -171,15 +171,27 @@ public class PatientTransformer {
      * removes spaces from address postcodes
      */
     private static void tidyPostcodes(Patient newPatient) {
-        if (!newPatient.hasAddress()) {
-            return;
+        if (newPatient.hasAddress()) {
+
+            for (Address address: newPatient.getAddress()) {
+                if (address.hasPostalCode()) {
+                    String postcode = address.getPostalCode();
+                    postcode = postcode.replace(" ", "");
+                    address.setPostalCode(postcode);
+                }
+            }
         }
 
-        for (Address address: newPatient.getAddress()) {
-            if (address.hasPostalCode()) {
-                String postcode = address.getPostalCode();
-                postcode = postcode.replace(" ", "");
-                address.setPostalCode(postcode);
+        if (newPatient.hasContact()) {
+            for (Patient.ContactComponent contact: newPatient.getContact()) {
+                if (contact.hasAddress()) {
+                    Address address = contact.getAddress();
+                    if (address.hasPostalCode()) {
+                        String postcode = address.getPostalCode();
+                        postcode = postcode.replace(" ", "");
+                        address.setPostalCode(postcode);
+                    }
+                }
             }
         }
     }

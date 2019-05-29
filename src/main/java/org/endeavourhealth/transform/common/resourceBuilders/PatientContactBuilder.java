@@ -313,7 +313,7 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
             ExtensionConverter.removeExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_DOB);
 
         } else {
-            Extension extension = ExtensionConverter.createOrUpdateExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_DOB, new DateType(dob));
+            Extension extension = ExtensionConverter.createOrUpdateExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_DOB, new DateTimeType(dob));
             int index = this.contact.getExtension().indexOf(extension);
             auditValue("extension[" + index + "].valueDate", sourceCells);
         }
