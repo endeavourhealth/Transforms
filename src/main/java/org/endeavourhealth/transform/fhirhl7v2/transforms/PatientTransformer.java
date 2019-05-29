@@ -615,15 +615,21 @@ public class PatientTransformer {
         String newStatus = cc.getText();
         NhsNumberVerificationStatus newStatusEnum = null;
 
-        for (NhsNumberVerificationStatus s: NhsNumberVerificationStatus.values()) {
-            if (s.getDescription().equalsIgnoreCase(newStatus)) {
-                newStatusEnum = s;
-                break;
-            }
-        }
+        if (newStatus.equalsIgnoreCase("Present and Verified")) {
+            newStatusEnum = NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;
 
-        if (newStatusEnum == null) {
-            throw new RuntimeException("Failed to find NHS number verification status for [" + newStatus + "]");
+        } else {
+
+            for (NhsNumberVerificationStatus s : NhsNumberVerificationStatus.values()) {
+                if (s.getDescription().equalsIgnoreCase(newStatus)) {
+                    newStatusEnum = s;
+                    break;
+                }
+            }
+
+            if (newStatusEnum == null) {
+                throw new RuntimeException("Failed to find NHS number verification status for [" + newStatus + "]");
+            }
         }
 
         //the patientBuilder funciton handles setting it on the extension etc. so we just call this function
