@@ -347,4 +347,10 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
     public Patient.ContactComponent getContact() {
         return this.contact;
     }
+
+    public void setGender(Enumerations.AdministrativeGender gender, CsvCell... sourceCells) {
+        this.contact.setGender(gender);
+
+        auditValue("gender", sourceCells);
+    }
 }

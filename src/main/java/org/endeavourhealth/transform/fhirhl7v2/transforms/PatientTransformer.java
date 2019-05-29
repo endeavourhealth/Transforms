@@ -146,11 +146,17 @@ public class PatientTransformer {
             }
 
             if (contact.hasAddress()) {
-                throw new RuntimeException("Not expecting Address in ADT Patient Contact");
+                Address address = contact.getAddress();
+                AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
+                addressBuilder.addAddressNoAudit(address);
             }
+
+
             if (contact.hasGender()) {
-                throw new RuntimeException("Not expecting Gender in ADT Patient Contact");
+                Enumerations.AdministrativeGender gender = contact.getGender();
+                contactBuilder.setGender(gender);
             }
+
             if (contact.hasOrganization()) {
                 throw new RuntimeException("Not expecting Organisation in ADT Patient Contact");
             }
