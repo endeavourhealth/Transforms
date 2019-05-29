@@ -24,6 +24,22 @@ public class Problem extends AbstractFixedParser {
         return super.getCell("problem_id");
     }
 
+    public CsvCell getPersonId() {
+        return super.getCell("person_id");
+    }
+
+    /**
+     * person_id is suffixed with ".00" so we have this version to give us a nice version to work with
+     */
+    public CsvCell getPersonIdSanitised() {
+        CsvCell ret = getPersonId();
+        if (ret.getString().contains(".")) {
+            int i = new Double(ret.getString()).intValue();
+            ret = CsvCell.factoryWithNewValue(ret, Integer.toString(i));
+        }
+        return ret;
+    }
+
     public CsvCell getUpdateDateTime() {
         return super.getCell("update_dt_tm");
     }
@@ -56,8 +72,24 @@ public class Problem extends AbstractFixedParser {
         return super.getCell("status_lifecycle");
     }
 
+    public CsvCell getQualifier() {
+        return super.getCell("qualifier");
+    }
+
     public CsvCell getSeverity() {
         return super.getCell("severity");
+    }
+
+    public CsvCell getPersistence() {
+        return super.getCell("persistence");
+    }
+
+    public CsvCell getPrognosis() {
+        return super.getCell("prognosis");
+    }
+
+    public CsvCell getClassification() {
+        return super.getCell("classification");
     }
 
     public CsvCell getProblemCode() {

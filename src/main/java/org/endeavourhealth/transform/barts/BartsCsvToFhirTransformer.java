@@ -160,19 +160,28 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //TODO:  work out ordering and structure of CDS file processing which contain Procedures and Diagnosis records
-            //DIAGNOSES
+            //DIAGNOSES / PROBLEMS
             /*
             DIAGNPreTransformer.transform(getParsers(parserMap, "DIAGN", false), fhirResourceFiler, csvHelper);
-            DiagnosisPreTransformer.transform(version, getParsers(parserMap, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
-            SusEmergencyTransformer.transformProcedures(getParsers(parserMap, "SusEmergency", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
-            SusEmergencyCareDataSetTransformer.transformProcedures(getParsers(parserMap, "SusEmergencyCareDataSet", csvHelper, false), fhirResourceFiler, csvHelper, fileMap);
+            DiagnosisPreTransformer.transform(getParsers(parserMap, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper);
+            ProblemPreTransformer.transform(getParsers(parserMap, "Problem", true), fhirResourceFiler, csvHelper);
+
+            //TODO - run these again for Diagnosis records?
+            SusInpatientTailPreTransformer.transform(getParsers(parserMap, "SusInpatientTail", true), fhirResourceFiler,csvHelper);
+            SusOutpatientTailPreTransformer.transform(getParsers(parserMap, "SusOutpatientTail", true), fhirResourceFiler,csvHelper);
+            SusEmergencyTailPreTransformer.transform(getParsers(parserMap,"SusEmergencyTail",true),fhirResourceFiler,csvHelper);
+            SusInpatientPreTransformer.transform(getParsers(parserMap, "SusInpatient", true), fhirResourceFiler,csvHelper);
+            SusOutpatientPreTransformer.transform(getParsers(parserMap, "SusOutpatient", true), fhirResourceFiler,csvHelper);
+            SusEmergencyPreTransformer.transform(getParsers(parserMap,"SusEmergency",true),fhirResourceFiler,csvHelper);
+
+
             save all diagnoses to the DB
             fhirResourceFiler.waitUntilEverythingIsSaved();
             */
 
             //other clinical transformers
             CLEVETransformer.transform(getParsers(parserMap, "CLEVE", true), fhirResourceFiler, csvHelper);
-            ProblemTransformer.transform(getParsers(parserMap, "Problem", true), fhirResourceFiler, csvHelper);
+            //ProblemTransformer.transform(getParsers(parserMap, "Problem", true), fhirResourceFiler, csvHelper);
             FamilyHistoryTransformer.transform(getParsers(parserMap, "FamilyHistory", true), fhirResourceFiler, csvHelper);
 
             //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now

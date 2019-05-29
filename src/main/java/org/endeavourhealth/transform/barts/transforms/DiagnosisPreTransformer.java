@@ -87,10 +87,10 @@ public class DiagnosisPreTransformer {
         String diagTerm = "";
         if (vocabCell.getString().equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
 
+            diagTerm = TerminologyService.lookupOpcs4ProcedureName(diagCode);
             if (Strings.isNullOrEmpty(diagTerm)) {
                 throw new Exception("Failed to find term for OPCS-4 code [" + diagCode + "]");
             }
-            diagTerm = TerminologyService.lookupOpcs4ProcedureName(diagCode);
 
         } else if (vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT) ||
                     vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_UK_ED_SUBSET)) {
@@ -104,7 +104,7 @@ public class DiagnosisPreTransformer {
             diagCode = snomedCode.getConceptCode();  //update the code to be an actual Snomed ConceptId
 
         } else {
-            throw new Exception("Unexpected coding scheme " + vocabCell.getString());
+            throw new Exception("Unexpected coding scheme vocab" + vocabCell.getString());
         }
 
         obj.setDiagCd(diagCode);
