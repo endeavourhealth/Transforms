@@ -139,19 +139,23 @@ public class PatientTransformer {
             }
 
             if (contact.hasTelecom()) {
-                throw new RuntimeException("No expecting Telecom in ADT Patient Contact");
+                for (ContactPoint telecom: contact.getTelecom()) {
+                    ContactPointBuilder telecomBuilder = new ContactPointBuilder(contactBuilder);
+                    telecomBuilder.addContactPointNoAudit(telecom);
+                }
             }
+
             if (contact.hasAddress()) {
-                throw new RuntimeException("No expecting Address in ADT Patient Contact");
+                throw new RuntimeException("Not expecting Address in ADT Patient Contact");
             }
             if (contact.hasGender()) {
-                throw new RuntimeException("No expecting Gender in ADT Patient Contact");
+                throw new RuntimeException("Not expecting Gender in ADT Patient Contact");
             }
             if (contact.hasOrganization()) {
-                throw new RuntimeException("No expecting Organisation in ADT Patient Contact");
+                throw new RuntimeException("Not expecting Organisation in ADT Patient Contact");
             }
             if (contact.hasPeriod()) {
-                throw new RuntimeException("No expecting Period in ADT Patient Contact");
+                throw new RuntimeException("Not expecting Period in ADT Patient Contact");
             }
 
         }
