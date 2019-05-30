@@ -108,6 +108,14 @@ public class Problem extends AbstractFixedParser {
         return super.getCell("updated_by");
     }
 
+    public CsvCell getRanking() {
+        return super.getCell("ranking");
+    }
+
+    public CsvCell getOrgName() {
+        return super.getCell("org_name");
+    }
+
 
     @Override
     protected boolean isFileAudited() {

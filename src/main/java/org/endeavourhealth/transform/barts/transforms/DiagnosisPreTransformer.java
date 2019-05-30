@@ -110,9 +110,19 @@ public class DiagnosisPreTransformer {
         obj.setDiagCd(diagCode);
         obj.setDiagTerm(diagTerm);
 
-        CsvCell qualifierCell = parser.getQualifier();
-        if (!qualifierCell.isEmpty()) {
-            obj.setQualifier(qualifierCell.getString());
+        CsvCell classificationCell = parser.getClassification();
+        if (!classificationCell.isEmpty()) {
+            obj.setClassification(classificationCell.getString());
+        }
+
+        CsvCell rankCell = parser.getRank();
+        if (!rankCell.isEmpty()) {
+            obj.setRanking(rankCell.getString());
+        }
+
+        CsvCell axisCell = parser.getAxis();
+        if (!axisCell.isEmpty()) {
+            obj.setAxis(axisCell.getString());
         }
 
         CsvCell confirmationCell = parser.getConfirmation();
@@ -169,19 +179,10 @@ public class DiagnosisPreTransformer {
 
         //collect up all the free text elements: classification, rank, axis, severity, certainty and secondary descriptions'
         StringBuilder notes = new StringBuilder();
-        CsvCell classification = parser.getClassification();
-        if (!classification.isEmpty()) {
-            notes.append("Classification: "+classification.getString()+". ");
-        }
 
-        CsvCell rank = parser.getRank();
-        if (!rank.isEmpty()) {
-            notes.append("Rank: "+rank.getString()+". ");
-        }
-
-        CsvCell axis = parser.getAxis();
-        if (!axis.isEmpty()) {
-            notes.append("Axis: "+axis.getString()+". ");
+        CsvCell qualifier = parser.getQualifier();
+        if (!qualifier.isEmpty()) {
+            notes.append("Qualifier: "+qualifier.getString()+". ");
         }
 
         CsvCell severity = parser.getSeverity();

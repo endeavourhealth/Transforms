@@ -111,11 +111,6 @@ public class ProblemPreTransformer {
             obj.setProblemTxt(problemTxtCell.getString());
         }
 
-        CsvCell qualifierCell = parser.getQualifier();
-        if (!qualifierCell.isEmpty()) {
-            obj.setQualifier(qualifierCell.getString());
-        }
-
         CsvCell classificationCell = parser.getClassification();
         if (!classificationCell.isEmpty()) {
             obj.setClassification(classificationCell.getString());
@@ -126,14 +121,9 @@ public class ProblemPreTransformer {
             obj.setConfirmation(confirmationCell.getString());
         }
 
-        CsvCell persistenceCell = parser.getPersistence();
-        if (!persistenceCell.isEmpty()) {
-            obj.setPersistence(persistenceCell.getString());
-        }
-
-        CsvCell prognosisCell = parser.getPrognosis();
-        if (!prognosisCell.isEmpty()) {
-            obj.setPrognosis(prognosisCell.getString());
+        CsvCell rankingCell = parser.getRanking();
+        if (!rankingCell.isEmpty()) {
+            obj.setRanking(rankingCell.getString());
         }
 
         CsvCell statusCell = parser.getStatusLifecycle();
@@ -144,6 +134,11 @@ public class ProblemPreTransformer {
         CsvCell statusDateCell = parser.getStatusDate();
         if (!statusDateCell.isEmpty()) {
             obj.setProblemStatusDtTm(statusDateCell.getDateTime());
+        }
+
+        CsvCell locationCell = parser.getOrgName();
+        if (!locationCell.isEmpty()) {
+            obj.setLocation(locationCell.getString());
         }
 
         String consultantPersonnelId
