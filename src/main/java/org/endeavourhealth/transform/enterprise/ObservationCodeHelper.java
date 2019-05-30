@@ -40,6 +40,10 @@ public class ObservationCodeHelper {
     }
 
     public static ObservationCodeHelper extractCodeFields(CodeableConcept codeableConcept) throws Exception {
+        return extractCodeFields(codeableConcept, true);
+    }
+
+    public static ObservationCodeHelper extractCodeFields(CodeableConcept codeableConcept, boolean blockCerner) throws Exception {
 
         if (codeableConcept == null) {
             return null;
@@ -73,8 +77,8 @@ public class ObservationCodeHelper {
         //if we don't have a Snomed code and our original code is a Cerner code, then don't send to the subscriber
         //so return null to prevent that
         if (ret.getSnomedConceptId() == null) {
-            if (originalCoding == null
-                    || originalCoding.getSystem().equals(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
+            if (blockCerner && (originalCoding == null
+                    || originalCoding.getSystem().equals(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID))) {
                 return null;
             }
         }

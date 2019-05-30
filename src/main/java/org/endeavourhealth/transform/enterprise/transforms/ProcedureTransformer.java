@@ -28,14 +28,14 @@ public class ProcedureTransformer extends AbstractTransformer {
         return true;
     }
 
-    private static CernerProcedureMapDalI cernerProcedureMap  = DalProvider.factoryCernerProcedureMapDal();
+    private static CernerProcedureMapDalI cernerProcedureMap = DalProvider.factoryCernerProcedureMapDal();
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                                     Resource resource,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformParams params) throws Exception {
 
-        Procedure fhir = (Procedure)resource;
+        Procedure fhir = (Procedure) resource;
 
         long id;
         long organisationId;
@@ -90,24 +90,29 @@ public class ProcedureTransformer extends AbstractTransformer {
             }
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode(), false);
+        //The above boolean tells the helper to allow some Cerner coded records through. Now filtered below
         if (codes == null) {
             return;
         }
         snomedConceptId = codes.getSnomedConceptId();
+
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
         if (snomedConceptId == null && CodeableConceptHelper.findOriginalCoding(fhir.getCode()) != null) {
             Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
-            if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
-                    && StringUtils.isNumeric(originalCoding.getCode())) {
-                snomedConceptId = cernerProcedureMap.getSnomedFromCernerProc(parseInt(originalCoding.getCode()));
+            if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
+                if (StringUtils.isNumeric(originalCoding.getCode())) {
+                    snomedConceptId = cernerProcedureMap.getSnomedFromCernerProc(parseInt(originalCoding.getCode()));
+                } else {
+                    return; // Don't allow records with only a Cerner term not mapped to Snomed.
+                }
             }
         }
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
-            BooleanType b = (BooleanType)reviewExtension.getValue();
+            BooleanType b = (BooleanType) reviewExtension.getValue();
             if (b.getValue() != null) {
                 isReview = b.getValue();
             }
@@ -115,11 +120,12 @@ public class ProcedureTransformer extends AbstractTransformer {
 
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
-            Reference parentReference = (Reference)parentExtension.getValue();
+            Reference parentReference = (Reference) parentExtension.getValue();
             parentObservationId = findEnterpriseId(params, parentReference);
         }
 
-        org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
+        org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation) csvWriter;
+
         model.writeUpsert(id,
                 organisationId,
                 patientId,
