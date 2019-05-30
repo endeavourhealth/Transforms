@@ -9,10 +9,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
 import org.endeavourhealth.core.terminology.Read2;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -26,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.endeavourhealth.core.terminology.Read2.isBPCode;
 
@@ -112,7 +110,7 @@ public class JournalTransformer {
     /**
      * finds out what resource type an observation was previously saved as
      */
-    private static ResourceType findOriginalTargetResourceType(FhirResourceFiler fhirResourceFiler, Journal parser) throws Exception {
+    private static ResourceType findOriginalTargetResourceType(HasServiceSystemAndExchangeIdI hasServiceId, Journal parser) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
         potentialResourceTypes.add(ResourceType.Observation);
@@ -125,18 +123,22 @@ public class JournalTransformer {
         potentialResourceTypes.add(ResourceType.MedicationOrder);
 
         for (ResourceType resourceType: potentialResourceTypes) {
-            if (wasSavedAsResourceType(fhirResourceFiler, parser, resourceType)) {
+            if (wasSavedAsResourceType(hasServiceId, parser, resourceType)) {
                 return resourceType;
             }
         }
         return null;
     }
 
-    private static boolean wasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, Journal parser, ResourceType resourceType) throws Exception {
+    private static boolean wasSavedAsResourceType(HasServiceSystemAndExchangeIdI hasServiceId, Journal parser, ResourceType resourceType) throws Exception {
         String sourceId = VisionCsvHelper.createUniqueId(parser.getPatientID(), parser.getObservationID());
-        Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
-        Reference edsReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(sourceReference, fhirResourceFiler);
-        return edsReference != null;
+//        Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
+//        Reference edsReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(sourceReference, fhirResourceFiler);
+//        return edsReference != null;
+
+        //fix for VE-6
+        UUID uuid = IdHelper.getEdsResourceId(hasServiceId.getServiceId(), resourceType, sourceId);
+        return uuid != null;
     }
 
     public static void createResource(Journal parser,
