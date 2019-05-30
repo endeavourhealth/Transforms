@@ -3,6 +3,8 @@ package org.endeavourhealth.transform.barts;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.common.*;
@@ -43,7 +45,10 @@ public abstract class BartsCsvToFhirTransformer {
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
-        LOG.info("Invoking Barts CSV transformer for " + files.size() + " files using and service " + fhirResourceFiler.getServiceId());
+        UUID serviceId = fhirResourceFiler.getServiceId();
+        Service service = DalProvider.factoryServiceDal().getById(serviceId);
+        ExchangeHelper.filterFileTypes(files, service);
+        LOG.info("Invoking Barts CSV transformer for " + files.size() + " files for service " + service.getName() + " " + service.getId());
 
         //if filtering by file type, we may end up with exchanges containing no files
         if (files.isEmpty()) {

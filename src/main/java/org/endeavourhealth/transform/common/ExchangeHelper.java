@@ -3,11 +3,16 @@ package org.endeavourhealth.transform.common;
 import com.google.gson.JsonSyntaxException;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.JsonSerializer;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class ExchangeHelper {
+    private static final Logger LOG = LoggerFactory.getLogger(ExchangeHelper.class);
 
     public static List<ExchangePayloadFile> parseExchangeBody(String exchangeBody) {
         return parseExchangeBody(exchangeBody, true);
@@ -79,4 +84,22 @@ public class ExchangeHelper {
 
         return files;
     }*/
+
+    public static void filterFileTypes(List<ExchangePayloadFile> files, Service service) throws Exception {
+        String odsCode = service.getLocalId();
+
+        Set<String> filteredTypes = TransformConfig.instance().getFilteredFileTypes(odsCode);
+        if (filteredTypes == null || filteredTypes.isEmpty()) {
+            return;
+        }
+
+        LOG.info("Will only process " + filteredTypes.size() + " file types: " + String.join(", ", filteredTypes));
+
+        for (int i=files.size()-1; i>=0; i--) {
+            ExchangePayloadFile file = files.get(i);
+            if (!filteredTypes.contains(file.getType())) {
+                files.remove(i);
+            }
+        }
+    }
 }

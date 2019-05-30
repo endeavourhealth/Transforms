@@ -7,10 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class TransformConfig {
@@ -33,6 +30,7 @@ public class TransformConfig {
     private boolean isLive;
     private int resourceSaveBatchSize;
     private boolean allowMissingConceptIdsInSubscriberTransform;
+    private Map<String, Set<String>> hmFileTypeFilters;
 
     //singleton
     private static TransformConfig instance;
@@ -68,6 +66,7 @@ public class TransformConfig {
         this.resourceCacheTempPath = null; //using null means we'll offload resources to the DB
         this.isLive = false;
         this.resourceSaveBatchSize = 50;
+        this.hmFileTypeFilters = new HashMap<>();
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
@@ -190,6 +189,28 @@ public class TransformConfig {
                 }
             }
 
+            node = json.get("file_type_filters");
+            if (node != null) {
+                for (int i=0; i<node.size(); i++) {
+                    JsonNode orgNode = node.get(i);
+                    JsonNode odsNode = orgNode.get("ods_code");
+                    JsonNode typesNode = orgNode.get("file_types");
+                    if (odsNode == null || typesNode == null) {
+                        LOG.error("Missing ods_code or file_types node under file_type_filters node");
+                        continue;
+                    }
+
+                    String odsCode = odsNode.asText();
+                    Set<String> fileTypes = new HashSet<>();
+
+                    for (int j=0; j<typesNode.size(); j++) {
+                        String fileType = typesNode.get(j).asText();
+                        fileTypes.add(fileType);
+                    }
+
+                    hmFileTypeFilters.put(odsCode, fileTypes);
+                }
+            }
 
             //ensure the temp path dir exists if set
             if (!Strings.isNullOrEmpty(resourceCacheTempPath)) {
@@ -270,5 +291,9 @@ public class TransformConfig {
 
     public boolean isAllowMissingConceptIdsInSubscriberTransform() {
         return allowMissingConceptIdsInSubscriberTransform;
+    }
+
+    public Set<String> getFilteredFileTypes(String odsCode) {
+        return hmFileTypeFilters.get(odsCode);
     }
 }

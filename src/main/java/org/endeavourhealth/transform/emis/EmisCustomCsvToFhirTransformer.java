@@ -2,6 +2,8 @@ package org.endeavourhealth.transform.emis;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class EmisCustomCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCustomCsvToFhirTransformer.class);
@@ -34,6 +37,9 @@ public class EmisCustomCsvToFhirTransformer {
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
+        UUID serviceId = fhirResourceFiler.getServiceId();
+        Service service = DalProvider.factoryServiceDal().getById(serviceId);
+        ExchangeHelper.filterFileTypes(files, service);
         LOG.info("Invoking EMIS CUSTOM CSV transformer for " + files.size() + " files and service " + fhirResourceFiler.getServiceId());
 
         //the processor is responsible for saving FHIR resources
