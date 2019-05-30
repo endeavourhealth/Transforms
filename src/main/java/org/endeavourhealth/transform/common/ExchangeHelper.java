@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 public class ExchangeHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ExchangeHelper.class);
@@ -85,7 +86,7 @@ public class ExchangeHelper {
         return files;
     }*/
 
-    public static void filterFileTypes(List<ExchangePayloadFile> files, Service service) throws Exception {
+    public static void filterFileTypes(List<ExchangePayloadFile> files, Service service, UUID exchangeId) throws Exception {
         String odsCode = service.getLocalId();
 
         Set<String> filteredTypes = TransformConfig.instance().getFilteredFileTypes(odsCode);
@@ -101,5 +102,8 @@ public class ExchangeHelper {
                 files.remove(i);
             }
         }
+
+        //write to exchange_event so we can see this happened
+        AuditWriter.writeExchangeEvent(exchangeId, "Automatically filtering on file types (" + String.join(", ", filteredTypes) + ") leaving " + files.size() + " files");
     }
 }

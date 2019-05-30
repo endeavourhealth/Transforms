@@ -39,7 +39,7 @@ public class EmisCustomCsvToFhirTransformer {
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         UUID serviceId = fhirResourceFiler.getServiceId();
         Service service = DalProvider.factoryServiceDal().getById(serviceId);
-        ExchangeHelper.filterFileTypes(files, service);
+        ExchangeHelper.filterFileTypes(files, service, fhirResourceFiler.getExchangeId());
         LOG.info("Invoking EMIS CUSTOM CSV transformer for " + files.size() + " files and service " + fhirResourceFiler.getServiceId());
 
         //the processor is responsible for saving FHIR resources

@@ -47,8 +47,13 @@ public abstract class EmisCsvToFhirTransformer {
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         UUID serviceId = processor.getServiceId();
         Service service = DalProvider.factoryServiceDal().getById(serviceId);
-        ExchangeHelper.filterFileTypes(files, service);
+        ExchangeHelper.filterFileTypes(files, service, processor.getExchangeId());
         LOG.info("Invoking EMIS CSV transformer for " + files.size() + " files and service " + service.getName() + " " + service.getId());
+
+        if (files.isEmpty()) {
+            LOG.info("No files, so returning out");
+            return;
+        }
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
         //so we dynamically work out the version when we load the first set of files

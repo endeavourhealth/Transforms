@@ -47,7 +47,7 @@ public abstract class BartsCsvToFhirTransformer {
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         UUID serviceId = fhirResourceFiler.getServiceId();
         Service service = DalProvider.factoryServiceDal().getById(serviceId);
-        ExchangeHelper.filterFileTypes(files, service);
+        ExchangeHelper.filterFileTypes(files, service, fhirResourceFiler.getExchangeId());
         LOG.info("Invoking Barts CSV transformer for " + files.size() + " files for service " + service.getName() + " " + service.getId());
 
         //if filtering by file type, we may end up with exchanges containing no files
