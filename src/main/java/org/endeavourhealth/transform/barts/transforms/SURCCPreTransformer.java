@@ -90,17 +90,6 @@ public class SURCCPreTransformer {
             stagingSURCC.setSurgicalAreaCode(parser.getSurgicalAreaCode().getString());
             stagingSURCC.setTheatreNumberCode(parser.getTheatreNumberCode().getString());
             stagingSURCC.setSpecialtyCode(parser.getSpecialityCode().getString());
-
-            ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-            auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
-            auditWrapper.auditValue(parser.getActiveIndicator().getPublishedFileId(), parser.getActiveIndicator().getRecordNumber(), parser.getActiveIndicator().getColIndex(), "ActiveInd");
-            auditWrapper.auditValue(parser.getPersonId().getPublishedFileId(), parser.getPersonId().getRecordNumber(), parser.getPersonId().getColIndex(), "PersonId");
-            auditWrapper.auditValue(parser.getEncounterId().getPublishedFileId(), parser.getEncounterId().getRecordNumber(), parser.getEncounterId().getColIndex(), "EncounterId");
-            auditWrapper.auditValue(parser.getInstitutionCode().getPublishedFileId(), parser.getInstitutionCode().getRecordNumber(), parser.getInstitutionCode().getColIndex(), "InstitutionCode");
-            auditWrapper.auditValue(parser.getDepartmentCode().getPublishedFileId(), parser.getDepartmentCode().getRecordNumber(), parser.getDepartmentCode().getColIndex(), "DepartmentCode");
-            auditWrapper.auditValue(parser.getTheatreNumberCode().getPublishedFileId(), parser.getTheatreNumberCode().getRecordNumber(), parser.getTheatreNumberCode().getColIndex(), "TheatreNumberCode");
-            auditWrapper.auditValue(parser.getSpecialityCode().getPublishedFileId(), parser.getSpecialityCode().getRecordNumber(), parser.getSpecialityCode().getColIndex(), "SpecialtyCode");
-            stagingSURCC.setAudit(auditWrapper);
         }
 
         UUID serviceId = csvHelper.getServiceId();
