@@ -5,6 +5,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingDIAGNDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingDIAGN;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.DIAGN;
@@ -48,6 +49,11 @@ public class DIAGNPreTransformer {
 
         CsvCell diagnosisIdCell = parser.getDiagnosisID();
         stagingDIAGN.setDiagnosisId(diagnosisIdCell.getInt());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(diagnosisIdCell.getPublishedFileId(), diagnosisIdCell.getRecordNumber());
+        stagingDIAGN.setAudit(audit);
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingDIAGN.setActiveInd(activeInd);

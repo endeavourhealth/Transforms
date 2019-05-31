@@ -153,6 +153,18 @@ public class ConditionBuilder extends ResourceBuilderBase
         createOrUpdateIsConfidentialExtension(isConfidential, sourceCells);
     }
 
+    public void setIsPrimary(boolean isPrimary, CsvCell... sourceCells) {
+
+        //only use the extension to record the positive, remove for the negative
+        if (isPrimary) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.IS_PRIMARY, true);
+            auditBooleanExtension(extension, sourceCells);
+
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.IS_PRIMARY);
+        }
+    }
+
     public void setOnset(DateTimeType dateTimeType, CsvCell... sourceCells) {
         this.condition.setOnset(dateTimeType);
 

@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingProblemDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProblem;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -62,6 +63,11 @@ public class ProblemPreTransformer {
         obj.setDtReceived(csvHelper.getDataDate());
         obj.setMrn(parser.getMrn().getString());
         obj.setUpdatedBy(parser.getUpdatedBy().getString());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(problemIdCell.getPublishedFileId(), problemIdCell.getRecordNumber());
+        obj.setAudit(audit);
 
         CsvCell onsetDtCell = parser.getOnsetDate();
         obj.setOnsetDtTm(BartsCsvHelper.parseDate(onsetDtCell));

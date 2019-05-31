@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingDiagnosisDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingDiagnosis;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -40,6 +41,8 @@ public class DiagnosisPreTransformer {
 
         CsvCell diagnosisIdCell = parser.getDiagnosisId();
 
+
+
         CsvCell personIdCell = parser.getPersonId();
         if (personIdCell.isEmpty()) {
             TransformWarnings.log(LOG, csvHelper, "No person ID found for Diagnosis for diagnosis ID {}", diagnosisIdCell);
@@ -55,6 +58,11 @@ public class DiagnosisPreTransformer {
         obj.setExchangeId(parser.getExchangeId().toString());
         obj.setDtReceived(csvHelper.getDataDate());
         obj.setDiagnosisId(diagnosisIdCell.getInt());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(diagnosisIdCell.getPublishedFileId(), diagnosisIdCell.getRecordNumber());
+        obj.setAudit(audit);
 
         //NOTE: all data columns are available when active_ind = 1 or 0
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
@@ -179,23 +187,16 @@ public class DiagnosisPreTransformer {
 
         CsvCell diagnosisCell = parser.getDiagnosis();
         if (!diagnosisCell.isEmpty()) {
-         notes.append("Diagnosis: " + diagnosisCell.getString());
+         notes.append("Diagnosis: " + diagnosisCell.getString()+". ");
         }
-
-        CsvCell classification = parser.getClassification();
-        if (!classification.isEmpty()) {
-            notes.append("Classification: " + classification.getString());
-        }
-
         CsvCell clinicalService = parser.getClinService();
         if (!clinicalService.isEmpty()) {
-            notes.append("ClinService: "+ clinicalService.getString());
+            notes.append("ClinService: "+ clinicalService.getString()+". ");
         }
         CsvCell qualifier = parser.getQualifier();
         if (!qualifier.isEmpty()) {
             notes.append("Qualifier: "+qualifier.getString()+". ");
         }
-
         CsvCell severity = parser.getSeverity();
         if (!severity.isEmpty()) {
             notes.append("Severity: "+severity.getString()+". ");

@@ -171,18 +171,24 @@ public abstract class BartsCsvToFhirTransformer {
             DiagnosisPreTransformer.transform(getParsers(parserMap, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper);
             ProblemPreTransformer.transform(getParsers(parserMap, "Problem", true), fhirResourceFiler, csvHelper);
 
-            //TODO - run these again for Diagnosis records?
+            //TODO:  work out ordering and structure of CDS file processing which contain Procedures and Diagnosis records
             SusInpatientTailPreTransformer.transform(getParsers(parserMap, "SusInpatientTail", true), fhirResourceFiler,csvHelper);
             SusOutpatientTailPreTransformer.transform(getParsers(parserMap, "SusOutpatientTail", true), fhirResourceFiler,csvHelper);
             SusEmergencyTailPreTransformer.transform(getParsers(parserMap,"SusEmergencyTail",true),fhirResourceFiler,csvHelper);
             SusInpatientPreTransformer.transform(getParsers(parserMap, "SusInpatient", true), fhirResourceFiler,csvHelper);
             SusOutpatientPreTransformer.transform(getParsers(parserMap, "SusOutpatient", true), fhirResourceFiler,csvHelper);
             SusEmergencyPreTransformer.transform(getParsers(parserMap,"SusEmergency",true),fhirResourceFiler,csvHelper);
-
-
-            save all diagnoses to the DB
-            fhirResourceFiler.waitUntilEverythingIsSaved();
             */
+
+            //TODO - uncomment calls for assurance
+            //CONDITIONS - execute the staging conditions to target procedures stored proc
+            //csvHelper.processStagingForTargetConditions();
+
+            //Condition data transformation on final condition target staging table
+            //ConditionTargetTransformer.transform(fhirResourceFiler, csvHelper);
+
+            //fhirResourceFiler.waitUntilEverythingIsSaved();
+
 
             //other clinical transformers
             CLEVETransformer.transform(getParsers(parserMap, "CLEVE", true), fhirResourceFiler, csvHelper);
