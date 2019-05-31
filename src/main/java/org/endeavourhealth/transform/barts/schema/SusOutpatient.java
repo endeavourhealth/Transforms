@@ -85,7 +85,9 @@ public class SusOutpatient extends AbstractFixedParser implements CdsRecordI {
         return super.getCell("WithheldFlag");
     }
 
-
+    public CsvCell getPrimaryDiagnosisICD() {return super.getCell("PrimaryDiagnosisICD"); }
+    public CsvCell getSecondaryDiagnosisICD() {return super.getCell("SecondaryDiagnosisICD");}
+    public CsvCell getAdditionalSecondaryDiagnosisICD() {return super.getCell("2nd50thSecondaryDiagnosisICD");}
 
     /*public String getConsultantCode() {
         return super.getString("ConsultantCode");

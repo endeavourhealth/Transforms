@@ -20,6 +20,9 @@ public interface CdsRecordI {
     CsvCell getSecondaryProcedureOPCS();
     CsvCell getSecondaryProcedureDate();
     CsvCell getAdditionalSecondaryProceduresOPCS();
+    CsvCell getPrimaryDiagnosisICD();
+    CsvCell getSecondaryDiagnosisICD();
+    CsvCell getAdditionalSecondaryDiagnosisICD();
 
     CsvCurrentState getCurrentState();
     DateFormat getDateFormat();

@@ -58,7 +58,11 @@ public class SusInpatient extends AbstractFixedParser implements CdsRecordI {
     public CsvCell getConsultantCode() { return super.getCell("ConsultantCode");}
     public CsvCell getWithheldFlag() { return super.getCell("WithheldFlag");}
 
-//    public CsvCell getCDSRecordType() {
+    public CsvCell getPrimaryDiagnosisICD() {return super.getCell("PrimaryDiagnosisICD"); }
+    public CsvCell getSecondaryDiagnosisICD() {return super.getCell("SecondaryDiagnosisICD");}
+    public CsvCell getAdditionalSecondaryDiagnosisICD() {return super.getCell("2nd50thSecondaryDiagnosisICD");}
+
+    //    public CsvCell getCDSRecordType() {
 //        return super.getCell("CDSRecordType");
 //    }
 //

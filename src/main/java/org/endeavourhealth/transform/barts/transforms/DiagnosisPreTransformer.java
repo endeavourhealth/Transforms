@@ -27,12 +27,8 @@ public class DiagnosisPreTransformer {
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
-                try {
+                //no try/catch here, since any failure here means we don't want to continue
                     processRecord((org.endeavourhealth.transform.barts.schema.Diagnosis) parser, csvHelper);
-
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
             }
         }
 
@@ -65,13 +61,14 @@ public class DiagnosisPreTransformer {
         obj.setActiveInd(activeInd);
 
         CsvCell encounterCell = parser.getEncounterIdSanitised();
-        obj.setEncounterId(encounterCell.getInt()); // Remember encounter ids from Procedure have a trailing .00
+        obj.setEncounterId(encounterCell.getInt());
 
         obj.setPersonId(personIdCell.getInt());
         obj.setMrn(parser.getMRN().getString());
 
         CsvCell dtCell = parser.getDiagnosisDate();
         obj.setDiagDtTm(BartsCsvHelper.parseDate(dtCell));
+
 
         CsvCell diagnosisTypeCell = parser.getDiagType();
         obj.setDiagType(diagnosisTypeCell.getString());
@@ -180,6 +177,20 @@ public class DiagnosisPreTransformer {
         //collect up all the free text elements: classification, rank, axis, severity, certainty and secondary descriptions'
         StringBuilder notes = new StringBuilder();
 
+        CsvCell diagnosisCell = parser.getDiagnosis();
+        if (!diagnosisCell.isEmpty()) {
+         notes.append("Diagnosis: " + diagnosisCell.getString());
+        }
+
+        CsvCell classification = parser.getClassification();
+        if (!classification.isEmpty()) {
+            notes.append("Classification: " + classification.getString());
+        }
+
+        CsvCell clinicalService = parser.getClinService();
+        if (!clinicalService.isEmpty()) {
+            notes.append("ClinService: "+ clinicalService.getString());
+        }
         CsvCell qualifier = parser.getQualifier();
         if (!qualifier.isEmpty()) {
             notes.append("Qualifier: "+qualifier.getString()+". ");
@@ -189,12 +200,18 @@ public class DiagnosisPreTransformer {
         if (!severity.isEmpty()) {
             notes.append("Severity: "+severity.getString()+". ");
         }
-
+        CsvCell severityClass = parser.getSeverityClass();
+        if (!severityClass.isEmpty()) {
+            notes.append("SeverityClass: "+severityClass.getString()+". ");
+        }
         CsvCell certainty = parser.getCertainty();
         if (!certainty.isEmpty()) {
             notes.append("Certainty: "+certainty.getString()+". ");
         }
-
+        CsvCell probability = parser.getProbability();
+        if (!probability.isEmpty()) {
+            notes.append("Probability: "+ probability.getString()+". ");
+        }
         CsvCell secondaryDescription = parser.getSecondaryDescription();
         if (!secondaryDescription.isEmpty()) {
             notes.append("Secondary Description: "+secondaryDescription.getString()+". ");

@@ -84,6 +84,9 @@ public class SusEmergency extends AbstractFixedParser implements CdsRecordI {
         return super.getCell("WithheldFlag");
     }
 
+    public CsvCell getPrimaryDiagnosisICD() {return super.getCell("PrimaryDiagnosisICD"); }
+    public CsvCell getSecondaryDiagnosisICD() {return super.getCell("SecondaryDiagnosisICD");}
+    public CsvCell getAdditionalSecondaryDiagnosisICD() {return super.getCell("2nd50thSecondaryDiagnosisICD");}
 
     /*public Date getArrivalDate() throws TransformException {
         return super.getDate("ArrivalDate");
