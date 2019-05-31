@@ -20,10 +20,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.endeavourhealth.core.terminology.Read2.isBPCode;
 
@@ -72,35 +69,38 @@ public class JournalTransformer {
                                        VisionCsvHelper csvHelper,
                                        String version) throws Exception {
 
-        ResourceType resourceType = findOriginalTargetResourceType(fhirResourceFiler, parser);
-        if (resourceType != null) {
-            switch (resourceType) {
-                case Observation:
-                    createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
-                    break;
-                case Condition:
-                    createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
-                    break;
-                case Procedure:
-                    createOrDeleteProcedure(parser, fhirResourceFiler, csvHelper);
-                    break;
-                case AllergyIntolerance:
-                    createOrDeleteAllergy(parser, fhirResourceFiler, csvHelper);
-                    break;
-                case FamilyMemberHistory:
-                    createOrDeleteFamilyMemberHistory(parser, fhirResourceFiler, csvHelper);
-                    break;
-                case Immunization:
-                    createOrDeleteImmunization(parser, fhirResourceFiler, csvHelper);
-                    break;
-                case MedicationStatement:
-                    createOrDeleteMedicationStatement(parser, fhirResourceFiler, csvHelper);
-                    break;
-                case MedicationOrder:
-                    createOrDeleteMedicationIssue(parser, fhirResourceFiler, csvHelper);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
+        Set<ResourceType> resourceTypes = findOriginalTargetResourceType(fhirResourceFiler, parser);
+
+        for (ResourceType resourceType: resourceTypes) {
+            if (resourceType != null) {
+                switch (resourceType) {
+                    case Observation:
+                        createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
+                        break;
+                    case Condition:
+                        createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
+                        break;
+                    case Procedure:
+                        createOrDeleteProcedure(parser, fhirResourceFiler, csvHelper);
+                        break;
+                    case AllergyIntolerance:
+                        createOrDeleteAllergy(parser, fhirResourceFiler, csvHelper);
+                        break;
+                    case FamilyMemberHistory:
+                        createOrDeleteFamilyMemberHistory(parser, fhirResourceFiler, csvHelper);
+                        break;
+                    case Immunization:
+                        createOrDeleteImmunization(parser, fhirResourceFiler, csvHelper);
+                        break;
+                    case MedicationStatement:
+                        createOrDeleteMedicationStatement(parser, fhirResourceFiler, csvHelper);
+                        break;
+                    case MedicationOrder:
+                        createOrDeleteMedicationIssue(parser, fhirResourceFiler, csvHelper);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
+                }
             }
         }
     }
@@ -108,9 +108,10 @@ public class JournalTransformer {
 
 
     /**
-     * finds out what resource type an observation was previously saved as
+     * finds out what resource type an observation was previously saved as.
+     * Potentially saved with multiple resource type mappings, so collect them up and use for deletions
      */
-    private static ResourceType findOriginalTargetResourceType(HasServiceSystemAndExchangeIdI hasServiceId, Journal parser) throws Exception {
+    private static Set<ResourceType> findOriginalTargetResourceType(HasServiceSystemAndExchangeIdI hasServiceId, Journal parser) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
         potentialResourceTypes.add(ResourceType.Observation);
@@ -122,19 +123,18 @@ public class JournalTransformer {
         potentialResourceTypes.add(ResourceType.MedicationStatement);
         potentialResourceTypes.add(ResourceType.MedicationOrder);
 
+        Set<ResourceType> ret = new HashSet<>();
+
         for (ResourceType resourceType: potentialResourceTypes) {
             if (wasSavedAsResourceType(hasServiceId, parser, resourceType)) {
-                return resourceType;
+                ret.add(resourceType);
             }
         }
-        return null;
+        return ret;
     }
 
     private static boolean wasSavedAsResourceType(HasServiceSystemAndExchangeIdI hasServiceId, Journal parser, ResourceType resourceType) throws Exception {
         String sourceId = VisionCsvHelper.createUniqueId(parser.getPatientID(), parser.getObservationID());
-//        Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
-//        Reference edsReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(sourceReference, fhirResourceFiler);
-//        return edsReference != null;
 
         //fix for VE-6
         UUID uuid = IdHelper.getEdsResourceId(hasServiceId.getServiceId(), resourceType, sourceId);
