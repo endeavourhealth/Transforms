@@ -42,7 +42,7 @@ public class ProcedureTargetTransformer {
     }
 
 
-    public static void createProcedures(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    private static void createProcedures(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         // retrieve the target procedures for the current exchangeId
         List<StagingProcedureTarget> targetProcedures = csvHelper.retrieveTargetProcedures();
@@ -60,12 +60,11 @@ public class ProcedureTargetTransformer {
             if (isDeleted) {
 
                 // retrieve the existing Procedure resource to perform the deletion on
-                Procedure existingProcedure
-                        = (Procedure) csvHelper.retrieveResourceForLocalId(ResourceType.Procedure, uniqueId);
+                Procedure existingProcedure = (Procedure) csvHelper.retrieveResourceForLocalId(ResourceType.Procedure, uniqueId);
 
                 if (existingProcedure != null) {
-                    ProcedureBuilder procedureBuilder = new ProcedureBuilder(existingProcedure);
-                    //TODO: procedureBuilder.setDeletedAudit(activeCell);   //build up audit from text?
+                    ProcedureBuilder procedureBuilder = new ProcedureBuilder(existingProcedure, targetProcedure.getAudit());
+
                     //remember to pass in false since this existing procedure is already ID mapped
                     fhirResourceFiler.deletePatientResource(null, false, procedureBuilder);
                 } else {
@@ -75,8 +74,8 @@ public class ProcedureTargetTransformer {
                 continue;
             }
 
-            // create the FHIR Procedure resource - NOTE //TODO: no individual audit cells set
-            ProcedureBuilder procedureBuilder = new ProcedureBuilder();
+            // create the FHIR Procedure resource - NOTE
+            ProcedureBuilder procedureBuilder = new ProcedureBuilder(null, targetProcedure.getAudit());
             procedureBuilder.setId(uniqueId);
 
             //we always have a performed date, so no error handling required
@@ -129,8 +128,9 @@ public class ProcedureTargetTransformer {
 
             // can be either of these three coded types
             String procedureCodeType = targetProcedure.getProcedureType().trim();
-            if (procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED) ||
-                    procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED_CT)) {
+            if (procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)
+                    || procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED_CT)) {
+
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
 
             } else if (procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
@@ -156,7 +156,7 @@ public class ProcedureTargetTransformer {
             // notes / free text
             String freeText = targetProcedure.getFreeText();
             if (!Strings.isNullOrEmpty(freeText)) {
-                procedureBuilder.addNotes("Notes: " + freeText);
+                procedureBuilder.addNotes(freeText);
             }
             // qualifier text as more notes
             String qualifierText = targetProcedure.getQualifier();

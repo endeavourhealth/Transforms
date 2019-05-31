@@ -5,6 +5,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingPROCEDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingPROCE;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.PROCE;
@@ -41,7 +42,6 @@ public class PROCEPreTransformer {
 
     public static void processRecord(PROCE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-
         StagingPROCE stagingPROCE = new StagingPROCE();
 
         stagingPROCE.setActiveInd(parser.getActiveIndicator().getIntAsBoolean());
@@ -50,6 +50,11 @@ public class PROCEPreTransformer {
 
         CsvCell procedureIdCell = parser.getProcedureID();
         stagingPROCE.setProcedureId(procedureIdCell.getInt());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(procedureIdCell.getPublishedFileId(), procedureIdCell.getRecordNumber());
+        stagingPROCE.setAudit(audit);
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingPROCE.setActiveInd(activeInd);

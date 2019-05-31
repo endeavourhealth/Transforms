@@ -4,9 +4,11 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsTailDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsTail;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCdsTail;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.CdsTailRecordI;
 import org.endeavourhealth.transform.common.AbstractCsvCallable;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,33 +23,38 @@ public class CdsTailPreTransformerBase {
     protected static void processTailRecord(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
 
         processTailRecordProcedure(parser,csvHelper,susRecordType);
-        processTailRecordCondition(parser,csvHelper,susRecordType);
+        //processTailRecordCondition(parser,csvHelper,susRecordType); //taking out so the procedures transform still works
 
     }
     private static void processTailRecordProcedure(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception{
 
-
-        StagingCdsTail staging = new StagingCdsTail();
-        String personId = parser.getPersonId().getString();
+        CsvCell personIdCell = parser.getPersonId();
+        String personId = personIdCell.getString();
         if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
             return;
         }
-        staging.setPersonId(parser.getPersonId().getInt());
-        staging.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
-        staging.setExchangeId(csvHelper.getExchangeId().toString());
-        staging.setDtReceived(csvHelper.getDataDate());
-        staging.setSusRecordType(susRecordType);
-        staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
-        staging.setMrn(parser.getLocalPatientId().getString());
-        staging.setNhsNumber(parser.getNhsNumber().getString());
 
-        staging.setEncounterId(parser.getEncounterId().getInt());
-        staging.setResponsibleHcpPersonnelId(parser.getResponsiblePersonnelId().getInt());
+        StagingCdsTail stagingObj = new StagingCdsTail();
 
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(personIdCell.getPublishedFileId(), personIdCell.getRecordNumber());
+        stagingObj.setAudit(audit);
+
+        stagingObj.setPersonId(personIdCell.getInt());
+        stagingObj.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
+        stagingObj.setExchangeId(csvHelper.getExchangeId().toString());
+        stagingObj.setDtReceived(csvHelper.getDataDate());
+        stagingObj.setSusRecordType(susRecordType);
+        stagingObj.setCdsUpdateType(parser.getCdsUpdateType().getInt());
+        stagingObj.setMrn(parser.getLocalPatientId().getString());
+        stagingObj.setNhsNumber(parser.getNhsNumber().getString());
+
+        stagingObj.setEncounterId(parser.getEncounterId().getInt());
+        stagingObj.setResponsibleHcpPersonnelId(parser.getResponsiblePersonnelId().getInt());
 
         UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SaveProcedureDataCallable(parser.getCurrentState(), staging, serviceId));
-
+        csvHelper.submitToThreadPool(new SaveProcedureDataCallable(parser.getCurrentState(), stagingObj, serviceId));
     }
 
     private static void processTailRecordCondition(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception{

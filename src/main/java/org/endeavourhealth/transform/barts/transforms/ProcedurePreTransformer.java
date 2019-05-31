@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingProcedureDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -42,11 +43,8 @@ public class ProcedurePreTransformer {
 
     private static void processRecord(org.endeavourhealth.transform.barts.schema.Procedure parser, BartsCsvHelper csvHelper) throws Exception {
 
-
         // Observer not null conditions in DB
         CsvCell encounterCell = parser.getEncounterIdSanitised();
-
-        StagingProcedure obj = new StagingProcedure();
         String personId = csvHelper.findPersonIdFromEncounterId(encounterCell);
 
         if (Strings.isNullOrEmpty(personId)) {
@@ -59,19 +57,28 @@ public class ProcedurePreTransformer {
             return;
         }
 
-        obj.setLookupPersonId(Integer.valueOf(personId));
-        obj.setExchangeId(parser.getExchangeId().toString());
-        obj.setDtReceived(csvHelper.getDataDate());
-        obj.setMrn(parser.getMrn().getString());
+        StagingProcedure stagingObj = new StagingProcedure();
+
+        stagingObj.setLookupPersonId(Integer.valueOf(personId));
+        stagingObj.setExchangeId(parser.getExchangeId().toString());
+        stagingObj.setDtReceived(csvHelper.getDataDate());
+
+        CsvCell mrnCell = parser.getMrn();
+        stagingObj.setMrn(mrnCell.getString());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(mrnCell.getPublishedFileId(), mrnCell.getRecordNumber());
+        stagingObj.setAudit(audit);
 
         CsvCell nhsNumberCell = parser.getNhsNumberSanitised();
-        obj.setNhsNumber(nhsNumberCell.getString());
+        stagingObj.setNhsNumber(nhsNumberCell.getString());
 
         CsvCell dobCell = parser.getDateOfBirth();
-        obj.setDateOfBirth(dobCell.getDate());
+        stagingObj.setDateOfBirth(dobCell.getDate());
 
-        obj.setEncounterId(encounterCell.getInt()); // Remember encounter ids from Procedure have a trailing .00
-        obj.setConsultant(parser.getConsultant().getString());
+        stagingObj.setEncounterId(encounterCell.getInt()); // Remember encounter ids from Procedure have a trailing .00
+        stagingObj.setConsultant(parser.getConsultant().getString());
 
         CsvCell dtCell = parser.getProcedureDateTime();
 
@@ -80,14 +87,14 @@ public class ProcedurePreTransformer {
             return;
         }*/
 
-        obj.setProcDtTm(BartsCsvHelper.parseDate(dtCell));
-        obj.setUpdatedBy(parser.getUpdatedBy().getString());
-        obj.setCreateDtTm(parser.getCreateDateTime().getDate());
-        obj.setComments(parser.getComment().getString());
+        stagingObj.setProcDtTm(BartsCsvHelper.parseDate(dtCell));
+        stagingObj.setUpdatedBy(parser.getUpdatedBy().getString());
+        stagingObj.setCreateDtTm(parser.getCreateDateTime().getDate());
+        stagingObj.setComments(parser.getComment().getString());
 
         //proceCdType is either "OPCS4" or "SNOMED CT". Snomed description Ids are used.
         String procCdType = parser.getProcedureCodeType().getString();
-        obj.setProcCdType(procCdType);
+        stagingObj.setProcCdType(procCdType);
 
         String procTerm = "";
         String procCd = parser.getProcedureCode().getString();
@@ -111,24 +118,24 @@ public class ProcedurePreTransformer {
             throw new Exception("Unexpected coding scheme " + procCdType);
         }
 
-        obj.setProcCd(procCd);
-        obj.setProcTerm(procTerm);
+        stagingObj.setProcCd(procCd);
+        stagingObj.setProcTerm(procTerm);
 
-        obj.setWard(parser.getWard().getString());
-        obj.setSite(parser.getSite().getString());
+        stagingObj.setWard(parser.getWard().getString());
+        stagingObj.setSite(parser.getSite().getString());
 
         String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, parser.getConsultant().getString());
         if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
-            obj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
+            stagingObj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
         }
 
         String recordedByPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID,parser.getUpdatedBy().getString());
         if (!Strings.isNullOrEmpty(recordedByPersonnelId)) {
-            obj.setLookupRecordedByPersonnelId(Integer.valueOf(recordedByPersonnelId));
+            stagingObj.setLookupRecordedByPersonnelId(Integer.valueOf(recordedByPersonnelId));
         }
 
         UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new ProcedurePreTransformer.saveDataCallable(parser.getCurrentState(), obj, serviceId));
+        csvHelper.submitToThreadPool(new ProcedurePreTransformer.saveDataCallable(parser.getCurrentState(), stagingObj, serviceId));
     }
 
     private static class saveDataCallable extends AbstractCsvCallable {

@@ -46,6 +46,11 @@ public class SURCCPreTransformer {
         CsvCell surgicalCaseIdCell = parser.getSurgicalCaseId();
         stagingSURCC.setSurgicalCaseId(surgicalCaseIdCell.getInt());
 
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(surgicalCaseIdCell.getPublishedFileId(), surgicalCaseIdCell.getRecordNumber());
+        stagingSURCC.setAudit(audit);
+
         CsvCell extractedDateCell = parser.getExtractDateTime();
         stagingSURCC.setDtExtract(BartsCsvHelper.parseDate(extractedDateCell));
 

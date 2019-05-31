@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsC
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCds;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCdsCount;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsSusHelper;
@@ -29,13 +30,21 @@ public abstract class CdsPreTransformerBase {
 
     protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
         processProcedures(parser,csvHelper,susRecordType);
-        processDiagnoses(parser,csvHelper,susRecordType);
+        //processDiagnoses(parser,csvHelper,susRecordType); //taking out so the procedures transform still works
     }
 
     private static void processProcedures(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
 
         StagingCds stagingCds = new StagingCds();
-        stagingCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
+
+        CsvCell cdsUniqueIdCell = parser.getCdsUniqueId();
+        stagingCds.setCdsUniqueIdentifier(cdsUniqueIdCell.getString());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(cdsUniqueIdCell.getPublishedFileId(), cdsUniqueIdCell.getRecordNumber());
+        stagingCds.setAudit(audit);
+
         stagingCds.setExchangeId(csvHelper.getExchangeId().toString());
         stagingCds.setDtReceived(csvHelper.getDataDate());
         stagingCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
@@ -92,6 +101,11 @@ public abstract class CdsPreTransformerBase {
         stagingCdsCount.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCdsCount.setSusRecordType(susRecordType);
         stagingCdsCount.setProcedureCount(procedureCount);
+
+        //audit that our staging object came from this file and record
+        audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(cdsUniqueIdCell.getPublishedFileId(), cdsUniqueIdCell.getRecordNumber());
+        stagingCdsCount.setAudit(audit);
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SaveCdsCountCallable(parser.getCurrentState(), stagingCdsCount, serviceId));

@@ -6,7 +6,6 @@ import org.endeavourhealth.core.database.dal.publisherStaging.StagingSURCPDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURCP;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-//import org.endeavourhealth.core.database.dal.reference.CernerProcedureMapDalI;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.SURCP;
@@ -17,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+
+//import org.endeavourhealth.core.database.dal.reference.CernerProcedureMapDalI;
 
 public class SURCPPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SURCPPreTransformer.class);
@@ -47,20 +48,25 @@ public class SURCPPreTransformer {
         CsvCell procedureIdCell = parser.getSurgicalCaseProcedureId();
         stagingSURCP.setSurgicalCaseProcedureId(procedureIdCell.getInt());
 
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(procedureIdCell.getPublishedFileId(), procedureIdCell.getRecordNumber());
+        stagingSURCP.setAudit(audit);
+
         CsvCell extractedDateCell = parser.getExtractDateTime();
         stagingSURCP.setDtExtract(BartsCsvHelper.parseDate(extractedDateCell));
 
         boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
         stagingSURCP.setActiveInd(activeInd);
 
-        LOG.trace("Processing SURCP procedure ID " + procedureIdCell.getString() + " active ind = " + activeInd);
+        //LOG.trace("Processing SURCP procedure ID " + procedureIdCell.getString() + " active ind = " + activeInd);
 
         if (activeInd) {
 
             CsvCell surgicalCaseIdCell = parser.getSurgicalCaseId();
             stagingSURCP.setSurgicalCaseId(surgicalCaseIdCell.getInt());
 
-            LOG.trace("Surgical case ID " + surgicalCaseIdCell.getString());
+            //LOG.trace("Surgical case ID " + surgicalCaseIdCell.getString());
 
             //we don't strictly need the person ID for loading the staging table, but we do if
             //we want to filter to a subset of patients
@@ -126,9 +132,13 @@ public class SURCPPreTransformer {
                 }
             }
 
-            stagingSURCP.setProcedureText(parser.getProcedureText().getString());
             stagingSURCP.setModifierText(modifierText);
             stagingSURCP.setPrimaryProcedureIndicator(primaryProcIndicator);
+
+            CsvCell procedureTextCell = parser.getProcedureText();
+            if (!procedureTextCell.isEmpty()) {
+                stagingSURCP.setProcedureText(procedureTextCell.getString());
+            }
 
             CsvCell surgeonIdCell = parser.getSurgeonPersonnelId();
             if (!BartsCsvHelper.isEmptyOrIsZero(surgeonIdCell)) {
@@ -147,17 +157,18 @@ public class SURCPPreTransformer {
                 stagingSURCP.setDtStop(d);
             }
 
+            CsvCell woundClassCell = parser.getWoundClassCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(woundClassCell)) {
+                stagingSURCP.setWoundClassCode(woundClassCell.getInt());
 
-            stagingSURCP.setWoundClassCode(parser.getWoundClassCode().getString());
+                CernerCodeValueRef cvref = csvHelper.lookupCodeRef(CodeValueSet.WOUND_CLASS, woundClassCell);
+                if (cvref == null) {
+                    throw new Exception("Failed to find CVREF record for code " + woundClassCell.getString());
+                }
+                String term = cvref.getCodeDispTxt();
+                stagingSURCP.setLookupWoundClassTerm(term);
 
-            ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-            auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
-            auditWrapper.auditValue(parser.getActiveIndicator().getPublishedFileId(), parser.getActiveIndicator().getRecordNumber(), parser.getActiveIndicator().getColIndex(), "ActiveInd");
-            auditWrapper.auditValue(parser.getSurgeonPersonnelId().getPublishedFileId(), parser.getSurgeonPersonnelId().getRecordNumber(), parser.getSurgeonPersonnelId().getColIndex(), "SurgeonPersonnelId");
-            auditWrapper.auditValue(parser.getSurgicalCaseId().getPublishedFileId(), parser.getSurgicalCaseId().getRecordNumber(), parser.getSurgicalCaseId().getColIndex(), "SurgicalCaseId");
-            auditWrapper.auditValue(parser.getSurgicalCaseProcedureId().getPublishedFileId(), parser.getSurgicalCaseProcedureId().getRecordNumber(), parser.getSurgicalCaseProcedureId().getColIndex(), "SurgicalCaseProcedureId");
-            auditWrapper.auditValue(parser.getProcedureCode().getPublishedFileId(), parser.getProcedureCode().getRecordNumber(), parser.getProcedureCode().getColIndex(), "ProcedureCode");
-            stagingSURCP.setAudit(auditWrapper);
+            }
         }
 
         UUID serviceId = csvHelper.getServiceId();
