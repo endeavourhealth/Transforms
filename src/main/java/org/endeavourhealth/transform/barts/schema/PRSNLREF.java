@@ -80,11 +80,23 @@ public class PRSNLREF extends AbstractCsvParser {
     }
 
     public CsvCell getLastName() {
-        return super.getCell("NAME_LAST_TXT");
+        //there's one person who has an apostrophe in their name but the extract file has this
+        //has the null character 0x00. So correct this for this.
+        CsvCell ret = super.getCell("NAME_LAST_TXT");
+        if (ret.getString().contains("\0")) {
+            ret = CsvCell.factoryWithNewValue(ret, ret.getString().replace("/0", "'"));
+        }
+        return ret;
     }
 
     public CsvCell getFullFormatName()  {
-        return super.getCell("NAME_FULL_TXT");
+        //there's one person who has an apostrophe in their name but the extract file has this
+        //has the null character 0x00. So correct this for this.
+        CsvCell ret = super.getCell("NAME_FULL_TXT");
+        if (ret.getString().contains("\0")) {
+            ret = CsvCell.factoryWithNewValue(ret, ret.getString().replace("/0", "'"));
+        }
+        return ret;
     }
 
     public CsvCell getAddress1() {
