@@ -84,7 +84,7 @@ public class PRSNLREF extends AbstractCsvParser {
         //has the null character 0x00. So correct this for this.
         CsvCell ret = super.getCell("NAME_LAST_TXT");
         if (ret.getString().contains("\0")) {
-            ret = CsvCell.factoryWithNewValue(ret, ret.getString().replace("/0", "'"));
+            ret = CsvCell.factoryWithNewValue(ret, ret.getString().replace("\0", "'"));
         }
         return ret;
     }
@@ -94,7 +94,7 @@ public class PRSNLREF extends AbstractCsvParser {
         //has the null character 0x00. So correct this for this.
         CsvCell ret = super.getCell("NAME_FULL_TXT");
         if (ret.getString().contains("\0")) {
-            ret = CsvCell.factoryWithNewValue(ret, ret.getString().replace("/0", "'"));
+            ret = CsvCell.factoryWithNewValue(ret, ret.getString().replace("\0", "'"));
         }
         return ret;
     }
