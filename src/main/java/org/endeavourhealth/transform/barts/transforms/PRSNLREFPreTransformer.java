@@ -77,7 +77,15 @@ public class PRSNLREFPreTransformer {
             String hl7ReceiverUniqueId = createHl7PractitionerId(givenNameCell, middleNameCell, surnameCell, gmpCodeCell);
             String hl7ReceiverScope = csvHelper.getHl7ReceiverScope(); //practitioners use local scope
 
-            csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Practitioner, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope, false);
+            try {
+                csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Practitioner, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope, false);
+            } catch (Exception ex) {
+                LOG.error("Failed to find/copy ID for personnel ID [" + localUniqueId + "]");
+                LOG.error("HL7 ID [" + hl7ReceiverUniqueId + "]");
+                LOG.error("Record = " + parser.getCurrentState());
+                throw ex;
+            }
+
         }
     }
 
