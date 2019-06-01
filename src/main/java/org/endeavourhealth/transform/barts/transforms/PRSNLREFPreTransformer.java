@@ -81,8 +81,19 @@ public class PRSNLREFPreTransformer {
                 csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Practitioner, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope, false);
             } catch (Exception ex) {
                 LOG.error("Failed to find/copy ID for personnel ID [" + localUniqueId + "]");
+                for (char c: localUniqueId.toCharArray()) {
+                    LOG.error("Char " + c + " (" + (int)c + ")");
+                }
                 LOG.error("HL7 ID [" + hl7ReceiverUniqueId + "]");
+                for (char c: hl7ReceiverUniqueId.toCharArray()) {
+                    LOG.error("Char " + c + " (" + (int)c + ")");
+                }
+                LOG.error("Scipe [" + hl7ReceiverScope + "]");
+                for (char c: hl7ReceiverScope.toCharArray()) {
+                    LOG.error("Char " + c + " (" + (int)c + ")");
+                }
                 LOG.error("Record = " + parser.getCurrentState());
+
                 throw ex;
             }
 
