@@ -96,6 +96,16 @@ public class ProblemPreTransformer {
 
                 List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getReferences();
 
+                //note: we ended up with unmapped references in the list, so we need to detect them and forwards map these to DDS UUIDs
+                for (int i=0; i<previousReferencesDiscoveryIds.size(); i++) {
+                    Reference ref = previousReferencesDiscoveryIds.get(i);
+                    if (ref.getReference().contains(":")) {
+                        Reference mappedRef = IdHelper.convertLocallyUniqueReferenceToEdsReference(ref, fhirResourceFiler);
+                        LOG.info("Had to manually map reference " + ref + " to " + mappedRef + " in " + conditionBuilder);
+                        previousReferencesDiscoveryIds.set(i, mappedRef);
+                    }
+                }
+
                 //note: a previous bug has meant we've ended up with duplicate references in the contained list,
                 //because Reference doesn't implement equals or hashCode. The below function fails if the same reference
                 //is passed in twice, so we need to remove any duplicates here.
