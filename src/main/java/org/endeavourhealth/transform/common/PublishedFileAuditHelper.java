@@ -177,8 +177,12 @@ public class PublishedFileAuditHelper {
 
             try {
 
+                //the DAL now handles duplicates, so just save the full list so we
+                //don't need to spend time doing a read before each write
+                dal.auditFileRows(records);
+
                 //if we've done this file before, re-load the past audit
-                List<PublishedFileRecord> recordsToInsert = null;
+                /*List<PublishedFileRecord> recordsToInsert = null;
 
                 if (haveProcessedFileBefore) {
                     recordsToInsert = new ArrayList<>();
@@ -196,7 +200,7 @@ public class PublishedFileAuditHelper {
 
                 if (!recordsToInsert.isEmpty()) {
                     dal.auditFileRows(recordsToInsert);
-                }
+                }*/
 
                 return null;
             } catch (Exception ex) {
@@ -210,55 +214,6 @@ public class PublishedFileAuditHelper {
                 throw ex;
             }
         }
-
-        /*public Object call() throws Exception {
-
-            try {
-
-                //if we've done this file before, re-load the past audit
-                List<PublishedFileRecord> recordsToInsert = null;
-
-                if (haveProcessedFileBefore) {
-                    recordsToInsert = new ArrayList<>();
-
-                    for (PublishedFileRecord record : records) {
-                        int recordNumber = record.getRecordNumber();
-                        Long existingId = dal.findRecordAuditIdForRow(fileAuditId, recordNumber);
-                        if (existingId != null) {
-                            long rowAuditId = existingId.longValue();
-                            parser.setRowAuditId(recordNumber, rowAuditId);
-
-                        } else {
-                            recordsToInsert.add(record);
-                        }
-                    }
-                } else {
-                    recordsToInsert = records;
-                }
-
-                if (!recordsToInsert.isEmpty()) {
-                    dal.auditFileRows(recordsToInsert);
-
-                    //the above call will have set the IDs in each of the record objects
-                    for (PublishedFileRecord record: recordsToInsert) {
-                        Long rowAuditId = record.getId();
-                        int recordNumber = record.getRecordNumber();
-                        parser.setRowAuditId(recordNumber, rowAuditId);
-                    }
-                }
-
-                return null;
-            } catch (Exception ex) {
-
-                String err = "Exception auditing rows ";
-                for (PublishedFileRecord record : records) {
-                    err += record.getRecordNumber();
-                    err += ", ";
-                }
-                LOG.error(err, ex);
-                throw ex;
-            }
-        }*/
 
         public void addRecord(PublishedFileRecord fileRecord) {
             this.records.add(fileRecord);

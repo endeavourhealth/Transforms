@@ -186,28 +186,35 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         String cacheKey = idType + "|" + sourceId;
 
-        //add/replace in the cache
+        List<InternalIdMap> batchToSave = null;
+
         try {
             cacheLock.lock();
+
+            //add/replace in the cache
             internalIdMapCache.put(cacheKey, destinationId);
 
             //add to the queue to be saved
             internalIdSaveBatch.add(dbObj);
             if (internalIdSaveBatch.size() > TransformConfig.instance().getResourceSaveBatchSize()) {
-                saveInternalIdBatch();
+                batchToSave = new ArrayList<>(internalIdSaveBatch);
+                internalIdSaveBatch.clear();
             }
 
         } finally {
             cacheLock.unlock();
         }
+
+        if (batchToSave != null) {
+            saveInternalIdBatch(batchToSave);
+        }
     }
 
-    private void saveInternalIdBatch() throws Exception {
-        if (internalIdSaveBatch.isEmpty()) {
+    private void saveInternalIdBatch(List<InternalIdMap> batch) throws Exception {
+        if (batch.isEmpty()) {
             return;
         }
-        internalIdDal.save(internalIdSaveBatch);
-        internalIdSaveBatch = new ArrayList<>();
+        internalIdDal.save(batch);
     }
 
 
@@ -1214,7 +1221,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public void waitUntilThreadPoolIsEmpty() throws Exception {
 
         //commit any unsaved internal IDs to the DB
-        saveInternalIdBatch();
+        saveInternalIdBatch(internalIdSaveBatch);
 
         if (this.utilityThreadPool != null) {
             List<ThreadPoolError> errors = utilityThreadPool.waitUntilEmpty();
@@ -1225,7 +1232,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public void stopThreadPool() throws Exception {
 
         //commit any unsaved internal IDs to the DB
-        saveInternalIdBatch();
+        saveInternalIdBatch(internalIdSaveBatch);
 
         if (this.utilityThreadPool != null) {
             List<ThreadPoolError> errors = utilityThreadPool.waitAndStop();
