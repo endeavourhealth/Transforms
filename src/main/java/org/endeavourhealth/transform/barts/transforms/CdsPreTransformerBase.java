@@ -96,7 +96,7 @@ public abstract class CdsPreTransformerBase {
 
         //persist the count of procedures in this cds record
         StagingCdsCount stagingCdsCount = new StagingCdsCount();
-        stagingCdsCount.setExchangeId(parser.getCdsUniqueId().getString());
+        stagingCdsCount.setExchangeId(csvHelper.getExchangeId().toString());
         stagingCdsCount.setDtReceived(csvHelper.getDataDate());
         stagingCdsCount.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingCdsCount.setSusRecordType(susRecordType);

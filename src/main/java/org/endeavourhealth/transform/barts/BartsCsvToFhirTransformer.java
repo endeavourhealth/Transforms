@@ -313,7 +313,9 @@ public abstract class BartsCsvToFhirTransformer {
                             || type.equals("NOMREF")
                             || type.equals("LOREF")
                             || type.equals("PRSNLREF")
-                            || (type.equals("PPALI") && !removeFromMap)) { //only skip the PRE transformer for this
+                            || (type.equals("PPALI") && !removeFromMap) //only skip the PRE transformer for this
+                            || (type.equals("PPADD") && !removeFromMap) //only skip the PRE transformer for this
+                        ) {
                         LOG.info("Not processing " + p.getFilePath() + " (remove from map = " + removeFromMap + ")");
                         ret.remove(i);
                     }
