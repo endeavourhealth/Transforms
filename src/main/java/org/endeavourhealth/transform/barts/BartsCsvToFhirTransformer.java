@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -293,6 +294,31 @@ public abstract class BartsCsvToFhirTransformer {
 
         if (ret == null) {
             ret = new ArrayList<>();
+        }
+
+        //hack to avoid re-processing files we've already done
+        if (TransformConfig.instance().isLive()) {
+
+            for (int i=ret.size()-1; i>=0; i--) {
+                ParserI p = ret.get(i);
+                File f = new File(p.getFilePath());
+                String parent = f.getParent();
+
+                String exchangeDirectoryName = FilenameUtils.getBaseName(parent);
+                Date exchangeDate = new SimpleDateFormat("yyyy-MM-dd").parse(exchangeDirectoryName); //date of current exchange
+                Date bulkDate = new SimpleDateFormat("yyyy-MM-dd").parse("2017-12-02"); //exchange date the bulks were processed with
+                if (exchangeDate.equals(bulkDate)) {
+                    if (type.equals("ORGREF")
+                            || type.equals("CVREF")
+                            || type.equals("NOMREF")
+                            || type.equals("LOREF")
+                            || type.equals("PRSNLREF")
+                            || (type.equals("PPALI") && !removeFromMap)) { //only skip the PRE transformer for this
+                        LOG.info("Not processing " + p.getFilePath() + " (remove from map = " + removeFromMap + ")");
+                        ret.remove(i);
+                    }
+                }
+            }
         }
 
         return ret;
