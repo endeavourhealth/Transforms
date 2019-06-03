@@ -40,6 +40,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(TppCsvHelper.class);
 
+    private static final String OPERATIONS_PROCEDURES = "X0001";
+    private static final String DISORDERS = "X0003";
+    private static final String FAMILY_HISTORY_DISORDERS = "Xa1px";
     private static final String ALLERGIC_DISORDER = "Xa1pQ";
     private static final ParserPool PARSER_POOL = new ParserPool();
 
@@ -75,6 +78,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
     private ArrayList<String> ctv3EthnicCodes = new ArrayList<>();
+    private ArrayList<String> ctv3ProcedureCodes = new ArrayList();
+    private ArrayList<String> ctv3DisorderCodes = new ArrayList();
+    private ArrayList<String> ctv3FamilyDisorderCodes = new ArrayList();;
     private Map<String, Long> staffMemberToProfileMap = new HashMap<>();
     private ThreadPool utilityThreadPool = null;
 
@@ -1001,4 +1007,36 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
+    public boolean isProcedure(String ctv3Code) throws Exception {
+        if (ctv3ProcedureCodes.contains(ctv3Code)) {
+            return true;
+        }
+        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(ctv3Code, OPERATIONS_PROCEDURES)) {
+            ctv3ProcedureCodes.add(ctv3Code);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isDisorder(String ctv3Code) throws Exception {
+        if (ctv3DisorderCodes.contains(ctv3Code)) {
+            return true;
+        }
+        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(ctv3Code, DISORDERS)) {
+            ctv3DisorderCodes.add(ctv3Code);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isFamilyHistoryDisorder(String ctv3Code) throws Exception {
+        if (ctv3FamilyDisorderCodes.contains(ctv3Code)) {
+            return true;
+        }
+        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(ctv3Code, FAMILY_HISTORY_DISORDERS)) {
+            ctv3FamilyDisorderCodes.add(ctv3Code);
+            return true;
+        }
+        return false;
+    }
 }
