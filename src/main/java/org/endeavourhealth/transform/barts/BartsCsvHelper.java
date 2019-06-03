@@ -80,6 +80,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private CernerCodeValueRefDalI cernerCodeValueRefDal = DalProvider.factoryCernerCodeValueRefDal();
     private Hl7ResourceIdDalI hl7ReceiverDal = DalProvider.factoryHL7ResourceDal();
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
+    private List<InternalIdMap> internalIdSaveBatch = new ArrayList<>();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private StagingTargetDalI stagingRepository = DalProvider.factoryStagingTargetDalI();
 
@@ -176,6 +177,42 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     }
 
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
+
+        InternalIdMap dbObj = new InternalIdMap();
+        dbObj.setDestinationId(destinationId);
+        dbObj.setSourceId(sourceId);
+        dbObj.setIdType(idType);
+        dbObj.setServiceId(serviceId);
+
+        String cacheKey = idType + "|" + sourceId;
+
+        //add/replace in the cache
+        try {
+            cacheLock.lock();
+            internalIdMapCache.put(cacheKey, destinationId);
+
+            //add to the queue to be saved
+            internalIdSaveBatch.add(dbObj);
+            if (internalIdSaveBatch.size() > TransformConfig.instance().getResourceSaveBatchSize()) {
+                saveInternalIdBatch();
+            }
+
+        } finally {
+            cacheLock.unlock();
+        }
+    }
+
+    private void saveInternalIdBatch() throws Exception {
+        if (internalIdSaveBatch.isEmpty()) {
+            return;
+        }
+        internalIdDal.save(internalIdSaveBatch);
+        internalIdSaveBatch = new ArrayList<>();
+    }
+
+
+
+    /*public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
         String cacheKey = idType + "|" + sourceId;
 
         internalIdDal.save(serviceId, idType, sourceId, destinationId);
@@ -187,7 +224,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         } finally {
             cacheLock.unlock();
         }
-    }
+    }*/
 
     public String getInternalId(String idType, String sourceId) throws Exception {
         String cacheKey = idType + "|" + sourceId;
@@ -1175,6 +1212,10 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     }
 
     public void waitUntilThreadPoolIsEmpty() throws Exception {
+
+        //commit any unsaved internal IDs to the DB
+        saveInternalIdBatch();
+
         if (this.utilityThreadPool != null) {
             List<ThreadPoolError> errors = utilityThreadPool.waitUntilEmpty();
             AbstractCsvCallable.handleErrors(errors);
@@ -1182,6 +1223,10 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     }
 
     public void stopThreadPool() throws Exception {
+
+        //commit any unsaved internal IDs to the DB
+        saveInternalIdBatch();
+
         if (this.utilityThreadPool != null) {
             List<ThreadPoolError> errors = utilityThreadPool.waitAndStop();
             AbstractCsvCallable.handleErrors(errors);
