@@ -489,6 +489,11 @@ public class ConditionBuilder extends ResourceBuilderBase
         auditValue("verificationStatus", sourceCells);
     }
 
+    public void setSequenceNumber(int seqNo, CsvCell... sourceCells) {
+        Extension extension = ExtensionConverter.createOrUpdateIntegerExtension(getResource(),FhirExtensionUri.CONDITION_SEQUENCE_NUMBER,seqNo);
+        auditIntegerExtension(extension,sourceCells);
+    }
+
     @Override
     public Identifier addIdentifier() {
         return this.condition.addIdentifier();

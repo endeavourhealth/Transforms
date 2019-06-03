@@ -60,8 +60,8 @@ public class ConditionTargetTransformer {
                         = (Condition) csvHelper.retrieveResourceForLocalId(ResourceType.Condition, uniqueId);
 
                 if (existingCondition != null) {
-                    ConditionBuilder conditionBuilder = new ConditionBuilder(existingCondition);
-                    //TODO: procedureBuilder.setDeletedAudit(activeCell);   //build up audit from text?
+                    ConditionBuilder conditionBuilder = new ConditionBuilder(existingCondition, targetCondition.getAudit());
+
                     //remember to pass in false since this existing procedure is already ID mapped
                     fhirResourceFiler.deletePatientResource(null, false, conditionBuilder);
                 } else {
@@ -71,8 +71,8 @@ public class ConditionTargetTransformer {
                 continue;
             }
 
-            // create the FHIR Condition resource - NOTE //TODO: no individual audit cells set
-            ConditionBuilder conditionBuilder = new ConditionBuilder();
+            // create the FHIR Condition resource
+            ConditionBuilder conditionBuilder = new ConditionBuilder(null, targetCondition.getAudit());
             conditionBuilder.setId(uniqueId);
 
             //we always have a performed date, although it may be an unknown
@@ -205,8 +205,7 @@ public class ConditionTargetTransformer {
             Integer sequenceNumber = targetCondition.getSequenceNumber();
             if (sequenceNumber != null) {
 
-                //TODO: CONDITION sequence number extension
-                //conditionBuilder.setSequenceNumber(sequenceNumber);
+                conditionBuilder.setSequenceNumber(sequenceNumber);
                 if (sequenceNumber == 1) {
                     conditionBuilder.setIsPrimary(true);
 
@@ -275,5 +274,4 @@ public class ConditionTargetTransformer {
         Date unknownDate = new SimpleDateFormat("yyyy-MM-dd").parse("1900-01-01");
         return date.equals(unknownDate);
     }
-
 }
