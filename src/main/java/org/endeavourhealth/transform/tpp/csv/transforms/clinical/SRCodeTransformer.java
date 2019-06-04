@@ -734,7 +734,7 @@ public class SRCodeTransformer {
                 && (parser.getNumericValue().isEmpty())) {
             return ResourceType.Procedure;
         } else if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())
-                && csvHelper.isDisorder(readV3Code)) {
+                || csvHelper.isDisorder(readV3Code)) {
             return ResourceType.Condition;
         } else if ((!Strings.isNullOrEmpty(readV3Code)
                 && csvHelper.isAllergyCode(readV3Code, parser.getCTV3Text().getString()))) {
