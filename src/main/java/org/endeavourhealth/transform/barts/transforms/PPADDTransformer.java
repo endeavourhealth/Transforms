@@ -176,7 +176,9 @@ public class PPADDTransformer {
                 || typeDesc.equalsIgnoreCase("home")
                 || typeDesc.equalsIgnoreCase("business")
                 || typeDesc.equalsIgnoreCase("temporary")
-                || typeDesc.equalsIgnoreCase("Prevous Address")) { //note the wrong spelling is in the Cerner data CVREF file
+                || typeDesc.equalsIgnoreCase("Prevous Address") //note the wrong spelling is in the Cerner data CVREF file
+                || typeDesc.equalsIgnoreCase("Alternate Address")
+        ) {
             return null;
 
         } else {
@@ -201,7 +203,8 @@ public class PPADDTransformer {
         } else if (typeDesc.equalsIgnoreCase("business")) {
             return Address.AddressUse.WORK;
 
-        } else if (typeDesc.equalsIgnoreCase("temporary")) {
+        } else if (typeDesc.equalsIgnoreCase("temporary")
+                || typeDesc.equalsIgnoreCase("Alternate Address")) {
             return Address.AddressUse.TEMP;
 
         } else if (typeDesc.equalsIgnoreCase("Prevous Address")) { //note the wrong spelling is in the Cerner data CVREF file
