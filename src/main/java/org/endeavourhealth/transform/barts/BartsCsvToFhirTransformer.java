@@ -299,6 +299,8 @@ public abstract class BartsCsvToFhirTransformer {
         //hack to avoid re-processing files we've already done
         if (TransformConfig.instance().isLive()) {
 
+            ret = new ArrayList<>(ret);
+
             for (int i=ret.size()-1; i>=0; i--) {
                 ParserI p = ret.get(i);
                 File f = new File(p.getFilePath());
