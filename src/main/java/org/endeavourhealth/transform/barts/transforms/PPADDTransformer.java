@@ -63,6 +63,10 @@ public class PPADDTransformer {
 
         CsvCell personIdCell = parser.getPersonId();
         CsvCell typeCell = parser.getAddressTypeCode();
+        if (BartsCsvHelper.isEmptyOrIsZero(typeCell)) {
+            TransformWarnings.log(LOG, csvHelper, "Skipping PPADD {} for person {} because it has no type", addressIdCell, personIdCell);
+            return;
+        }
         CsvCell typeDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.ADDRESS_TYPE, typeCell);
         String typeDesc = typeDescCell.getString();
 
