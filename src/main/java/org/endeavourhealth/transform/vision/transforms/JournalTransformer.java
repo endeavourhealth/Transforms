@@ -1110,6 +1110,11 @@ public class JournalTransformer {
             return;
         }
 
+        if (isInvalidData(parser)) {
+            TransformWarnings.log(LOG, parser, "Journal ID: {} contains invalid Immunisation data", parser.getObservationID());
+            return;
+        }
+
         //CsvCell status = parser.getImmsStatus();
         //these fields are mandatory so set to what we know
         immunizationBuilder.setStatus(ImmunizationStatus.COMPLETED.getCode()); //we know it was given
@@ -1275,6 +1280,31 @@ public class JournalTransformer {
             }
         }
         return problemLinkIDs;
+    }
+
+    // Advanced have indicated that erroneous data rows could be extracted and sent as part of
+    // the extract.  Examples include Immunization records, coded with a 65E..
+    // but contain a value code and a class type of WEIGHT or BP.  These records will be
+    // logged and the parser row will cease processing that row only
+    private static boolean isInvalidData(Journal parser) throws Exception {
+
+        Boolean inValid = false;
+        ResourceType type = getTargetResourceType(parser);
+
+        //Fixed VEI-4 (invalid Immunisation records)
+        if (type == ResourceType.Immunization) {
+
+            // First invalid indicator, the Immunisation has a value - this fails the assertValueEmpty test
+            String valueText = parser.getValue1AsText().getString();
+            if (!Strings.isNullOrEmpty(valueText)) {
+
+                // Second invalid indicator, it contains contains weight or BP data
+                String obsEntity = parser.getObservationEntity().getString();
+                inValid = (obsEntity.equalsIgnoreCase("WEIGHT") ||
+                        obsEntity.equalsIgnoreCase("BP"));
+            }
+        }
+        return inValid;
     }
 
     private static void assertValueEmpty(ResourceBuilderBase resourceBuilder, Journal parser) throws Exception {
