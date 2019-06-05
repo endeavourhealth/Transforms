@@ -280,6 +280,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRCodeTemplateLink");
             set.add("SRMedia");
             set.add("SRImmunisationConsent");
+            set.add("SRGoal");
 
             cachedFileNamesToIgnore = set;
         }
