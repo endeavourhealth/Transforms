@@ -64,7 +64,7 @@ public class PPADD extends AbstractCsvParser {
         return super.getCell("BEG_EFFECTIVE_DT_TM");
     }
 
-    public CsvCell getEndEffectiveDater() {
+    public CsvCell getEndEffectiveDate() {
         return super.getCell("END_EFFECTIVE_DT_TM");
     }
 

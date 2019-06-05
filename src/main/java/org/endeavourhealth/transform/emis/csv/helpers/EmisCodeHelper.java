@@ -4,18 +4,23 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
+import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class EmisCodeHelper {
+    private static final Logger LOG = LoggerFactory.getLogger(EmisCodeHelper.class);
 
     public static final String AUDIT_CLINICAL_CODE_SNOMED_CONCEPT_ID = "snomed_concept_id";
     public static final String AUDIT_CLINICAL_CODE_SNOMED_DESCRIPTION_ID = "snomed_description_id";
@@ -194,16 +199,13 @@ public class EmisCodeHelper {
 
     public static void applyEthnicity(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) {
         EthnicCategory ethnicCategory = findEthnicityCode(codeMap);
-        if (ethnicCategory != null) {
-            patientBuilder.setEthnicity(ethnicCategory, sourceCells);
-        }
+        patientBuilder.setEthnicity(ethnicCategory, sourceCells);
     }
 
     public static void applyMaritalStatus(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) {
         MaritalStatus maritalStatus = findMaritalStatus(codeMap);
-        if (maritalStatus != null) {
-            patientBuilder.setMaritalStatus(maritalStatus, sourceCells);
-        }
+        //note, the above may return null if it's one of the "unknown" codes, so we simply clear the field on the resource
+        patientBuilder.setMaritalStatus(maritalStatus, sourceCells);
     }
 
 
@@ -213,10 +215,7 @@ public class EmisCodeHelper {
             return null;
         }
 
-        if (read2Code.equals("1331.")) {
-            //single
-
-        } else if (read2Code.equals("1332.")
+        if (read2Code.equals("1332.")
                 || read2Code.equals("EMISNQHO15")
                 || read2Code.equals("EMISNQHO16")
                 || read2Code.equals("133S.")) {
@@ -241,9 +240,14 @@ public class EmisCodeHelper {
                 || read2Code.equals("EMISNQCO47")) {
             return MaritalStatus.DOMESTIC_PARTNER;
 
-        }
+        } else if (read2Code.equals("133F.") //Marital state unknown
+                || read2Code.equals("133W.") //Marital/civil state not disclosed
+                || read2Code.equals("1331.")) { //single
+            return null;
 
-        return null;
+        } else {
+            throw new RuntimeException("Unknown marital status code " + read2Code);
+        }
     }
 
     public static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) {
@@ -287,16 +291,10 @@ public class EmisCodeHelper {
         } else if (read2Code.startsWith("9iG")) {
             return EthnicCategory.NOT_STATED;
         } else {
+            //note, there are no other branches under the Ethnicity hierarchy
             return null;
         }
     }
 
 
-    public static boolean isEthnicity(EmisCsvCodeMap codeMapping) {
-        return findEthnicityCode(codeMapping) != null;
-    }
-
-    public static boolean isMaritalStatus(EmisCsvCodeMap codeMapping) {
-        return findMaritalStatus(codeMapping) != null;
-    }
 }

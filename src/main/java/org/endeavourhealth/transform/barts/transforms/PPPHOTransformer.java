@@ -153,7 +153,7 @@ public class PPPHOTransformer {
         }
     }
 
-    private static void removeExistingContactPointWithoutIdByValue(PatientBuilder patientBuilder, ContactPoint newOne) {
+    public static void removeExistingContactPointWithoutIdByValue(PatientBuilder patientBuilder, ContactPoint newOne) {
 
         Patient patient = (Patient) patientBuilder.getResource();
         if (!patient.hasTelecom()) {

@@ -117,11 +117,8 @@ public class ObservationPreTransformer {
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
             EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
-            if (EmisCodeHelper.isEthnicity(codeMapping)) {
-
-                CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
-                csvHelper.cacheEthnicity(patientGuid, codeAndDate);
-            }
+            CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
+            csvHelper.cacheEthnicity(patientGuid, codeAndDate);
 
         } else if (codeType == ClinicalCodeType.Marital_Status) {
 
@@ -130,11 +127,8 @@ public class ObservationPreTransformer {
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
             EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
-            if (EmisCodeHelper.isMaritalStatus(codeMapping)) {
-
-                CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
-                csvHelper.cacheMaritalStatus(patientGuid, codeAndDate);
-            }
+            CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
+            csvHelper.cacheMaritalStatus(patientGuid, codeAndDate);
         }
 
         //if we've previously found that our observation is a problem (via the problem pre-transformer)
