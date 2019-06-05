@@ -165,31 +165,18 @@ public abstract class BartsCsvToFhirTransformer {
 
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            //TODO:  work out ordering and structure of CDS file processing which contain Procedures and Diagnosis records
-            //DIAGNOSES / PROBLEMS
-            /*
+            //DIAGNOSES / PROBLEMS - NOTE:  Any Sus Diagnosis data will have been processed during the transforms above, i.e. Inpatient, Outpatient
             DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, "DIAGN", false), fhirResourceFiler, csvHelper);
-            DiagnosisPreTransformer.transform(getParsers(parserMap, csvHelper, "Diagnosis", csvHelper), fhirResourceFiler, csvHelper);
+            DiagnosisPreTransformer.transform(getParsers(parserMap, csvHelper, "Diagnosis", true), fhirResourceFiler, csvHelper);
             ProblemPreTransformer.transform(getParsers(parserMap, csvHelper, "Problem", true), fhirResourceFiler, csvHelper);
 
-            //TODO:  work out ordering and structure of CDS file processing which contain Procedures and Diagnosis records
-            SusInpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, "SusInpatientTail", true), fhirResourceFiler,csvHelper);
-            SusOutpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, "SusOutpatientTail", true), fhirResourceFiler,csvHelper);
-            SusEmergencyTailPreTransformer.transform(getParsers(parserMap,"SusEmergencyTail",true),fhirResourceFiler,csvHelper);
-            SusInpatientPreTransformer.transform(getParsers(parserMap, csvHelper, "SusInpatient", true), fhirResourceFiler,csvHelper);
-            SusOutpatientPreTransformer.transform(getParsers(parserMap, csvHelper, "SusOutpatient", true), fhirResourceFiler,csvHelper);
-            SusEmergencyPreTransformer.transform(getParsers(parserMap,"SusEmergency",true),fhirResourceFiler,csvHelper);
-            */
-
-            //TODO - uncomment calls for assurance
             //CONDITIONS - execute the staging conditions to target procedures stored proc
-            //csvHelper.processStagingForTargetConditions();
+            csvHelper.processStagingForTargetConditions();
 
             //Condition data transformation on final condition target staging table
-            //ConditionTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            ConditionTargetTransformer.transform(fhirResourceFiler, csvHelper);
 
-            //fhirResourceFiler.waitUntilEverythingIsSaved();
-
+            fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //other clinical transformers
             CLEVETransformer.transform(getParsers(parserMap, csvHelper, "CLEVE", true), fhirResourceFiler, csvHelper);

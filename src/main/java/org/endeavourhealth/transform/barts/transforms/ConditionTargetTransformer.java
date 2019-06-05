@@ -132,15 +132,14 @@ public class ConditionTargetTransformer {
                         || problemStatus.equalsIgnoreCase("Inactive")) {
 
                     //CsvCell statusDateCell = parser.getStatusDate();
-                    //if (statusDateCell.isEmpty()) {
+                    Date problemStatusDate = targetCondition.getProblemStatusDate();
+                    if (problemStatusDate == null) {
                         //if we don't have a status date, use a boolean to indicate the end
-                    //TODO: Status date TBC
                         conditionBuilder.setEndDateOrBoolean(new BooleanType(true));
-
-                    //} else {
-                    //    DateType dt = new DateType(statusDateCell.getDate());
-                    //    conditionBuilder.setEndDateOrBoolean(dt, statusCell);
-                    //}
+                    } else {
+                        DateType dt = new DateType(problemStatusDate);
+                        conditionBuilder.setEndDateOrBoolean(dt);
+                    }
                 }
             } else {
                 //an active Diagnosis
@@ -192,12 +191,20 @@ public class ConditionTargetTransformer {
             String conditionType = targetCondition.getConditionType();
             if (!Strings.isNullOrEmpty(conditionType)) {
 
-                //TODO: check target table values against codeSet 17L
+                // these are specific diagnosis types, Principal, Working etc.
                 CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(17L, conditionType);
                 if (cernerCodeValueRef != null) {
 
                     String category = cernerCodeValueRef.getCodeDispTxt();
                     conditionBuilder.setCategory(category);
+                }
+            } else {
+
+                // not specifically set during staging, it is either a complaint (problem) or a diagnosis (diagnosis)
+                if (isProblem) {
+                    conditionBuilder.setCategory("complaint");
+                } else {
+                    conditionBuilder.setCategory("diagnosis");
                 }
             }
 

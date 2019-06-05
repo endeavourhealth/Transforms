@@ -23,7 +23,7 @@ public class CdsTailPreTransformerBase {
     protected static void processTailRecord(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
 
         processTailRecordProcedure(parser,csvHelper,susRecordType);
-        //processTailRecordCondition(parser,csvHelper,susRecordType); //taking out so the procedures transform still works
+        processTailRecordCondition(parser,csvHelper,susRecordType);
 
     }
     private static void processTailRecordProcedure(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception{
