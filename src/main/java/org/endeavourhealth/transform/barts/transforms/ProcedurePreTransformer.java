@@ -124,12 +124,12 @@ public class ProcedurePreTransformer {
         stagingObj.setWard(parser.getWard().getString());
         stagingObj.setSite(parser.getSite().getString());
 
-        String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, parser.getConsultant().getString());
+        String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, parser.getConsultant().getString().replace(" ,",","));
         if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
             stagingObj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
         }
 
-        String recordedByPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID,parser.getUpdatedBy().getString());
+        String recordedByPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID,parser.getUpdatedBy().getString().replace(" ,",","));
         if (!Strings.isNullOrEmpty(recordedByPersonnelId)) {
             stagingObj.setLookupRecordedByPersonnelId(Integer.valueOf(recordedByPersonnelId));
         }
