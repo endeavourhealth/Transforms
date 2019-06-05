@@ -124,9 +124,20 @@ public class ProcedurePreTransformer {
         stagingObj.setWard(parser.getWard().getString());
         stagingObj.setSite(parser.getSite().getString());
 
-        String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, parser.getConsultant().getString().replace(" ,",","));
+        String consultantStr  = parser.getConsultant().getString();
+        String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, consultantStr);
         if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
             stagingObj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
+        } else {
+            //TODO  Once we have data rebuilt with forced format of Personnel name this can be removed
+            int commaPosn = consultantStr.indexOf(",");
+            if (Character.isWhitespace(consultantStr.charAt(commaPosn-1))) { //Has surname got a space before comma?
+                String newConsultantStr = consultantStr.substring(0,commaPosn-1) + consultantStr.substring(commaPosn);
+                consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, newConsultantStr);
+            }
+            if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
+                stagingObj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
+            }
         }
 
         String recordedByPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID,parser.getUpdatedBy().getString().replace(" ,",","));
