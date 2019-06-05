@@ -54,7 +54,7 @@ public class PRSNLREFPreTransformer {
         //to mirror what Millennium does, so the weird extra spacing is intentional
         StringBuilder sb = new StringBuilder();
         sb.append(surnameCell.getString());
-        sb.append(" , ");
+        sb.append(", ");
         sb.append(givenNameCell.getString());
         if (!middleNameCell.isEmpty()) {
             sb.append(" ");
