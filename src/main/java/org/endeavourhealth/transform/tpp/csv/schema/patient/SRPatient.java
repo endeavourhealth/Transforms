@@ -16,7 +16,7 @@ public class SRPatient extends AbstractCsvParser {
         super(serviceId, systemId, exchangeId, version, filePath,
                 TppCsvToFhirTransformer.CSV_FORMAT,
                 TppCsvToFhirTransformer.DATE_FORMAT,
-                TppCsvToFhirTransformer.TIME_FORMAT,
+                TppCsvToFhirTransformer.TIME_FORMAT_NO_SEC,
                 TppCsvToFhirTransformer.ENCODING);
     }
 
