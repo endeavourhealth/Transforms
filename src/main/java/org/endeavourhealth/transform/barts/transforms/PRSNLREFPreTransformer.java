@@ -23,7 +23,7 @@ public class PRSNLREFPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        for (ParserI parser: parsers) {
+        for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
                 try {
                     processLine((PRSNLREF) parser, fhirResourceFiler, csvHelper);
@@ -38,8 +38,8 @@ public class PRSNLREFPreTransformer {
     }
 
     private static void processLine(PRSNLREF parser,
-                                           FhirResourceFiler fhirResourceFiler,
-                                           BartsCsvHelper csvHelper) throws Exception {
+                                    FhirResourceFiler fhirResourceFiler,
+                                    BartsCsvHelper csvHelper) throws Exception {
 
 
         CsvCell personnelIdCell = parser.getPersonnelID();
@@ -49,20 +49,28 @@ public class PRSNLREFPreTransformer {
         CsvCell middleNameCell = parser.getMiddleName();
         CsvCell surnameCell = parser.getLastName();
 
+
         //we also need to save a lookup of free-text name to practitioner ID, because the fixed-width Procedure file
         //only gives us the name and not the ID. Note the way that this free-text name is built up is specifically
         //to mirror what Millennium does, so the weird extra spacing is intentional
-        StringBuilder sb = new StringBuilder();
-        sb.append(surnameCell.getString());
-        sb.append(", ");
-        sb.append(givenNameCell.getString());
-        if (!middleNameCell.isEmpty()) {
-            sb.append(" ");
-            sb.append(middleNameCell.getString());
+        if (!parser.getFullFormatName().isEmpty()) { //Already formatted as we want.
+            String freeTextName = parser.getFullFormatName().getString().trim();
+            csvHelper.saveInternalId(MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
+        } else {
+            if (!surnameCell.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(surnameCell.getString().trim());
+                sb.append(" , ");
+                sb.append(givenNameCell.getString().trim());
+                if (!middleNameCell.isEmpty()) {
+                    sb.append(" ");
+                    sb.append(middleNameCell.getString());
+                }
+                String freeTextName = sb.toString();
+                csvHelper.saveInternalId(MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
+            }
         }
 
-        String freeTextName = sb.toString();
-        csvHelper.saveInternalId(MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
 
         CsvCell consultantNHSCode = parser.getConsultantNHSCode();
         if (!consultantNHSCode.isEmpty()) {
@@ -81,16 +89,16 @@ public class PRSNLREFPreTransformer {
                 csvHelper.createResourceIdOrCopyFromHl7Receiver(ResourceType.Practitioner, localUniqueId, hl7ReceiverUniqueId, hl7ReceiverScope, false);
             } catch (Exception ex) {
                 LOG.error("Failed to find/copy ID for personnel ID [" + localUniqueId + "]");
-                for (char c: localUniqueId.toCharArray()) {
-                    LOG.error("Char " + c + " (" + (int)c + ")");
+                for (char c : localUniqueId.toCharArray()) {
+                    LOG.error("Char " + c + " (" + (int) c + ")");
                 }
                 LOG.error("HL7 ID [" + hl7ReceiverUniqueId + "]");
-                for (char c: hl7ReceiverUniqueId.toCharArray()) {
-                    LOG.error("Char " + c + " (" + (int)c + ")");
+                for (char c : hl7ReceiverUniqueId.toCharArray()) {
+                    LOG.error("Char " + c + " (" + (int) c + ")");
                 }
                 LOG.error("Scipe [" + hl7ReceiverScope + "]");
-                for (char c: hl7ReceiverScope.toCharArray()) {
-                    LOG.error("Char " + c + " (" + (int)c + ")");
+                for (char c : hl7ReceiverScope.toCharArray()) {
+                    LOG.error("Char " + c + " (" + (int) c + ")");
                 }
                 LOG.error("Record = " + parser.getCurrentState());
 
