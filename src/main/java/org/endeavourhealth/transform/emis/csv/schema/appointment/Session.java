@@ -77,38 +77,4 @@ public class Session extends AbstractCsvParser {
         return super.getCell("ProcessingId");
     }
 
-    /*public String getAppointmnetSessionGuid() {
-        return super.getString("AppointmentSessionGuid");
-    }
-    public String getDescription() {
-        return super.getString("Description");
-    }
-    public String getLocationGuid() {
-        return super.getString("LocationGuid");
-    }
-    public String getSessionTypeDescription() {
-        return super.getString("SessionTypeDescription");
-    }
-    public String getSessionCategoryDisplayName() {
-        return super.getString("SessionCategoryDisplayName");
-    }
-    public Date getStartDateTime() throws TransformException {
-        return super.getDateTime("StartDate", "StartTime");
-    }
-    public Date getEndDateTime() throws TransformException {
-        return super.getDateTime("EndDate", "EndTime");
-    }
-    public boolean getPrivate() {
-        return super.getBoolean("Private");
-    }
-    public String getOrganisationGuid() {
-        return super.getString("OrganisationGuid");
-    }
-    public boolean getDeleted() {
-        return super.getBoolean("Deleted");
-    }
-    public Integer getProcessingId() {
-        return super.getInt("ProcessingId");
-    }*/
-
 }

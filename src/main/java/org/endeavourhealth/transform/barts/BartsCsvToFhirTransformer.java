@@ -120,8 +120,11 @@ public abstract class BartsCsvToFhirTransformer {
             CLEVEPreTransformer.transform(getParsers(parserMap, csvHelper, "CLEVE", false), fhirResourceFiler, csvHelper);
             DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, "DIAGN", false), fhirResourceFiler, csvHelper);
 
+            //while we're just doing the pre-transformer only, allow it to remove from the map, to reduce memory use
+            ENCNTPreTransformer.transform(getParsers(parserMap, csvHelper, "ENCNT", true), fhirResourceFiler, csvHelper);
+            fhirResourceFiler.waitUntilEverythingIsSaved(); //the above may update existing resources, so let it fully finish
 
-            ENCNTPreTransformer.transform(getParsers(parserMap, csvHelper, "ENCNT", false), fhirResourceFiler, csvHelper);
+            /*ENCNTPreTransformer.transform(getParsers(parserMap, csvHelper, "ENCNT", false), fhirResourceFiler, csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved(); //the above may update existing resources, so let it fully finish
 
             // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
@@ -129,7 +132,7 @@ public abstract class BartsCsvToFhirTransformer {
             //from what files and how/why things don't seem to match up to the ADT feed. Note the ENCNTPreTransformer
             //is still necessary as that creates the internal ID mappings to get from Encounter ID to Person ID, needed
             //for processing a number of other files
-            /*ENCNTTransformer.transform(getParsers(parserMap, csvHelper, "ENCNT", true), fhirResourceFiler, csvHelper);
+            ENCNTTransformer.transform(getParsers(parserMap, csvHelper, "ENCNT", true), fhirResourceFiler, csvHelper);
             AEATTTransformer.transform(getParsers(parserMap, csvHelper, "AEATT", true), fhirResourceFiler, csvHelper);
             IPEPITransformer.transform(getParsers(parserMap, csvHelper, "IPEPI", true), fhirResourceFiler, csvHelper);
             IPWDSTransformer.transform(getParsers(parserMap, csvHelper, "IPWDS", true), fhirResourceFiler, csvHelper);
