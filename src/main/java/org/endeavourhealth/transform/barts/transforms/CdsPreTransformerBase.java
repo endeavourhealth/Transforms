@@ -301,7 +301,15 @@ public abstract class CdsPreTransformerBase {
     private static void processDiagnoses(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
 
         StagingConditionCds stagingConditionCds = new StagingConditionCds();
-        stagingConditionCds.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
+
+        CsvCell cdsUniqueIdCell = parser.getCdsUniqueId();
+        stagingConditionCds.setCdsUniqueIdentifier(cdsUniqueIdCell.getString());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(cdsUniqueIdCell.getPublishedFileId(), cdsUniqueIdCell.getRecordNumber());
+        stagingConditionCds.setAudit(audit);
+
         stagingConditionCds.setExchangeId(csvHelper.getExchangeId().toString());
         stagingConditionCds.setDtReceived(csvHelper.getDataDate());
         stagingConditionCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
@@ -358,6 +366,11 @@ public abstract class CdsPreTransformerBase {
         stagingConditionCdsCount.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingConditionCdsCount.setSusRecordType(susRecordType);
         stagingConditionCdsCount.setConditionCount(conditionCount);
+
+        //audit that our staging object came from this file and record
+        audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(cdsUniqueIdCell.getPublishedFileId(), cdsUniqueIdCell.getRecordNumber());
+        stagingConditionCds.setAudit(audit);
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SaveCdsConditionCountCallable(parser.getCurrentState(), stagingConditionCdsCount, serviceId));
