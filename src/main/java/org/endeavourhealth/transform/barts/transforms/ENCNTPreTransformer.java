@@ -127,7 +127,9 @@ public class ENCNTPreTransformer {
                 csvHelper.saveEncounterIdToPersonId(encounterIdCell, personIdCell);
 
                 //update the internal ID map with our encounter to responsible personnel mapping - DAB-121 enhancement
-                csvHelper.saveEncounterIdToResponsiblePersonnelId(encounterIdCell, responsiblePersonnelIdCell);
+                if (!responsiblePersonnelIdCell.isEmpty()) {
+                    csvHelper.saveEncounterIdToResponsiblePersonnelId(encounterIdCell, responsiblePersonnelIdCell);
+                }
 
                 //99%+ of ENCNT records have a VISIT ID, but some don't, so we can't use them
                 //also, VISIT IDs starting "RES_" seem to be used as placeholders, across multiple patients
