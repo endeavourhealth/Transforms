@@ -31,6 +31,7 @@ public class TransformConfig {
     private int resourceSaveBatchSize;
     private boolean allowMissingConceptIdsInSubscriberTransform;
     private Map<String, Set<String>> hmFileTypeFilters;
+    private int rabbitMessagePerSecondThrottle;
 
     //singleton
     private static TransformConfig instance;
@@ -67,6 +68,7 @@ public class TransformConfig {
         this.isLive = false;
         this.resourceSaveBatchSize = 50;
         this.hmFileTypeFilters = new HashMap<>();
+        this.rabbitMessagePerSecondThrottle = 1000;
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
@@ -124,6 +126,11 @@ public class TransformConfig {
             node = json.get("resource_save_batch_size");
             if (node != null) {
                 this.resourceSaveBatchSize = node.asInt();
+            }
+
+            node = json.get("rabbit_messge_per_second_throttle");
+            if (node != null) {
+                this.rabbitMessagePerSecondThrottle = node.asInt();
             }
 
             node = json.get("emis");
@@ -295,5 +302,9 @@ public class TransformConfig {
 
     public Set<String> getFilteredFileTypes(String odsCode) {
         return hmFileTypeFilters.get(odsCode);
+    }
+
+    public int getRabbitMessagePerSecondThrottle() {
+        return rabbitMessagePerSecondThrottle;
     }
 }

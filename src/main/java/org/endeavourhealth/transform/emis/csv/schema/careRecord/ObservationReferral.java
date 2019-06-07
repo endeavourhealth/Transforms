@@ -53,7 +53,7 @@ public class ObservationReferral extends AbstractCsvParser {
     public CsvCell getOrganisationGuid() {
         return super.getCell("OrganisationGuid");
     }
-    public CsvCell getReferalTargetOrganisationGuid() {
+    public CsvCell getReferralTargetOrganisationGuid() {
         return super.getCell("ReferralTargetOrganisationGuid");
     }
     public CsvCell getReferralUrgency() {
@@ -95,7 +95,7 @@ public class ObservationReferral extends AbstractCsvParser {
     public CsvCell getReferralEpisodeClosureDate() {
         return super.getCell("ReferralEpisodeClosureDate");
     }
-    public CsvCell getReferralEpisideDischargeLetterIssuedDate() {
+    public CsvCell getReferralEpisodeDischargeLetterIssuedDate() {
         return super.getCell("ReferralEpisodeDischargeLetterIssuedDate");
     }
     public CsvCell getReferralClosureReasonCodeId() {
@@ -104,62 +104,5 @@ public class ObservationReferral extends AbstractCsvParser {
     public CsvCell getProcessingId() {
         return super.getCell("ProcessingId");
     }
-    
-    /*public String getObservationGuid() {
-        return super.getString("ObservationGuid");
-    }
-    public String getPatientGuid() {
-        return super.getString("PatientGuid");
-    }
-    public String getOrganisationGuid() {
-        return super.getString("OrganisationGuid");
-    }
-    public String getReferalTargetOrganisationGuid() {
-        return super.getString("ReferralTargetOrganisationGuid");
-    }
-    public String getReferralUrgency() {
-        return super.getString("ReferralUrgency");
-    }
-    public String getReferralMode() {
-        return super.getString("ReferralMode");
-    }
-    public String getReferralServiceType() {
-        return super.getString("ReferralServiceType");
-    }
-    public Date getReferralReceivedDateTime() throws TransformException {
-        return super.getDateTime("ReferralReceivedDate", "ReferralReceivedTime");
-    }
-    public Date getReferralEndDate() throws TransformException {
-        return super.getDate("ReferralEndDate");
-    }
-    public Long getReferralSourceId() {
-        return super.getLong("ReferralSourceId");
-    }
-    public String getReferralSourceOrganisationGuid() {
-        return super.getString("ReferralSourceOrganisationGuid");
-    }
-    public String getReferralUBRN() {
-        return super.getString("ReferralUBRN");
-    }
-    public Long getReferralReasonCodeId() {
-        return super.getLong("ReferralReasonCodeId");
-    }
-    public Long getReferringCareProfessionalStaffGroupCodeId() {
-        return super.getLong("ReferringCareProfessionalStaffGroupCodeId");
-    }
-    public Long getReferralEpisodeRTTMeasurmentTypeId() {
-        return super.getLong("ReferralEpisodeRTTMeasurementTypeId");
-    }
-    public Date getReferralEpisodeClosureDate() throws TransformException {
-        return super.getDate("ReferralEpisodeClosureDate");
-    }
-    public Date getReferralEpisideDischargeLetterIssuedDate() throws TransformException {
-        return super.getDate("ReferralEpisodeDischargeLetterIssuedDate");
-    }
-    public Long getReferralClosureReasonCodeId() {
-        return super.getLong("ReferralClosureReasonCodeId");
-    }
-    public Integer getProcessingId() {
-        return super.getInt("ProcessingId");
-    }*/
+
 }

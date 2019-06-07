@@ -100,7 +100,7 @@ public class ObservationReferralTransformer {
             }
         }
 
-        CsvCell recipientOrgGuid = parser.getReferalTargetOrganisationGuid();
+        CsvCell recipientOrgGuid = parser.getReferralTargetOrganisationGuid();
         //the spec. states that this value will always be present, but there's some live data with a missing value
         if (!recipientOrgGuid.isEmpty()) {
             Reference orgReference = csvHelper.createOrganisationReference(recipientOrgGuid);
@@ -131,7 +131,7 @@ public class ObservationReferralTransformer {
         //ReferringCareProfessionalStaffGroupCodeId - links to Coding_ClinicalCode
         //ReferralEpisodeRTTMeasurementTypeId - links to Coding_ClinicalCode
         //ReferralEpisodeClosureDate
-        //ReferralEpisideDischargeLetterIssuedDate
+        //ReferralEpisodeDischargeLetterIssuedDate
         //ReferralClosureReasonCodeId - links to Coding_ClinicalCode
 
         //unlike other resources, we don't save the Referral immediately, as there's data we
