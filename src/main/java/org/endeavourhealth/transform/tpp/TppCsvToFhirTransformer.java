@@ -283,6 +283,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRGoal");
             set.add("SRWaitingList");
             set.add("SRAttendee");
+            set.add("SRCluster");
 
             cachedFileNamesToIgnore = set;
         }
