@@ -105,6 +105,7 @@ public class PatientResourceCache {
     public void filePatientResources(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         LOG.info("Saving " + patientBuildersByPatientUuid.size() + " patients to the DB");
+        int done = 0;
 
         for (UUID patientUuid: patientBuildersByPatientUuid.keySet()) {
             PatientBuilder patientBuilder = patientBuildersByPatientUuid.getAndRemoveFromCache(patientUuid);
@@ -115,6 +116,11 @@ public class PatientResourceCache {
             LOG.trace("Saving " + patientBuilder.getResource().getResourceType() + " " + patientBuilder.getResource().getId() + " map IDs = " + performIdMapping + "\n" + json);*/
 
             fhirResourceFiler.savePatientResource(null, performIdMapping, patientBuilder);
+
+            done ++;
+            if (done % 50000 == 0) {
+                LOG.info("Done " + done);
+            }
         }
 
         LOG.info("Finishing saving patients to the DB");
