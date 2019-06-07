@@ -128,7 +128,7 @@ public class TransformConfig {
                 this.resourceSaveBatchSize = node.asInt();
             }
 
-            node = json.get("rabbit_messge_per_second_throttle");
+            node = json.get("rabbit_message_per_second_throttle");
             if (node != null) {
                 this.rabbitMessagePerSecondThrottle = node.asInt();
             }
