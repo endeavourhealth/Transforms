@@ -284,6 +284,8 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRWaitingList");
             set.add("SRAttendee");
             set.add("SRCluster");
+            set.add("SRHospitalAAndENumber");
+            set.add("SRCHSStatusHistory");
 
             cachedFileNamesToIgnore = set;
         }
