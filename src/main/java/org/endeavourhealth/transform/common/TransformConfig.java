@@ -68,7 +68,7 @@ public class TransformConfig {
         this.isLive = false;
         this.resourceSaveBatchSize = 50;
         this.hmFileTypeFilters = new HashMap<>();
-        this.rabbitMessagePerSecondThrottle = 1000;
+        this.rabbitMessagePerSecondThrottle = 5000;
 
         try {
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
