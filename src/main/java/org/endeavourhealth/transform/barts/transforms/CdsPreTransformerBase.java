@@ -30,7 +30,7 @@ public abstract class CdsPreTransformerBase {
 
     protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
         processProcedures(parser,csvHelper,susRecordType);
-        //processDiagnoses(parser,csvHelper,susRecordType);
+        processDiagnoses(parser,csvHelper,susRecordType);
     }
 
     private static void processProcedures(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
