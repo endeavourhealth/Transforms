@@ -437,6 +437,11 @@ public abstract class CdsPreTransformerBase {
         StagingConditionCds cdsSecondary = commonContent.clone();
 
         String icdCode = secondaryDiagnosisCell.getString().trim();
+        //TODO an ugly patch to get this data through. Decide tomorrow how to fix
+        if (icdCode.length()>4 && icdCode.indexOf(".")<0) {
+            TransformWarnings.log(LOG, csvHelper, "Long code found. Shortening : {}", icdCode);
+            icdCode=icdCode.substring(0,4);
+        }
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
         cdsSecondary.setDiagnosisIcdCode(icdCode);
          /*
