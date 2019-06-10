@@ -45,8 +45,8 @@ public class ProblemPreTransformer {
 
         StagingProblem obj = new StagingProblem();
 
-        CsvCell problemIdCell = parser.getProblemId();
-        CsvCell personIdCell = parser.getPersonIdSanitised();
+        CsvCell problemIdCell = parser.getProblemIdSanitised();   // .00 suffix removed
+        CsvCell personIdCell = parser.getPersonIdSanitised();     // .00 suffix removed
         String personId = personIdCell.getString();
 
         if (Strings.isNullOrEmpty(personId)) {

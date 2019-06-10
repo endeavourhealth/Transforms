@@ -40,6 +40,18 @@ public class Problem extends AbstractFixedParser {
         return ret;
     }
 
+    /**
+     * problem_id is suffixed with ".00" so we have this version to give us a nice version to work with
+     */
+    public CsvCell getProblemIdSanitised() {
+        CsvCell ret = getProblemId();
+        if (ret.getString().contains(".")) {
+            int i = new Double(ret.getString()).intValue();
+            ret = CsvCell.factoryWithNewValue(ret, Integer.toString(i));
+        }
+        return ret;
+    }
+
     public CsvCell getUpdateDateTime() {
         return super.getCell("update_dt_tm");
     }
