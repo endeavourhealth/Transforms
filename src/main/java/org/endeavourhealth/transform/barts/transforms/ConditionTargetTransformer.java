@@ -53,7 +53,7 @@ public class ConditionTargetTransformer {
             boolean isDeleted = targetCondition.isDeleted();
             String problemStatus = targetCondition.getProblemStatus();
 
-            if (isDeleted || problemStatus.equalsIgnoreCase("Canceled")) {
+            if (isDeleted || (problemStatus != null && problemStatus.equalsIgnoreCase("Canceled"))) {
 
                 // retrieve the existing Condition resource to perform the deletion on
                 Condition existingCondition
