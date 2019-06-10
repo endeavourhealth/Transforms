@@ -388,6 +388,12 @@ public abstract class CdsPreTransformerBase {
         StagingConditionCds cdsPrimary = commonContent.clone();
 
         String icdCode = primaryDiagnosisCell.getString().trim();
+        //TODO an ugly patch to get this data through. Decide tomorrow how to fix
+        if (icdCode.length()>5 && icdCode.indexOf(".")<0) {
+            TransformWarnings.log(LOG, csvHelper, "Illegal code found : {}", icdCode);
+            return false;
+        }
+
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
         cdsPrimary.setDiagnosisIcdCode(icdCode);
  /*
