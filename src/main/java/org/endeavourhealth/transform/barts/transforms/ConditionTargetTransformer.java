@@ -75,8 +75,8 @@ public class ConditionTargetTransformer {
             ConditionBuilder conditionBuilder = new ConditionBuilder(null, targetCondition.getAudit());
             conditionBuilder.setId(uniqueId);
 
-            //we always have a performed date, although it may be an unknown
-            if (!isUnknownConditionDate(targetCondition.getDtPerformed())) {
+            //we don't always have a performed date, although it may be an unknown
+            if (targetCondition.getDtPerformed()!= null && !isUnknownConditionDate(targetCondition.getDtPerformed())) {
 
                 DateTimeType conditionDateTime = new DateTimeType(targetCondition.getDtPerformed());
                 conditionBuilder.setOnset(conditionDateTime);
