@@ -453,7 +453,7 @@ public abstract class CdsPreTransformerBase {
         int remainingConditionCount = 0;
         int seq = 3;
 
-        for (String word : BartsSusHelper.splitEqually(otherDiagnosisICD.getString(), 40)) {
+        for (String word : BartsSusHelper.splitEqually(otherDiagnosisICD.getString(), 7)) {
             if (Strings.isNullOrEmpty(word)) {
                 break;
             }
