@@ -159,7 +159,7 @@ public class PublishedFileAuditHelper {
 
     private static long findFileLength(String filePath) throws Exception {
 
-        String parent = FilenameUtils.getFullPath(filePath);
+        String parent = FilenameUtils.getFullPathNoEndSeparator(filePath);
         List<FileInfo> fileInfos = FileHelper.listFilesInSharedStorageWithInfo(parent);
         for (FileInfo info: fileInfos) {
             String infoPath = info.getFilePath();
