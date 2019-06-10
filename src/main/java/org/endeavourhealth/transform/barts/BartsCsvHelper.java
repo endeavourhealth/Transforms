@@ -73,6 +73,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private static SimpleDateFormat DATE_FORMAT_BULK = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
     private static SimpleDateFormat DATE_FORMAT_CLEVE = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
     private static SimpleDateFormat DATE_FORMAT_PROCEDURE = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss");
+    private static SimpleDateFormat DATE_FORMAT_PROBLEM = new SimpleDateFormat("dd-MMM-yyyy");
+
 
     private static Date cachedEndOfTime = null;
     private static Date cachedStartOfTime = null;
@@ -259,7 +261,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return ret;
     }
 
-    public void processStagingForTargetProcedures () throws Exception {
+    public void processStagingForTargetProcedures() throws Exception {
 
         stagingRepository.processStagingForTargetProcedures(this.exchangeId, this.serviceId);
     }
@@ -270,7 +272,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return ret;
     }
 
-    public void processStagingForTargetConditions () throws Exception {
+    public void processStagingForTargetConditions() throws Exception {
 
         stagingRepository.processStagingForTargetConditions(this.exchangeId, this.serviceId);
     }
@@ -408,7 +410,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         if (ret == null) {
             ret = TerminologyService.lookupSnomedConceptForDescriptionId(descId).getConceptCode();
             if (ret == null) {
-                TransformWarnings.log(LOG, this,"Failed to find SNOMED concept id for desc ID " + descId);
+                TransformWarnings.log(LOG, this, "Failed to find SNOMED concept id for desc ID " + descId);
             }
         }
         return ret;
@@ -837,13 +839,18 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
                         String date3 = formatAllcapsMonth(dateString);
                         d = DATE_FORMAT_PROCEDURE.parse(date3);
                         adjustForBst = false;
-
                     } catch (ParseException ex3) {
-                        //I have no idea if the weird CLEVE dates are affected by the BST issue or not
-                        //so we need to investigate to find out if they are or not. But I don't have time to
-                        //work that out now, so pushing this back until we actually start processing the CLEVE files
-                        d = DATE_FORMAT_CLEVE.parse(dateString);
-                        adjustForBst = false;
+                        try {
+                            d = DATE_FORMAT_PROBLEM.parse(dateString);
+                            adjustForBst = false;
+
+                        } catch (ParseException ex4) {
+                            //I have no idea if the weird CLEVE dates are affected by the BST issue or not
+                            //so we need to investigate to find out if they are or not. But I don't have time to
+                            //work that out now, so pushing this back until we actually start processing the CLEVE files
+                            d = DATE_FORMAT_CLEVE.parse(dateString);
+                            adjustForBst = false;
+                        }
                     }
                 }
             }
@@ -1065,9 +1072,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public SusPatientCache getSusPatientCache() {
         return susPatientCache;
     }
+
     public SusPatientTailCache getSusPatientTailCache() {
         return susPatientTailCache;
     }
+
     public void cacheNewConsultationChildRelationship(CsvCell encounterIdCell,
                                                       CsvCell childIdCell,
                                                       ResourceType childResourceType) throws Exception {
