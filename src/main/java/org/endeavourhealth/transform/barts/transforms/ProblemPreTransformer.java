@@ -139,7 +139,7 @@ public class ProblemPreTransformer {
 
         CsvCell statusDateCell = parser.getStatusDate();
         if (!statusDateCell.isEmpty()) {
-            obj.setProblemStatusDtTm(statusDateCell.getDateTime());
+            obj.setProblemStatusDtTm(BartsCsvHelper.parseDate(statusDateCell));
         }
 
         CsvCell locationCell = parser.getOrgName();
