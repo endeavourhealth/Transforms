@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.common;
 
+import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -34,7 +36,7 @@ public class PublishedFileAuditHelper {
 
         //create file audit
         int fileAuditId;
-        boolean haveProcessedFileBefore = false;
+        //boolean haveProcessedFileBefore = false;
 
         UUID serviceId = parser.getServiceId();
         UUID systemId = parser.getSystemId();
@@ -45,13 +47,22 @@ public class PublishedFileAuditHelper {
             fileAuditId = existingId.intValue();
             //LOG.debug("Existing file ID = " + existingId);
 
+            //if we've previously started auditing this file, see where we got up to
+            long fileLen = findFileLength(filePath);
+
+            Integer fullyAuditedRecordCount = dal.isFileFullyAuditedAndGetRecordCount(fileAuditId, fileLen);
+            if (fullyAuditedRecordCount != null) {
+                LOG.info("File was previously fully audited, with " + fullyAuditedRecordCount + " records");
+                parser.setNumLines(fullyAuditedRecordCount);
+                return fileAuditId;
+            }
+
             //if we've already been through this file at some point, then we need to re-load the audit IDs
             //for each of the cells in this file, so set this to true
-            haveProcessedFileBefore = true;
+            //haveProcessedFileBefore = true;
 
         } else {
             fileAuditId = dal.auditFile(serviceId, systemId, exchangeId, fileTypeId, filePath);
-            //LOG.debug("Created new file ID = " + fileAuditId);
         }
 
         //use the threadpool for saving these record audit objects, so we can get better throughput
@@ -61,7 +72,7 @@ public class PublishedFileAuditHelper {
         InputStream inputStream = FileHelper.readFileFromSharedStorage(filePath);
         try {
 
-            AuditRowTask nextTask = new AuditRowTask(parser, haveProcessedFileBefore, fileAuditId);
+            AuditRowTask nextTask = new AuditRowTask(parser, fileAuditId);
 
             //loop through the file
             long currentRecordStart = 0;
@@ -98,7 +109,7 @@ public class PublishedFileAuditHelper {
                             if (nextTask.isFull()) {
                                 List<ThreadPoolError> errors = threadPool.submit(nextTask);
                                 handleErrors(errors);
-                                nextTask = new AuditRowTask(parser, haveProcessedFileBefore, fileAuditId);
+                                nextTask = new AuditRowTask(parser, fileAuditId);
                             }
                         }
 
@@ -123,7 +134,7 @@ public class PublishedFileAuditHelper {
                     if (nextTask.isFull()) {
                         List<ThreadPoolError> errors = threadPool.submit(nextTask);
                         handleErrors(errors);
-                        nextTask = new AuditRowTask(parser, haveProcessedFileBefore, fileAuditId);
+                        nextTask = new AuditRowTask(parser, fileAuditId);
                     }
                 }
             }
@@ -146,6 +157,20 @@ public class PublishedFileAuditHelper {
         return fileAuditId;
     }
 
+    private static long findFileLength(String filePath) throws Exception {
+
+        String parent = FilenameUtils.getFullPath(filePath);
+        List<FileInfo> fileInfos = FileHelper.listFilesInSharedStorageWithInfo(parent);
+        for (FileInfo info: fileInfos) {
+            String infoPath = info.getFilePath();
+            if (infoPath.equals(filePath)) {
+                return info.getSize();
+            }
+        }
+
+        throw new Exception("Failed to find file size for " + filePath);
+    }
+
     private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
         if (errors == null || errors.isEmpty()) {
             return;
@@ -162,13 +187,11 @@ public class PublishedFileAuditHelper {
     static class AuditRowTask implements Callable {
 
         private final ParserI parser;
-        private final boolean haveProcessedFileBefore;
         private final int fileAuditId;
         private List<PublishedFileRecord> records = new ArrayList<>();
 
-        public AuditRowTask(ParserI parser, boolean haveProcessedFileBefore, int fileAuditId) {
+        public AuditRowTask(ParserI parser, int fileAuditId) {
             this.parser = parser;
-            this.haveProcessedFileBefore = haveProcessedFileBefore;
             this.fileAuditId = fileAuditId;
         }
 
