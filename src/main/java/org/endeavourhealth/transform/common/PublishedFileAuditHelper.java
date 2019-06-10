@@ -168,6 +168,10 @@ public class PublishedFileAuditHelper {
             }
         }
 
+        LOG.error("Failed to find file size for " + filePath + ", got " + fileInfos.size() + " files in dir");
+        for (FileInfo info: fileInfos) {
+            LOG.error("Found: " + info.getFilePath());
+        }
         throw new Exception("Failed to find file size for " + filePath);
     }
 
