@@ -387,7 +387,7 @@ public abstract class CdsPreTransformerBase {
 
         StagingConditionCds cdsPrimary = commonContent.clone();
 
-        String icdCode = primaryDiagnosisCell.getString();
+        String icdCode = primaryDiagnosisCell.getString().trim();
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
         cdsPrimary.setDiagnosisIcdCode(icdCode);
  /*
@@ -430,7 +430,7 @@ public abstract class CdsPreTransformerBase {
 
         StagingConditionCds cdsSecondary = commonContent.clone();
 
-        String icdCode = secondaryDiagnosisCell.getString();
+        String icdCode = secondaryDiagnosisCell.getString().trim();
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
         cdsSecondary.setDiagnosisIcdCode(icdCode);
          /*
