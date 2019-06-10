@@ -168,7 +168,7 @@ public class PublishedFileAuditHelper {
             }
         }
 
-        LOG.error("Failed to find file size for " + filePath + ", got " + fileInfos.size() + " files in dir");
+        LOG.error("Failed to find file size for " + filePath + ", got " + fileInfos.size() + " files in " + parent);
         for (FileInfo info: fileInfos) {
             LOG.error("Found: " + info.getFilePath());
         }
