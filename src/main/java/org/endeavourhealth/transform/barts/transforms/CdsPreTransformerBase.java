@@ -470,7 +470,8 @@ public abstract class CdsPreTransformerBase {
 
              */
             if (icdCode.toUpperCase().endsWith(".X")) {
-                icdCode = icdCode.substring(0,2);
+                TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
+                icdCode = icdCode.substring(0,3);
             }
 
             icdCode = TerminologyService.standardiseIcd10Code(icdCode);
