@@ -390,7 +390,15 @@ public abstract class CdsPreTransformerBase {
         String icdCode = primaryDiagnosisCell.getString();
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
         cdsPrimary.setDiagnosisIcdCode(icdCode);
+ /*
+            ".x" or ".X" is a placeholder in ICD-10.  Our lookup will just have the first part so remove the placeholder.
+            https://www.cms.gov/Medicare/Coding/ICD10/Downloads/032310_ICD10_Slides.pdf
 
+             */
+        if (icdCode.toUpperCase().endsWith(".X")) {
+            TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
+            icdCode = icdCode.substring(0,3);
+        }
         String term = TerminologyService.lookupIcd10CodeDescription(icdCode);
         if (Strings.isNullOrEmpty(term)) {
             throw new Exception("Failed to find term for ICD-10 code " + icdCode);
@@ -425,6 +433,15 @@ public abstract class CdsPreTransformerBase {
         String icdCode = secondaryDiagnosisCell.getString();
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
         cdsSecondary.setDiagnosisIcdCode(icdCode);
+         /*
+            ".x" or ".X" is a placeholder in ICD-10.  Our lookup will just have the first part so remove the placeholder.
+            https://www.cms.gov/Medicare/Coding/ICD10/Downloads/032310_ICD10_Slides.pdf
+
+             */
+        if (icdCode.toUpperCase().endsWith(".X")) {
+            TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
+            icdCode = icdCode.substring(0,3);
+        }
 
         String term = TerminologyService.lookupIcd10CodeDescription(icdCode);
         if (Strings.isNullOrEmpty(term)) {
