@@ -390,8 +390,8 @@ public abstract class CdsPreTransformerBase {
         String icdCode = primaryDiagnosisCell.getString().trim();
         //TODO an ugly patch to get this data through. Decide tomorrow how to fix
         if (icdCode.length()>5 && icdCode.indexOf(".")<0) {
-            TransformWarnings.log(LOG, csvHelper, "Illegal code found : {}", icdCode);
-            return false;
+            TransformWarnings.log(LOG, csvHelper, "Long code found. Shortening : {}", icdCode);
+            icdCode=icdCode.substring(0,4);
         }
 
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
