@@ -64,6 +64,9 @@ public class ProblemPreTransformer {
         obj.setMrn(parser.getMrn().getString());
         obj.setUpdatedBy(parser.getUpdatedBy().getString());
 
+        obj.setProblemId(problemIdCell.getInt());
+        obj.setPersonId(personIdCell.getInt());
+
         //audit that our staging object came from this file and record
         ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
         audit.auditRecord(problemIdCell.getPublishedFileId(), problemIdCell.getRecordNumber());
