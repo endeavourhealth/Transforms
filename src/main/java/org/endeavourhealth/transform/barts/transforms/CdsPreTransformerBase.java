@@ -464,7 +464,11 @@ public abstract class CdsPreTransformerBase {
             if (icdCode.isEmpty()) {
                 break;
             }
-            /*
+
+
+            icdCode = TerminologyService.standardiseIcd10Code(icdCode);
+
+             /*
             ".x" or ".X" is a placeholder in ICD-10.  Our lookup will just have the first part so remove the placeholder.
             https://www.cms.gov/Medicare/Coding/ICD10/Downloads/032310_ICD10_Slides.pdf
 
@@ -473,8 +477,6 @@ public abstract class CdsPreTransformerBase {
                 TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
                 icdCode = icdCode.substring(0,3);
             }
-
-            icdCode = TerminologyService.standardiseIcd10Code(icdCode);
             cdsRemainder.setDiagnosisIcdCode(icdCode);
 
             CsvCell dateCell = parser.getCdsActivityDate();
