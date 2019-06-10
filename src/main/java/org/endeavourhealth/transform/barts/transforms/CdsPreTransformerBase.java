@@ -464,6 +464,15 @@ public abstract class CdsPreTransformerBase {
             if (icdCode.isEmpty()) {
                 break;
             }
+            /*
+            ".x" or ".X" is a placeholder in ICD-10.  Our lookup will just have the first part so remove the placeholder.
+            https://www.cms.gov/Medicare/Coding/ICD10/Downloads/032310_ICD10_Slides.pdf
+
+             */
+            if (icdCode.toUpperCase().endsWith(".X")) {
+                icdCode = icdCode.substring(0,2);
+            }
+
             icdCode = TerminologyService.standardiseIcd10Code(icdCode);
             cdsRemainder.setDiagnosisIcdCode(icdCode);
 
