@@ -75,6 +75,8 @@ public class ProblemPreTransformer {
         CsvCell onsetDtCell = parser.getOnsetDate();
         obj.setOnsetDtTm(BartsCsvHelper.parseDate(onsetDtCell));
 
+        CsvCell statusCell = parser.getStatusLifecycle();
+
         //vocab is either "UK Ed Subset" or "SNOMED CT". Snomed description Ids are used.
         String vocab = parser.getVocabulary().getString();
         obj.setVocab(vocab);
@@ -103,13 +105,19 @@ public class ProblemPreTransformer {
             probTerm = snomedCode.getTerm();
             probCode = snomedCode.getConceptCode();  //update the code to be an actual Snomed ConceptId
 
-        } else if (vocab.equalsIgnoreCase("Cerner")) {
+        } else if (vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_CERNER) ||
+                    vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_PATIENT_CARE)) {
             // in this file, Cerner VOCAB doesn't seem to mean it refers to the CVREF file, so don't make any
-            // attempt to look up an official term and just use the original problem term text
+            // attempt to look up an official term and just use the original problem term text.  Also, Patient Care
+            // records do not have codes so just use the term
 
             probTerm = parser.getProblem().getString();
         } else {
-            throw new Exception("Unexpected coding scheme vocab " + vocab);
+
+            // only throw an exception if this is not a canceled (US spelling) record and the vocab is unrecognised
+            if (!statusCell.isEmpty() && !statusCell.getString().equalsIgnoreCase("Canceled")) {
+                throw new Exception("Unexpected coding scheme vocab " + vocab);
+            }
         }
 
         obj.setProblemCd(probCode);
@@ -135,7 +143,7 @@ public class ProblemPreTransformer {
             obj.setRanking(rankingCell.getString());
         }
 
-        CsvCell statusCell = parser.getStatusLifecycle();
+        // status cell is set before the coding processing
         if (!statusCell.isEmpty()) {
             obj.setProblemStatus(statusCell.getString());
         }

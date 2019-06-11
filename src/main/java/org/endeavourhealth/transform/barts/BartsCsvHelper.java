@@ -59,6 +59,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public static final String CODE_TYPE_OPCS_4 = "OPCS4";
     public static final String CODE_TYPE_HRG = "HRG";
     public static final String CODE_TYPE_CERNER = "CERNER";
+    public static final String CODE_TYPE_PATIENT_CARE = "Patient Care";
     public static final String SUS_RECORD_TYPE_INPATIENT = "InPatient";
     public static final String SUS_RECORD_TYPE_OUTPATIENT = "OutPatient";
     public static final String SUS_RECORD_TYPE_EMERGENCY = "Emergency";
