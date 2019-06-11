@@ -437,11 +437,12 @@ public abstract class CdsPreTransformerBase {
         StagingConditionCds cdsSecondary = commonContent.clone();
 
         String icdCode = secondaryDiagnosisCell.getString().trim();
-        //TODO an ugly patch to get this data through. Decide tomorrow how to fix
-        if (icdCode.length()>4 && icdCode.indexOf(".")<0) {
-            TransformWarnings.log(LOG, csvHelper, "Long code found. Shortening : {}", icdCode);
-            icdCode=icdCode.substring(0,4);
-        }
+        // 7 chars are valid especially for ICD-O. ICD for Oncology.
+//        //TODO an ugly patch to get this data through. Decide tomorrow how to fix
+//        if (icdCode.length()>4 && icdCode.indexOf(".")<0) {
+//            TransformWarnings.log(LOG, csvHelper, "Long code found. Shortening : {}", icdCode);
+//            icdCode=icdCode.substring(0,4);
+//        }
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
         cdsSecondary.setDiagnosisIcdCode(icdCode);
          /*
@@ -456,7 +457,8 @@ public abstract class CdsPreTransformerBase {
 
         String term = TerminologyService.lookupIcd10CodeDescription(icdCode);
         if (Strings.isNullOrEmpty(term)) {
-            throw new Exception("Failed to find term for ICD 10 code " + icdCode);
+            TransformWarnings.log(LOG, csvHelper, "#unmappedicd10 Unmapped ICD-10 code : {}", icdCode);
+            //    throw new Exception("Failed to find term for ICD 10 code " + icdCode);
         }
         cdsSecondary.setLookupDiagnosisIcdTerm(term);
         cdsSecondary.setDiagnosisSeqNbr(2);
