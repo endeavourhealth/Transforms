@@ -90,7 +90,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         if (startDate == null
                 || !extractDate.before(startDate)) {
-            LOG.trace("Processing patient data for extract " + extractDate + " for " + service.getName() + " " + odsCode + " as this is on or after their start date of " + startDate);
+            //LOG.trace("Processing patient data for extract " + extractDate + " for " + service.getName() + " " + odsCode + " as this is on or after their start date of " + startDate);
             return true;
 
         } else {

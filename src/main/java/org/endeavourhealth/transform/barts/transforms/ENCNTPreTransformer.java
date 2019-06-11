@@ -51,11 +51,11 @@ public class ENCNTPreTransformer {
     public static void processRecord(ENCNT parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         //nasty hack to get through the 16M record bulk without
-        String file = parser.getFilePath();
+        /*String file = parser.getFilePath();
         if (file.contains("2017-12-03")
                 && parser.getCurrentLineNumber() < 14000000L) {
             return;
-        }
+        }*/
 
         //in-active (i.e. deleted) rows don't have anything else but the ID, so we can't do anything with them
         CsvCell activeCell = parser.getActiveIndicator();
