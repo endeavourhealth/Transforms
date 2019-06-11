@@ -39,18 +39,16 @@ public class DiagnosisPreTransformer {
 
     private static void processRecord(org.endeavourhealth.transform.barts.schema.Diagnosis parser, BartsCsvHelper csvHelper) throws Exception {
 
-        CsvCell diagnosisIdCell = parser.getDiagnosisId();
+        CsvCell diagnosisIdCell = parser.getDiagnosisIdSanitised();
 
-
-
-        CsvCell personIdCell = parser.getPersonId();
+        CsvCell personIdCell = parser.getPersonIdIdSanitised();
         if (personIdCell.isEmpty()) {
             TransformWarnings.log(LOG, csvHelper, "No person ID found for Diagnosis for diagnosis ID {}", diagnosisIdCell);
             return;
         }
 
         if (!csvHelper.processRecordFilteringOnPatientId(personIdCell.getString())) {
-            TransformWarnings.log(LOG, csvHelper, "Skipping Procedure with patient ID {} as not part of filtered subset", diagnosisIdCell);
+            TransformWarnings.log(LOG, csvHelper, "Skipping Diagnosis with Diagnosis ID {} as not part of filtered subset", diagnosisIdCell);
             return;
         }
 

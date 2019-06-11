@@ -22,7 +22,6 @@ public class Diagnosis extends AbstractFixedParser {
         super(serviceId, systemId, exchangeId, version, filePath, DATE_FORMAT, TIME_FORMAT);
     }
 
-    //all the below need re-implementing using CsvCells
     public CsvCell getDiagnosisId() {
         return super.getCell("diagnosis_id");
     }
@@ -52,6 +51,30 @@ public class Diagnosis extends AbstractFixedParser {
      */
     public CsvCell getEncounterIdSanitised() {
         CsvCell ret = getEncounterId();
+        if (ret.getString().contains(".")) {
+            int i = new Double(ret.getString()).intValue();
+            ret = CsvCell.factoryWithNewValue(ret, Integer.toString(i));
+        }
+        return ret;
+    }
+
+    /**
+     * person ID is suffixed with ".00" so we have this version to give us a nice version to work with
+     */
+    public CsvCell getPersonIdIdSanitised() {
+        CsvCell ret = getPersonId();
+        if (ret.getString().contains(".")) {
+            int i = new Double(ret.getString()).intValue();
+            ret = CsvCell.factoryWithNewValue(ret, Integer.toString(i));
+        }
+        return ret;
+    }
+
+    /**
+     * diagnosis ID is suffixed with ".00" so we have this version to give us a nice version to work with
+     */
+    public CsvCell getDiagnosisIdSanitised() {
+        CsvCell ret = getDiagnosisId();
         if (ret.getString().contains(".")) {
             int i = new Double(ret.getString()).intValue();
             ret = CsvCell.factoryWithNewValue(ret, Integer.toString(i));
