@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.emis.csv.helpers;
 
 import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
@@ -8,6 +9,7 @@ import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.ResourceParser;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class EmisCodeHelper {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCodeHelper.class);
@@ -28,6 +31,9 @@ public class EmisCodeHelper {
     public static final String AUDIT_CLINICAL_CODE_READ_TERM = "read_term";
     public static final String AUDIT_DRUG_CODE = "drug_code";
     public static final String AUDIT_DRUG_TERM = "drug_term";
+
+    private static Map<String, String> maritalStatusMap;
+    private static Map<String, String> ethnicityMap;
 
     public static CodeableConceptBuilder createCodeableConcept(HasCodeableConceptI resourceBuilder, boolean medication, CsvCell codeIdCell, CodeableConceptBuilder.Tag tag, EmisCsvHelper csvHelper) throws Exception {
         if (codeIdCell.isEmpty()) {
@@ -197,101 +203,58 @@ public class EmisCodeHelper {
         return list.toArray(new CsvCell[0]);
     }
 
-    public static void applyEthnicity(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) {
+    public static void applyEthnicity(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) throws Exception {
         EthnicCategory ethnicCategory = findEthnicityCode(codeMap);
         patientBuilder.setEthnicity(ethnicCategory, sourceCells);
     }
 
-    public static void applyMaritalStatus(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) {
+    public static void applyMaritalStatus(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) throws Exception {
         MaritalStatus maritalStatus = findMaritalStatus(codeMap);
         //note, the above may return null if it's one of the "unknown" codes, so we simply clear the field on the resource
         patientBuilder.setMaritalStatus(maritalStatus, sourceCells);
     }
 
-
-    public static MaritalStatus findMaritalStatus(EmisCsvCodeMap codeMapping) {
+    public static MaritalStatus findMaritalStatus(EmisCsvCodeMap codeMapping) throws Exception {
         String read2Code = removeSynonymAndPadRead2Code(codeMapping);
         if (Strings.isNullOrEmpty(read2Code)) {
             return null;
         }
 
-        if (read2Code.equals("1332.")
-                || read2Code.equals("EMISNQHO15")
-                || read2Code.equals("EMISNQHO16")
-                || read2Code.equals("133S.")) {
-            return MaritalStatus.MARRIED;
+        if (maritalStatusMap == null) {
+            maritalStatusMap = ResourceParser.readCsvResourceIntoMap("EmisMaritalStatusMap.csv", "SourceCode", "TargetCode", CSVFormat.DEFAULT.withHeader());
+        }
 
-        } else if (read2Code.equals("1334.")
-                || read2Code.equals("133T.")) {
-            return MaritalStatus.DIVORCED;
+        String code = maritalStatusMap.get(read2Code);
+        if (code == null) {
+            throw new RuntimeException("Unknown marital status code " + read2Code);
 
-        } else if (read2Code.equals("1335.")
-                || read2Code.equals("133C.")
-                || read2Code.equals("133V.")) {
-            return MaritalStatus.WIDOWED;
-
-        } else if (read2Code.equals("1333.")) {
-            return MaritalStatus.LEGALLY_SEPARATED;
-
-        } else if (read2Code.equals("1336.")
-                || read2Code.equals("133e.")
-                || read2Code.equals("133G.")
-                || read2Code.equals("133H.")
-                || read2Code.equals("EMISNQCO47")) {
-            return MaritalStatus.DOMESTIC_PARTNER;
-
-        } else if (read2Code.equals("133F.") //Marital state unknown
-                || read2Code.equals("133W.") //Marital/civil state not disclosed
-                || read2Code.equals("1331.")) { //single
-            return null;
+        } else if (!Strings.isNullOrEmpty(code)) {
+            return MaritalStatus.fromCode(code);
 
         } else {
-            throw new RuntimeException("Unknown marital status code " + read2Code);
+            return null;
         }
     }
 
-    public static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) {
+
+    public static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) throws Exception {
         String read2Code = removeSynonymAndPadRead2Code(codeMapping);
         if (Strings.isNullOrEmpty(read2Code)) {
             return null;
         }
 
-        if (read2Code.startsWith("9i0")) {
-            return EthnicCategory.WHITE_BRITISH;
-        } else if (read2Code.startsWith("9i1")) {
-            return EthnicCategory.WHITE_IRISH;
-        } else if (read2Code.startsWith("9i2")) {
-            return EthnicCategory.OTHER_WHITE;
-        } else if (read2Code.startsWith("9i3")) {
-            return EthnicCategory.MIXED_CARIBBEAN;
-        } else if (read2Code.startsWith("9i4")) {
-            return EthnicCategory.MIXED_AFRICAN;
-        } else if (read2Code.startsWith("9i5")) {
-            return EthnicCategory.MIXED_ASIAN;
-        } else if (read2Code.startsWith("9i6")) {
-            return EthnicCategory.OTHER_MIXED;
-        } else if (read2Code.startsWith("9i7")) {
-            return EthnicCategory.ASIAN_INDIAN;
-        } else if (read2Code.startsWith("9i8")) {
-            return EthnicCategory.ASIAN_PAKISTANI;
-        } else if (read2Code.startsWith("9i9")) {
-            return EthnicCategory.ASIAN_BANGLADESHI;
-        } else if (read2Code.startsWith("9iA")) {
-            return EthnicCategory.OTHER_ASIAN;
-        } else if (read2Code.startsWith("9iB")) {
-            return EthnicCategory.BLACK_CARIBBEAN;
-        } else if (read2Code.startsWith("9iC")) {
-            return EthnicCategory.BLACK_AFRICAN;
-        } else if (read2Code.startsWith("9iD")) {
-            return EthnicCategory.OTHER_BLACK;
-        } else if (read2Code.startsWith("9iE")) {
-            return EthnicCategory.CHINESE;
-        } else if (read2Code.startsWith("9iF")) {
-            return EthnicCategory.OTHER;
-        } else if (read2Code.startsWith("9iG")) {
-            return EthnicCategory.NOT_STATED;
+        if (ethnicityMap == null) {
+            ethnicityMap = ResourceParser.readCsvResourceIntoMap("EmisEthnicityMap.csv", "SourceCode", "TargetCode", CSVFormat.DEFAULT.withHeader());
+        }
+
+        String code = ethnicityMap.get(read2Code);
+        if (code == null) {
+            throw new RuntimeException("Unknown ethnicity code " + read2Code);
+
+        } else if (!Strings.isNullOrEmpty(code)) {
+            return EthnicCategory.fromCode(code);
+
         } else {
-            //note, there are no other branches under the Ethnicity hierarchy
             return null;
         }
     }
