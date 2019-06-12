@@ -89,7 +89,7 @@ public class PatientTransformer {
         Reference organisationReference = csvHelper.createOrganisationReference(organisationGuid);
         episodeBuilder.setManagingOrganisation(organisationReference, organisationGuid);
 
-        CsvCell patientType = parser.getPatientTypedescription();
+        CsvCell patientType = parser.getPatientTypeDescription();
         CsvCell dummyType = parser.getDummyType();
         RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
         episodeBuilder.setRegistrationType(registrationType, patientType, dummyType);
@@ -282,7 +282,7 @@ public class PatientTransformer {
         nameBuilder.addFamily(surname.getString(), surname);
 
         //we need to know the registration type to work out the address use
-        CsvCell patientType = parser.getPatientTypedescription();
+        CsvCell patientType = parser.getPatientTypeDescription();
         CsvCell dummyType = parser.getDummyType();
 
         //dummy flag can be one of two places
@@ -387,6 +387,7 @@ public class PatientTransformer {
 
                 } catch (IllegalArgumentException ex) {
                     codeableConceptBuilder.setText(carerRelationship.getString(), carerRelationship);
+                    TransformWarnings.log(LOG, csvHelper, "Unmapped Emis carer relationship type {}", carerRelationship);
                 }
             }
         }

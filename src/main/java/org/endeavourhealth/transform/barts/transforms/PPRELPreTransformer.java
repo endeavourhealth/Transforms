@@ -79,9 +79,16 @@ public class PPRELPreTransformer {
 
             try {
 
-                //we need to store the PPREL ID -> PERSON ID mapping so that if the address is ever deleted,
+                //we need to store the PPREL ID -> PERSON ID mapping so that if the record is ever deleted,
                 //we can find the person it belonged to, since the deleted records only give us the ID
-                csvHelper.saveInternalId(PPREL_ID_TO_PERSON_ID, relatedPersonIdCell.getString(), personIdCell.getString());
+                String relatedPersonId = relatedPersonIdCell.getString();
+                String personId = personIdCell.getString();
+                String existingPersonId = csvHelper.getInternalId(PPREL_ID_TO_PERSON_ID, relatedPersonId);
+                if (existingPersonId == null
+                        || !existingPersonId.equals(personId)) {
+
+                    csvHelper.saveInternalId(PPREL_ID_TO_PERSON_ID, relatedPersonId, personId);
+                }
 
                 //store the relationship type in the internal ID map table so the family history transformer can look it up
                 csvHelper.savePatientRelationshipType(personIdCell, relatedPersonIdCell, relationshipToPatientCodeCell);

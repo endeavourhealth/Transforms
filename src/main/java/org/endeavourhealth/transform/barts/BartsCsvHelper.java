@@ -971,7 +971,14 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         String sourceId = personIdCell.getString() + ":" + relationshipIdCell.getString();
         String destId = typeCode.getString();
-        saveInternalId(PPREL_TO_RELATIONSHIP_TYPE, sourceId, destId);
+
+        //only save if it's different to the current
+        String existingDestId = getInternalId(PPREL_TO_RELATIONSHIP_TYPE, sourceId);
+        if (existingDestId == null
+                || !existingDestId.equals(destId)) {
+
+            saveInternalId(PPREL_TO_RELATIONSHIP_TYPE, sourceId, destId);
+        }
     }
 
     /*

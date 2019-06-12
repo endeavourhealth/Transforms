@@ -5,10 +5,7 @@ import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPREL;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.ContactPoint;
@@ -51,6 +48,7 @@ public class PPRELTransformer {
         //so we need to look it up via the internal ID mapping will have stored when we first created the contactPoint
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
+            TransformWarnings.log(LOG, csvHelper, "Non-active PPREL record {}", relationshipIdCell);
 
             String personIdStr = csvHelper.getInternalId(PPRELPreTransformer.PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString());
             if (!Strings.isNullOrEmpty(personIdStr)) {

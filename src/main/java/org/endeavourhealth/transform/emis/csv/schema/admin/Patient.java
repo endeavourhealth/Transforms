@@ -146,7 +146,7 @@ public class Patient extends AbstractCsvParser {
     public CsvCell getPatientNumber() {
         return super.getCell("PatientNumber");
     }
-    public CsvCell getPatientTypedescription() {
+    public CsvCell getPatientTypeDescription() {
         return super.getCell("PatientTypeDescription");
     }
     public CsvCell getDummyType() {

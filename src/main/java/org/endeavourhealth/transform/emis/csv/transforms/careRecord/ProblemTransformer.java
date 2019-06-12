@@ -6,6 +6,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
@@ -16,10 +17,13 @@ import org.endeavourhealth.transform.emis.csv.schema.careRecord.Problem;
 import org.hl7.fhir.instance.model.BooleanType;
 import org.hl7.fhir.instance.model.DateType;
 import org.hl7.fhir.instance.model.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class ProblemTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(ProblemTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -119,10 +123,10 @@ public class ProblemTransformer {
             conditionBuilder.setProblemLastReviewedBy(practitionerReference, lastReviewedByGuid);
         }
 
-        CsvCell significance = parser.getSignificanceDescription();
-        if (!significance.isEmpty()) {
-            ProblemSignificance fhirSignificance = convertSignificance(significance.getString());
-            conditionBuilder.setProblemSignificance(fhirSignificance, significance);
+        CsvCell significanceCell = parser.getSignificanceDescription();
+        if (!significanceCell.isEmpty()) {
+            ProblemSignificance fhirSignificance = convertSignificance(significanceCell, csvHelper);
+            conditionBuilder.setProblemSignificance(fhirSignificance, significanceCell);
         }
 
         CsvCell parentProblemGuid = parser.getParentProblemObservationGuid();
@@ -168,8 +172,9 @@ public class ProblemTransformer {
         }
     }
 
-    private static ProblemSignificance convertSignificance(String significance) {
+    private static ProblemSignificance convertSignificance(CsvCell significanceCell, EmisCsvHelper csvHelper) throws Exception {
 
+        String significance = significanceCell.getString();
         if (significance.equalsIgnoreCase("Significant Problem")) {
             return ProblemSignificance.SIGNIFICANT;
 
@@ -177,6 +182,7 @@ public class ProblemTransformer {
             return ProblemSignificance.NOT_SIGNIFICANT;
 
         } else {
+            TransformWarnings.log(LOG, csvHelper, "Unmapped problem significance {}", significanceCell);
             return ProblemSignificance.UNSPECIIED;
         }
     }
