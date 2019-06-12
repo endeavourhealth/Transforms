@@ -75,13 +75,15 @@ public class ConditionTargetTransformer {
             ConditionBuilder conditionBuilder = new ConditionBuilder(null, targetCondition.getAudit());
             conditionBuilder.setId(uniqueId);
 
-            //we don't always have a performed date, although it may be an unknown
+            //we don't always have a performed date and it may be an unknown / 1900-01-01 one to skip over
             if (targetCondition.getDtPerformed()!= null && !isUnknownConditionDate(targetCondition.getDtPerformed())) {
 
                 DateTimeType conditionDateTime = new DateTimeType(targetCondition.getDtPerformed());
                 conditionBuilder.setOnset(conditionDateTime);
             } else {
-                conditionBuilder.setOnset(null);
+
+                TransformWarnings.log(LOG, csvHelper, "Condition: {} which has UNKNOWN date skipped", uniqueId);
+                continue;
             }
 
             // set the patient reference
@@ -101,27 +103,33 @@ public class ConditionTargetTransformer {
                 conditionBuilder.setEncounter(encounterReference);
             }
 
+            //is it a Problem - use problem status to determine
+            Boolean isProblem = !Strings.isNullOrEmpty(problemStatus);
+            conditionBuilder.setAsProblem(isProblem);
+
             String confirmation = targetCondition.getConfirmation();
             if (!Strings.isNullOrEmpty(confirmation)) {
 
+                //DS and CG - suggest Confirmed problems only and Complaining of, Complaint of, Confirmed  diagnoses
+                //other wise, skip.  Should be dealt with up front in pre-transforms but this is to double check
+                //none have slipped through which we are not interested in
                 if (confirmation.equalsIgnoreCase("Confirmed")) {
 
                     conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
-                } else if (confirmation.equalsIgnoreCase("Suspected")) {
+                } else if (!isProblem && (confirmation.equalsIgnoreCase("Complaining of") ||
+                        confirmation.equalsIgnoreCase("Complaint of"))) {
 
-                    //conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.PROVISIONAL);
-                    TransformWarnings.log(LOG, csvHelper, "Ignoring Condition Id with status 'Suspected': {}", uniqueId);
+                    conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
+                } else {
+
+                    TransformWarnings.log(LOG, csvHelper, "Ignoring Condition Id: {} with confirmation status: "+confirmation, uniqueId);
                     continue;
                 }
             } else {
 
-                TransformWarnings.log(LOG, csvHelper, "Ignoring Condition Id without a confirmation status: {}", uniqueId);
+                TransformWarnings.log(LOG, csvHelper, "Ignoring Condition Id with NO confirmation status: {}", uniqueId);
                 continue;
             }
-
-            //is it a Problem - use problem status to determine
-            Boolean isProblem = !Strings.isNullOrEmpty(problemStatus);
-            conditionBuilder.setAsProblem(isProblem);
 
             //note that status is also used, at the start of this fn, to work out whether to delete the resource
             if (isProblem) {
@@ -173,6 +181,10 @@ public class ConditionTargetTransformer {
             } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_CERNER)) {
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+
+            } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_PATIENT_CARE)) {
+
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_PATIENT_CARE);
             } else {
                 throw new TransformException("Unknown Condition Target code type [" + conditionCodeType + "]");
             }
@@ -190,6 +202,9 @@ public class ConditionTargetTransformer {
 
             String conditionType = targetCondition.getConditionType();
             if (!Strings.isNullOrEmpty(conditionType)) {
+
+                //These might be codes or free text
+
 
                 // these are specific diagnosis types, Principal, Working etc.
                 CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(17L, conditionType);

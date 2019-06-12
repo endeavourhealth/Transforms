@@ -85,8 +85,16 @@ public class DIAGNPreTransformer {
                 TransformWarnings.log(LOG, csvHelper, "DIAGN {} has no MRN from lookup for person {}", diagnosisIdCell, personId);
             }
 
+            // check DIAGN record first for personnel ID. If missing, try encounter lookup as per PROCE
             CsvCell responsiblePersonnelId = parser.getPersonnelId();
-            if (!responsiblePersonnelId.isEmpty()) {
+            if (BartsCsvHelper.isEmptyOrIsZero(responsiblePersonnelId)) {
+
+                String responsiblePersonnelIdFromEncounter = csvHelper.findResponsiblePersonnelIdFromEncounterId(encounterIdCell);
+                if (!Strings.isNullOrEmpty(responsiblePersonnelIdFromEncounter)) {
+                    stagingDIAGN.setDiagnosisPersonnelId(Integer.valueOf(responsiblePersonnelIdFromEncounter));
+                }
+            } else {
+
                 stagingDIAGN.setDiagnosisPersonnelId(responsiblePersonnelId.getInt());
             }
 
