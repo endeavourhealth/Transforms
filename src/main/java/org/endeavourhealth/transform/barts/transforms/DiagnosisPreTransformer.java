@@ -106,7 +106,7 @@ public class DiagnosisPreTransformer {
             diagTerm = snomedCode.getTerm();
             diagCode = snomedCode.getConceptCode();  //update the code to be an actual Snomed ConceptId
 
-        } else if (vocabCell.getString().trim().equals("Allergy")) {
+        } else if (vocabCell.getString().trim().equals("[Allergy]")) {
             TransformWarnings.log(LOG,csvHelper,"Allergycoding.  Found Allergy as vocab for diagnosis id: {}", diagnosisIdCell.getString() );
             return;
         } else {
