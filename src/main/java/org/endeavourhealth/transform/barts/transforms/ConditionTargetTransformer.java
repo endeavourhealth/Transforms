@@ -203,15 +203,23 @@ public class ConditionTargetTransformer {
             String conditionType = targetCondition.getConditionType();
             if (!Strings.isNullOrEmpty(conditionType)) {
 
-                //These might be codes or free text
+                //This data might be Cerner coded or free text
+                try {
+                    // is the condition type an Integer Id?
+                    Integer.parseInt(conditionType);
 
+                    // these are specific diagnosis category coded types, code set 17, Principal, Working etc.
+                    CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(17L, conditionType);
+                    if (cernerCodeValueRef != null) {
 
-                // these are specific diagnosis types, Principal, Working etc.
-                CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(17L, conditionType);
-                if (cernerCodeValueRef != null) {
+                        String category = cernerCodeValueRef.getCodeDispTxt();
+                        conditionBuilder.setCategory(category);
+                    }
 
-                    String category = cernerCodeValueRef.getCodeDispTxt();
-                    conditionBuilder.setCategory(category);
+                } catch (NumberFormatException ex) {
+
+                    //set the category as the condition type text
+                    conditionBuilder.setCategory(conditionType);
                 }
             } else {
 
