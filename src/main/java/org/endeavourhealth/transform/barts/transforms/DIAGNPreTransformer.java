@@ -122,6 +122,10 @@ public class DIAGNPreTransformer {
             stagingDIAGN.setDiagnosisCode(codeId);
 
             String codeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(parser.getConceptCodeIdentifier());
+            //TODO Hack to get this run through. Discuss with Mehbs
+            if (codeType.equals("SNMUKEMED")) {
+                codeType= BartsCsvHelper.CODE_TYPE_SNOMED;
+            }
             stagingDIAGN.setDiagnosisCodeType(codeType);
 
             String diagnosisTerm;
