@@ -1,11 +1,13 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPREL;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.ContactPoint;
@@ -51,12 +53,13 @@ public class PPRELTransformer {
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
 
+            if (!personIdCell.isEmpty()) {
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
+                if (patientBuilder != null) {
+                    PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
 
-            PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
-            if (patientBuilder != null) {
-                PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
-
-                csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+                    csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+                }
             }
             return;
         }
