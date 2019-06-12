@@ -218,6 +218,9 @@ public class PPALIPreTransformer {
                     }
                 }
 
+                //pre-cache the patient resource
+                csvHelper.getPatientCache().preCachePatientBuilder(personIdCell);
+
             } catch (Throwable t) {
                 LOG.error("", t);
                 throw t;

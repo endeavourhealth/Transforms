@@ -78,6 +78,9 @@ public class PPNAMPreTransformer {
                 //we can find the person it belonged to, since the deleted records only give us the ID
                 csvHelper.saveInternalId(PPNAM_ID_TO_PERSON_ID, nameIdCell.getString(), personIdCell.getString());
 
+                //pre-cache the patient resource
+                csvHelper.getPatientCache().preCachePatientBuilder(personIdCell);
+
             } catch (Throwable t) {
                 LOG.error("", t);
                 throw t;

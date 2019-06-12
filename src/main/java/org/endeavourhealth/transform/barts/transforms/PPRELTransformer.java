@@ -44,29 +44,14 @@ public class PPRELTransformer {
         CsvCell relationshipIdCell = parser.getRelatedPersonMillenniumIdentifier();
         //CsvCell relationshipIdCell = parser.getMillenniumPersonRelationId();
 
-        //if non-active (i.e. deleted) we should REMOVE the contactPoint, but we don't get any other fields, including the Person ID
-        //so we need to look it up via the internal ID mapping will have stored when we first created the contactPoint
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+
+        //if non-active (i.e. deleted) we should REMOVE the contactPoint. Unlike all the other PPxxx files, we DO
+        //get the person ID when a PPREL is non-active, so we don't need to mess about with the internal_id_map to find it
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
-            TransformWarnings.log(LOG, csvHelper, "Non-active PPREL record {}", relationshipIdCell);
 
-            String personIdStr = csvHelper.getInternalId(PPRELPreTransformer.PPREL_ID_TO_PERSON_ID, relationshipIdCell.getString());
-            if (!Strings.isNullOrEmpty(personIdStr)) {
 
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
-                if (patientBuilder != null) {
-                    PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
-
-                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
-                }
-            }
-            return;
-        }
-
-        //if ended, we also remove from the FHIR patient
-        CsvCell endDate = parser.getEndEffectiveDateTime();
-        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
-            CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
             PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
             if (patientBuilder != null) {
                 PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
@@ -76,7 +61,17 @@ public class PPRELTransformer {
             return;
         }
 
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        //if ended, we also remove from the FHIR patient
+        CsvCell endDate = parser.getEndEffectiveDateTime();
+        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(endDate)) {
+            PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
+            if (patientBuilder != null) {
+                PatientContactBuilder.removeExistingContactPointById(patientBuilder, relationshipIdCell.getString());
+
+                csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
+            }
+            return;
+        }
 
         //store the relationship type in the internal ID map table so the family history transformer can look it up
         //moved this to PPREL PRE transformer, but only after the PP... bulk files have been processed
