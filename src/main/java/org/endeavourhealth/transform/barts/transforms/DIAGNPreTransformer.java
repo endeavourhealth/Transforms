@@ -124,12 +124,13 @@ public class DIAGNPreTransformer {
             String codeScheme = parser.getConceptCodeIdentifier().getString();
             //TODO Ugly hack to get this run through. Discuss with Mehbs.
             String codeType;
-            if (codeScheme.equals("SNMUKEMED")) {
+            if (codeScheme.startsWith("SNMUKEMED")) {
                 codeType = BartsCsvHelper.CODE_TYPE_SNOMED;
             } else {
                 codeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(parser.getConceptCodeIdentifier());
-                stagingDIAGN.setDiagnosisCodeType(codeType);
+
             }
+            stagingDIAGN.setDiagnosisCodeType(codeType);
 
             String diagnosisTerm;
             if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
