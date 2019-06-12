@@ -108,6 +108,7 @@ public class DiagnosisPreTransformer {
 
         } else if (vocabCell.getString().trim().equals("Allergy")) {
             TransformWarnings.log(LOG,csvHelper,"Allergycoding.  Found Allergy as vocab for diagnosis id: {}", diagnosisIdCell.getString() );
+            return;
         } else {
             throw new Exception("Unexpected coding scheme vocab" + vocabCell.getString());
         }
