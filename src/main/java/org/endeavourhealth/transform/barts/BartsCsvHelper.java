@@ -91,7 +91,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private Map<Long, List<CernerCodeValueRef>> cernerCodesBySet = new ConcurrentHashMap<>();
     private Map<Long, CernerNomenclatureRef> nomenclatureCache = new ConcurrentHashMap<>();
     private Map<String, CernerNomenclatureRef> nomenclatureCacheByValueTxt = new ConcurrentHashMap<>();
-    private Map<String, String> internalIdMapCache = new HashMap<>(); //contains nulls so a regular map but uses the cacheLock
+    private Map<StringMemorySaver, StringMemorySaver> internalIdMapCache = new HashMap<>(); //contains nulls so a regular map but uses the cacheLock
     private ReentrantLock cacheLock = new ReentrantLock();
     private Map<Long, SnomedLookup> cleveSnomedConceptMappings = new ConcurrentHashMap<>();
     private String cachedBartsOrgRefId = null;
@@ -181,23 +181,33 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
 
-        InternalIdMap dbObj = new InternalIdMap();
-        dbObj.setDestinationId(destinationId);
-        dbObj.setSourceId(sourceId);
-        dbObj.setIdType(idType);
-        dbObj.setServiceId(serviceId);
-
-        String cacheKey = idType + "|" + sourceId;
+        StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
+        StringMemorySaver cacheValue = new StringMemorySaver(destinationId);
 
         List<InternalIdMap> batchToSave = null;
 
         try {
             cacheLock.lock();
 
+            //check to see if the current value is the same, in which case just return out
+            if (internalIdMapCache.containsKey(cacheKey)) {
+                StringMemorySaver currentValue = internalIdMapCache.get(cacheKey);
+                if (currentValue != null
+                        && currentValue.equals(cacheValue)) {
+                    return;
+                }
+            }
+
             //add/replace in the cache
-            internalIdMapCache.put(cacheKey, destinationId);
+            internalIdMapCache.put(cacheKey, cacheValue);
 
             //add to the queue to be saved
+            InternalIdMap dbObj = new InternalIdMap();
+            dbObj.setDestinationId(destinationId);
+            dbObj.setSourceId(sourceId);
+            dbObj.setIdType(idType);
+            dbObj.setServiceId(serviceId);
+
             internalIdSaveBatch.add(dbObj);
             if (internalIdSaveBatch.size() > TransformConfig.instance().getResourceSaveBatchSize()) {
                 batchToSave = new ArrayList<>(internalIdSaveBatch);
@@ -221,29 +231,19 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     }
 
 
-
-    /*public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
-        String cacheKey = idType + "|" + sourceId;
-
-        internalIdDal.save(serviceId, idType, sourceId, destinationId);
-
-        //add/replace in the cache
-        try {
-            cacheLock.lock();
-            internalIdMapCache.put(cacheKey, destinationId);
-        } finally {
-            cacheLock.unlock();
-        }
-    }*/
-
     public String getInternalId(String idType, String sourceId) throws Exception {
-        String cacheKey = idType + "|" + sourceId;
+        StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
 
         //check the cache - note we cache null lookups in the cache
         try {
             cacheLock.lock();
             if (internalIdMapCache.containsKey(cacheKey)) {
-                return internalIdMapCache.get(cacheKey);
+                StringMemorySaver cacheValue = internalIdMapCache.get(cacheKey);
+                if (cacheValue == null) {
+                    return null;
+                } else {
+                    return cacheValue.toString();
+                }
             }
         } finally {
             cacheLock.unlock();
@@ -254,7 +254,12 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         //add to the cache - note we cache lookup failures too
         try {
             cacheLock.lock();
-            internalIdMapCache.put(cacheKey, ret);
+            if (ret == null) {
+                internalIdMapCache.put(cacheKey, null);
+            } else {
+                internalIdMapCache.put(cacheKey, new StringMemorySaver(ret));
+            }
+
         } finally {
             cacheLock.unlock();
         }

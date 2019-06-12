@@ -131,7 +131,10 @@ public class ENCNTPreTransformer {
                 }
 
                 //update the internal ID map with our encounter to person mapping
-                csvHelper.saveEncounterIdToPersonId(encounterIdCell, personIdCell);
+                if (Strings.isNullOrEmpty(existingPersonId)
+                        || !existingPersonId.equals(personIdCell.getString())) {
+                    csvHelper.saveEncounterIdToPersonId(encounterIdCell, personIdCell);
+                }
 
                 //update the internal ID map with our encounter to responsible personnel mapping - DAB-121 enhancement
                 if (!responsiblePersonnelIdCell.isEmpty()) {
