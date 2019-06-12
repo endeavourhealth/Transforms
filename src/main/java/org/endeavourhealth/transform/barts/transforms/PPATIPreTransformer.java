@@ -1,17 +1,17 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.schema.PPPHO;
+import org.endeavourhealth.transform.barts.schema.PPATI;
+import org.endeavourhealth.transform.barts.schema.PPREL;
 import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class PPPHOPreTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(PPPHOPreTransformer.class);
-
-    public static final String PPPHO_ID_TO_PERSON_ID = "PPPHO_ID_TO_PERSON_ID";
+public class PPATIPreTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(PPATIPreTransformer.class);
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -26,7 +26,7 @@ public class PPPHOPreTransformer {
                     }
 
                     //no try/catch as failures here meant we should abort
-                    processRecord((PPPHO)parser, fhirResourceFiler, csvHelper);
+                    processRecord((PPATI)parser, fhirResourceFiler, csvHelper);
                 }
             }
         } finally {
@@ -35,37 +35,31 @@ public class PPPHOPreTransformer {
     }
 
 
-    public static void processRecord(PPPHO parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    private static void processRecord(PPATI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        //if non-active (i.e. deleted) we should REMOVE the identifier, but we don't get any other fields, including the Person ID
-        //so we need to look it up via the internal ID mapping will have stored when we first created the identifier
+        //all this pre-transformer does is to pre-load any FHIR patients that we know we might want
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
             return;
         }
 
-        //we need to store a mapping of alias ID to person ID
-        CsvCell phoneIdCell = parser.getMillenniumPhoneId();
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        CsvCell personIdCell = parser.getMillenniumPersonId();
 
-        PPPHOPreTransformCallable callable = new PPPHOPreTransformCallable(parser.getCurrentState(), phoneIdCell, personIdCell, csvHelper);
+        PPRELPreTransformCallable callable = new PPRELPreTransformCallable(parser.getCurrentState(), personIdCell, csvHelper);
         csvHelper.submitToThreadPool(callable);
     }
 
 
-    static class PPPHOPreTransformCallable extends AbstractCsvCallable {
+    static class PPRELPreTransformCallable extends AbstractCsvCallable {
 
-        private CsvCell phoneIdCell = null;
         private CsvCell personIdCell = null;
         private BartsCsvHelper csvHelper = null;
 
-        public PPPHOPreTransformCallable(CsvCurrentState parserState,
-                                         CsvCell phoneIdCell,
+        public PPRELPreTransformCallable(CsvCurrentState parserState,
                                          CsvCell personIdCell,
                                          BartsCsvHelper csvHelper) {
 
             super(parserState);
-            this.phoneIdCell = phoneIdCell;
             this.personIdCell = personIdCell;
             this.csvHelper = csvHelper;
         }
@@ -74,11 +68,6 @@ public class PPPHOPreTransformer {
         public Object call() throws Exception {
 
             try {
-
-                //we need to store the PPPHO ID -> PERSON ID mapping so that if the address is ever deleted,
-                //we can find the person it belonged to, since the deleted records only give us the ID
-                csvHelper.saveInternalId(PPPHO_ID_TO_PERSON_ID, phoneIdCell.getString(), personIdCell.getString());
-
                 //pre-cache the patient resource
                 csvHelper.getPatientCache().preCachePatientBuilder(personIdCell);
 
@@ -91,4 +80,5 @@ public class PPPHOPreTransformer {
         }
     }
 }
+
 

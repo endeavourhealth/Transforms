@@ -11,7 +11,7 @@ import java.util.List;
 public class PPRELPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPRELPreTransformer.class);
 
-    public static final String PPREL_ID_TO_PERSON_ID = "PPREL_ID_TO_PERSON_ID";
+    //public static final String PPREL_ID_TO_PERSON_ID = "PPREL_ID_TO_PERSON_ID";
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -81,17 +81,21 @@ public class PPRELPreTransformer {
 
                 //we need to store the PPREL ID -> PERSON ID mapping so that if the record is ever deleted,
                 //we can find the person it belonged to, since the deleted records only give us the ID
-                String relatedPersonId = relatedPersonIdCell.getString();
+                //not required - when we get a non-active PPREL record, we still get the person ID, so don't need this mapping
+                /*String relatedPersonId = relatedPersonIdCell.getString();
                 String personId = personIdCell.getString();
                 String existingPersonId = csvHelper.getInternalId(PPREL_ID_TO_PERSON_ID, relatedPersonId);
                 if (existingPersonId == null
                         || !existingPersonId.equals(personId)) {
 
                     csvHelper.saveInternalId(PPREL_ID_TO_PERSON_ID, relatedPersonId, personId);
-                }
+                }*/
 
-                //store the relationship type in the internal ID map table so the family history transformer can look it up
+                //store the relationship type in the internal ID map table so the FamilyHistoryTransformer can look it up
                 csvHelper.savePatientRelationshipType(personIdCell, relatedPersonIdCell, relationshipToPatientCodeCell);
+
+                //pre-cache the patient resource
+                csvHelper.getPatientCache().preCachePatientBuilder(personIdCell);
 
             } catch (Throwable t) {
                 LOG.error("", t);

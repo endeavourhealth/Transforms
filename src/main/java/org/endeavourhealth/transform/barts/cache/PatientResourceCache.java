@@ -39,14 +39,17 @@ public class PatientResourceCache {
         return borrowPatientBuilder(cell);
     }
 
+    private UUID mapPersonIdToUuid(CsvCell personIdCell) throws Exception {
+        return IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personIdCell.getString());
+
+    }
+
     public PatientBuilder borrowPatientBuilder(CsvCell personIdCell) throws Exception {
 
-        Long personId = personIdCell.getLong();
+        UUID globallyUniqueId = mapPersonIdToUuid(personIdCell);
 
         //if we know we've deleted it, return null
-        UUID globallyUniqueId = IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personId.toString());
-        if (globallyUniqueId != null
-                && patientUuidsJustDeleted.contains(globallyUniqueId)) {
+        if (patientUuidsJustDeleted.contains(globallyUniqueId)) {
             return null;
         }
 
@@ -63,11 +66,11 @@ public class PatientResourceCache {
         PatientBuilder patientBuilder = null;
 
         //each of the patient transforms only updates part of the FHIR resource, so we need to retrieve any existing instance to update
-        Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personId.toString());
+        Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personIdCell.getString());
         if (patient == null) {
             //if the patient doesn't exist yet, create a new one
             patientBuilder = new PatientBuilder();
-            patientBuilder.setId(personId.toString(), personIdCell);
+            patientBuilder.setId(personIdCell.getString(), personIdCell);
 
         } else {
             patientBuilder = new PatientBuilder(patient);
@@ -86,7 +89,7 @@ public class PatientResourceCache {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_INTERNAL_PERSON);
-            identifierBuilder.setValue(personId.toString(), personIdCell);
+            identifierBuilder.setValue(personIdCell.getString(), personIdCell);
         }
 
         return patientBuilder;
@@ -166,6 +169,31 @@ public class PatientResourceCache {
         fhirResourceFiler.deletePatientResource(parserState, mapIds, patientBuilder);
     }
 
+    /**
+     * ensures that a person ID we know we'll be processing is pre-cached
+     */
+    public void preCachePatientBuilder(CsvCell personIdCell) throws Exception {
 
+        //just in case
+        if (BartsCsvHelper.isEmptyOrIsZero(personIdCell)) {
+            return;
+        }
 
+        UUID globallyUniqueId = mapPersonIdToUuid(personIdCell);
+
+        //if we know we've deleted it, return out
+        if (patientUuidsJustDeleted.contains(globallyUniqueId)) {
+            return;
+        }
+
+        //check the cache
+        if (patientBuildersByPatientUuid.contains(globallyUniqueId)) {
+            return;
+        }
+
+        PatientBuilder patientBuilder = borrowPatientBuilder(personIdCell);
+        if (patientBuilder != null) {
+            returnPatientBuilder(personIdCell, patientBuilder);
+        }
+    }
 }

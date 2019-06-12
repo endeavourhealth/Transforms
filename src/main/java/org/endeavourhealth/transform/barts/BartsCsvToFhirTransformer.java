@@ -99,6 +99,10 @@ public abstract class BartsCsvToFhirTransformer {
             PPNAMPreTransformer.transform(getParsers(parserMap, csvHelper, "PPNAM", false), fhirResourceFiler, csvHelper);
             PPPHOPreTransformer.transform(getParsers(parserMap, csvHelper, "PPPHO", false), fhirResourceFiler, csvHelper);
             PPRELPreTransformer.transform(getParsers(parserMap, csvHelper, "PPREL", false), fhirResourceFiler, csvHelper);
+            PPATIPreTransformer.transform(getParsers(parserMap, csvHelper, "PPATI", false), fhirResourceFiler, csvHelper);
+
+            //let all the pre-transformers finish pre-loading the Patient resources
+            csvHelper.waitUntilThreadPoolIsEmpty();
 
             //patient transformers
             PPATITransformer.transform(getParsers(parserMap, csvHelper, "PPATI", true), fhirResourceFiler, csvHelper);
@@ -287,7 +291,7 @@ public abstract class BartsCsvToFhirTransformer {
         }
 
         //hack to avoid re-processing files we've already done
-        if (TransformConfig.instance().isLive()) {
+        /*if (TransformConfig.instance().isLive()) {
 
             ret = new ArrayList<>(ret);
 
@@ -316,7 +320,7 @@ public abstract class BartsCsvToFhirTransformer {
                     }
                 }
             }
-        }
+        }*/
 
         return ret;
     }

@@ -78,6 +78,9 @@ public class PPADDPreTransformer {
                 //we can find the person it belonged to, since the deleted records only give us the ID
                 csvHelper.saveInternalId(PPADD_ID_TO_PERSON_ID, addressIdCell.getString(), personIdCell.getString());
 
+                //pre-cache the patient resource
+                csvHelper.getPatientCache().preCachePatientBuilder(personIdCell);
+
             } catch (Throwable t) {
                 LOG.error("", t);
                 throw t;
