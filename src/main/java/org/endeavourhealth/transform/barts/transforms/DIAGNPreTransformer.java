@@ -122,14 +122,8 @@ public class DIAGNPreTransformer {
             stagingDIAGN.setDiagnosisCode(codeId);
 
             String codeScheme = parser.getConceptCodeIdentifier().getString();
-            //TODO Ugly hack to get this run through. Discuss with Mehbs.
-            String codeType;
-            if (codeScheme.startsWith("SNMUKEMED")) {
-                codeType = BartsCsvHelper.CODE_TYPE_SNOMED;
-            } else {
-                codeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(parser.getConceptCodeIdentifier());
 
-            }
+            String   codeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(parser.getConceptCodeIdentifier());
             stagingDIAGN.setDiagnosisCodeType(codeType);
 
             String diagnosisTerm;
@@ -138,7 +132,8 @@ public class DIAGNPreTransformer {
                 if (Strings.isNullOrEmpty(diagnosisTerm)) {
                     throw new Exception("Failed to find term for ICD10 code " + codeId);
                 }
-            } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)) {
+            } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)
+                        ||codeType.equals(BartsCsvHelper.CODE_TYPE_SNOMED_UK_SUBSET)) {
                 diagnosisTerm = TerminologyService.lookupSnomedTerm(codeId);
                 if (Strings.isNullOrEmpty(diagnosisTerm)) {
                     throw new Exception("Failed to find term for Snomed code " + codeId);
