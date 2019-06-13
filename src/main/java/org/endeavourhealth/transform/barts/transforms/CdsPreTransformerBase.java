@@ -362,7 +362,7 @@ public abstract class CdsPreTransformerBase {
 
         //persist the count of conditions in this cds record
         StagingConditionCdsCount stagingConditionCdsCount = new StagingConditionCdsCount();
-        stagingConditionCdsCount.setExchangeId(parser.getCdsUniqueId().getString());
+        stagingConditionCdsCount.setExchangeId(csvHelper.getExchangeId().toString());
         stagingConditionCdsCount.setDtReceived(csvHelper.getDataDate());
         stagingConditionCdsCount.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
         stagingConditionCdsCount.setSusRecordType(susRecordType);
