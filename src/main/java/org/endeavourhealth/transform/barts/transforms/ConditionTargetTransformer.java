@@ -75,15 +75,16 @@ public class ConditionTargetTransformer {
             ConditionBuilder conditionBuilder = new ConditionBuilder(null, targetCondition.getAudit());
             conditionBuilder.setId(uniqueId);
 
-            //we don't always have a performed date and it may be an unknown / 1900-01-01 one to skip over
-            if (targetCondition.getDtPerformed()!= null && !isUnknownConditionDate(targetCondition.getDtPerformed())) {
+            //we don't always have a performed date and it may 1900-01-01 one to skip over
+            if (targetCondition.getDtPerformed()!= null) {
 
-                DateTimeType conditionDateTime = new DateTimeType(targetCondition.getDtPerformed());
-                conditionBuilder.setOnset(conditionDateTime);
-            } else {
-
-                TransformWarnings.log(LOG, csvHelper, "Condition: {} which has UNKNOWN date skipped", uniqueId);
-                continue;
+                if (!isUnknownConditionDate(targetCondition.getDtPerformed())) {
+                    DateTimeType conditionDateTime = new DateTimeType(targetCondition.getDtPerformed());
+                    conditionBuilder.setOnset(conditionDateTime);
+                } else {
+                    TransformWarnings.log(LOG, csvHelper, "Condition: {} which has an UNKNOWN 1900 date skipped", uniqueId);
+                    continue;
+                }
             }
 
             // set the patient reference
@@ -139,7 +140,7 @@ public class ConditionTargetTransformer {
                 } else if (problemStatus.equalsIgnoreCase("Resolved")
                         || problemStatus.equalsIgnoreCase("Inactive")) {
 
-                    //CsvCell statusDateCell = parser.getStatusDate();
+                    //TODO - to confirm whether status date is actually worthless in this scenario so just set as true?
                     Date problemStatusDate = targetCondition.getProblemStatusDate();
                     if (problemStatusDate == null) {
                         //if we don't have a status date, use a boolean to indicate the end
