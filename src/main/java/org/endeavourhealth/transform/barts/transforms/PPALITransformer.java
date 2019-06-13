@@ -42,20 +42,21 @@ public class PPALITransformer {
     public static void createPatientAlias(PPALI parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell aliasIdCell = parser.getMillenniumPersonAliasId();
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
 
         //if non-active (i.e. deleted) we should REMOVE the identifier, but we don't get any other fields, including the Person ID
         //so we need to look it up via the internal ID mapping will have stored when we first created the identifier
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
+            //There are a small number of cases where all the fields are empty (including person ID) but in all examined
+            //cases, we've never previously received a valid record, so can just ignore them
+            if (!personIdCell.isEmpty()) {
 
-            String personIdStr = csvHelper.getInternalId(PPALIPreTransformer.PPALI_ID_TO_PERSON_ID, aliasIdCell.getString());
-            if (!Strings.isNullOrEmpty(personIdStr)) {
-
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
                 if (patientBuilder != null) {
                     IdentifierBuilder.removeExistingIdentifierById(patientBuilder, aliasIdCell.getString());
 
-                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
+                    csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
                 }
             }
             return;
@@ -67,7 +68,6 @@ public class PPALITransformer {
             return;
         }
 
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
             return;

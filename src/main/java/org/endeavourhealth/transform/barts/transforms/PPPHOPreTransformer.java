@@ -11,7 +11,7 @@ import java.util.List;
 public class PPPHOPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PPPHOPreTransformer.class);
 
-    public static final String PPPHO_ID_TO_PERSON_ID = "PPPHO_ID_TO_PERSON_ID";
+    //public static final String PPPHO_ID_TO_PERSON_ID = "PPPHO_ID_TO_PERSON_ID";
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -77,7 +77,8 @@ public class PPPHOPreTransformer {
 
                 //we need to store the PPPHO ID -> PERSON ID mapping so that if the address is ever deleted,
                 //we can find the person it belonged to, since the deleted records only give us the ID
-                csvHelper.saveInternalId(PPPHO_ID_TO_PERSON_ID, phoneIdCell.getString(), personIdCell.getString());
+                //wrong - we don't need this
+                //csvHelper.saveInternalId(PPPHO_ID_TO_PERSON_ID, phoneIdCell.getString(), personIdCell.getString());
 
                 //pre-cache the patient resource
                 csvHelper.getPatientCache().preCachePatientBuilder(personIdCell);

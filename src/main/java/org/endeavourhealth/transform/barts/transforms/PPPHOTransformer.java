@@ -42,28 +42,26 @@ public class PPPHOTransformer {
     public static void createPatientPhone(PPPHO parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell phoneIdCell = parser.getMillenniumPhoneId();
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
 
         //if non-active (i.e. deleted) we should REMOVE the address, but we don't get any other fields, including the Person ID
         //so we need to look it up via the internal ID mapping will have stored when we first created the address
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
-
-            String personIdStr = csvHelper.getInternalId(PPPHOPreTransformer.PPPHO_ID_TO_PERSON_ID, phoneIdCell.getString());
-            if (!Strings.isNullOrEmpty(personIdStr)) {
-
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
+            //There are a small number of cases where all the fields are empty (including person ID) but in all examined
+            //cases, we've never previously received a valid record, so can just ignore them
+            if (!personIdCell.isEmpty()) {
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
                 if (patientBuilder != null) {
                     //LOG.trace("Deleting phone " + phoneIdCell.getString() + " which maps to person " + personIdStr + " with FHIR patient\r" + FhirSerializationHelper.serializeResource(patientBuilder.getResource()));
 
                     ContactPointBuilder.removeExistingContactPointById(patientBuilder, phoneIdCell.getString());
 
-                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
+                    csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
                 }
             }
             return;
         }
-
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
 
         //if no number, then nothing to process - seems like in some cases the Millennium user doesn't delete
         //a phone number, but just amends it to have a blank number

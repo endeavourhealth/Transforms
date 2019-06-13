@@ -46,16 +46,16 @@ public class PPADDTransformer {
     public static void processRecord(PPADD parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell addressIdCell = parser.getMillenniumAddressId();
+        CsvCell personIdCell = parser.getPersonId();
 
         //if non-active (i.e. deleted) we should REMOVE the address, but we don't get any other fields, including the Person ID
         //so we need to look it up via the internal ID mapping will have stored when we first created the address
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
-
-            String personIdStr = csvHelper.getInternalId(PPADDPreTransformer.PPADD_ID_TO_PERSON_ID, addressIdCell.getString());
-            if (!Strings.isNullOrEmpty(personIdStr)) {
-
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
+            //There are a small number of cases where all the fields are empty (including person ID) but in all examined
+            //cases, we've never previously received a valid record, so can just ignore them
+            if (!personIdCell.isEmpty()) {
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
                 if (patientBuilder != null) {
 
                     AddressBuilder.removeExistingAddressById(patientBuilder, addressIdCell.getString());
@@ -63,7 +63,7 @@ public class PPADDTransformer {
                     //the address may have been saved as a Contact Point if it was an email address
                     ContactPointBuilder.removeExistingContactPointById(patientBuilder, EMAIL_ID_PREFIX + addressIdCell.getString());
 
-                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
+                    csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
                 }
             }
             return;
@@ -86,7 +86,6 @@ public class PPADDTransformer {
             return;
         }
 
-        CsvCell personIdCell = parser.getPersonId();
         CsvCell typeCell = parser.getAddressTypeCode();
         if (BartsCsvHelper.isEmptyOrIsZero(typeCell)) {
             TransformWarnings.log(LOG, csvHelper, "Skipping PPADD {} for person {} because it has no type", addressIdCell, personIdCell);

@@ -83,6 +83,7 @@ public abstract class BartsCsvToFhirTransformer {
 
         try {
             //admin transformers
+            LOG.trace("Starting admin transformers");
             ORGREFPreTransformer.transform(getParsers(parserMap, csvHelper, "ORGREF", false), fhirResourceFiler, csvHelper);
             ORGREFTransformer.transform(getParsers(parserMap, csvHelper, "ORGREF", true), fhirResourceFiler, csvHelper);
             CVREFTransformer.transform(getParsers(parserMap, csvHelper, "CVREF", true), fhirResourceFiler, csvHelper);
@@ -90,10 +91,11 @@ public abstract class BartsCsvToFhirTransformer {
             LOREFTransformer.transform(getParsers(parserMap, csvHelper, "LOREF", true), fhirResourceFiler, csvHelper);
             csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
 
-            PRSNLREFPreTransformer.transform(getParsers(parserMap, csvHelper, "PRSNLREF", false), fhirResourceFiler, csvHelper);
-            PRSNLREFTransformer.transform(getParsers(parserMap, csvHelper, "PRSNLREF", true), fhirResourceFiler, csvHelper);
+            PRSNLREFPreTransformer.transform(getParsers(parserMap, csvHelper, "PRSNLREF", false), fhirResourceFiler, csvHelper); //saves mappings in multiple threads
+            PRSNLREFTransformer.transform(getParsers(parserMap, csvHelper, "PRSNLREF", true), fhirResourceFiler, csvHelper); //updates/creates FHIR practitioners
 
             //patient PRE transformers - to save and cache stuff fast (mostly PPxxx ID to Person ID mappings)
+            LOG.trace("Starting PPxxx pre-transformers");
             PPALIPreTransformer.transform(getParsers(parserMap, csvHelper, "PPALI", false), fhirResourceFiler, csvHelper); //this must be FIRST
             PPADDPreTransformer.transform(getParsers(parserMap, csvHelper, "PPADD", false), fhirResourceFiler, csvHelper);
             PPNAMPreTransformer.transform(getParsers(parserMap, csvHelper, "PPNAM", false), fhirResourceFiler, csvHelper);
@@ -105,6 +107,7 @@ public abstract class BartsCsvToFhirTransformer {
             csvHelper.waitUntilThreadPoolIsEmpty();
 
             //patient transformers
+            LOG.trace("Starting PPxxx transformers");
             PPATITransformer.transform(getParsers(parserMap, csvHelper, "PPATI", true), fhirResourceFiler, csvHelper);
             PPALITransformer.transform(getParsers(parserMap, csvHelper, "PPALI", true), fhirResourceFiler, csvHelper);
             PPADDTransformer.transform(getParsers(parserMap, csvHelper, "PPADD", true), fhirResourceFiler, csvHelper);

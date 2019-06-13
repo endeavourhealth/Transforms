@@ -52,7 +52,8 @@ public class PPRELTransformer {
         //get the person ID when a PPREL is non-active, so we don't need to mess about with the internal_id_map to find it
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
-
+            //There are a small number of cases where all the fields are empty (including person ID) but in all examined
+            //cases, we've never previously received a valid record, so can just ignore them
             if (!personIdCell.isEmpty()) {
                 PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
                 if (patientBuilder != null) {

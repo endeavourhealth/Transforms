@@ -45,26 +45,25 @@ public class PPNAMTransformer {
     public static void createPatientName(PPNAM parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
         CsvCell nameIdCell = parser.getMillenniumPersonNameId();
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
 
         //if non-active (i.e. deleted) we should REMOVE the name, but we don't get any other fields, including the Person ID
         //so we need to look it up via the internal ID mapping will have stored when we first created the name
         CsvCell active = parser.getActiveIndicator();
         if (!active.getIntAsBoolean()) {
-
-            String personIdStr = csvHelper.getInternalId(PPNAMPreTransformer.PPNAM_ID_TO_PERSON_ID, nameIdCell.getString());
-            if (!Strings.isNullOrEmpty(personIdStr)) {
-
-                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(Long.valueOf(personIdStr));
+            //There are a small number of cases where all the fields are empty (including person ID) but in all examined
+            //cases, we've never previously received a valid record, so can just ignore them
+            if (!personIdCell.isEmpty()) {
+                PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
                 if (patientBuilder != null) {
                     NameBuilder.removeExistingNameById(patientBuilder, nameIdCell.getString());
 
-                    csvHelper.getPatientCache().returnPatientBuilder(Long.valueOf(personIdStr), patientBuilder);
+                    csvHelper.getPatientCache().returnPatientBuilder(personIdCell, patientBuilder);
                 }
             }
             return;
         }
 
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
         //LOG.trace("Processing PPNAM " + nameIdCell.getString() + " for Person ID " + personIdCell.getString());
         PatientBuilder patientBuilder = csvHelper.getPatientCache().borrowPatientBuilder(personIdCell);
         if (patientBuilder == null) {
