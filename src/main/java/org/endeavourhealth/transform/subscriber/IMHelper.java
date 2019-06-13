@@ -62,14 +62,14 @@ public class IMHelper {
         }
     }
 
-    public static synchronized Integer getIMConcept(SubscriberTransformParams params, Resource fhirResource, String scheme, String code) throws Exception {
+    public static synchronized Integer getIMConcept(SubscriberTransformParams params, Resource fhirResource, String scheme, String code, String term) throws Exception {
         String key = createCacheKey(scheme, code);
         Integer ret = null;
         if (code != null) {
             ret = coreCache.get(key);
         }
         if (ret == null & code != null) {
-            ret = getConceptIdForSchemeCodeWithRetry(scheme, code);
+            ret = getConceptIdForSchemeCodeWithRetry(scheme, code, term);
             if (ret == null) {
                 //if null, we may let it slide if in testing, just logging it out
                 if (TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
@@ -85,7 +85,7 @@ public class IMHelper {
         return ret;
     }
 
-    private static Integer getConceptIdForSchemeCodeWithRetry(String scheme, String code) throws Exception {
+    private static Integer getConceptIdForSchemeCodeWithRetry(String scheme, String code, String term) throws Exception {
 
         //during development, we get fairly frequent timeouts, so give it a couple of attempts
         int lives = 5;
@@ -93,7 +93,7 @@ public class IMHelper {
         while (true) {
             lives --;
             try {
-                return IMClient.getConceptIdForSchemeCode(scheme, code, true);
+                return IMClient.getConceptIdForSchemeCode(scheme, code, true, term);
             } catch (Exception ex) {
                 if (lives <= 0) {
                     throw ex;

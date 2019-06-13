@@ -82,7 +82,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         if (fhir.hasDateAssertedElement()) {
             DateTimeType dt = fhir.getDateAssertedElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
         }
 
         /*
@@ -107,7 +107,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
 
         String conceptScheme = getScheme(originalCoding.getSystem());
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
         if (fhir.hasStatus()) {
             MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
@@ -135,6 +135,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         }
 
         MedicationAuthorisationType authorisationType = null;
+        String originalTerm = null;
 
         if (fhir.hasExtension()) {
             for (Extension extension: fhir.getExtension()) {
@@ -158,11 +159,13 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
                 } else if (extension.getUrl().equals(FhirExtensionUri.MEDICATION_AUTHORISATION_TYPE)) {
                     Coding c = (Coding)extension.getValue();
                     authorisationType = MedicationAuthorisationType.fromCode(c.getCode());
+                    originalTerm = c.getDisplay();
                 }
             }
         }
 
-        authorisationTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_MED_STATEMENT_AUTH_TYPE, authorisationType.getCode());
+        authorisationTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_MED_STATEMENT_AUTH_TYPE,
+                authorisationType.getCode(), originalTerm);
 
         String snomedCodeString = null;
 

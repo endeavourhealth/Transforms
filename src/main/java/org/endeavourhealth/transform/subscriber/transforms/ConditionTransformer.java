@@ -85,7 +85,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasOnsetDateTimeType()) {
             DateTimeType dt = fhir.getOnsetDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(),clinicalEffectiveDate.toString());
         }
 
         Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
@@ -97,7 +97,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
 
         String conceptScheme = getScheme(originalCoding.getSystem());
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
 
         //if it's a problem set the boolean to say so

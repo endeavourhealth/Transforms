@@ -87,7 +87,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
             if (fhirCollection.hasCollectedDateTimeType()) {
                 DateTimeType dt = fhirCollection.getCollectedDateTimeType();
                 clinicalEffectiveDate = dt.getValue();
-                datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+                datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
             }
 
             if (fhirCollection.hasCollector()) {
@@ -105,7 +105,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
 
         String conceptScheme = getScheme(originalCoding.getSystem());
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);

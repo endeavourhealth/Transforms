@@ -178,8 +178,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
             String ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
+            String display = CodeableConceptHelper.findCodingDisplay(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
 
-            ethnicCodeConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ETHNIC_CATEGORY, ethnicCodeId);
+            ethnicCodeConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ETHNIC_CATEGORY, ethnicCodeId, display);
         }
 
         if (fhirPatient.hasCareProvider()) {
@@ -220,7 +221,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 }
             }
 
-            genderConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ADMINISTRATIVE_GENDER, gender.toCode());
+            genderConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ADMINISTRATIVE_GENDER, gender.toCode(), gender.getDisplay());
         }
 
         //only present name fields if non-pseudonymised
@@ -292,8 +293,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 Date endDate = null;
                 String value = null;
 
-                useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_USE, telecom.getUse().toCode());
-                typeConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_SYSTEM, telecom.getSystem().toCode());
+                useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_USE, telecom.getUse().toCode(), telecom.getValue());
+                typeConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_SYSTEM, telecom.getSystem().toCode(), telecom.getValue());
 
                 if (!params.isPseudonymised()) {
                     value = telecom.getValue();
@@ -425,7 +426,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 }
 
                 Address.AddressUse use = address.getUse();
-                useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_ADDRESS_USE, use.toCode());
+                useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_ADDRESS_USE, use.toCode(), use.getDisplay());
 
                 if (address.hasPeriod()) {
                     startDate = address.getPeriod().getStart();

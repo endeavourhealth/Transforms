@@ -87,13 +87,13 @@ public class ProcedureTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasPerformedDateTimeType()) {
             DateTimeType dt = fhir.getPerformedDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
         } else if (fhir.hasPerformedPeriod()) {
             Period p = fhir.getPerformedPeriod();
             if (p.hasStart()) {
                 DateTimeType dt = fhir.getPerformedPeriod().getStartElement();
                 clinicalEffectiveDate = dt.getValue();
-                datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+                datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
             }
         }
 
@@ -106,7 +106,7 @@ public class ProcedureTransformer extends AbstractSubscriberTransformer {
 
         String conceptScheme = getScheme(originalCoding.getSystem());
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
 
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);

@@ -70,7 +70,7 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasScheduledDateTimeType()) {
             DateTimeType dt = fhir.getScheduledDateTimeType();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
         }
 
         Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
@@ -82,10 +82,11 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
 
         String conceptScheme = getScheme(originalCoding.getSystem());
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
         if (fhir.hasStatus()) {
-            procedureRequestStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_PROCEDURE_REQUEST_STATUS, fhir.getStatus().toCode());
+            procedureRequestStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_PROCEDURE_REQUEST_STATUS,
+                    fhir.getStatus().toCode(), fhir.getStatus().getDisplay());
         }
 
         if (fhir.getSubject() != null) {

@@ -88,7 +88,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
         }
 
 
@@ -110,7 +110,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
 
             String conceptScheme = getScheme(originalCoding.getSystem());
             coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-            nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+            nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
         }
         /*Long snomedConceptId = findSnomedConceptId(fhir.getType());
         model.setSnomedConceptId(snomedConceptId);*/
@@ -194,7 +194,8 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralPriority fhirReferralPriority = ReferralPriority.fromCode(coding.getCode());
                 Integer referralRequestPriorityId = fhirReferralPriority.ordinal();
-                referralRequestPriorityConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_PRIORITY, referralRequestPriorityId.toString());
+                referralRequestPriorityConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_PRIORITY,
+                        referralRequestPriorityId.toString(), coding.getDisplay());
             }
         }
 
@@ -203,7 +204,8 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
-                referralRequestTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_TYPE, fhirReferralType.getCode());
+                referralRequestTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_TYPE,
+                        fhirReferralType.getCode(), coding.getDisplay());
             }
         }
 

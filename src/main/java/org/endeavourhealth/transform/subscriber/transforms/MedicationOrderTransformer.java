@@ -84,7 +84,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasDateWrittenElement()) {
             DateTimeType dt = fhir.getDateWrittenElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
         }
 
         /*
@@ -108,7 +108,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
 
         String conceptScheme = getScheme(originalCoding.getSystem());
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
         if (fhir.hasDosageInstruction()) {
             if (fhir.getDosageInstruction().size() > 1) {

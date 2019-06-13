@@ -107,7 +107,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             Period period = fhir.getPeriod();
             DateTimeType dt = period.getStartElement();
             clinicalEffectiveDate = dt.getValue();
-            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+            datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
         }
 
         /*

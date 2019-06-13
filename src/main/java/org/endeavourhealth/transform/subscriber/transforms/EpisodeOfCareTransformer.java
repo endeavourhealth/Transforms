@@ -81,7 +81,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
             Coding coding = (Coding)regTypeExtension.getValue();
             RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
 
-            registrationTypeConceptId = IMHelper.getIMConcept(params, fhirEpisode, IMConstant.FHIR_REGISTRATION_TYPE, fhirRegistrationType.getCode());
+            registrationTypeConceptId = IMHelper.getIMConcept(params, fhirEpisode, IMConstant.FHIR_REGISTRATION_TYPE, fhirRegistrationType.getCode(), coding.getDisplay());
         }
 
         //reg status is stored in a contained list with an extension giving the internal reference to it
@@ -102,7 +102,8 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                         CodeableConcept codeableConcept = entry.getFlag();
                         String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
                         RegistrationStatus status = RegistrationStatus.fromCode(code);
-                        registrationStatusConceptId = IMHelper.getIMConcept(params, fhirEpisode, IMConstant.FHIR_REGISTRATION_STATUS, status.getCode());
+                        registrationStatusConceptId = IMHelper.getIMConcept(params, fhirEpisode, IMConstant.FHIR_REGISTRATION_STATUS,
+                                status.getCode(), status.getDescription());
                     }
 
                     break;

@@ -149,7 +149,8 @@ public abstract class AbstractSubscriberTransformer {
 
 
 
-    protected static Integer convertDatePrecision(SubscriberTransformParams params, Resource fhirResource, TemporalPrecisionEnum precision) throws Exception {
+    protected static Integer convertDatePrecision(SubscriberTransformParams params, Resource fhirResource,
+                                                  TemporalPrecisionEnum precision, String clinicalEffectiveDate) throws Exception {
         String code = null;
         if (precision == TemporalPrecisionEnum.YEAR) {
             code = "year";
@@ -173,7 +174,7 @@ public abstract class AbstractSubscriberTransformer {
             throw new Exception("Unknown date time " + precision);
         }
 
-        return IMHelper.getIMConcept(params, fhirResource, IMConstant.FHIR_DATETIME_PRECISION, code);
+        return IMHelper.getIMConcept(params, fhirResource, IMConstant.FHIR_DATETIME_PRECISION, code, clinicalEffectiveDate);
         //return Integer.valueOf(precision.getCalendarConstant());
     }
 

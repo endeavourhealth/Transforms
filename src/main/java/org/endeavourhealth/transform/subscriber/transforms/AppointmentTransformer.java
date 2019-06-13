@@ -108,7 +108,7 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
         }
 
         Appointment.AppointmentStatus status = fhir.getStatus();
-        appointmentStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_APPOINTMENT_STATUS, status.toCode());
+        appointmentStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_APPOINTMENT_STATUS, status.toCode(), status.getDisplay());
 
         if (fhir.hasExtension()) {
             for (Extension extension: fhir.getExtension()) {

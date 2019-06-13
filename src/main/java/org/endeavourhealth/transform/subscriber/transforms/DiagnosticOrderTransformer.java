@@ -88,7 +88,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
             if (event.hasDateTimeElement()) {
                 DateTimeType dt = event.getDateTimeElement();
                 clinicalEffectiveDate = dt.getValue();
-                datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision());
+                datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
             }
         }
 
@@ -106,7 +106,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
         String conceptScheme = getScheme(originalCoding.getSystem());
 
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode);
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
         //if it's a problem set the boolean to say so
         if (fhir.hasMeta()) {
