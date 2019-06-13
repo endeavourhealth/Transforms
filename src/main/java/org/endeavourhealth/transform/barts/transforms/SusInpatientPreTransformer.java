@@ -21,8 +21,8 @@ public class SusInpatientPreTransformer extends CdsPreTransformerBase {
 
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
-                processRecords((SusInpatient)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_INPATIENT);
-                }
+                processRecords((SusInpatient) parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_INPATIENT);
+            }
         }
 
     }

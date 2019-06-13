@@ -13,10 +13,7 @@ import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsSusHelper;
 import org.endeavourhealth.transform.barts.schema.CdsRecordI;
-import org.endeavourhealth.transform.common.AbstractCsvCallable;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +27,11 @@ public abstract class CdsPreTransformerBase {
 
     protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
         processProcedures(parser,csvHelper,susRecordType);
-        processDiagnoses(parser,csvHelper,susRecordType);
+
+        if (!TransformConfig.instance().isLive()) {
+            processDiagnoses(parser,csvHelper,susRecordType);
+        }
+
     }
 
     private static void processProcedures(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
