@@ -93,7 +93,7 @@ public class IMHelper {
         while (true) {
             lives --;
             try {
-                return IMClient.getConceptIdForSchemeCode(scheme, code);
+                return IMClient.getConceptIdForSchemeCode(scheme, code, true);
             } catch (Exception ex) {
                 if (lives <= 0) {
                     throw ex;
@@ -177,7 +177,7 @@ public class IMHelper {
         while (true) {
             lives --;
             try {
-                return IMClient.getConceptIdForTypeTerm(type, term);
+                return IMClient.getConceptIdForTypeTerm(type, term, true);
             } catch (Exception ex) {
                 if (lives <= 0) {
                     throw ex;
