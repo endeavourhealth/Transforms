@@ -36,7 +36,7 @@ public abstract class AbstractCsvCallable implements Callable {
         if (callable instanceof AbstractCsvCallable) {
             AbstractCsvCallable csvCallable = (AbstractCsvCallable)first.getCallable();
             CsvCurrentState parserState = csvCallable.getParserState();
-            throw new TransformException(parserState.toString(), exception);
+            throw new TransformException("" + parserState, exception);
         } else {
             throw new TransformException("", exception);
         }

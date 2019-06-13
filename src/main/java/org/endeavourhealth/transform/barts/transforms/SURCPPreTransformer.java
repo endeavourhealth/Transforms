@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.barts.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingSURCPDalI;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURCC;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURCP;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
@@ -13,9 +14,11 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 //import org.endeavourhealth.core.database.dal.reference.CernerProcedureMapDalI;
 
@@ -28,18 +31,39 @@ public class SURCPPreTransformer {
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
+
+        List<StagingSURCP> batch = new ArrayList<>();
+
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
                 //no try/catch as records in this file aren't independent and can't be re-processed on their own
 
                 //can't filter on patients here, as we don't have a person ID cell, so this is done lower down
-                processRecord((SURCP) parser, csvHelper);
+                processRecord((SURCP) parser, csvHelper, batch);
             }
+        }
+
+        saveBatch(batch, true, csvHelper);
+    }
+
+    private static void saveBatch(List<StagingSURCP> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SURCPPreTransformer.saveDataCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
-    private static void processRecord(SURCP parser, BartsCsvHelper csvHelper) throws Exception {
+    private static void processRecord(SURCP parser, BartsCsvHelper csvHelper, List<StagingSURCP> batch) throws Exception {
 
         StagingSURCP stagingSURCP = new StagingSURCP();
         stagingSURCP.setExchangeId(parser.getExchangeId().toString());
@@ -171,21 +195,17 @@ public class SURCPPreTransformer {
             }
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SURCPPreTransformer.saveDataCallable(parser.getCurrentState(), stagingSURCP, serviceId));
-        LOG.trace("Added SURCP procedure ID " + procedureIdCell.getString() + " to thread pool");
+        batch.add(stagingSURCP);
+        saveBatch(batch, false, csvHelper);
     }
 
-    private static class saveDataCallable extends AbstractCsvCallable {
+    private static class saveDataCallable implements Callable {
 
-        private StagingSURCP obj = null;
+        private List<StagingSURCP> objs = null;
         private UUID serviceId;
 
-        public saveDataCallable(CsvCurrentState parserState,
-                                StagingSURCP obj,
-                                UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+        public saveDataCallable(List<StagingSURCP> objs, UUID serviceId) {
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -193,8 +213,7 @@ public class SURCPPreTransformer {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
-                LOG.trace("Saved SURCP procedure ID " + obj.getSurgicalCaseProcedureId());
+                repository.saveSURCPs(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);

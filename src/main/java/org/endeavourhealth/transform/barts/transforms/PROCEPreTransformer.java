@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingPROCEDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingPROCE;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -13,9 +14,11 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 public class PROCEPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PROCEPreTransformer.class);
@@ -26,21 +29,35 @@ public class PROCEPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        try {
-            for (ParserI parser : parsers) {
-                while (parser.nextRecord()) {
-                    //no try/catch here, since any failure here means we don't want to continue
-                    processRecord((PROCE) parser, fhirResourceFiler, csvHelper);
-                }
-            }
+        List<StagingPROCE> batch = new ArrayList<>();
 
-        } finally {
-            csvHelper.waitUntilThreadPoolIsEmpty();
+        for (ParserI parser : parsers) {
+            while (parser.nextRecord()) {
+                //no try/catch here, since any failure here means we don't want to continue
+                processRecord((PROCE) parser, fhirResourceFiler, csvHelper, batch);
+            }
         }
 
+        saveBatch(batch, true, csvHelper);
     }
 
-    public static void processRecord(PROCE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    private static void saveBatch(List<StagingPROCE> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new PROCEPreTransformer.saveDataCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    public static void processRecord(PROCE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, List<StagingPROCE> batch) throws Exception {
 
         StagingPROCE stagingPROCE = new StagingPROCE();
 
@@ -162,20 +179,17 @@ public class PROCEPreTransformer {
             //LOG.debug("Adding to thread thing with checksum " + stagingPROCE.hashCode());
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new PROCEPreTransformer.saveDataCallable(parser.getCurrentState(), stagingPROCE, serviceId));
+        batch.add(stagingPROCE);
+        saveBatch(batch, false, csvHelper);
     }
 
-    private static class saveDataCallable extends AbstractCsvCallable {
+    private static class saveDataCallable implements Callable {
 
-        private StagingPROCE obj = null;
+        private List<StagingPROCE> objs = null;
         private UUID serviceId;
 
-        public saveDataCallable(CsvCurrentState parserState,
-                                StagingPROCE obj,
-                                UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+        public saveDataCallable(List<StagingPROCE> objs, UUID serviceId) {
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -183,7 +197,7 @@ public class PROCEPreTransformer {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.savePROCEs(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);

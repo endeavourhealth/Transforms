@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingProcedureDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURCP;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -12,8 +13,11 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 public class ProcedurePreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ProcedurePreTransformer.class);
@@ -25,23 +29,35 @@ public class ProcedurePreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
+        List<StagingProcedure> batch = new ArrayList<>();
+
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
-                try {
-                    processRecord((org.endeavourhealth.transform.barts.schema.Procedure) parser, csvHelper);
-
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
+                processRecord((org.endeavourhealth.transform.barts.schema.Procedure) parser, csvHelper, batch);
             }
         }
 
-        //call this to abort if we had any errors, during the above processing
-        fhirResourceFiler.failIfAnyErrors();
+        saveBatch(batch, true, csvHelper);
     }
 
-    private static void processRecord(org.endeavourhealth.transform.barts.schema.Procedure parser, BartsCsvHelper csvHelper) throws Exception {
+    private static void saveBatch(List<StagingProcedure> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new ProcedurePreTransformer.saveDataCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    private static void processRecord(org.endeavourhealth.transform.barts.schema.Procedure parser, BartsCsvHelper csvHelper, List<StagingProcedure> batch) throws Exception {
 
         // Observer not null conditions in DB
         CsvCell encounterCell = parser.getEncounterIdSanitised();
@@ -143,36 +159,8 @@ public class ProcedurePreTransformer {
             stagingObj.setLookupRecordedByPersonnelId(Integer.valueOf(recordedByPersonnelId));
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new ProcedurePreTransformer.saveDataCallable(parser.getCurrentState(), stagingObj, serviceId));
-    }
-
-    private static class saveDataCallable extends AbstractCsvCallable {
-
-        private StagingProcedure obj = null;
-        private UUID serviceId;
-
-        public saveDataCallable(CsvCurrentState parserState,
-                                StagingProcedure obj,
-                                UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
-            this.serviceId = serviceId;
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            try {
-                repository.save(obj, serviceId);
-
-            } catch (Throwable t) {
-                LOG.error("", t);
-                throw t;
-            }
-
-            return null;
-        }
+        batch.add(stagingObj);
+        saveBatch(batch, false, csvHelper);
     }
 
     private static String formatName(String consultantStr) {
@@ -186,4 +174,30 @@ public class ProcedurePreTransformer {
         }
         return consultantStr;
     }
+
+    private static class saveDataCallable implements Callable {
+
+        private List<StagingProcedure> objs = null;
+        private UUID serviceId;
+
+        public saveDataCallable(List<StagingProcedure> objs, UUID serviceId) {
+            this.objs = objs;
+            this.serviceId = serviceId;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+                repository.saveProcedures(objs, serviceId);
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
+            }
+
+            return null;
+        }
+    }
+
 }

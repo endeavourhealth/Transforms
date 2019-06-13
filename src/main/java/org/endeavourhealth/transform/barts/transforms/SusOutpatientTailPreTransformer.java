@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCdsTail;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureCdsTail;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.SusOutpatientTail;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -7,6 +9,7 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SusOutpatientTailPreTransformer extends CdsTailPreTransformerBase {
@@ -16,67 +19,23 @@ public class SusOutpatientTailPreTransformer extends CdsTailPreTransformerBase {
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
+
+        List<StagingProcedureCdsTail> procedureBatch = new ArrayList<>();
+        List<StagingConditionCdsTail> conditionBatch = new ArrayList<>();
+
+
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
-                processTailRecord((SusOutpatientTail)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT);
+                processTailRecord((SusOutpatientTail)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT, procedureBatch, conditionBatch);
             }
         }
+
+        saveProcedureBatch(procedureBatch, true, csvHelper);
+        saveConditionBatch(conditionBatch, true, csvHelper);
     }
 
-    /*private static void processRecord(SusOutpatientTail parser, BartsCsvHelper csvHelper) throws Exception{
-
-        String personId = parser.getPersonId().getString();
-        if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
-            return;
-        }
-        StagingCdsTail staging = new StagingCdsTail();
-        staging.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
-        staging.setExchangeId(parser.getExchangeId().toString());
-        staging.setDtReceived(csvHelper.getDataDate());
-        staging.setSusRecordType(BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT);
-        staging.setCdsUpdateType(parser.getCdsUpdateType().getInt());
-        staging.setMrn(parser.getLocalPatientId().getString());
-        staging.setNhsNumber(parser.getNhsNumber().getString());
-        staging.setPersonId(parser.getPersonId().getInt());
-        staging.setEncounterId(parser.getEncounterId().getInt());
-        staging.setResponsibleHcpPersonnelId(parser.getResponsiblePersonnelId().getInt());
-
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SusOutpatientTailPreTransformer.saveDataCallable(parser.getCurrentState(), staging, serviceId));
-
-    }
-
-
-    private static class saveDataCallable extends AbstractCsvCallable {
-
-        private StagingCdsTail obj = null;
-        private UUID serviceId;
-
-        public saveDataCallable(CsvCurrentState parserState,
-                                StagingCdsTail obj,
-                                UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
-            this.serviceId = serviceId;
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            try {
-                obj.setRecordChecksum(obj.hashCode());
-                repository.save(obj, serviceId);
-
-            } catch (Throwable t) {
-                LOG.error("", t);
-                throw t;
-            }
-
-            return null;
-        }
-    }*/
 }
 
 

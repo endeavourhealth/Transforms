@@ -2,8 +2,8 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsTailDalI;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsTail;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCdsTail;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureCdsTail;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.CdsTailRecordI;
@@ -14,23 +14,60 @@ import org.endeavourhealth.transform.common.TransformConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 public class CdsTailPreTransformerBase {
     private static final Logger LOG = LoggerFactory.getLogger(CdsTailPreTransformerBase.class);
 
     private static StagingCdsTailDalI repository = DalProvider.factoryStagingCdsTailDalI();
 
-    protected static void processTailRecord(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
+    protected static void processTailRecord(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
+                                            List<StagingProcedureCdsTail> procedureBatch,
+                                            List<StagingConditionCdsTail> conditionBatch) throws Exception {
 
-        processTailRecordProcedure(parser,csvHelper,susRecordType);
+        processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
 
         if (!TransformConfig.instance().isLive()) {
-            processTailRecordCondition(parser, csvHelper, susRecordType);
+            processTailRecordCondition(parser, csvHelper, susRecordType, conditionBatch);
         }
     }
 
-    private static void processTailRecordProcedure(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception{
+    protected static void saveProcedureBatch(List<StagingProcedureCdsTail> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new CdsTailPreTransformerBase.SaveProcedureDataCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    protected static void saveConditionBatch(List<StagingConditionCdsTail> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new CdsTailPreTransformerBase.SaveConditionDataCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    private static void processTailRecordProcedure(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType, List<StagingProcedureCdsTail> procedureBatch) throws Exception {
 
         CsvCell personIdCell = parser.getPersonId();
         String personId = personIdCell.getString();
@@ -38,7 +75,7 @@ public class CdsTailPreTransformerBase {
             return;
         }
 
-        StagingCdsTail stagingObj = new StagingCdsTail();
+        StagingProcedureCdsTail stagingObj = new StagingProcedureCdsTail();
 
         //audit that our staging object came from this file and record
         ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
@@ -57,11 +94,11 @@ public class CdsTailPreTransformerBase {
         stagingObj.setEncounterId(parser.getEncounterId().getInt());
         stagingObj.setResponsibleHcpPersonnelId(parser.getResponsiblePersonnelId().getInt());
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SaveProcedureDataCallable(parser.getCurrentState(), stagingObj, serviceId));
+        procedureBatch.add(stagingObj);
+        saveProcedureBatch(procedureBatch, false, csvHelper);
     }
 
-    private static void processTailRecordCondition(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception{
+    private static void processTailRecordCondition(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType, List<StagingConditionCdsTail> conditionBatch) throws Exception {
 
 
         StagingConditionCdsTail staging = new StagingConditionCdsTail();
@@ -81,22 +118,17 @@ public class CdsTailPreTransformerBase {
         staging.setEncounterId(parser.getEncounterId().getInt());
         staging.setResponsibleHcpPersonnelId(parser.getResponsiblePersonnelId().getInt());
 
-
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SaveConditionDataCallable(parser.getCurrentState(), staging, serviceId));
-
+        conditionBatch.add(staging);
+        saveConditionBatch(conditionBatch, false, csvHelper);
     }
 
-    private static class SaveProcedureDataCallable extends AbstractCsvCallable {
+    private static class SaveProcedureDataCallable implements Callable {
 
-        private StagingCdsTail obj = null;
+        private List<StagingProcedureCdsTail> objs = null;
         private UUID serviceId;
 
-        public SaveProcedureDataCallable(CsvCurrentState parserState,
-                                StagingCdsTail obj,
-                                UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+        public SaveProcedureDataCallable(List<StagingProcedureCdsTail> objs, UUID serviceId) {
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -104,7 +136,7 @@ public class CdsTailPreTransformerBase {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveProcedureTails(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);
@@ -114,16 +146,15 @@ public class CdsTailPreTransformerBase {
             return null;
         }
     }
-    private static class SaveConditionDataCallable extends AbstractCsvCallable {
+
+    private static class SaveConditionDataCallable implements Callable {
         //Try to abstract these 2 saves. We need the class know as save is overloaded
-        private StagingConditionCdsTail obj = null;
+        private List<StagingConditionCdsTail> objs = null;
         private UUID serviceId;
 
-        public SaveConditionDataCallable(CsvCurrentState parserState,
-                                         StagingConditionCdsTail obj,
+        public SaveConditionDataCallable(List<StagingConditionCdsTail> objs,
                                          UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -131,7 +162,7 @@ public class CdsTailPreTransformerBase {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveConditionTails(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);

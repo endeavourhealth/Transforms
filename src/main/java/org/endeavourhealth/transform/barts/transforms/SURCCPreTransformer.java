@@ -10,9 +10,11 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 public class SURCCPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SURCCPreTransformer.class);
@@ -22,6 +24,9 @@ public class SURCCPreTransformer {
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
+
+        List<StagingSURCC> batch = new ArrayList<>();
+
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
@@ -32,12 +37,30 @@ public class SURCCPreTransformer {
                     TransformWarnings.log(LOG, csvHelper, "Skipping SURCC {} as not part of filtered subset", ((SURCC) parser).getSurgicalCaseId());
                     continue;
                 }
-                processRecord((SURCC) parser, csvHelper);
+                processRecord((SURCC) parser, csvHelper, batch);
             }
+        }
+
+        saveBatch(batch, true, csvHelper);
+    }
+
+    private static void saveBatch(List<StagingSURCC> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+            || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SURCCPreTransformer.saveDataCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
-    private static void processRecord(SURCC parser, BartsCsvHelper csvHelper) throws Exception {
+    private static void processRecord(SURCC parser, BartsCsvHelper csvHelper, List<StagingSURCC> batch) throws Exception {
 
         StagingSURCC stagingSURCC = new StagingSURCC();
         stagingSURCC.setExchangeId(parser.getExchangeId().toString());
@@ -92,20 +115,17 @@ public class SURCCPreTransformer {
             stagingSURCC.setSpecialtyCode(parser.getSpecialityCode().getString());
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SURCCPreTransformer.saveDataCallable(parser.getCurrentState(), stagingSURCC, serviceId));
+        batch.add(stagingSURCC);
+        saveBatch(batch, false, csvHelper);
     }
 
-    private static class saveDataCallable extends AbstractCsvCallable {
+    private static class saveDataCallable implements Callable {
 
-        private StagingSURCC obj = null;
+        private List<StagingSURCC> objs = null;
         private UUID serviceId;
 
-        public saveDataCallable(CsvCurrentState parserState,
-                                StagingSURCC obj,
-                                UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+        public saveDataCallable(List<StagingSURCC> objs, UUID serviceId) {
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -113,7 +133,7 @@ public class SURCCPreTransformer {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveSURCCs(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);

@@ -3,10 +3,10 @@ package org.endeavourhealth.transform.barts.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCds;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsCount;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCds;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCdsCount;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureCds;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureCdsCount;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -17,26 +17,102 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 public abstract class CdsPreTransformerBase {
     private static final Logger LOG = LoggerFactory.getLogger(CdsPreTransformerBase.class);
 
     private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
 
-    protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
-        processProcedures(parser,csvHelper,susRecordType);
+    protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
+                                         List<StagingProcedureCds> procedureBatch,
+                                         List<StagingProcedureCdsCount> procedureCountBatch,
+                                         List<StagingConditionCds> conditionBatch,
+                                         List<StagingConditionCdsCount> conditionCountBatch) throws Exception {
+
+        processProcedures(parser, csvHelper, susRecordType, procedureBatch, procedureCountBatch);
 
         if (!TransformConfig.instance().isLive()) {
-            processDiagnoses(parser,csvHelper,susRecordType);
+            processDiagnoses(parser, csvHelper, susRecordType, conditionBatch, conditionCountBatch);
         }
 
     }
 
-    private static void processProcedures(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
 
-        StagingCds stagingCds = new StagingCds();
+    protected static void saveProcedureBatch(List<StagingProcedureCds> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SaveCdsProcedureCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    protected static void saveConditionBatch(List<StagingConditionCds> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SaveCdsConditionCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    protected static void saveProcedureCountBatch(List<StagingProcedureCdsCount> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SaveCdsProcedureCountCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    protected static void saveConditionCountBatch(List<StagingConditionCdsCount> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SaveCdsConditionCountCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+
+    private static void processProcedures(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
+                                          List<StagingProcedureCds> procedureBatch,
+                                          List<StagingProcedureCdsCount> procedureCountBatch) throws Exception {
+
+        StagingProcedureCds stagingCds = new StagingProcedureCds();
 
         CsvCell cdsUniqueIdCell = parser.getCdsUniqueId();
         stagingCds.setCdsUniqueIdentifier(cdsUniqueIdCell.getString());
@@ -83,20 +159,20 @@ public abstract class CdsPreTransformerBase {
         int procedureCount = 0;
 
         //primary procedure
-        if (parsePrimaryProcedure(parser, stagingCds, csvHelper)) {
-            procedureCount ++;
+        if (parsePrimaryProcedure(parser, stagingCds, csvHelper, procedureBatch)) {
+            procedureCount++;
         }
 
         //Secondary
-        if (parseSecondaryProcedure(parser, stagingCds, csvHelper)) {
-            procedureCount ++;
+        if (parseSecondaryProcedure(parser, stagingCds, csvHelper, procedureBatch)) {
+            procedureCount++;
         }
 
         //Rest
-        procedureCount += parseRemainingProcedures(parser, stagingCds, csvHelper);
+        procedureCount += parseRemainingProcedures(parser, stagingCds, csvHelper, procedureBatch);
 
         //persist the count of procedures in this cds record
-        StagingCdsCount stagingCdsCount = new StagingCdsCount();
+        StagingProcedureCdsCount stagingCdsCount = new StagingProcedureCdsCount();
         stagingCdsCount.setExchangeId(csvHelper.getExchangeId().toString());
         stagingCdsCount.setDtReceived(csvHelper.getDataDate());
         stagingCdsCount.setCdsUniqueIdentifier(parser.getCdsUniqueId().getString());
@@ -108,11 +184,11 @@ public abstract class CdsPreTransformerBase {
         audit.auditRecord(cdsUniqueIdCell.getPublishedFileId(), cdsUniqueIdCell.getRecordNumber());
         stagingCdsCount.setAudit(audit);
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SaveCdsCountCallable(parser.getCurrentState(), stagingCdsCount, serviceId));
+        procedureCountBatch.add(stagingCdsCount);
+        saveProcedureCountBatch(procedureCountBatch, false, csvHelper);
     }
 
-    private static boolean parsePrimaryProcedure(CdsRecordI parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+    private static boolean parsePrimaryProcedure(CdsRecordI parser, StagingProcedureCds commonContent, BartsCsvHelper csvHelper, List<StagingProcedureCds> procedureBatch) throws Exception {
 
         //if no procedures, then nothing to save
         CsvCell primaryProcedureCell = parser.getPrimaryProcedureOPCS();
@@ -120,7 +196,7 @@ public abstract class CdsPreTransformerBase {
             return false;
         }
 
-        StagingCds cdsPrimary = commonContent.clone();
+        StagingProcedureCds cdsPrimary = commonContent.clone();
 
         String opcsCode = primaryProcedureCell.getString();
         opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
@@ -140,8 +216,8 @@ public abstract class CdsPreTransformerBase {
             cdsPrimary.setProcedureDate(dateCell.getDate());
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SaveCdsCallable(parser.getCurrentState(), cdsPrimary, serviceId));
+        procedureBatch.add(cdsPrimary);
+        saveProcedureBatch(procedureBatch, false, csvHelper);
 
         //for secondary etc. we set the primary opcs code on a separate column so set on the common object
         commonContent.setPrimaryProcedureOpcsCode(opcsCode);
@@ -149,14 +225,14 @@ public abstract class CdsPreTransformerBase {
         return true;
     }
 
-    private static boolean parseSecondaryProcedure(CdsRecordI parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+    private static boolean parseSecondaryProcedure(CdsRecordI parser, StagingProcedureCds commonContent, BartsCsvHelper csvHelper, List<StagingProcedureCds> procedureBatch) throws Exception {
         CsvCell secondaryProcedureCell = parser.getSecondaryProcedureOPCS();
         if (secondaryProcedureCell.isEmpty()) {
             //if no secondary procedure, then we're finished
             return false;
         }
 
-        StagingCds cdsSecondary = commonContent.clone();
+        StagingProcedureCds cdsSecondary = commonContent.clone();
 
         String opcsCode = secondaryProcedureCell.getString();
         opcsCode = TerminologyService.standardiseOpcs4Code(opcsCode);
@@ -180,13 +256,13 @@ public abstract class CdsPreTransformerBase {
             }
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SaveCdsCallable(parser.getCurrentState(), cdsSecondary, serviceId));
+        procedureBatch.add(cdsSecondary);
+        saveProcedureBatch(procedureBatch, false, csvHelper);
 
         return true;
     }
 
-    private static int parseRemainingProcedures(CdsRecordI parser, StagingCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+    private static int parseRemainingProcedures(CdsRecordI parser, StagingProcedureCds commonContent, BartsCsvHelper csvHelper, List<StagingProcedureCds> procedureBatch) throws Exception {
         CsvCell otherProcedureOPCS = parser.getAdditionalSecondaryProceduresOPCS();
         if (otherProcedureOPCS.isEmpty()) {
             return 0;
@@ -199,7 +275,7 @@ public abstract class CdsPreTransformerBase {
             if (Strings.isNullOrEmpty(word)) {
                 break;
             }
-            StagingCds cdsRemainder = commonContent.clone();
+            StagingProcedureCds cdsRemainder = commonContent.clone();
 
             String opcsCode = word.substring(0, 4);
             opcsCode = opcsCode.trim(); //because we sometimes get just three chars e.g. S41
@@ -234,8 +310,9 @@ public abstract class CdsPreTransformerBase {
 
             cdsRemainder.setProcedureSeqNbr(seq);
 
-            UUID serviceId = csvHelper.getServiceId();
-            csvHelper.submitToThreadPool(new SaveCdsCallable(parser.getCurrentState(), cdsRemainder, serviceId));
+            procedureBatch.add(cdsRemainder);
+            saveProcedureBatch(procedureBatch, false, csvHelper);
+
             seq++;
             remainingProcedureCount++;
         }
@@ -243,16 +320,13 @@ public abstract class CdsPreTransformerBase {
         return remainingProcedureCount;
     }
 
-    private static class SaveCdsCallable extends AbstractCsvCallable {
+    private static class SaveCdsProcedureCallable implements Callable {
 
-        private StagingCds obj = null;
+        private List<StagingProcedureCds> objs = null;
         private UUID serviceId;
 
-        public SaveCdsCallable(CsvCurrentState parserState,
-                                StagingCds obj,
-                                UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+        public SaveCdsProcedureCallable(List<StagingProcedureCds> objs, UUID serviceId) {
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -260,7 +334,7 @@ public abstract class CdsPreTransformerBase {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveProcedures(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);
@@ -271,16 +345,13 @@ public abstract class CdsPreTransformerBase {
         }
     }
 
-    private static class SaveCdsCountCallable extends AbstractCsvCallable {
+    private static class SaveCdsProcedureCountCallable implements Callable {
 
-        private StagingCdsCount obj = null;
+        private List<StagingProcedureCdsCount> objs = null;
         private UUID serviceId;
 
-        public SaveCdsCountCallable(CsvCurrentState parserState,
-                                StagingCdsCount obj,
-                                UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+        public SaveCdsProcedureCountCallable(List<StagingProcedureCdsCount> objs, UUID serviceId) {
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -288,7 +359,7 @@ public abstract class CdsPreTransformerBase {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveProcedureCounts(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);
@@ -299,7 +370,9 @@ public abstract class CdsPreTransformerBase {
         }
     }
 
-    private static void processDiagnoses(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
+    private static void processDiagnoses(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
+                                         List<StagingConditionCds> conditionBatch,
+                                         List<StagingConditionCdsCount> conditionCountBatch) throws Exception {
 
         StagingConditionCds stagingConditionCds = new StagingConditionCds();
 
@@ -348,17 +421,17 @@ public abstract class CdsPreTransformerBase {
         int conditionCount = 0;
 
         //primary Diagnosis
-        if (parsePrimaryDiagnosis(parser, stagingConditionCds, csvHelper)) {
-            conditionCount ++;
+        if (parsePrimaryDiagnosis(parser, stagingConditionCds, csvHelper, conditionBatch)) {
+            conditionCount++;
         }
 
         //Secondary
-        if (parseSecondaryDiagnosis(parser, stagingConditionCds, csvHelper)) {
-            conditionCount ++;
+        if (parseSecondaryDiagnosis(parser, stagingConditionCds, csvHelper, conditionBatch)) {
+            conditionCount++;
         }
 
         //Rest
-        conditionCount += parseRemainingDiagnoses(parser, stagingConditionCds, csvHelper);
+        conditionCount += parseRemainingDiagnoses(parser, stagingConditionCds, csvHelper, conditionBatch);
 
         //persist the count of conditions in this cds record
         StagingConditionCdsCount stagingConditionCdsCount = new StagingConditionCdsCount();
@@ -373,12 +446,12 @@ public abstract class CdsPreTransformerBase {
         audit.auditRecord(cdsUniqueIdCell.getPublishedFileId(), cdsUniqueIdCell.getRecordNumber());
         stagingConditionCds.setAudit(audit);
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SaveCdsConditionCountCallable(parser.getCurrentState(), stagingConditionCdsCount, serviceId));
+        conditionCountBatch.add(stagingConditionCdsCount);
+        saveConditionCountBatch(conditionCountBatch, false, csvHelper);
     }
 
 
-    private static boolean parsePrimaryDiagnosis(CdsRecordI parser, StagingConditionCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+    private static boolean parsePrimaryDiagnosis(CdsRecordI parser, StagingConditionCds commonContent, BartsCsvHelper csvHelper, List<StagingConditionCds> conditionBatch) throws Exception {
 
         //if no diagnoses, then nothing to save
         CsvCell primaryDiagnosisCell = parser.getPrimaryDiagnosisICD();
@@ -390,9 +463,9 @@ public abstract class CdsPreTransformerBase {
 
         String icdCode = primaryDiagnosisCell.getString().trim();
         //TODO an ugly patch to get this data through. Decide tomorrow how to fix
-        if (icdCode.length()>4 && icdCode.indexOf(".")<0) {
+        if (icdCode.length() > 4 && icdCode.indexOf(".") < 0) {
             TransformWarnings.log(LOG, csvHelper, "Long code found. Shortening : {}", icdCode);
-            icdCode=icdCode.substring(0,4);
+            icdCode = icdCode.substring(0, 4);
         }
 
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
@@ -404,7 +477,7 @@ public abstract class CdsPreTransformerBase {
              */
         if (icdCode.toUpperCase().endsWith(".X")) {
             TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
-            icdCode = icdCode.substring(0,3);
+            icdCode = icdCode.substring(0, 3);
         }
         String term = TerminologyService.lookupIcd10CodeDescription(icdCode);
         if (Strings.isNullOrEmpty(term)) {
@@ -419,8 +492,8 @@ public abstract class CdsPreTransformerBase {
             cdsPrimary.setCdsActivityDate(dateCell.getDate());
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SaveCdsConditionCallable(parser.getCurrentState(), cdsPrimary, serviceId));
+        conditionBatch.add(cdsPrimary);
+        saveConditionBatch(conditionBatch, false, csvHelper);
 
         //for secondary etc. we set the primary opcs code on a separate column so set on the common object
         commonContent.setPrimaryDiagnosisIcdCodee(icdCode);
@@ -428,7 +501,7 @@ public abstract class CdsPreTransformerBase {
         return true;
     }
 
-    private static boolean parseSecondaryDiagnosis(CdsRecordI parser, StagingConditionCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+    private static boolean parseSecondaryDiagnosis(CdsRecordI parser, StagingConditionCds commonContent, BartsCsvHelper csvHelper, List<StagingConditionCds> conditionBatch) throws Exception {
         CsvCell secondaryDiagnosisCell = parser.getSecondaryDiagnosisICD();
         if (secondaryDiagnosisCell.isEmpty()) {
             //if no secondary diagnosis, then we're finished
@@ -453,7 +526,7 @@ public abstract class CdsPreTransformerBase {
              */
         if (icdCode.toUpperCase().endsWith(".X")) {
             TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
-            icdCode = icdCode.substring(0,3);
+            icdCode = icdCode.substring(0, 3);
         }
 
         String term = TerminologyService.lookupIcd10CodeDescription(icdCode);
@@ -469,13 +542,13 @@ public abstract class CdsPreTransformerBase {
             cdsSecondary.setCdsActivityDate(dateCell.getDate());
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new SaveCdsConditionCallable(parser.getCurrentState(), cdsSecondary, serviceId));
+        conditionBatch.add(cdsSecondary);
+        saveConditionBatch(conditionBatch, false, csvHelper);
 
         return true;
     }
 
-    private static int parseRemainingDiagnoses(CdsRecordI parser, StagingConditionCds commonContent, BartsCsvHelper csvHelper) throws Exception {
+    private static int parseRemainingDiagnoses(CdsRecordI parser, StagingConditionCds commonContent, BartsCsvHelper csvHelper, List<StagingConditionCds> conditionBatch) throws Exception {
         CsvCell otherDiagnosisICD = parser.getAdditionalSecondaryDiagnosisICD();
         if (otherDiagnosisICD.isEmpty()) {
             return 0;
@@ -506,7 +579,7 @@ public abstract class CdsPreTransformerBase {
              */
             if (icdCode.toUpperCase().endsWith(".X")) {
                 TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
-                icdCode = icdCode.substring(0,3);
+                icdCode = icdCode.substring(0, 3);
             }
             cdsRemainder.setDiagnosisIcdCode(icdCode);
 
@@ -523,8 +596,9 @@ public abstract class CdsPreTransformerBase {
 
             cdsRemainder.setDiagnosisSeqNbr(seq);
 
-            UUID serviceId = csvHelper.getServiceId();
-            csvHelper.submitToThreadPool(new SaveCdsConditionCallable(parser.getCurrentState(), cdsRemainder, serviceId));
+            conditionBatch.add(cdsRemainder);
+            saveConditionBatch(conditionBatch, false, csvHelper);
+
             seq++;
             remainingConditionCount++;
         }
@@ -532,16 +606,13 @@ public abstract class CdsPreTransformerBase {
         return remainingConditionCount;
     }
 
-    private static class SaveCdsConditionCallable extends AbstractCsvCallable {
+    private static class SaveCdsConditionCallable implements Callable {
 
-        private StagingConditionCds obj = null;
+        private List<StagingConditionCds> objs = null;
         private UUID serviceId;
 
-        public SaveCdsConditionCallable(CsvCurrentState parserState,
-                                        StagingConditionCds obj,
-                                        UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+        public SaveCdsConditionCallable(List<StagingConditionCds> objs, UUID serviceId) {
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -549,7 +620,7 @@ public abstract class CdsPreTransformerBase {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveConditions(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);
@@ -560,16 +631,13 @@ public abstract class CdsPreTransformerBase {
         }
     }
 
-    private static class SaveCdsConditionCountCallable extends AbstractCsvCallable {
+    private static class SaveCdsConditionCountCallable implements Callable {
 
-        private StagingConditionCdsCount obj = null;
+        private List<StagingConditionCdsCount> objs = null;
         private UUID serviceId;
 
-        public SaveCdsConditionCountCallable(CsvCurrentState parserState,
-                                             StagingConditionCdsCount obj,
-                                             UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+        public SaveCdsConditionCountCallable(List<StagingConditionCdsCount> objs, UUID serviceId) {
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -577,7 +645,7 @@ public abstract class CdsPreTransformerBase {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveConditionCounts(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);
