@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.barts.schema.CdsTailRecordI;
 import org.endeavourhealth.transform.common.AbstractCsvCallable;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.CsvCurrentState;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,9 +24,12 @@ public class CdsTailPreTransformerBase {
     protected static void processTailRecord(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception {
 
         processTailRecordProcedure(parser,csvHelper,susRecordType);
-        processTailRecordCondition(parser,csvHelper,susRecordType);
 
+        if (!TransformConfig.instance().isLive()) {
+            processTailRecordCondition(parser, csvHelper, susRecordType);
+        }
     }
+
     private static void processTailRecordProcedure(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType) throws Exception{
 
         CsvCell personIdCell = parser.getPersonId();
