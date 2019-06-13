@@ -679,6 +679,8 @@ public abstract class AbstractSubscriberTransformer {
             str = IMConstant.OPCS4;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
             str = IMConstant.BARTS_CERNER;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) {
+            str = IMConstant.EMIS_LOCAL;
         }
         if (str == null) {
             str = codingSystem;
