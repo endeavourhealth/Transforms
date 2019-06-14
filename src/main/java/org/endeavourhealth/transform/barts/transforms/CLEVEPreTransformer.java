@@ -37,7 +37,6 @@ public class CLEVEPreTransformer {
                     if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
                         continue;
                     }
-
                     //no try/catch here, since any failure here means we don't want to continue
                     processRecord((CLEVE) parser, fhirResourceFiler, csvHelper);
                 }
