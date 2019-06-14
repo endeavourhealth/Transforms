@@ -119,11 +119,6 @@ public class CLEVEPreTransformer {
                 }
             }
 
-            CsvCell eventDispTxtCell = parser.getCodeDisplayText();
-            if (!eventDispTxtCell.isEmpty()) {
-                stagingClinicalEvent.setCodeDispTxt(eventDispTxtCell.getString());
-            }
-
             Date procDate;
 
             CsvCell eventStartDateCell = parser.getEventStartDateTime();
