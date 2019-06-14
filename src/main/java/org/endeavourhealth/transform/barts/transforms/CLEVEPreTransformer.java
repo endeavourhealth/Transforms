@@ -332,10 +332,12 @@ public class CLEVEPreTransformer {
 
             try {
                 if (!Strings.isNullOrEmpty(lowParsed)) {
+                    stagingClinicalEvent.setNormalRangeLowTxt(low.getString());
                     stagingClinicalEvent.setNormalRangeLowValue(new Double(lowParsed));
                 }
 
                 if (!Strings.isNullOrEmpty(highParsed)) {
+                    stagingClinicalEvent.setNormalRangeHighTxt(high.getString());
                     stagingClinicalEvent.setNormalRangeHighValue(new Double(lowParsed));
                 }
             }
