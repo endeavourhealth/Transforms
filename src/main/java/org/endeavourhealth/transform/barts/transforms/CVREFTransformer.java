@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -13,6 +14,7 @@ import org.endeavourhealth.transform.barts.schema.CVREF;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.hl7.fhir.instance.model.Reference;
@@ -20,8 +22,10 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 public class CVREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CVREFTransformer.class);
@@ -32,17 +36,37 @@ public class CVREFTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
+        List<CernerCodeValueRef> batch = new ArrayList<>();
+
         for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
                 //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
                 //to parse any record in this file is a critical error. A bad entry here could have multiple serious effects
-                transform((CVREF)parser, fhirResourceFiler, csvHelper);
+                transform((CVREF)parser, fhirResourceFiler, csvHelper, batch);
             }
+        }
+
+        saveBatch(batch, true, csvHelper);
+    }
+
+    private static void saveBatch(List<CernerCodeValueRef> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        csvHelper.submitToThreadPool(new SaveCVREFCallable(new ArrayList<>(batch)));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
 
-    public static void transform(CVREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+
+    public static void transform(CVREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, List<CernerCodeValueRef> batch) throws Exception {
         //For CVREF the first column should always resolve as a numeric code. We've seen some bad data appended to CVREF files
         if (!StringUtils.isNumeric(parser.getCodeValueCode().getString())) {
             return;
@@ -86,9 +110,9 @@ public class CVREFTransformer {
                 fhirResourceFiler.getServiceId(),
                 auditWrapper);
 
-
         //save to the DB
-        repository.saveCVREF(mapping);
+        batch.add(mapping);
+        saveBatch(batch, false, csvHelper);
 
         //LOG.debug("CVREF " + codeValueCode.getString() + " SET " + codeSetNbr.getString());
         //if it's a specialty, store the record as an Organization so we can refer to it from the Encounter resource
@@ -128,6 +152,29 @@ public class CVREFTransformer {
 
                 fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
             }
+        }
+    }
+
+    static class SaveCVREFCallable implements Callable {
+
+        private List<CernerCodeValueRef> objs = null;
+
+        public SaveCVREFCallable(List<CernerCodeValueRef> objs) {
+            this.objs = objs;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+                repository.saveCVREFs(objs);
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
+            }
+
+            return null;
         }
     }
 }
