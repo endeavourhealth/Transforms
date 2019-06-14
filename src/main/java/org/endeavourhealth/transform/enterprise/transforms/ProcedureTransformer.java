@@ -6,7 +6,9 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
 import org.endeavourhealth.core.database.dal.reference.CernerProcedureMapDalI;
+import org.endeavourhealth.core.database.dal.reference.models.CernerClinicalEventMap;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
@@ -18,9 +20,9 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Date;
 
-import static java.lang.Integer.parseInt;
-
 public class ProcedureTransformer extends AbstractTransformer {
+
+    CernerClinicalEventMappingDalI referenceDal = DalProvider.factoryCernerClinicalEventMappingDal();
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
 
@@ -103,7 +105,11 @@ public class ProcedureTransformer extends AbstractTransformer {
             Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
             if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
                 if (StringUtils.isNumeric(originalCoding.getCode())) {
-                    snomedConceptId = cernerProcedureMap.getSnomedFromCernerProc(parseInt(originalCoding.getCode()));
+                    Long codeLong = Long.parseLong(originalCoding.getCode());
+                    CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(codeLong);
+                    if (mapping.getSnomedConceptId() != null)
+                     snomedConceptId = Long.parseLong(mapping.getSnomedConceptId());
+                    //snomedConceptId = cernerProcedureMap.getSnomedFromCernerProc(parseInt(originalCoding.getCode()));
                 } else {
                     return; // Don't allow records with only a Cerner term not mapped to Snomed.
                 }
