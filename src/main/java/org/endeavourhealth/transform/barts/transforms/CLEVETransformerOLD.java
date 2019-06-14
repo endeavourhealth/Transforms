@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-public class CLEVETransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(CLEVETransformer.class);
+public class CLEVETransformerOLD {
+    private static final Logger LOG = LoggerFactory.getLogger(CLEVETransformerOLD.class);
 
     private static final String[] comparators = {"<=", "<", ">=", ">"};
 
@@ -78,7 +78,7 @@ public class CLEVETransformer {
         }
 
         //now we've handled any deletes, check if we actually want to transform this record
-        if (!CLEVEPreTransformer.shouldTransformOrAuditRecord(parser, csvHelper)) {
+        if (!CLEVEPreTransformerOLD.shouldTransformOrAuditRecord(parser, csvHelper)) {
             return;
         }
 

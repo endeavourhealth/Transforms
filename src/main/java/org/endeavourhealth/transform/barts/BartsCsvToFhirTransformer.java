@@ -11,7 +11,6 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -189,7 +188,7 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //other clinical transformers
-            CLEVETransformer.transform(getParsers(parserMap, csvHelper, "CLEVE", true), fhirResourceFiler, csvHelper);
+            CLEVETransformerOLD.transform(getParsers(parserMap, csvHelper, "CLEVE", true), fhirResourceFiler, csvHelper);
             //ProblemTransformer.transform(getParsers(parserMap, csvHelper, "Problem", true), fhirResourceFiler, csvHelper);
             FamilyHistoryTransformer.transform(getParsers(parserMap, csvHelper, "FamilyHistory", true), fhirResourceFiler, csvHelper);
 
@@ -256,8 +255,8 @@ public abstract class BartsCsvToFhirTransformer {
                 CLEVE parser = new CLEVE(serviceId, systemId, exchangeId, version, bulk.getPath());
                 parsers.add(parser);
 
-                CLEVEPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-                CLEVETransformer.transform(parsers, fhirResourceFiler, csvHelper);
+                CLEVEPreTransformerOLD.transform(parsers, fhirResourceFiler, csvHelper);
+                CLEVETransformerOLD.transform(parsers, fhirResourceFiler, csvHelper);
 
                 csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
                 csvHelper.processRemainingNewConsultationRelationships(fhirResourceFiler);
@@ -626,7 +625,7 @@ public abstract class BartsCsvToFhirTransformer {
             } else if (fileType.equalsIgnoreCase("CLEVE")) {
                 //call into 2.2 clinical events transform
                 CLEVE parser = new CLEVE(serviceId, systemId, exchangeId, version, filePath);
-                CLEVETransformer.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
+                CLEVETransformerOLD.transform(version, parser, fhirResourceFiler, csvHelper, PRIMARY_ORG_ODS_CODE, PRIMARY_ORG_HL7_OID);
                 parser.close();
             }
         }

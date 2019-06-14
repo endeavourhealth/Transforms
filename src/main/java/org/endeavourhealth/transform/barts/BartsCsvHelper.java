@@ -28,7 +28,7 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.cache.*;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
-import org.endeavourhealth.transform.barts.transforms.CLEVEPreTransformer;
+import org.endeavourhealth.transform.barts.transforms.CLEVEPreTransformerOLD;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
@@ -1272,7 +1272,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public boolean shouldAuditRecord(ParserI parser) throws Exception {
         if (parser instanceof CLEVE) {
             CLEVE cleveParser = (CLEVE) parser;
-            return CLEVEPreTransformer.shouldTransformOrAuditRecord(cleveParser, this);
+            return CLEVEPreTransformerOLD.shouldTransformOrAuditRecord(cleveParser, this);
         }
 
         //audit every record of any other files

@@ -57,6 +57,7 @@ public class CLEVE extends AbstractCsvParser {
                 "REFERENCE_NBR",
                 "VALID_FROM_DT_TM",
                 "CONTRIBUTOR_SYSTEM_CD",
+                "CODE_DISP_TXT",
         };
     }
 
@@ -206,6 +207,10 @@ public class CLEVE extends AbstractCsvParser {
 
     public CsvCell getContributorSystemMillenniumCode() {
         return super.getCell("CONTRIBUTOR_SYSTEM_CD");
+    }
+
+    public CsvCell getCodeDisplayText() {
+        return super.getCell("CODE_DISP_TXT");
     }
 
     @Override

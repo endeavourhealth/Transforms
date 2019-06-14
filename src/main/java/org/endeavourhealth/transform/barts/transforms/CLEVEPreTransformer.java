@@ -2,367 +2,266 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerClinicalEventMappingState;
+import org.endeavourhealth.core.database.dal.publisherStaging.StagingClinicalEventDalI;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingClinicalEvent;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
-import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
-import org.endeavourhealth.core.database.dal.reference.models.CernerClinicalEventMap;
-import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.*;
-import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 public class CLEVEPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(CLEVEPreTransformer.class);
 
-    private static CernerClinicalEventMappingDalI referenceDal = DalProvider.factoryCernerClinicalEventMappingDal();
-    private static CernerCodeValueRefDalI cernerDal = DalProvider.factoryCernerCodeValueRefDal();
-    private static SnomedDalI snomedDal = DalProvider.factorySnomedDal();
-    private static Map<Long, CernerClinicalEventMap> cachedMappings = new HashMap<>(); //can't use concurrent hasmap, as that doesn't allow null values
+    private static StagingClinicalEventDalI repository = DalProvider.factoryBartsStagingClinicalEventDalI();
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
         try {
-            List<CleveRecord> pendingUpdates = new ArrayList<>();
-            List<CleveRecord> pendingDeletes = new ArrayList<>();
-
-            for (ParserI parser: parsers) {
+            for (ParserI parser : parsers) {
                 while (parser.nextRecord()) {
+
                     if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
                         continue;
                     }
-                    //no try/catch here, since any failure here means we don't want to continue
-                    processRecord((CLEVE)parser, fhirResourceFiler, csvHelper, pendingUpdates, pendingDeletes);
-                }
-            }
 
-            //make sure to run any pending ones left over
-            if (!pendingUpdates.isEmpty()) {
-                runPending(pendingUpdates, false, csvHelper);
-            }
-            if (!pendingDeletes.isEmpty()) {
-                runPending(pendingDeletes, true, csvHelper);
+                    //no try/catch here, since any failure here means we don't want to continue
+                    processRecord((CLEVE) parser, fhirResourceFiler, csvHelper);
+                }
             }
 
         } finally {
             csvHelper.waitUntilThreadPoolIsEmpty();
         }
+
     }
 
+    public static void processRecord(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-    public static void processRecord(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, List<CleveRecord> pendingUpdates, List<CleveRecord> pendingDeletes) throws Exception {
+        StagingClinicalEvent stagingClinicalEvent = new StagingClinicalEvent();
 
-        //observations have bi-directional child-parent links. We can create the child-to-parent link when processing
-        //the CLEVE file normally, but need to pre-cache the links in order to create the parent-to-child ones
-        //We also need to update the CLEVE mapping table, so may as well do here rather than when we're actually
-        //creating the resource
+        stagingClinicalEvent.setActiveInd(parser.getActiveIndicator().getIntAsBoolean());
+        stagingClinicalEvent.setExchangeId(parser.getExchangeId().toString());
+        stagingClinicalEvent.setDtReceived(csvHelper.getDataDate());
+
         CsvCell eventIdCell = parser.getEventId();
-        CsvCell activeCell = parser.getActiveIndicator();
-        CsvCell parentEventIdCell = parser.getParentEventId();
-        CsvCell encounterIdCell = parser.getEncounterId();
-        CsvCell eventCdCell = parser.getEventCode();
-        CsvCell eventClassCdCell = parser.getEventCodeClass();
-        CsvCell eventResultUnitsCdCell = parser.getEventResultUnitsCode();
-        CsvCell eventResultTxtCell = parser.getEventResultText();
-        CsvCell resultValueCell = parser.getEventResultNumber();
-        CsvCell eventTitleCell = parser.getEventTitleText();
-        CsvCell eventTagCell = parser.getEventTag();
+        stagingClinicalEvent.setEventId(eventIdCell.getLong());
 
-        CleveRecord record = new CleveRecord(parser.getCurrentState(), eventIdCell, parentEventIdCell,
-                encounterIdCell, eventCdCell, eventClassCdCell, eventResultUnitsCdCell,
-                eventResultTxtCell, resultValueCell, eventTitleCell, eventTagCell);
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(eventIdCell.getPublishedFileId(), eventIdCell.getRecordNumber());
+        stagingClinicalEvent.setAuditJson(audit);
 
-        if (activeCell.getIntAsBoolean()) {
-            pendingUpdates.add(record);
-            if (pendingUpdates.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
-                runPending(pendingUpdates, false, csvHelper);
+        boolean activeInd = parser.getActiveIndicator().getIntAsBoolean();
+        stagingClinicalEvent.setActiveInd(activeInd);
+
+        //only set additional values if active
+        if (activeInd) {
+
+            Integer personId = parser.getPersonId().getInt();
+            if (Strings.isNullOrEmpty(personId.toString())) {
+                TransformWarnings.log(LOG, csvHelper, "No person ID found for CLEVE {}", eventIdCell);
+                return;
             }
 
-        } else {
-            pendingDeletes.add(record);
+            stagingClinicalEvent.setPersonId(personId);
 
-            if (pendingDeletes.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
-                runPending(pendingDeletes, true, csvHelper);
+            //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
+            String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId.toString());
+            if (mrn != null) {
+                stagingClinicalEvent.setLookupMrn(mrn);
+            } else {
+                TransformWarnings.log(LOG, csvHelper, "CLEVE {} has no MRN from lookup for person {}", eventIdCell, personId);
             }
-        }
-    }
 
-    private static void runPending(List<CleveRecord> records, boolean isDelete, BartsCsvHelper csvHelper) throws Exception {
+            //LOG.debug("Processing procedure " + procedureIdCell.getString());
 
-        List<CleveRecord> copy = new ArrayList<>(records);
-        records.clear();
+            CsvCell encounterIdCell = parser.getEncounterId();
+            stagingClinicalEvent.setEncounterId(encounterIdCell.getInt());
 
-        PreTransformCallable callable = new PreTransformCallable(copy, isDelete, csvHelper);
-        csvHelper.submitToThreadPool(callable);
-    }
+            /*//DAB-121 enhancement to derive the responsiblePersonnelId from the encounter internal map
+            String responsiblePersonnelId = csvHelper.findResponsiblePersonnelIdFromEncounterId(encounterIdCell);
+            if (!Strings.isNullOrEmpty(responsiblePersonnelId)) {
+                stagingClinicalEvent.setLookupResponsiblePersonnelId(Integer.valueOf(responsiblePersonnelId));
+            }*/
 
-    public static boolean shouldTransformOrAuditRecord(CLEVE cleveParser, BartsCsvHelper csvHelper) throws Exception {
+            CsvCell orderIdCell = parser.getOrderId();
+            if (!orderIdCell.isEmpty()) {
+                stagingClinicalEvent.setOrderId(orderIdCell.getInt());
+            }
 
-        CsvCell eventCdCell = cleveParser.getEventCode();
-        CsvCell eventClassCdCell = cleveParser.getEventCodeClass();
-        CsvCell eventResultTxtCell = cleveParser.getEventResultText();
-        CsvCell resultValueCell = cleveParser.getEventResultNumber();
+            CsvCell parentEventIdCell = parser.getParentEventId();
+            if (!parentEventIdCell.isEmpty()) {
+                stagingClinicalEvent.setParentEventId(parentEventIdCell.getInt());
+            }
 
-        if (eventCdCell.isEmpty()) {
-            return false;
-        }
+            CsvCell eventCdCell = parser.getEventCode();
 
-        String snomedConceptId = mapToSnomedCode(eventClassCdCell, resultValueCell, eventResultTxtCell, eventCdCell, csvHelper);
-
-        //if we can't map to Snomed, we won't create a FHIR resource, so skip auditing this record
-        if (Strings.isNullOrEmpty(snomedConceptId)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    public static String mapToSnomedCode(CsvCell eventClassCdCell, CsvCell resultValueCell,
-                                         CsvCell eventResultTxtCell, CsvCell eventCdCell,
-                                         BartsCsvHelper csvHelper) throws Exception {
-
-        //currently, mapping only works for numerics
-        if (CLEVETransformer.isNumericResult(eventClassCdCell, resultValueCell, eventResultTxtCell, csvHelper)) {
-
-            //see if we've mapped this numeric to snomed
-            Long key = eventCdCell.getLong();
-            CernerClinicalEventMap mapping = null;
-            synchronized (cachedMappings) {
-                //slightly odd pattern because not all codes are mapped to snomed, so we'll have
-                //null mappings that we want to cache in the map, so we don't keep perfomring the same DB hit for ones that aren't mapped
-                if (cachedMappings.containsKey(key)) {
-                    mapping = cachedMappings.get(key);
-
-                } else {
-                    mapping = referenceDal.findMappingForCvrefCode(eventCdCell.getLong());
-                    cachedMappings.put(key, mapping);
+            if (!eventCdCell.isEmpty()) {
+                stagingClinicalEvent.setEventCd(eventCdCell.getString());
+                if (!BartsCsvHelper.isEmptyOrIsZero(eventCdCell)) {
+                    CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_CODE_TYPE, eventCdCell);
+                    if (codeRef != null) {
+                        stagingClinicalEvent.setLookupEventCode(codeRef.getCodeValueCd());
+                        stagingClinicalEvent.setLookupEventTerm(codeRef.getCodeDispTxt());
+                    }
                 }
             }
 
-            if (mapping != null) {
-                return mapping.getSnomedConceptId();
+            CsvCell eventDispTxtCell = parser.getCodeDisplayText();
+            if (!eventDispTxtCell.isEmpty()) {
+                stagingClinicalEvent.setCodeDispTxt(eventDispTxtCell.getString());
+            }
+
+            Date procDate;
+
+            CsvCell eventStartDateCell = parser.getEventStartDateTime();
+            procDate = BartsCsvHelper.parseDate(eventStartDateCell);
+            stagingClinicalEvent.setEventStartDtTm(procDate);
+
+            CsvCell eventEndDateCell = parser.getEventEndDateTime();
+            procDate = BartsCsvHelper.parseDate(eventEndDateCell);
+            stagingClinicalEvent.setEventEndDtTm(procDate);
+
+            CsvCell clinicalSignificantDateCell = parser.getClinicallySignificantDateTime();
+            procDate = BartsCsvHelper.parseDate(clinicalSignificantDateCell);
+            stagingClinicalEvent.setClinicallySignificantDtTm(procDate);
+
+            CsvCell eventCodeClassCell = parser.getEventCodeClass();
+
+            if (!eventCodeClassCell.isEmpty()) {
+                stagingClinicalEvent.setEventClassCd(eventCodeClassCell.getInt());
+                if (!BartsCsvHelper.isEmptyOrIsZero(eventCodeClassCell)) {
+                    CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, eventCodeClassCell);
+                    if (codeRef != null) {
+                        stagingClinicalEvent.setLookupEventClass(codeRef.getCodeDispTxt());
+                    }
+                }
+            }
+
+            CsvCell resultNormalcyCell = parser.getEventNormalcyCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(resultNormalcyCell)) {
+                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_NORMALCY, resultNormalcyCell);
+                if (codeRef != null) {
+                    String codeDesc = codeRef.getCodeDispTxt();
+                    stagingClinicalEvent.setLookupNormalcy(codeDesc);
+
+                }
+            }
+
+            CsvCell resultTextCell = parser.getEventResultText();
+            if (!resultTextCell.isEmpty()) {
+                stagingClinicalEvent.setEventResultTxt(resultTextCell.getString());
+            }
+
+            CsvCell resultNbrCell = parser.getEventResultNumber();
+            if (!resultNbrCell.isEmpty()) {
+                stagingClinicalEvent.setEventResultNbr(resultNbrCell.getInt());
+            }
+
+            CsvCell eventResultDateCell = parser.getEventResultDateTime();
+            procDate = BartsCsvHelper.parseDate(eventResultDateCell);
+            stagingClinicalEvent.setEventResultDt(procDate);
+
+            CsvCell resultClassCode = parser.getEventResultStatusCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(resultClassCode)) {
+                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_STATUS, resultClassCode);
+                if (codeRef != null) {
+                    String codeDesc = codeRef.getCodeDispTxt();
+                    stagingClinicalEvent.setLookupEventResultStatus(codeDesc);
+
+                }
+            }
+
+            CsvCell normalRangeLowCell = parser.getEventNormalRangeLow();
+            if (!normalRangeLowCell.isEmpty()) {
+                stagingClinicalEvent.setNormalRangeLowTxt(normalRangeLowCell.getString());
+            }
+
+            CsvCell normalRangeHighCell = parser.getEventNormalRangeHigh();
+            if (!normalRangeHighCell.isEmpty()) {
+                stagingClinicalEvent.setNormalRangeHighTxt(normalRangeHighCell.getString());
+            }
+
+            CsvCell eventPerformedDateCell = parser.getEventPerformedDateTime();
+            procDate = BartsCsvHelper.parseDate(eventPerformedDateCell);
+            stagingClinicalEvent.setEventPerformedDtTm(procDate);
+
+            CsvCell eventPerformedPersonCell = parser.getEventPerformedPersonnelId();
+            if (!eventPerformedPersonCell.isEmpty()) {
+                stagingClinicalEvent.setEventPerformedPrsnlId(eventPerformedPersonCell.getInt());
+            }
+
+            CsvCell eventTagCell = parser.getEventTag();
+            if (!eventTagCell.isEmpty()) {
+                stagingClinicalEvent.setEventTag(eventTagCell.getString());
+            }
+
+            CsvCell eventTitleTextCell = parser.getEventTitleText();
+            if (!eventTitleTextCell.isEmpty()) {
+                stagingClinicalEvent.setEventTitleTxt(eventTitleTextCell.getString());
+            }
+
+            CsvCell resultUnitsCodeCell = parser.getEventResultUnitsCode();
+            if (!BartsCsvHelper.isEmptyOrIsZero(resultUnitsCodeCell)) {
+                stagingClinicalEvent.setEventResultUnitsCd(resultUnitsCodeCell.getInt());
+                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_UNITS, resultUnitsCodeCell);
+                if (codeRef != null) {
+                    String codeDesc = codeRef.getCodeDispTxt();
+                    stagingClinicalEvent.setLookupEventResultsUnitsCode(codeDesc);
+
+                }
+            }
+
+            CsvCell recordStatusCodeCell = parser.getRecordStatusReference();
+            if (!BartsCsvHelper.isEmptyOrIsZero(recordStatusCodeCell)) {
+                stagingClinicalEvent.setRecordStatusCd(recordStatusCodeCell.getInt());
+                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_STATUS, recordStatusCodeCell);
+                if (codeRef != null) {
+                    String codeDesc = codeRef.getCodeDispTxt();
+                    stagingClinicalEvent.setLookupRecordStatusCode(codeDesc);
+
+                }
             }
         }
 
-        return null;
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new CLEVEPreTransformer.saveDataCallable(stagingClinicalEvent, serviceId));
     }
 
-    //simple storage class to carry over everything we need from the CSV parser so we can use in the thread pool
-    static class CleveRecord {
+    public static class saveDataCallable implements Callable {
 
-        private CsvCurrentState parserState;
-        private CsvCell eventIdCell;
-        private CsvCell parentEventIdCell;
-        private CsvCell encounterIdCell;
-        private CsvCell eventCdCell;
-        private CsvCell eventClassCdCell;
-        private CsvCell eventResultUnitsCdCell;
-        private CsvCell eventResultTxtCell;
-        private CsvCell resultValueCell;
-        private CsvCell eventTitleCell;
-        private CsvCell eventTagCell;
+        private StagingClinicalEvent obj = null;
+        private UUID serviceId;
 
-        public CleveRecord(CsvCurrentState parserState, CsvCell eventIdCell, CsvCell parentEventIdCell, CsvCell encounterIdCell, CsvCell eventCdCell, CsvCell eventClassCdCell, CsvCell eventResultUnitsCdCell, CsvCell eventResultTxtCell, CsvCell resultValueCell, CsvCell eventTitleCell, CsvCell eventTagCell) {
-            this.parserState = parserState;
-            this.eventIdCell = eventIdCell;
-            this.parentEventIdCell = parentEventIdCell;
-            this.encounterIdCell = encounterIdCell;
-            this.eventCdCell = eventCdCell;
-            this.eventClassCdCell = eventClassCdCell;
-            this.eventResultUnitsCdCell = eventResultUnitsCdCell;
-            this.eventResultTxtCell = eventResultTxtCell;
-            this.resultValueCell = resultValueCell;
-            this.eventTitleCell = eventTitleCell;
-            this.eventTagCell = eventTagCell;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
-        }
-
-        public CsvCell getEventIdCell() {
-            return eventIdCell;
-        }
-
-        public CsvCell getParentEventIdCell() {
-            return parentEventIdCell;
-        }
-
-        public CsvCell getEncounterIdCell() {
-            return encounterIdCell;
-        }
-
-        public CsvCell getEventCdCell() {
-            return eventCdCell;
-        }
-
-        public CsvCell getEventClassCdCell() {
-            return eventClassCdCell;
-        }
-
-        public CsvCell getEventResultUnitsCdCell() {
-            return eventResultUnitsCdCell;
-        }
-
-        public CsvCell getEventResultTxtCell() {
-            return eventResultTxtCell;
-        }
-
-        public CsvCell getResultValueCell() {
-            return resultValueCell;
-        }
-
-        public CsvCell getEventTitleCell() {
-            return eventTitleCell;
-        }
-
-        public CsvCell getEventTagCell() {
-            return eventTagCell;
-        }
-    }
-
-    static class PreTransformCallable implements Callable {
-
-        private List<CleveRecord> records;
-        private boolean isDelete;
-        private BartsCsvHelper csvHelper;
-
-        public PreTransformCallable(List<CleveRecord> records, boolean isDelete, BartsCsvHelper csvHelper) {
-
-            this.records = records;
-            this.isDelete = isDelete;
-            this.csvHelper = csvHelper;
+        public saveDataCallable(StagingClinicalEvent objs, UUID serviceId) {
+            this.obj = objs;
+            this.serviceId = serviceId;
         }
 
         @Override
         public Object call() throws Exception {
 
             try {
-
-                if (isDelete) {
-
-                    //delete from the CLEVE mapping table
-                    List<CernerClinicalEventMappingState> mappings = new ArrayList<>();
-                    for (CleveRecord record: records) {
-
-                        CernerClinicalEventMappingState mappingState = new CernerClinicalEventMappingState();
-                        mappingState.setServiceId(csvHelper.getServiceId());
-                        mappingState.setEventId(record.getEventIdCell().getLong()); //only need to populate these two columns for the delete
-
-                        mappings.add(mappingState);
-                    }
-
-                    cernerDal.deleteCleveMappingStateTable(mappings);
-
-                } else {
-
-                    List<CernerClinicalEventMappingState> mappings = new ArrayList<>();
-
-                    for (CleveRecord record: records) {
-                        //cache our parent-child link
-                        //group header CLEVE records have their own ID as their parent, so ignore those ones
-                        CsvCell parentEventIdCell = record.getParentEventIdCell();
-                        CsvCell eventIdCell = record.getEventIdCell();
-                        if (!BartsCsvHelper.isEmptyOrIsZero(parentEventIdCell)
-                                && !parentEventIdCell.equalsValue(eventIdCell)) {
-                            csvHelper.cacheParentChildClinicalEventLink(eventIdCell, parentEventIdCell);
-                        }
-
-                        //cache our encounter link
-                        CsvCell encounterIdCell = record.getEncounterIdCell();
-                        csvHelper.cacheNewConsultationChildRelationship(encounterIdCell, eventIdCell, ResourceType.Observation);
-
-                        CsvCell eventClassCdCell = record.getEventClassCdCell();
-                        CsvCell resultValueCell = record.getResultValueCell();
-                        CsvCell eventResultTxtCell = record.getEventResultTxtCell();
-                        CsvCell eventCdCell = record.getEventCdCell();
-
-                        //map to Snomed if possible
-                        String snomedConceptId = CLEVEPreTransformer.mapToSnomedCode(eventClassCdCell, resultValueCell, eventResultTxtCell, eventCdCell, csvHelper);
-
-                        if (!Strings.isNullOrEmpty(snomedConceptId)) {
-                            SnomedLookup snomedLookup = snomedDal.getSnomedLookup(snomedConceptId);
-                            if (snomedLookup == null) {
-                                throw new TransformException("Failed to find snomed_lookup for concept ID " + snomedConceptId);
-                            }
-                            csvHelper.cacheCleveSnomedConceptId(eventIdCell, snomedLookup);
-                        }
-
-                        //update the CLEVE mapping table
-                        CernerClinicalEventMappingState mappingState = new CernerClinicalEventMappingState();
-                        mappingState.setServiceId(csvHelper.getServiceId());
-                        mappingState.setEventId(eventIdCell.getLong());
-                        if (!BartsCsvHelper.isEmptyOrIsZero(eventCdCell)) {
-                            mappingState.setEventCd(eventCdCell.getString());
-
-                            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_CODE_TYPE, eventCdCell);
-                            if (codeRef != null) {
-                                mappingState.setEventCdTerm(codeRef.getCodeDispTxt());
-                            }
-                        }
-                        if (!BartsCsvHelper.isEmptyOrIsZero(eventClassCdCell)) {
-                            mappingState.setEventClassCd(eventClassCdCell.getString());
-
-                            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, eventClassCdCell);
-                            if (codeRef != null) {
-                                mappingState.setEventClassCdTerm(codeRef.getCodeDispTxt());
-                            }
-                        }
-                        CsvCell eventResultUnitsCdCell = record.getEventResultUnitsCdCell();
-                        if (!BartsCsvHelper.isEmptyOrIsZero(eventResultUnitsCdCell)) {
-                            mappingState.setEventResultUnitsCd(eventResultUnitsCdCell.getString());
-
-                            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_UNITS, eventResultUnitsCdCell);
-                            if (codeRef != null) {
-                                mappingState.setEventResultUnitsCdTerm(codeRef.getCodeDispTxt());
-                            }
-                        }
-                        if (!eventResultTxtCell.isEmpty()) {
-                            mappingState.setEventResultText(eventResultTxtCell.getString());
-                        }
-                        CsvCell eventTitleCell = record.getEventTitleCell();
-                        if (!eventTitleCell.isEmpty()) {
-                            mappingState.setEventTitleText(eventTitleCell.getString());
-                        }
-                        CsvCell eventTagCell = record.getEventTagCell();
-                        if (!eventTagCell.isEmpty()) {
-                            mappingState.setEventTagText(eventTagCell.getString());
-                        }
-                        if (!Strings.isNullOrEmpty(snomedConceptId)) {
-                            mappingState.setMappedSnomedId(snomedConceptId);
-                        }
-
-                        mappings.add(mappingState);
-                    }
-
-                    cernerDal.updateCleveMappingStateTable(mappings);
-                }
+                repository.save(obj, serviceId);
 
             } catch (Throwable t) {
-                String msg = "Error with CLEVE pre-transform for records: ";
-                for (CleveRecord record: records) {
-                    msg += record.getParserState().toString();
-                }
-                LOG.error(msg, t);
-                throw new TransformException(msg, t);
+                LOG.error("", t);
+                throw t;
             }
 
             return null;
         }
     }
-
 }
