@@ -92,6 +92,6 @@ public class CodeTransformer {
                                     auditWrapper);
 
                 //save to the DB
-            repository.save(mapping, fhirResourceFiler.getServiceId());
+            repository.saveCVREF(mapping);
     }
  }

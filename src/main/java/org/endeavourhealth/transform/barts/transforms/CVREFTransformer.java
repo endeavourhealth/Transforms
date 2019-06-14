@@ -88,7 +88,7 @@ public class CVREFTransformer {
 
 
         //save to the DB
-        repository.save(mapping, fhirResourceFiler.getServiceId());
+        repository.saveCVREF(mapping);
 
         //LOG.debug("CVREF " + codeValueCode.getString() + " SET " + codeSetNbr.getString());
         //if it's a specialty, store the record as an Organization so we can refer to it from the Encounter resource

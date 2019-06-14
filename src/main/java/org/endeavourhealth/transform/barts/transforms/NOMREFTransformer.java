@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerNomenclatureRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
@@ -10,7 +11,10 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 
 public class NOMREFTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(NOMREFTransformer.class);
@@ -27,24 +31,38 @@ public class NOMREFTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        try {
-            for (ParserI parser: parsers) {
+        List<CernerNomenclatureRef> batch = new ArrayList<>();
 
-                while (parser.nextRecord()) {
+        for (ParserI parser: parsers) {
 
-                    //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
-                    //to parse any record in this file it a critical error
-                    transform((NOMREF) parser, fhirResourceFiler, csvHelper);
-                }
+            while (parser.nextRecord()) {
+
+                //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
+                //to parse any record in this file it a critical error
+                transform((NOMREF) parser, fhirResourceFiler, csvHelper, batch);
             }
+        }
 
-        } finally {
+        saveBatch(batch, true, csvHelper);
+    }
+
+    private static void saveBatch(List<CernerNomenclatureRef> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        csvHelper.submitToThreadPool(new SaveNomenclatureCallable(new ArrayList<>(batch)));
+        batch.clear();
+
+        if (lastOne) {
             csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
 
-    public static void transform(NOMREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    public static void transform(NOMREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, List<CernerNomenclatureRef> batch) throws Exception {
         CsvCell idCell = parser.getNomenclatureId();
         CsvCell activeCell = parser.getActiveIndicator();
         CsvCell mnemonicTextCell = parser.getMnemonicText();
@@ -95,25 +113,24 @@ public class NOMREFTransformer {
         }
 
         //spin the remainder of our work off to a small thread pool, so we can perform multiple snomed term lookups in parallel
-        csvHelper.submitToThreadPool(new SaveNomenclatureCallable(parser.getCurrentState(), obj));
+        batch.add(obj);
+        saveBatch(batch, false, csvHelper);
     }
 
 
-    static class SaveNomenclatureCallable extends AbstractCsvCallable {
+    static class SaveNomenclatureCallable implements Callable {
 
-        private CernerNomenclatureRef obj = null;
+        private List<CernerNomenclatureRef> objs = null;
 
-        public SaveNomenclatureCallable(CsvCurrentState parserState,
-                                        CernerNomenclatureRef obj) {
-            super(parserState);
-            this.obj = obj;
+        public SaveNomenclatureCallable(List<CernerNomenclatureRef> objs) {
+            this.objs = objs;
         }
 
         @Override
         public Object call() throws Exception {
 
             try {
-                repository.saveNomenclatureRef(obj);
+                repository.saveNOMREFs(objs);
 
             } catch (Throwable t) {
                 LOG.error("", t);
