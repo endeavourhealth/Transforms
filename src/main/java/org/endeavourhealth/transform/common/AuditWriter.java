@@ -22,6 +22,10 @@ public final class AuditWriter {
 
     public static void writeExchangeEvent(UUID exchangeId, String event) throws Exception {
 
+        if (event.length() > 250) {
+            event = event.substring(0, 250);
+        }
+
         ExchangeEvent eventToSave = new ExchangeEvent();
         eventToSave.setTimestamp(new Date());
         eventToSave.setExchangeId(exchangeId);
