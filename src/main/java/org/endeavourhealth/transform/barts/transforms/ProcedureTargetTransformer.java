@@ -222,7 +222,7 @@ public class ProcedureTargetTransformer {
 
             fhirResourceFiler.savePatientResource(null, procedureBuilder);
 
-            LOG.debug("Transforming procedureId: "+uniqueId+"  Filed");
+            //LOG.debug("Transforming procedureId: "+uniqueId+"  Filed");
         }
     }
 

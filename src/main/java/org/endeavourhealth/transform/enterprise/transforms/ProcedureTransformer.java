@@ -101,20 +101,40 @@ public class ProcedureTransformer extends AbstractTransformer {
 
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
-        if (snomedConceptId == null && CodeableConceptHelper.findOriginalCoding(fhir.getCode()) != null) {
+
+        if (snomedConceptId == null) {
+            Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
+            if (originalCoding != null
+                && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
+                && StringUtils.isNumeric(originalCoding.getCode())) {
+
+                Long codeLong = Long.parseLong(originalCoding.getCode());
+                CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(codeLong);
+                if (mapping != null) {
+                    snomedConceptId = Long.parseLong(mapping.getSnomedConceptId());
+                } else {
+                    // Don't allow records with only a Cerner term not mapped to Snomed.
+                    return;
+                }
+            }
+        }
+
+        /*if (snomedConceptId == null && CodeableConceptHelper.findOriginalCoding(fhir.getCode()) != null) {
             Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
             if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
                 if (StringUtils.isNumeric(originalCoding.getCode())) {
                     Long codeLong = Long.parseLong(originalCoding.getCode());
                     CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(codeLong);
-                    if (mapping.getSnomedConceptId() != null)
-                     snomedConceptId = Long.parseLong(mapping.getSnomedConceptId());
+                    if (mapping.getSnomedConceptId() != null) {
+                        snomedConceptId = Long.parseLong(mapping.getSnomedConceptId());
+                    }
+
                     //snomedConceptId = cernerProcedureMap.getSnomedFromCernerProc(parseInt(originalCoding.getCode()));
                 } else {
                     return; // Don't allow records with only a Cerner term not mapped to Snomed.
                 }
             }
-        }
+        }*/
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
