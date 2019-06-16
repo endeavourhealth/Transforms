@@ -263,7 +263,7 @@ public abstract class EmisCsvToFhirTransformer {
         map.put("F82018", "09/06/2019");
         map.put("F82030", "09/06/2019");
         map.put("F82671", "09/06/2019");
-
+        map.put("F86087", "14/06/2019");
 
         String startDateStr = map.get(odsCode);
         if (Strings.isNullOrEmpty(startDateStr)) {
