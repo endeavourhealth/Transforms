@@ -426,6 +426,11 @@ public class JournalTransformer {
             return;
         }
 
+        if (isInvalidData(parser)) {
+            TransformWarnings.log(LOG, parser, "Journal ID: {} contains invalid Allergy data", parser.getObservationID());
+            return;
+        }
+
         CsvCell clinicianID = parser.getClinicianUserID();
         if (!clinicianID.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
@@ -1291,10 +1296,10 @@ public class JournalTransformer {
         Boolean inValid = false;
         ResourceType type = getTargetResourceType(parser);
 
-        //Fixed VEI-4 (invalid Immunisation records)
-        if (type == ResourceType.Immunization) {
+        //Fixed VEI-4 (invalid Immunisation records).  Also, invalid Allergies detected, so handled those
+        if (type == ResourceType.Immunization || type == ResourceType.AllergyIntolerance) {
 
-            // First invalid indicator, the Immunisation has a value - this fails the assertValueEmpty test
+            // First invalid indicator, the Immunisation or Allergy has a value - this fails the assertValueEmpty test
             String valueText = parser.getValue1AsText().getString();
             if (!Strings.isNullOrEmpty(valueText)) {
 

@@ -125,10 +125,10 @@ public abstract class BartsCsvToFhirTransformer {
             //pre-transformers, must be done before encounter ones
             CLEVEPreTransformer.transform(getParsers(parserMap, csvHelper, "CLEVE", false), fhirResourceFiler, csvHelper);
 
-            //PROCEDURES - execute the staging procedures to target clinical events stored proc
+            //CLINICAL EVENTS - execute the staging procedures to target clinical events stored proc
             csvHelper.processStagingForTargetClinicalEvents();
 
-            //Procedure data transformation on final procedure target staging table
+            //Clinical events data transformation on final procedure target staging table
             ClinicalEventTargetTransformer.transform(fhirResourceFiler, csvHelper);
 
             DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, "DIAGN", false), fhirResourceFiler, csvHelper);
