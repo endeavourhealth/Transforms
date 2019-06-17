@@ -124,6 +124,13 @@ public abstract class BartsCsvToFhirTransformer {
 
             //pre-transformers, must be done before encounter ones
             CLEVEPreTransformer.transform(getParsers(parserMap, csvHelper, "CLEVE", false), fhirResourceFiler, csvHelper);
+
+            //PROCEDURES - execute the staging procedures to target clinical events stored proc
+            csvHelper.processStagingForTargetClinicalEvents();
+
+            //Procedure data transformation on final procedure target staging table
+            ClinicalEventTargetTransformer.transform(fhirResourceFiler, csvHelper);
+
             DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, "DIAGN", false), fhirResourceFiler, csvHelper);
 
             //while we're just doing the pre-transformer only, allow it to remove from the map, to reduce memory use
@@ -188,7 +195,7 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //other clinical transformers
-            CLEVETransformerOLD.transform(getParsers(parserMap, csvHelper, "CLEVE", true), fhirResourceFiler, csvHelper);
+            // CLEVETransformerOLD.transform(getParsers(parserMap, csvHelper, "CLEVE", true), fhirResourceFiler, csvHelper);
             //ProblemTransformer.transform(getParsers(parserMap, csvHelper, "Problem", true), fhirResourceFiler, csvHelper);
             FamilyHistoryTransformer.transform(getParsers(parserMap, csvHelper, "FamilyHistory", true), fhirResourceFiler, csvHelper);
 
