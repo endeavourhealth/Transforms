@@ -171,7 +171,7 @@ public class ClinicalEventTargetTransformer {
 
             // coded concept
             CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+                    = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
 
             // All codes are cerner codes??
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
