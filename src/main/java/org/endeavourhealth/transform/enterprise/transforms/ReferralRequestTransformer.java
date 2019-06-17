@@ -60,15 +60,6 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             encounterId = findEnterpriseId(params, encounterReference);
         }
 
-        //moved to lower down since this isn't correct for incoming referrals
-        /*if (fhir.hasRequester()) {
-            Reference practitionerReference = fhir.getRequester();
-            practitionerId = findEnterpriseId(data.getPractitioners(), practitionerReference);
-            if (practitionerId == null) {
-                practitionerId = transformOnDemand(practitionerReference, data, otherResources, enterpriseOrganisationId, enterprisePatientId, enterprisePersonId, configName, protocolId);
-            }
-        }*/
-
         if (fhir.hasDateElement()) {
             DateTimeType dt = fhir.getDateElement();
             clinicalEffectiveDate = dt.getValue();
@@ -89,9 +80,14 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             snomedConceptId = codes.getSnomedConceptId();
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
+
+            if (snomedConceptId == null) {
+                Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(fhirServiceRequested);
+                if (snomedValue!= null) {
+                    snomedConceptId = snomedValue;
+                }
+            }
         }
-        /*Long snomedConceptId = findSnomedConceptId(fhir.getType());
-        model.setSnomedConceptId(snomedConceptId);*/
 
         if (fhir.hasRequester()) {
             Reference requesterReference = fhir.getRequester();
@@ -117,17 +113,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                 }
             }
 
-            //if we didn't find an organisation reference, look for a practitioner one
-            //just rely on the organisation ID, so we don't accidentally infer that the referral is to
-            //and organisation when it's not because the Emis data contains referrals with BOTH sender and recipient
-            //organsiation GUIDs being to unknown orgs, and we should let that be carried through into the subscriber DB
-            /*if (recipientOrganizationId == null) {
-                for (Reference recipientReference : fhir.getRecipient()) {
-                    if (ReferenceHelper.isResourceType(recipientReference, ResourceType.Practitioner)) {
-                        recipientOrganizationId = findOrganisationEnterpriseIdFromPractictioner(recipientReference, fhir, params);
-                    }
-                }
-            }*/
+
         }
 
         Reference practitionerReference = null;

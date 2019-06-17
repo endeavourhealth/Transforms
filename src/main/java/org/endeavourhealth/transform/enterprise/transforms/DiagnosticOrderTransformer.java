@@ -86,6 +86,13 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
 
+        if (snomedConceptId == null) {
+            Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(item.getCode());
+            if (snomedValue!= null) {
+                snomedConceptId = snomedValue;
+            }
+        }
+
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
             BooleanType b = (BooleanType)reviewExtension.getValue();

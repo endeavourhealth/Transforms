@@ -1,10 +1,10 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
-import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
-import org.endeavourhealth.core.database.dal.reference.models.CernerClinicalEventMap;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -81,21 +81,12 @@ public class ConditionTransformer extends AbstractTransformer {
         originalTerm = codes.getOriginalTerm();
 
         if (snomedConceptId == null) {
-            Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
-            if (originalCoding != null
-                    && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
-                    && StringUtils.isNumeric(originalCoding.getCode())) {
-
-                Long codeLong = Long.parseLong(originalCoding.getCode());
-                CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(codeLong);
-                if (mapping != null) {
-                    snomedConceptId = Long.parseLong(mapping.getSnomedConceptId());
-                } else {
-                    // Don't allow records with only a Cerner term not mapped to Snomed.
-                    return;
+                Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(fhir.getCode());
+                if (snomedValue!= null) {
+                    snomedConceptId = snomedValue;
                 }
             }
-        }
+
 
 
         //if it's a problem set the boolean to say so

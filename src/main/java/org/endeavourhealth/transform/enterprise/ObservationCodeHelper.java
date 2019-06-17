@@ -1,7 +1,11 @@
 package org.endeavourhealth.transform.enterprise;
 
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
+import org.endeavourhealth.core.database.dal.reference.models.CernerClinicalEventMap;
 import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.Coding;
 
@@ -11,6 +15,9 @@ import javax.xml.crypto.dsig.TransformException;
  * utility object for passing around values for the three code-related fields on the subscriber Observation table
  */
 public class ObservationCodeHelper {
+
+    private static CernerClinicalEventMappingDalI referenceDal = DalProvider.factoryCernerClinicalEventMappingDal();
+
     private Long snomedConceptId = null;
     private String originalCode = null;
     private String originalTerm = null;
@@ -127,5 +134,20 @@ public class ObservationCodeHelper {
         } else {
             throw new TransformException("Unsupported original code system [" + system + "]");
         }
+    }
+
+    public static Long getSnomedFromCerner(CodeableConcept concept) throws Exception {
+        //Try to get a SNOMED code mapped from a Barts Cerner value.
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(concept);
+        if (originalCoding != null
+                && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
+                && StringUtils.isNumeric(originalCoding.getCode())) {
+            Long codeLong = Long.parseLong(originalCoding.getCode());
+            CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(codeLong);
+            if (mapping != null) {
+                return Long.parseLong(mapping.getSnomedConceptId());
+            }
+        }
+        return null;
     }
 }
