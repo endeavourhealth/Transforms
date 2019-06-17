@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingProcedureDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingSURCP;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -14,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -140,21 +138,24 @@ public class ProcedurePreTransformer {
         stagingObj.setWard(parser.getWard().getString());
         stagingObj.setSite(parser.getSite().getString());
 
-        String consultantStr  = parser.getConsultant().getString();
-        String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, consultantStr);
-        if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
-            stagingObj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
-        } else {
-            //Make sure name is formatted as "surname , names"
+        CsvCell consultantCell = parser.getConsultant();
+        if (!consultantCell.isEmpty()) {
+            String consultantStr = consultantCell.getString();
+            String consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, consultantStr);
+            if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
+                stagingObj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
+            } else {
+                //Make sure name is formatted as "surname , names"
                 String newConsultantStr = formatName(consultantStr);
                 consultantPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, newConsultantStr);
 
-            if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
-                stagingObj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
+                if (!Strings.isNullOrEmpty(consultantPersonnelId)) {
+                    stagingObj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
+                }
             }
         }
 
-        String recordedByPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID,parser.getUpdatedBy().getString().replace(" ,",","));
+        String recordedByPersonnelId = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, parser.getUpdatedBy().getString().replace(" ,", ","));
         if (!Strings.isNullOrEmpty(recordedByPersonnelId)) {
             stagingObj.setLookupRecordedByPersonnelId(Integer.valueOf(recordedByPersonnelId));
         }
@@ -165,12 +166,12 @@ public class ProcedurePreTransformer {
 
     private static String formatName(String consultantStr) {
         int commaposn = consultantStr.indexOf(",");
-        if (!Character.isWhitespace(consultantStr.charAt(commaposn-1))) {
+        if (!Character.isWhitespace(consultantStr.charAt(commaposn - 1))) {
             consultantStr = consultantStr.substring(0, commaposn) + " " + consultantStr.substring(commaposn);
         }
         commaposn = consultantStr.indexOf(",");
-        if (!Character.isWhitespace(consultantStr.charAt(commaposn+1))) {
-            consultantStr = consultantStr.substring(0, commaposn+1) + " " + consultantStr.substring(commaposn+1);
+        if (!Character.isWhitespace(consultantStr.charAt(commaposn + 1))) {
+            consultantStr = consultantStr.substring(0, commaposn + 1) + " " + consultantStr.substring(commaposn + 1);
         }
         return consultantStr;
     }
