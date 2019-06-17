@@ -90,6 +90,8 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
             Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(item.getCode());
             if (snomedValue!= null) {
                 snomedConceptId = snomedValue;
+            } else {
+                return; // Don't allow records we can't map to SNOMED.
             }
         }
 

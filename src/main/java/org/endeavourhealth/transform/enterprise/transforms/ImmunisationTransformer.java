@@ -81,6 +81,8 @@ public class ImmunisationTransformer extends AbstractTransformer {
             Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(fhir.getVaccineCode());
             if (snomedValue!= null) {
                 snomedConceptId = snomedValue;
+            } else {
+                return; // Don't allow records we can't map to SNOMED.
             }
         }
 

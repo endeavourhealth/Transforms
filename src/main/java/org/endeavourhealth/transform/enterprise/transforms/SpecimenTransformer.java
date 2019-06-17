@@ -90,6 +90,8 @@ public class SpecimenTransformer extends AbstractTransformer {
             Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(fhir.getType());
             if (snomedValue!= null) {
                 snomedConceptId = snomedValue;
+            } else {
+                return; // Don't allow records we can't map to SNOMED.
             }
         }
 

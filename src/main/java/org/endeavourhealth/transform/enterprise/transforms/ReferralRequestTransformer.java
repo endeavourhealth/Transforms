@@ -85,6 +85,8 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                 Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(fhirServiceRequested);
                 if (snomedValue!= null) {
                     snomedConceptId = snomedValue;
+                } else {
+                    return; // Don't allow records we can't map to SNOMED.
                 }
             }
         }

@@ -88,6 +88,8 @@ public class ObservationTransformer extends AbstractTransformer {
             Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(fhir.getCode());
             if (snomedValue!= null) {
                 snomedConceptId = snomedValue;
+            } else {
+                return; // Don't allow records we can't map to SNOMED.
             }
         }
         if (fhir.hasValue()) {
