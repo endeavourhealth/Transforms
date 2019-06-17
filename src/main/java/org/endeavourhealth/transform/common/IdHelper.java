@@ -95,6 +95,49 @@ public class IdHelper {
         return edsId;
     }
 
+    /**
+     * checks for multiple target UUIDs for a set of source IDs
+     */
+    public static Map<String, UUID> getEdsResourceIds(UUID serviceId, ResourceType resourceType, Set<String> sourceIds) throws Exception {
+
+        Map<String, UUID> ret = new HashMap<>();
+
+        Map<Reference, String> hmReferencesForDb = new HashMap<>();
+
+        for (String sourceId: sourceIds) {
+            Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
+            String sourceReferenceValue = sourceReference.getReference();
+
+            UUID edsId = checkCache(serviceId, sourceReferenceValue);
+            if (edsId != null) {
+                ret.put(sourceId, edsId);
+            } else {
+                hmReferencesForDb.put(sourceReference, sourceId);
+            }
+        }
+
+        //if we need to hit the DB for any...
+        if (!hmReferencesForDb.isEmpty()) {
+            List<Reference> sourceReferences = new ArrayList<>(hmReferencesForDb.keySet());
+            Map<Reference, Reference> map = repository.findEdsReferencesFromSourceReferences(serviceId, sourceReferences);
+            for (Reference sourceReference: hmReferencesForDb.keySet()) {
+
+                Reference edsReference = map.get(sourceReference);
+                if (edsReference != null) {
+                    String edsIdStr = ReferenceHelper.getReferenceId(edsReference);
+                    UUID edsId = UUID.fromString(edsIdStr);
+                    String sourceId = hmReferencesForDb.get(sourceReference);
+                    ret.put(sourceId, edsId);
+
+                    String sourceReferenceValue = sourceReference.getReference();
+                    addToCache(serviceId, sourceReferenceValue, edsId);
+                }
+            }
+        }
+
+        return ret;
+    }
+
     private static UUID checkCache(UUID serviceId, String referenceValue) {
         String cacheKey = createCacheKey(serviceId, referenceValue);
         return (UUID)cache.get(cacheKey);

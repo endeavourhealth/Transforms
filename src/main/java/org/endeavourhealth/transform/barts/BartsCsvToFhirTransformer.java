@@ -126,6 +126,7 @@ public abstract class BartsCsvToFhirTransformer {
             CLEVEPreTransformer.transform(getParsers(parserMap, csvHelper, "CLEVE", false), fhirResourceFiler, csvHelper);
 
             //CLINICAL EVENTS - execute the staging procedures to target clinical events stored proc
+            csvHelper.waitUntilThreadPoolIsEmpty();
             csvHelper.processStagingForTargetClinicalEvents();
 
             //Clinical events data transformation on final procedure target staging table
@@ -170,10 +171,8 @@ public abstract class BartsCsvToFhirTransformer {
             SURCCPreTransformer.transform(getParsers(parserMap, csvHelper, "SURCC", true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
             SURCPPreTransformer.transform(getParsers(parserMap, csvHelper, "SURCP",true), fhirResourceFiler,csvHelper);
 
-            //must let all the threads doing the saving for the above finish
-            csvHelper.waitUntilThreadPoolIsEmpty();
-
             //PROCEDURES - execute the staging procedures to target procedures stored proc
+            csvHelper.waitUntilThreadPoolIsEmpty();
             csvHelper.processStagingForTargetProcedures();
 
             //Procedure data transformation on final procedure target staging table
@@ -187,6 +186,7 @@ public abstract class BartsCsvToFhirTransformer {
             ProblemPreTransformer.transform(getParsers(parserMap, csvHelper, "Problem", true), fhirResourceFiler, csvHelper);
 
             //CONDITIONS - execute the staging conditions to target procedures stored proc
+            csvHelper.waitUntilThreadPoolIsEmpty();
             csvHelper.processStagingForTargetConditions();
 
             //Condition data transformation on final condition target staging table

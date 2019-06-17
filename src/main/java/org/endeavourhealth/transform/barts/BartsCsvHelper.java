@@ -67,9 +67,9 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public static final String SUS_RECORD_TYPE_EMERGENCY = "Emergency";
 
     private static final String PPREL_TO_RELATIONSHIP_TYPE = "PPREL_ID_TO_TYPE";
-    private static final String ENCOUNTER_ID_TO_PERSON_ID = "ENCNTR_ID_TO_PERSON_ID";
+    public static final String ENCOUNTER_ID_TO_PERSON_ID = "ENCNTR_ID_TO_PERSON_ID";
     private static final String SURGICAL_CASE_ID_TO_PERSON_ID = "SURCC_ID_TO_PERSON_ID";
-    private static final String ENCOUNTER_ID_TO_RESPONSIBLE_PESONNEL_ID = "ENCNTR_ID_TO_RESPONSIBLE_PERSONNEL_ID";
+    public static final String ENCOUNTER_ID_TO_RESPONSIBLE_PESONNEL_ID = "ENCNTR_ID_TO_RESPONSIBLE_PERSONNEL_ID";
 
     //the daily files have dates formatted different to the bulks, so we need to support both
     private static SimpleDateFormat DATE_FORMAT_DAILY = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
@@ -234,6 +234,14 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
 
     public String getInternalId(String idType, String sourceId) throws Exception {
+        Set<String> hs = new HashSet<>();
+        hs.add(sourceId);
+
+        Map<String, String> hm = getInternalIds(idType, hs);
+        return hm.get(sourceId);
+    }
+
+    /*public String getInternalId(String idType, String sourceId) throws Exception {
         StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
 
         //check the cache - note we cache null lookups in the cache
@@ -264,6 +272,61 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         } finally {
             cacheLock.unlock();
+        }
+
+        return ret;
+    }*/
+
+    public Map<String, String> getInternalIds(String idType, Set<String> sourceIds) throws Exception {
+
+        Map<String, String> ret = new HashMap<>();
+
+        //check the cache - note we cache null lookups in the cache
+        Set<String> idsForDb = new HashSet<>();
+        for (String sourceId: sourceIds) {
+            StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
+
+            try {
+                cacheLock.lock();
+                if (internalIdMapCache.containsKey(cacheKey)) {
+                    StringMemorySaver cacheValue = internalIdMapCache.get(cacheKey);
+                    if (cacheValue == null) {
+                        //if null was put in the cache, it means we previously checked the DB and found null
+                    } else {
+                        String val = cacheValue.toString();
+                        ret.put(sourceId, val);
+                    }
+                } else {
+                    idsForDb.add(sourceId);
+                }
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+
+        if (!idsForDb.isEmpty()) {
+            Map<String, String> dbResults = internalIdDal.getDestinationIds(serviceId, idType, idsForDb);
+
+            //add to the cache - note we cache lookup failures too
+            try {
+                cacheLock.lock();
+
+                for (String sourceId: idsForDb) {
+                    StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
+
+                    String dbVal = dbResults.get(sourceId);
+                    if (dbVal == null) {
+                        internalIdMapCache.put(cacheKey, null);
+                    } else {
+                        internalIdMapCache.put(cacheKey, new StringMemorySaver(dbVal));
+
+                        ret.put(sourceId, dbVal);
+                    }
+                }
+
+            } finally {
+                cacheLock.unlock();
+            }
         }
 
         return ret;
