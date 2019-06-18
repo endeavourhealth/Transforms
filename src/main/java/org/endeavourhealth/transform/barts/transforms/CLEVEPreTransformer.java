@@ -44,6 +44,8 @@ public class CLEVEPreTransformer {
             }
         }
 
+        saveBatch(batch, true, csvHelper);
+
     }
 
     private static void saveBatch(List<StagingClinicalEvent> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
