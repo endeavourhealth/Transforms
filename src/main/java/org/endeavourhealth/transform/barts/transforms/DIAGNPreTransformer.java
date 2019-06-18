@@ -14,9 +14,11 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 public class DIAGNPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DIAGNPreTransformer.class);
@@ -27,20 +29,38 @@ public class DIAGNPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        try {
-            for (ParserI parser: parsers) {
-                while (parser.nextRecord()) {
-                    //no try/catch here, since any failure here means we don't want to continue
-                    processRecord((DIAGN)parser, fhirResourceFiler, csvHelper);
-                }
-            }
+        List<StagingDIAGN> batch = new ArrayList<>();
 
-        } finally {
+        for (ParserI parser : parsers) {
+            while (parser.nextRecord()) {
+                //no try/catch here, since any failure here means we don't want to continue
+                processRecord((DIAGN)parser, fhirResourceFiler, csvHelper, batch);
+            }
+        }
+
+        saveBatch(batch, true, csvHelper);
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
+    }
+
+    private static void saveBatch(List<StagingDIAGN> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new DIAGNPreTransformer.saveDataCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
             csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
-    public static void processRecord(DIAGN parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    public static void processRecord(DIAGN parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, List<StagingDIAGN> batch) throws Exception {
 
         StagingDIAGN stagingDIAGN = new StagingDIAGN();
 
@@ -169,24 +189,18 @@ public class DIAGNPreTransformer {
             }
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new DIAGNPreTransformer.saveDataCallable(parser.getCurrentState(), stagingDIAGN, serviceId));
-
-        //TODO: revist this when Encounters work recommences
-//        PreTransformCallable callable = new PreTransformEncounterLinkCallable(parser.getCurrentState(), diagnosisIdCell, encounterIdCell, csvHelper);
-//        csvHelper.submitToThreadPool(callable);
+        batch.add(stagingDIAGN);
+        saveBatch(batch, false, csvHelper);
     }
 
+    private static class saveDataCallable implements Callable {
 
-    private static class saveDataCallable extends AbstractCsvCallable {
-
-        private StagingDIAGN obj = null;
+        private List<StagingDIAGN> obj = null;
         private UUID serviceId;
 
-        public saveDataCallable(CsvCurrentState parserState,
-                                StagingDIAGN obj,
+        public saveDataCallable(List<StagingDIAGN> obj,
                                 UUID serviceId) {
-            super(parserState);
+
             this.obj = obj;
             this.serviceId = serviceId;
         }
@@ -195,7 +209,7 @@ public class DIAGNPreTransformer {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveDIAGNs(obj, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);
@@ -235,5 +249,4 @@ public class DIAGNPreTransformer {
             return null;
         }
     }
-
 }
