@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -30,25 +31,39 @@ public class CLEVEPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        try {
-            for (ParserI parser : parsers) {
-                while (parser.nextRecord()) {
+        List<StagingClinicalEvent> batch = new ArrayList<>();
 
-                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
-                        continue;
-                    }
-                    //no try/catch here, since any failure here means we don't want to continue
-                    processRecord((CLEVE) parser, fhirResourceFiler, csvHelper);
+        for (ParserI parser : parsers) {
+            while (parser.nextRecord()) {
+
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
                 }
+                //no try/catch here, since any failure here means we don't want to continue
+                processRecord((CLEVE) parser, fhirResourceFiler, csvHelper, batch);
             }
-
-        } finally {
-            csvHelper.waitUntilThreadPoolIsEmpty();
         }
 
     }
 
-    public static void processRecord(CLEVE parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
+    private static void saveBatch(List<StagingClinicalEvent> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new CLEVEPreTransformer.saveDataCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    public static void processRecord(CLEVE parser, FhirResourceFiler fhirResourceFiler,
+                                     BartsCsvHelper csvHelper, List<StagingClinicalEvent> batch) throws Exception {
 
         StagingClinicalEvent stagingClinicalEvent = new StagingClinicalEvent();
 
@@ -220,8 +235,9 @@ public class CLEVEPreTransformer {
             }
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new CLEVEPreTransformer.saveDataCallable(stagingClinicalEvent, serviceId));
+        batch.add(stagingClinicalEvent);
+        saveBatch(batch, false, csvHelper);
+
     }
 
     private static boolean isNumericResult(CLEVE parser, BartsCsvHelper csvHelper) throws Exception {
@@ -351,11 +367,11 @@ public class CLEVEPreTransformer {
 
     public static class saveDataCallable implements Callable {
 
-        private StagingClinicalEvent obj = null;
+        private List<StagingClinicalEvent> objs = null;
         private UUID serviceId;
 
-        public saveDataCallable(StagingClinicalEvent objs, UUID serviceId) {
-            this.obj = objs;
+        public saveDataCallable(List<StagingClinicalEvent> objs, UUID serviceId) {
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -363,7 +379,7 @@ public class CLEVEPreTransformer {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveCLEVEs(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);

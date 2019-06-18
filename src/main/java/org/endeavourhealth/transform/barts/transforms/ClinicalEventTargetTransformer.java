@@ -124,9 +124,19 @@ public class ClinicalEventTargetTransformer {
                 observationBuilder.setEffectiveDate(eventPerformedDateTime);
             }
 
-            // TODO link to parent observation
 
-            // TODO check orderId and link that up
+            Integer parentEventId =  targetClinicalEvent.getParentEventId();
+            if (parentEventId != null) {
+                Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.DiagnosticReport, parentEventId.toString());
+                observationBuilder.setParentResource(parentDiagnosticReportReference);
+            }
+
+            //link to parent diagnostic report if we have an order (NOTE we don't transform the orders file as of yet, but we may as well carry over this reference)
+            Integer orderId =  targetClinicalEvent.getOrderId();
+            if (orderId != null) {
+                Reference parentDiagnosticOrderReference = ReferenceHelper.createReference(ResourceType.DiagnosticOrder, orderId.toString());
+                observationBuilder.setParentResource(parentDiagnosticOrderReference);
+            }
 
             if (targetClinicalEvent.getProcessedNumericResult() != null) {
                 observationBuilder.setValueNumber(targetClinicalEvent.getProcessedNumericResult());
