@@ -75,16 +75,17 @@ public class ConditionTargetTransformer {
             ConditionBuilder conditionBuilder = new ConditionBuilder(null, targetCondition.getAudit());
             conditionBuilder.setId(uniqueId);
 
-            //we don't always have a performed date and it may 1900-01-01 one to skip over
+            //we don't always have a performed date so that will become a null onset
             if (targetCondition.getDtPerformed()!= null) {
 
-                if (!isUnknownConditionDate(targetCondition.getDtPerformed())) {
-                    DateTimeType conditionDateTime = new DateTimeType(targetCondition.getDtPerformed());
-                    conditionBuilder.setOnset(conditionDateTime);
-                } else {
-                    TransformWarnings.log(LOG, csvHelper, "Condition: {} which has an UNKNOWN 1900 date skipped", uniqueId);
-                    continue;
-                }
+                //removed the 1-1-1900 check following Mehbs advice
+                //if (!isUnknownConditionDate(targetCondition.getDtPerformed())) {
+                DateTimeType conditionDateTime = new DateTimeType(targetCondition.getDtPerformed());
+                conditionBuilder.setOnset(conditionDateTime);
+                //} else {
+                //    TransformWarnings.log(LOG, csvHelper, "Condition: {} which has an UNKNOWN 1900 date skipped", uniqueId);
+                //    continue;
+                //}
             }
 
             // set the patient reference
@@ -140,7 +141,7 @@ public class ConditionTargetTransformer {
                 } else if (problemStatus.equalsIgnoreCase("Resolved")
                         || problemStatus.equalsIgnoreCase("Inactive")) {
 
-                    //TODO - to confirm whether status date is actually worthless in this scenario so just set as true?
+                    //Status date confirmed as problem changed to Resolved/Inactive date for example
                     Date problemStatusDate = targetCondition.getProblemStatusDate();
                     if (problemStatusDate == null) {
                         //if we don't have a status date, use a boolean to indicate the end
