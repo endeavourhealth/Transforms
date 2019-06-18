@@ -12,32 +12,52 @@ import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 public class DiagnosisPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosisPreTransformer.class);
 
     private static StagingDiagnosisDalI repository = DalProvider.factoryBartsStagingDiagnosisDalI();
 
-
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        for (ParserI parser : parsers) {
+        List<StagingDiagnosis> batch = new ArrayList<>();
 
+        for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
-                    processRecord((org.endeavourhealth.transform.barts.schema.Diagnosis) parser, csvHelper);
+                processRecord((org.endeavourhealth.transform.barts.schema.Diagnosis) parser, csvHelper, batch);
             }
         }
+
+        saveBatch(batch, true, csvHelper);
 
         //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    private static void processRecord(org.endeavourhealth.transform.barts.schema.Diagnosis parser, BartsCsvHelper csvHelper) throws Exception {
+    private static void saveBatch(List<StagingDiagnosis> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new DiagnosisPreTransformer.saveDataCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    private static void processRecord(org.endeavourhealth.transform.barts.schema.Diagnosis parser, BartsCsvHelper csvHelper, List<StagingDiagnosis> batch) throws Exception {
 
         CsvCell diagnosisIdCell = parser.getDiagnosisIdSanitised();
 
@@ -149,20 +169,18 @@ public class DiagnosisPreTransformer {
             obj.setLookupConsultantPersonnelId(Integer.valueOf(consultantPersonnelId));
         }
 
-        UUID serviceId = csvHelper.getServiceId();
-        csvHelper.submitToThreadPool(new DiagnosisPreTransformer.saveDataCallable(parser.getCurrentState(), obj, serviceId));
+        batch.add(obj);
+        saveBatch(batch, false, csvHelper);
     }
 
-    private static class saveDataCallable extends AbstractCsvCallable {
+    private static class saveDataCallable implements Callable {
 
-        private StagingDiagnosis obj = null;
+        private List<StagingDiagnosis> objs = null;
         private UUID serviceId;
 
-        public saveDataCallable(CsvCurrentState parserState,
-                                StagingDiagnosis obj,
+        public saveDataCallable(List<StagingDiagnosis> objs,
                                 UUID serviceId) {
-            super(parserState);
-            this.obj = obj;
+            this.objs = objs;
             this.serviceId = serviceId;
         }
 
@@ -170,7 +188,7 @@ public class DiagnosisPreTransformer {
         public Object call() throws Exception {
 
             try {
-                repository.save(obj, serviceId);
+                repository.saveDiags(objs, serviceId);
 
             } catch (Throwable t) {
                 LOG.error("", t);
