@@ -131,12 +131,13 @@ public class ClinicalEventTargetTransformer {
                 observationBuilder.setParentResource(parentDiagnosticReportReference);
             }
 
+            // Order Id is referenced in the diagnostic report resource rather than the child event
             //link to parent diagnostic report if we have an order (NOTE we don't transform the orders file as of yet, but we may as well carry over this reference)
-            Integer orderId =  targetClinicalEvent.getOrderId();
+            /*Integer orderId =  targetClinicalEvent.getOrderId();
             if (orderId != null) {
                 Reference parentDiagnosticOrderReference = ReferenceHelper.createReference(ResourceType.DiagnosticOrder, orderId.toString());
                 observationBuilder.setParentResource(parentDiagnosticOrderReference);
-            }
+            }*/
 
             if (targetClinicalEvent.getProcessedNumericResult() != null) {
                 observationBuilder.setValueNumber(targetClinicalEvent.getProcessedNumericResult());
