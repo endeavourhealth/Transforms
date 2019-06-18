@@ -49,18 +49,16 @@ public class ClinicalEventTargetTransformer {
             String uniqueId = targetClinicalEvent.getUniqueId();
             boolean isDeleted = targetClinicalEvent.isDeleted();
 
-            //there are lots of events that are still active but have a result text of DELETED
-            String resultText = targetClinicalEvent.getEventResultTxt();
-            if (!resultText.isEmpty()
-                    && resultText.equalsIgnoreCase("DELETED")) {
-                isDeleted  = true;
-            }
-
             boolean isAuthorised = true;
 
-            // deleted records don't have status set and no point checking we already know its a delete
+            // deleted records don't have status or result text set and no point checking we already know its a delete
             if (!isDeleted) {
-
+                //there are lots of events that are still active but have a result text of DELETED
+                String resultText = targetClinicalEvent.getEventResultTxt();
+                if (!resultText.isEmpty()
+                        && resultText.equalsIgnoreCase("DELETED")) {
+                    isDeleted  = true;
+                }
 
                 String eventResultStatus = targetClinicalEvent.getLookupEventResultStatus();
                 if (eventResultStatus.equals("Unauth")
