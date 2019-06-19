@@ -1,0 +1,6 @@
+"SourceUrgency","TargetCode","Comment"
+"Routine","1","Routine"
+"Urgent","2","Urgent"
+"2 Week Wait","3","Two Week Wait"
+"Soon","4","Soon"
+"Dated","","Not mapped - very small number of these"

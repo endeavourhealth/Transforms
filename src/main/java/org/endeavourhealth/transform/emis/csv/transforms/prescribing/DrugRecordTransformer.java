@@ -7,10 +7,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
-import org.endeavourhealth.transform.emis.csv.helpers.IssueRecordIssueDate;
+import org.endeavourhealth.transform.emis.csv.helpers.*;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.DrugRecord;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.MedicationStatement;
@@ -156,7 +153,7 @@ public class DrugRecordTransformer {
 
         CsvCell authorisationType = parser.getPrescriptionType();
         if (!authorisationType.isEmpty()) {
-            MedicationAuthorisationType fhirAuthorisationType = MedicationAuthorisationType.fromDescription(authorisationType.getString());
+            MedicationAuthorisationType fhirAuthorisationType = EmisMappingHelper.findMedicationAuthorisationType(authorisationType.getString());
             medicationStatementBuilder.setAuthorisationType(fhirAuthorisationType, authorisationType);
         }
 

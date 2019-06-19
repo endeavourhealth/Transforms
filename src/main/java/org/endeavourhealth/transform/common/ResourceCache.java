@@ -27,8 +27,6 @@ public class ResourceCache<T, S extends ResourceBuilderBase> {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceCache.class);
 
     private Map<T, CacheEntryProxy> cache = new HashMap<>();
-    //private Set<T> keysInMemory = new HashSet<>();
-    private QueuedMessageDalI dal = DalProvider.factoryQueuedMessageDal();
     private ReentrantLock lock = new ReentrantLock();
 
     /**

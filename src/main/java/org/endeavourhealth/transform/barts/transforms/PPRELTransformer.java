@@ -234,11 +234,8 @@ public class PPRELTransformer {
 
             if (!types.isEmpty()) {
                 String typeStr = String.join(", ", types);
-
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
-                codeableConceptBuilder.setText(typeStr, cells.toArray(new CsvCell[]{}));
+                contactBuilder.setRelationship(typeStr, cells.toArray(new CsvCell[]{}));
             }
-
 
             //PPNAM transformer removes any names added by the ADT transform, so we would need to do the same if the ADT
             //feed populated relationships. In place of that, just validate that there are no relationships without IDs

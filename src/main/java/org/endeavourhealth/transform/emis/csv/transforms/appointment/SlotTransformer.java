@@ -24,10 +24,6 @@ import java.util.*;
 
 public class SlotTransformer {
 
-    private static final String SLOT_LATEST_PATIENT_GUID = "EmisSlotLatestPatientGuid";
-
-    private static final InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
-
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
@@ -52,9 +48,6 @@ public class SlotTransformer {
 
         CsvCell slotGuid = parser.getSlotGuid();
         CsvCell patientGuid = parser.getPatientGuid();
-
-        //see if our slot previously had a different patient
-        cancelPreviousAppointmentIfNecessary(slotGuid, patientGuid, csvHelper, fhirResourceFiler);
 
         //the slots CSV contains data on empty slots too; ignore them
         if (patientGuid.isEmpty()) {
@@ -162,7 +155,9 @@ public class SlotTransformer {
             appointmentBuilder.setLeftDateTime(leftDateTime, startDate, leftTime);
         }
 
-        //derive the status from the other fields
+        //derive the status from the other fields - note cancellation isn't worked out here - if an appt
+        //is cancelled, then the next extract will simply have the slot without a patientGuid, which is handled
+        //in the SlotPreTransformer class
         CsvCell didNotAttend = parser.getDidNotAttend();
         if (didNotAttend.getBoolean()) {
             appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW, didNotAttend);
@@ -181,52 +176,8 @@ public class SlotTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
     }
 
-    private static void cancelPreviousAppointmentIfNecessary(CsvCell slotGuid, CsvCell patientGuid, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        String previousPatientGuid = findPreviousPatientGuidForSlot(slotGuid, csvHelper);
-        if (!Strings.isNullOrEmpty(previousPatientGuid)
-                && !previousPatientGuid.equals(patientGuid.getString())) {
-
-            cancelPreviousAppointment(slotGuid, previousPatientGuid, csvHelper, fhirResourceFiler);
-        }
-
-        //save the current patient GUID for the slot, so we can detect cancellations and rebooking later
-        storeCurrentPatientGuidForSlot(slotGuid, patientGuid, csvHelper);
-
-    }
-
-    /**
-     * if we detect that the patientGUID has changed, this means the appointment was cancelled,
-     * and we need to find the previous Appointment resource and mark it as such.
-     */
-    private static void cancelPreviousAppointment(CsvCell slotGuid, String previousPatientGuid, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        CsvCell previousPatientGuidCell = CsvCell.factoryDummyWrapper(previousPatientGuid);
-        String sourceId = EmisCsvHelper.createUniqueId(previousPatientGuidCell, slotGuid);
-        Appointment appointment = (Appointment)csvHelper.retrieveResource(sourceId, ResourceType.Appointment);
-
-        //if the appointment has already been deleted or is cancelled or DNA, then do nothing
-        if (appointment == null
-                || appointment.getStatus() == Appointment.AppointmentStatus.CANCELLED
-                || appointment.getStatus() == Appointment.AppointmentStatus.NOSHOW) {
-            return;
-        }
-
-        AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
-        appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
-
-        //save without mapping IDs as this has been retrieved from the DB
-        fhirResourceFiler.savePatientResource(null, false, appointmentBuilder);
-    }
 
 
-    private static String findPreviousPatientGuidForSlot(CsvCell slotGuidCell, EmisCsvHelper csvHelper) throws Exception {
-        return internalIdDal.getDestinationId(csvHelper.getServiceId(), SLOT_LATEST_PATIENT_GUID, slotGuidCell.getString());
-    }
-
-    private static void storeCurrentPatientGuidForSlot(CsvCell slotGuidCell, CsvCell patientGuidCell, EmisCsvHelper csvHelper) throws Exception {
-        internalIdDal.save(csvHelper.getServiceId(), SLOT_LATEST_PATIENT_GUID, slotGuidCell.getString(), patientGuidCell.getString());
-    }
 
 
     private static List<CsvCell> retrieveExistingPractitioners(CsvCell slotGuidCell, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {

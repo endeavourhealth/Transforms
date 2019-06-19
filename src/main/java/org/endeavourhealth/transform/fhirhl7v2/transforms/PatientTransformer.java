@@ -144,9 +144,7 @@ public class PatientTransformer {
 
                 if (!types.isEmpty()) {
                     String typeStr = String.join(", ", types);
-
-                    CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
-                    codeableConceptBuilder.setText(typeStr);
+                    contactBuilder.setRelationship(typeStr);
                 }
             }
 

@@ -32,8 +32,6 @@ public class EmisCodeHelper {
     public static final String AUDIT_DRUG_CODE = "drug_code";
     public static final String AUDIT_DRUG_TERM = "drug_term";
 
-    private static Map<String, String> maritalStatusMap;
-    private static Map<String, String> ethnicityMap;
 
     public static CodeableConceptBuilder createCodeableConcept(HasCodeableConceptI resourceBuilder, boolean medication, CsvCell codeIdCell, CodeableConceptBuilder.Tag tag, EmisCsvHelper csvHelper) throws Exception {
         if (codeIdCell.isEmpty()) {
@@ -204,60 +202,17 @@ public class EmisCodeHelper {
     }
 
     public static void applyEthnicity(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) throws Exception {
-        EthnicCategory ethnicCategory = findEthnicityCode(codeMap);
+        EthnicCategory ethnicCategory = EmisMappingHelper.findEthnicityCode(codeMap);
+        //note, the above may return null if it's one of the "unknown" codes, so we simply clear the field on the resource
         patientBuilder.setEthnicity(ethnicCategory, sourceCells);
     }
 
     public static void applyMaritalStatus(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) throws Exception {
-        MaritalStatus maritalStatus = findMaritalStatus(codeMap);
+        MaritalStatus maritalStatus = EmisMappingHelper.findMaritalStatus(codeMap);
         //note, the above may return null if it's one of the "unknown" codes, so we simply clear the field on the resource
         patientBuilder.setMaritalStatus(maritalStatus, sourceCells);
     }
 
-    public static MaritalStatus findMaritalStatus(EmisCsvCodeMap codeMapping) throws Exception {
-        String read2Code = removeSynonymAndPadRead2Code(codeMapping);
-        if (Strings.isNullOrEmpty(read2Code)) {
-            return null;
-        }
-
-        if (maritalStatusMap == null) {
-            maritalStatusMap = ResourceParser.readCsvResourceIntoMap("EmisMaritalStatusMap.csv", "SourceCode", "TargetCode", CSVFormat.DEFAULT.withHeader());
-        }
-
-        String code = maritalStatusMap.get(read2Code);
-        if (code == null) {
-            throw new RuntimeException("Unknown marital status code " + read2Code);
-
-        } else if (!Strings.isNullOrEmpty(code)) {
-            return MaritalStatus.fromCode(code);
-
-        } else {
-            return null;
-        }
-    }
-
-
-    public static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) throws Exception {
-        String read2Code = removeSynonymAndPadRead2Code(codeMapping);
-        if (Strings.isNullOrEmpty(read2Code)) {
-            return null;
-        }
-
-        if (ethnicityMap == null) {
-            ethnicityMap = ResourceParser.readCsvResourceIntoMap("EmisEthnicityMap.csv", "SourceCode", "TargetCode", CSVFormat.DEFAULT.withHeader());
-        }
-
-        String code = ethnicityMap.get(read2Code);
-        if (code == null) {
-            throw new RuntimeException("Unknown ethnicity code " + read2Code);
-
-        } else if (!Strings.isNullOrEmpty(code)) {
-            return EthnicCategory.fromCode(code);
-
-        } else {
-            return null;
-        }
-    }
 
 
 }

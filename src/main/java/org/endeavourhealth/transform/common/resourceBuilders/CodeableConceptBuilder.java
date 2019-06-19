@@ -32,8 +32,7 @@ public class CodeableConceptBuilder {
         Immunization_Main_Code,
         Immunization_Site,
         Immunization_Route,
-
-        Patient_Contact_Relationship,
+        //Patient_Contact_Relationship,
         Allergy_Intolerance_Main_Code,
         Specimen_Main_Code,
         Appointment_Dna_Reason_Code,

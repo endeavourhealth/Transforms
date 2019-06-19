@@ -15,10 +15,6 @@ import java.util.List;
 public class PRSNLREFPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PRSNLREFPreTransformer.class);
 
-    public static final String MAPPING_ID_PERSONNEL_NAME_TO_ID = "PersonnelNameToId";
-    public static final String MAPPING_ID_CONSULTANT_TO_ID = "ConsultantToId";
-
-
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -55,7 +51,7 @@ public class PRSNLREFPreTransformer {
         //to mirror what Millennium does, so the weird extra spacing is intentional
         if (!parser.getFullFormatName().isEmpty()) { //Already formatted as we want.
             String freeTextName = parser.getFullFormatName().getString().trim();
-            csvHelper.saveInternalId(MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
+            csvHelper.saveInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
         } else {
             if (!surnameCell.isEmpty()) {
                 StringBuilder sb = new StringBuilder();
@@ -67,14 +63,14 @@ public class PRSNLREFPreTransformer {
                     sb.append(middleNameCell.getString());
                 }
                 String freeTextName = sb.toString();
-                csvHelper.saveInternalId(MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
+                csvHelper.saveInternalId(PRSNLREFTransformer.MAPPING_ID_PERSONNEL_NAME_TO_ID, freeTextName, personnelIdCell.getString());
             }
         }
 
 
         CsvCell consultantNHSCode = parser.getConsultantNHSCode();
         if (!consultantNHSCode.isEmpty()) {
-            csvHelper.saveInternalId(MAPPING_ID_CONSULTANT_TO_ID, consultantNHSCode.getString(), personnelIdCell.getString());
+            csvHelper.saveInternalId(PRSNLREFTransformer.MAPPING_ID_CONSULTANT_TO_ID, consultantNHSCode.getString(), personnelIdCell.getString());
         }
 
         //if the HL7 Receiver has processed this person carry over the UUID that it used

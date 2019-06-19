@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.CodeAndDate;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisMappingHelper;
 import org.endeavourhealth.transform.emis.csv.schema.admin.Patient;
 import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
@@ -376,19 +377,7 @@ public class PatientTransformer {
             if (!carerRelationship.isEmpty()) {
                 //FHIR spec states that we should map to their relationship types if possible, but if
                 //not possible, then send as a textual codeable concept
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(contactBuilder, CodeableConceptBuilder.Tag.Patient_Contact_Relationship);
-
-                try {
-                    ContactRelationship fhirContactRelationship = ContactRelationship.fromCode(carerRelationship.getString());
-
-                    codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_CONTACT_RELATIONSHIP);
-                    codeableConceptBuilder.setCodingCode(fhirContactRelationship.getCode(), carerRelationship);
-                    codeableConceptBuilder.setCodingDisplay(fhirContactRelationship.getDescription());
-
-                } catch (IllegalArgumentException ex) {
-                    codeableConceptBuilder.setText(carerRelationship.getString(), carerRelationship);
-                    TransformWarnings.log(LOG, csvHelper, "Unmapped Emis carer relationship type {}", carerRelationship);
-                }
+                contactBuilder.setRelationship(carerRelationship.getString(), carerRelationship);
             }
         }
 
@@ -699,6 +688,17 @@ public class PatientTransformer {
      */
     private static RegistrationType convertRegistrationType(String csvRegType, boolean dummyRecord, ParserI parserI) throws Exception {
 
+        //don't assign a reg type to any test patient records we get
+        if (dummyRecord) {
+            return null;
+        }
+
+        //EMIS both test and Live data has leading spaces
+        csvRegType = csvRegType.trim();
+        return EmisMappingHelper.findRegistrationType(csvRegType);
+    }
+    /*private static RegistrationType convertRegistrationType(String csvRegType, boolean dummyRecord, ParserI parserI) throws Exception {
+
         //EMIS both test and Live data has leading spaces
         csvRegType = csvRegType.trim();
 
@@ -752,7 +752,7 @@ public class PatientTransformer {
             } else {
                 throw new TransformException("Unsupported registration type " + csvRegType);
             }
-        }
+        }*/
 
         /**
          * This is the FULL list of registration types from Emis Web
@@ -796,7 +796,5 @@ public class PatientTransformer {
          Urgent and Emergency Care
          Externally Registered
 
-         */
-    }
-
+    }*/
 }

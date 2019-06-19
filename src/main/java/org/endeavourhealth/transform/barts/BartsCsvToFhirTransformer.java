@@ -83,38 +83,38 @@ public abstract class BartsCsvToFhirTransformer {
         try {
             //admin transformers
             LOG.trace("Starting admin transformers");
-            ORGREFPreTransformer.transform(getParsers(parserMap, csvHelper, "ORGREF", false), fhirResourceFiler, csvHelper);
-            ORGREFTransformer.transform(getParsers(parserMap, csvHelper, "ORGREF", true), fhirResourceFiler, csvHelper);
-            CVREFTransformer.transform(getParsers(parserMap, csvHelper, "CVREF", true), fhirResourceFiler, csvHelper);
-            NOMREFTransformer.transform(getParsers(parserMap, csvHelper, "NOMREF", true), fhirResourceFiler, csvHelper);
-            LOREFTransformer.transform(getParsers(parserMap, csvHelper, "LOREF", true), fhirResourceFiler, csvHelper);
+            ORGREFPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ORGREF", false), fhirResourceFiler, csvHelper);
+            ORGREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ORGREF", true), fhirResourceFiler, csvHelper);
+            CVREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "CVREF", true), fhirResourceFiler, csvHelper);
+            NOMREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "NOMREF", true), fhirResourceFiler, csvHelper);
+            LOREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "LOREF", true), fhirResourceFiler, csvHelper);
             csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
 
-            PRSNLREFPreTransformer.transform(getParsers(parserMap, csvHelper, "PRSNLREF", false), fhirResourceFiler, csvHelper); //saves mappings in multiple threads
-            PRSNLREFTransformer.transform(getParsers(parserMap, csvHelper, "PRSNLREF", true), fhirResourceFiler, csvHelper); //updates/creates FHIR practitioners
+            PRSNLREFPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PRSNLREF", false), fhirResourceFiler, csvHelper); //saves mappings in multiple threads
+            PRSNLREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PRSNLREF", true), fhirResourceFiler, csvHelper); //updates/creates FHIR practitioners
 
             //patient PRE transformers - to save and cache stuff fast (mostly PPxxx ID to Person ID mappings)
             LOG.trace("Starting PPxxx pre-transformers");
-            PPALIPreTransformer.transform(getParsers(parserMap, csvHelper, "PPALI", false), fhirResourceFiler, csvHelper); //this must be FIRST
-            PPADDPreTransformer.transform(getParsers(parserMap, csvHelper, "PPADD", false), fhirResourceFiler, csvHelper);
-            PPNAMPreTransformer.transform(getParsers(parserMap, csvHelper, "PPNAM", false), fhirResourceFiler, csvHelper);
-            PPPHOPreTransformer.transform(getParsers(parserMap, csvHelper, "PPPHO", false), fhirResourceFiler, csvHelper);
-            PPRELPreTransformer.transform(getParsers(parserMap, csvHelper, "PPREL", false), fhirResourceFiler, csvHelper);
-            PPATIPreTransformer.transform(getParsers(parserMap, csvHelper, "PPATI", false), fhirResourceFiler, csvHelper);
+            PPALIPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPALI", false), fhirResourceFiler, csvHelper); //this must be FIRST
+            PPADDPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPADD", false), fhirResourceFiler, csvHelper);
+            PPNAMPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPNAM", false), fhirResourceFiler, csvHelper);
+            PPPHOPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPPHO", false), fhirResourceFiler, csvHelper);
+            PPRELPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPREL", false), fhirResourceFiler, csvHelper);
+            PPATIPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPATI", false), fhirResourceFiler, csvHelper);
 
             //let all the pre-transformers finish pre-loading the Patient resources
             csvHelper.waitUntilThreadPoolIsEmpty();
 
             //patient transformers
             LOG.trace("Starting PPxxx transformers");
-            PPATITransformer.transform(getParsers(parserMap, csvHelper, "PPATI", true), fhirResourceFiler, csvHelper);
-            PPALITransformer.transform(getParsers(parserMap, csvHelper, "PPALI", true), fhirResourceFiler, csvHelper);
-            PPADDTransformer.transform(getParsers(parserMap, csvHelper, "PPADD", true), fhirResourceFiler, csvHelper);
-            //PPINFTransformer.transform(getParsers(parserMap, csvHelper, "PPINF", csvHelper), fhirResourceFiler, csvHelper); //nothing interesting in this file
-            PPNAMTransformer.transform(getParsers(parserMap, csvHelper, "PPNAM", true), fhirResourceFiler, csvHelper);
-            PPPHOTransformer.transform(getParsers(parserMap, csvHelper, "PPPHO", true), fhirResourceFiler, csvHelper);
-            PPRELTransformer.transform(getParsers(parserMap, csvHelper, "PPREL", true), fhirResourceFiler, csvHelper);
-            PPAGPTransformer.transform(getParsers(parserMap, csvHelper, "PPAGP", true), fhirResourceFiler, csvHelper);
+            PPATITransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPATI", true), fhirResourceFiler, csvHelper);
+            PPALITransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPALI", true), fhirResourceFiler, csvHelper);
+            PPADDTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPADD", true), fhirResourceFiler, csvHelper);
+            //PPINFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPINF", csvHelper), fhirResourceFiler, csvHelper); //nothing interesting in this file
+            PPNAMTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPNAM", true), fhirResourceFiler, csvHelper);
+            PPPHOTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPPHO", true), fhirResourceFiler, csvHelper);
+            PPRELTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPREL", true), fhirResourceFiler, csvHelper);
+            PPAGPTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPAGP", true), fhirResourceFiler, csvHelper);
 
             //we're now good to save our patient resources
             csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
@@ -123,7 +123,7 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //pre-transformers, must be done before encounter ones
-            CLEVEPreTransformer.transform(getParsers(parserMap, csvHelper, "CLEVE", false), fhirResourceFiler, csvHelper);
+            CLEVEPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "CLEVE", false), fhirResourceFiler, csvHelper);
 
             //CLINICAL EVENTS - execute the staging procedures to target clinical events stored proc
             csvHelper.waitUntilThreadPoolIsEmpty();
@@ -132,13 +132,13 @@ public abstract class BartsCsvToFhirTransformer {
             //Clinical events data transformation on final procedure target staging table
             ClinicalEventTargetTransformer.transform(fhirResourceFiler, csvHelper);
 
-            DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, "DIAGN", false), fhirResourceFiler, csvHelper);
+            DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "DIAGN", false), fhirResourceFiler, csvHelper);
 
             //while we're just doing the pre-transformer only, allow it to remove from the map, to reduce memory use
-            ENCNTPreTransformer.transform(getParsers(parserMap, csvHelper, "ENCNT", true), fhirResourceFiler, csvHelper);
+            ENCNTPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ENCNT", true), fhirResourceFiler, csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved(); //the above may update existing resources, so let it fully finish
 
-            /*ENCNTPreTransformer.transform(getParsers(parserMap, csvHelper, "ENCNT", false), fhirResourceFiler, csvHelper);
+            /*ENCNTPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ENCNT", false), fhirResourceFiler, csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved(); //the above may update existing resources, so let it fully finish
 
             // Encounters - Doing ENCNT first to try and create as many Ecnounter->EoC links as possible in cache
@@ -146,12 +146,12 @@ public abstract class BartsCsvToFhirTransformer {
             //from what files and how/why things don't seem to match up to the ADT feed. Note the ENCNTPreTransformer
             //is still necessary as that creates the internal ID mappings to get from Encounter ID to Person ID, needed
             //for processing a number of other files
-            ENCNTTransformer.transform(getParsers(parserMap, csvHelper, "ENCNT", true), fhirResourceFiler, csvHelper);
-            AEATTTransformer.transform(getParsers(parserMap, csvHelper, "AEATT", true), fhirResourceFiler, csvHelper);
-            IPEPITransformer.transform(getParsers(parserMap, csvHelper, "IPEPI", true), fhirResourceFiler, csvHelper);
-            IPWDSTransformer.transform(getParsers(parserMap, csvHelper, "IPWDS", true), fhirResourceFiler, csvHelper);
-            OPATTTransformer.transform(getParsers(parserMap, csvHelper, "OPATT", true), fhirResourceFiler, csvHelper);
-            //ENCINFTransformer.transform(getParsers(parserMap, csvHelper, "ENCINF", csvHelper), fhirResourceFiler, csvHelper); //not interesting
+            ENCNTTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ENCNT", true), fhirResourceFiler, csvHelper);
+            AEATTTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "AEATT", true), fhirResourceFiler, csvHelper);
+            IPEPITransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "IPEPI", true), fhirResourceFiler, csvHelper);
+            IPWDSTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "IPWDS", true), fhirResourceFiler, csvHelper);
+            OPATTTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "OPATT", true), fhirResourceFiler, csvHelper);
+            //ENCINFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ENCINF", csvHelper), fhirResourceFiler, csvHelper); //not interesting
 
             csvHelper.getEncounterCache().fileEncounterResources(fhirResourceFiler);
             csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler);*/
@@ -160,16 +160,16 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //PROCEDURES - the order is significant, going from less to more rich files
-            PROCEPreTransformer.transform(getParsers(parserMap, csvHelper, "PROCE", false), fhirResourceFiler, csvHelper);
-            ProcedurePreTransformer.transform(getParsers(parserMap, csvHelper, "Procedure", true), fhirResourceFiler, csvHelper);
-            SusInpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, "SusInpatientTail", true), fhirResourceFiler,csvHelper);
-            SusOutpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, "SusOutpatientTail", true), fhirResourceFiler,csvHelper);
-            SusEmergencyTailPreTransformer.transform(getParsers(parserMap, csvHelper, "SusEmergencyTail", true),fhirResourceFiler,csvHelper);
-            SusInpatientPreTransformer.transform(getParsers(parserMap, csvHelper, "SusInpatient", true), fhirResourceFiler,csvHelper);
-            SusOutpatientPreTransformer.transform(getParsers(parserMap, csvHelper, "SusOutpatient", true), fhirResourceFiler,csvHelper);
-            SusEmergencyPreTransformer.transform(getParsers(parserMap, csvHelper, "SusEmergency", true),fhirResourceFiler,csvHelper);
-            SURCCPreTransformer.transform(getParsers(parserMap, csvHelper, "SURCC", true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
-            SURCPPreTransformer.transform(getParsers(parserMap, csvHelper, "SURCP",true), fhirResourceFiler,csvHelper);
+            PROCEPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PROCE", false), fhirResourceFiler, csvHelper);
+            ProcedurePreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure", true), fhirResourceFiler, csvHelper);
+            SusInpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusInpatientTail", true), fhirResourceFiler,csvHelper);
+            SusOutpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusOutpatientTail", true), fhirResourceFiler,csvHelper);
+            SusEmergencyTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyTail", true),fhirResourceFiler,csvHelper);
+            SusInpatientPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusInpatient", true), fhirResourceFiler,csvHelper);
+            SusOutpatientPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusOutpatient", true), fhirResourceFiler,csvHelper);
+            SusEmergencyPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergency", true),fhirResourceFiler,csvHelper);
+            SURCCPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCC", true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
+            SURCPPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCP",true), fhirResourceFiler,csvHelper);
 
             //PROCEDURES - execute the staging procedures to target procedures stored proc
             csvHelper.waitUntilThreadPoolIsEmpty();
@@ -181,9 +181,9 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //DIAGNOSES / PROBLEMS - NOTE:  Any Sus Diagnosis data will have been processed during the transforms above, i.e. Inpatient, Outpatient
-            DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, "DIAGN", false), fhirResourceFiler, csvHelper);
-            DiagnosisPreTransformer.transform(getParsers(parserMap, csvHelper, "Diagnosis", true), fhirResourceFiler, csvHelper);
-            ProblemPreTransformer.transform(getParsers(parserMap, csvHelper, "Problem", true), fhirResourceFiler, csvHelper);
+            DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "DIAGN", false), fhirResourceFiler, csvHelper);
+            DiagnosisPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Diagnosis", true), fhirResourceFiler, csvHelper);
+            ProblemPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Problem", true), fhirResourceFiler, csvHelper);
 
             //CONDITIONS - execute the staging conditions to target procedures stored proc
             csvHelper.waitUntilThreadPoolIsEmpty();
@@ -195,9 +195,9 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //other clinical transformers
-            // CLEVETransformerOLD.transform(getParsers(parserMap, csvHelper, "CLEVE", true), fhirResourceFiler, csvHelper);
-            //ProblemTransformer.transform(getParsers(parserMap, csvHelper, "Problem", true), fhirResourceFiler, csvHelper);
-            FamilyHistoryTransformer.transform(getParsers(parserMap, csvHelper, "FamilyHistory", true), fhirResourceFiler, csvHelper);
+            // CLEVETransformerOLD.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "CLEVE", true), fhirResourceFiler, csvHelper);
+            //ProblemTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Problem", true), fhirResourceFiler, csvHelper);
+            FamilyHistoryTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "FamilyHistory", true), fhirResourceFiler, csvHelper);
 
             //if we've got any updates to existing resources that haven't been handled in an above transform, apply them now
             csvHelper.processRemainingClinicalEventParentChildLinks(fhirResourceFiler);
@@ -278,11 +278,14 @@ public abstract class BartsCsvToFhirTransformer {
     /**
      * finds parsers for the given file type on any matching files
      */
-    private static List<ParserI> getParsers(Map<String, List<ParserI>> parserMap, BartsCsvHelper csvHelper, String type, boolean removeFromMap) throws Exception {
+    private static List<ParserI> getParsers(Map<String, List<ParserI>> parserMap, BartsCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, String type, boolean removeFromMap) throws Exception {
 
         //not strictly to do with getting parsers, but before we start any new transform, we should
         //ensure that everything in the thread pool is done
         csvHelper.waitUntilThreadPoolIsEmpty();
+
+        //and if we had any errors on the previous file, we should bomb out now
+        fhirResourceFiler.failIfAnyErrors();
 
         List<ParserI> ret = null;
 

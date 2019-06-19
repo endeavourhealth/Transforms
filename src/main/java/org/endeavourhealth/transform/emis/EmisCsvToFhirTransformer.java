@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.appointment.SessionTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.appointment.SessionUserTransformer;
+import org.endeavourhealth.transform.emis.csv.transforms.appointment.SlotPreTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.appointment.SlotTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.careRecord.*;
 import org.endeavourhealth.transform.emis.csv.transforms.coding.ClinicalCodeTransformer;
@@ -491,6 +492,7 @@ public abstract class EmisCsvToFhirTransformer {
         if (processPatientData) {
             //the Slot transformer requires Discovery UUIDs to be generated for all patients, so we must call this Pre-transformer before it
             PatientPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SlotPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SlotTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         }
         //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules

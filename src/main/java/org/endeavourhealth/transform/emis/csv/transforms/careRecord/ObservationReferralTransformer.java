@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisMappingHelper;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.ObservationReferral;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Reference;
@@ -65,37 +66,36 @@ public class ObservationReferralTransformer {
 
         CsvCell urgency = parser.getReferralUrgency();
         if (!urgency.isEmpty()) {
-            ReferralPriority fhirPriority = convertUrgency(urgency.getString());
+            ReferralPriority fhirPriority = EmisMappingHelper.findReferralPriority(urgency.getString());
             if (fhirPriority != null) {
                 referralRequestBuilder.setPriority(fhirPriority, urgency);
 
             } else {
-                //if the CSV urgency couldn't be mapped to a FHIR priority, then we can use free-text
-                TransformWarnings.log(LOG, csvHelper, "Unmapped Emis referral priority {}", urgency);
+                //if the urgency hasn't been mapped to a proper type, carry over as text
                 referralRequestBuilder.setPriorityFreeText(urgency.getString(), urgency);
             }
         }
 
         CsvCell serviceType = parser.getReferralServiceType();
         if (!serviceType.isEmpty()) {
-            ReferralType type = convertType(serviceType.getString());
+            ReferralType type = EmisMappingHelper.findReferralType(serviceType.getString());
             if (type != null) {
                 referralRequestBuilder.setType(type, serviceType);
 
             } else {
-                TransformWarnings.log(LOG, csvHelper, "Unmapped Emis referral type {}", serviceType);
+                //if the type hasn't been mapped to a proper type, carry over as text
                 referralRequestBuilder.setTypeFreeText(serviceType.getString(), serviceType);
             }
         }
 
         CsvCell mode = parser.getReferralMode();
         if (!mode.isEmpty()) {
-            ReferralRequestSendMode fhirMode = convertMode(mode.getString());
+            ReferralRequestSendMode fhirMode = EmisMappingHelper.findReferralMode(mode.getString());
             if (fhirMode != null) {
                 referralRequestBuilder.setMode(fhirMode, mode);
 
             } else {
-                TransformWarnings.log(LOG, csvHelper, "Unmapped Emis referral mode {}", mode);
+                //if the mode hasn't been mapped to a proper type, carry over as text
                 referralRequestBuilder.setModeFreeText(mode.getString(), mode);
             }
         }
@@ -103,7 +103,7 @@ public class ObservationReferralTransformer {
         CsvCell recipientOrgGuid = parser.getReferralTargetOrganisationGuid();
         //the spec. states that this value will always be present, but there's some live data with a missing value
         if (!recipientOrgGuid.isEmpty()) {
-            Reference orgReference = csvHelper.createOrganisationReference(recipientOrgGuid);
+            Reference orgReference = EmisCsvHelper.createOrganisationReference(recipientOrgGuid);
             referralRequestBuilder.addRecipient(orgReference, recipientOrgGuid);
         }
 
@@ -141,7 +141,7 @@ public class ObservationReferralTransformer {
 
     }
 
-    private static ReferralType convertType(String type) throws Exception {
+    /*private static ReferralType convertType(String type) throws Exception {
 
         if (type.equalsIgnoreCase("Unknown")) {
             return ReferralType.UNKNOWN;
@@ -221,5 +221,5 @@ public class ObservationReferralTransformer {
                 return null;
             }
         }
-    }
+    }*/
 }

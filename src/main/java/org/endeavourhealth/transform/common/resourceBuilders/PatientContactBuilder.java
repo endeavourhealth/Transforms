@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactPointI, HasCodeableConceptI {
+public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactPointI {
     private static final Logger LOG = LoggerFactory.getLogger(PatientContactBuilder.class);
 
     private PatientBuilder patientBuilder = null;
@@ -189,48 +189,33 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         return patientBuilder.getContactJsonPrefix(contact) + ".name";
     }
 
-    @Override
-    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
-        if (tag == CodeableConceptBuilder.Tag.Patient_Contact_Relationship) {
-            if (contact.hasRelationship()
-                    && useExisting) {
-                return contact.getRelationship().get(0);
+    /**
+     * set the relationship between the individuals (e.g. parent)
+     */
+    public void setRelationship(String relationship, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(relationship)) {
+            contact.getRelationship().clear();
+        } else {
+
+            CodeableConcept codeableConcept = null;
+            if (contact.hasRelationship()) {
+                codeableConcept = contact.getRelationship().get(0);
+            } else {
+                codeableConcept = new CodeableConcept();
+                contact.getRelationship().add(codeableConcept);
             }
 
-            CodeableConcept codeableConcept = contact.addRelationship();
-            return codeableConcept;
+            codeableConcept.setText(relationship);
 
-        } else {
-            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+            auditValue(patientBuilder.getContactJsonPrefix(contact) + ".relationship[0].text", sourceCells);
         }
     }
-
-    @Override
-    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
-        if (tag == CodeableConceptBuilder.Tag.Patient_Contact_Relationship) {
-            int index = contact.getRelationship().indexOf(codeableConcept);
-            return patientBuilder.getContactJsonPrefix(contact) + ".relationship[" + index + "]";
-
-        } else {
-            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
-        }
-    }
-
 
     @Override
     public ResourceFieldMappingAudit getAuditWrapper() {
         return patientBuilder.getAuditWrapper();
     }
 
-    @Override
-    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
-        if (tag == CodeableConceptBuilder.Tag.Patient_Contact_Relationship) {
-            this.contact.getRelationship().clear();
-
-        } else {
-            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
-        }
-    }
 
     @Override
     public List<HumanName> getNames() {

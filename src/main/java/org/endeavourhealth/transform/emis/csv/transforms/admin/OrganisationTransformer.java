@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisMappingHelper;
 import org.endeavourhealth.transform.emis.csv.schema.admin.Organisation;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Reference;
@@ -104,14 +105,14 @@ public class OrganisationTransformer {
 
         CsvCell organisationType = parser.getOrganisationType();
         if (!organisationType.isEmpty()) {
-            OrganisationType fhirOrgType = convertOrganisationType(organisationType.getString());
+            //OrganisationType fhirOrgType = convertOrganisationType(organisationType.getString());
+            OrganisationType fhirOrgType = EmisMappingHelper.findOrganisationType(organisationType.getString());
             if (fhirOrgType != null) {
                 organizationBuilder.setType(fhirOrgType, organisationType);
 
             } else {
                 //if the org type from the CSV can't be mapped to one of the value set, store as a freetext type
                 organizationBuilder.setTypeFreeText(organisationType.getString(), organisationType);
-                TransformWarnings.log(LOG, parser, "Error mapping Emis org type {}", organisationType);
             }
         }
 
@@ -129,7 +130,7 @@ public class OrganisationTransformer {
     }
 
 
-    private static OrganisationType convertOrganisationType(String csvOrganisationType) {
+    /*public static OrganisationType convertOrganisationType(String csvOrganisationType) {
         try {
             return OrganisationType.fromDescription(csvOrganisationType);
         } catch (Exception ex) {
@@ -220,5 +221,5 @@ public class OrganisationTransformer {
             }
         }
 
-    }
+    }*/
 }
