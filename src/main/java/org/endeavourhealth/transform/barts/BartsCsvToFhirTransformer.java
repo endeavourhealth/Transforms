@@ -132,8 +132,6 @@ public abstract class BartsCsvToFhirTransformer {
             //Clinical events data transformation on final procedure target staging table
             ClinicalEventTargetTransformer.transform(fhirResourceFiler, csvHelper);
 
-            DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "DIAGN", false), fhirResourceFiler, csvHelper);
-
             //while we're just doing the pre-transformer only, allow it to remove from the map, to reduce memory use
             ENCNTPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ENCNT", true), fhirResourceFiler, csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved(); //the above may update existing resources, so let it fully finish
