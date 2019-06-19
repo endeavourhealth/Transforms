@@ -42,7 +42,7 @@ public class ClinicalEventTargetTransformer {
             return;
         }
 
-        TransformWarnings.log(LOG, csvHelper, "Target Procedures to transform to FHIR: {} for exchangeId: {}", targetClinicalEvents.size(), csvHelper.getExchangeId());
+        TransformWarnings.log(LOG, csvHelper, "Target Clinical events to transform to FHIR: {} for exchangeId: {}", targetClinicalEvents.size(), csvHelper.getExchangeId());
 
         for (StagingClinicalEventTarget targetClinicalEvent : targetClinicalEvents) {
 
