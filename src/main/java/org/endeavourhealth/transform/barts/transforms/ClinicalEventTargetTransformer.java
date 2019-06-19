@@ -49,35 +49,7 @@ public class ClinicalEventTargetTransformer {
             String uniqueId = targetClinicalEvent.getUniqueId();
             boolean isDeleted = targetClinicalEvent.isDeleted();
 
-            boolean isAuthorised = true;
-
-            // deleted records don't have status or result text set and no point checking we already know its a delete
-            if (!isDeleted) {
-                //there are lots of events that are still active but have a result text of DELETED
-                String resultText = targetClinicalEvent.getEventResultTxt();
-                if (!resultText.isEmpty()
-                        && resultText.equalsIgnoreCase("DELETED")) {
-                    isDeleted  = true;
-                }
-
-                String eventResultStatus = targetClinicalEvent.getLookupEventResultStatus();
-                if (eventResultStatus.equals("Unauth")
-                        || eventResultStatus.equals("Superseded")
-                        || eventResultStatus.equals("REJECTED")
-                        || eventResultStatus.equals("Not Done")
-                        || eventResultStatus.equals("In Progress")
-                        || eventResultStatus.equals("Active")
-                        || eventResultStatus.equals("In Lab")
-                        || eventResultStatus.equals("In Error")
-                        || eventResultStatus.equals("Canceled") //NOTE the US spelling
-                        || eventResultStatus.equals("Anticipated")
-                        || eventResultStatus.equals("? Unknown")) {
-
-                    isAuthorised = false;
-                }
-            }
-
-            if (isDeleted || !isAuthorised) {
+            if (isDeleted) {
 
                 // retrieve the existing Procedure resource to perform the deletion on
                 Observation existingObservation = (Observation) csvHelper.retrieveResourceForLocalId(ResourceType.Observation, uniqueId);
