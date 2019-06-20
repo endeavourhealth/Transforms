@@ -182,7 +182,7 @@ public class EmisMappingHelper {
 
         String code = problemSeverityMap.get(type);
         if (code == null) {
-            throw new RuntimeException("Unknown drug record type " + type);
+            throw new RuntimeException("Unknown problem significance " + type);
 
         } else if (!Strings.isNullOrEmpty(code)) {
             return ProblemSignificance.fromCode(code);
@@ -200,7 +200,7 @@ public class EmisMappingHelper {
 
         String code = problemRelationshipMap.get(type);
         if (code == null) {
-            throw new RuntimeException("Unknown drug record type " + type);
+            throw new RuntimeException("Unknown problem relationship " + type);
 
         } else if (!Strings.isNullOrEmpty(code)) {
             return ProblemRelationshipType.fromCode(code);

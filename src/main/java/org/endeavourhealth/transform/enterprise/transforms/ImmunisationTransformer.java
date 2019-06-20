@@ -100,6 +100,14 @@ public class ImmunisationTransformer extends AbstractTransformer {
             parentObservationId = findEnterpriseId(params, parentReference);
         }
 
+        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
+        if (isPrimaryExtension != null) {
+            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
+            if (b.getValue() != null) {
+                resultString = "Primary";
+            }
+        }
+
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
                 organisationId,
