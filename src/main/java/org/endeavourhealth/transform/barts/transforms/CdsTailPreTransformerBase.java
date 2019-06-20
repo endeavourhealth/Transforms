@@ -14,7 +14,9 @@ import org.endeavourhealth.transform.common.TransformConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -24,15 +26,37 @@ public class CdsTailPreTransformerBase {
 
     private static StagingCdsTailDalI repository = DalProvider.factoryStagingCdsTailDalI();
 
+    private static Date dProceduresEnd = null;
+    private static Date dProceduresStart = null;
+
     protected static void processTailRecord(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
                                             List<StagingProcedureCdsTail> procedureBatch,
                                             List<StagingConditionCdsTail> conditionBatch) throws Exception {
 
-        processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
+        if (TransformConfig.instance().isLive()) {
 
-        if (!TransformConfig.instance().isLive()) {
             processTailRecordCondition(parser, csvHelper, susRecordType, conditionBatch);
+
+            //on live, we've already processed the procedure data from 01/01/2019 to 19/06/2019 inclusive,
+            //so skip them while we process the condition/diagnosis data
+            Date dData = csvHelper.getDataDate();
+            if (dProceduresStart == null) {
+                dProceduresStart = new SimpleDateFormat("yyyy-MM-dd").parse("2019-01-01");
+                dProceduresEnd = new SimpleDateFormat("yyyy-MM-dd").parse("2019-06-19");
+            }
+            if (dData.before(dProceduresStart)) {
+                throw new Exception("Trying to run past procedures data when code to skip 2019 still in place");
+            }
+            if (dData.after(dProceduresEnd)) {
+                processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
+            }
+
+        } else {
+            //on Cerner Transform server, just run diagnoses for now
+            processTailRecordCondition(parser, csvHelper, susRecordType, conditionBatch);
+            //processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
         }
+
     }
 
     protected static void saveProcedureBatch(List<StagingProcedureCdsTail> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
