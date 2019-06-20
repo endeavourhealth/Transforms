@@ -183,6 +183,12 @@ public class ConditionTargetTransformer {
             } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_PATIENT_CARE)) {
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_PATIENT_CARE);
+
+            } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+
+                //OPCS4 codes have been detected in Barts Problem files, so handle them
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
+
             } else {
                 throw new TransformException("Unknown Condition Target code type [" + conditionCodeType + "]");
             }

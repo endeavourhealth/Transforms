@@ -161,6 +161,13 @@ public class DIAGNPreTransformer {
                 TransformWarnings.log(LOG, csvHelper, "DIAGN record {} has HRG code in concept cell {}", diagnosisIdCell, conceptCell);
                 return;
 
+            } else  if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+
+                //OPCS4 codes have been detected in Barts Problem files, so checking here also
+                diagnosisTerm = TerminologyService.lookupOpcs4ProcedureName(codeId);
+                if (Strings.isNullOrEmpty(diagnosisTerm)) {
+                    throw new Exception("Failed to find term for OPCS-4 code " + codeId);
+                }
             } else {
                 throw new Exception("Unexpected code type " + codeType);
             }

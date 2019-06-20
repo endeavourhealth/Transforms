@@ -123,6 +123,14 @@ public class ProblemPreTransformer {
             // records do not have codes so just use the term
 
             probTerm = parser.getProblem().getString();
+
+        } else  if (vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+
+            //OPCS4 codes have been detected in Barts Problem files
+            probTerm = TerminologyService.lookupOpcs4ProcedureName(probCode);
+            if (Strings.isNullOrEmpty(probTerm)) {
+                throw new Exception("Failed to find term for OPCS-4 code [" + probCode + "]");
+            }
         } else {
 
             // only throw an exception if this is not a canceled (US spelling) record and the vocab is unrecognised

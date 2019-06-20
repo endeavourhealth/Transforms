@@ -134,7 +134,13 @@ public class DiagnosisPreTransformer {
             if (Strings.isNullOrEmpty(diagTerm)) {
                 throw new Exception("Failed to find term for ICD10 code " + diagCode);
             }
+        } else if (vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
 
+            //OPCS4 codes have been detected in Barts Problem files, so checking here also
+            diagTerm = TerminologyService.lookupOpcs4ProcedureName(diagCode);
+            if (Strings.isNullOrEmpty(diagTerm)) {
+                throw new Exception("Failed to find term for OPCS-4 code [" + diagCode + "]");
+            }
         } else if (vocabCell.getString().trim().contains("Allergy")) {
             TransformWarnings.log(LOG,csvHelper,"Allergycoding.  Found Allergy as vocab for diagnosis id: {}", diagnosisIdCell.getString() );
             return;
