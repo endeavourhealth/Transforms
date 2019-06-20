@@ -107,6 +107,13 @@ public class DiagnosisPreTransformer {
 
         CsvCell diagCodeCell = parser.getDiagnosisCode();
         String diagCode = diagCodeCell.getString();
+
+        //discard row if contains no code and vocab
+        if (Strings.isNullOrEmpty(diagCode) && Strings.isNullOrEmpty(vocabCell.getString())) {
+            TransformWarnings.log(LOG, csvHelper, "Skipping Diagnosis {} containing no code or vocab", diagnosisIdCell);
+            return;
+        }
+
         String diagTerm = "";
         if (vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT) ||
                     vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_UK_ED_SUBSET)) {
