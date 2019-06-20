@@ -176,9 +176,10 @@ public class ConditionTargetTransformer {
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
 
-            } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+            } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10) ||
+                        conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
 
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
 
             } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_CERNER)) {
 

@@ -100,16 +100,11 @@ public class ProblemPreTransformer {
         String probTerm = "";
         String probCode = parser.getProblemCode().getString();
 
-        if (vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
+        if (vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)
+                || vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
             probTerm = TerminologyService.lookupIcd10CodeDescription(probCode);
             if (Strings.isNullOrEmpty(probTerm)) {
                 throw new Exception("Failed to find term for ICD-10 code [" + probCode + "]");
-            }
-        } else if (vocab.equalsIgnoreCase("OPCS4")) {
-
-            String term = TerminologyService.lookupOpcs4ProcedureName(probCode);
-            if (Strings.isNullOrEmpty(term)) {
-                throw new Exception("Failed to find term for OPCS-4 code [" + probCode + "]");
             }
         } else if (vocab.equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT) ||
                     vocab.equals(BartsCsvHelper.CODE_TYPE_UK_ED_SUBSET)) {

@@ -141,13 +141,12 @@ public class DIAGNPreTransformer {
             }
             stagingDIAGN.setDiagnosisCode(codeId);
 
-            String codeScheme = parser.getConceptCodeIdentifier().getString();
-
-            String   codeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(parser.getConceptCodeIdentifier());
+            String codeType = csvHelper.getProcedureOrDiagnosisConceptCodeType(parser.getConceptCodeIdentifier());
             stagingDIAGN.setDiagnosisCodeType(codeType);
 
             String diagnosisTerm;
-            if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)) {
+            if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10) ||
+                    codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
                 diagnosisTerm = TerminologyService.lookupIcd10CodeDescription(codeId);
                 if (Strings.isNullOrEmpty(diagnosisTerm)) {
                     throw new Exception("Failed to find term for ICD10 code " + codeId);
@@ -158,13 +157,8 @@ public class DIAGNPreTransformer {
                 if (Strings.isNullOrEmpty(diagnosisTerm)) {
                     throw new Exception("Failed to find term for Snomed code " + codeId);
                 }
-            } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
-                diagnosisTerm = TerminologyService.lookupOpcs4ProcedureName(codeId);
-                if (Strings.isNullOrEmpty(diagnosisTerm)) {
-                    throw new Exception("Failed to find term for OPCS-4 code " + codeId);
-                }
             } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_HRG)) {
-                TransformWarnings.log(LOG, csvHelper, "PROCE record {} has HRG code in concept cell {}", diagnosisIdCell, conceptCell);
+                TransformWarnings.log(LOG, csvHelper, "DIAGN record {} has HRG code in concept cell {}", diagnosisIdCell, conceptCell);
                 return;
 
             } else {

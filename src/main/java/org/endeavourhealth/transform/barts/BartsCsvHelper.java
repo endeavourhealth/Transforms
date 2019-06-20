@@ -58,6 +58,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public static final String CODE_TYPE_UK_ED_SUBSET = "UK ED Subset";
     public static final String CODE_TYPE_SNOMED_UK_SUBSET ="SNMUKEMED";  // Found in Barts DIAGN files.
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
+    public static final String CODE_TYPE_ICD_10_d = "ICD-10";           // Found in Barts Diagnosis files, v rare.
     public static final String CODE_TYPE_OPCS_4 = "OPCS4";
     public static final String CODE_TYPE_HRG = "HRG";
     public static final String CODE_TYPE_CERNER = "CERNER";
@@ -440,7 +441,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         if (index > -1) {
             String ret = conceptCodeIdentifier.substring(0, index);
             if (ret.equals(CODE_TYPE_SNOMED)
-                    || ret.equals(CODE_TYPE_ICD_10)
+                    || ret.equals(CODE_TYPE_ICD_10) || ret.equals(CODE_TYPE_ICD_10_d)
                     || ret.equalsIgnoreCase(CODE_TYPE_OPCS_4)
                     || ret.equalsIgnoreCase(CODE_TYPE_HRG)
                     || ret.equals(CODE_TYPE_SNOMED_UK_SUBSET)) {

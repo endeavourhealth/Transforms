@@ -108,14 +108,7 @@ public class DiagnosisPreTransformer {
         CsvCell diagCodeCell = parser.getDiagnosisCode();
         String diagCode = diagCodeCell.getString();
         String diagTerm = "";
-        if (vocabCell.getString().equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
-
-            diagTerm = TerminologyService.lookupOpcs4ProcedureName(diagCode);
-            if (Strings.isNullOrEmpty(diagTerm)) {
-                throw new Exception("Failed to find term for OPCS-4 code [" + diagCode + "]");
-            }
-
-        } else if (vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT) ||
+        if (vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT) ||
                     vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_UK_ED_SUBSET)) {
             // note, although the column says it's Snomed or UK Ed Subset,
             // these are actually a Snomed description ID, not a concept ID
@@ -125,6 +118,15 @@ public class DiagnosisPreTransformer {
             }
             diagTerm = snomedCode.getTerm();
             diagCode = snomedCode.getConceptCode();  //update the code to be an actual Snomed ConceptId
+
+        } else if (vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_ICD_10) ||
+                    vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
+
+            //rare occurance of ICD10 codes in Diagnosis file
+            diagTerm = TerminologyService.lookupIcd10CodeDescription(diagCode);
+            if (Strings.isNullOrEmpty(diagTerm)) {
+                throw new Exception("Failed to find term for ICD10 code " + diagCode);
+            }
 
         } else if (vocabCell.getString().trim().contains("Allergy")) {
             TransformWarnings.log(LOG,csvHelper,"Allergycoding.  Found Allergy as vocab for diagnosis id: {}", diagnosisIdCell.getString() );
