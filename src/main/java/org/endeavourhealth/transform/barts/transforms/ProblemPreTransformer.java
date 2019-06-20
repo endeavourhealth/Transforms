@@ -100,6 +100,12 @@ public class ProblemPreTransformer {
         String probTerm = "";
         String probCode = parser.getProblemCode().getString();
 
+        //discard row if contains no code and vocab
+        if (Strings.isNullOrEmpty(probCode) && Strings.isNullOrEmpty(vocab)) {
+            TransformWarnings.log(LOG, csvHelper, "Skipping Problem {} containing no code or vocab", problemIdCell);
+            return;
+        }
+
         if (vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)
                 || vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
             probTerm = TerminologyService.lookupIcd10CodeDescription(probCode);
