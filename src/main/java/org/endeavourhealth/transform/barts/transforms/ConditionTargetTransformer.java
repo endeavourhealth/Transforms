@@ -45,7 +45,7 @@ public class ConditionTargetTransformer {
             return;
         }
 
-        TransformWarnings.log(LOG, csvHelper, "Target Conditions to transform to FHIR: {} for exchangeId: {}", targetConditions.size(), csvHelper.getExchangeId());
+        //TransformWarnings.log(LOG, csvHelper, "Target Conditions to transform to FHIR: {} for exchangeId: {}", targetConditions.size(), csvHelper.getExchangeId());
 
         for (StagingConditionTarget targetCondition : targetConditions) {
 
@@ -79,13 +79,8 @@ public class ConditionTargetTransformer {
             if (targetCondition.getDtPerformed()!= null) {
 
                 //removed the 1-1-1900 check following Mehbs advice
-                //if (!isUnknownConditionDate(targetCondition.getDtPerformed())) {
                 DateTimeType conditionDateTime = new DateTimeType(targetCondition.getDtPerformed());
                 conditionBuilder.setOnset(conditionDateTime);
-                //} else {
-                //    TransformWarnings.log(LOG, csvHelper, "Condition: {} which has an UNKNOWN 1900 date skipped", uniqueId);
-                //    continue;
-                //}
             }
 
             // set the patient reference
@@ -297,7 +292,7 @@ public class ConditionTargetTransformer {
 
             fhirResourceFiler.savePatientResource(null, conditionBuilder);
 
-            LOG.debug("Transforming conditionId: "+uniqueId+"  Filed");
+            //LOG.debug("Transforming conditionId: "+uniqueId+"  Filed");
         }
     }
 
