@@ -121,6 +121,11 @@ public class DiagnosisPreTransformer {
             // these are actually a Snomed description ID, not a concept ID
             SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(diagCode);
             if (snomedCode == null) {
+                //had a single example of a DIAGN record with the below as the "code", which isn't a code in any known scheme, and certainly not Snomed
+                if (diagCode.equals("UK_ED_SUB")) {
+                    TransformWarnings.log(LOG, csvHelper, "DIAGN record {} has invalid snomed code {} and will be ignored", diagnosisIdCell, diagCodeCell);
+                    return;
+                }
                 throw new Exception("Failed to find term for Snomed description ID [" + diagCode + "]");
             }
             diagTerm = snomedCode.getTerm();

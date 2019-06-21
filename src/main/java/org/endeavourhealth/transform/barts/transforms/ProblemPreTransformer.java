@@ -98,7 +98,9 @@ public class ProblemPreTransformer {
         obj.setVocab(vocab);
 
         String probTerm = "";
-        String probCode = parser.getProblemCode().getString();
+
+        CsvCell problemCodeCell = parser.getProblemCode();
+        String probCode = problemCodeCell.getString();
 
         //discard row if contains no code and vocab
         if (Strings.isNullOrEmpty(probCode) && Strings.isNullOrEmpty(vocab)) {
@@ -117,6 +119,11 @@ public class ProblemPreTransformer {
             //note, although the column says it's Snomed, it's actually a Snomed description ID, not a concept ID
             SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(probCode);
             if (snomedCode == null) {
+                //had a single example of a DIAGN record with the below as the "code", which isn't a code in any known scheme, and certainly not Snomed
+                if (probCode.equals("UK_ED_SUB")) {
+                    TransformWarnings.log(LOG, csvHelper, "Problem record {} has invalid snomed code {} and will be ignored", problemIdCell, problemCodeCell);
+                    return;
+                }
                 throw new Exception("Failed to find term for Snomed description ID [" + probCode + "]");
             }
             probTerm = snomedCode.getTerm();
