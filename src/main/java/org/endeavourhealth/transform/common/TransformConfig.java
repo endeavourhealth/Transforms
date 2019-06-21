@@ -26,12 +26,12 @@ public class TransformConfig {
     private boolean disableSavingResources;
     private boolean validateResourcesOnSaving;
     private int resourceCacheMaxSizeInMemory;
-    private String resourceCacheTempPath;
     private boolean isLive;
     private int resourceSaveBatchSize;
     private boolean allowMissingConceptIdsInSubscriberTransform;
     private Map<String, Set<String>> hmFileTypeFilters;
     private int rabbitMessagePerSecondThrottle;
+    private Map<String, String> emisOdsCodesAndStartDates;
 
     //singleton
     private static TransformConfig instance;
@@ -64,172 +64,211 @@ public class TransformConfig {
         this.disableSavingResources = false;
         this.validateResourcesOnSaving = true;
         this.resourceCacheMaxSizeInMemory = 100000;
-        this.resourceCacheTempPath = null; //using null means we'll offload resources to the DB
         this.isLive = false;
         this.resourceSaveBatchSize = 50;
         this.hmFileTypeFilters = new HashMap<>();
         this.rabbitMessagePerSecondThrottle = 5000;
+        this.emisOdsCodesAndStartDates = new HashMap<>();
 
         try {
+
             JsonNode json = ConfigManager.getConfigurationAsJson("common_config", "queuereader");
+            loadCommonConfig(json);
 
-            JsonNode node = json.get("shared_storage_path");
-            if (node != null) {
-                this.sharedStoragePath = node.asText();
-            }
+            json = ConfigManager.getConfigurationAsJson("emis_config", "queuereader");
+            loadEmisConfig(json);
 
-            node = json.get("disable_saving_resources");
-            if (node != null) {
-                this.disableSavingResources = node.asBoolean();
-            }
+            json = ConfigManager.getConfigurationAsJson("cerner_config", "queuereader");
+            loadCernerConfig(json);
 
-            node = json.get("validate_resources_on_save");
-            if (node != null) {
-                this.validateResourcesOnSaving = node.asBoolean();
-            }
-
-            node = json.get("attempts_permmitted_per_exchange");
-            if (node != null) {
-                this.attemptsPermmitedPerExchange = node.asInt();
-            }
-
-            node = json.get("kill_file_location");
-            if (node != null) {
-                this.killFileLocation = node.asText();
-            }
-
-            node = json.get("shared_storage_path");
-            if (node != null) {
-                this.sharedStoragePath = node.asText();
-            }
-
-            node = json.get("transform_errors_before_abort");
-            if (node != null) {
-                this.maxTransformErrorsBeforeAbort = node.asInt();
-            }
-
-            node = json.get("resource_cache_temp_dir");
-            if (node != null) {
-                this.resourceCacheTempPath = node.asText();
-            }
-
-            node = json.get("resource_cache_max_size_in_memory");
-            if (node != null) {
-                this.resourceCacheMaxSizeInMemory = node.asInt();
-            }
-
-            node = json.get("is_live");
-            if (node != null) {
-                this.isLive = node.asBoolean();
-            }
-
-            node = json.get("resource_save_batch_size");
-            if (node != null) {
-                this.resourceSaveBatchSize = node.asInt();
-            }
-
-            node = json.get("rabbit_message_per_second_throttle");
-            if (node != null) {
-                this.rabbitMessagePerSecondThrottle = node.asInt();
-            }
-
-            node = json.get("emis");
-            if (node != null) {
-
-                JsonNode subNode = node.get("disabled_ods_codes_allowed");
-                if (subNode != null) {
-                    for (int i=0; i<subNode.size(); i++) {
-                        String s = subNode.get(i).asText();
-                        this.emisDisabledOdsCodesAllowed.add(s);
-                    }
-                }
-
-                subNode = node.get("allow_missing_codes");
-                if (subNode != null) {
-                    this.emisAllowMissingCodes = subNode.asBoolean();
-                }
-
-                subNode = node.get("allow_unmapped_registration_types");
-                if (subNode != null) {
-                    this.emisAllowUnmappedRegistrationTypes = subNode.asBoolean();
-                }
-            }
-
-            node = json.get("cerner");
-            if (node != null) {
-                /*JsonNode subNode = node.get("transform_2_1_files");
-                if (subNode != null) {
-                    this.transformCerner21Files = subNode.asBoolean();
-                }*/
-
-                JsonNode subNode = node.get("patient_id_file");
-                if (subNode != null) {
-                    this.cernerPatientIdFile = subNode.asText();
-                }
-            }
-
-            node = json.get("subscriber");
-            if (node != null) {
-
-                JsonNode subNode = node.get("allow_missing_concepts");
-                if (subNode != null) {
-                    this.allowMissingConceptIdsInSubscriberTransform = subNode.asBoolean();
-                }
-            }
-
-
-
-            node = json.get("drain_queue_on_failure");
-            if (node != null) {
-                for (int i=0; i<node.size(); i++) {
-                    String software = node.get(i).asText();
-                    this.softwareFormatsToDrainQueueOnFailure.add(software);
-                }
-            }
-
-            node = json.get("warnings_to_fail_on");
-            if (node != null) {
-                for (int i=0; i<node.size(); i++) {
-                    String s = node.get(i).asText();
-                    Pattern pattern = Pattern.compile(s);
-                    this.warningsToFailOn.add(pattern);
-                }
-            }
-
-            node = json.get("file_type_filters");
-            if (node != null) {
-                for (int i=0; i<node.size(); i++) {
-                    JsonNode orgNode = node.get(i);
-                    JsonNode odsNode = orgNode.get("ods_code");
-                    JsonNode typesNode = orgNode.get("file_types");
-                    if (odsNode == null || typesNode == null) {
-                        LOG.error("Missing ods_code or file_types node under file_type_filters node");
-                        continue;
-                    }
-
-                    String odsCode = odsNode.asText();
-                    Set<String> fileTypes = new HashSet<>();
-
-                    for (int j=0; j<typesNode.size(); j++) {
-                        String fileType = typesNode.get(j).asText();
-                        fileTypes.add(fileType);
-                    }
-
-                    hmFileTypeFilters.put(odsCode, fileTypes);
-                }
-            }
-
-            //ensure the temp path dir exists if set
-            if (!Strings.isNullOrEmpty(resourceCacheTempPath)) {
-                new File(resourceCacheTempPath).mkdirs();
-            }
-
-        } catch (Exception var4) {
+        } catch (Exception ex) {
             //if the config record is there, just log it out rather than throw an exception
-            LOG.warn("No common queuereader config found in config DB with app_id queuereader and config_id common_config");
+            LOG.error("", ex);
         }
 
         LOG.debug("resourceSaveBatchSize = " + resourceSaveBatchSize);
+    }
+
+    private void loadCernerConfig(JsonNode json) {
+        if (json == null) {
+            return;
+        }
+
+        JsonNode node = json.get("patient_id_file");
+        if (node != null) {
+            this.cernerPatientIdFile = node.asText();
+        }
+    }
+
+    private void loadCommonConfig(JsonNode json) throws Exception {
+
+        if (json == null) {
+            LOG.warn("No common queuereader config found in config DB with app_id queuereader and config_id common_config");
+            return;
+        }
+
+        JsonNode node = json.get("shared_storage_path");
+        if (node != null) {
+            this.sharedStoragePath = node.asText();
+        }
+
+        node = json.get("disable_saving_resources");
+        if (node != null) {
+            this.disableSavingResources = node.asBoolean();
+        }
+
+        node = json.get("validate_resources_on_save");
+        if (node != null) {
+            this.validateResourcesOnSaving = node.asBoolean();
+        }
+
+        node = json.get("attempts_permmitted_per_exchange");
+        if (node != null) {
+            this.attemptsPermmitedPerExchange = node.asInt();
+        }
+
+        node = json.get("kill_file_location");
+        if (node != null) {
+            this.killFileLocation = node.asText();
+        }
+
+        node = json.get("shared_storage_path");
+        if (node != null) {
+            this.sharedStoragePath = node.asText();
+        }
+
+        node = json.get("transform_errors_before_abort");
+        if (node != null) {
+            this.maxTransformErrorsBeforeAbort = node.asInt();
+        }
+
+        node = json.get("resource_cache_max_size_in_memory");
+        if (node != null) {
+            this.resourceCacheMaxSizeInMemory = node.asInt();
+        }
+
+        node = json.get("is_live");
+        if (node != null) {
+            this.isLive = node.asBoolean();
+        }
+
+        node = json.get("resource_save_batch_size");
+        if (node != null) {
+            this.resourceSaveBatchSize = node.asInt();
+        }
+
+        node = json.get("rabbit_message_per_second_throttle");
+        if (node != null) {
+            this.rabbitMessagePerSecondThrottle = node.asInt();
+        }
+
+        node = json.get("emis");
+        if (node != null) {
+            //the emis config should now be in a separate config record, but still apply it if it's still found as part of the common config
+            loadEmisConfig(node);
+        }
+
+        node = json.get("cerner");
+        if (node != null) {
+            //the cerner config should now be in a separate config record, but still apply it if it's still found as part of the common config
+            loadCernerConfig(node);
+        }
+
+        node = json.get("subscriber");
+        if (node != null) {
+
+            JsonNode subNode = node.get("allow_missing_concepts");
+            if (subNode != null) {
+                this.allowMissingConceptIdsInSubscriberTransform = subNode.asBoolean();
+            }
+        }
+
+        node = json.get("drain_queue_on_failure");
+        if (node != null) {
+            for (int i=0; i<node.size(); i++) {
+                String software = node.get(i).asText();
+                this.softwareFormatsToDrainQueueOnFailure.add(software);
+            }
+        }
+
+        node = json.get("warnings_to_fail_on");
+        if (node != null) {
+            for (int i=0; i<node.size(); i++) {
+                String s = node.get(i).asText();
+                Pattern pattern = Pattern.compile(s);
+                this.warningsToFailOn.add(pattern);
+            }
+        }
+
+        node = json.get("file_type_filters");
+        if (node != null) {
+            for (int i=0; i<node.size(); i++) {
+                JsonNode orgNode = node.get(i);
+                JsonNode odsNode = orgNode.get("ods_code");
+                JsonNode typesNode = orgNode.get("file_types");
+                if (odsNode == null || typesNode == null) {
+                    LOG.error("Missing ods_code or file_types node under file_type_filters node");
+                    continue;
+                }
+
+                String odsCode = odsNode.asText();
+                Set<String> fileTypes = new HashSet<>();
+
+                for (int j=0; j<typesNode.size(); j++) {
+                    String fileType = typesNode.get(j).asText();
+                    fileTypes.add(fileType);
+                }
+
+                hmFileTypeFilters.put(odsCode, fileTypes);
+            }
+        }
+
+    }
+
+    private void loadEmisConfig(JsonNode json) throws Exception {
+
+        if (json == null) {
+            return;
+        }
+
+        JsonNode subNode = json.get("disabled_ods_codes_allowed");
+        if (subNode != null) {
+            for (int i=0; i<subNode.size(); i++) {
+                String s = subNode.get(i).asText();
+                this.emisDisabledOdsCodesAllowed.add(s);
+            }
+        }
+
+        subNode = json.get("allow_missing_codes");
+        if (subNode != null) {
+            this.emisAllowMissingCodes = subNode.asBoolean();
+        }
+
+        subNode = json.get("allow_unmapped_registration_types");
+        if (subNode != null) {
+            this.emisAllowUnmappedRegistrationTypes = subNode.asBoolean();
+        }
+
+        subNode = json.get("start_dates");
+        if (subNode != null) {
+            for (int i=0; i<subNode.size(); i++) {
+                JsonNode orgNode = subNode.get(i);
+                JsonNode odsNode = orgNode.get("ods_code");
+                JsonNode startDateNode = orgNode.get("start_date");
+                if (odsNode == null || startDateNode == null) {
+                    LOG.error("Missing ods_code or start_date node under emis start_dates node");
+                    continue;
+                }
+
+                String odsCode = odsNode.asText();
+                String startDate = startDateNode.asText();
+                emisOdsCodesAndStartDates.put(odsCode, startDate);
+            }
+        }
+
+
+
+
     }
 
     public String getSharedStoragePath() {
@@ -280,10 +319,6 @@ public class TransformConfig {
         return validateResourcesOnSaving;
     }
 
-    public String getResourceCacheTempPath() {
-        return resourceCacheTempPath;
-    }
-
     public boolean isLive() {
         return isLive;
     }
@@ -306,5 +341,9 @@ public class TransformConfig {
 
     public int getRabbitMessagePerSecondThrottle() {
         return rabbitMessagePerSecondThrottle;
+    }
+
+    public String getEmisStartDate(String odsCode) {
+        return emisOdsCodesAndStartDates.get(odsCode);
     }
 }

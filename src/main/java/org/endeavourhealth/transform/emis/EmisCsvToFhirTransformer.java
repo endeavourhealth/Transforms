@@ -102,6 +102,21 @@ public abstract class EmisCsvToFhirTransformer {
 
     private static Date findStartDate(String odsCode) throws Exception {
 
+        //the start date for each service is in the Emis config record. Note that not all orgs have
+        //a start date - this is only needed for ones where there were lots of re-bulks or they
+        //we disabled for a long period of time, and this lets us ignore all the bad data and only
+        //start processing from when we know it was right.
+        String startDateStr = TransformConfig.instance().getEmisStartDate(odsCode);
+        if (Strings.isNullOrEmpty(startDateStr)) {
+            return null;
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        return sdf.parse(startDateStr);
+    }
+
+    /*private static Date findStartDate(String odsCode) throws Exception {
+
         Map<String, String> map = new HashMap<>();
 
         //this list of ODS codes and dates is based off the live Emis extracts, giving the most recent bulk date for each organisation
@@ -273,7 +288,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         return sdf.parse(startDateStr);
-    }
+    }*/
 
 
     private static void closeParsers(Collection<AbstractCsvParser> parsers) {
