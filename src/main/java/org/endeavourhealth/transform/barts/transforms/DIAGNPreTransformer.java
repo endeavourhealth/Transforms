@@ -155,6 +155,13 @@ public class DIAGNPreTransformer {
                         ||codeType.equals(BartsCsvHelper.CODE_TYPE_SNOMED_UK_SUBSET)) {
                 diagnosisTerm = TerminologyService.lookupSnomedTerm(codeId);
                 if (Strings.isNullOrEmpty(diagnosisTerm)) {
+
+                    //had a single example of a DIAGN record with the below as the "code", which isn't a code in any known scheme, and certainly not Snomed
+                    if (codeId.equals("UK_ED_SUB")) {
+                        TransformWarnings.log(LOG, csvHelper, "DIAGN record {} has invalid snomed code {} and will be ignored", diagnosisIdCell, conceptCell);
+                        return;
+                    }
+
                     throw new Exception("Failed to find term for Snomed code " + codeId);
                 }
             } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_HRG)) {
