@@ -119,12 +119,12 @@ public class ConditionTargetTransformer {
                     conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
                 } else {
 
-                    TransformWarnings.log(LOG, csvHelper, "Ignoring Condition Id: {} with confirmation status: "+confirmation, uniqueId);
+                    //TransformWarnings.log(LOG, csvHelper, "Ignoring Condition Id: {} with confirmation status: "+confirmation, uniqueId);
                     continue;
                 }
             } else {
 
-                TransformWarnings.log(LOG, csvHelper, "Ignoring Condition Id with NO confirmation status: {}", uniqueId);
+                //TransformWarnings.log(LOG, csvHelper, "Ignoring Condition Id with NO confirmation status: {}", uniqueId);
                 continue;
             }
 

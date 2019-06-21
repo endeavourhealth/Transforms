@@ -485,9 +485,9 @@ public abstract class CdsPreTransformerBase {
         StagingConditionCds cdsPrimary = commonContent.clone();
 
         String icdCode = primaryDiagnosisCell.getString().trim();
-        //TODO an ugly patch to get this data through. Decide tomorrow how to fix
+
         if (icdCode.length() > 4 && icdCode.indexOf(".") < 0) {
-            TransformWarnings.log(LOG, csvHelper, "Long code found. Shortening : {}", icdCode);
+            //TransformWarnings.log(LOG, csvHelper, "Long code found. Shortening : {}", icdCode);
             icdCode = icdCode.substring(0, 4);
         }
 
@@ -499,7 +499,7 @@ public abstract class CdsPreTransformerBase {
 
              */
         if (icdCode.toUpperCase().endsWith(".X")) {
-            TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
+            //TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
             icdCode = icdCode.substring(0, 3);
         }
         String term = TerminologyService.lookupIcd10CodeDescription(icdCode);
@@ -534,12 +534,6 @@ public abstract class CdsPreTransformerBase {
         StagingConditionCds cdsSecondary = commonContent.clone();
 
         String icdCode = secondaryDiagnosisCell.getString().trim();
-        // 7 chars are valid especially for ICD-O. ICD for Oncology.
-//        //TODO an ugly patch to get this data through. Decide tomorrow how to fix
-//        if (icdCode.length()>4 && icdCode.indexOf(".")<0) {
-//            TransformWarnings.log(LOG, csvHelper, "Long code found. Shortening : {}", icdCode);
-//            icdCode=icdCode.substring(0,4);
-//        }
         icdCode = TerminologyService.standardiseIcd10Code(icdCode);
         cdsSecondary.setDiagnosisIcdCode(icdCode);
          /*
@@ -548,7 +542,7 @@ public abstract class CdsPreTransformerBase {
 
              */
         if (icdCode.toUpperCase().endsWith(".X")) {
-            TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
+            //TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
             icdCode = icdCode.substring(0, 3);
         }
 
@@ -592,16 +586,14 @@ public abstract class CdsPreTransformerBase {
                 break;
             }
 
-
             icdCode = TerminologyService.standardiseIcd10Code(icdCode);
-
              /*
             ".x" or ".X" is a placeholder in ICD-10.  Our lookup will just have the first part so remove the placeholder.
             https://www.cms.gov/Medicare/Coding/ICD10/Downloads/032310_ICD10_Slides.pdf
 
              */
             if (icdCode.toUpperCase().endsWith(".X")) {
-                TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
+                //TransformWarnings.log(LOG, csvHelper, "Truncating ICD-10 code : {}", icdCode);
                 icdCode = icdCode.substring(0, 3);
             }
             cdsRemainder.setDiagnosisIcdCode(icdCode);
