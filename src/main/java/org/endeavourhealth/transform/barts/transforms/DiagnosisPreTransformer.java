@@ -103,7 +103,8 @@ public class DiagnosisPreTransformer {
         obj.setConsultant(diagnosisConsultant.getString());
 
         CsvCell vocabCell = parser.getVocabulary();
-        obj.setVocab(vocabCell.getString());
+        String vocab = vocabCell.getString();
+        obj.setVocab(vocab);
 
         CsvCell diagCodeCell = parser.getDiagnosisCode();
         String diagCode = diagCodeCell.getString();
@@ -115,8 +116,8 @@ public class DiagnosisPreTransformer {
         }
 
         String diagTerm = "";
-        if (vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT) ||
-                    vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_UK_ED_SUBSET)) {
+        if (vocab.equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT)
+                || vocab.equals(BartsCsvHelper.CODE_TYPE_UK_ED_SUBSET)) {
             // note, although the column says it's Snomed or UK Ed Subset,
             // these are actually a Snomed description ID, not a concept ID
             SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(diagCode);
@@ -131,24 +132,35 @@ public class DiagnosisPreTransformer {
             diagTerm = snomedCode.getTerm();
             diagCode = snomedCode.getConceptCode();  //update the code to be an actual Snomed ConceptId
 
-        } else if (vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_ICD_10) ||
-                    vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
+        } else if (vocab.equals(BartsCsvHelper.CODE_TYPE_ICD_10)
+                || vocab.equals(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
 
             //rare occurance of ICD10 codes in Diagnosis file
             diagTerm = TerminologyService.lookupIcd10CodeDescription(diagCode);
             if (Strings.isNullOrEmpty(diagTerm)) {
                 throw new Exception("Failed to find term for ICD10 code " + diagCode);
             }
-        } else if (vocabCell.getString().equals(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+        } else if (vocab.equals(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
 
             //OPCS4 codes have been detected in Barts Problem files, so checking here also
             diagTerm = TerminologyService.lookupOpcs4ProcedureName(diagCode);
             if (Strings.isNullOrEmpty(diagTerm)) {
                 throw new Exception("Failed to find term for OPCS-4 code [" + diagCode + "]");
             }
-        } else if (vocabCell.getString().trim().contains("Allergy")) {
-            TransformWarnings.log(LOG,csvHelper,"Allergycoding.  Found Allergy as vocab for diagnosis id: {}", diagnosisIdCell.getString() );
+
+        } else if (vocab.contains("Allergy")) {
+            TransformWarnings.log(LOG, csvHelper, "Allergycoding.  Found Allergy as vocab for diagnosis id: {}", diagnosisIdCell);
             return;
+
+        } else if (vocab.equals("Patient Care")) {
+            //found one instance of a Patient Care vocab with no code
+            if (Strings.isNullOrEmpty(diagCode)) {
+                TransformWarnings.log(LOG, csvHelper, "Ignoring Diagnosis record {} with vocab Patient Care and no code", diagnosisIdCell);
+                return;
+            } else {
+                throw new Exception("Patient Care record with non-empty code found " + diagnosisIdCell);
+            }
+
         } else {
             throw new Exception("Unexpected coding scheme vocab " + vocabCell.getString());
         }
