@@ -144,7 +144,12 @@ public class ProblemPreTransformer {
             if (Strings.isNullOrEmpty(probTerm)) {
                 throw new Exception("Failed to find term for OPCS-4 code [" + probCode + "]");
             }
-        } else {
+        } else if (vocab.contains("Allergy")) {
+
+            TransformWarnings.log(LOG, csvHelper, "Allergycoding.  Found Allergy as vocab for Problem id: {}", problemIdCell);
+            return;
+        }
+        else {
 
             // only throw an exception if this is not a canceled (US spelling) record and the vocab is unrecognised
             if (!statusCell.isEmpty() && !statusCell.getString().equalsIgnoreCase("Canceled")) {

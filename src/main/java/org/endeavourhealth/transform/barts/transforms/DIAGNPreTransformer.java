@@ -175,6 +175,10 @@ public class DIAGNPreTransformer {
                 if (Strings.isNullOrEmpty(diagnosisTerm)) {
                     throw new Exception("Failed to find term for OPCS-4 code " + codeId);
                 }
+            } else if (codeType.contains("Allergy")) {
+                TransformWarnings.log(LOG, csvHelper, "Allergycoding.  Found Allergy as vocab for DIAGN record id: {}", diagnosisIdCell);
+                return;
+
             } else {
                 throw new Exception("Unexpected code type " + codeType);
             }
