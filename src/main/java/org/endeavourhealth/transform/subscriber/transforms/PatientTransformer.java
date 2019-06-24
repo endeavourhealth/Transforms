@@ -123,8 +123,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         personId = enterprisePersonId.longValue();
 
         if (previousVersion != null) {
-            processChangesFromPreviousVersion(params.getServiceId(), fhirPatient, previousVersion,
+            boolean cont = processChangesFromPreviousVersion(params.getServiceId(), fhirPatient, previousVersion,
                     resourceWrapper.getResourceId(), personId, params);
+            if (!cont) {
+                return;
+            }
         }
 
 
@@ -965,7 +968,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, UUID resourceID,
+    private boolean processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, UUID resourceID,
                                                    long personId, SubscriberTransformParams params) throws  Exception {
 
 
@@ -1002,6 +1005,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         params.getExchangeId(), params.getBatchId(), resource.getResourceType(), wrapper.getResourceId());
             }
             transformResources(resources, params);
+            return false;
         }
         //NHS Number was added or became non-confidential or person id changed, adding resources related to it
         else if (((!StringUtils.isEmpty(currentNHSNumber) && StringUtils.isEmpty(previousNHSNumber))
@@ -1042,6 +1046,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
             transformResources(reprocess, params);
         }
+        return true;
     }
 
 
