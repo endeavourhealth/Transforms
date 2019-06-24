@@ -92,12 +92,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         Patient fhirPatient = (Patient) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
-        //if confidential, don't send (and remove)
-        if (isConfidential(fhirPatient)) {
-            //TODO - can this happen? If it does happen, does that mean we should delete ALL data for the patient?
-            throw new RuntimeException("Not sure how to handle a confidential patient resource");
-        }
-
         String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
 
         //when the person ID table was populated, patients who had been deleted weren't added,
@@ -998,8 +992,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             params.setEnterprisePersonId(enterprisePersonId);
         }
 
-        //NHS Number was removed, removing resources related to it
-        if (StringUtils.isEmpty(currentNHSNumber) && !StringUtils.isEmpty(previousNHSNumber)) {
+        //NHS Number was removed or if the patient record is no confidential, remove any resources related to it
+        if ((StringUtils.isEmpty(currentNHSNumber) && !StringUtils.isEmpty(previousNHSNumber))
+                || (isConfidential(current) && !isConfidential(previous))) {
             for (ResourceWrapper wrapper : resources) {
                 wrapper.setDeleted(true);
                 Resource resource = FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
@@ -1008,8 +1003,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
             transformResources(resources, params);
         }
-        //NHS Number was added or person id changed, adding resources related to it
-        else if(((!StringUtils.isEmpty(currentNHSNumber) && StringUtils.isEmpty(previousNHSNumber))
+        //NHS Number was added or became non-confidential or person id changed, adding resources related to it
+        else if (((!StringUtils.isEmpty(currentNHSNumber) && StringUtils.isEmpty(previousNHSNumber))
+                || (!isConfidential(current) && isConfidential(previous))
                 || enterprisePersonId != personId)) {
             for (ResourceWrapper wrapper : resources) {
                 Resource resource = FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
