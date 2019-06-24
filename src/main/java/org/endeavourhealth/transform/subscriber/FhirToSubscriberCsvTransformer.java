@@ -346,7 +346,9 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             patient = (Patient) AbstractSubscriberTransformer.findResource(patientRef, params);
         }
 
-        if (patient != null && StringUtils.isNotEmpty(IdentifierHelper.findNhsNumber(patient))) {
+        if (patient != null
+                && StringUtils.isNotEmpty(IdentifierHelper.findNhsNumber(patient)) //don't send data for patients w/o NHS numbers
+                && !AbstractSubscriberTransformer.isConfidential(patient)) { //don't send data for patients that are confidential
             transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
             transformResources(ResourceType.Appointment, resources, threadPool, params);
             transformResources(ResourceType.Encounter, resources, threadPool, params);

@@ -59,7 +59,7 @@ public abstract class AbstractSubscriberTransformer {
     }
 
 
-    protected boolean isConfidential(Resource fhir) {
+    public static boolean isConfidential(Resource fhir) {
         DomainResource resource = (DomainResource)fhir;
         BooleanType bt = (BooleanType) ExtensionConverter.findExtensionValue(resource, FhirExtensionUri.IS_CONFIDENTIAL);
         if (bt == null
