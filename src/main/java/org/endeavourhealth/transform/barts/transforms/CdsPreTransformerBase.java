@@ -29,9 +29,6 @@ public abstract class CdsPreTransformerBase {
 
     private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
 
-    private static Date dProceduresEnd = null;
-    private static Date dProceduresStart = null;
-
     protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
                                          List<StagingProcedureCds> procedureBatch,
                                          List<StagingProcedureCdsCount> procedureCountBatch,
@@ -39,22 +36,8 @@ public abstract class CdsPreTransformerBase {
                                          List<StagingConditionCdsCount> conditionCountBatch) throws Exception {
 
         if (TransformConfig.instance().isLive()) {
-
             processDiagnoses(parser, csvHelper, susRecordType, conditionBatch, conditionCountBatch);
-
-            //on live, we've already processed the procedure data from 01/01/2019 to 19/06/2019 inclusive,
-            //so skip them while we process the condition/diagnosis data
-            Date dData = csvHelper.getDataDate();
-            if (dProceduresStart == null) {
-                dProceduresStart = new SimpleDateFormat("yyyy-MM-dd").parse("2019-01-01");
-                dProceduresEnd = new SimpleDateFormat("yyyy-MM-dd").parse("2019-06-19");
-            }
-            if (dData.before(dProceduresStart)) {
-                throw new Exception("Trying to run past procedures data when code to skip 2019 still in place");
-            }
-            if (dData.after(dProceduresEnd)) {
-                processProcedures(parser, csvHelper, susRecordType, procedureBatch, procedureCountBatch);
-            }
+            processProcedures(parser, csvHelper, susRecordType, procedureBatch, procedureCountBatch);
 
         } else {
             //on Cerner Transform server, just run diagnoses for now
