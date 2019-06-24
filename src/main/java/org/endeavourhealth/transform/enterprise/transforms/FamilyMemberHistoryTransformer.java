@@ -94,11 +94,13 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
         originalTerm = codes.getOriginalTerm();
 
         if (snomedConceptId == null) {
-            Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(condition.getCode());
-            if (snomedValue!= null) {
-                snomedConceptId = snomedValue;
-            } else {
-                return; // Don't allow records we can't map to SNOMED.
+            if (ObservationCodeHelper.isCernerCoding(condition.getCode())) {
+                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(condition.getCode());
+                if (snomedValue != null) {
+                    snomedConceptId = snomedValue;
+                } else {
+                    return; // Don't allow records we can't map to SNOMED.
+                }
             }
         }
 

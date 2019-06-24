@@ -87,11 +87,13 @@ public class DiagnosticOrderTransformer extends AbstractTransformer {
         originalTerm = codes.getOriginalTerm();
 
         if (snomedConceptId == null) {
-            Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(item.getCode());
-            if (snomedValue!= null) {
-                snomedConceptId = snomedValue;
-            } else {
-                return; // Don't allow records we can't map to SNOMED.
+            if (ObservationCodeHelper.isCernerCoding(item.getCode())) {
+                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(item.getCode());
+                if (snomedValue!= null) {
+                    snomedConceptId = snomedValue;
+                } else {
+                    return; // Don't allow records we can't map to SNOMED.
+                }
             }
         }
 

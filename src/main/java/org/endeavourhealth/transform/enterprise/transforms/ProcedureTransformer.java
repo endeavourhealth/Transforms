@@ -99,12 +99,14 @@ public class ProcedureTransformer extends AbstractTransformer {
         originalTerm = codes.getOriginalTerm();
 
         if (snomedConceptId == null) {
-            Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(fhir.getCode());
-           if (snomedValue!= null) {
-               snomedConceptId = snomedValue;
-           } else {
-               return; // Don't allow records we can't map to SNOMED.
-           }
+            if (ObservationCodeHelper.isCernerCoding(fhir.getCode())) {
+                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhir.getCode());
+                if (snomedValue != null) {
+                    snomedConceptId = snomedValue;
+                } else {
+                    return; // Don't allow records we can't map to SNOMED.
+                }
+            }
         }
 
         /*if (snomedConceptId == null && CodeableConceptHelper.findOriginalCoding(fhir.getCode()) != null) {
@@ -140,7 +142,7 @@ public class ProcedureTransformer extends AbstractTransformer {
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
         if (isPrimaryExtension != null) {
-            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
+            BooleanType b = (BooleanType) isPrimaryExtension.getValue();
             if (b.getValue() != null) {
                 resultString = "Primary";
             }

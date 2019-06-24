@@ -82,11 +82,13 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             originalTerm = codes.getOriginalTerm();
 
             if (snomedConceptId == null) {
-                Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(fhirServiceRequested);
-                if (snomedValue!= null) {
-                    snomedConceptId = snomedValue;
-                } else {
-                    return; // Don't allow records we can't map to SNOMED.
+                if (ObservationCodeHelper.isCernerCoding(fhirServiceRequested)) {
+                    Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhirServiceRequested);
+                    if (snomedValue != null) {
+                        snomedConceptId = snomedValue;
+                    } else {
+                        return; // Don't allow records we can't map to SNOMED.
+                    }
                 }
             }
         }

@@ -136,7 +136,13 @@ public class ObservationCodeHelper {
         }
     }
 
-    public static Long getSnomedFromCerner(CodeableConcept concept) throws Exception {
+    public static boolean isCernerCoding(CodeableConcept concept) {
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(concept);
+        return originalCoding != null
+                && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+    }
+
+    public static Long mapCernerCodeToSnomed(CodeableConcept concept) throws Exception {
         //Try to get a SNOMED code mapped from a Barts Cerner value.
         Coding originalCoding = CodeableConceptHelper.findOriginalCoding(concept);
         if (originalCoding != null

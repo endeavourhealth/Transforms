@@ -87,11 +87,13 @@ public class SpecimenTransformer extends AbstractTransformer {
         originalTerm = codes.getOriginalTerm();
 
         if (snomedConceptId == null) {
-            Long snomedValue = ObservationCodeHelper.getSnomedFromCerner(fhir.getType());
-            if (snomedValue!= null) {
-                snomedConceptId = snomedValue;
-            } else {
-                return; // Don't allow records we can't map to SNOMED.
+            if (ObservationCodeHelper.isCernerCoding(fhir.getType())) {
+                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhir.getType());
+                if (snomedValue != null) {
+                    snomedConceptId = snomedValue;
+                } else {
+                    return; // Don't allow records we can't map to SNOMED.
+                }
             }
         }
 
