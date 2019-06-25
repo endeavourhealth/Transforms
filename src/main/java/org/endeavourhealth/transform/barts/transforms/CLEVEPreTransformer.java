@@ -186,11 +186,6 @@ public class CLEVEPreTransformer {
                 stagingClinicalEvent.setEventResultTxt(resultTextCell.getString());
             }
 
-            CsvCell resultNbrCell = parser.getEventResultNumber();
-            if (!resultNbrCell.isEmpty()) {
-                stagingClinicalEvent.setEventResultNbr(resultNbrCell.getInt());
-            }
-
             CsvCell eventResultDateCell = parser.getEventResultDateTime();
             procDate = BartsCsvHelper.parseDate(eventResultDateCell);
             stagingClinicalEvent.setEventResultDt(procDate);
