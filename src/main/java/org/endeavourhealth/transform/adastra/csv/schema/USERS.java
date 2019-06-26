@@ -22,7 +22,6 @@ public class USERS extends AbstractCsvParser {
 
     private static String[] getExpectedCsvHeaders(String version) {
 
-        if (version.equalsIgnoreCase(AdastraCsvToFhirTransformer.VERSION_2)) {
             return new String[]{
                     "UserRef",
                     "UserName",
@@ -35,9 +34,6 @@ public class USERS extends AbstractCsvParser {
                     "ProviderGMC",
                     "ProviderNMC"
             };
-        } else {
-            return null;   //Users only valid for version 1
-        }
     }
 
     @Override
