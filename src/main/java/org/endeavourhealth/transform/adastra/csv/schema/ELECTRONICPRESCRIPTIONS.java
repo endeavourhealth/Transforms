@@ -22,8 +22,6 @@ public class ELECTRONICPRESCRIPTIONS extends AbstractCsvParser {
 
     private static String[] getExpectedCsvHeaders(String version) {
 
-        if (version.equalsIgnoreCase(AdastraCsvToFhirTransformer.VERSION_2)) {
-
             return new String[]{
                     "CaseRef",
                     "ProviderRef",
@@ -37,10 +35,6 @@ public class ELECTRONICPRESCRIPTIONS extends AbstractCsvParser {
                     "PrescriberNumber ",
                     "PrescriberName"
             };
-        } else {
-
-            return null;    //ETP only valid for version 2
-        }
     }
 
     @Override
