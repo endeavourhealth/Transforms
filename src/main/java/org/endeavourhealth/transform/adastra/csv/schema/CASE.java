@@ -46,7 +46,8 @@ public class CASE extends AbstractCsvParser {
                     "LocationName",
                     "CaseTagName",
                     "ArrivedPCC",
-                    "UserRef"
+                    "UserRef",
+                    "ODSCode"
             };
         }
     }
@@ -97,4 +98,7 @@ public class CASE extends AbstractCsvParser {
     public CsvCell getUserRef() {
         return super.getCell("UserRef");
     }
+
+    public CsvCell getODSCode() {
+        return super.getCell("ODSCode"); }
 }

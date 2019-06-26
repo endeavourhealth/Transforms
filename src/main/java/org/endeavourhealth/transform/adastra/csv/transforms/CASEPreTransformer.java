@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.ods.OdsOrganisation;
+import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
@@ -46,16 +48,31 @@ public class CASEPreTransformer {
                                       AdastraCsvHelper csvHelper,
                                       String version) throws Exception {
 
-        // first up, create the OOH organisation from the DDS service details
-        // if this is the first run, the organization will not have been created yet or cached - will only run once for th OOH org
-        UUID serviceId = parser.getServiceId();
-        boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(serviceId.toString());
-        if (!orgInCache) {
-            boolean oohMainOrgAlreadyFiled
-                    = csvHelper.getOrganisationCache().organizationInDB(serviceId.toString(), csvHelper, fhirResourceFiler);
-            if (!oohMainOrgAlreadyFiled) {
+        //create / cache the OOH code if it exists (v2)
+        CsvCell odsCode = parser.getODSCode();
+        if (odsCode != null) {
 
-                createMainOOHOrganization(parser, fhirResourceFiler, csvHelper);
+            boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(odsCode.toString());
+            if (!orgInCache) {
+                boolean oohOrgAlreadyFiled
+                        = csvHelper.getOrganisationCache().organizationInDB(odsCode.toString(), csvHelper, fhirResourceFiler);
+                if (!oohOrgAlreadyFiled) {
+
+                    createOOHOrganisation(parser, fhirResourceFiler, csvHelper);
+                }
+            }
+        } else {
+            // or, create the OOH organisation from the DDS service details if ods code does not exist
+            // if this is the first run, the organization will not have been created yet or cached - will only run once for the OOH service org
+            UUID serviceId = parser.getServiceId();
+            boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(serviceId.toString());
+            if (!orgInCache) {
+                boolean oohServiceOrgAlreadyFiled
+                        = csvHelper.getOrganisationCache().organizationInDB(serviceId.toString(), csvHelper, fhirResourceFiler);
+                if (!oohServiceOrgAlreadyFiled) {
+
+                    createServiceOOHOrganisation(parser, fhirResourceFiler, csvHelper);
+                }
             }
         }
 
@@ -81,7 +98,7 @@ public class CASEPreTransformer {
         }
     }
 
-    private static void createMainOOHOrganization(CASE parser, FhirResourceFiler fhirResourceFiler, AdastraCsvHelper csvHelper) throws Exception {
+    private static void createServiceOOHOrganisation(CASE parser, FhirResourceFiler fhirResourceFiler, AdastraCsvHelper csvHelper) throws Exception {
 
         UUID serviceId = parser.getServiceId();
 
@@ -116,5 +133,41 @@ public class CASEPreTransformer {
 
         //add to cache
         csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId.toString(), organizationBuilder);
+    }
+
+    private static void createOOHOrganisation(CASE parser, FhirResourceFiler fhirResourceFiler, AdastraCsvHelper csvHelper) throws Exception {
+
+        CsvCell odsCodeCell = parser.getODSCode();
+
+        OrganizationBuilder organizationBuilder
+                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (odsCodeCell.toString(), csvHelper, fhirResourceFiler, parser);
+        if (organizationBuilder == null) {
+            TransformWarnings.log(LOG, parser, "Error creating OOH Organization resource for ODS: {}",
+                    odsCodeCell.toString());
+            return;
+        }
+
+        OdsOrganisation org = OdsWebService.lookupOrganisationViaRest(odsCodeCell.getString().trim());
+        if (org != null) {
+
+            organizationBuilder.setName(org.getOrganisationName());
+        } else {
+
+            TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {}",
+                    odsCodeCell.toString());
+            return;
+        }
+
+        //set the ods identifier
+        organizationBuilder.getIdentifiers().clear();
+        IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+        identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+        identifierBuilder.setValue(odsCodeCell.getString());
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+
+        //add to cache
+        csvHelper.getOrganisationCache().returnOrganizationBuilder(odsCodeCell.toString(), organizationBuilder);
     }
 }

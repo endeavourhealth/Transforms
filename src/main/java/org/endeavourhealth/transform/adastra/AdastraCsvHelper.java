@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
 import org.endeavourhealth.transform.adastra.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.adastra.cache.PatientResourceCache;
+import org.endeavourhealth.transform.adastra.cache.QuestionnaireResponseResourceCache;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -45,6 +46,7 @@ public class AdastraCsvHelper {
     private PatientResourceCache patientCache = new PatientResourceCache();
     private EpisodeOfCareResourceCache episodeOfCareCache = new EpisodeOfCareResourceCache();
     private OrganisationResourceCache organisationCache = new OrganisationResourceCache();
+    private QuestionnaireResponseResourceCache questionnaireResponseCache = new QuestionnaireResponseResourceCache();
 
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
@@ -102,6 +104,8 @@ public class AdastraCsvHelper {
     public PatientResourceCache getPatientCache() { return patientCache; }
 
     public OrganisationResourceCache getOrganisationCache() { return organisationCache; }
+
+    public QuestionnaireResponseResourceCache getQuestionnaireResponseCache() { return questionnaireResponseCache; }
 
     public EpisodeOfCareResourceCache getEpisodeOfCareCache() { return episodeOfCareCache; }
 

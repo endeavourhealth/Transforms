@@ -57,6 +57,7 @@ public class CASETransformer {
         CsvCell caseNo = parser.getCaseNo();
         if (!caseNo.isEmpty()) {
 
+            IdentifierBuilder.removeExistingIdentifiersForSystem(episodeBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_ADASTRA_CASENO);
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.USUAL);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ADASTRA_CASENO);
@@ -66,6 +67,7 @@ public class CASETransformer {
         CsvCell caseTag = parser.getCaseTagName();
         if (caseTag != null && !caseTag.isEmpty()) {
 
+            IdentifierBuilder.removeExistingIdentifiersForSystem(episodeBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_ADASTRA_CASETAG);
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ADASTRA_CASETAG);
@@ -93,15 +95,27 @@ public class CASETransformer {
         }
 
         //get the organization resource has been created already in CASEPreTransformer set the episode managing org reference
-        UUID serviceId = parser.getServiceId();
-        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+        CsvCell odsCode = parser.getODSCode();
+        if (odsCode != null) {
 
-        // if episode already ID mapped, get the mapped ID for the org
-        if (isResourceMapped) {
+            Reference organisationReference = csvHelper.createOrganisationReference(odsCode.toString());
+            // if episode already ID mapped, get the mapped ID for the org
+            if (isResourceMapped) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
+            episodeBuilder.setManagingOrganisation(organisationReference);
 
-            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+        } else {
+
+            //v1 uses service details
+            UUID serviceId = parser.getServiceId();
+            Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+            // if episode already ID mapped, get the mapped ID for the org
+            if (isResourceMapped) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
+            episodeBuilder.setManagingOrganisation(organisationReference);
         }
-        episodeBuilder.setManagingOrganisation(organisationReference);
 
         //v2 userRef
         CsvCell userRef = parser.getUserRef();

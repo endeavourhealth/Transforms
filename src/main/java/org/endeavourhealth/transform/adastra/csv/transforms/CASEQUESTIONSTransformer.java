@@ -1,12 +1,16 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
-import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.csv.schema.CASEQUESTIONS;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
+import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.QuestionnaireResponseBuilder;
+import org.hl7.fhir.instance.model.Identifier;
+import org.hl7.fhir.instance.model.QuestionnaireResponse;
+import org.hl7.fhir.instance.model.StringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,46 +47,51 @@ public class CASEQUESTIONSTransformer {
                                       AdastraCsvHelper csvHelper,
                                       String version) throws Exception {
 
-        CsvCell caseId = parser.getCaseId();
+        //use the CaseId as the Id for the Questionnaire
+        CsvCell caseIdCell = parser.getCaseId();
 
-        EpisodeOfCareBuilder episodeBuilder
-                = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(caseId, csvHelper, fhirResourceFiler);
+        QuestionnaireResponseBuilder questionnaireResponseBuilder
+                = csvHelper.getQuestionnaireResponseCache().getOrCreateQuestionnaireResponseBuilder(caseIdCell,csvHelper,fhirResourceFiler);
 
-        CsvCell questionSetName = parser.getQuestionSetName();
-        CsvCell question = parser.getQuestion();
+        //does the patient have a Case record?
+        CsvCell casePatientIdCell = csvHelper.findCasePatient(caseIdCell.getString());
+        if (casePatientIdCell == null) {
+            TransformWarnings.log(LOG, parser, "No Case record match found for case {},  file: {}",
+                    caseIdCell.getString(), parser.getFilePath());
+            return;
+        }
+        questionnaireResponseBuilder.setSubject(csvHelper.createPatientReference(casePatientIdCell));
 
-        // Outcomes are handled in the Outcomes transformer.
-        // Capture non Outcomes text here, i.e. safe guarding and additional comments
-        if (!questionSetName.getString().toLowerCase().contains("outcomes") ||
-                question.getString().toLowerCase().contains("additional")) {
+        //store the Case Number as the business identifier
+        CsvCell caseNoCell = csvHelper.findCaseCaseNo(caseIdCell.getString());
+        if (!caseNoCell.isEmpty()) {
 
-            CsvCell answerOutcome = parser.getAnswer();
-            if (!answerOutcome.isEmpty()) {
-
-                String answerOutcomeText = "";
-                //append the question set to the answer to give it some context
-                if (!question.getString().toLowerCase().contains("additional")) {
-
-                    answerOutcomeText = questionSetName.getString().concat(": ").concat(answerOutcome.getString());
-                } else {
-                    answerOutcomeText = question.getString().concat(": ").concat(answerOutcome.getString());
-                }
-
-                //get existing outcome text to update
-                String existingOutcomeText = csvHelper.getCaseOutcome(caseId.getString());
-                if (!Strings.isNullOrEmpty(existingOutcomeText)) {
-
-                    answerOutcomeText = existingOutcomeText.concat(", ").concat(answerOutcomeText);
-                }
-
-                episodeBuilder.setOutcome(answerOutcomeText, answerOutcome);
-
-                //cache the new episode outcome
-                csvHelper.cacheCaseOutcome(caseId.getString(), answerOutcomeText);
-            }
+            Identifier identifier = new Identifier();
+            identifier.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifier.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ADASTRA_CASENO);
+            identifier.setValue(caseNoCell.getString());
+            questionnaireResponseBuilder.setIdentifier(identifier, caseNoCell);
         }
 
+        CsvCell questionGroupCell = parser.getQuestionSetName();
+        CsvCell questionCell = parser.getQuestion();
+        CsvCell questionAnswerCell = parser.getAnswer();
+
+        //first, get or create the main group
+        QuestionnaireResponse.GroupComponent mainGroup = questionnaireResponseBuilder.getOrCreateMainGroup();
+
+        //does the sub / question group already exist?, otherwise, add it to the main group
+        QuestionnaireResponse.GroupComponent subGroup
+                = questionnaireResponseBuilder.getGroup(mainGroup, questionGroupCell.getString());
+        if (subGroup == null) {
+            mainGroup.addGroup().setTitle(questionGroupCell.getString());
+        }
+
+        //now add the question and answer for the sub group item
+        QuestionnaireResponse.QuestionComponent question = subGroup.addQuestion().setText(questionCell.getString());
+        question.addAnswer().setValue(new StringType(questionAnswerCell.getString()));
+
         // return the builder back to the cache
-        csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(caseId, episodeBuilder);
+        csvHelper.getQuestionnaireResponseCache().returnQuestionnaireResponseBuilder(caseIdCell, questionnaireResponseBuilder);
     }
 }
