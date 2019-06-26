@@ -6,9 +6,9 @@ import org.endeavourhealth.transform.common.CsvCell;
 
 import java.util.UUID;
 
-public class ELECTRONICPRESCRIPTIONS extends AbstractCsvParser {
+public class ElectronicPrescriptions extends AbstractCsvParser {
 
-    public ELECTRONICPRESCRIPTIONS(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
+    public ElectronicPrescriptions(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
                 AdastraCsvToFhirTransformer.CSV_FORMAT.withHeader(getExpectedCsvHeaders(version)),
                 AdastraCsvToFhirTransformer.DATE_FORMAT,

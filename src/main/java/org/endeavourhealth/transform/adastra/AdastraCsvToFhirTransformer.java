@@ -91,7 +91,7 @@ public abstract class AdastraCsvToFhirTransformer {
         if (version.equalsIgnoreCase(VERSION_2)) {
 
             findFileAndOpenParser(USERS.class, serviceId, systemId, exchangeId, files, version, parsers);
-            findFileAndOpenParser(ELECTRONICPRESCRIPTIONS.class, serviceId, systemId, exchangeId, files, version, parsers);
+            findFileAndOpenParser(ElectronicPrescriptions.class, serviceId, systemId, exchangeId, files, version, parsers);
         }
 
         Set<String> expectedFiles = parsers
