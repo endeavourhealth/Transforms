@@ -56,7 +56,6 @@ public class OUTCOMESTransformer {
             String outcomeText = outcomeName.getString();
 
             // get existing outcome text to update, can have multiple outcome lines and
-            // may have also been set during the Questions transformer
             String existingOutcomeText = csvHelper.getCaseOutcome(caseId.getString());
             if (!Strings.isNullOrEmpty(existingOutcomeText)) {
 

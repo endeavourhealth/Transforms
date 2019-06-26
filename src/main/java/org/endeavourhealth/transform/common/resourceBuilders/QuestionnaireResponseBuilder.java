@@ -5,6 +5,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
+import java.util.Date;
 import java.util.List;
 
 public class QuestionnaireResponseBuilder extends ResourceBuilderBase {
@@ -50,6 +51,12 @@ public class QuestionnaireResponseBuilder extends ResourceBuilderBase {
         this.questionnaireResponse.setIdentifier(identifier);
 
         auditValue("identifier", sourceCells);
+    }
+
+    public void setAuthoredDate(Date authoredDate, CsvCell... sourceCells) {
+        this.questionnaireResponse.setAuthored(authoredDate);
+
+        auditValue("authored", sourceCells);
     }
 
     public QuestionnaireResponse.GroupComponent getOrCreateMainGroup() {
