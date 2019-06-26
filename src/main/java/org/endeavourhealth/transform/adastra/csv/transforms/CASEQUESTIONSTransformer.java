@@ -91,7 +91,7 @@ public class CASEQUESTIONSTransformer {
         QuestionnaireResponse.GroupComponent subGroup
                 = questionnaireResponseBuilder.getGroup(mainGroup, questionGroupCell.getString());
         if (subGroup == null) {
-            mainGroup.addGroup().setTitle(questionGroupCell.getString());
+            subGroup = mainGroup.addGroup().setTitle(questionGroupCell.getString());
         }
 
         //now add the question and answer for the sub group item
