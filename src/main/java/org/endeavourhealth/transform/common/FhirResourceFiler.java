@@ -597,6 +597,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             set.add(ResourceType.ReferralRequest);
             set.add(ResourceType.RelatedPerson);
             set.add(ResourceType.Specimen);
+            set.add(ResourceType.QuestionnaireResponse);
 
             //although Slot isn't technically linked to a patient, it is saved at the same time as
             //Appointment resources, so should be treated as one
