@@ -63,14 +63,14 @@ public class QuestionnaireResponseResourceCache {
         questionnaireResponseBuildersByCaseId.addToCache(caseId, questionnaireResponseBuilder);
     }
 
-    public void fileQuestionnaireResponseResources(FhirResourceFiler fhirResourceFiler) throws Exception {
+    public void fileQuestionnaireResponseResources(FhirResourceFiler fhirResourceFiler, AdastraCsvHelper csvHelper) throws Exception {
 
         for (String caseId: questionnaireResponseBuildersByCaseId.keySet()) {
 
             QuestionnaireResponseBuilder questionnaireResponseBuilder
                     = questionnaireResponseBuildersByCaseId.getAndRemoveFromCache(caseId);
 
-            boolean mapIds = !questionnaireResponseBuilder.isIdMapped();
+            boolean mapIds = !(csvHelper.isResourceIdMapped(caseId, questionnaireResponseBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, mapIds, questionnaireResponseBuilder);
         }
     }

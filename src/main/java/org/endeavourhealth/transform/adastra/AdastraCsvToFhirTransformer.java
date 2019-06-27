@@ -203,14 +203,11 @@ public abstract class AdastraCsvToFhirTransformer {
             CASETransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             OUTCOMESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             CASEQUESTIONSTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            csvHelper.getQuestionnaireResponseCache().fileQuestionnaireResponseResources(fhirResourceFiler);
+            csvHelper.getQuestionnaireResponseCache().fileQuestionnaireResponseResources(fhirResourceFiler, csvHelper);
 
-            //Patient transform also finalises and files the Episode data create by case and outcomes
+            //Patient transform also finalises and files the Episode data created by case and outcomes
             PATIENTTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-
             NOTESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-
-            //TODO - move above CASEQUESTIONS to cache CaseId/Encounter link if it's 1:1: else, latest?
             CONSULTATIONTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             CLINICALCODESTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             PRESCRIPTIONSTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
