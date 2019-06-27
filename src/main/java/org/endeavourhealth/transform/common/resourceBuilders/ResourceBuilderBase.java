@@ -305,6 +305,9 @@ public abstract class ResourceBuilderBase {
         } else if (resource instanceof Specimen) {
             return new SpecimenBuilder((Specimen) resource, audit);
 
+        } else if (resource instanceof QuestionnaireResponse) {
+            return new QuestionnaireResponseBuilder((QuestionnaireResponse) resource, audit);
+
         } else {
             throw new RuntimeException("Unsupported Resource type " + resource.getClass());
         }
