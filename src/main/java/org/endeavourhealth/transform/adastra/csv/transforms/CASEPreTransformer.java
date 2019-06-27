@@ -76,13 +76,14 @@ public class CASEPreTransformer {
             }
         }
 
-        // next up, simply cache the case Patient, CaseNo, User and StartDate references here for use in Consultation,
-        // Clinical Code, Prescription, Notes and Case Questions transforms
+        // next up, simply cache the case Patient, CaseNo, User, ODSCode and StartDate references here for use
+        // in Consultation, Clinical Code, Prescription, Notes, Patient and Case Questions transforms
         CsvCell caseIdCell = parser.getCaseId();
         CsvCell caseNoCell = parser.getCaseNo();
         CsvCell patientIdCell = parser.getPatientId();
         CsvCell caseStartDateCell = parser.getStartDateTime();
         CsvCell caseUserCell = parser.getUserRef();
+        CsvCell caseODSCodeCell = parser.getODSCode();
 
         if (!caseIdCell.isEmpty()) {
 
@@ -104,6 +105,12 @@ public class CASEPreTransformer {
             if (caseUserCell != null && !caseUserCell.isEmpty()) {
                 csvHelper.cacheCaseUser(caseId, caseUserCell);
             }
+
+            //ODSCode is v2
+            if (caseODSCodeCell != null && !caseODSCodeCell.isEmpty()) {
+                csvHelper.cacheCaseODSCode(caseId, caseODSCodeCell);
+            }
+
 
         } else {
             TransformWarnings.log(LOG, parser, "No Case Id in Case record for PatientId: {},  file: {}",

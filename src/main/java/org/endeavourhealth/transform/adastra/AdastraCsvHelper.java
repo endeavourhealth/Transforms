@@ -40,6 +40,7 @@ public class AdastraCsvHelper {
     private Map<String, CsvCell> consultationDateMap = new HashMap<>();
     private Map<String, CsvCell> caseStartDateMap = new HashMap<>();
     private Map<String, CsvCell> caseUserMap = new HashMap<>();
+    private Map<String, CsvCell> caseODSMap = new HashMap<>();
     private Map<String, CsvCell> consultationUserRefMap = new HashMap<>();
     private Map<String, CsvCell> caseCaseNoMap = new HashMap<>();
     private Map<String, String> caseOutcomeMap = new HashMap<>();
@@ -177,6 +178,14 @@ public class AdastraCsvHelper {
 
     public CsvCell findCaseUser(String caseId) {
         return caseUserMap.get(caseId);
+    }
+
+    public void cacheCaseODSCode(String caseId, CsvCell caseODSCodeCell) {
+        caseODSMap.put(caseId, caseODSCodeCell);
+    }
+
+    public CsvCell findCaseODSCode(String caseId) {
+        return caseODSMap.get(caseId);
     }
 
     public void cacheConsultationUserRef(String consultationId, CsvCell consultationUserRefCell) {

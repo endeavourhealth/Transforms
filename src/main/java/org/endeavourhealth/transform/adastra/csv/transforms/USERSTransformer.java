@@ -50,7 +50,7 @@ public class USERSTransformer {
         CsvCell userRefCell = parser.getUserRef();
         CsvCell userFullName = parser.getFullName();
         if (userRefCell.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "UserRef is blank for PatientId: {}",
+            TransformWarnings.log(LOG, parser, "UserRef is blank for Username: {}",
                     userFullName.getString());
             return;
         }

@@ -110,6 +110,13 @@ public class CONSULTATIONTransformer {
             csvHelper.cacheConsultationUserRef(consultationId.getString(), userRef);
         }
 
+        //v2 ODS code from Case
+        CsvCell caseODSCodeCell = csvHelper.findCaseODSCode(caseId.getString());
+        if (caseODSCodeCell != null && !caseODSCodeCell.isEmpty()) {
+
+            encounterBuilder.setServiceProvider(csvHelper.createOrganisationReference(caseODSCodeCell.getString()), caseODSCodeCell);
+        }
+
         //collect free text from history, exam, diagnosis and treatment
         StringBuilder encounterTextBuilder = new StringBuilder();
 

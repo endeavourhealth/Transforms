@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
-import java.util.UUID;
 
 public class PATIENTTransformer {
 
@@ -201,18 +200,22 @@ public class PATIENTTransformer {
             patientBuilder.setActive(active);
         }
 
-        //the organization resource has been created already in CASEPreTransformer set the episode managing org reference
-        UUID serviceId = parser.getServiceId();
-        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
-
-        // if patient already ID mapped, get the mapped ID for the org
         boolean isResourceMapped = csvHelper.isResourceIdMapped(patientId.getString(), patientBuilder.getResource());
-        if (isResourceMapped) {
-            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
-        }
 
-        // set the managing OOH organization
-        patientBuilder.setManagingOrganisation(organisationReference);
+        //the organization resource has been created already in CASEPreTransformer set the episode managing org reference
+        CsvCell caseODSCodeCell = csvHelper.findCaseODSCode(caseId.getString());
+        if (caseODSCodeCell != null) {
+
+            Reference organisationReference = csvHelper.createOrganisationReference(caseODSCodeCell.toString());
+
+            // if patient already ID mapped, get the mapped ID for the org
+            if (isResourceMapped) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
+
+            // set the managing OOH organization
+            patientBuilder.setManagingOrganisation(organisationReference);
+        }
 
         //set the patient's GP as a care provider
         CsvCell patientGPCareProviderCodeCell = csvHelper.findPatientCareProvider(patientId.getString());
