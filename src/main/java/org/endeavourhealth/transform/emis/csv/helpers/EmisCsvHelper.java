@@ -8,6 +8,9 @@ import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
@@ -75,6 +78,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<StringMemorySaver, List<List_.ListEntryComponent>> existingRegsitrationStatues = new ConcurrentHashMap<>();
     private ThreadPool utilityThreadPool = null;
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
+    private Date cachedDataDate = null;
 
     public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, boolean processPatientData, Map<Class, AbstractCsvParser> parsers) {
         this.serviceId = serviceId;
@@ -161,25 +165,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         if (ret == null) {
             ret = mappingRepository.getCodeMapping(false, codeIdCell.getLong());
             if (ret == null) {
-                if (TransformConfig.instance().isEmisAllowMissingCodes()) {
-                    LOG.error("Failed to find clincal codeable concept for code ID " + codeIdCell.getLong());
-
-                    Coding coding = new Coding();
-                    coding.setSystem(FhirCodeUri.CODE_SYSTEM_READ2);
-                    coding.setCode("?????");
-                    coding.setDisplay("Unknown code");
-
-                    CodeableConcept codeableConcept = new CodeableConcept();
-                    codeableConcept.setText("Missing Clinical Code (Emis ECR 9953529)");
-                    codeableConcept.addCoding(coding);
-
-                    ret = new EmisCsvCodeMap();
-                    ret.setCodeableConceptObject(codeableConcept);
-                    ret.setCodeType(ClinicalCodeType.Conditions_Operations_Procedures.getValue());
-
-                } else {
-                    throw new Exception("Failed to find clinical code for codeId " + codeIdCell.getLong());
-                }
+                throw new Exception("Failed to find clinical code for codeId " + codeIdCell.getLong());
             }
             clinicalCodes.put(codeIdCell.getLong(), ret);
         }
@@ -200,19 +186,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         if (ret == null) {
             ret = mappingRepository.getCodeMapping(true, codeIdCell.getLong());
             if (ret == null) {
-                if (TransformConfig.instance().isEmisAllowMissingCodes()) {
-                    //until we move to AWS, and Emis actually fix this, substitute a dummy codeable concept
-                    LOG.error("Failed to find medication codeable concept for code ID " + codeIdCell.getLong());
-
-                    CodeableConcept codeableConcept = new CodeableConcept();
-                    codeableConcept.setText("Missing Drug Code (Emis ECR 9953529)");
-
-                    ret = new EmisCsvCodeMap();
-                    ret.setCodeableConceptObject(codeableConcept);
-
-                } else {
-                    throw new Exception("Failed to find drug code for codeId " + codeIdCell.getLong());
-                }
+                throw new Exception("Failed to find drug code for codeId " + codeIdCell.getLong());
             }
             medication.put(codeIdCell.getLong(), ret);
         }
@@ -1351,5 +1325,21 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void setSharingAgreementDisabled(boolean sharingAgreementDisabled) {
         this.sharingAgreementDisabled = new Boolean(sharingAgreementDisabled);
+    }
+
+    /**
+     * returns the original date of the data in the exchange (i.e. when actually sent to DDS)
+     */
+    public Date getDataDate() throws Exception {
+        if (cachedDataDate == null) {
+            ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
+            Exchange x = exchangeDal.getExchange(exchangeId);
+            cachedDataDate = x.getHeaderAsDate(HeaderKeys.DataDate);
+
+            if (cachedDataDate == null) {
+                throw new Exception("Failed to find data date for exchange " + exchangeId);
+            }
+        }
+        return cachedDataDate;
     }
 }

@@ -69,6 +69,7 @@ public class DrugCodeTransformer {
         mapping.setCodeId(codeId.getLong());
         mapping.setSnomedConceptId(dmdId.getLong());
         mapping.setSnomedTerm(term.getString());
+        mapping.setDtLastReceived(csvHelper.getDataDate());
 
         //we need to generate the audit of the source cells to FHIR so we can apply it when we create resources
         ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();

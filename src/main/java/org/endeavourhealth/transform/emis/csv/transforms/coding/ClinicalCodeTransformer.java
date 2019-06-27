@@ -87,6 +87,7 @@ public abstract class ClinicalCodeTransformer {
         mapping.setNationalCode(nationalCode.getString());
         mapping.setNationalCodeCategory(nationalCodeCategory.getString());
         mapping.setNationalCodeDescription(nationalCodeDescription.getString());
+        mapping.setDtLastReceived(csvHelper.getDataDate());
 
         //the parent code ID was added after 5.3
         if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_4)) {
