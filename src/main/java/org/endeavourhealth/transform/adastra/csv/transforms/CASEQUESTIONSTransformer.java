@@ -80,7 +80,13 @@ public class CASEQUESTIONSTransformer {
         CsvCell caseUserCell = csvHelper.findCaseUser(caseIdCell.getString());
         if (caseUserCell != null) {
 
-            questionnaireResponseBuilder.setAuthor(csvHelper.createPractitionerReference(caseUserCell.getString()));
+            Reference practitionerReference = csvHelper.createPractitionerReference(caseUserCell.getString());
+            if (isResourceMapped) {
+
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+            }
+
+            questionnaireResponseBuilder.setAuthor(practitionerReference);
         }
 
         //store the Case Number as the business identifier
