@@ -100,7 +100,8 @@ public class CASEPreTransformer {
                 csvHelper.cacheCaseStartDate(caseId, caseStartDateCell);
             }
 
-            if (!caseUserCell.isEmpty()) {
+            //userRef is v2
+            if (caseUserCell != null && !caseUserCell.isEmpty()) {
                 csvHelper.cacheCaseUser(caseId, caseUserCell);
             }
 
