@@ -76,30 +76,37 @@ public class CASEPreTransformer {
             }
         }
 
-        // next up, simply cache the case Patient, CaseNo and StartDate references here for use in Consultation, Clinical Code,
-        // Prescription, Notes and Case Questions transforms
-        CsvCell caseId = parser.getCaseId();
-        CsvCell caseNo = parser.getCaseNo();
-        CsvCell patientId = parser.getPatientId();
-        CsvCell caseStartDate = parser.getStartDateTime();
+        // next up, simply cache the case Patient, CaseNo, User and StartDate references here for use in Consultation,
+        // Clinical Code, Prescription, Notes and Case Questions transforms
+        CsvCell caseIdCell = parser.getCaseId();
+        CsvCell caseNoCell = parser.getCaseNo();
+        CsvCell patientIdCell = parser.getPatientId();
+        CsvCell caseStartDateCell = parser.getStartDateTime();
+        CsvCell caseUserCell = parser.getUserRef();
 
-        if (!caseId.isEmpty()) {
+        if (!caseIdCell.isEmpty()) {
 
-            if (!patientId.isEmpty()) {
-                csvHelper.cacheCasePatient(caseId.getString(), patientId);
+            String caseId = caseIdCell.getString();
+
+            if (!patientIdCell.isEmpty()) {
+                csvHelper.cacheCasePatient(caseId, patientIdCell);
             }
 
-            if (!caseNo.isEmpty()) {
-                csvHelper.cacheCaseCaseNo(caseId.getString(), caseNo);
+            if (!caseNoCell.isEmpty()) {
+                csvHelper.cacheCaseCaseNo(caseId, caseNoCell);
             }
 
-            if (!caseStartDate.isEmpty()) {
-                csvHelper.cacheCaseStartDate(caseId.getString(), caseStartDate);
+            if (!caseStartDateCell.isEmpty()) {
+                csvHelper.cacheCaseStartDate(caseId, caseStartDateCell);
+            }
+
+            if (!caseUserCell.isEmpty()) {
+                csvHelper.cacheCaseUser(caseId, caseUserCell);
             }
 
         } else {
             TransformWarnings.log(LOG, parser, "No Case Id in Case record for PatientId: {},  file: {}",
-                    patientId.getString(), parser.getFilePath());
+                    patientIdCell.getString(), parser.getFilePath());
             return;
         }
     }

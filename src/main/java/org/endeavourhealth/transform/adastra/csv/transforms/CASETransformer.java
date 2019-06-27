@@ -119,7 +119,7 @@ public class CASETransformer {
 
         //v2 userRef
         CsvCell userRef = parser.getUserRef();
-        if (userRef !=null && !userRef.isEmpty()) {
+        if (userRef != null && !userRef.isEmpty()) {
 
             Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
 

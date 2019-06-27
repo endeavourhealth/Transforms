@@ -63,10 +63,17 @@ public class CASEQUESTIONSTransformer {
         questionnaireResponseBuilder.setSubject(csvHelper.createPatientReference(casePatientIdCell));
 
         //set the authored date to that of the Case start date
-        CsvCell caseStartDate = csvHelper.findCaseStartDate(caseIdCell.getString());
-        if (caseStartDate != null) {
+        CsvCell caseStartDateCell = csvHelper.findCaseStartDate(caseIdCell.getString());
+        if (caseStartDateCell != null) {
 
-            questionnaireResponseBuilder.setAuthoredDate(caseStartDate.getDateTime());
+            questionnaireResponseBuilder.setAuthoredDate(caseStartDateCell.getDateTime());
+        }
+
+        //set the author to that of the Case User derived from the Case
+        CsvCell caseUserCell = csvHelper.findCaseUser(caseIdCell.getString());
+        if (caseUserCell != null) {
+
+            questionnaireResponseBuilder.setAuthor(csvHelper.createPractitionerReference(caseUserCell.getString()));
         }
 
         //store the Case Number as the business identifier

@@ -59,6 +59,12 @@ public class QuestionnaireResponseBuilder extends ResourceBuilderBase {
         auditValue("authored", sourceCells);
     }
 
+    public void setAuthor(Reference userReference, CsvCell... sourceCells) {
+        this.questionnaireResponse.setAuthor(userReference);
+
+        auditValue("author", sourceCells);
+    }
+
     public QuestionnaireResponse.GroupComponent getOrCreateMainGroup() {
 
         if (this.questionnaireResponse.hasGroup()) {
