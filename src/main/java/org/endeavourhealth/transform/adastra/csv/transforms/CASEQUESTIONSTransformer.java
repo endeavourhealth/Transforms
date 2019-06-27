@@ -3,13 +3,11 @@ package org.endeavourhealth.transform.adastra.csv.transforms;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.csv.schema.CASEQUESTIONS;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.QuestionnaireResponseBuilder;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.QuestionnaireResponse;
+import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.StringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +58,16 @@ public class CASEQUESTIONSTransformer {
                     caseIdCell.getString(), parser.getFilePath());
             return;
         }
-        questionnaireResponseBuilder.setSubject(csvHelper.createPatientReference(casePatientIdCell));
+
+        boolean isResourceMapped
+                = csvHelper.isResourceIdMapped(caseIdCell.getString(), questionnaireResponseBuilder.getResource());
+
+        Reference patientReference = csvHelper.createPatientReference(casePatientIdCell);
+        if (isResourceMapped) {
+
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+        }
+        questionnaireResponseBuilder.setSubject(patientReference);
 
         //set the authored date to that of the Case start date
         CsvCell caseStartDateCell = csvHelper.findCaseStartDate(caseIdCell.getString());
