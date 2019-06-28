@@ -52,10 +52,10 @@ public class CASEPreTransformer {
         CsvCell odsCode = parser.getODSCode();
         if (odsCode != null) {
 
-            boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(odsCode.toString());
+            boolean orgInCache = csvHelper.getOrganisationCache().organizationInCache(odsCode.getString());
             if (!orgInCache) {
                 boolean oohOrgAlreadyFiled
-                        = csvHelper.getOrganisationCache().organizationInDB(odsCode.toString(), csvHelper, fhirResourceFiler);
+                        = csvHelper.getOrganisationCache().organizationInDB(odsCode.getString(), csvHelper, fhirResourceFiler);
                 if (!oohOrgAlreadyFiled) {
 
                     createOOHOrganisation(parser, fhirResourceFiler, csvHelper);
@@ -161,10 +161,10 @@ public class CASEPreTransformer {
         CsvCell odsCodeCell = parser.getODSCode();
 
         OrganizationBuilder organizationBuilder
-                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (odsCodeCell.toString(), csvHelper, fhirResourceFiler, parser);
+                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder (odsCodeCell.getString(), csvHelper, fhirResourceFiler, parser);
         if (organizationBuilder == null) {
             TransformWarnings.log(LOG, parser, "Error creating OOH Organization resource for ODS: {}",
-                    odsCodeCell.toString());
+                    odsCodeCell.getString());
             return;
         }
 
@@ -175,7 +175,7 @@ public class CASEPreTransformer {
         } else {
 
             TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {}",
-                    odsCodeCell.toString());
+                    odsCodeCell.getString());
             return;
         }
 
@@ -189,6 +189,6 @@ public class CASEPreTransformer {
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
 
         //add to cache
-        csvHelper.getOrganisationCache().returnOrganizationBuilder(odsCodeCell.toString(), organizationBuilder);
+        csvHelper.getOrganisationCache().returnOrganizationBuilder(odsCodeCell.getString(), organizationBuilder);
     }
 }

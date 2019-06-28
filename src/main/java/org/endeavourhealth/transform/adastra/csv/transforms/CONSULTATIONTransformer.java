@@ -99,11 +99,11 @@ public class CONSULTATIONTransformer {
             codeableConceptBuilder.setText(consultationCaseType.getString(), consultationCaseType);
         }
 
-        //v2 userRef
+        //v2 userRef - //TODO this is the incorrect value from Adastra, i.e. ProviderRef, should be UserRef
         CsvCell userRef = parser.getUserRef();
         if (userRef != null && !userRef.isEmpty()) {
 
-            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.getString());
             encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, userRef);
 
             //cache the consultation user to use with linked clinical codes and prescriptions
@@ -164,7 +164,7 @@ public class CONSULTATIONTransformer {
             //v2 userRef - add consulting clinician to observation
             if (userRef != null && !userRef.isEmpty()) {
 
-                Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+                Reference practitionerReference = csvHelper.createPractitionerReference(userRef.getString());
                 observationBuilder.setClinician(practitionerReference, userRef);
             }
 

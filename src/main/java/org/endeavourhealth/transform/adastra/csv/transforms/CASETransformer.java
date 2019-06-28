@@ -95,15 +95,15 @@ public class CASETransformer {
         }
 
         //get the organization resource has been created already in CASEPreTransformer set the episode managing org reference
-        CsvCell odsCode = parser.getODSCode();
-        if (odsCode != null) {
+        CsvCell odsCodeCell = parser.getODSCode();
+        if (odsCodeCell != null) {
 
-            Reference organisationReference = csvHelper.createOrganisationReference(odsCode.toString());
+            Reference organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
             // if episode already ID mapped, get the mapped ID for the org
             if (isResourceMapped) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
-            episodeBuilder.setManagingOrganisation(organisationReference);
+            episodeBuilder.setManagingOrganisation(organisationReference, odsCodeCell);
 
         } else {
 
@@ -121,7 +121,7 @@ public class CASETransformer {
         CsvCell userRef = parser.getUserRef();
         if (userRef != null && !userRef.isEmpty()) {
 
-            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.getString());
 
             if (isResourceMapped) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);

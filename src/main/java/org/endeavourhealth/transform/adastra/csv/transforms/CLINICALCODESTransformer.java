@@ -83,11 +83,11 @@ public class CLINICALCODESTransformer {
         }
 
         //v2 userRef - get from consultation transformer
-        CsvCell userRef = csvHelper.findConsultationUserRef(consultationId.getString());
-        if (userRef != null) {
+        CsvCell userRefCell = csvHelper.findConsultationUserRef(consultationId.getString());
+        if (userRefCell != null) {
 
-            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
-            observationBuilder.setClinician(practitionerReference, userRef);
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRefCell.getString());
+            observationBuilder.setClinician(practitionerReference, userRefCell);
         }
 
         if (!readCode.isEmpty()) {

@@ -85,11 +85,11 @@ public class PRESCRIPTIONSTransformer {
         }
 
         //v2 userRef - get from consultation transformer
-        CsvCell userRef = csvHelper.findConsultationUserRef(consultationId.getString());
-        if (userRef != null) {
+        CsvCell userRefCell = csvHelper.findConsultationUserRef(consultationId.getString());
+        if (userRefCell != null) {
 
-            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
-            medicationStatementBuilder.setInformationSource(practitionerReference, userRef);
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRefCell.getString());
+            medicationStatementBuilder.setInformationSource(practitionerReference, userRefCell);
         }
 
         CodeableConceptBuilder codeableConceptBuilder

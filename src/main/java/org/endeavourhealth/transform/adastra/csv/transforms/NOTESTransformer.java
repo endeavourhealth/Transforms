@@ -93,7 +93,7 @@ public class NOTESTransformer {
         CsvCell userRef = parser.getUserRef();
         if (userRef != null && !userRef.isEmpty()) {
 
-            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.toString());
+            Reference practitionerReference = csvHelper.createPractitionerReference(userRef.getString());
             flagBuilder.setAuthor(practitionerReference, userRef);
         }
 

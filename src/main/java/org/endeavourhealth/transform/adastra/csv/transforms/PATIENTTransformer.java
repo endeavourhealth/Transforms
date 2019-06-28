@@ -206,7 +206,7 @@ public class PATIENTTransformer {
         CsvCell caseODSCodeCell = csvHelper.findCaseODSCode(caseId.getString());
         if (caseODSCodeCell != null) {
 
-            Reference organisationReference = csvHelper.createOrganisationReference(caseODSCodeCell.toString());
+            Reference organisationReference = csvHelper.createOrganisationReference(caseODSCodeCell.getString());
 
             // if patient already ID mapped, get the mapped ID for the org
             if (isResourceMapped) {
@@ -214,7 +214,7 @@ public class PATIENTTransformer {
             }
 
             // set the managing OOH organization
-            patientBuilder.setManagingOrganisation(organisationReference);
+            patientBuilder.setManagingOrganisation(organisationReference, caseODSCodeCell);
         }
 
         //set the patient's GP as a care provider
@@ -225,7 +225,7 @@ public class PATIENTTransformer {
             if (isResourceMapped) {
                 gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(gpOrganisationReference, fhirResourceFiler);
             }
-            patientBuilder.addCareProvider(gpOrganisationReference);
+            patientBuilder.addCareProvider(gpOrganisationReference, patientGPCareProviderCodeCell);
         }
 
         if (!patientCreatedInSession) {
