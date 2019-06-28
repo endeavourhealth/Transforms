@@ -75,15 +75,6 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
 
-        if (snomedConceptId == null) {
-            if (ObservationCodeHelper.isCernerCoding(fhir.getSubstance())) {
-                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhir.getSubstance());
-                if (snomedValue!= null) {
-                    snomedConceptId = snomedValue;
-                }
-            }
-        }
-
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
             BooleanType b = (BooleanType)reviewExtension.getValue();

@@ -81,16 +81,6 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
 
-        if (snomedConceptId == null) {
-            if (ObservationCodeHelper.isCernerCoding(fhir.getCode())) {
-                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhir.getCode());
-                if (snomedValue != null) {
-                    snomedConceptId = snomedValue;
-                }
-            }
-        }
-
-
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
             BooleanType b = (BooleanType)reviewExtension.getValue();

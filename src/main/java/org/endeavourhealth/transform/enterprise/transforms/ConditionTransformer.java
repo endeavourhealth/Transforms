@@ -80,15 +80,6 @@ public class ConditionTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
 
-        if (snomedConceptId == null) {
-            if (ObservationCodeHelper.isCernerCoding(fhir.getCode())) {
-                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhir.getCode());
-                if (snomedValue != null) {
-                    snomedConceptId = snomedValue;
-                }
-            }
-        }
-
         //if it's a problem set the boolean to say so
         if (fhir.hasMeta()) {
             for (UriType uriType: fhir.getMeta().getProfile()) {

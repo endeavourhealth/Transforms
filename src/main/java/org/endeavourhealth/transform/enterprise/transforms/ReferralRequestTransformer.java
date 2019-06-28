@@ -80,15 +80,6 @@ public class ReferralRequestTransformer extends AbstractTransformer {
             snomedConceptId = codes.getSnomedConceptId();
             originalCode = codes.getOriginalCode();
             originalTerm = codes.getOriginalTerm();
-
-            if (snomedConceptId == null) {
-                if (ObservationCodeHelper.isCernerCoding(fhirServiceRequested)) {
-                    Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhirServiceRequested);
-                    if (snomedValue != null) {
-                        snomedConceptId = snomedValue;
-                    }
-                }
-            }
         }
 
         if (fhir.hasRequester()) {

@@ -84,14 +84,6 @@ public class ObservationTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
 
-        if (snomedConceptId == null) {
-            if (ObservationCodeHelper.isCernerCoding(fhir.getCode())) {
-                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhir.getCode());
-                if (snomedValue != null) {
-                    snomedConceptId = snomedValue;
-                }
-            }
-        }
         if (fhir.hasValue()) {
             Type value = fhir.getValue();
             if (value instanceof Quantity) {

@@ -52,18 +52,16 @@ public class ObservationCodeHelper {
     }
 
     public static ObservationCodeHelper extractCodeFields(CodeableConcept codeableConcept) throws Exception {
-        return extractCodeFields(codeableConcept, true);
-    }
-
-    public static ObservationCodeHelper extractCodeFields(CodeableConcept codeableConcept, boolean blockCerner) throws Exception {
-
         if (codeableConcept == null) {
             return null;
         }
 
         ObservationCodeHelper ret = new ObservationCodeHelper();
 
-        ret.setSnomedConceptId(CodeableConceptHelper.findSnomedConceptId(codeableConcept));
+        Long snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
+        if (snomedConceptId != null) {
+            ret.setSnomedConceptId(snomedConceptId);
+        }
 
         Coding originalCoding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
 
@@ -74,7 +72,10 @@ public class ObservationCodeHelper {
             originalCoding = null;
         }
 
-        ret.setOriginalCode(findAndFormatOriginalCode(originalCoding));
+        String formattedCode = findAndFormatOriginalCode(originalCoding);
+        if (formattedCode != null) {
+            ret.setOriginalCode(formattedCode);
+        }
 
         //add original term too, for easy display of results
         if (codeableConcept.hasText()) {
@@ -86,13 +87,21 @@ public class ObservationCodeHelper {
             ret.setOriginalTerm(originalCoding.getDisplay());
         }
 
-        //if we don't have a Snomed code and our original code is a Cerner code, then don't send to the subscriber
-        //so return null to prevent that
-        if (ret.getSnomedConceptId() == null) {
-            if (blockCerner && (originalCoding == null
-                    || originalCoding.getSystem().equals(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID))) {
-                return null;
+        //if we've not got a Snomed code and our original code was a Cerner code, then see if can map to a Snomed concept
+        if (ret.getSnomedConceptId() == null
+                && originalCoding != null
+                && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
+
+            Long mappedSnomedConceptId = mapCernerCodeToSnomed(originalCoding);
+            if (mappedSnomedConceptId != null) {
+                ret.setSnomedConceptId(mappedSnomedConceptId);
             }
+        }
+
+        //if there's neither code, return null
+        if (ret.getSnomedConceptId() == null
+                && ret.getOriginalCode() == null) {
+            return null;
         }
 
         return ret;
@@ -141,15 +150,10 @@ public class ObservationCodeHelper {
         }
     }
 
-    public static boolean isCernerCoding(CodeableConcept concept) {
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(concept);
-        return originalCoding != null
-                && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
-    }
 
-    public static Long mapCernerCodeToSnomed(CodeableConcept concept) throws Exception {
+    private static Long mapCernerCodeToSnomed(Coding originalCoding) throws Exception {
+
         //Try to get a SNOMED code mapped from a Barts Cerner value.
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(concept);
         if (originalCoding == null
                 || !originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
                 || !StringUtils.isNumeric(originalCoding.getCode())) {

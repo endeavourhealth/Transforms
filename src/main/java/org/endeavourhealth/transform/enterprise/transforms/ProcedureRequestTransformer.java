@@ -69,14 +69,6 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
 
-        if (snomedConceptId == null) {
-            if (ObservationCodeHelper.isCernerCoding(fhir.getCode())) {
-                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhir.getCode());
-                if (snomedValue != null) {
-                    snomedConceptId = snomedValue;
-                }
-            }
-        }
         if (fhir.hasStatus()) {
             procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
         }

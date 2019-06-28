@@ -88,24 +88,15 @@ public class ProcedureTransformer extends AbstractTransformer {
             }
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode(), false);
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
         //The above boolean tells the helper to allow some Cerner coded records through. Now filtered below
         if (codes == null) {
             return;
         }
         snomedConceptId = codes.getSnomedConceptId();
-
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
 
-        if (snomedConceptId == null) {
-            if (ObservationCodeHelper.isCernerCoding(fhir.getCode())) {
-                Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhir.getCode());
-                if (snomedValue != null) {
-                    snomedConceptId = snomedValue;
-                }
-            }
-        }
 
         /*if (snomedConceptId == null && CodeableConceptHelper.findOriginalCoding(fhir.getCode()) != null) {
             Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
