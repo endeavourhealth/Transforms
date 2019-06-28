@@ -10,6 +10,9 @@ import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.Coding;
 
 import javax.xml.crypto.dsig.TransformException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * utility object for passing around values for the three code-related fields on the subscriber Observation table
@@ -17,6 +20,8 @@ import javax.xml.crypto.dsig.TransformException;
 public class ObservationCodeHelper {
 
     private static CernerClinicalEventMappingDalI referenceDal = DalProvider.factoryCernerClinicalEventMappingDal();
+    private static Map<Long, Long> hmCernerSnomedMapCache = new HashMap<>();
+    private static ReentrantLock cacheLock = new ReentrantLock();
 
     private Long snomedConceptId = null;
     private String originalCode = null;
@@ -145,15 +150,45 @@ public class ObservationCodeHelper {
     public static Long mapCernerCodeToSnomed(CodeableConcept concept) throws Exception {
         //Try to get a SNOMED code mapped from a Barts Cerner value.
         Coding originalCoding = CodeableConceptHelper.findOriginalCoding(concept);
-        if (originalCoding != null
-                && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
-                && StringUtils.isNumeric(originalCoding.getCode())) {
-            Long codeLong = Long.parseLong(originalCoding.getCode());
-            CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(codeLong);
-            if (mapping != null) {
-                return Long.parseLong(mapping.getSnomedConceptId());
-            }
+        if (originalCoding == null
+                || !originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
+                || !StringUtils.isNumeric(originalCoding.getCode())) {
+            return null;
         }
-        return null;
+
+        Long codeLong = Long.parseLong(originalCoding.getCode());
+
+        //check the cache - note we cache lookup failures too (as null values)
+        try {
+            cacheLock.lock();
+
+            if (hmCernerSnomedMapCache.containsKey(codeLong)) {
+                return hmCernerSnomedMapCache.get(codeLong);
+            }
+        } finally {
+            cacheLock.unlock();
+        }
+
+        //hit the DB
+        CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(codeLong);
+
+        //add to the cache - cache lookup failures too
+        try {
+            cacheLock.lock();
+
+            if (mapping != null) {
+                Long val = Long.parseLong(mapping.getSnomedConceptId());
+                hmCernerSnomedMapCache.put(codeLong, val);
+                return val;
+            } else {
+                hmCernerSnomedMapCache.put(codeLong, null);
+                return null;
+            }
+
+        } finally {
+            cacheLock.unlock();
+        }
     }
+
+
 }

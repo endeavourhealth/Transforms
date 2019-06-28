@@ -69,11 +69,22 @@ public abstract class BartsCsvToFhirTransformer {
             }
         }*/
 
+
+
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String exchangeDirectory = ExchangePayloadFile.validateFilesAreInSameDirectory(files);
         LOG.trace("Transforming Barts CSV content in " + exchangeDirectory);
 
         BartsCsvHelper csvHelper = new BartsCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), PRIMARY_ORG_HL7_OID, version);
+
+
+        Date dData = csvHelper.getDataDate();
+        Date dProceduresStart = new SimpleDateFormat("yyyy-MM-dd").parse("2019-01-01");
+        Date dProceduresEnd = new SimpleDateFormat("yyyy-MM-dd").parse("2019-06-27");
+        if (dData.before(dProceduresStart)) {
+            throw new Exception("Trying to run past data when code to skip 2019 still in place");
+        }
+        boolean processProceduresTarget = dData.after(dProceduresEnd);
 
         /*transformAdminAndPatientParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);
         transformClinicalParsers(serviceId, systemId, exchangeId, files, version, fhirResourceFiler, csvHelper, previousErrors);*/
@@ -169,12 +180,14 @@ public abstract class BartsCsvToFhirTransformer {
             SURCCPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCC", true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
             SURCPPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCP",true), fhirResourceFiler,csvHelper);
 
-            //PROCEDURES - execute the staging procedures to target procedures stored proc
-            csvHelper.waitUntilThreadPoolIsEmpty();
-            csvHelper.processStagingForTargetProcedures();
+            if (processProceduresTarget) {
+                //PROCEDURES - execute the staging procedures to target procedures stored proc
+                csvHelper.waitUntilThreadPoolIsEmpty();
+                csvHelper.processStagingForTargetProcedures();
 
-            //Procedure data transformation on final procedure target staging table
-            ProcedureTargetTransformer.transform(fhirResourceFiler, csvHelper);
+                //Procedure data transformation on final procedure target staging table
+                ProcedureTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            }
 
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
@@ -183,12 +196,14 @@ public abstract class BartsCsvToFhirTransformer {
             DiagnosisPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Diagnosis", true), fhirResourceFiler, csvHelper);
             ProblemPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Problem", true), fhirResourceFiler, csvHelper);
 
-            //CONDITIONS - execute the staging conditions to target procedures stored proc
-            csvHelper.waitUntilThreadPoolIsEmpty();
-            csvHelper.processStagingForTargetConditions();
+            if (processProceduresTarget) {
+                //CONDITIONS - execute the staging conditions to target procedures stored proc
+                csvHelper.waitUntilThreadPoolIsEmpty();
+                csvHelper.processStagingForTargetConditions();
 
-            //Condition data transformation on final condition target staging table
-            ConditionTargetTransformer.transform(fhirResourceFiler, csvHelper);
+                //Condition data transformation on final condition target staging table
+                ConditionTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            }
 
             fhirResourceFiler.waitUntilEverythingIsSaved();
 

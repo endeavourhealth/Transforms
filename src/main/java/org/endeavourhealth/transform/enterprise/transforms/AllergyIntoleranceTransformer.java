@@ -80,8 +80,6 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
                 Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(fhir.getSubstance());
                 if (snomedValue!= null) {
                     snomedConceptId = snomedValue;
-                } else {
-                    return; // Don't allow records we can't map to SNOMED.
                 }
             }
         }

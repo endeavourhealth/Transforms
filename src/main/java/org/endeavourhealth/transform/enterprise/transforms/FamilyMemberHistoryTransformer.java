@@ -98,8 +98,6 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
                 Long snomedValue = ObservationCodeHelper.mapCernerCodeToSnomed(condition.getCode());
                 if (snomedValue != null) {
                     snomedConceptId = snomedValue;
-                } else {
-                    return; // Don't allow records we can't map to SNOMED.
                 }
             }
         }
