@@ -201,8 +201,6 @@ public class ClinicalEventTargetTransformer {
             }
 
             fhirResourceFiler.savePatientResource(null, observationBuilder);
-
-            LOG.debug("Transforming clinicalId : "+uniqueId+"  Filed");
         }
     }
 
