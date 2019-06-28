@@ -101,6 +101,11 @@ public class ObservationTransformer extends AbstractTransformer {
                 resultValue = quantity.getValue();
                 resultValueUnits = quantity.getUnit();
 
+                if (quantity.hasComparator()) {
+                    resultString = quantity.getComparator().toCode();
+                    resultString += resultValue.toString();
+                }
+
             } else if (value instanceof DateTimeType) {
                 DateTimeType dateTimeType = (DateTimeType)value;
                 resultDate = dateTimeType.getValue();
