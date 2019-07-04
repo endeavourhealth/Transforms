@@ -359,6 +359,8 @@ public class ENCNTPreTransformer {
                         fhirResourceFiler.savePatientResource(null, false, builder);
                     }
 
+                } else if (resource.getResourceType() == ResourceType.Observation) {
+                    continue;
                 } else {
                     //most resources haven't had the right stuff above implemented, so
                     throw new Exception("Unhandled resource type " + resource.getResourceType() + " when moving encounter to another patient " + existingPersonId + " -> " + personIdCell.getString());
