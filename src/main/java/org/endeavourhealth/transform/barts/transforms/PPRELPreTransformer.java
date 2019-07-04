@@ -45,12 +45,14 @@ public class PPRELPreTransformer {
         }
 
         //we need to store a mapping of alias ID to person ID
-        CsvCell relatedPersonIdCell = parser.getRelatedPersonMillenniumIdentifier();
-        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-        CsvCell relationshipToPatientCodeCell = parser.getRelationshipToPatientCode();
+        if (!parser.getMillenniumPersonIdentifier().isEmpty() && !parser.getRelatedPersonMillenniumIdentifier().isEmpty()) {
+            CsvCell relatedPersonIdCell = parser.getRelatedPersonMillenniumIdentifier();
+            CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+            CsvCell relationshipToPatientCodeCell = parser.getRelationshipToPatientCode();
 
-        PPRELPreTransformCallable callable = new PPRELPreTransformCallable(parser.getCurrentState(), relatedPersonIdCell, personIdCell, relationshipToPatientCodeCell, csvHelper);
-        csvHelper.submitToThreadPool(callable);
+            PPRELPreTransformCallable callable = new PPRELPreTransformCallable(parser.getCurrentState(), relatedPersonIdCell, personIdCell, relationshipToPatientCodeCell, csvHelper);
+            csvHelper.submitToThreadPool(callable);
+        }
     }
 
 
