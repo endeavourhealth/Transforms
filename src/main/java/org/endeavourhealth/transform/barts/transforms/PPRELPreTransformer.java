@@ -18,15 +18,15 @@ public class PPRELPreTransformer {
                                  BartsCsvHelper csvHelper) throws Exception {
 
         try {
-            for (ParserI parser: parsers) {
+            for (ParserI parser : parsers) {
                 while (parser.nextRecord()) {
 
-                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                         continue;
                     }
 
                     //no try/catch as failures here meant we should abort
-                    processRecord((PPREL)parser, fhirResourceFiler, csvHelper);
+                    processRecord((PPREL) parser, fhirResourceFiler, csvHelper);
                 }
             }
         } finally {
@@ -45,14 +45,12 @@ public class PPRELPreTransformer {
         }
 
         //we need to store a mapping of alias ID to person ID
-        if (!parser.getMillenniumPersonIdentifier().isEmpty() && !parser.getRelatedPersonMillenniumIdentifier().isEmpty()) {
-            CsvCell relatedPersonIdCell = parser.getRelatedPersonMillenniumIdentifier();
-            CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
-            CsvCell relationshipToPatientCodeCell = parser.getRelationshipToPatientCode();
+        CsvCell relatedPersonIdCell = parser.getRelatedPersonMillenniumIdentifier();
+        CsvCell personIdCell = parser.getMillenniumPersonIdentifier();
+        CsvCell relationshipToPatientCodeCell = parser.getRelationshipToPatientCode();
 
-            PPRELPreTransformCallable callable = new PPRELPreTransformCallable(parser.getCurrentState(), relatedPersonIdCell, personIdCell, relationshipToPatientCodeCell, csvHelper);
-            csvHelper.submitToThreadPool(callable);
-        }
+        PPRELPreTransformCallable callable = new PPRELPreTransformCallable(parser.getCurrentState(), relatedPersonIdCell, personIdCell, relationshipToPatientCodeCell, csvHelper);
+        csvHelper.submitToThreadPool(callable);
     }
 
 
