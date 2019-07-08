@@ -55,14 +55,14 @@ public class OUTCOMESTransformer {
 
             String outcomeText = outcomeName.getString();
 
-            // get existing outcome text to update, can have multiple outcome lines and
+            // get existing outcome text to update, can have multiple outcome lines
             String existingOutcomeText = csvHelper.getCaseOutcome(caseId.getString());
             if (!Strings.isNullOrEmpty(existingOutcomeText)) {
 
                 outcomeText = existingOutcomeText.concat(", ").concat(outcomeText);
             }
 
-            episodeBuilder.setOutcome("Outcome(s): "+outcomeText, outcomeName);
+            episodeBuilder.setOutcome(outcomeText, outcomeName);
 
             //cache the new episode outcome
             csvHelper.cacheCaseOutcome(caseId.getString(), outcomeText);
