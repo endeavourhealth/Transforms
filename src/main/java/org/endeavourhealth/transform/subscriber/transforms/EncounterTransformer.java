@@ -186,6 +186,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             subtype = null;
         }
 
+        /*
         if (fhir.hasExtension()) {
 
             Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
@@ -203,17 +204,18 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
                 nonCoreConceptId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
 
-                /* Integer typeId;
-                Integer subTypeId;
-                typeId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-                subTypeId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-                type = typeId.toString();
-                subtype = subTypeId.toString(); */
+                //Integer typeId;
+                //Integer subTypeId;
+                //typeId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+                //subTypeId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+                //type = typeId.toString();
+                //subtype = subTypeId.toString();
 
                 type = null;
                 subtype = null;
             }
         }
+        */
 
         if (fhir.getPatient() != null) {
             Reference ref = fhir.getPatient();

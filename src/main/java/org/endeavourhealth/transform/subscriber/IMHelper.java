@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class IMHelper {
@@ -17,14 +18,20 @@ public class IMHelper {
     //simpler to use just a map in memory than mess about with JCS etc.
     //there won't be so many concepts that we need to worry about limiting in size
     private static Map<String, Integer> coreCache = new ConcurrentHashMap<>();
+    private static Vector<String> nullCoreCache = new Vector();
     private static Map<String, Integer> mappedCache = new ConcurrentHashMap<>();
+    private static Vector<String> nullMappedCache = new Vector();
     private static Map<Integer, String> snomedCodeCache = new ConcurrentHashMap<>();
+    private static Vector<Integer> nullSnomedCodeCache = new Vector();
 
     public static synchronized Integer getIMMappedConcept(SubscriberTransformParams params, Resource fhirResource, String scheme, String code) throws Exception {
         String key = createCacheKey(scheme, code);
         Integer ret = null;
         if (code != null) {
             ret = mappedCache.get(key);
+        }
+        if (ret == null && nullMappedCache.contains(key)) {
+            return null;
         }
         if (ret == null & code != null) {
             ret = getIMMappedConceptWithRetry(scheme, code);
@@ -39,6 +46,9 @@ public class IMHelper {
             } else {
                 mappedCache.put(key, ret);
             }
+        }
+        if (ret == null) {
+            nullMappedCache.add(key);
         }
         return ret;
     }
@@ -68,6 +78,9 @@ public class IMHelper {
         if (code != null) {
             ret = coreCache.get(key);
         }
+        if (ret == null && nullCoreCache.contains(key)) {
+            return null;
+        }
         if (ret == null & code != null) {
             ret = getConceptIdForSchemeCodeWithRetry(scheme, code, term);
             if (ret == null) {
@@ -81,6 +94,9 @@ public class IMHelper {
             } else {
                 coreCache.put(key, ret);
             }
+        }
+        if (ret == null) {
+            nullCoreCache.add(key);
         }
         return ret;
     }
@@ -110,6 +126,9 @@ public class IMHelper {
         if (term != null) {
             ret = mappedCache.get(key);
         }
+        if (ret == null && nullMappedCache.contains(key)) {
+            return null;
+        }
         if (ret == null && term != null) {
             ret = getIMMappedConceptForTypeTermWithRetry(type, term);
             if (ret == null) {
@@ -123,6 +142,9 @@ public class IMHelper {
             } else {
                 mappedCache.put(key, ret);
             }
+        }
+        if (ret == null) {
+            nullMappedCache.add(key);
         }
         return ret;
     }
@@ -152,6 +174,9 @@ public class IMHelper {
         if (term != null) {
             ret = coreCache.get(key);
         }
+        if (ret == null && nullCoreCache.contains(key)) {
+            return null;
+        }
         if (ret == null && term != null) {
             ret = getIMConceptForTypeTermWithRetry(type, term);
             if (ret == null) {
@@ -165,6 +190,9 @@ public class IMHelper {
             } else {
                 coreCache.put(key, ret);
             }
+        }
+        if (ret == null) {
+            nullCoreCache.add(key);
         }
         return ret;
     }
@@ -195,7 +223,9 @@ public class IMHelper {
         if (key != null) {
             ret = snomedCodeCache.get(key);
         }
-
+        if (ret == null && nullSnomedCodeCache.contains(key)) {
+            return null;
+        }
         if (ret == null && conceptId != null) {
             ret = getIMSnomedCodeForConceptIdWithRetry(conceptId);
             if (ret == null) {
@@ -209,6 +239,9 @@ public class IMHelper {
             } else {
                 snomedCodeCache.put(key, ret);
             }
+        }
+        if (ret == null) {
+            nullSnomedCodeCache.add(key);
         }
         return ret;
     }
