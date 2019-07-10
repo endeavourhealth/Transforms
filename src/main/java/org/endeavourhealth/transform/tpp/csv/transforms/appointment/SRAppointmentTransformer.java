@@ -72,7 +72,7 @@ public class SRAppointmentTransformer {
                 slotBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);
                 slotBuilder.setDeletedAudit(deleteDataCell);
 
-                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, slotBuilder, appointmentBuilder);
             }
             return;
         }
