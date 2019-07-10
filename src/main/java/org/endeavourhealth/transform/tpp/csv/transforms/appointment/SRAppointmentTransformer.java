@@ -61,20 +61,22 @@ public class SRAppointmentTransformer {
                 && deleteDataCell.getIntAsBoolean()) {
 
             // get previously filed resources for deletion
-            Appointment appointment = (Appointment) csvHelper.retrieveResource(appointmentIdCell.getString(), ResourceType.Appointment);
+            Appointment appointment
+                    = (Appointment) csvHelper.retrieveResource(appointmentIdCell.getString(), ResourceType.Appointment);
             if (appointment != null) {
 
-                //create the linked slot to delete using the same Id as the appointment. nb. there is no patient on
-                //a slot so we don't need to retrieve the existing resource.  mapIds needs to be the default true;
-                SlotBuilder slotBuilder = new SlotBuilder();
-                slotBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);
-                slotBuilder.setDeletedAudit(deleteDataCell);
-                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), slotBuilder);
-
-                //call the resource deletion on the appointment builder with mapIds = false, as it was retrieved from the DB
+                //create the appointment resource from existing
                 AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
                 appointmentBuilder.setDeletedAudit(deleteDataCell);
-                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, appointmentBuilder);
+
+                //then retrieve the linked slot to delete using the same Id as the appointment.
+                Slot slot = (Slot) csvHelper.retrieveResource(appointmentIdCell.getString(), ResourceType.Slot);
+                SlotBuilder slotBuilder = new SlotBuilder(slot);
+                //slotBuilder.setId(appointmentIdCell.getString(), appointmentIdCell);
+                slotBuilder.setDeletedAudit(deleteDataCell);
+
+                //call delete using mapIds = false as retrieved from DB as existing mapped resources
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, slotBuilder, appointmentBuilder);
             }
             return;
         }
