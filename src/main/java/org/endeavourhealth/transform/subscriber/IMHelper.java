@@ -134,7 +134,7 @@ public class IMHelper {
             if (ret == null) {
                 //if null, we may let it slide if in testing, just logging it out
                 if (TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
-                    TransformWarnings.log(LOG, params, "Null mapped IM concept for type {} and term {} for resource {} {}", term, type, fhirResource.getResourceType(), fhirResource.getId());
+                    TransformWarnings.log(LOG, params, "Null mapped IM concept for type {} and term {} for resource {} {}", type, term, fhirResource.getResourceType(), fhirResource.getId());
                 } else {
                     throw new TransformException("Null mapped IM concept for type " + type + " and term " + term + " for resource " + fhirResource.getResourceType() + " " + fhirResource.getId());
                 }
@@ -182,7 +182,7 @@ public class IMHelper {
             if (ret == null) {
                 //if null, we may let it slide if in testing, just logging it out
                 if (TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
-                    TransformWarnings.log(LOG, params, "Null IM concept for type {} and term {} for resource {} {}", term, type, fhirResource.getResourceType(), fhirResource.getId());
+                    TransformWarnings.log(LOG, params, "Null IM concept for type {} and term {} for resource {} {}", type, term, fhirResource.getResourceType(), fhirResource.getId());
                 } else {
                     throw new TransformException("Null IM concept for type " + type + " and term " + term + " for resource " + fhirResource.getResourceType() + " " + fhirResource.getId());
                 }
