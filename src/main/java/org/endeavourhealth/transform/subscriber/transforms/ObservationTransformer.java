@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
@@ -153,6 +154,13 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             if (b.getValue() != null) {
                 isPrimary = b.getValue();
             }
+        }
+
+        Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);
+        if (episodicityExtension != null) {
+            StringType episodicity = (StringType) episodicityExtension.getValue();
+            episodicityConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_CONDITION_EPISODICITY,
+                    episodicity.getValue(), episodicity.getValue());
         }
 
         model.writeUpsert(subscriberId,
