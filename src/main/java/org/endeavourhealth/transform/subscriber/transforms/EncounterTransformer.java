@@ -156,11 +156,6 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
         }
 
-        // TODO 16/05/19 Following discussion between Rich, Drew and James in the office, Rich to review classification of
-        //  the IM data for Encounter, definition of types, and therefore the calls to access it for coreConceptId and
-        //  nonCoreConceptId, and what needs to be populated for type and subtype (or whether a single field is enough).
-        //  Code below will need to be modified at the outcome of this.
-
         String originalTerm = null;
         originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
@@ -170,17 +165,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             // Long snomedCode = ret.getCode();
             originalTerm = originalTerm.toLowerCase();
 
-            // coreConceptId = IMHelper.getIMMappedConcept(params, fhir, IMConstant.SNOMED, snomedCode.toString());
-            // nonCoreConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.SNOMED, snomedCode.toString());
             coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
             nonCoreConceptId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-
-            /* Integer typeId;
-            Integer subTypeId;
-            typeId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-            subTypeId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-            type = typeId.toString();
-            subtype = subTypeId.toString(); */
 
             type = null;
             subtype = null;
@@ -199,17 +185,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 // String originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
                 // originalTerm = codeableConcept.getText();
 
-                // coreConceptId = IMHelper.getIMMappedConcept(params, fhir, IMConstant.SNOMED, originalCode);
-                // nonCoreConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.SNOMED, originalCode);
                 coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
                 nonCoreConceptId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-
-                //Integer typeId;
-                //Integer subTypeId;
-                //typeId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-                //subTypeId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-                //type = typeId.toString();
-                //subtype = subTypeId.toString();
 
                 type = null;
                 subtype = null;
