@@ -124,19 +124,12 @@ public class FhirHl7v2Filer {
 
             //if we make it here, we want to remap the resource and move to the new patient
             String json = minorPatientResource.getResourceData();
-            Resource fhirOriginal = ParserPool.getInstance().parse(json);
-
-            //copy and remap the resource, then save
-            //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
             Resource fhirAmended = ParserPool.getInstance().parse(json);
             IdHelper.applyExternalReferenceMappings(fhirAmended, idMappings, false);
 
             fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(fhirAmended));
 
-            //finally delete the resource from the old patient
-            fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(fhirOriginal));
-
-            LOG.debug("Moved " + resourceType + " " + fhirOriginal.getId() + " -> " + fhirAmended.getId());
+            LOG.debug("Moved " + resourceType + " " + fhirAmended.getId());
         }
 
         //save these resource mappings for the future
@@ -250,27 +243,33 @@ public class FhirHl7v2Filer {
             String json = minorPatientResource.getResourceData();
             Resource fhirOriginal = ParserPool.getInstance().parse(json);
 
-            //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
-            Resource fhirAmended = ParserPool.getInstance().parse(json);
-
-            if (fhirAmended instanceof Patient) {
-                //we don't want to move patient resources, so do nothing and let the delete happen
+            if (fhirOriginal instanceof Patient) {
+                //we don't want to move patient resources, so just delete it
+                fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(fhirOriginal));
 
             } else {
                 //for all other resources, re-map the IDs and save to the DB
                 try {
+                    //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
+                    IdHelper.applyExternalReferenceMappings(fhirOriginal, idMappings, false);
+                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(fhirOriginal));
+
+                    //no delete required - the resource_current table has a unique ID on resource_id and resource_type so simply saving
+                    //the resource (above) with the updated reference(s) is enough, and doesn't leave us with a confusing deleted record
+                    /*Resource fhirAmended = ParserPool.getInstance().parse(json);
+
                     IdHelper.applyExternalReferenceMappings(fhirAmended, idMappings, false);
                     fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(fhirAmended));
 
+                    //finally delete the resource from the old patient - do the delete AFTER, so any failure on the insert happens before we do the delete
+                    fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(fhirOriginal));*/
+
                 } catch (Exception ex) {
-                    throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + fhirOriginal.getId() + " and now has " + fhirAmended.getId(), ex);
+                    throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + minorPatientResource.getResourceId() + " and now has " + fhirOriginal.getId(), ex);
                 }
+
+                LOG.debug("Moved " + fhirOriginal.getResourceType() + " " + fhirOriginal.getId());
             }
-
-            //finally delete the resource from the old patient - do the delete AFTER, so any failure on the insert happens before we do the delete
-            fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(fhirOriginal));
-
-            LOG.debug("Moved " + fhirOriginal.getResourceType() + " " + fhirOriginal.getId() + " -> " + fhirAmended.getId());
         }
 
         //save these resource mappings for the future
