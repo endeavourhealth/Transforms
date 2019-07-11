@@ -735,15 +735,15 @@ public class SRCodeTransformer {
                 && !isBPCode(readV3Code)
                 && (parser.getNumericValue().isEmpty())) {
             return ResourceType.Procedure;
-        } else if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())
-                || csvHelper.isDisorder(readV3Code)) {
-            return ResourceType.Condition;
         } else if ((!Strings.isNullOrEmpty(readV3Code)
                 && csvHelper.isAllergyCode(readV3Code, parser.getCTV3Text().getString()))) {
             return ResourceType.AllergyIntolerance;
         } else if (!Strings.isNullOrEmpty(readV3Code)
                 && csvHelper.isFamilyHistoryDisorder(readV3Code)) {
             return ResourceType.FamilyMemberHistory;
+        } else if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())
+                || (!Strings.isNullOrEmpty(readV3Code) && csvHelper.isDisorder(readV3Code))) {
+            return ResourceType.Condition;
         } else {
             return ResourceType.Observation;
         }
