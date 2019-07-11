@@ -334,6 +334,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         tranformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
         tranformResources(ResourceType.Specimen, resources, threadPool, params);
         tranformResources(ResourceType.Flag, resources, threadPool, params);
+        tranformResources(ResourceType.QuestionnaireResponse, resources, threadPool, params);
 
         //for these resource types, call with a null transformer as they're actually transformed when
         //doing one of the above entities, but we want to remove them from the resources list
