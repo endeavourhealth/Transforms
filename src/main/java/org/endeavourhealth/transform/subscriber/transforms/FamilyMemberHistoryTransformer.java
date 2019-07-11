@@ -131,7 +131,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
         if (fhir.getPatient() != null) {
             Reference ref = fhir.getPatient();
             Patient patient = getCachedPatient(ref, params);
-            ageAtEvent = getPatientAgeInDecimalYears(patient);
+            ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);

@@ -113,7 +113,7 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
         if (fhir.getSubject() != null) {
             Reference ref = fhir.getSubject();
             Patient patient = getCachedPatient(ref, params);
-            ageAtEvent = getPatientAgeInDecimalYears(patient);
+            ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);

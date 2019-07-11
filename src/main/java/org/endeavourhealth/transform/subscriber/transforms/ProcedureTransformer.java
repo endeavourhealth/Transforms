@@ -118,7 +118,7 @@ public class ProcedureTransformer extends AbstractSubscriberTransformer {
         if (fhir.getSubject() != null) {
             Reference ref = fhir.getSubject();
             Patient patient = getCachedPatient(ref, params);
-            ageAtEvent = getPatientAgeInDecimalYears(patient);
+            ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);

@@ -132,7 +132,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         if (fhir.getPatient() != null) {
             Reference ref = fhir.getPatient();
             Patient patient = getCachedPatient(ref, params);
-            ageAtEvent = getPatientAgeInDecimalYears(patient);
+            ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
         Extension episodicityExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_EPISODICITY);

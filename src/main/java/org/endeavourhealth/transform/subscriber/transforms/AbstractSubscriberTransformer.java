@@ -638,10 +638,10 @@ public abstract class AbstractSubscriberTransformer {
         instanceCache.put(key, mappedResourceId);
     }
 
-    protected static Double getPatientAgeInDecimalYears(Patient patient) {
-        if (patient.getBirthDate() != null) {
+    protected static Double getPatientAgeInDecimalYears(Patient patient, Date eventDate) {
+        if (patient.getBirthDate() != null && eventDate != null) {
             LocalDate date = patient.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-            Period diff = Period.between(date, LocalDate.now());
+            Period diff = Period.between(date, eventDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
             if (diff.getYears() == 0 && diff.getMonths() == 0) {
                 diff.plusMonths(1);
             }
