@@ -92,12 +92,6 @@ public class FhirHl7v2Filer {
 
         Map<String, String> originalIdMappings = createIdMappings(parameters);
 
-        LOG.debug("Id mappings are");
-        for (String key: originalIdMappings.keySet()) {
-            String value = originalIdMappings.get(key);
-            LOG.debug(key + " -> " + value);
-        }
-
         //copy the ID mappings map and add the patient to it. Note we keep the original map without the patient as
         //we use that to store in our resource merge map table
         Map<String, String> idMappings = new HashMap<>(originalIdMappings);
@@ -190,10 +184,7 @@ public class FhirHl7v2Filer {
                 }
 
             } else {
-                //if we have any other resource type, then something is wrong
-                //in DSTU2, there are no other resources that seem to reference episodes of care, so removing this
-                //now we've got additional Cerner resource types
-                //throw new TransformException("Cannot perform A35 episode merge for " + resourceType + " " + patientResource.getResourceId());
+                //nothing else refers to an episode, so skip it
             }
         }
 
@@ -219,12 +210,6 @@ public class FhirHl7v2Filer {
         String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId);
         String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorPatientId);
         idMappings.put(minorPatientReference, majorPatientReference);
-
-        LOG.debug("Id mappings are");
-        for (String key: idMappings.keySet()) {
-            String value = idMappings.get(key);
-            LOG.debug(key + " -> " + value);
-        }
 
         List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(fhirResourceFiler.getServiceId(), UUID.fromString(minorPatientId));
 
@@ -293,6 +278,12 @@ public class FhirHl7v2Filer {
                     }
                 }
             }
+        }
+
+        LOG.debug("Id mappings are");
+        for (String key: referenceIdMap.keySet()) {
+            String value = referenceIdMap.get(key);
+            LOG.debug(key + " -> " + value);
         }
 
         return referenceIdMap;
