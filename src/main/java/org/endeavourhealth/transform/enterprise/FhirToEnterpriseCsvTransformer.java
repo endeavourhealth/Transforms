@@ -24,10 +24,7 @@ import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.*;
-import org.hl7.fhir.instance.model.Patient;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -335,6 +332,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         tranformResources(ResourceType.Specimen, resources, threadPool, params);
         tranformResources(ResourceType.Flag, resources, threadPool, params);
         tranformResources(ResourceType.QuestionnaireResponse, resources, threadPool, params);
+        //Note we return null for QuestionnaireResponse as we don't know how to store them yet
 
         //for these resource types, call with a null transformer as they're actually transformed when
         //doing one of the above entities, but we want to remove them from the resources list
@@ -463,7 +461,10 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         } else if (resourceType == ResourceType.Location) {
             //locations are handled in the organisation transformer, so have no dedicated one
             return null;
-        } else {
+        } else if (resourceType == resourceType.QuestionnaireResponse) {
+            return null;  }
+        //TODO Work out how to store them later.
+        else {
             throw new TransformException("Unhandled resource type " + resourceType);
         }
     }
