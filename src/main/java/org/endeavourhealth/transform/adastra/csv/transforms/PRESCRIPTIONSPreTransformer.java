@@ -67,6 +67,11 @@ public class PRESCRIPTIONSPreTransformer {
             csvHelper.cacheNewConsultationChildRelationship(consultationId,
                     drugId,
                     ResourceType.MedicationStatement);
+
+            //create the order link also, using the same drugId
+            csvHelper.cacheNewConsultationChildRelationship(consultationId,
+                    drugId,
+                    ResourceType.MedicationOrder);
         }
     }
 }
