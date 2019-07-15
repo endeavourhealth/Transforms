@@ -102,7 +102,7 @@ public class PatientTransformer extends AbstractTransformer {
         if (fhirPatient.getManagingOrganization().isEmpty()) {
             organizationId = params.getEnterpriseOrganisationId().longValue();
         } else {
-            organizationId= super.findEnterpriseId(params,fhirPatient.getManagingOrganization());
+            organizationId= transformOnDemandAndMapId(fhirPatient.getManagingOrganization(),params);
         }
         personId = enterprisePersonId.longValue();
 

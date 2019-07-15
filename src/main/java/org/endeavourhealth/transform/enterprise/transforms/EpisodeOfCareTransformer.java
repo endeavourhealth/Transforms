@@ -41,7 +41,11 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         //Long managingOrganisationId = null;
 
         id = enterpriseId.longValue();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        if (fhirEpisode.getManagingOrganization().isEmpty()) {
+            organisationId = params.getEnterpriseOrganisationId().longValue();
+        } else {
+            organisationId = transformOnDemandAndMapId(fhirEpisode.getManagingOrganization(), params);
+        }
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
