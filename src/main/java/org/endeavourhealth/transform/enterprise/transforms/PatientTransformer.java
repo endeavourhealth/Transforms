@@ -99,7 +99,11 @@ public class PatientTransformer extends AbstractTransformer {
         String targetSkid = null;
 
         id = enterpriseId.longValue();
-        organizationId = params.getEnterpriseOrganisationId().longValue();
+        if (fhirPatient.getManagingOrganization().isEmpty()) {
+            organizationId = params.getEnterpriseOrganisationId().longValue();
+        } else {
+            organizationId= super.findEnterpriseId(params,fhirPatient.getManagingOrganization());
+        }
         personId = enterprisePersonId.longValue();
 
         //Calendar cal = Calendar.getInstance();
