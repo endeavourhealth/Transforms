@@ -12,10 +12,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.MedicationStatement;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +48,7 @@ public class PRESCRIPTIONSTransformer {
                                       FhirResourceFiler fhirResourceFiler,
                                       AdastraCsvHelper csvHelper) throws Exception {
 
-        //create both the medication statement and the linked order
+        //create both the medication statement and the linked order (if issued)
         createMedicationStatement(parser, fhirResourceFiler, csvHelper);
         createMedicationOrder(parser, fhirResourceFiler, csvHelper);
     }
@@ -101,6 +98,23 @@ public class PRESCRIPTIONSTransformer {
 
             Reference practitionerReference = csvHelper.createPractitionerReference(userRefCell.getString());
             medicationStatementBuilder.setInformationSource(practitionerReference, userRefCell);
+        }
+
+        //v2 issue info
+        CsvCell issueCell = parser.getIssue();
+        if (issueCell != null && !issueCell.isEmpty()) {
+            if (!issueCell.getString().equalsIgnoreCase("N")) {
+
+                medicationStatementBuilder.setNumberIssuesIssued(1);
+                medicationStatementBuilder.setNumberIssuesAuthorised(1);
+
+                //set the first issue date to that of the consultation effective date
+                if (effectiveDate != null) {
+
+                    DateType issueDateType = new DateType(effectiveDate.getDate());
+                    medicationStatementBuilder.setFirstIssueDate(issueDateType, effectiveDate);
+                }
+            }
         }
 
         CodeableConceptBuilder codeableConceptBuilder
@@ -159,6 +173,19 @@ public class PRESCRIPTIONSTransformer {
                                               FhirResourceFiler fhirResourceFiler,
                                               AdastraCsvHelper csvHelper) throws Exception {
 
+        //has the drug been issued?
+        CsvCell issueCell = parser.getIssue();
+        if (issueCell == null || issueCell.isEmpty()) {
+            return;
+        }
+
+        //'S' = Stored, 'P' = Printed, 'H' = Handwritten, 'N' = Not Issued
+        String issueType = issueCell.getString();
+        if (issueType.equalsIgnoreCase("N")) {
+            return;
+        }
+
+        //drug has been issued, so create the medicationOrder
         CsvCell caseId = parser.getCaseId();
         CsvCell consultationId = parser.getConsultationId();
 

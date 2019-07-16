@@ -41,7 +41,8 @@ public class PRESCRIPTIONS extends AbstractCsvParser {
                     "Preparation",
                     "Dosage",
                     "Quantity",
-                    "DMDCode"
+                    "DMDCode",
+                    "Issue"
             };
         }
     }
@@ -79,5 +80,9 @@ public class PRESCRIPTIONS extends AbstractCsvParser {
 
     public CsvCell getDMDCode() {
         return super.getCell("DMDCode");
+    }
+
+    public CsvCell getIssue() {
+        return super.getCell("Issue");
     }
 }
