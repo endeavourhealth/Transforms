@@ -623,7 +623,7 @@ public class PatientTransformer {
             newStatusEnum = NhsNumberVerificationStatus.TRACE_REQUIRED;
 
         } else if (newStatus.equalsIgnoreCase("Trace Attempted")) {
-            newStatusEnum = NhsNumberVerificationStatus. TRACE_ATTEMPTED_NO_MATCH;
+            newStatusEnum = NhsNumberVerificationStatus.TRACE_ATTEMPTED_NO_MATCH;
 
         } else {
          //TODO Does this enum have correct strings? We saw "Trace Attempted" for ex.
