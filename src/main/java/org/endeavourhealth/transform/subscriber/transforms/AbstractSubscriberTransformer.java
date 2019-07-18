@@ -8,6 +8,7 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInstanceMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberResourceMappingDalI;
@@ -42,6 +43,8 @@ public abstract class AbstractSubscriberTransformer {
 
     private HashMap<String, Patient> patients = new HashMap<>();
 
+    private Map<String, String> snomedToBnfChapter = new HashMap<>();
+
     static {
         try {
 
@@ -60,7 +63,7 @@ public abstract class AbstractSubscriberTransformer {
 
 
     public static boolean isConfidential(Resource fhir) {
-        DomainResource resource = (DomainResource)fhir;
+        DomainResource resource = (DomainResource) fhir;
         BooleanType bt = (BooleanType) ExtensionConverter.findExtensionValue(resource, FhirExtensionUri.IS_CONFIDENTIAL);
         if (bt == null
                 || !bt.hasValue()) {
@@ -75,7 +78,7 @@ public abstract class AbstractSubscriberTransformer {
         //find or create subscriber DB IDs for each of our resources
         Map<String, SubscriberId> idsForMainTable = mapIds(params.getEnterpriseConfigName(), getMainSubscriberTableId(), resources, shouldAlwaysTransform(), params);
 
-        for (ResourceWrapper resource: resources) {
+        for (ResourceWrapper resource : resources) {
 
             try {
                 ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
@@ -146,7 +149,6 @@ public abstract class AbstractSubscriberTransformer {
                                               SubscriberTransformParams params) throws Exception;
 
     protected abstract SubscriberTableId getMainSubscriberTableId();
-
 
 
     protected static Integer convertDatePrecision(SubscriberTransformParams params, Resource fhirResource,
@@ -267,7 +269,7 @@ public abstract class AbstractSubscriberTransformer {
     }
 
     private static SubscriberId checkCacheForId(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId) throws Exception {
-        return (SubscriberId)idCache.get(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId));
+        return (SubscriberId) idCache.get(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId));
     }
 
     private static void addIdToCache(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId, SubscriberId toCache) throws Exception {
@@ -295,7 +297,7 @@ public abstract class AbstractSubscriberTransformer {
     }*/
 
     private static ResourceWrapper findResourceWrapper(Reference reference,
-                                                        SubscriberTransformParams params) throws Exception {
+                                                       SubscriberTransformParams params) throws Exception {
 
         String referenceStr = reference.getReference();
 
@@ -313,7 +315,7 @@ public abstract class AbstractSubscriberTransformer {
     }
 
     public static Resource findResource(Reference reference,
-                                           SubscriberTransformParams params) throws Exception {
+                                        SubscriberTransformParams params) throws Exception {
 
         ResourceWrapper ret = findResourceWrapper(reference, params);
         //the above fn returns null if it's deleted
@@ -351,7 +353,7 @@ public abstract class AbstractSubscriberTransformer {
         List<String> resourcesToFindOnDb = new ArrayList<>();
         List<String> resourcesToFindOrCreateOnDb = new ArrayList<>();
 
-        for (ResourceWrapper wrapper: resources) {
+        for (ResourceWrapper wrapper : resources) {
 
             String sourceId = ReferenceHelper.createResourceReference(wrapper.getResourceType(), wrapper.getResourceId().toString());
 
@@ -384,7 +386,7 @@ public abstract class AbstractSubscriberTransformer {
         //look up any resources we need
         if (!resourcesToFindOnDb.isEmpty()) {
             Map<String, SubscriberId> foundMap = enterpriseIdDal.findSubscriberIds(mainTable.getId(), resourcesToFindOnDb);
-            for (String sourceId: resourcesToFindOnDb) {
+            for (String sourceId : resourcesToFindOnDb) {
                 SubscriberId foundId = foundMap.get(sourceId);
                 if (foundId != null) {
                     ret.put(sourceId, foundId);
@@ -398,7 +400,7 @@ public abstract class AbstractSubscriberTransformer {
         //lookup and create any resources we need
         if (!resourcesToFindOrCreateOnDb.isEmpty()) {
             Map<String, SubscriberId> createdMap = enterpriseIdDal.findOrCreateSubscriberIds(mainTable.getId(), resourcesToFindOrCreateOnDb);
-            for (String sourceId: resourcesToFindOrCreateOnDb) {
+            for (String sourceId : resourcesToFindOrCreateOnDb) {
                 SubscriberId foundId = createdMap.get(sourceId);
                 if (foundId != null) {
                     ret.put(sourceId, foundId);
@@ -443,7 +445,6 @@ public abstract class AbstractSubscriberTransformer {
     }
 
 
-
     private static String findInstanceMappingValue(ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
 
         Resource resource = null;
@@ -464,13 +465,13 @@ public abstract class AbstractSubscriberTransformer {
 
         if (resource instanceof Organization) {
             //for orgs, we use the ODS code
-            Organization fhirOrg = (Organization)resource;
+            Organization fhirOrg = (Organization) resource;
             return IdentifierHelper.findOdsCode(fhirOrg);
 
         } else if (resource instanceof Practitioner) {
             //we don't have any unique identifier for a person, so use a combination
             //of their name PLUS their org ods code
-            Practitioner fhirPractitioner = (Practitioner)resource;
+            Practitioner fhirPractitioner = (Practitioner) resource;
             if (fhirPractitioner.hasName()) {
                 HumanName humanName = fhirPractitioner.getName();
                 String name = humanName.getText();
@@ -540,7 +541,7 @@ public abstract class AbstractSubscriberTransformer {
             //see if this resource is mapped to another instance of the same concept (e.g. organisation),
             //in which case we want to use the enterprise ID for that OTHER instance
             if (resourceType == ResourceType.Organization
-                || resourceType == ResourceType.Practitioner) {
+                    || resourceType == ResourceType.Practitioner) {
 
                 UUID mappedResourceId = checkInstanceMapCache(params.getEnterpriseConfigName(), resourceType, resourceId);
                 if (mappedResourceId == null) {
@@ -629,7 +630,7 @@ public abstract class AbstractSubscriberTransformer {
 
     private static UUID checkInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId) {
         Object key = createInstanceMapCacheKey(enterpriseConfigName, resourceType, resourceId);
-        return (UUID)instanceCache.get(key);
+        return (UUID) instanceCache.get(key);
     }
 
     private static void addToInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId, UUID mappedResourceId) throws Exception {
@@ -687,6 +688,27 @@ public abstract class AbstractSubscriberTransformer {
             str = codingSystem;
         }
         return str;
+    }
+
+    protected String getSnomedToBnfChapter(String snomedCodeString) throws Exception {
+
+        String bnfReference = null;
+        bnfReference = snomedToBnfChapter.get(snomedCodeString);
+
+        if (bnfReference != null) {
+            return bnfReference;
+        }
+
+        SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
+        String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCodeString);
+
+        if (fullBnfChapterCodeString != null && fullBnfChapterCodeString.length() > 7) {
+            bnfReference = fullBnfChapterCodeString.substring(0, 6);
+            snomedToBnfChapter.put(snomedCodeString, bnfReference);
+        }
+
+        return bnfReference;
+
     }
 
     /*protected Long transformOnDemandAndMapId(Reference reference,

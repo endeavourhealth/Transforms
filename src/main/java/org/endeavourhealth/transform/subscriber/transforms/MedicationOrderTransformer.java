@@ -3,9 +3,7 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
@@ -180,14 +178,8 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         }
 
         if (snomedCodeString != null) {
-            SnomedToBnfChapterDalI snomedToBnfChapterDal = DalProvider.factorySnomedToBnfChapter();
-            String fullBnfChapterCodeString = snomedToBnfChapterDal.lookupSnomedCode(snomedCodeString);
-            //LOG.info("fullBnfChapterCodeString: " + fullBnfChapterCodeString);
-
-            if (fullBnfChapterCodeString != null && fullBnfChapterCodeString.length() > 7) {
-                bnfReference = fullBnfChapterCodeString.substring(0, 6);
+                bnfReference = getSnomedToBnfChapter(snomedCodeString);
                 //LOG.info("bnfReference: " + bnfReference);
-            }
         }
 
         if (fhir.getPatient() != null) {
