@@ -622,8 +622,11 @@ public class PatientTransformer {
         } else if (newStatus.equalsIgnoreCase("Needs Resolution")) {
             newStatusEnum = NhsNumberVerificationStatus.TRACE_REQUIRED;
 
-        } else {
+        } else if (newStatus.equalsIgnoreCase("Trace Attempted")) {
+            newStatusEnum = NhsNumberVerificationStatus. TRACE_ATTEMPTED_NO_MATCH;
 
+        } else {
+         //TODO Does this enum have correct strings? We saw "Trace Attempted" for ex.
             for (NhsNumberVerificationStatus s : NhsNumberVerificationStatus.values()) {
                 if (s.getDescription().equalsIgnoreCase(newStatus)) {
                     newStatusEnum = s;
