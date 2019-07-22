@@ -243,9 +243,10 @@ public class SRCodeTransformer {
             codeableConceptBuilder.setCodingDisplay(ctv3DescCell.getString(), ctv3DescCell);
         }
 
-        //set the text from one of the text cells, perferring Snomed is present
+        //set the text from one of the text cells, preferring Snomed if present
         if (snomedDescCell != null
-                && !snomedDescCell.isEmpty()) {
+                && !snomedDescCell.isEmpty()
+                && snomedCodeCell.getLong() != -1) {
 
             codeableConceptBuilder.setText(snomedDescCell.getString(), snomedDescCell);
 
