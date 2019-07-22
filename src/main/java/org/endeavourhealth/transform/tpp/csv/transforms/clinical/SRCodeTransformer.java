@@ -723,7 +723,7 @@ public class SRCodeTransformer {
         CsvCell valueCell = parser.getNumericValue();
         if (!valueCell.isEmpty()) {  //Handle multiple stand-ins for empty/null value. Some with decimal place.
             if (valueCell.getDouble().equals(0.0)
-                    || valueCell.getDouble() == -1) {
+                    || valueCell.getDouble() == -1.0) {
                 return;
             }
             throw new FieldNotEmptyException("Value", resourceBuilder.getResource());
