@@ -211,7 +211,7 @@ public class SRCodeTransformer {
 
         if (snomedCodeCell != null //might be null in older versions
                 && !snomedCodeCell.isEmpty()
-                && snomedCodeCell.getString().equals("-1")) {
+                && snomedCodeCell.getLong() == -1) {
 
             SnomedCode snomedCode = TerminologyService.lookupSnomedFromConceptId(snomedCodeCell.getString());
             if (snomedCode != null) {

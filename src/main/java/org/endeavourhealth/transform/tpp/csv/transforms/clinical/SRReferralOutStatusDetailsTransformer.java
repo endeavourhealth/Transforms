@@ -62,25 +62,7 @@ public class SRReferralOutStatusDetailsTransformer {
             TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
                         parser.getRowIdentifier().getString(), parser.getFilePath());
             return;
-//
-//            if ((deleteData != null) && !deleteData.isEmpty() && !deleteData.getIntAsBoolean()) {
-//                TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-//                        parser.getRowIdentifier().getString(), parser.getFilePath());
-//                return;
-//            } else {
-//
-//                // get previously filed resource for deletion
-//                org.hl7.fhir.instance.model.ReferralRequest referralRequest
-//                        = (org.hl7.fhir.instance.model.ReferralRequest) csvHelper.retrieveResource(referralOutId.getString(),
-//                        ResourceType.ReferralRequest,
-//                        fhirResourceFiler);
-//
-//                if (referralRequest != null) {
-//                    ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder(referralRequest);
-//                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), referralRequestBuilder);
-//                    return;
-//                }
-//            }
+
         }
 
         ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
@@ -105,6 +87,14 @@ public class SRReferralOutStatusDetailsTransformer {
                     referralRequestBuilder.setStatus(status, referralStatus);
 
                     //Update the referral description with status details
+                    if (parser.getDateEvent().isEmpty()) {
+                        //We sometimes get empty dates for completed. If we don't have a date and
+                        // it's not completed it must be a draft entry which is default below anyway
+                        if (status==ReferralRequest.ReferralStatus.NULL) {
+                            referralRequestBuilder.setStatus(ReferralRequest.ReferralStatus.DRAFT, referralStatus);
+                            return;
+                        }
+                    }
                     CsvCell referralStatusDate = parser.getDateEvent();
                     DateTimeType dateTimeType = new DateTimeType(referralStatusDate.getDateTime());
                     if (dateTimeType != null) {
@@ -136,7 +126,9 @@ public class SRReferralOutStatusDetailsTransformer {
 
         if (referralStatusDisplay.toLowerCase().contains("waiting")) {
             return ReferralRequest.ReferralStatus.ACTIVE;
-        } else
+        } else if (referralStatusDisplay.toLowerCase().contains("complete")) {
+            return ReferralRequest.ReferralStatus.COMPLETED;
+        }
             return ReferralRequest.ReferralStatus.DRAFT;
     }
 }
