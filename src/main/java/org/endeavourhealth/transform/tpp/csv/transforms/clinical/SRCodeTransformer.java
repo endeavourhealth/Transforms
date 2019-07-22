@@ -722,8 +722,8 @@ public class SRCodeTransformer {
     private static void assertValueEmpty(ResourceBuilderBase resourceBuilder, SRCode parser) throws Exception {
         CsvCell valueCell = parser.getNumericValue();
         if (!valueCell.isEmpty()) {  //Handle multiple stand-ins for empty/null value. Some with decimal place.
-            if (valueCell.getDouble() == 0D
-                    || valueCell.getDouble() == -1D) {
+            if (valueCell.getDouble().equals(0.0)
+                    || valueCell.getDouble() == -1.0) {
                 return;
             }
             throw new FieldNotEmptyException("Value", resourceBuilder.getResource());
