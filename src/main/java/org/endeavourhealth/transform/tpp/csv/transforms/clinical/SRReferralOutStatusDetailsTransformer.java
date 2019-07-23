@@ -90,10 +90,8 @@ public class SRReferralOutStatusDetailsTransformer {
                     if (parser.getDateEvent().isEmpty()) {
                         //We sometimes get empty dates for completed. If we don't have a date and
                         // it's not completed it must be a draft entry which is default below anyway
-                        if (status==ReferralRequest.ReferralStatus.NULL) {
-                            referralRequestBuilder.setStatus(ReferralRequest.ReferralStatus.DRAFT, referralStatus);
-                            return;
-                        }
+                        referralRequestBuilder.setStatus(ReferralRequest.ReferralStatus.DRAFT, referralStatus);
+                        return;
                     }
                     CsvCell referralStatusDate = parser.getDateEvent();
                     DateTimeType dateTimeType = new DateTimeType(referralStatusDate.getDateTime());
