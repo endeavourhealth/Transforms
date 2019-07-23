@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
@@ -19,8 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import static org.endeavourhealth.core.terminology.Read2.isBPCode;
 
 
 public class SRCodeTransformer {
@@ -731,20 +728,21 @@ public class SRCodeTransformer {
     public static ResourceType getTargetResourceType(SRCode parser, TppCsvHelper csvHelper) throws Exception {
         String readV3Code = parser.getCTV3Code().getString();
         if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())) {
-            csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Condition);
+            csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Condition); //Type maybe changed so re-cache
             return ResourceType.Condition;
         }
-        if (!parser.getNumericValue().isEmpty() && !csvHelper.isTppEmpty(parser.getNumericValue())) {
-            csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Observation);
-            return ResourceType.Observation;
-        }
-        if (!readV3Code.isEmpty() ) {
+        if (!readV3Code.isEmpty()) {
             ResourceType type = csvHelper.getResourceType(readV3Code);
+            if (!parser.getNumericValue().isEmpty()
+                    && !csvHelper.isTppPlaceholder(parser.getNumericValue())
+                    && (type.equals(ResourceType.Procedure))) {
+                csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Observation); //Type maybe changed so re-cache
+                return ResourceType.Observation;
+            }
             return type;
         }
         return ResourceType.Observation;
     }
-
 
 
     private static Quantity.QuantityComparator convertComparator(String str) {

@@ -1076,7 +1076,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         codeToTypes.put(code,type);
     }
 
-    public static boolean isTppEmpty(CsvCell cell) {
+    public static boolean isTppPlaceholder(CsvCell cell) {
         //Test for one of the TPP placeholders 0, 0.0, -1, -1.0
         Double zero = 0.0;
         Double negOne = -1.0;
