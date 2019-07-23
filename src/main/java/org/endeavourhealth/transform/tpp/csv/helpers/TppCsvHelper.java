@@ -73,16 +73,17 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ConditionResourceCache conditionResourceCache = new ConditionResourceCache();
     private ReferralRequestResourceCache referralRequestResourceCache = new ReferralRequestResourceCache();
     private Map<Long, String> problemReadCodes = new HashMap<>();
-    private Map<String, String> allergyReadCodes = new HashMap<>();
+//    private Map<String, String> allergyReadCodes = new HashMap<>();
     private Map<Long, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
     private ArrayList<String> ctv3EthnicCodes = new ArrayList<>();
-    private ArrayList<String> ctv3ProcedureCodes = new ArrayList();
-    private ArrayList<String> ctv3DisorderCodes = new ArrayList();
-    private ArrayList<String> ctv3FamilyDisorderCodes = new ArrayList();;
+    //    private ArrayList<String> ctv3ProcedureCodes = new ArrayList();
+//    private ArrayList<String> ctv3DisorderCodes = new ArrayList();
+//    private ArrayList<String> ctv3FamilyDisorderCodes = new ArrayList();;
     private Map<String, Long> staffMemberToProfileMap = new HashMap<>();
     private ThreadPool utilityThreadPool = null;
+    private Map<String, ResourceType> codeToTypes = new HashMap<>();
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -143,7 +144,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             //if one of the profiles for the staff member is the same as recorded the consultation, then that's the one to us
             if (!profileIdRecordedBy.isEmpty()) {
-                for (InternalIdMap mapping: mappings) {
+                for (InternalIdMap mapping : mappings) {
                     if (mapping.getSourceId().equals(profileIdRecordedBy.getString())) {
                         profileId = Long.valueOf(mapping.getSourceId());
                         break;
@@ -154,7 +155,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             //if we know the organisation is was done at, we can try to use that to narrow down the profile ID
             if (profileId == null
                     && !organisationDoneAtCell.isEmpty()) {
-                for (InternalIdMap mapping: mappings) {
+                for (InternalIdMap mapping : mappings) {
 
                     String mappingProfileId = mapping.getSourceId();
 
@@ -253,7 +254,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         String json = resourceHistory.getResourceData();
         return PARSER_POOL.parse(json);
     }
-
 
 
     public class DateAndCode {
@@ -384,10 +384,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void processRemainingRegistrationStatuses(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        for (Long patientId: medicalRecordStatusMap.keySet()) {
+        for (Long patientId : medicalRecordStatusMap.keySet()) {
             List<MedicalRecordStatusCacheObject> statusForPatient = medicalRecordStatusMap.get(patientId);
 
-            EpisodeOfCare episodeOfCare = (EpisodeOfCare)retrieveResource("" + patientId, ResourceType.EpisodeOfCare);
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare) retrieveResource("" + patientId, ResourceType.EpisodeOfCare);
             if (episodeOfCare == null) {
                 continue;
             }
@@ -395,7 +395,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
 
-            for (MedicalRecordStatusCacheObject status: statusForPatient) {
+            for (MedicalRecordStatusCacheObject status : statusForPatient) {
 
                 CsvCell statusCell = status.getStatusCell();
                 RegistrationStatus medicalRecordStatus = SRPatientRegistrationTransformer.convertMedicalRecordStatus(statusCell);
@@ -412,27 +412,29 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public void cacheAllergyCode(String readCode, String readTerm) {
-        allergyReadCodes.put(readCode, readTerm);
-    }
+//    public void cacheAllergyCode(String readCode, String readTerm) {
+//        allergyReadCodes.put(readCode, readTerm);
+//    }
 
-    public boolean isAllergyCode(String readCode, String readTerm) throws Exception {
-
-        // check cache first
-        if (allergyReadCodes.containsKey(readCode))
-            return true;
-
-        // check db and cache if true
-        boolean isAllergy
-                = ctv3HierarchyRefDalI.isChildCodeUnderParentCode(readCode, ALLERGIC_DISORDER);
-        if (isAllergy) {
-            cacheAllergyCode(readCode, readTerm);
-            return true;
-        }
-
-        // otherwise, it's not an allergy code
-        return false;
-    }
+//    public boolean isAllergyCode(String readCode, String readTerm) throws Exception {
+//
+//        // check cache first
+//        if (codeToTypes.get(readCode).equals(ResourceType.AllergyIntolerance)) {
+//            return true;
+//        }
+//
+//        // check db and cache if true
+//        boolean isAllergy
+//                = ctv3HierarchyRefDalI.isChildCodeUnderParentCode(readCode, ALLERGIC_DISORDER);
+//        if (isAllergy) {
+//            codeToTypes.put(readCode, ResourceType.AllergyIntolerance);
+//            cacheAllergyCode(readCode, readTerm);
+//            return true;
+//        }
+//
+//        // otherwise, it's not an allergy code
+//        return false;
+//    }
 
     public boolean isEthnicityCode(String readCode) throws Exception {
         if (knownEthnicCodes.containsKey(readCode)) {
@@ -639,7 +641,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         internalIdDal.save(mappings);
 
-        for (InternalIdMap mapping: mappings) {
+        for (InternalIdMap mapping : mappings) {
             String cacheKey = mapping.getIdType() + "|" + mapping.getSourceId();
             internalIdMapCache.put(cacheKey, mapping.getDestinationId());
         }
@@ -1007,36 +1009,60 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public boolean isProcedure(String ctv3Code) throws Exception {
-        if (ctv3ProcedureCodes.contains(ctv3Code)) {
-            return true;
-        }
-        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(ctv3Code, OPERATIONS_PROCEDURES)) {
-            ctv3ProcedureCodes.add(ctv3Code);
-            return true;
-        }
-        return false;
-    }
+//    public boolean isProcedure(String ctv3Code) throws Exception {
+//
+//        if (codeToTypes.get(ctv3Code).equals(ResourceType.Procedure)) {
+//            return true;
+//        }
+//        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(ctv3Code, OPERATIONS_PROCEDURES)) {
+//            codeToTypes.put(ctv3Code, ResourceType.Procedure);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    public boolean isDisorder(String ctv3Code) throws Exception {
+//        if (codeToTypes.get(ctv3Code).equals(ResourceType.Condition)) {
+//            return true;
+//        }
+//        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(ctv3Code, DISORDERS)) {
+//            codeToTypes.put(ctv3Code, ResourceType.Condition);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    public boolean isFamilyHistoryDisorder(String ctv3Code) throws Exception {
+//        if (codeToTypes.get(ctv3Code).equals(ResourceType.FamilyMemberHistory)) {
+//            return true;
+//        }
+//        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(ctv3Code, FAMILY_HISTORY_DISORDERS)) {
+//            codeToTypes.put(ctv3Code, ResourceType.FamilyMemberHistory);
+//            return true;
+//        }
+//        return false;
+//    }
 
-    public boolean isDisorder(String ctv3Code) throws Exception {
-        if (ctv3DisorderCodes.contains(ctv3Code)) {
-            return true;
-        }
-        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(ctv3Code, DISORDERS)) {
-            ctv3DisorderCodes.add(ctv3Code);
-            return true;
-        }
-        return false;
-    }
+    public ResourceType getResourceType(String code) throws Exception {
+        if (codeToTypes.containsKey(code)) {
+            return codeToTypes.get(code);
+        } else {
+            if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, OPERATIONS_PROCEDURES)) {
+                codeToTypes.put(code, ResourceType.Procedure);
+                return ResourceType.Procedure;
+            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, FAMILY_HISTORY_DISORDERS)) {
+                codeToTypes.put(code, ResourceType.FamilyMemberHistory);
+                return ResourceType.FamilyMemberHistory;
+            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, DISORDERS)) {
+                codeToTypes.put(code, ResourceType.Condition);
+                return ResourceType.Condition;
+            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, ALLERGIC_DISORDER)) {
+                codeToTypes.put(code, ResourceType.AllergyIntolerance);
+             return ResourceType.AllergyIntolerance;
+            }
 
-    public boolean isFamilyHistoryDisorder(String ctv3Code) throws Exception {
-        if (ctv3FamilyDisorderCodes.contains(ctv3Code)) {
-            return true;
         }
-        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(ctv3Code, FAMILY_HISTORY_DISORDERS)) {
-            ctv3FamilyDisorderCodes.add(ctv3Code);
-            return true;
-        }
-        return false;
+        return null;
+
     }
 }

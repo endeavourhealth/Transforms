@@ -732,25 +732,24 @@ public class SRCodeTransformer {
 
     //the FHIR resource type is roughly derived from the code subset and ReadCode
     public static ResourceType getTargetResourceType(SRCode parser, TppCsvHelper csvHelper) throws Exception {
-
         String readV3Code = parser.getCTV3Code().getString();
-        if (!Strings.isNullOrEmpty(readV3Code)
-                && csvHelper.isProcedure(readV3Code)
-                && !isBPCode(readV3Code)
-                && (parser.getNumericValue().isEmpty())) {
-            return ResourceType.Procedure;
-        } else if ((!Strings.isNullOrEmpty(readV3Code)
-                && csvHelper.isAllergyCode(readV3Code, parser.getCTV3Text().getString()))) {
-            return ResourceType.AllergyIntolerance;
-        } else if (!Strings.isNullOrEmpty(readV3Code)
-                && csvHelper.isFamilyHistoryDisorder(readV3Code)) {
-            return ResourceType.FamilyMemberHistory;
-        } else if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())
-                || (!Strings.isNullOrEmpty(readV3Code) && csvHelper.isDisorder(readV3Code))) {
-            return ResourceType.Condition;
-        } else {
-            return ResourceType.Observation;
+        if (!readV3Code.isEmpty()) {
+            ResourceType type = csvHelper.getResourceType(readV3Code);
+            if (type != null) {
+                 if (type.equals(ResourceType.Procedure)) {
+                     if (!isBPCode(readV3Code)) {
+                         return type;
+                     } else {
+                         return ResourceType.Condition;
+                     }
+                 }
+                 return type;
+            }
         }
+        if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())) {
+            return ResourceType.Condition;
+        }
+        return ResourceType.Observation;
     }
 
     private static Quantity.QuantityComparator convertComparator(String str) {
@@ -774,11 +773,13 @@ public class SRCodeTransformer {
     /**
      * finds out what resource type an EMIS observation was previously saved as
      */
-    public static boolean wasOriginallySavedAsCondition(FhirResourceFiler fhirResourceFiler, CsvCell codeId) throws Exception {
+    public static boolean wasOriginallySavedAsCondition(FhirResourceFiler fhirResourceFiler, CsvCell codeId) throws
+            Exception {
         return checkIfWasSavedAsResourceType(fhirResourceFiler, codeId, ResourceType.Condition);
     }
 
-    public static ResourceType wasOriginallySavedAsOtherThanCondition(FhirResourceFiler fhirResourceFiler, CsvCell codeId) throws Exception {
+    public static ResourceType wasOriginallySavedAsOtherThanCondition(FhirResourceFiler fhirResourceFiler, CsvCell
+            codeId) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
         potentialResourceTypes.add(ResourceType.Observation);
@@ -800,7 +801,8 @@ public class SRCodeTransformer {
         return null;
     }
 
-    private static boolean checkIfWasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, CsvCell codeId, ResourceType resourceType) throws Exception {
+    private static boolean checkIfWasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, CsvCell
+            codeId, ResourceType resourceType) throws Exception {
         String sourceId = codeId.getString();
         UUID uuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), resourceType, sourceId);
         return uuid != null;
