@@ -37,6 +37,8 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.endeavourhealth.core.terminology.Read2.isBPCode;
+
 public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(TppCsvHelper.class);
 
@@ -1049,18 +1051,22 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         } else {
             if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, OPERATIONS_PROCEDURES)) {
                 codeToTypes.put(code, ResourceType.Procedure);
+                if (isBPCode(code)) {
+                    return ResourceType.Observation;
+                }
                 return ResourceType.Procedure;
-            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, FAMILY_HISTORY_DISORDERS)) {
-                codeToTypes.put(code, ResourceType.FamilyMemberHistory);
-                return ResourceType.FamilyMemberHistory;
+            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, ALLERGIC_DISORDER)) {
+                codeToTypes.put(code, ResourceType.AllergyIntolerance);
+                return ResourceType.AllergyIntolerance;
             } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, DISORDERS)) {
                 codeToTypes.put(code, ResourceType.Condition);
                 return ResourceType.Condition;
-            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, ALLERGIC_DISORDER)) {
-                codeToTypes.put(code, ResourceType.AllergyIntolerance);
-             return ResourceType.AllergyIntolerance;
+            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, FAMILY_HISTORY_DISORDERS)) {
+                codeToTypes.put(code, ResourceType.FamilyMemberHistory);
+                return ResourceType.FamilyMemberHistory;
+            }  else {
+                codeToTypes.put(code, null);
             }
-
         }
         return null;
 
