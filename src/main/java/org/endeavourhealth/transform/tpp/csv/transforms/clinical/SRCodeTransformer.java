@@ -728,7 +728,6 @@ public class SRCodeTransformer {
     public static ResourceType getTargetResourceType(SRCode parser, TppCsvHelper csvHelper) throws Exception {
         String readV3Code = parser.getCTV3Code().getString();
         if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())) {
-            csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Condition); //Type maybe changed so re-cache
             return ResourceType.Condition;
         }
         if (!readV3Code.isEmpty()) {
@@ -736,7 +735,6 @@ public class SRCodeTransformer {
             if (!parser.getNumericValue().isEmpty()
                     && !csvHelper.isTppPlaceholder(parser.getNumericValue())
                     && (type.equals(ResourceType.Procedure))) {
-                csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Observation); //Type maybe changed so re-cache
                 return ResourceType.Observation;
             }
             return type;
