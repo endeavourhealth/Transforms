@@ -191,8 +191,8 @@ public abstract class TppCsvToFhirTransformer {
         }
         // We've run out of goes so print some breadcrumbs
         LOG.info("Filename : possible versions");
-        for (String fn : breadcrumbs.keySet()) {
-            LOG.info(fn + ":" + breadcrumbs.get(fn).toString());
+        for (String filePath : files) {
+            LOG.info(filePath + ":" + breadcrumbs.get(filePath).toString());
         }
         throw new TransformException("Unable to determine version for TPP CSV");
     }
