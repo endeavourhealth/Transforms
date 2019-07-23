@@ -740,7 +740,7 @@ public class SRCodeTransformer {
                      if (!isBPCode(readV3Code)) {
                          return type;
                      } else {
-                         return ResourceType.Condition;
+                         return ResourceType.Observation;
                      }
                  }
                  return type;
