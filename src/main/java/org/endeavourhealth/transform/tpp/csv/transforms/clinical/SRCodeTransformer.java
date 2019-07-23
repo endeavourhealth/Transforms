@@ -6,10 +6,7 @@ import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
@@ -737,7 +734,7 @@ public class SRCodeTransformer {
             csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Condition);
             return ResourceType.Condition;
         }
-        if (!parser.getNumericValue().isEmpty()) {
+        if (!parser.getNumericValue().isEmpty() && !csvHelper.isTppEmpty(parser.getNumericValue())) {
             csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Observation);
             return ResourceType.Observation;
         }
@@ -747,6 +744,8 @@ public class SRCodeTransformer {
         }
         return ResourceType.Observation;
     }
+
+
 
     private static Quantity.QuantityComparator convertComparator(String str) {
         if (str.equalsIgnoreCase("<=")) {

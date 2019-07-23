@@ -1075,4 +1075,14 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void cacheCTV3CodeToResourceType(String code, ResourceType type) {
         codeToTypes.put(code,type);
     }
+
+    public static boolean isTppEmpty(CsvCell cell) {
+        //Test for one of the TPP placeholders 0, 0.0, -1, -1.0
+        Double zero = 0.0;
+        Double negOne = -1.0;
+       if (cell.getDouble() == zero || cell.getDouble() == negOne ) {
+           return true;
+       }
+       return false;
+    }
 }
