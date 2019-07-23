@@ -737,7 +737,11 @@ public class SRCodeTransformer {
             csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Condition);
             return ResourceType.Condition;
         }
-        if (!readV3Code.isEmpty() || !parser.getNumericValue().isEmpty()) {
+        if (!parser.getNumericValue().isEmpty()) {
+            csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Observation);
+            return ResourceType.Observation;
+        }
+        if (!readV3Code.isEmpty() ) {
             ResourceType type = csvHelper.getResourceType(readV3Code);
             return type;
         }
