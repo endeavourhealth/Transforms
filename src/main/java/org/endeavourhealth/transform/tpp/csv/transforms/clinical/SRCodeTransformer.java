@@ -733,14 +733,13 @@ public class SRCodeTransformer {
     //the FHIR resource type is roughly derived from the code subset and ReadCode
     public static ResourceType getTargetResourceType(SRCode parser, TppCsvHelper csvHelper) throws Exception {
         String readV3Code = parser.getCTV3Code().getString();
+        if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())) {
+            csvHelper.cacheCTV3CodeToResourceType(readV3Code, ResourceType.Condition);
+            return ResourceType.Condition;
+        }
         if (!readV3Code.isEmpty() || !parser.getNumericValue().isEmpty()) {
             ResourceType type = csvHelper.getResourceType(readV3Code);
-            if (type != null) {
-                return type;
-            }
-        }
-        if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())) {
-            return ResourceType.Condition;
+            return type;
         }
         return ResourceType.Observation;
     }

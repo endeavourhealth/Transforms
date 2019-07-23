@@ -1050,25 +1050,29 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return codeToTypes.get(code);
         } else {
             if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, OPERATIONS_PROCEDURES)) {
-                codeToTypes.put(code, ResourceType.Procedure);
+                cacheCTV3CodeToResourceType(code, ResourceType.Procedure);
                 if (isBPCode(code)) {
+                    cacheCTV3CodeToResourceType(code, ResourceType.Observation);
                     return ResourceType.Observation;
                 }
                 return ResourceType.Procedure;
             } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, ALLERGIC_DISORDER)) {
-                codeToTypes.put(code, ResourceType.AllergyIntolerance);
+                cacheCTV3CodeToResourceType(code, ResourceType.AllergyIntolerance);
                 return ResourceType.AllergyIntolerance;
-            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, DISORDERS)) {
-                codeToTypes.put(code, ResourceType.Condition);
-                return ResourceType.Condition;
             } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, FAMILY_HISTORY_DISORDERS)) {
-                codeToTypes.put(code, ResourceType.FamilyMemberHistory);
+                cacheCTV3CodeToResourceType(code, ResourceType.FamilyMemberHistory);
                 return ResourceType.FamilyMemberHistory;
+            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, DISORDERS)) {
+                cacheCTV3CodeToResourceType(code, ResourceType.Condition);
+                return ResourceType.Condition;
             }  else {
-                codeToTypes.put(code, null);
+                cacheCTV3CodeToResourceType(code, ResourceType.Observation);
             }
         }
-        return null;
-
+        cacheCTV3CodeToResourceType(code,ResourceType.Observation);
+        return ResourceType.Observation;
+    }
+    public void cacheCTV3CodeToResourceType(String code, ResourceType type) {
+        codeToTypes.put(code,type);
     }
 }
