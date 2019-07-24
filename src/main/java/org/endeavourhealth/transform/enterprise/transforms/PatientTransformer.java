@@ -99,11 +99,13 @@ public class PatientTransformer extends AbstractTransformer {
         String targetSkid = null;
 
         id = enterpriseId.longValue();
-        if (fhirPatient.getManagingOrganization().isEmpty()) {
-            organizationId = params.getEnterpriseOrganisationId().longValue();
-        } else {
-            organizationId= transformOnDemandAndMapId(fhirPatient.getManagingOrganization(),params);
-        }
+        organizationId = params.getEnterpriseOrganisationId().longValue();
+        //TODO Adastra had problems with organizationId. See also EpisodeOfCare
+//        if (fhirPatient.getManagingOrganization().isEmpty()) {
+//            organizationId = params.getEnterpriseOrganisationId().longValue();
+//        } else {
+//            organizationId= transformOnDemandAndMapId(fhirPatient.getManagingOrganization(),params);
+//        }
         personId = enterprisePersonId.longValue();
 
         if (fhirPatient.hasCareProvider()) {
