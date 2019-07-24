@@ -81,7 +81,7 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
         if (fhir.getSlot().size() > 1) {
             throw new TransformException("Cannot handle appointments linked to multiple slots " + fhir.getId());
         }
-        if (fhir.getSlot().size() > 1) {
+        if (fhir.getSlot().size() > 0) {
             Reference slotReference = fhir.getSlot().get(0);
             Slot fhirSlot = (Slot) findResource(slotReference, params);
             if (fhirSlot != null) {
