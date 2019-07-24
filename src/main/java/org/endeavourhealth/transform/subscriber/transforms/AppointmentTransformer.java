@@ -56,7 +56,7 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
         Date cancelledDate = null;
 
         if (fhir.hasParticipant()) {
-            for (Appointment.AppointmentParticipantComponent participantComponent: fhir.getParticipant()) {
+            for (Appointment.AppointmentParticipantComponent participantComponent : fhir.getParticipant()) {
                 Reference reference = participantComponent.getActor();
                 ReferenceComponents components = ReferenceHelper.getReferenceComponents(reference);
 
@@ -81,17 +81,19 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
         if (fhir.getSlot().size() > 1) {
             throw new TransformException("Cannot handle appointments linked to multiple slots " + fhir.getId());
         }
-        Reference slotReference = fhir.getSlot().get(0);
-        Slot fhirSlot = (Slot)findResource(slotReference, params);
-        if (fhirSlot != null) {
+        if (fhir.getSlot().size() > 1) {
+            Reference slotReference = fhir.getSlot().get(0);
+            Slot fhirSlot = (Slot) findResource(slotReference, params);
+            if (fhirSlot != null) {
 
-            Reference scheduleReference = fhirSlot.getSchedule();
-            scheduleId = transformOnDemandAndMapId(scheduleReference, params);
+                Reference scheduleReference = fhirSlot.getSchedule();
+                scheduleId = transformOnDemandAndMapId(scheduleReference, params);
 
-        } else {
-            //a bug was found that meant this happened. So if it happens again, something is wrong
-            throw new TransformException("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
-            //LOG.warn("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
+            } else {
+                //a bug was found that meant this happened. So if it happens again, something is wrong
+                throw new TransformException("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
+                //LOG.warn("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
+            }
         }
 
         startDate = fhir.getStart();
@@ -99,7 +101,7 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
         Date end = fhir.getEnd();
         if (startDate != null && end != null) {
             long millisDiff = end.getTime() - startDate.getTime();
-            plannedDuration = Integer.valueOf((int)(millisDiff / (1000 * 60)));
+            plannedDuration = Integer.valueOf((int) (millisDiff / (1000 * 60)));
         }
 
         if (fhir.hasMinutesDuration()) {
@@ -111,10 +113,10 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
         appointmentStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_APPOINTMENT_STATUS, status.toCode(), status.getDisplay());
 
         if (fhir.hasExtension()) {
-            for (Extension extension: fhir.getExtension()) {
+            for (Extension extension : fhir.getExtension()) {
 
                 if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_PATIENT_WAIT)) {
-                    Duration d = (Duration)extension.getValue();
+                    Duration d = (Duration) extension.getValue();
                     if (!d.getUnit().equalsIgnoreCase("minutes")) {
                         throw new TransformException("Unsupported patient wait unit [" + d.getUnit() + "] in " + fhir.getId());
                     }
@@ -122,7 +124,7 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
                     patientWait = Integer.valueOf(i);
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_PATIENT_DELAY)) {
-                    Duration d = (Duration)extension.getValue();
+                    Duration d = (Duration) extension.getValue();
                     if (!d.getUnit().equalsIgnoreCase("minutes")) {
                         throw new TransformException("Unsupported patient delay unit [" + d.getUnit() + "] in " + fhir.getId());
                     }
@@ -130,11 +132,11 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
                     patientDelay = Integer.valueOf(i);
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_SENT_IN)) {
-                    DateTimeType dt = (DateTimeType)extension.getValue();
+                    DateTimeType dt = (DateTimeType) extension.getValue();
                     sentIn = dt.getValue();
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_LEFT)) {
-                    DateTimeType dt = (DateTimeType)extension.getValue();
+                    DateTimeType dt = (DateTimeType) extension.getValue();
                     left = dt.getValue();
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_ORIGINAL_IDENTIFIER)) {
@@ -142,7 +144,7 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
                     sourceId = orig_id.getValue();
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_CANCELLATION_DATE)) {
-                    DateTimeType dt = (DateTimeType)extension.getValue();
+                    DateTimeType dt = (DateTimeType) extension.getValue();
                     cancelledDate = dt.getValue();
                 }
             }
