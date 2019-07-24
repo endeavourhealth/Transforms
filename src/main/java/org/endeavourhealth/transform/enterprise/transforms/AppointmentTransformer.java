@@ -68,17 +68,19 @@ public class AppointmentTransformer extends AbstractTransformer {
         if (fhir.getSlot().size() > 1) {
             throw new TransformException("Cannot handle appointments linked to multiple slots " + fhir.getId());
         }
-        Reference slotReference = fhir.getSlot().get(0);
-        Slot fhirSlot = (Slot)findResource(slotReference, params);
-        if (fhirSlot != null) {
+        if (fhir.getSlot().size()>0) {
+            Reference slotReference = fhir.getSlot().get(0);
+            Slot fhirSlot = (Slot) findResource(slotReference, params);
+            if (fhirSlot != null) {
 
-            Reference scheduleReference = fhirSlot.getSchedule();
-            scheduleId = transformOnDemandAndMapId(scheduleReference, params);
+                Reference scheduleReference = fhirSlot.getSchedule();
+                scheduleId = transformOnDemandAndMapId(scheduleReference, params);
 
-        } else {
-            //a bug was found that meant this happened. So if it happens again, something is wrong
-            throw new TransformException("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
-            //LOG.warn("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
+            } else {
+                //a bug was found that meant this happened. So if it happens again, something is wrong
+                throw new TransformException("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
+                //LOG.warn("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
+            }
         }
 
         startDate = fhir.getStart();
