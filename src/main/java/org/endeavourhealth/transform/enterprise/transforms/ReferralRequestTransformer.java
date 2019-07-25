@@ -219,8 +219,11 @@ public class ReferralRequestTransformer extends AbstractTransformer {
         Practitioner.PractitionerPractitionerRoleComponent role = fhirPractitioner.getPractitionerRole().get(0);
         Reference organisationReference = role.getManagingOrganization();
 
-        Long ret = transformOnDemandAndMapId(organisationReference, params);
-        return ret;
+        if (!organisationReference.isEmpty()) {
+            Long ret = transformOnDemandAndMapId(organisationReference, params);
+            return ret;
+        }
+        return null;
     }
 
 }
