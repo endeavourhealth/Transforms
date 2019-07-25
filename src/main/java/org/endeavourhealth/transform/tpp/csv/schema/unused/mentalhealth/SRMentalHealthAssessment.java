@@ -20,7 +20,8 @@ public class SRMentalHealthAssessment extends AbstractCsvParser {
                 TppCsvToFhirTransformer.ENCODING);
     }
 
-
+    //TODO review columns. Added some per DA data from
+    // /TPP-YDDH3_08Y/2019-07-17T02.19.00/Split/E87742/SRMentalHealthAssessment.csv
     @Override
     protected String[] getCsvHeaders(String version) {
         return new String[]{
@@ -37,8 +38,10 @@ public class SRMentalHealthAssessment extends AbstractCsvParser {
                 "IDCPA",
                 "IDEvent",
                 "IDPatient",
-                "IDOrganisation"
-
+                "IDOrganisation",
+                "IDOrganisationRegisteredAt",
+                "ValidationDate",
+                "RemovedData"
 
         };
 
