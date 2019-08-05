@@ -3,11 +3,15 @@ package org.endeavourhealth.transform.emis.custom.helpers;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
+import org.endeavourhealth.common.utility.ThreadPool;
+import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.common.AbstractCsvCallable;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -25,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.Callable;
 
 public class EmisCustomCsvHelper {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCustomCsvHelper.class);
@@ -32,6 +37,12 @@ public class EmisCustomCsvHelper {
     private static ResourceDalI resourceDal = DalProvider.factoryResourceDal();
 
     private Map<String, List<RegStatusObj>> regStatusCache = new HashMap<>();
+    private ThreadPool utilityThreadPool = null;
+    private UUID serviceId;
+
+    public EmisCustomCsvHelper(UUID serviceId) {
+        this.serviceId = serviceId;
+    }
 
     public void saveRegistrationStatues(FhirResourceFiler fhirResourceFiler) throws Exception {
 
@@ -366,6 +377,30 @@ public class EmisCustomCsvHelper {
         regTypeCache.put(key, regTypeCell);
     }*/
 
+    public void submitToThreadPool(Callable callable) throws Exception {
+        if (this.utilityThreadPool == null) {
+            int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
+            this.utilityThreadPool = new ThreadPool(threadPoolSize, 50000);
+        }
+
+        List<ThreadPoolError> errors = utilityThreadPool.submit(callable);
+        AbstractCsvCallable.handleErrors(errors);
+    }
+
+    public void waitUntilThreadPoolIsEmpty() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitUntilEmpty();
+            AbstractCsvCallable.handleErrors(errors);
+        }
+    }
+
+    public void stopThreadPool() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitAndStop();
+            AbstractCsvCallable.handleErrors(errors);
+        }
+    }
+
     class RegStatusObj {
         private CsvCell patientGuidCell;
         private CsvCell regStatusCell;
@@ -438,5 +473,6 @@ public class EmisCustomCsvHelper {
             }
         }
     }
+
 
 }

@@ -44,11 +44,11 @@ public class ImmunizationBuilder extends ResourceBuilderBase
         auditValue("patient.reference", sourceCells);
     }
 
-    public void setLocation(Reference locationReference, CsvCell... sourceCells) {
+    /*public void setLocation(Reference locationReference, CsvCell... sourceCells) {
         this.immunization.setLocation(locationReference);
 
         auditValue("location.reference", sourceCells);
-    }
+    }*/
 
     public void setSite(String site, CsvCell... sourceCells) {
         if (!Strings.isNullOrEmpty(site)) {

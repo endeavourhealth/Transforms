@@ -229,7 +229,7 @@ public abstract class ResourceBuilderBase {
         }
     }
 
-    public void createOrUpdateContextExtension(String context, CsvCell... sourceCells) {
+    protected void createOrUpdateContextExtension(String context, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateStringExtension(getResource(), FhirExtensionUri.RESOURCE_CONTEXT, context);
 
         auditStringExtension(extension, sourceCells);
