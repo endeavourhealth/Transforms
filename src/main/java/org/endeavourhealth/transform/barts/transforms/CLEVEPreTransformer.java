@@ -260,11 +260,14 @@ public class CLEVEPreTransformer {
         }
 
         //despite the event class saying "numeric" there are lots of events where the result is "negative" (e.g. pregnancy tests)
-        //so we need to test the value itself can be turned into a number
+        //so we need to test the value itself can be turned into a number.  Also checks for NaN values which are NotANumber
         String resultText = resultTextCell.getString();
         try {
-            new Double(resultText);
-            return true;
+            Double value = new Double(resultText);
+            if (value.isNaN())
+                return false;
+            else
+                return true;
 
         } catch (NumberFormatException nfe) {
             //if it's not a number, try checking for comparators at the start
