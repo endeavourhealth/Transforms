@@ -660,6 +660,9 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         //to save messy handling of non-empty but "empty" strings, trim whitespace of any non-null value
         if (value != null) {
             value = value.replace("\\u00a0", " ").trim(); // replace nbsp with normal space.
+
+            //strip out any high ascii values, i.e. those outside of range 0-127
+            value = value.replaceAll("[^\\x00-\\x7F]", "");
         }
 
         //long rowAuditId = getSourceFileRecordIdForCurrentRow();
