@@ -37,9 +37,14 @@ public class RegistrationStatusTransformer {
         CsvCell regStatusCell = parser.getRegistrationStatus();
         CsvCell regTypeCell = parser.getRegistrationType();
         CsvCell organisationGuidCell = parser.getOrganisationGuid();
-        //CsvCell processingOrderCell = parser.getProcessingOrder();
 
-        csvHelper.cacheRegStatus(patientGuidCell, regStatusCell, dateTimeCell, regTypeCell, organisationGuidCell);
+        //emis seem unable to work out if they can consistently provide this cell or not, so handle it being absent
+        Integer processingOrder = null;
+        if (parser.getVersion().equals(RegistrationStatus.VERSION_WITH_PROCESSING_ID)) {
+            processingOrder = parser.getProcessingOrder().getInt();
+        }
+
+        csvHelper.cacheRegStatus(patientGuidCell, regStatusCell, dateTimeCell, regTypeCell, organisationGuidCell, processingOrder);
     }
 
 

@@ -347,9 +347,9 @@ public class EmisCustomCsvHelper {
         return new EpisodeOfCareBuilder(episodeOfCare);
     }*/
 
-    public void cacheRegStatus(CsvCell patientGuidCell, CsvCell regStatusCell, CsvCell dateTimeCell, CsvCell regTypeCell, CsvCell organisationGuidCell) {
+    public void cacheRegStatus(CsvCell patientGuidCell, CsvCell regStatusCell, CsvCell dateTimeCell, CsvCell regTypeCell, CsvCell organisationGuidCell, Integer processingOrder) {
 
-        RegStatusObj obj = new RegStatusObj(patientGuidCell, regStatusCell, dateTimeCell, regTypeCell, organisationGuidCell);
+        RegStatusObj obj = new RegStatusObj(patientGuidCell, regStatusCell, dateTimeCell, regTypeCell, organisationGuidCell, processingOrder);
 
         String key = patientGuidCell.getString();
         List<RegStatusObj> list = regStatusCache.get(key);
@@ -405,16 +405,17 @@ public class EmisCustomCsvHelper {
         private CsvCell patientGuidCell;
         private CsvCell regStatusCell;
         private CsvCell dateTimeCell;
-        //private int processingOrder;
         private CsvCell regTypeCell;
         private CsvCell organisationGuidCell;
+        private Integer processingOrder;
 
-        public RegStatusObj(CsvCell patientGuidCell, CsvCell regStatusCell, CsvCell dateTimeCell, CsvCell regTypeCell, CsvCell organisationGuidCell) {
+        public RegStatusObj(CsvCell patientGuidCell, CsvCell regStatusCell, CsvCell dateTimeCell, CsvCell regTypeCell, CsvCell organisationGuidCell, Integer processingOrder) {
             this.patientGuidCell = patientGuidCell;
             this.regStatusCell = regStatusCell;
             this.dateTimeCell = dateTimeCell;
             this.regTypeCell = regTypeCell;
             this.organisationGuidCell = organisationGuidCell;
+            this.processingOrder = processingOrder;
         }
 
         public CsvCell getPatientGuidCell() {
@@ -437,6 +438,10 @@ public class EmisCustomCsvHelper {
             return organisationGuidCell;
         }
 
+        public Integer getProcessingOrder() {
+            return processingOrder;
+        }
+
         public RegistrationType convertRegistrationType() throws Exception {
             return RegistrationStatusTransformer.convertRegistrationType(regTypeCell.getInt());
         }
@@ -451,28 +456,36 @@ public class EmisCustomCsvHelper {
 
         public int compareTo(RegStatusObj other) {
 
-            //need to handle potential exception from date format errors
+            //if we have processing order, then use that
+            if (processingOrder != null) {
+                int comp = processingOrder.compareTo(other.getProcessingOrder());
+                if (comp != 0) {
+                    return comp;
+                }
+            }
+
+            //if no processing order column or the processing orders are the same, then compare the dates
             try {
                 Date d1 = getDateTimeCell().getDateTime();
                 Date d2 = other.getDateTimeCell().getDateTime();
 
-                int diff = d1.compareTo(d2);
-
-                //some old date has multiple reg statuses on the same date and without a time, so
-                //if we find these, look at the status itself to work out a suitable ordering. Just using the
-                //raw reg status value seems to give the ideal result.
-                if (diff == 0) {
-                    Integer i1 = getRegStatusCell().getInt();
-                    Integer i2 = other.getRegStatusCell().getInt();
-                    diff = i1.compareTo(i2);
+                int comp = d1.compareTo(d2);
+                if (comp != 0) {
+                    return comp;
                 }
-                return diff;
-
             } catch (Exception ex) {
+                //need to handle potential exception from date format errors
                 throw new RuntimeException("Failed to compare reg status objects", ex);
             }
+
+            //if the dates are the same, then use the reg status value and compare by that
+            //as that seems to give an ideal result.
+            Integer i1 = getRegStatusCell().getInt();
+            Integer i2 = other.getRegStatusCell().getInt();
+            return i1.compareTo(i2);
         }
     }
 
 
 }
+
