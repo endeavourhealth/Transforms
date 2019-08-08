@@ -320,22 +320,22 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
      * when we open this file, this function is called to ensure the content is fully audited. If not, it will use
      * a thread pool to iterate through the file and ensure every row is audited
      */
-    private void ensureFileAudited() throws Exception {
+    public Integer ensureFileAudited() throws Exception {
 
         //if this file doesn't need auditing, just return out
         if (!isFileAudited()) {
-            return;
+            return null;
         }
 
         //to work out the Emis CSV version, we create parsers but don't use them to process any records, so
         //detect this by the null service ID and just return out
         if (this.serviceId == null) {
-            return;
+            return null;
         }
 
         //if we've already audited this file, then just return out
         if (this.fileAuditId != null) {
-            return;
+            return this.fileAuditId;
         }
 
         PublishedFileType publishedFileType = new PublishedFileType();
@@ -350,6 +350,7 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         }
 
         this.fileAuditId = PublishedFileAuditHelper.auditPublishedFileRecord(this, skipFirstRow(), publishedFileType);
+        return this.fileAuditId;
     }
 
     /*private void ensureFileAudited() throws Exception {

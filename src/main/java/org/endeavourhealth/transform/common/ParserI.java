@@ -18,4 +18,6 @@ public interface ParserI extends HasServiceSystemAndExchangeIdI {
     CsvCell getCell(String column);
     //void setRowAuditId(int recordNumber, Long rowAuditId);
     void setNumLines(Integer numLines);
+
+    Integer ensureFileAudited() throws Exception;
 }
