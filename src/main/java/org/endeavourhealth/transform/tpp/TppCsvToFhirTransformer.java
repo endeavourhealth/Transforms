@@ -201,7 +201,7 @@ public abstract class TppCsvToFhirTransformer {
         throw new TransformException("Unable to determine version for TPP CSV");
     }
 
-    private static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String version, String[] files, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String version, String[] files, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         for (String filePath : files) {
 

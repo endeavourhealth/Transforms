@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 
 public class ENCNTPreTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(ENCNTTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ENCNTPreTransformer.class);
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
