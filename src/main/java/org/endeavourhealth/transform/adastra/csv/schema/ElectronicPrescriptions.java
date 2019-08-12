@@ -32,7 +32,7 @@ public class ElectronicPrescriptions extends AbstractCsvParser {
                     "CancellationReasonCode",
                     "CancellationReasonText",
                     "PharmacyName",
-                    "PrescriberNumber ",
+                    "PrescriberNumber",
                     "PrescriberName"
             };
     }
