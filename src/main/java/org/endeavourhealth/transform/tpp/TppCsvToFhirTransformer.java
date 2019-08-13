@@ -65,6 +65,11 @@ public abstract class TppCsvToFhirTransformer {
         String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
         LOG.info("Invoking TPP CSV transformer for " + files.length + " files and service " + fhirResourceFiler.getServiceId());
 
+        if (files.length == 0) {
+            LOG.info("No files in exchange, so returning out");
+            return;
+        }
+
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         Map<Class, AbstractCsvParser> parsers = new HashMap<>();
