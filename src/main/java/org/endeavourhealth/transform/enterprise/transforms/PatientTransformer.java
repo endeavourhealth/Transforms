@@ -375,12 +375,12 @@ public class PatientTransformer extends AbstractTransformer {
             }
         }
 
-        LOG.trace("Checking if should write person record for patient " + patientId + " with person ID " + discoveryPersonId);
+        //LOG.trace("Checking if should write person record for patient " + patientId + " with person ID " + discoveryPersonId);
 
         //get the other patient IDs for our person record
         List<PatientSearch> patientSearchesInProtocol = new ArrayList<>();
         patientSearchesInProtocol.add(patientSearch);
-        LOG.trace("Added our patient search record: " + patientSearch);
+        //LOG.trace("Added our patient search record: " + patientSearch);
 
         Map<String, String> allPatientIdMap = patientLinkDal.getPatientAndServiceIdsForPerson(discoveryPersonId);
         for (String otherPatientId: allPatientIdMap.keySet()) {
@@ -391,27 +391,26 @@ public class PatientTransformer extends AbstractTransformer {
             }
 
             PatientSearch otherPatientSearch = patientSearchDal.searchByPatientId(UUID.fromString(otherPatientId));
-            LOG.trace("Matches to other patient " + otherPatientId + " with patient search record: " + otherPatientSearch);
+            //LOG.trace("Matches to other patient " + otherPatientId + " with patient search record: " + otherPatientSearch);
 
             //if we get null back, then we'll have deleted the patient, so just skip the ID
             if (otherPatientSearch == null) {
-                LOG.trace("Deleted patient search record, so skipping");
-                //LOG.error("Failed to get patient search record for patient ID " + otherPatientId);
+                //LOG.trace("Deleted patient search record, so skipping");
                 continue;
             }
 
             //if this patient search record isn't in our protocol, skip it
             String otherPatientSearchService = otherPatientSearch.getServiceId().toString();
             if (!serviceIdsInProtocol.contains(otherPatientSearchService)) {
-                LOG.trace("Patient record is not part of protocol, so skipping");
+                //LOG.trace("Patient record is not part of protocol, so skipping");
                 continue;
             }
 
             patientSearchesInProtocol.add(otherPatientSearch);
-            LOG.trace("Added other patient search record: " + otherPatientSearch);
+            //LOG.trace("Added other patient search record: " + otherPatientSearch);
         }
 
-        LOG.trace("Got " + patientSearchesInProtocol.size() + " patient search records: " + patientSearchesInProtocol);
+        //LOG.trace("Got " + patientSearchesInProtocol.size() + " patient search records: " + patientSearchesInProtocol);
 
         //sort the patient searches so active GP ones are first
         patientSearchesInProtocol.sort((o1, o2) -> {
