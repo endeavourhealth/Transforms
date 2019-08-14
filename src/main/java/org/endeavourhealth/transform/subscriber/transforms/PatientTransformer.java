@@ -635,7 +635,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         Set<String> serviceIdsInProtocol = new HashSet<>();
 
         for (ServiceContract serviceContract: protocol.getServiceContract()) {
-            if (serviceContract.getType().equals(ServiceContractType.SUBSCRIBER)
+            if (serviceContract.getType().equals(ServiceContractType.PUBLISHER)
                 && serviceContract.getActive() == ServiceContractActive.TRUE) {
 
                 serviceIdsInProtocol.add(serviceContract.getService().getUuid());
