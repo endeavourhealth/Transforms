@@ -296,6 +296,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRHospitalAAndENumber");
             set.add("SRCHSStatusHistory");
             set.add("SRMentalHealthAssessment");
+            set.add("SRCarePlanFrequency");
 
             cachedFileNamesToIgnore = set;
         }
