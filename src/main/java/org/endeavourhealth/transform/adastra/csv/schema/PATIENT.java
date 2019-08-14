@@ -81,6 +81,7 @@ public class PATIENT extends AbstractCsvParser {
                     "MobilePhone",
                     "HomePhone",
                     "OtherPhone",
+                    "EthnicCode",
                     "LastEditByUserRef"
             };
         }
@@ -196,6 +197,7 @@ public class PATIENT extends AbstractCsvParser {
     }
 
     //version 2 additional
+    public CsvCell getEthnicCode() { return super.getCell("EthnicCode"); }
 
     public CsvCell getLastEditByUserRef() {
         return super.getCell("LastEditByUserRef");

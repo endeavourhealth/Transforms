@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.adastra.AdastraCsvHelper;
 import org.endeavourhealth.transform.adastra.csv.schema.PATIENT;
 import org.endeavourhealth.transform.common.*;
@@ -166,16 +167,8 @@ public class PATIENTTransformer {
             contactPointBuilder.setValue(mobilePhone.getString(), mobilePhone);
         }
 
-        //the registration type is a property of a patient's stay at an organisation, so add to that resource
-        CsvCell regType = parser.getRegistrationType();
-        if (!regType.isEmpty()) {
-
-            if (regType.getString().trim().equalsIgnoreCase("Registered")) {
-                episodeBuilder.setRegistrationType(RegistrationType.REGULAR_GMS);
-            } else {
-                episodeBuilder.setRegistrationType(RegistrationType.OTHER);
-            }
-        }
+        //the registration type is a property of a patient's stay at the OOH organisation, so add to that resource
+        episodeBuilder.setRegistrationType(RegistrationType.OUT_OF_HOURS);
 
         CsvCell language = parser.getLanguage();
         if (!language.isEmpty()) {
@@ -189,9 +182,19 @@ public class PATIENTTransformer {
             }
         }
 
-        CsvCell ethnicity = parser.getEthnicity();
-        if (!ethnicity.isEmpty()) {
-            patientBuilder.setEthnicity(mapEthnicity(ethnicity.getString()), ethnicity);
+        //v2 ethnic code supplied
+        CsvCell ethnicCode = parser.getEthnicCode();
+        if (ethnicCode != null) {
+
+            //single character code sent in v2, i.e. A-Z
+            patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicCode.getString()));
+        } else {
+
+            //otherwise, v1 full text, try to map
+            CsvCell ethnicity = parser.getEthnicity();
+            if (!ethnicity.isEmpty()) {
+                patientBuilder.setEthnicity(mapEthnicity(ethnicity.getString()), ethnicity);
+            }
         }
 
         Date registrationEndDate = episodeBuilder.getRegistrationEndDate();
@@ -254,14 +257,9 @@ public class PATIENTTransformer {
     }
 
     //try Ethnicity matching using text input string
-    private static EthnicCategory mapEthnicity(String ethnicity) {
-        if (Strings.isNullOrEmpty(ethnicity)) {
+    private static EthnicCategory mapEthnicity(String ethnicity) throws Exception {
+        if (Strings.isNullOrEmpty(ethnicity) || ethnicity.equalsIgnoreCase("Not stated")) {
             return EthnicCategory.NOT_STATED;
-        }
-
-        //if single character code sent in v2 use that, i.e. A-Z
-        if (ethnicity.trim().length() == 1) {
-            return EthnicCategory.fromCode(ethnicity);
         }
 
         //otherwise, use text matching
@@ -289,7 +287,7 @@ public class PATIENTTransformer {
         } else if (ethnicity.contains("Black") && ethnicity.contains("African")) {
             return EthnicCategory.BLACK_AFRICAN;
         } else {
-            return EthnicCategory.OTHER;
+            throw new TransformException("Unmapped ethnic type " + ethnicity);
         }
     }
 }
