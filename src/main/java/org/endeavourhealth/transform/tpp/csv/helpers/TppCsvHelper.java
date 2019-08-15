@@ -368,7 +368,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         //This code needs to check the DB to see if the existing observation is already saved as a problem
     }
 
-    public void cacheMedicalRecordStatus(CsvCell patientGuid, CsvCell dateCell, CsvCell medicalRecordStatusCell) {
+    public void cacheMedicalRecordStatus(CsvCell patientGuid, CsvCell dateCell, CsvCell medicalRecordStatusCell) throws Exception {
 
         Long key = patientGuid.getLong();
         List<MedicalRecordStatusCacheObject> list = medicalRecordStatusMap.get(key);
@@ -376,10 +376,19 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             list = new ArrayList<>();
             medicalRecordStatusMap.put(key, list);
         }
-        list.add(new MedicalRecordStatusCacheObject(dateCell, medicalRecordStatusCell));
+        try {
+            for (MedicalRecordStatusCacheObject status : list) {
+                if (status.getStatusCell().getString().equals(medicalRecordStatusCell.getString())
+                        && status.getDateCell().getDateTime().equals(dateCell.getDateTime()))
+                    return; // dupe
+            }
+            list.add(new MedicalRecordStatusCacheObject(dateCell, medicalRecordStatusCell));
+        } catch (Exception e) {
+            TransformWarnings.log(LOG,this, "");
+        }
     }
 
-    public List<MedicalRecordStatusCacheObject> getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
+    public  List<MedicalRecordStatusCacheObject> getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
         Long key = patientGuid.getLong();
         return medicalRecordStatusMap.remove(key);
     }
@@ -396,19 +405,19 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
-
-            for (MedicalRecordStatusCacheObject status : statusForPatient) {
-
-                CsvCell statusCell = status.getStatusCell();
-                RegistrationStatus medicalRecordStatus = SRPatientRegistrationTransformer.convertMedicalRecordStatus(statusCell);
-                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
-                containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
-
-                CsvCell dateCell = status.getDateCell();
-                if (!dateCell.isEmpty()) {
-                    containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
-                }
-            }
+            addRecordStatuses(statusForPatient, containedListBuilder, patientId);
+//            for (MedicalRecordStatusCacheObject status : statusForPatient) {
+//
+//                CsvCell statusCell = status.getStatusCell();
+//                RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
+//                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
+//                containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
+//
+//                CsvCell dateCell = status.getDateCell();
+//                if (!dateCell.isEmpty()) {
+//                    containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
+//                }
+//            }
 
             fhirResourceFiler.savePatientResource(null, false, episodeBuilder);
         }
@@ -1084,5 +1093,40 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
            return true;
        }
        return false;
+    }
+
+    public static void addRecordStatuses(  List<MedicalRecordStatusCacheObject> statuses, ContainedListBuilder containedListBuilder,Long  patientId) throws Exception {
+        if (statuses != null) {
+
+            for (MedicalRecordStatusCacheObject status : statuses) {
+                CsvCell statusCell = status.getStatusCell();
+                RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
+
+                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
+                containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
+
+                CsvCell dateCell = status.getDateCell();
+                if (!dateCell.isEmpty()) {
+                    containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
+                }
+            }
+        }
+    }
+    public static RegistrationStatus convertMedicalRecordStatus(CsvCell statusCell) throws Exception {
+        int medicalRecordStatus = statusCell.getInt().intValue();
+        switch (medicalRecordStatus) {
+            case 0:
+                return RegistrationStatus.DEDUCTED_RECORDS_SENT_BACK_TO_FHSA;
+            case 1:
+                return RegistrationStatus.REGISTERED_RECORD_SENT_FROM_FHSA;
+            case 2:
+                return RegistrationStatus.REGISTERED_RECORD_RECEIVED_FROM_FHSA;
+            case 3:
+                return RegistrationStatus.DEDUCTED_RECORDS_RECEIVED_BY_FHSA;
+            case 4:
+                return RegistrationStatus.DEDUCTED_RECORD_REQUESTED_BY_FHSA;
+            default:
+                throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
+        }
     }
 }

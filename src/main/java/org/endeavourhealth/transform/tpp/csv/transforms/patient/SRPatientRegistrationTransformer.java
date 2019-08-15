@@ -113,19 +113,19 @@ public class SRPatientRegistrationTransformer {
             //TODO - only want to apply these to the right episode, not all of them!
             List<MedicalRecordStatusCacheObject> statuses = csvHelper.getAndRemoveMedicalRecordStatus(patientIdCell);
             if (statuses != null) {
-
-                for (MedicalRecordStatusCacheObject status : statuses) {
-                    CsvCell statusCell = status.getStatusCell();
-                    RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
-
-                    CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
-                    containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
-
-                    CsvCell dateCell = status.getDateCell();
-                    if (!dateCell.isEmpty()) {
-                        containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
-                    }
-                }
+                 csvHelper.addRecordStatuses(statuses,containedListBuilder, patientIdCell.getLong());
+//                for (MedicalRecordStatusCacheObject status : statuses) {
+//                    CsvCell statusCell = status.getStatusCell();
+//                    RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
+//
+//                    CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
+//                    containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
+//
+//                    CsvCell dateCell = status.getDateCell();
+//                    if (!dateCell.isEmpty()) {
+//                        containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
+//                    }
+//                }
             }
 
 
@@ -282,22 +282,6 @@ public class SRPatientRegistrationTransformer {
         }
     }
 
-    public static RegistrationStatus convertMedicalRecordStatus(CsvCell statusCell) throws Exception {
-        int medicalRecordStatus = statusCell.getInt().intValue();
-        switch (medicalRecordStatus) {
-            case 0:
-                return RegistrationStatus.DEDUCTED_RECORDS_SENT_BACK_TO_FHSA;
-            case 1:
-                return RegistrationStatus.REGISTERED_RECORD_SENT_FROM_FHSA;
-            case 2:
-                return RegistrationStatus.REGISTERED_RECORD_RECEIVED_FROM_FHSA;
-            case 3:
-                return RegistrationStatus.DEDUCTED_RECORDS_RECEIVED_BY_FHSA;
-            case 4:
-                return RegistrationStatus.DEDUCTED_RECORD_REQUESTED_BY_FHSA;
-            default:
-                throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
-        }
-    }
+
 
 }
