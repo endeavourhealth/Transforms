@@ -75,7 +75,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ConditionResourceCache conditionResourceCache = new ConditionResourceCache();
     private ReferralRequestResourceCache referralRequestResourceCache = new ReferralRequestResourceCache();
     private Map<Long, String> problemReadCodes = new HashMap<>();
-//    private Map<String, String> allergyReadCodes = new HashMap<>();
+    //    private Map<String, String> allergyReadCodes = new HashMap<>();
     private Map<Long, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
@@ -384,11 +384,11 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
             list.add(new MedicalRecordStatusCacheObject(dateCell, medicalRecordStatusCell));
         } catch (Exception e) {
-            TransformWarnings.log(LOG,this, "");
+            TransformWarnings.log(LOG, this, "");
         }
     }
 
-    public  List<MedicalRecordStatusCacheObject> getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
+    public List<MedicalRecordStatusCacheObject> getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
         Long key = patientGuid.getLong();
         return medicalRecordStatusMap.remove(key);
     }
@@ -405,7 +405,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
-            addRecordStatuses(statusForPatient, containedListBuilder, patientId);
+            addRecordStatuses(statusForPatient, containedListBuilder, patientId, episodeOfCare);
 //            for (MedicalRecordStatusCacheObject status : statusForPatient) {
 //
 //                CsvCell statusCell = status.getStatusCell();
@@ -1074,44 +1074,77 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, DISORDERS)) {
                 cacheCTV3CodeToResourceType(code, ResourceType.Condition);
                 return ResourceType.Condition;
-            }  else {
+            } else {
                 cacheCTV3CodeToResourceType(code, ResourceType.Observation);
             }
         }
-        cacheCTV3CodeToResourceType(code,ResourceType.Observation);
+        cacheCTV3CodeToResourceType(code, ResourceType.Observation);
         return ResourceType.Observation;
     }
+
     public void cacheCTV3CodeToResourceType(String code, ResourceType type) {
-        codeToTypes.put(code,type);
+        codeToTypes.put(code, type);
     }
 
     public static boolean isTppPlaceholder(CsvCell cell) {
         //Test for one of the TPP placeholders 0, 0.0, -1, -1.0
         Double zero = 0.0;
         Double negOne = -1.0;
-       if (cell.getDouble() == zero || cell.getDouble() == negOne ) {
-           return true;
-       }
-       return false;
+        if (cell.getDouble() == zero || cell.getDouble() == negOne) {
+            return true;
+        }
+        return false;
     }
 
-    public static void addRecordStatuses(  List<MedicalRecordStatusCacheObject> statuses, ContainedListBuilder containedListBuilder,Long  patientId) throws Exception {
+    public static void addRecordStatuses(List<MedicalRecordStatusCacheObject> statuses, ContainedListBuilder containedListBuilder,
+                                         Long patientId, EpisodeOfCare episodeOfCare) throws Exception {
         if (statuses != null) {
-
+            Map<Date, List<String>> recordStatusMap = buildRecordStatusMap(episodeOfCare);
             for (MedicalRecordStatusCacheObject status : statuses) {
                 CsvCell statusCell = status.getStatusCell();
                 RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
-
+                CsvCell dateCell = status.getDateCell();
+                if (!dateCell.isEmpty() && !recordStatusMap.isEmpty()) {
+                    if (recordStatusMap.get(dateCell.getDate()).contains(statusCell.getString())) {
+                        continue;
+                    }
+                }
                 CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
                 containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
-
-                CsvCell dateCell = status.getDateCell();
                 if (!dateCell.isEmpty()) {
                     containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
                 }
             }
         }
     }
+
+    private static Map<Date, List<String>> buildRecordStatusMap(EpisodeOfCare episodeOfCare) {
+        Map<Date, List<String>> episodeStatuses = new HashMap<>();
+        for (Resource resource : episodeOfCare.getContained()) {
+            List_ list = (List_) resource;
+            List<List_.ListEntryComponent> entries = list.getEntry();
+            for (List_.ListEntryComponent entry : entries) {
+                Date entryDate = entry.getDate();
+                CodeableConcept codeableConcept = entry.getFlag();
+                List<Coding> codings = codeableConcept.getCoding();
+                for (Coding coding : codings) {
+                    if (episodeStatuses.containsKey(entryDate)) {
+                        if (episodeStatuses.get(entryDate).contains(coding.getCode())) {
+                            continue;
+                        } else {
+                            episodeStatuses.get(entryDate).add(coding.getCode());
+                        }
+                    } else {
+                        List<String> newList = new ArrayList<>();
+                        newList.add(coding.getCode());
+                        episodeStatuses.put(entryDate, newList);
+                    }
+                }
+            }
+        }
+        return episodeStatuses;
+    }
+
     public static RegistrationStatus convertMedicalRecordStatus(CsvCell statusCell) throws Exception {
         int medicalRecordStatus = statusCell.getInt().intValue();
         switch (medicalRecordStatus) {

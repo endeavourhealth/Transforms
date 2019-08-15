@@ -14,16 +14,11 @@ import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.cache.MedicalRecordStatusCacheObject;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRegistration;
-import org.hl7.fhir.instance.model.CodeableConcept;
-import org.hl7.fhir.instance.model.EpisodeOfCare;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SRPatientRegistrationTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRPatientRegistrationTransformer.class);
@@ -59,7 +54,7 @@ public class SRPatientRegistrationTransformer {
         //because we might receive an update to this record without a change in SRRecordStatus
         //we need to retrieve the latest instance and update, so we don't lose that status
         EpisodeOfCareBuilder episodeBuilder = null;
-        EpisodeOfCare episodeOfCare = (EpisodeOfCare)csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.EpisodeOfCare);
+        EpisodeOfCare episodeOfCare = (EpisodeOfCare) csvHelper.retrieveResource(rowIdCell.getString(), ResourceType.EpisodeOfCare);
         if (episodeOfCare == null) {
             episodeBuilder = new EpisodeOfCareBuilder();
             episodeBuilder.setId(rowIdCell.getString(), rowIdCell);
@@ -107,13 +102,15 @@ public class SRPatientRegistrationTransformer {
 
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
 
+
+
         //for GMS registrations we also may have
         if (regType != null
                 && regType == RegistrationType.REGULAR_GMS) {
             //TODO - only want to apply these to the right episode, not all of them!
             List<MedicalRecordStatusCacheObject> statuses = csvHelper.getAndRemoveMedicalRecordStatus(patientIdCell);
             if (statuses != null) {
-                 csvHelper.addRecordStatuses(statuses,containedListBuilder, patientIdCell.getLong());
+                csvHelper.addRecordStatuses(statuses, containedListBuilder, patientIdCell.getLong(), episodeOfCare);
 //                for (MedicalRecordStatusCacheObject status : statuses) {
 //                    CsvCell statusCell = status.getStatusCell();
 //                    RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
@@ -151,7 +148,6 @@ public class SRPatientRegistrationTransformer {
         }
 
 
-
         CsvCell orgIdCell = parser.getIDOrganisation();
         //LOG.debug("Doing episode of care " + episodeBuilder.getResourceId() + " for patient " + patientIdCell.getString() + " and org ID " + orgIdCell.getString());
 
@@ -175,8 +171,7 @@ public class SRPatientRegistrationTransformer {
 
                 //and if the patient is registered for GMS, then this is their registered practice too
                 if (regType != null
-                        && regType == RegistrationType.REGULAR_GMS)
-                {
+                        && regType == RegistrationType.REGULAR_GMS) {
                     Reference orgReferenceCareProvider = csvHelper.createOrganisationReference(orgIdCell);
                     if (patientBuilder.isIdMapped()) {
                         orgReferenceCareProvider = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferenceCareProvider, csvHelper);
@@ -213,10 +208,10 @@ public class SRPatientRegistrationTransformer {
         String s = regTypeCell.getString();
         String[] toks = s.split(",");
 
-        for (String tok: toks) {
+        for (String tok : toks) {
 
             if (tok.equalsIgnoreCase("GMS")
-            || tok.equalsIgnoreCase("Standard")) {
+                    || tok.equalsIgnoreCase("Standard")) {
                 types.add(RegistrationType.REGULAR_GMS);
             } else if (tok.equalsIgnoreCase("IMMEDIATELY NECESSARY")
                     || tok.equalsIgnoreCase("Immediately Necessary Treatment")) {
@@ -281,7 +276,6 @@ public class SRPatientRegistrationTransformer {
             //throw new TransformException("Don't know how to handle registration type string " + s);
         }
     }
-
 
 
 }
