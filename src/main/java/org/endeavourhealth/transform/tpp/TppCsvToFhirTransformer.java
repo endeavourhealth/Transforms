@@ -286,11 +286,12 @@ public abstract class TppCsvToFhirTransformer {
                 String version = versions.get(filePath);
                 if (version == null) {
                     LOG.info("Null version for " + filePath);
+                    continue;
 //                    for (Map.Entry<String, String> entry : versions.entrySet()) {
 //                        LOG.info("ParserMap" + entry.getKey() + "/" + entry.getValue());
 //                    }
                 }
-                if (version.equals("0")) {
+                if (version == ("0")) {
                     LOG.info("Skipping file with just headers, no data: " + filePath);
                     continue;
                 }
