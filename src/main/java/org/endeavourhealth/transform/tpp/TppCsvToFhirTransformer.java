@@ -239,6 +239,9 @@ public abstract class TppCsvToFhirTransformer {
                 AbstractCsvParser parser = createParserForFile(null, null, null, null, filePath);
                 //calling this will return the possible versions that apply to this parser
                 compatibleVersions = parser.testForValidVersions(possibleVersions);
+                if (filePath.contains("PatientRelation")) {
+                    LOG.info("PatientRelation versions " + Arrays.toString(noVersions.toArray()));
+                }
                 if (compatibleVersions.isEmpty()) {
                     ensureFileIsEmpty(filePath);
                     noVersions.add(filePath); //Not dropping straight out as multiple files may have changed.
