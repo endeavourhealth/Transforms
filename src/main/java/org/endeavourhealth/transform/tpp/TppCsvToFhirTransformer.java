@@ -259,6 +259,10 @@ public abstract class TppCsvToFhirTransformer {
             System.out.println(Arrays.toString(noVersions.toArray()));
             throw new TransformException("Unable to determine TPP CSV version for above file(s).");
         }
+
+        for (Map.Entry<String, String> entry : parserToVersionsMap.entrySet()) {
+            LOG.info("ParserMap" +entry.getKey() + "/" + entry.getValue());
+        }
     return parserToVersionsMap;
 
     }
@@ -270,6 +274,12 @@ public abstract class TppCsvToFhirTransformer {
 
             try {
                 String version = versions.get(filePath);
+                if (version == null) {
+                    LOG.info("Null version for " + filePath);
+                    for (Map.Entry<String, String> entry : versions.entrySet()) {
+                        LOG.info("ParserMap" + entry.getKey() + "/" + entry.getValue());
+                    }
+                }
                 AbstractCsvParser parser = createParserForFile(serviceId, systemId, exchangeId, version, filePath);
                 Class cls = parser.getClass();
                 parsers.put(cls, parser);
