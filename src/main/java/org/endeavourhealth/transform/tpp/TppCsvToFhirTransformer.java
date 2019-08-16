@@ -259,8 +259,9 @@ public abstract class TppCsvToFhirTransformer {
                     //
                     LOG.info("Missing newline in file. Skipping : " +filePath);
                     parserToVersionsMap.put(filePath,"0");
+                } else {
+                    LOG.error("", eio);
                 }
-                LOG.error("", eio);
             }
         }
         if (noVersions.size()>0) {
@@ -279,7 +280,8 @@ public abstract class TppCsvToFhirTransformer {
     public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId,  String[] files,Map<String, String> versions, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         for (String filePath : files) {
-
+            LOG.info("Files: " + Arrays.toString(files));
+            if (filePath == null) {continue;}
             try {
                 String version = versions.get(filePath);
                 if (version.equals("0")) {
