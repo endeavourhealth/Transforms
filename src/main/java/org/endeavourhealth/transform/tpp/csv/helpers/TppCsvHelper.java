@@ -1107,7 +1107,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
                 RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
                 CsvCell dateCell = status.getDateCell();
                 if (!dateCell.isEmpty() && !recordStatusMap.isEmpty()) {
-                    if (recordStatusMap.get(dateCell.getDate()).contains(statusCell.getString())) {
+                    List<String> stats = recordStatusMap.get(dateCell.getDate());
+                    if (!stats.isEmpty() &&  stats.contains(statusCell.getString())) {
                         continue;
                     }
                 }
