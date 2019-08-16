@@ -255,6 +255,11 @@ public abstract class TppCsvToFhirTransformer {
                 //have decided to ignore a non-empty file
                 ensureFileIsEmpty(filePath);
             } catch (IOException eio) {
+                if (eio.getMessage().contains("startline 1")) {
+                    //
+                    LOG.info("Missing newline in file. Skipping : " +filePath);
+                    parserToVersionsMap.put(filePath,"0");
+                }
                 LOG.error("", eio);
             }
         }
@@ -277,6 +282,11 @@ public abstract class TppCsvToFhirTransformer {
 
             try {
                 String version = versions.get(filePath);
+                if (version.equals("0")) {
+                    LOG.info("Skipping file with just headers, no data: " + filePath);
+                    continue;
+                }
+
                 if (version == null) {
                     LOG.info("Null version for " + filePath);
                     for (Map.Entry<String, String> entry : versions.entrySet()) {
