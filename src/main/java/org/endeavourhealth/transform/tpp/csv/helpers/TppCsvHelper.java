@@ -1108,7 +1108,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
                 CsvCell dateCell = status.getDateCell();
                 if (!dateCell.isEmpty() && !recordStatusMap.isEmpty()) {
                     List<String> stats = recordStatusMap.get(dateCell.getDate());
-                    if (!stats.isEmpty() &&  stats.contains(statusCell.getString())) {
+                    if (stats == null || stats.isEmpty() ||  stats.contains(statusCell.getString())) {
                         continue;
                     }
                 }
