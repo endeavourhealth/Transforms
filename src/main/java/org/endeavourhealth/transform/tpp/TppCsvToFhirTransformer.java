@@ -59,7 +59,7 @@ public abstract class TppCsvToFhirTransformer {
     public static final String VERSION_93 = "93"; //Basically 92 plus RemovedData
 
     private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
-    private static Map<String, String> parserToVersionsMap = new HashMap<>();
+
 
 
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
@@ -78,13 +78,13 @@ public abstract class TppCsvToFhirTransformer {
 
         //work out the version of the files by checking the headers (ignoring what was passed in)
         //version = determineVersion(files);
-        buildParserToVersionsMap(files);
+        Map<String, String> parserToVersionsMap = buildParserToVersionsMap(files);
 
         boolean processPatientData = shouldProcessPatientData(files);
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            createParsers(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), files, parsers);
+            createParsers(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), files,parserToVersionsMap, parsers);
 
             LOG.trace("Transforming TPP CSV content in " + orgDirectory);
             transformParsers(parsers, fhirResourceFiler, processPatientData);
@@ -215,10 +215,10 @@ public abstract class TppCsvToFhirTransformer {
      * the TPP schema changes without notice, so rather than define the version in the SFTP reader,
      * and then need to back pedal when we find it's changed, dynamically work it out from the CSV headers
      */
-    public static void buildParserToVersionsMap(String[] files) throws Exception {
+    public static Map<String, String> buildParserToVersionsMap(String[] files) throws Exception {
 
        List<String> possibleVersions = new ArrayList<>();
-
+        Map<String, String> parserToVersionsMap = new HashMap<>();
         possibleVersions.add(VERSION_93);
         possibleVersions.add(VERSION_92);
         possibleVersions.add(VERSION_91);
@@ -259,26 +259,17 @@ public abstract class TppCsvToFhirTransformer {
             System.out.println(Arrays.toString(noVersions.toArray()));
             throw new TransformException("Unable to determine TPP CSV version for above file(s).");
         }
+    return parserToVersionsMap;
 
-        // We've run out of goes so print some breadcrumbs
-//        LOG.info("Filename : possible versions");
-//        for (String filePath : files) {
-//            if (parserToVersionsMap.get(filePath) != null ) {
-//                LOG.info(filePath + ":" + parserToVersionsMap.get(filePath).toString());
-//            } else {
-//                LOG.info(filePath + ": has NULL breadcrumbs reference");
-//            }
-//        }
-//        throw new TransformException("Unable to determine version for TPP CSV");
     }
 
 
-    public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId,  String[] files, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId,  String[] files,Map<String, String> versions, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         for (String filePath : files) {
 
             try {
-                String version = parserToVersionsMap.get(filePath);
+                String version = versions.get(filePath);
                 AbstractCsvParser parser = createParserForFile(serviceId, systemId, exchangeId, version, filePath);
                 Class cls = parser.getClass();
                 parsers.put(cls, parser);
