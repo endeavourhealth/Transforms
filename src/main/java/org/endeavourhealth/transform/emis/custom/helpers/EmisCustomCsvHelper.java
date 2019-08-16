@@ -456,15 +456,10 @@ public class EmisCustomCsvHelper {
 
         public int compareTo(RegStatusObj other) {
 
-            //if we have processing order, then use that
-            if (processingOrder != null) {
-                int comp = processingOrder.compareTo(other.getProcessingOrder());
-                if (comp != 0) {
-                    return comp;
-                }
-            }
+            //after going round the houses for over a year, we've agreeds that the records should be sorted by DATE TIME
+            //and then only by PROCESSING ORDER if the date times are the same
 
-            //if no processing order column or the processing orders are the same, then compare the dates
+            //sort by datetime
             try {
                 Date d1 = getDateTimeCell().getDateTime();
                 Date d2 = other.getDateTimeCell().getDateTime();
@@ -478,11 +473,16 @@ public class EmisCustomCsvHelper {
                 throw new RuntimeException("Failed to compare reg status objects", ex);
             }
 
-            //if the dates are the same, then use the reg status value and compare by that
-            //as that seems to give an ideal result.
-            Integer i1 = getRegStatusCell().getInt();
-            Integer i2 = other.getRegStatusCell().getInt();
-            return i1.compareTo(i2);
+            //sort by processing order
+            if (processingOrder == null) {
+                throw new RuntimeException("No processing order column in Registration Status file");
+            }
+            int comp = processingOrder.compareTo(other.getProcessingOrder());
+            if (comp != 0) {
+                return comp;
+            }
+
+            return 0;
         }
     }
 
