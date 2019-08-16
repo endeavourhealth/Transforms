@@ -383,8 +383,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
                     return; // dupe
             }
             list.add(new MedicalRecordStatusCacheObject(dateCell, medicalRecordStatusCell));
+            medicalRecordStatusMap.put(key, list);
         } catch (Exception e) {
-            TransformWarnings.log(LOG, this, "");
+            TransformWarnings.log(LOG, this, "Error processing cached record status: possible dateformat error:"  );
         }
     }
 
