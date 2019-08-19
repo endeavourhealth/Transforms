@@ -318,9 +318,8 @@ public abstract class AbstractSubscriberTransformer {
                                         SubscriberTransformParams params) throws Exception {
 
         ResourceWrapper ret = findResourceWrapper(reference, params);
-        //the above fn returns null if it's deleted
-        //if (ret.isDeleted()) {
-        if (ret == null) {
+        if (ret == null
+                || ret.isDeleted()) {
             return null;
         } else {
             return FhirResourceHelper.deserialiseResouce(ret);
