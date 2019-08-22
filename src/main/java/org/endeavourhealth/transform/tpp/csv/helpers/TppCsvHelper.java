@@ -1101,6 +1101,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
                                          Long patientId, EpisodeOfCare episodeOfCare) throws Exception {
         if (statuses != null) {
             Map<Date, List<String>> recordStatusMap = buildRecordStatusMap(episodeOfCare);
+            if (recordStatusMap == null) {
+                return;
+            }
             for (MedicalRecordStatusCacheObject status : statuses) {
                 CsvCell statusCell = status.getStatusCell();
                 if (statusCell.isEmpty()) {continue;}
@@ -1128,6 +1131,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private static Map<Date, List<String>> buildRecordStatusMap(EpisodeOfCare episodeOfCare) {
         Map<Date, List<String>> episodeStatuses = new HashMap<>();
+        if (episodeOfCare.getContained()==null) {
+            return null;
+        }
         for (Resource resource : episodeOfCare.getContained()) {
             List_ list = (List_) resource;
             List<List_.ListEntryComponent> entries = list.getEntry();
