@@ -1131,7 +1131,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private static Map<Date, List<String>> buildRecordStatusMap(EpisodeOfCare episodeOfCare) {
         Map<Date, List<String>> episodeStatuses = new HashMap<>();
-        if (episodeOfCare.getContained()==null) {
+
+        if (episodeOfCare == null || episodeOfCare.getContained()==null) {
             return null;
         }
         for (Resource resource : episodeOfCare.getContained()) {
