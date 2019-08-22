@@ -217,7 +217,7 @@ public class StaffMemberCache {
             //TODO Restore exception when we've finished the initial load for Redbridge group.
             //Initial load missing staff records
           //  throw new TransformException("Failed to find any staff profile IDs for staff member ID " + staffMemberIdCell.getString());
-            TransformWarnings.log(LOG, csvHelper,"Unmapped staff record here." + staffMemberIdCell.getString());
+            TransformWarnings.log(LOG, csvHelper,"Unmapped staff record {} " , staffMemberIdCell.getString());
         }
 
         for (InternalIdMap mapping: mappings) {
