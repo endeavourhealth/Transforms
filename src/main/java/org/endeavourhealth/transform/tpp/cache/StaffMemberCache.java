@@ -214,7 +214,10 @@ public class StaffMemberCache {
         //find all the profiles for this staff member
         List<InternalIdMap> mappings = internalIdDal.getSourceId(csvHelper.getServiceId(), InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, staffMemberIdCell.getString());
         if (mappings.isEmpty()) {
-            throw new TransformException("Failed to find any staff profile IDs for staff member ID " + staffMemberIdCell.getString());
+            //TODO Restore exception when we've finished the initial load for Redbridge group.
+            //Initial load missing staff records
+          //  throw new TransformException("Failed to find any staff profile IDs for staff member ID " + staffMemberIdCell.getString());
+            TransformWarnings.log(LOG, csvHelper,"Unmapped staff record here." + staffMemberIdCell.getString());
         }
 
         for (InternalIdMap mapping: mappings) {
