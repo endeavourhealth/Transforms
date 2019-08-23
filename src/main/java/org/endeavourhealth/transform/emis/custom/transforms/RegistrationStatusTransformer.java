@@ -205,6 +205,8 @@ public class RegistrationStatusTransformer {
             return RegistrationType.VASECTOMY;
         } else if (value == 28) { //Out of Hours
             return RegistrationType.OUT_OF_HOURS;
+        } else if (value == 36) { //Externally Registered
+            return RegistrationType.EXTERNALLY_REGISTERED;
         } else {
             throw new TransformException("Unsupported registration type " + value);
         }
