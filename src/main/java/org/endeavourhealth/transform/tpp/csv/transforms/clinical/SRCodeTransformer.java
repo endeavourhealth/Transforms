@@ -162,7 +162,9 @@ public class SRCodeTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            allergyIntoleranceBuilder.setClinician(staffReference, staffMemberIdDoneBy);
+            if (staffReference != null) {
+                allergyIntoleranceBuilder.setClinician(staffReference, staffMemberIdDoneBy);
+            }
         }
 
         CsvCell dateRecored = parser.getDateEventRecorded();
@@ -289,7 +291,9 @@ public class SRCodeTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            procedureBuilder.addPerformer(staffReference, staffMemberIdDoneBy);
+            if (staffReference != null) {
+                procedureBuilder.addPerformer(staffReference, staffMemberIdDoneBy);
+            }
         }
 
         //status is mandatory, so set the only value we can
@@ -365,10 +369,12 @@ public class SRCodeTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            if (conditionBuilder.isIdMapped()) {
-                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
+            if (staffReference != null) {
+                if (conditionBuilder.isIdMapped()) {
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
+                }
+                conditionBuilder.setClinician(staffReference, staffMemberIdDoneBy);
             }
-            conditionBuilder.setClinician(staffReference, staffMemberIdDoneBy);
         }
 
         //status is mandatory, so set the only value we can
@@ -455,7 +461,9 @@ public class SRCodeTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            observationBuilder.setClinician(staffReference, staffMemberIdDoneBy);
+            if (staffReference != null) {
+                observationBuilder.setClinician(staffReference, staffMemberIdDoneBy);
+            }
         }
 
         //status is mandatory, so set the only value we can
@@ -669,7 +677,9 @@ public class SRCodeTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            familyMemberHistoryBuilder.setClinician(staffReference, staffMemberIdDoneBy);
+            if (staffReference != null) {
+                familyMemberHistoryBuilder.setClinician(staffReference, staffMemberIdDoneBy);
+            }
         }
 
         //status is mandatory, so set the only value we can

@@ -121,7 +121,9 @@ public class SRPrimaryCareMedicationTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
+            if (staffReference != null) {
+                medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
+            }
         }
 
         if (!parser.getDateMedicationEnd().isEmpty()) {
@@ -236,7 +238,9 @@ public class SRPrimaryCareMedicationTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            medicationOrderBuilder.setPrescriber(practitionerReference);
+            if (practitionerReference != null) {
+                medicationOrderBuilder.setPrescriber(practitionerReference);
+            }
         }
 
         CsvCell dateRecored = parser.getDateEventRecorded();

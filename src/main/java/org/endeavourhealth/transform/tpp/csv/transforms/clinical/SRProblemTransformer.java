@@ -124,10 +124,12 @@ public class SRProblemTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            if (conditionBuilder.isIdMapped()) {
-                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+            if (staffReference != null) {
+                if (conditionBuilder.isIdMapped()) {
+                    staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
+                }
+                conditionBuilder.setClinician(staffReference, staffMemberIdDoneBy);
             }
-            conditionBuilder.setClinician(staffReference, staffMemberIdDoneBy);
         }
 
         //status is mandatory, so set the only value we can

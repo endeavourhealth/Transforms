@@ -85,7 +85,9 @@ public class SRRecallTransformer {
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            procedureRequestBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
+            if (staffReference != null) {
+                procedureRequestBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
+            }
         }
 
         CsvCell recallType = parser.getRecallType();

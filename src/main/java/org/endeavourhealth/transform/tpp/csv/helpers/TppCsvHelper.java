@@ -28,7 +28,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilde
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.tpp.cache.*;
-import org.endeavourhealth.transform.tpp.csv.transforms.patient.SRPatientRegistrationTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +121,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public Reference createPractitionerReferenceForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell) throws Exception {
         Long profileId = findStaffProfileIdForStaffMemberId(staffMemberIdCell, profileIdRecordedBy, organisationDoneAtCell);
+        if (profileId == null) {
+            return null;
+        }
         return ReferenceHelper.createReference(ResourceType.Practitioner, "" + profileId);
     }
 
@@ -129,7 +131,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Observation, patientGuid + ":" + observationGuid);
     }
 
-    public Long findStaffProfileIdForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell) throws Exception {
+    private Long findStaffProfileIdForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell) throws Exception {
 
         //Practitioner resources use the profile ID as the source ID, so need to look up an ID for our staff member
         String cacheKey = staffMemberIdCell.getString() + "/" + profileIdRecordedBy.getString() + "/" + organisationDoneAtCell.getString();
@@ -138,7 +140,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             List<InternalIdMap> mappings = internalIdDal.getSourceId(serviceId, InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, staffMemberIdCell.getString());
             if (mappings.isEmpty() && !staffMemberIdCell.isEmpty()) {
-              TransformWarnings.log(LOG, this, "Failed to find any staff profile IDs for staff member ID {}", staffMemberIdCell.getString());
+                TransformWarnings.log(LOG, this, "Failed to find any staff profile IDs for staff member ID {}", staffMemberIdCell.getString());
+                return null;
                 //throw new TransformException("Failed to find any staff profile IDs for staff member ID " + staffMemberIdCell.getString());
             }
 
@@ -386,7 +389,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             list.add(new MedicalRecordStatusCacheObject(dateCell, medicalRecordStatusCell));
             medicalRecordStatusMap.put(key, list);
         } catch (Exception e) {
-            TransformWarnings.log(LOG, this, "Error processing cached record status: possible dateformat error:"  );
+            TransformWarnings.log(LOG, this, "Error processing cached record status: possible dateformat error:");
         }
     }
 
@@ -1107,14 +1110,16 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
             for (MedicalRecordStatusCacheObject status : statuses) {
                 CsvCell statusCell = status.getStatusCell();
-                if (statusCell.isEmpty()) {continue;}
+                if (statusCell.isEmpty()) {
+                    continue;
+                }
                 RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
                 CsvCell dateCell = status.getDateCell();
                 if (!dateCell.isEmpty() && !recordStatusMap.isEmpty()) {
                     List<String> stats = recordStatusMap.get(dateCell.getDate());
                     LOG.debug("Stats target:" + statusCell.getString());
 
-                    if (stats == null || stats.isEmpty() ||  stats.contains(statusCell.getString())) {
+                    if (stats == null || stats.isEmpty() || stats.contains(statusCell.getString())) {
                         continue;
                     }
                     for (String s : stats) {
@@ -1133,7 +1138,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static Map<Date, List<String>> buildRecordStatusMap(EpisodeOfCare episodeOfCare) {
         Map<Date, List<String>> episodeStatuses = new HashMap<>();
 
-        if (episodeOfCare == null || episodeOfCare.getContained()==null) {
+        if (episodeOfCare == null || episodeOfCare.getContained() == null) {
             return null;
         }
         for (Resource resource : episodeOfCare.getContained()) {

@@ -100,10 +100,12 @@ public class SRReferralOutTransformer {
         CsvCell requestedByOrg = parser.getIDOrganisationDoneAt();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
             Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
-            if (referralRequestBuilder.isIdMapped()) {
-                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+            if (practitionerReference != null) {
+                if (referralRequestBuilder.isIdMapped()) {
+                    practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                }
+                referralRequestBuilder.setRequester(practitionerReference, staffMemberIdDoneBy);
             }
-            referralRequestBuilder.setRequester(practitionerReference, staffMemberIdDoneBy);
 
         } else if (!requestedByOrg.isEmpty()) {
             Reference orgReference = csvHelper.createOrganisationReference(requestedByOrg);
