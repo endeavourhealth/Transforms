@@ -182,8 +182,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         enterpriseOrganisationId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId.toString());
         //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
-        //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
-        subscriberOrgDal.saveEnterpriseOrganisationId(serviceId.toString(), enterpriseOrganisationId);
+
 
         //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
         String orgReferenceValue = ReferenceHelper.createResourceReference(resourceType, resourceId.toString());
@@ -209,7 +208,8 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             resources.add(resourceWrapper);
             map.put(orgReferenceValue, resourceWrapper);
         }
-
+        //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
+        subscriberOrgDal.saveEnterpriseOrganisationId(serviceId.toString(), enterpriseOrganisationId);
         return enterpriseOrganisationId;
     }
 
