@@ -13,6 +13,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInsta
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberResourceMappingDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.FhirToEnterpriseCsvTransformer;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -79,11 +80,14 @@ public abstract class AbstractTransformer {
                 if (!params.hasResourceBeenTransformedAddIfNot(resourceReference)) {
 
                     if (resource.isDeleted()) {
+                       //TODO temporay debugging to understand deletes. See 2nd instance below
+                        LOG.info("Delete for resourcetype " + resourceType.getPath() + " resId:" + resourceId + " : enterpsideId:" + enterpriseId);
                         transformResourceDelete(enterpriseId, csvWriter, params);
 
                     } else {
                         Resource fhir = FhirResourceHelper.deserialiseResouce(resource);
                         if (isConfidential(fhir)) {
+                            LOG.info("Delete for resourcetype " + resourceType.getPath() + " resId:" + resourceId + " : enterpsideId:" + enterpriseId);
                             transformResourceDelete(enterpriseId, csvWriter, params);
 
                         } else {
