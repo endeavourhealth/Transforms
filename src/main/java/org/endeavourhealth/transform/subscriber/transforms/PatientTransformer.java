@@ -174,10 +174,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
-            String ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
+            String ethnicCodeId = "";
+            ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
             String display = CodeableConceptHelper.findCodingDisplay(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
 
-            ethnicCodeConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ETHNIC_CATEGORY, ethnicCodeId, display);
+            if (!ethnicCodeId.isEmpty()) {
+                ethnicCodeConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ETHNIC_CATEGORY, ethnicCodeId, display);
+            }
         }
 
         if (fhirPatient.hasCareProvider()) {
@@ -428,7 +431,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 }
 
                 Address.AddressUse use = address.getUse();
-                useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_ADDRESS_USE, use.toCode(), use.getDisplay());
+
+                if (address.hasUse()) {
+                    useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_ADDRESS_USE, use.toCode(), use.getDisplay());
+                }
 
                 if (address.hasPeriod()) {
                     startDate = address.getPeriod().getStart();
