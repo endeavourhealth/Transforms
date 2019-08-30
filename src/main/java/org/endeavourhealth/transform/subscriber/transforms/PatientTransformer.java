@@ -290,8 +290,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 Date endDate = null;
                 String value = null;
 
-                useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_USE, telecom.getUse().toCode(), telecom.getValue());
-                typeConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_SYSTEM, telecom.getSystem().toCode(), telecom.getValue());
+                if (telecom.hasUse()) {
+                    useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_USE, telecom.getUse().toCode(), telecom.getValue());
+                }
+
+                if (telecom.hasSystem()) {
+                    typeConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_SYSTEM, telecom.getSystem().toCode(), telecom.getValue());
+                }
 
                 if (!params.isPseudonymised()) {
                     value = telecom.getValue();
