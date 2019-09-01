@@ -140,7 +140,9 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
                     left = dt.getValue();
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_ORIGINAL_IDENTIFIER)) {
-                    Identifier orig_id = (Identifier) extension.getValue();
+
+                    StringType orig_id = (StringType) extension.getValue();
+                    //Identifier orig_id = (Identifier) extension.getValue(); //AppointmentBuilder uses String
                     sourceId = orig_id.getValue();
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_CANCELLATION_DATE)) {
