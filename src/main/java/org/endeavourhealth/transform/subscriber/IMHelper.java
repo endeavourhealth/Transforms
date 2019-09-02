@@ -135,7 +135,10 @@ public class IMHelper {
                 //if null, we may let it slide if in testing, just logging it out
                 if (TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
                     TransformWarnings.log(LOG, params, "Null mapped IM concept for type {} and term {} for resource {} {}", type, term, fhirResource.getResourceType(), fhirResource.getId());
-                } else {
+                } else {//TODO remove these LOGs. Trying to catch NPE exception
+                    if (type == null) {LOG.error("Type is null. Term is " + term);}
+                    if (fhirResource.getResourceType() == null) {LOG.error("Fhir resourcetype is null. Term is " + term + ". Type is " + type);}
+                    if (fhirResource.getId() == null) {LOG.error("Fhir id is null. Term is " + term + ". Type is " + type + ". Restype " + fhirResource.getResourceType());}
                     throw new TransformException("Null mapped IM concept for type " + type + " and term " + term + " for resource " + fhirResource.getResourceType() + " " + fhirResource.getId());
                 }
 
