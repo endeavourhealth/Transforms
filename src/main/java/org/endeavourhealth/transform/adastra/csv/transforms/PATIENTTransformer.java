@@ -87,10 +87,19 @@ public class PATIENTTransformer {
             CsvCell nhsNumberTraceStatus = parser.getNHSNoTraceStatus();
             if (!nhsNumberTraceStatus.isEmpty()) {
 
+                //V is the only valid verified status in Adastra.  All other known codes are non verified/traced
                 if (nhsNumberTraceStatus.getString().equalsIgnoreCase("V")) {
+
                     patientBuilder.setNhsNumberVerificationStatus(NhsNumberVerificationStatus.PRESENT_AND_VERIFIED, nhsNumberTraceStatus);
-                } else {
+                } else if (nhsNumberTraceStatus.getString().equalsIgnoreCase("U") ||
+                        nhsNumberTraceStatus.getString().equalsIgnoreCase("H") ||
+                        nhsNumberTraceStatus.getString().equalsIgnoreCase("W") ||
+                        nhsNumberTraceStatus.getString().equalsIgnoreCase("E")) {
+
                     patientBuilder.setNhsNumberVerificationStatus(NhsNumberVerificationStatus.PRESENT_BUT_NOT_TRACED, nhsNumberTraceStatus);
+                } else {
+
+                    throw new TransformException("Unknown NHS number verification status received: " + nhsNumberTraceStatus.getString());
                 }
             }
         } else {
@@ -187,7 +196,7 @@ public class PATIENTTransformer {
         if (ethnicCode != null) {
 
             //single character code sent in v2, i.e. A-Z
-            patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicCode.getString()));
+            patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicCode.getString()),ethnicCode);
         } else {
 
             //otherwise, v1 full text, try to map
@@ -287,7 +296,7 @@ public class PATIENTTransformer {
         } else if (ethnicity.contains("Black") && ethnicity.contains("African")) {
             return EthnicCategory.BLACK_AFRICAN;
         } else {
-            throw new TransformException("Unmapped ethnic type " + ethnicity);
+            throw new TransformException("Unmapped ethnic type: " + ethnicity);
         }
     }
 }
