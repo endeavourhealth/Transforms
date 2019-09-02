@@ -275,6 +275,10 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             return null;
         }
         Practitioner.PractitionerPractitionerRoleComponent role = fhirPractitioner.getPractitionerRole().get(0);
+        if (!role.hasManagingOrganization()) {
+            //From TPP we sometimes don't get a practitioner with a role encoded.
+            return null;
+        }
         Reference organisationReference = role.getManagingOrganization();
 
         Long ret = transformOnDemandAndMapId(organisationReference, params);
