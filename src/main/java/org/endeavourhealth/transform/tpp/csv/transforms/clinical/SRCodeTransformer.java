@@ -344,8 +344,18 @@ public class SRCodeTransformer {
 
         if (deleteData != null && deleteData.getIntAsBoolean()) {
 
+            //check if already Id mapped and if not, needs Id mapping, i.e. not filed yet which is an erroneous for a delete
             boolean mapIds = !conditionBuilder.isIdMapped();
+            if (mapIds) {
+
+                //the condition is being deleted here and needs Id mapping, So it has NOT been previously saved,
+                //so cannot be deleted. Therefore, Log, and return gracefully
+                TransformWarnings.log(LOG, csvHelper, "Cannot find existing Condition: {} for deletion", conditionId);
+                return;
+            }
+
             conditionBuilder.setDeletedAudit(deleteData);
+            //deletions should always be on valid mapIds = False.  The check above will prevent this being passed as True
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, conditionBuilder);
 
             return;
