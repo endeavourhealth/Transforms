@@ -1,14 +1,26 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
+import org.endeavourhealth.common.fhir.schema.OrganisationType;
+import org.endeavourhealth.common.ods.OdsOrganisation;
+import org.endeavourhealth.common.ods.OdsWebService;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInstanceMappingDalI;
+import org.endeavourhealth.core.database.rdbms.subscriberTransform.RdbmsSubscriberInstanceMappingDalI;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class OrganisationTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
@@ -95,6 +107,58 @@ public class OrganisationTransformer extends AbstractTransformer {
                     }
                 }
 
+            }
+        }
+
+        //to align the target DB with TRUD, use the ODS code to find the official name, parent etc. so the
+        //DB doesn't end up with whatever weirdness came from Emis, TPP etc.
+        if (!Strings.isNullOrEmpty(odsCode)) {
+            OdsOrganisation odsOrg = OdsWebService.lookupOrganisationViaRest(odsCode);
+            if (odsOrg != null) {
+                if (odsOrg.getOrganisationName() != null) {
+                    name = odsOrg.getOrganisationName();
+                }
+
+                OrganisationType odsType = odsOrg.getOrganisationType();
+                if (odsType != null) {
+                    typeCode = odsType.getCode();
+                    typeDesc = odsType.getDescription();
+                }
+
+                if (odsOrg.getPostcode() != null) {
+                    postcode = odsOrg.getPostcode();
+                }
+
+                /*Map<String, String> parents = odsOrg.getParents();
+                if (parents != null) {
+                    SubscriberInstanceMappingDalI instanceMappingDal = DalProvider.factorySubscriberInstanceMappingDal(params.getEnterpriseConfigName());
+
+                    List<UUID> parentResourceIds = new ArrayList<>();
+
+                    //for each parent ODS code, we need to use the instance mapping table to work back to a Resource UUID
+                    for (String parentOdsCode: parents.keySet()) {
+                        UUID parentResourceId = instanceMappingDal.findResourceIdFromInstanceMapping(ResourceType.Organization, parentOdsCode);
+                        if (parentResourceId != null) {
+                            parentResourceIds.add(parentResourceId);
+                        }
+                    }
+
+                    if (parentResourceIds.isEmpty()) {
+                        //not sure how to handle this, but also unsure if it will happen, so throw an exception and we'll see
+                        throw new Exception("Failed to find FHIR Organization for parent ODS code(s) of " + odsCode + " for " + resource.getResourceType() + " " + resource.getId());
+
+                    } else if (parentResourceIds.size() > 1) {
+                        //not sure how to handle this, but also unsure if it will happen, so throw an exception and we'll see
+                        throw new Exception("Multiple FHIR parent Organizations for parent ODS code(s) of " + odsCode + " for " + resource.getResourceType() + " " + resource.getId());
+
+                    } else {
+                        UUID parentResourceId = parentResourceIds.get(0);
+                        parentOrganisationId = findEnterpriseId(params, ResourceType.Organization.toString(), parentResourceId.toString());
+                        if (parentOrganisationId == null) {
+                            throw new Exception("Failed to find enterprise ID for Organization " + parentOrganisationId + " which is a parent of " + resource.getResourceType() + " " + resource.getId());
+                        }
+                    }
+                }*/
             }
         }
 
