@@ -9,10 +9,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisation;
-import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.ContactPoint;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +57,6 @@ public class SROrganisationTransformer {
                                               TppCsvHelper csvHelper,
                                               EmisAdminCacheFiler adminCacheFiler) throws Exception {
 
-
         //note that throughout the TPP files, the organisation ID is used rather than the rowIdentifier when referring to orgs
         CsvCell idCell = parser.getID();
 
@@ -74,12 +70,10 @@ public class SROrganisationTransformer {
         locationBuilder.setId(idCell.getString(), idCell);
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
-        if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) {
-            adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
-
-            locationBuilder.setDeletedAudit(obsoleteCell);
-            fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
-            return;
+        if (obsoleteCell != null && obsoleteCell.getBoolean()) {
+            locationBuilder.setStatus(Location.LocationStatus.INACTIVE);
+        } else {
+            locationBuilder.setStatus(Location.LocationStatus.ACTIVE);
         }
 
         CsvCell nameCell = parser.getName();
@@ -157,9 +151,11 @@ public class SROrganisationTransformer {
 
         CsvCell obsoleteCell = parser.getMadeObsolete();
         CsvCell deleted = parser.getRemovedData();
-
-        if ((obsoleteCell != null && obsoleteCell.getBoolean())
-                || (deleted != null && deleted.getIntAsBoolean())) {
+        boolean obsolete = false;
+        if (obsoleteCell != null && obsoleteCell.getBoolean()) {
+            obsolete = true;
+        }
+        if (deleted != null && deleted.getIntAsBoolean()) {
             adminCacheFiler.deleteAdminResourceFromCache(organizationBuilder);
 
             organizationBuilder.setDeletedAudit(obsoleteCell, deleted);
@@ -169,8 +165,15 @@ public class SROrganisationTransformer {
 
         CsvCell nameCell = parser.getName();
         if (!nameCell.isEmpty()) {
-            organizationBuilder.setName(nameCell.getString(), nameCell);
+            if (!obsolete) {
+                organizationBuilder.setName(nameCell.getString(), nameCell);
+            } else {
+                organizationBuilder.setName(nameCell.getString() + "(Obsolete)", nameCell);
+            }
+        } else {
+            organizationBuilder.setName("(Obsolete)", nameCell);
         }
+
 
         AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
         addressBuilder.setUse(Address.AddressUse.WORK);
