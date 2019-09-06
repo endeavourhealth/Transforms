@@ -9,7 +9,7 @@ import java.util.UUID;
 public class RegistrationStatus extends AbstractCsvParser {
 
     public static final String VERSION_WITH_PROCESSING_ID = "WithProcessingId";
-    public static final String VERSION_WITHOUT_PROCESSING_ID = "WithoutProcessingId";
+    //public static final String VERSION_WITHOUT_PROCESSING_ID = "WithoutProcessingId"; //processing ID is required for accurate sorting
 
     public RegistrationStatus(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath, CSVFormat csvFormat, String dateFormat, String timeFormat) {
         super(serviceId,
@@ -40,14 +40,14 @@ public class RegistrationStatus extends AbstractCsvParser {
                     "RegistrationType",
                     "ProcessingOrder"
             };
-        } else if (version.equals(VERSION_WITHOUT_PROCESSING_ID)) {
+        /*} else if (version.equals(VERSION_WITHOUT_PROCESSING_ID)) {
             return new String[] {
                     "OrganisationGuid",
                     "PatientGuid",
                     "Date",
                     "RegistrationStatus",
                     "RegistrationType"
-            };
+            };*/
         } else {
             throw new RuntimeException("Unknown version [" + version + "]");
         }

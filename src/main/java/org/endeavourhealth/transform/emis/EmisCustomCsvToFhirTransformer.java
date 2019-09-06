@@ -83,7 +83,7 @@ public class EmisCustomCsvToFhirTransformer {
     private static String detectRegStatusFileVersion(String filePath) throws Exception {
         List<String> possibleVersions = new ArrayList<>();
         possibleVersions.add(RegistrationStatus.VERSION_WITH_PROCESSING_ID);
-        possibleVersions.add(RegistrationStatus.VERSION_WITHOUT_PROCESSING_ID);
+        //possibleVersions.add(RegistrationStatus.VERSION_WITHOUT_PROCESSING_ID);
 
         RegistrationStatus testParser = new RegistrationStatus(null, null, null, null, filePath, CSV_FORMAT, DATE_FORMAT, TIME_FORMAT);
         possibleVersions = testParser.testForValidVersions(possibleVersions);
