@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.admin.SROrganisationBranch;
 import org.hl7.fhir.instance.model.Address;
+import org.hl7.fhir.instance.model.Location;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,8 +71,13 @@ public class SROrganisationBranchTransformer {
         CsvCell obsoleteCell = parser.getBranchObsolete();
         CsvCell deleted = parser.getRemovedData();
 
-        if ((!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) ||
-                (deleted != null && !deleted.isEmpty() && deleted.getBoolean())) {
+        if (!obsoleteCell.isEmpty() && obsoleteCell.getBoolean()) {
+            locationBuilder.setStatus(Location.LocationStatus.INACTIVE, obsoleteCell);
+        } else {
+            locationBuilder.setStatus(Location.LocationStatus.ACTIVE, obsoleteCell);
+        }
+
+        if (deleted != null && !deleted.isEmpty() && deleted.getBoolean()) {
 
             adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
 

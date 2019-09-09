@@ -68,13 +68,13 @@ public class SRCcgTransformer {
         locationBuilder.setId(CCG_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
 
         //removed data column wasn't present prior to v88
-        CsvCell obsoleteCell = parser.getRemovedData();
-        if (obsoleteCell != null //note this cell wasn't present in all versions, so need to check for null cell
-                && obsoleteCell.getBoolean()) {
+        CsvCell removedData = parser.getRemovedData(); //renamed to avoid confusion. Obsolete != delete
+        if (removedData != null //note this cell wasn't present in all versions, so need to check for null cell
+                && removedData.getBoolean()) {
 
             adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
 
-            locationBuilder.setDeletedAudit(obsoleteCell);
+            locationBuilder.setDeletedAudit(removedData);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }

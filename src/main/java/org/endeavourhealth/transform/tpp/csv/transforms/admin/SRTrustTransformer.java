@@ -66,12 +66,12 @@ public class SRTrustTransformer {
         LocationBuilder locationBuilder = new LocationBuilder();
         locationBuilder.setId(TRUST_KEY_PREFIX + rowIdCell.getString(), rowIdCell);
 
-        CsvCell obsoleteCell  = parser.getRemovedData();
+        CsvCell removedData  = parser.getRemovedData(); //Renamed to avoid confusion. obsolete != delete
 
-        if (obsoleteCell != null && !obsoleteCell.isEmpty() && obsoleteCell.getBoolean() ) {
+        if (removedData != null && !removedData.isEmpty() && removedData.getBoolean() ) {
             adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
 
-            locationBuilder.setDeletedAudit(obsoleteCell);
+            locationBuilder.setDeletedAudit(removedData);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
             return;
         }
