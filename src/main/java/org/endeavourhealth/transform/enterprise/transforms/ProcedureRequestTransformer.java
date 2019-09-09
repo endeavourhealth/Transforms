@@ -1,12 +1,9 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.ProcedureRequest;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +13,11 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureRequestTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.ProcedureRequest;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
@@ -23,9 +25,15 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         ProcedureRequest fhir = (ProcedureRequest)resource;
+
+        if (isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
+            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            return;
+        }
 
         long id;
         long organisationId;

@@ -6,7 +6,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
 import org.endeavourhealth.core.database.dal.reference.CernerProcedureMapDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -22,6 +22,11 @@ public class ProcedureTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Procedure;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
@@ -31,9 +36,15 @@ public class ProcedureTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                                      Resource resource,
                                      AbstractEnterpriseCsvWriter csvWriter,
-                                     EnterpriseTransformParams params) throws Exception {
+                                     EnterpriseTransformHelper params) throws Exception {
 
         Procedure fhir = (Procedure) resource;
+
+        if (isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
+            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            return;
+        }
 
         long id;
         long organisationId;

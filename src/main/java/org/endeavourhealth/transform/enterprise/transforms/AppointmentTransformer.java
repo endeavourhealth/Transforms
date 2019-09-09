@@ -3,8 +3,10 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -16,6 +18,11 @@ public class AppointmentTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AppointmentTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Appointment;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
@@ -23,7 +30,7 @@ public class AppointmentTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         Appointment fhir = (Appointment)resource;
 
@@ -70,9 +77,9 @@ public class AppointmentTransformer extends AbstractTransformer {
         }
         if (fhir.getSlot().size() > 0) {
             Reference slotReference = fhir.getSlot().get(0);
-            Slot fhirSlot = (Slot) findResource(slotReference, params);
-            if (fhirSlot != null) {
-
+            ResourceWrapper wrapper = findResource(slotReference, params);
+            if (wrapper != null) {
+                Slot fhirSlot = (Slot) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
                 Reference scheduleReference = fhirSlot.getSchedule();
                 scheduleId = transformOnDemandAndMapId(scheduleReference, params);
 

@@ -1,8 +1,10 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -13,6 +15,11 @@ import java.util.Date;
 public class ScheduleTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Schedule;
+    }
+
     public boolean shouldAlwaysTransform() {
         return false;
     }
@@ -20,7 +27,7 @@ public class ScheduleTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         Schedule fhir = (Schedule)resource;
 
@@ -49,8 +56,9 @@ public class ScheduleTransformer extends AbstractTransformer {
                 if (extension.getUrl().equals(FhirExtensionUri.SCHEDULE_LOCATION)) {
                     Reference locationReference = (Reference)extension.getValue();
 
-                    Location fhirLocation = (Location)findResource(locationReference, params);
-                    if (fhirLocation != null) {
+                    ResourceWrapper wrapper = findResource(locationReference, params);
+                    if (wrapper != null) {
+                        Location fhirLocation = (Location) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
                         location = fhirLocation.getName();
                     }
                 }

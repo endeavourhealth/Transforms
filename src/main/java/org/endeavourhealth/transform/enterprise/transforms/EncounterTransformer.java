@@ -9,7 +9,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.EncounterDetail;
@@ -27,6 +27,11 @@ public class EncounterTransformer extends AbstractTransformer {
 
     private static final EncounterCodeDalI encounterCodeDal = DalProvider.factoryEncounterCodeDal();
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Encounter;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
@@ -34,9 +39,15 @@ public class EncounterTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         Encounter fhir = (Encounter)resource;
+
+        if (isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
+            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            return;
+        }
 
         long id;
         long organisationId;
@@ -159,7 +170,7 @@ public class EncounterTransformer extends AbstractTransformer {
                 serviceProviderOrganisationId);
     }
 
-    private void tranformExtraEncounterTables(Resource resource, EnterpriseTransformParams params,
+    private void tranformExtraEncounterTables(Resource resource, EnterpriseTransformHelper params,
                                               long id, long organisationId, long patientId, long personId, Long practitionerId,
                                               Long episodeOfCareId, Date clinicalEffectiveDate, Integer datePrecisionId, Long appointmentId,
                                               Long serviceProviderOrganisationId) throws Exception {
@@ -378,7 +389,7 @@ public class EncounterTransformer extends AbstractTransformer {
         return hl7MessageTypeCoding.getCode();
     }
 
-    private Long findRecordingPractitionerId(Encounter fhir, EnterpriseTransformParams params) throws Exception {
+    private Long findRecordingPractitionerId(Encounter fhir, EnterpriseTransformHelper params) throws Exception {
         if (!fhir.hasExtension()) {
             return null;
         }
@@ -403,7 +414,7 @@ public class EncounterTransformer extends AbstractTransformer {
         return null;
     }
 
-    private Long findLocationId(Encounter fhir, EnterpriseTransformParams params) throws Exception {
+    private Long findLocationId(Encounter fhir, EnterpriseTransformHelper params) throws Exception {
 
         if (!fhir.hasLocation()) {
             return null;
@@ -476,7 +487,7 @@ public class EncounterTransformer extends AbstractTransformer {
         return findEncounterTypeTerm(fhir, null);
     }*/
 
-    private static String findEncounterTypeTerm(Encounter fhir, EnterpriseTransformParams params) {
+    private static String findEncounterTypeTerm(Encounter fhir, EnterpriseTransformHelper params) {
 
         String source = null;
 
@@ -710,7 +721,7 @@ public class EncounterTransformer extends AbstractTransformer {
     @Override
     protected void transformResourceDelete(Long enterpriseId,
                                            AbstractEnterpriseCsvWriter csvWriter,
-                                           EnterpriseTransformParams params) throws Exception {
+                                           EnterpriseTransformHelper params) throws Exception {
 
         //we need to override this function as we also need to send the delete to the other two encounter tables
         super.transformResourceDelete(enterpriseId, csvWriter, params);

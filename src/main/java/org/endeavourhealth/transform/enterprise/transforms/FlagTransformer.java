@@ -1,10 +1,11 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Flag;
 import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +15,11 @@ public class FlagTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlagTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Flag;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
@@ -21,9 +27,15 @@ public class FlagTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         Flag fhir = (Flag)resource;
+
+        if (isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
+            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            return;
+        }
 
         long id;
         long organisationId;

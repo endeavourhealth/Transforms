@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -17,6 +17,11 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(FamilyMemberHistoryTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.FamilyMemberHistory;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
@@ -24,9 +29,15 @@ public class FamilyMemberHistoryTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         FamilyMemberHistory fhir = (FamilyMemberHistory)resource;
+
+        if (isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
+            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            return;
+        }
 
         long id;
         long organisationId;

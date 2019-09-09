@@ -291,100 +291,104 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         threads = Math.max(threads, 1); //make sure we have a min of 1
 
         ThreadPool threadPool = new ThreadPool(threads, 1000);
+        try {
 
-        //we detect whether we're doing an update or insert, based on whether we're previously mapped
-        //a reference to a resource, so we need to transform the resources in a specific order, so
-        //that we transform resources before we ones that refer to them
-        transformResources(ResourceType.Organization, resources, threadPool, params);
-        transformResources(ResourceType.Location, resources, threadPool, params);
-        transformResources(ResourceType.Practitioner, resources, threadPool, params);
-        transformResources(ResourceType.Schedule, resources, threadPool, params);
+            //we detect whether we're doing an update or insert, based on whether we're previously mapped
+            //a reference to a resource, so we need to transform the resources in a specific order, so
+            //that we transform resources before we ones that refer to them
+            transformResources(ResourceType.Organization, resources, threadPool, params);
+            transformResources(ResourceType.Location, resources, threadPool, params);
+            transformResources(ResourceType.Practitioner, resources, threadPool, params);
+            transformResources(ResourceType.Schedule, resources, threadPool, params);
 
-        //do the patient resource
-        transformResources(ResourceType.Patient, resources, threadPool, params);
+            //do the patient resource
+            transformResources(ResourceType.Patient, resources, threadPool, params);
 
-        //if we transformed a patient resource, we need to guarantee that the patient is fully transformed before continuing
-        //so we need to let the threadpool empty before doing anything more
-        List<ThreadPoolError> errors = threadPool.waitUntilEmpty();
-        handleErrors(errors);
-
-        //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
-        String discoveryPatientId = findPatientId(resources);
-        if (!Strings.isNullOrEmpty(discoveryPatientId)) {
-            String sourceId = ReferenceHelper.createResourceReference(ResourceType.Patient.toString(), discoveryPatientId);
-            Long enterprisePatientId = AbstractSubscriberTransformer.findEnterpriseId(params, SubscriberTableId.PATIENT, sourceId);
-            if (enterprisePatientId == null) {
-                //with the Homerton data, we just get data from a point in time, not historic data too, so we have some episodes of
-                //care where we don't have patients. If we're in this situation, then don't send over the data.
-                LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so not doing patient resources");
-                return;
-                //throw new TransformException("No enterprise patient ID found for discovery patient " + discoveryPatientId);
-            }
-            if (params.getEnterprisePatientId() == null) {
-                params.setEnterprisePatientId(enterprisePatientId);
-            }
-
-            String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
-
-            //if we've got some cases where we've got a deleted patient but non-deleted patient-related resources
-            //all in the same batch, because Emis sent it like that. In that case we won't have a person ID, so
-            //return out without processing any of the remaining resources, since they're for a deleted patient.
-            if (Strings.isNullOrEmpty(discoveryPersonId)) {
-                return;
-            }
-
-            SubscriberPersonMappingDalI subscriberPersonMappingDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
-            Long enterprisePersonId = subscriberPersonMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
-            if (params.getEnterprisePersonId() == null) {
-                params.setEnterprisePersonId(enterprisePersonId);
-            }
-        }
-
-        Patient patient = null;
-        if (!Strings.isNullOrEmpty(discoveryPatientId)) {
-            Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
-            patient = (Patient) AbstractSubscriberTransformer.findResource(patientRef, params);
-        }
-
-        if (patient != null
-                && !Strings.isNullOrEmpty(IdentifierHelper.findNhsNumber(patient)) //don't send data for patients w/o NHS numbers
-                && !AbstractSubscriberTransformer.isConfidential(patient)) { //don't send data for patients that are confidential
-            transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
-            transformResources(ResourceType.Appointment, resources, threadPool, params);
-            transformResources(ResourceType.Encounter, resources, threadPool, params);
-            transformResources(ResourceType.Condition, resources, threadPool, params);
-            transformResources(ResourceType.Procedure, resources, threadPool, params);
-            transformResources(ResourceType.ReferralRequest, resources, threadPool, params);
-            transformResources(ResourceType.ProcedureRequest, resources, threadPool, params);
-            transformResources(ResourceType.Observation, resources, threadPool, params);
-            transformResources(ResourceType.MedicationStatement, resources, threadPool, params);
-            transformResources(ResourceType.MedicationOrder, resources, threadPool, params);
-            transformResources(ResourceType.Immunization, resources, threadPool, params);
-            transformResources(ResourceType.FamilyMemberHistory, resources, threadPool, params);
-            transformResources(ResourceType.AllergyIntolerance, resources, threadPool, params);
-            transformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);
-            transformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
-            transformResources(ResourceType.Specimen, resources, threadPool, params);
-            transformResources(ResourceType.Flag, resources, threadPool, params);
-
-            //for these resource types, call with a null transformer as they're actually transformed when
-            //doing one of the above entities, but we want to remove them from the resources list
-            transformResources(ResourceType.Slot, resources, threadPool, params);
-
-            //close the thread pool
-            errors = threadPool.waitAndStop();
+            //if we transformed a patient resource, we need to guarantee that the patient is fully transformed before continuing
+            //so we need to let the threadpool empty before doing anything more
+            List<ThreadPoolError> errors = threadPool.waitUntilEmpty();
             handleErrors(errors);
 
-            //if there's anything left in the list, then we've missed a resource type
-            if (!resources.isEmpty()) {
-                Set<String> resourceTypesMissed = new HashSet<>();
-                for (ResourceWrapper resource: resources) {
-                    String resourceType = resource.getResourceType();
-                    resourceTypesMissed.add(resourceType);
+            //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
+            String discoveryPatientId = findPatientId(resources);
+            if (!Strings.isNullOrEmpty(discoveryPatientId)) {
+                String sourceId = ReferenceHelper.createResourceReference(ResourceType.Patient.toString(), discoveryPatientId);
+                Long enterprisePatientId = AbstractSubscriberTransformer.findEnterpriseId(params, SubscriberTableId.PATIENT, sourceId);
+                if (enterprisePatientId == null) {
+                    //with the Homerton data, we just get data from a point in time, not historic data too, so we have some episodes of
+                    //care where we don't have patients. If we're in this situation, then don't send over the data.
+                    LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so not doing patient resources");
+                    return;
+                    //throw new TransformException("No enterprise patient ID found for discovery patient " + discoveryPatientId);
                 }
-                String s = String.join(", ", resourceTypesMissed);
-                throw new TransformException("Transform to Enterprise doesn't handle " + s + " resource type(s)");
+                if (params.getEnterprisePatientId() == null) {
+                    params.setEnterprisePatientId(enterprisePatientId);
+                }
+
+                String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
+
+                //if we've got some cases where we've got a deleted patient but non-deleted patient-related resources
+                //all in the same batch, because Emis sent it like that. In that case we won't have a person ID, so
+                //return out without processing any of the remaining resources, since they're for a deleted patient.
+                if (Strings.isNullOrEmpty(discoveryPersonId)) {
+                    return;
+                }
+
+                SubscriberPersonMappingDalI subscriberPersonMappingDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
+                Long enterprisePersonId = subscriberPersonMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
+                if (params.getEnterprisePersonId() == null) {
+                    params.setEnterprisePersonId(enterprisePersonId);
+                }
             }
+
+            Patient patient = null;
+            if (!Strings.isNullOrEmpty(discoveryPatientId)) {
+                Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
+                patient = (Patient) AbstractSubscriberTransformer.findResource(patientRef, params);
+            }
+
+            if (patient != null
+                    && !Strings.isNullOrEmpty(IdentifierHelper.findNhsNumber(patient)) //don't send data for patients w/o NHS numbers
+                    && !AbstractSubscriberTransformer.isConfidential(patient)) { //don't send data for patients that are confidential
+                transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
+                transformResources(ResourceType.Appointment, resources, threadPool, params);
+                transformResources(ResourceType.Encounter, resources, threadPool, params);
+                transformResources(ResourceType.Condition, resources, threadPool, params);
+                transformResources(ResourceType.Procedure, resources, threadPool, params);
+                transformResources(ResourceType.ReferralRequest, resources, threadPool, params);
+                transformResources(ResourceType.ProcedureRequest, resources, threadPool, params);
+                transformResources(ResourceType.Observation, resources, threadPool, params);
+                transformResources(ResourceType.MedicationStatement, resources, threadPool, params);
+                transformResources(ResourceType.MedicationOrder, resources, threadPool, params);
+                transformResources(ResourceType.Immunization, resources, threadPool, params);
+                transformResources(ResourceType.FamilyMemberHistory, resources, threadPool, params);
+                transformResources(ResourceType.AllergyIntolerance, resources, threadPool, params);
+                transformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);
+                transformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
+                transformResources(ResourceType.Specimen, resources, threadPool, params);
+                transformResources(ResourceType.Flag, resources, threadPool, params);
+
+                //for these resource types, call with a null transformer as they're actually transformed when
+                //doing one of the above entities, but we want to remove them from the resources list
+                transformResources(ResourceType.Slot, resources, threadPool, params);
+
+                //if there's anything left in the list, then we've missed a resource type
+                if (!resources.isEmpty()) {
+                    Set<String> resourceTypesMissed = new HashSet<>();
+                    for (ResourceWrapper resource : resources) {
+                        String resourceType = resource.getResourceType();
+                        resourceTypesMissed.add(resourceType);
+                    }
+                    String s = String.join(", ", resourceTypesMissed);
+                    throw new TransformException("Transform to Enterprise doesn't handle " + s + " resource type(s)");
+                }
+            }
+        } finally {
+
+            //close the thread pool
+            List<ThreadPoolError> errors = threadPool.waitAndStop();
+            handleErrors(errors);
+
         }
     }
 

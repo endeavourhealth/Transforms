@@ -630,8 +630,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     private boolean shouldWritePersonRecord(Patient fhirPatient, String discoveryPersonId, UUID protocolId) throws Exception {
 
         //check if OUR patient record is an active one at a GP practice, in which case it definitely should define the person record
-        String patientId = fhirPatient.getId();
-        PatientSearch patientSearch = patientSearchDal.searchByPatientId(UUID.fromString(patientId));
+        String patientIdStr = fhirPatient.getId();
+        PatientSearch patientSearch = patientSearchDal.searchByPatientId(UUID.fromString(patientIdStr));
 
         if (patientSearch != null //if we get null back, then we'll have deleted the patient, so just skip the ID
                 && isActive(patientSearch)
@@ -661,7 +661,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         for (String otherPatientId: allPatientIdMap.keySet()) {
 
             //skip the patient ID we've already retrieved
-            if (otherPatientId.equals(patientId)) {
+            if (otherPatientId.equals(patientIdStr)) {
                 continue;
             }
 
@@ -716,7 +716,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             return false;
         }
 
-        return bestPatientSearch.getPatientId().equals(patientId);
+        String bestPatientIdStr = bestPatientSearch.getPatientId().toString();
+        return bestPatientIdStr.equals(patientIdStr);
     }
 
     private static int getPatientSearchOrgScore(PatientSearch patientSearch) {

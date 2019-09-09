@@ -6,8 +6,10 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
@@ -20,6 +22,11 @@ public class ReferralRequestTransformer extends AbstractTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReferralRequestTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.ReferralRequest;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
@@ -27,9 +34,15 @@ public class ReferralRequestTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         ReferralRequest fhir = (ReferralRequest)resource;
+
+        if (isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
+            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            return;
+        }
 
         long id;
         long organizationId;
@@ -208,14 +221,15 @@ public class ReferralRequestTransformer extends AbstractTransformer {
 
     private Long findOrganisationEnterpriseIdFromPractictioner(Reference practitionerReference,
                                                                ReferralRequest fhir,
-                                                               EnterpriseTransformParams params) throws Exception {
+                                                               EnterpriseTransformHelper params) throws Exception {
 
-        Practitioner fhirPractitioner = (Practitioner)findResource(practitionerReference, params);
-        if (fhirPractitioner == null) {
+        ResourceWrapper wrapper = findResource(practitionerReference, params);
+        if (wrapper == null) {
             //we have a number of examples of Emis data where the practitioner doesn't exist, so handle this not being found
             LOG.warn("" + fhir.getResourceType() + " " + fhir.getId() + " refers to a Practitioner that doesn't exist");
             return null;
         }
+        Practitioner fhirPractitioner = (Practitioner) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
         Practitioner.PractitionerPractitionerRoleComponent role = fhirPractitioner.getPractitionerRole().get(0);
         Reference organisationReference = role.getManagingOrganization();
 

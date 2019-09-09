@@ -15,14 +15,18 @@ import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
 import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
 import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
 import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseAgeUpdaterlDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.xml.QueryDocument.*;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.json.ConfigParameter;
 import org.endeavourhealth.transform.enterprise.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -51,6 +55,11 @@ public class PatientTransformer extends AbstractTransformer {
     //private static byte[] saltBytes = null;
     //private static ResourceRepository resourceRepository = new ResourceRepository();
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Patient;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
@@ -58,10 +67,19 @@ public class PatientTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         Patient fhirPatient = (Patient)resource;
 
+        Patient previousVersion = findPreviousVersion(fhirPatient, params);
+        if (previousVersion != null) {
+            processChangesFromPreviousVersion(params.getServiceId(), fhirPatient, previousVersion, params);
+        }
+
+        if (isConfidential(fhirPatient)) {
+            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            return;
+        }
 
         String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
 
@@ -100,12 +118,6 @@ public class PatientTransformer extends AbstractTransformer {
 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
-        //TODO Adastra had problems with organizationId. See also EpisodeOfCare
-//        if (fhirPatient.getManagingOrganization().isEmpty()) {
-//            organizationId = params.getEnterpriseOrganisationId().longValue();
-//        } else {
-//            organizationId= transformOnDemandAndMapId(fhirPatient.getManagingOrganization(),params);
-//        }
         personId = enterprisePersonId.longValue();
 
         if (fhirPatient.hasCareProvider()) {
@@ -307,9 +319,24 @@ public class PatientTransformer extends AbstractTransformer {
         }
     }
 
+    private Patient findPreviousVersion(Patient fhirPatient, EnterpriseTransformHelper params) throws Exception {
+        UUID serviceId = params.getServiceId();
+        String resourceType = fhirPatient.getResourceType().toString();
+        UUID resourceId = UUID.fromString(fhirPatient.getId());
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> history = resourceDal.getResourceHistory(serviceId, resourceType, resourceId);
+
+        //history is most-recent-first
+        if (history.size() > 1) {
+            ResourceWrapper wrapper = history.get(1); //want the second one
+            return (Patient)FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
+        } else {
+            return null;
+        }
+    }
 
 
-    private Reference findOrgReference(Patient fhirPatient, EnterpriseTransformParams params) throws Exception {
+    private Reference findOrgReference(Patient fhirPatient, EnterpriseTransformHelper params) throws Exception {
 
         //find a direct org reference first
         for (Reference reference: fhirPatient.getCareProvider()) {
@@ -325,9 +352,12 @@ public class PatientTransformer extends AbstractTransformer {
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
             if (comps.getResourceType() == ResourceType.Practitioner) {
 
-                Practitioner practitioner = (Practitioner)super.findResource(reference, params);
-                if (practitioner == null
-                        || !practitioner.hasPractitionerRole()) {
+                ResourceWrapper wrapper = super.findResource(reference, params);
+                if (wrapper == null) {
+                    continue;
+                }
+                Practitioner practitioner = (Practitioner) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
+                if (!practitioner.hasPractitionerRole()) {
                     continue;
                 }
 
@@ -349,11 +379,36 @@ public class PatientTransformer extends AbstractTransformer {
         return null;
     }
 
+    /**
+     * if a patient record becomes confidential, then we need to delete all data previously sent, and conversely
+     * if a patient record becomes non-confidential, then we need to send all data again
+     */
+    private void processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, EnterpriseTransformHelper params) throws  Exception {
+
+        boolean isConfidential = isConfidential(current);
+        boolean wasConfidential = isConfidential(previous);
+
+        if ((isConfidential && !wasConfidential) //if become confidential, then delete everything
+                || (!isConfidential && wasConfidential)) { //if become non-confidential, then re-add everything
+
+            //retrieve all resources and add them to the current transform. This will ensure they then get transformed
+            //back in FhirToEnterpriseCsvTransformer. Each individual transform will know if the patient is confidential
+            //or not, which will result in either a delete or insert being sent
+            UUID patientUuid = UUID.fromString(current.getId());
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+            List<ResourceWrapper> allPatientResources = resourceDal.getResourcesByPatient(serviceId, patientUuid);
+            for (ResourceWrapper wrapper: allPatientResources) {
+                params.addResourceToTransform(wrapper);
+            }
+        }
+    }
+
+
     private boolean shouldWritePersonRecord(Patient fhirPatient, String discoveryPersonId, UUID protocolId) throws Exception {
 
         //check if OUR patient record is an active one at a GP practice, in which case it definitely should define the person record
-        String patientId = fhirPatient.getId();
-        PatientSearch patientSearch = patientSearchDal.searchByPatientId(UUID.fromString(patientId));
+        String patientIdStr = fhirPatient.getId();
+        PatientSearch patientSearch = patientSearchDal.searchByPatientId(UUID.fromString(patientIdStr));
 
         if (patientSearch != null //if we get null back, then we'll have deleted the patient, so just skip the ID
                 && isActive(patientSearch)
@@ -386,7 +441,7 @@ public class PatientTransformer extends AbstractTransformer {
         for (String otherPatientId: allPatientIdMap.keySet()) {
 
             //skip the patient ID we've already retrieved
-            if (otherPatientId.equals(patientId)) {
+            if (otherPatientId.equals(patientIdStr)) {
                 continue;
             }
 
@@ -446,7 +501,8 @@ public class PatientTransformer extends AbstractTransformer {
             return false;
         }
 
-        return bestPatientSearch.getPatientId().equals(patientId);
+        String patientPatientIdStr = bestPatientSearch.getPatientId().toString();
+        return patientPatientIdStr.equals(patientIdStr);
     }
 
     private static int getPatientSearchOrgScore(PatientSearch patientSearch) {

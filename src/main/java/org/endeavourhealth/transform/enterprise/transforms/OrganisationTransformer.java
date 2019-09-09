@@ -8,22 +8,21 @@ import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.common.ods.OdsWebService;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInstanceMappingDalI;
-import org.endeavourhealth.core.database.rdbms.subscriberTransform.RdbmsSubscriberInstanceMappingDalI;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 public class OrganisationTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
+
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Organization;
+    }
 
     public boolean shouldAlwaysTransform() {
         return false;
@@ -32,7 +31,7 @@ public class OrganisationTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         org.hl7.fhir.instance.model.Organization fhir = (org.hl7.fhir.instance.model.Organization)resource;
 
@@ -91,15 +90,15 @@ public class OrganisationTransformer extends AbstractTransformer {
 
                     Reference locationReference = (Reference)extension.getValue();
 
-                    Location location = (Location)findResource(locationReference, params);
-                    if (location == null) {
+                    ResourceWrapper wrapper = findResource(locationReference, params);
+                    if (wrapper == null) {
                         //The Emis data contains organisations that refer to organisations that don't exist
                         LOG.warn("" + fhir.getResourceType() + " " + fhir.getId() + " refers to " + locationReference.getReference() + " that doesn't exist");
                         continue;
                     }
 
-                    if (location != null
-                            && location.hasAddress()) {
+                    Location location = (Location) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
+                    if (location.hasAddress()) {
                         Address address = location.getAddress();
                         if (address.hasPostalCode()) {
                             postcode = address.getPostalCode();

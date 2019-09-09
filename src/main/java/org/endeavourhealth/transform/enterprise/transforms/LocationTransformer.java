@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformParams;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -10,6 +10,11 @@ import org.slf4j.LoggerFactory;
 public class LocationTransformer extends AbstractTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(LocationTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Location;
+    }
+
     public boolean shouldAlwaysTransform() {
         return false;
     }
@@ -17,7 +22,7 @@ public class LocationTransformer extends AbstractTransformer {
     protected void transformResource(Long enterpriseId,
                           Resource resource,
                           AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformParams params) throws Exception {
+                          EnterpriseTransformHelper params) throws Exception {
 
         Location fhir = (Location)resource;
 
