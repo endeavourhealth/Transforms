@@ -55,12 +55,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
-        //TODO wwe had problems with organisationId and Adastra. Investigate later. See also PatientTransformer
-//        if (fhirEpisode.getManagingOrganization().isEmpty()) {
-//            organisationId = params.getEnterpriseOrganisationId().longValue();
-//        } else {
-//            organisationId = transformOnDemandAndMapId(fhirEpisode.getManagingOrganization(), params);
-//        }
+
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 

@@ -82,9 +82,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
             //if we've previously sent the patient, we'll also need to delete any dependent entities
             if (previousVersion != null) {
-                deletePseudoIds(previousVersion, resourceWrapper, params);
-                deleteAddresses(previousVersion, resourceWrapper, params);
-                deleteTelecoms(previousVersion, resourceWrapper, params);
+                deletePseudoIds(previousVersion, params);
+                deleteAddresses(previousVersion, params);
+                deleteTelecoms(previousVersion, params);
             }
 
             return;
@@ -343,7 +343,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void deleteTelecoms(Patient previousVersion, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    private void deleteTelecoms(Patient previousVersion, SubscriberTransformParams params) throws Exception {
         if (!previousVersion.hasTelecom()) {
             return;
         }
@@ -360,7 +360,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void deleteAddresses(Patient previousVersion, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    private void deleteAddresses(Patient previousVersion, SubscriberTransformParams params) throws Exception {
 
         if (!previousVersion.hasAddress()) {
             return;
@@ -529,7 +529,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     }
 
 
-    private void deletePseudoIds(Patient previousVersion, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    private void deletePseudoIds(Patient previousVersion, SubscriberTransformParams params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
