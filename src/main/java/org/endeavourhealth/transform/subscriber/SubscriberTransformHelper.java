@@ -248,33 +248,8 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
                 continue;
             }
 
-            //if it's a patient resource, we can just check the
-            if (resourceType == ResourceType.Patient) {
-                return resourceWrapper.getResourceIdStr();
-            }
-
-            if (!resourceWrapper.isDeleted()) {
-
-                try {
-                    Resource resource = resourceWrapper.getResource();
-                    String patientId = IdHelper.getPatientId(resource);
-                    if (Strings.isNullOrEmpty(patientId)) {
-                        continue;
-                    }
-
-                    return patientId;
-
-                } catch (PatientResourceException ex) {
-                    //we've had this exception because a batch has ended up containing JUST
-                    //a Slot resource, which means we can't get the patient ID. The matching Appointment
-                    //resource was created in a separate exchange_batch, but errors meant this data was
-                    //split into a separate batch. This being the case, the Slot will already have been sent
-                    //to the subscriber, because that's manually done when the appointment is done. So we
-                    //can safely ignore this
-                    if (resourceType != ResourceType.Slot) {
-                        throw ex;
-                    }
-                }
+            if (resourceWrapper.getPatientId() != null) {
+                return resourceWrapper.getPatientId().toString();
             }
         }
 
@@ -289,16 +264,14 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             return;
         }
 
-        String sourceId = ReferenceHelper.createResourceReference(ResourceType.Patient.toString(), discoveryPatientId);
-        SubscriberId subscriberId = AbstractSubscriberTransformer.findSubscriberId(this, SubscriberTableId.PATIENT, sourceId);
-        if (subscriberId == null) {
-            //with the Homerton data, we just get data from a point in time, not historic data too, so we have some episodes of
-            //care where we don't have patients. If we're in this situation, then don't send over the data.
-            LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so not doing patient resources");
-            return;
-            //throw new TransformException("No enterprise patient ID found for discovery patient " + discoveryPatientId);
+        //retrieve the patient resource to see if the record has been deleted or is confidential
+        Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
+        ResourceWrapper patientWrapper = findOrRetrieveResourceWrapper(patientRef);
+        if (patientWrapper != null) {
+            this.cachedPatient = (Patient)patientWrapper.getResource();
         }
-        this.subscriberPatientId = subscriberId.getSubscriberId();
+        this.shouldPatientRecordBeDeleted = !shouldPatientBePresentInSubscriber(cachedPatient);
+
 
         PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
         String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
@@ -306,19 +279,48 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             //if we've got some cases where we've got a deleted patient but non-deleted patient-related resources
             //all in the same batch, because Emis sent it like that. In that case we won't have a person ID, so
             //return out without processing any of the remaining resources, since they're for a deleted patient.
-            return;
+            this.shouldPatientRecordBeDeleted = new Boolean(true);
+        } else {
+            SubscriberPersonMappingDalI personMappingDal = DalProvider.factorySubscriberPersonMappingDal(getSubscriberConfigName());
+            this.subscriberPersonId = personMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
         }
 
-        SubscriberPersonMappingDalI personMappingDal = DalProvider.factorySubscriberPersonMappingDal(getSubscriberConfigName());
-        this.subscriberPersonId = personMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
 
-        //retrieve the patient resource to see if the record has been deleted or is confidential
-        Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
-        ResourceWrapper wrapper = findOrRetrieveResourceWrapper(patientRef);
-        if (wrapper != null) {
-            this.cachedPatient = (Patient) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
+        String sourceId = ReferenceHelper.createResourceReference(ResourceType.Patient.toString(), discoveryPatientId);
+        SubscriberId subscriberId = AbstractSubscriberTransformer.findSubscriberId(this, SubscriberTableId.PATIENT, sourceId);
+        if (subscriberId == null) {
+            //if we have no patient ID yet, then it's because our Patient resource has never been through this transform,
+            //possibly because the patient has just entered the protocol cohort. The protocol Queue Reader
+            //should detect that in the future, but for now, we need to simply force through the transform for the other resources now
+            UUID patientUuid = UUID.fromString(discoveryPatientId);
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+            List<ResourceWrapper> allPatientResources = resourceDal.getResourcesByPatient(serviceId, patientUuid);
+            for (ResourceWrapper wrapper: allPatientResources) {
+
+                //add the resource so it gets transformed
+                addResourceToTransform(wrapper);
+
+                //if the patient record, we need to manually invoke the transform because this fn is only
+                //called AFTER the patient has been transformed
+                if (wrapper.getResourceTypeObj() == ResourceType.Patient) {
+                    AbstractSubscriberTransformer transformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(ResourceType.Patient);
+                    List<ResourceWrapper> l = new ArrayList<>();
+                    l.add(wrapper);
+                    transformer.transformResources(l, this);
+                }
+            }
+
+            //now look for the enterprise patient ID again, if still null it means our patient was deleted (or never was received),
+            //so set the boolean to delete everything from our subscriber DB
+            subscriberId = AbstractSubscriberTransformer.findSubscriberId(this, SubscriberTableId.PATIENT, sourceId);
+            if (subscriberId == null) {
+                LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so will delete everything");
+                this.shouldPatientRecordBeDeleted = new Boolean(true);
+            }
         }
-        this.shouldPatientRecordBeDeleted = !shouldPatientBePresentInSubscriber(cachedPatient);
+        if (subscriberId != null) {
+            this.subscriberPatientId = subscriberId.getSubscriberId();
+        }
     }
 
     public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
