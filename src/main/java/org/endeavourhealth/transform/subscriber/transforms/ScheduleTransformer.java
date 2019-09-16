@@ -6,7 +6,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -17,12 +17,17 @@ import java.util.Date;
 public class ScheduleTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Schedule;
+    }
+
     public boolean shouldAlwaysTransform() {
         return false;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Schedule model = params.getOutputContainer().getSchedules();
 
@@ -31,7 +36,7 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
             return;
         }
 
-        Schedule fhir = (Schedule) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+        Schedule fhir = (Schedule)resourceWrapper.getResource();
 
         long organisationId;
         Long practitionerId = null;
@@ -40,11 +45,11 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
         String location = null;
         String name = null;
 
-        organisationId = params.getEnterpriseOrganisationId().longValue();
+        organisationId = params.getSubscriberOrganisationId().longValue();
 
         if (fhir.hasActor()) {
             Reference practitionerReference = fhir.getActor();
-            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+            practitionerId = transformOnDemandAndMapId(practitionerReference, SubscriberTableId.PRACTITIONER, params);
         }
 
         if (fhir.hasPlanningHorizon()) {
@@ -57,7 +62,7 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
                 if (extension.getUrl().equals(FhirExtensionUri.SCHEDULE_LOCATION)) {
                     Reference locationReference = (Reference)extension.getValue();
 
-                    Location fhirLocation = (Location)findResource(locationReference, params);
+                    Location fhirLocation = (Location)params.findOrRetrieveResource(locationReference);
                     if (fhirLocation != null) {
                         location = fhirLocation.getName();
                     }

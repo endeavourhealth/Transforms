@@ -4,7 +4,6 @@ import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
@@ -19,7 +18,6 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
-import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
@@ -27,14 +25,13 @@ import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.PatientAddress;
 import org.endeavourhealth.transform.subscriber.targetTables.PatientContact;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
-import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +51,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     private static final int BEST_ORG_SCORE = 10;
 
-    private static Map<String, LinkDistributorConfig> mainPseudoCacheMap = new HashMap<>();
+    //private static Map<String, LinkDistributorConfig> mainPseudoCacheMap = new HashMap<>();
     private static Map<String, List<LinkDistributorConfig>> linkDistributorCacheMap = new HashMap<>();
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
@@ -63,34 +60,45 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     //private static ResourceRepository resourceRepository = new ResourceRepository();
 
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Patient;
+    }
 
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Patient patientWriter = params.getOutputContainer().getPatients();
         org.endeavourhealth.transform.subscriber.targetTables.Person personWriter = params.getOutputContainer().getPersons();
-        Patient previousVersion = findPreviousVersionSent(resourceWrapper, subscriberId);
 
-        if (resourceWrapper.isDeleted()) {
+        Patient fhirPatient = (Patient)resourceWrapper.getResource(); //returns null if deleted
+
+        //work out if something has changed that means we'll need to process the full patient record
+        List<ResourceWrapper> fullHistory = getFullHistory(resourceWrapper);
+        Patient previousVersion = findPreviousVersionSent(resourceWrapper, fullHistory, subscriberId);
+        if (previousVersion != null) {
+            processChangesFromPreviousVersion(params.getServiceId(), fhirPatient, previousVersion, params);
+        }
+
+        //check if the patient is deleted, is confidential, has no NHS number etc.
+        if (!SubscriberTransformHelper.shouldPatientBePresentInSubscriber(fhirPatient)) {
 
             //delete the patient
             patientWriter.writeDelete(subscriberId);
 
-            //if we've previously sent the patient, we'll also need to delete any dependent entities
-            if (previousVersion != null) {
-                deletePseudoIds(previousVersion, params);
-                deleteAddresses(previousVersion, params);
-                deleteTelecoms(previousVersion, params);
-            }
+            //delete any dependent pseudo ID records
+            deletePseudoIds(resourceWrapper, params);
+
+            //we'll need a previous instance to delete any dependent addresses and telecoms
+            deleteAddresses(resourceWrapper, fullHistory, params);
+            deleteTelecoms(resourceWrapper, fullHistory, params);
 
             return;
         }
-
-        Patient fhirPatient = (Patient) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         String discoveryPersonId = patientLinkDal.getPersonId(fhirPatient.getId());
 
@@ -102,7 +110,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             discoveryPersonId = pair.getNewPersonId();
         }
 
-        SubscriberPersonMappingDalI enterpriseIdDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
+        SubscriberPersonMappingDalI enterpriseIdDal = DalProvider.factorySubscriberPersonMappingDal(params.getSubscriberConfigName());
         Long enterprisePersonId = enterpriseIdDal.findOrCreateEnterprisePersonId(discoveryPersonId);
 
         long organizationId;
@@ -119,23 +127,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         Long registeredPracticeId = null;
 
 
-        organizationId = params.getEnterpriseOrganisationId().longValue();
+        organizationId = params.getSubscriberOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
-
-        if (previousVersion != null) {
-            boolean cont = processChangesFromPreviousVersion(params.getServiceId(), fhirPatient, previousVersion,
-                    resourceWrapper.getResourceId(), personId, params);
-            if (!cont) {
-                return;
-            }
-        }
-
 
         //transform our dependent objects first, as we need the address ID
         transformPseudoIds(subscriberId.getSubscriberId(), personId, fhirPatient, resourceWrapper, params);
-        currentAddressId = transformAddresses(subscriberId.getSubscriberId(), personId, fhirPatient, previousVersion, resourceWrapper, params);
-        transformTelecoms(subscriberId.getSubscriberId(), personId, fhirPatient, previousVersion, resourceWrapper, params);
-
+        currentAddressId = transformAddresses(subscriberId.getSubscriberId(), personId, fhirPatient, fullHistory, resourceWrapper, params);
+        transformTelecoms(subscriberId.getSubscriberId(), personId, fhirPatient, fullHistory, resourceWrapper, params);
 
 
         if (fhirPatient.hasDeceasedDateTimeType()) {
@@ -189,7 +187,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             if (orgReference != null) {
                 //added try/catch to track down a bug in Cerner->FHIR->Enterprise
                 try {
-                    registeredPracticeId = super.findEnterpriseId(params, SubscriberTableId.ORGANIZATION, orgReference);
+                    registeredPracticeId = transformOnDemandAndMapId(orgReference, SubscriberTableId.ORGANIZATION, params);
                 } catch (Throwable t) {
                     LOG.error("Error finding enterprise ID for reference " + orgReference.getReference());
                     throw t;
@@ -274,7 +272,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     }
 
-    private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, Patient previousPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         PatientContact writer = params.getOutputContainer().getPatientContacts();
 
@@ -285,8 +283,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
                 SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
-                long organisationId = params.getEnterpriseOrganisationId();
+                long organisationId = params.getSubscriberOrganisationId();
                 Integer useConceptId = null;
                 Integer typeConceptId = null;
                 Date startDate = null;
@@ -325,60 +324,57 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         //and make sure to delete any that we previously sent over that are no longer present
         //i.e. if we previously had five addresses and now only have three, we need to delete four and five
-        if (previousPatient != null
-                && previousPatient.hasTelecom()) {
-            int start = 0;
-            if (currentPatient.hasTelecom()) {
-                start = currentPatient.getTelecom().size();
-            }
+        int maxPreviousTelecoms = getMaxNumberOfTelecoms(fullHistory);
 
-            for (int i=start; i<previousPatient.getTelecom().size(); i++) {
+        int start = 0;
+        if (currentPatient.hasTelecom()) {
+            start = currentPatient.getTelecom().size();
+        }
 
-                String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
-                SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+        for (int i=start; i<maxPreviousTelecoms; i++) {
 
-                writer.writeDelete(subTableId);
+            String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+            params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
-            }
+            writer.writeDelete(subTableId);
+
         }
     }
 
-    private void deleteTelecoms(Patient previousVersion, SubscriberTransformParams params) throws Exception {
-        if (!previousVersion.hasTelecom()) {
-            return;
-        }
+    private void deleteTelecoms(ResourceWrapper resourceWrapper, List<ResourceWrapper> fullHistory, SubscriberTransformHelper params) throws Exception {
 
         PatientContact writer = params.getOutputContainer().getPatientContacts();
+        int maxTelecoms = getMaxNumberOfTelecoms(fullHistory);
 
-        for (int i=0; i < previousVersion.getTelecom().size(); i++) {
+        for (int i=0; i<maxTelecoms; i++) {
 
-            String sourceId = ReferenceHelper.createReferenceExternal(previousVersion).getReference() + PREFIX_TELECOM_ID + i;
+            String sourceId = resourceWrapper.getReferenceString() + PREFIX_TELECOM_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
-
-            writer.writeDelete(subTableId);
-
+            if (subTableId != null) {
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                writer.writeDelete(subTableId);
+            }
         }
     }
 
-    private void deleteAddresses(Patient previousVersion, SubscriberTransformParams params) throws Exception {
-
-        if (!previousVersion.hasAddress()) {
-            return;
-        }
+    private void deleteAddresses(ResourceWrapper resourceWrapper, List<ResourceWrapper> fullHistory, SubscriberTransformHelper params) throws Exception {
 
         PatientAddress writer = params.getOutputContainer().getPatientAddresses();
+        int maxAddresses = getMaxNumberOfAddresses(fullHistory);
 
-        for (int i=0; i < previousVersion.getAddress().size(); i++) {
+        for (int i=0; i<maxAddresses; i++) {
 
-            String sourceId = ReferenceHelper.createReferenceExternal(previousVersion).getReference() + PREFIX_ADDRESS_ID + i;
+            String sourceId = resourceWrapper.getReferenceString() + PREFIX_ADDRESS_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
-
-            writer.writeDelete(subTableId);
-
+            if (subTableId != null) {
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                writer.writeDelete(subTableId);
+            }
         }
     }
 
-    private Long transformAddresses(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, Patient previousPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    private Long transformAddresses(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         PatientAddress writer = params.getOutputContainer().getPatientAddresses();
 
@@ -394,13 +390,14 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
                 SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
                 //if this address is our current home one, then assign the ID
                 if (address == currentAddress) {
                     currentAddressId = new Long(subTableId.getSubscriberId());
                 }
 
-                long organisationId = params.getEnterpriseOrganisationId();
+                long organisationId = params.getSubscriberOrganisationId();
                 String addressLine1 = null;
                 String addressLine2 = null;
                 String addressLine3 = null;
@@ -477,21 +474,20 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         //and make sure to delete any that we previously sent over that are no longer present
         //i.e. if we previously had five addresses and now only have three, we need to delete four and five
-        if (previousPatient != null
-                && previousPatient.hasAddress()) {
-            int start = 0;
-            if (currentPatient.hasAddress()) {
-                start = currentPatient.getAddress().size();
-            }
+        int maxsAddresses = getMaxNumberOfAddresses(fullHistory);
 
-            for (int i=start; i<previousPatient.getAddress().size(); i++) {
+        int start = 0;
+        if (currentPatient.hasAddress()) {
+            start = currentPatient.getAddress().size();
+        }
 
-                String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
-                SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
+        for (int i=start; i<maxsAddresses; i++) {
 
-                writer.writeDelete(subTableId);
+            String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
+            params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
-            }
+            writer.writeDelete(subTableId);
         }
 
         return currentAddressId;
@@ -506,54 +502,92 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private Patient findPreviousVersionSent(ResourceWrapper resourceWrapper, SubscriberId subscriberId) throws Exception {
+    private static List<ResourceWrapper> getFullHistory(ResourceWrapper resourceWrapper) throws Exception {
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        UUID serviceId = resourceWrapper.getServiceId();
+        String resourceType = resourceWrapper.getResourceType();
+        UUID resourceId = resourceWrapper.getResourceId();
+        return resourceDal.getResourceHistory(serviceId, resourceType, resourceId);
+    }
 
-        //if we've a null datetime, it means we've never sent for this patient or
-        //the last thing we sent was a delete
+    private static int getMaxNumberOfTelecoms(List<ResourceWrapper> history) throws Exception {
+        int max = 0;
+        for (ResourceWrapper wrapper: history) {
+            if (!wrapper.isDeleted()) {
+                Patient patient = (Patient) wrapper.getResource();
+                if (patient.hasTelecom()) {
+                    max = Math.max(max, patient.getTelecom().size());
+                }
+            }
+        }
+        return max;
+    }
+
+    private static int getMaxNumberOfAddresses(List<ResourceWrapper> history) throws Exception {
+        int max = 0;
+        for (ResourceWrapper wrapper: history) {
+            if (!wrapper.isDeleted()) {
+                Patient patient = (Patient) wrapper.getResource();
+                if (patient.hasAddress()) {
+                    max = Math.max(max, patient.getAddress().size());
+                }
+            }
+        }
+        return max;
+    }
+
+    private Patient findPreviousVersionSent(ResourceWrapper currentWrapper, List<ResourceWrapper> history, SubscriberId subscriberId) throws Exception {
+
+        //if we've a null datetime, it means we've never sent for this patient
         Date dtLastSent = subscriberId.getDtUpdatedPreviouslySent();
+LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent = " + dtLastSent + " and dt current version = " + currentWrapper.getCreatedAt());
+
         if (dtLastSent == null) {
+            LOG.debug("" + currentWrapper.getReferenceString() + " has dt_last_sent of null, so this must be first time it is being transformed (or was previously deleted)");
             return null;
         }
 
-        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        List<ResourceWrapper> history = resourceDal.getResourceHistory(resourceWrapper.getServiceId(), resourceWrapper.getResourceType(), resourceWrapper.getResourceId());
-
         //history is most-recent-first
         for (ResourceWrapper wrapper: history) {
-            if (wrapper.getCreatedAt().compareTo(dtLastSent) == 0) {
-                return (Patient)FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
+            Date dtCreatedAt = wrapper.getCreatedAt();
+            LOG.debug("Compare dt_last_sent " + dtLastSent + " (" + dtLastSent.getTime() + ") against dtCreatedAt " + dtCreatedAt + " (" + dtCreatedAt.getTime() + ")");
+            if (dtCreatedAt.equals(dtLastSent)) {
+                LOG.debug("" + currentWrapper.getReferenceString() + " has dt_last_sent of " + dtLastSent + " so using version from that date");
+                return (Patient)wrapper.getResource();
             }
         }
 
-        throw new Exception("Failed to find previous version of " + resourceWrapper.getResourceType() + " " + resourceWrapper.getResourceId() + " for dtLastSent " + dtLastSent);
+        throw new Exception("Failed to find previous version of " + currentWrapper.getReferenceString() + " for dtLastSent " + dtLastSent);
     }
 
 
-    private void deletePseudoIds(Patient previousVersion, SubscriberTransformParams params) throws Exception {
+    private void deletePseudoIds(ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
-        List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
+        List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getSubscriberConfigName());
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
 
             //create a unique source ID from the patient UUID plus the salt key name
-            String sourceId = ReferenceHelper.createReferenceExternal(previousVersion).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
+            String referenceStr = ReferenceHelper.createResourceReference(resourceWrapper.getResourceTypeObj(), resourceWrapper.getResourceIdStr());
+            String sourceId = referenceStr + PREFIX_PSEUDO_ID + saltKeyName;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
-
-            pseudoIdWriter.writeDelete(subTableId);
-
+            if (subTableId != null) {
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                pseudoIdWriter.writeDelete(subTableId);
+            }
         }
 
     }
 
 
 
-    private void transformPseudoIds(long subscriberPatientId, long subscriberPersonId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    private void transformPseudoIds(long subscriberPatientId, long subscriberPersonId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
-        List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
+        List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getSubscriberConfigName());
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
             String pseudoId = pseudonymiseUsingConfig(fhirPatient, ldConfig);
@@ -561,6 +595,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             //create a unique source ID from the patient UUID plus the salt key name
             String sourceId = ReferenceHelper.createReferenceExternal(fhirPatient).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
             SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
+            params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
             if (!Strings.isNullOrEmpty(pseudoId)) {
 
@@ -570,7 +605,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         pseudoId);
 
                 //only persist the pseudo ID if it's non-null
-                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
+                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getSubscriberConfigName());
                 pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), subscriberPatientId, saltKeyName, pseudoId);
 
             } else {
@@ -587,7 +622,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     }
 
 
-    private Reference findOrgReference(Patient fhirPatient, SubscriberTransformParams params) throws Exception {
+    private Reference findOrgReference(Patient fhirPatient, SubscriberTransformHelper params) throws Exception {
 
         //find a direct org reference first
         for (Reference reference: fhirPatient.getCareProvider()) {
@@ -603,7 +638,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
             if (comps.getResourceType() == ResourceType.Practitioner) {
 
-                Practitioner practitioner = (Practitioner)super.findResource(reference, params);
+                Practitioner practitioner = (Practitioner)params.findOrRetrieveResource(reference);
                 if (practitioner == null
                         || !practitioner.hasPractitionerRole()) {
                     continue;
@@ -924,7 +959,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     */
 
-    private LinkDistributorConfig getMainSaltConfig(String configName) throws Exception {
+    /*private LinkDistributorConfig getMainSaltConfig(String configName) throws Exception {
 
         LinkDistributorConfig ret = mainPseudoCacheMap.get(configName);
         if (ret == null) {
@@ -937,7 +972,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             mainPseudoCacheMap.put(configName, ret);
         }
         return ret;
-    }
+    }*/
 
     private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
         Crypto crypto = new Crypto();
@@ -980,85 +1015,81 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private boolean processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, UUID resourceID,
-                                                   long personId, SubscriberTransformParams params) throws  Exception {
+    private void processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, SubscriberTransformHelper params) throws  Exception {
 
+        //if the present status has changed then we need to either bulk-add or bulk-delete all data for the patient
+        //and if the NHS number has changed, the person ID on each table will need updating
+        //and if the DoB has changed, then the age_at_event will need recalculating for everything
+        if (hasPresentStateChanged(current, previous)
+            || hasDobChanged(current, previous)
+            || hasNhsNumberChanged(current, previous)) {
 
-        String currentNHSNumber = IdentifierHelper.findNhsNumber(current);
-        String previousNHSNumber = IdentifierHelper.findNhsNumber(previous);
-
-        ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI =
-                DalProvider.factoryExchangeBatchExtraResourceDal(params.getEnterpriseConfigName());
-        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-
-        List<ResourceWrapper> resources = resourceDal.getResourcesByPatient(serviceId, resourceID);
-
-        Long enterprisePatientId = findEnterpriseId(params, SubscriberTableId.PATIENT,
-                ReferenceHelper.createResourceReference(ResourceType.Patient, previous.getId()));
-        if (params.getEnterprisePatientId() == null) {
-            params.setEnterprisePatientId(enterprisePatientId);
-        }
-
-        String discoveryPersonId = patientLinkDal.getPersonId(previous.getId());
-        SubscriberPersonMappingDalI subscriberPersonMappingDal =
-                DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
-        Long enterprisePersonId = subscriberPersonMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
-        if (params.getEnterprisePersonId() == null) {
-            params.setEnterprisePersonId(enterprisePersonId);
-        }
-
-        //NHS Number was removed or if the patient record is no confidential, remove any resources related to it
-        if ((StringUtils.isEmpty(currentNHSNumber) && !StringUtils.isEmpty(previousNHSNumber))
-                || (isConfidential(current) && !isConfidential(previous))) {
-            for (ResourceWrapper wrapper : resources) {
-                wrapper.setDeleted(true);
-                Resource resource = FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
-                exchangeBatchExtraResourceDalI.saveExtraResource(
-                        params.getExchangeId(), params.getBatchId(), resource.getResourceType(), wrapper.getResourceId());
+            //retrieve all resources and add them to the current transform. This will ensure they then get transformed
+            //back in FhirToEnterpriseCsvTransformer. Each individual transform will know if the patient is confidential
+            //or not, which will result in either a delete or insert being sent
+            UUID patientUuid = UUID.fromString(previous.getId()); //current may be null, so get ID from previous
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+            List<ResourceWrapper> allPatientResources = resourceDal.getResourcesByPatient(serviceId, patientUuid);
+            for (ResourceWrapper wrapper: allPatientResources) {
+                params.addResourceToTransform(wrapper);
             }
-            transformResources(resources, params);
+        }
+    }
+
+    private boolean hasPresentStateChanged(Patient current, Patient previous) {
+
+        boolean nowShouldBePresent = SubscriberTransformHelper.shouldPatientBePresentInSubscriber(current);
+        boolean previousShouldBePresent = SubscriberTransformHelper.shouldPatientBePresentInSubscriber(previous);
+
+        return nowShouldBePresent != previousShouldBePresent;
+    }
+
+    private boolean hasNhsNumberChanged(Patient current, Patient previous) {
+
+        String nowNhsNumber = null;
+        if (current != null) {
+            nowNhsNumber = IdentifierHelper.findNhsNumber(current);
+        }
+
+        String previousNhsNumber = null;
+        if (previous != null) {
+            previousNhsNumber = IdentifierHelper.findNhsNumber(previous);
+        }
+
+        if (nowNhsNumber == null && previousNhsNumber == null) {
+            //if both null, no change
             return false;
+        } else if (nowNhsNumber == null || previousNhsNumber == null) {
+            //if only one null, change found
+            return true;
+        } else {
+            //if neither null, compare values
+            return !nowNhsNumber.equals(previousNhsNumber);
         }
-        //NHS Number was added or became non-confidential or person id changed, adding resources related to it
-        else if (((!StringUtils.isEmpty(currentNHSNumber) && StringUtils.isEmpty(previousNHSNumber))
-                || (!isConfidential(current) && isConfidential(previous))
-                || enterprisePersonId != personId)) {
-            for (ResourceWrapper wrapper : resources) {
-                Resource resource = FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
-                exchangeBatchExtraResourceDalI.saveExtraResource(
-                        params.getExchangeId(), params.getBatchId(), resource.getResourceType(), wrapper.getResourceId());
-            }
-            transformResources(resources, params);
+    }
+
+    private static boolean hasDobChanged(Patient current, Patient previous) {
+
+        Date nowDoB = null;
+        if (current != null) {
+            nowDoB = current.getBirthDate();
         }
 
-        //DOB changed values need to reprocess specific resources for changes in age_at_event
-        if (((current.getBirthDate() == null) != (previous.getBirthDate() == null))
-                || (current.getBirthDate() != null && previous.getBirthDate() != null
-                && current.getBirthDate().equals(previous.getBirthDate()))) {
-
-            List<ResourceWrapper> reprocess = new ArrayList();
-
-            List<ResourceType> ageRelatedResourceTypes = new ArrayList();
-            ageRelatedResourceTypes.add(ResourceType.Encounter);
-            ageRelatedResourceTypes.add(ResourceType.AllergyIntolerance);
-            ageRelatedResourceTypes.add(ResourceType.MedicationStatement);
-            ageRelatedResourceTypes.add(ResourceType.MedicationOrder);
-            ageRelatedResourceTypes.add(ResourceType.Observation);
-            ageRelatedResourceTypes.add(ResourceType.ProcedureRequest);
-            ageRelatedResourceTypes.add(ResourceType.ReferralRequest);
-
-            for (ResourceWrapper resource : resources) {
-                for (ResourceType type : ageRelatedResourceTypes) {
-                    if (type.toString().equalsIgnoreCase(resource.getResourceType())) {
-                        reprocess.add(resource);
-                        exchangeBatchExtraResourceDalI.saveExtraResource(
-                                params.getExchangeId(), params.getBatchId(), type, resource.getResourceId());
-                    }
-                }
-            }
-            transformResources(reprocess, params);
+        Date previousDoB = null;
+        if (previous != null) {
+            previousDoB = previous.getBirthDate();
         }
-        return true;
+
+        if (nowDoB == null && previousDoB == null) {
+            //if both null, no change
+            return false;
+        } else if (nowDoB == null || previousDoB == null) {
+            //if only one is null, change found
+            return true;
+        } else {
+            //if neither null, compare dates
+            return !nowDoB.equals(previousDoB);
+        }
     }
 
 

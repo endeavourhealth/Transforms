@@ -2,6 +2,8 @@ package org.endeavourhealth.transform.enterprise.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -11,9 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class AllergyIntoleranceTransformer extends AbstractTransformer {
+public class AllergyIntoleranceEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AllergyIntoleranceTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AllergyIntoleranceEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -25,15 +27,18 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        AllergyIntolerance fhir = (AllergyIntolerance)resource;
 
-        if (isConfidential(fhir)
+        AllergyIntolerance fhir = (AllergyIntolerance)resourceWrapper.getResource(); //returns null if deleted
+
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -59,7 +64,7 @@ public class AllergyIntoleranceTransformer extends AbstractTransformer {
             for (Extension extension: fhir.getExtension()) {
                 if (extension.getUrl().equals(FhirExtensionUri.ASSOCIATED_ENCOUNTER)) {
                     Reference encounterReference = (Reference)extension.getValue();
-                    encounterId = findEnterpriseId(params, encounterReference);
+                    encounterId = transformOnDemandAndMapId(encounterReference, params);
                 }
             }
         }

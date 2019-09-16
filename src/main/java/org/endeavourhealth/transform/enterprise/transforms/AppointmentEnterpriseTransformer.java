@@ -14,9 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class AppointmentTransformer extends AbstractTransformer {
+public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AppointmentTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AppointmentEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -28,11 +28,19 @@ public class AppointmentTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Appointment fhir = (Appointment)resource;
+        Appointment fhir = (Appointment)resourceWrapper.getResource(); //returns null if deleted
+
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
+            csvWriter.writeDelete(enterpriseId.longValue());
+            return;
+        }
 
         long id;
         long organisationId;
@@ -77,7 +85,7 @@ public class AppointmentTransformer extends AbstractTransformer {
         }
         if (fhir.getSlot().size() > 0) {
             Reference slotReference = fhir.getSlot().get(0);
-            ResourceWrapper wrapper = findResource(slotReference, params);
+            ResourceWrapper wrapper = params.findOrRetrieveResource(slotReference);
             if (wrapper != null) {
                 Slot fhirSlot = (Slot) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
                 Reference scheduleReference = fhirSlot.getSchedule();

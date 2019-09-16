@@ -4,7 +4,9 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -15,9 +17,9 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class MedicationStatementTransformer extends AbstractTransformer {
+public class MedicationStatementEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MedicationStatementTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MedicationStatementEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -29,15 +31,17 @@ public class MedicationStatementTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        MedicationStatement fhir = (MedicationStatement)resource;
+        MedicationStatement fhir = (MedicationStatement)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 

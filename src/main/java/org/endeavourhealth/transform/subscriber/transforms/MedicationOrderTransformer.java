@@ -9,7 +9,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -22,24 +22,26 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(MedicationOrderTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.MedicationOrder;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.MedicationOrder model = params.getOutputContainer().getMedicationOrders();
 
-        if (resourceWrapper.isDeleted()) {
-            model.writeDelete(subscriberId);
-            return;
-        }
+        MedicationOrder fhir = (MedicationOrder)resourceWrapper.getResource(); //returns null if deleted
 
-        MedicationOrder fhir = (MedicationOrder) FhirResourceHelper.deserialiseResouce(resourceWrapper);
-
-        //if confidential, don't send (and remove)
-        if (isConfidential(fhir)) {
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
             model.writeDelete(subscriberId);
             return;
         }
@@ -65,18 +67,18 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         Double ageAtEvent = null;
         String issueMethod = null;
 
-        organizationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        organizationId = params.getSubscriberOrganisationId().longValue();
+        patientId = params.getSubscriberPatientId().longValue();
+        personId = params.getSubscriberPersonId().longValue();
 
         if (fhir.hasPrescriber()) {
             Reference practitionerReference = fhir.getPrescriber();
-            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+            practitionerId = transformOnDemandAndMapId(practitionerReference, SubscriberTableId.PRACTITIONER, params);
         }
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, SubscriberTableId.ENCOUNTER, encounterReference);
+            encounterId = transformOnDemandAndMapId(encounterReference, SubscriberTableId.ENCOUNTER, params);
         }
 
         if (fhir.hasDateWrittenElement()) {
@@ -155,7 +157,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION)) {
                     Reference medicationStatementReference = (Reference)extension.getValue();
-                    medicationStatementId = findEnterpriseId(params, SubscriberTableId.MEDICATION_STATEMENT, medicationStatementReference);
+                    medicationStatementId = transformOnDemandAndMapId(medicationStatementReference, SubscriberTableId.MEDICATION_STATEMENT, params);
 
                     //the test pack contains medication orders (i.e. issueRecords) that point to medication statements (i.e. drugRecords)
                     //that don't exist, so log it out and just skip this bad record
@@ -178,16 +180,17 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         }
 
         if (snomedCodeString != null) {
-                bnfReference = getSnomedToBnfChapter(snomedCodeString);
+                bnfReference = params.getSnomedToBnfChapter(snomedCodeString);
                 //LOG.info("bnfReference: " + bnfReference);
         }
 
         if (fhir.getPatient() != null) {
             Reference ref = fhir.getPatient();
-            Patient patient = getCachedPatient(ref, params);
+            Patient patient = params.getCachedPatient(ref);
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
+        //TODO - not sure what issueMethod is supposed to contain, and MedicationOrder note field is never used in DDS (Drew)
         if (fhir.getNote() != null && fhir.getNote().length() > 0) {
             issueMethod = fhir.getNote();
         }

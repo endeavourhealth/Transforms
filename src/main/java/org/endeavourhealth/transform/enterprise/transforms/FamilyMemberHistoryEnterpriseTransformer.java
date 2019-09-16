@@ -2,6 +2,9 @@ package org.endeavourhealth.transform.enterprise.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -12,13 +15,13 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class SpecimenTransformer extends AbstractTransformer {
+public class FamilyMemberHistoryEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SpecimenTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FamilyMemberHistoryEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
-        return ResourceType.Specimen;
+        return ResourceType.FamilyMemberHistory;
     }
 
     public boolean shouldAlwaysTransform() {
@@ -26,15 +29,17 @@ public class SpecimenTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Specimen fhir = (Specimen)resource;
+        FamilyMemberHistory fhir = (FamilyMemberHistory)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -68,28 +73,34 @@ public class SpecimenTransformer extends AbstractTransformer {
             for (Extension extension: fhir.getExtension()) {
                 if (extension.getUrl().equals(FhirExtensionUri.ASSOCIATED_ENCOUNTER)) {
                     Reference encounterReference = (Reference)extension.getValue();
-                    encounterId = findEnterpriseId(params, encounterReference);
+                    encounterId = transformOnDemandAndMapId(encounterReference, params);
+
+                } else if (extension.getUrl().equals(FhirExtensionUri.FAMILY_MEMBER_HISTORY_REPORTED_BY)) {
+                    Reference practitionerReference = (Reference)extension.getValue();
+                    practitionerId = transformOnDemandAndMapId(practitionerReference, params);
                 }
             }
         }
 
-        if (fhir.hasCollection()) {
-
-            Specimen.SpecimenCollectionComponent fhirCollection = fhir.getCollection();
-
-            if (fhirCollection.hasCollectedDateTimeType()) {
-                DateTimeType dt = fhirCollection.getCollectedDateTimeType();
-                clinicalEffectiveDate = dt.getValue();
-                datePrecisionId = convertDatePrecision(dt.getPrecision());
-            }
-
-            if (fhirCollection.hasCollector()) {
-                Reference practitionerReference = fhirCollection.getCollector();
-                practitionerId = transformOnDemandAndMapId(practitionerReference, params);
-            }
+        if (fhir.hasDateElement()) {
+            DateTimeType dt = fhir.getDateElement();
+            clinicalEffectiveDate = dt.getValue();
+            datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getType());
+        if (fhir.getCondition().size() > 1) {
+            throw new TransformException("FamilyMemberHistory with more than one item not supported");
+        }
+
+        //if there's no clinical code, then don't transform - there are a small number of records
+        //from Barts where there's no code, so we should skip them on outbound transforms
+        if (fhir.getCondition().isEmpty()) {
+            return;
+        }
+
+        FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = fhir.getCondition().get(0);
+
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(condition.getCode());
         if (codes == null) {
             return;
         }
@@ -108,7 +119,7 @@ public class SpecimenTransformer extends AbstractTransformer {
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = findEnterpriseId(params, parentReference);
+            parentObservationId = transformOnDemandAndMapId(parentReference, params);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
@@ -141,6 +152,7 @@ public class SpecimenTransformer extends AbstractTransformer {
                 problemEndDate,
                 parentObservationId);
     }
-}
 
+
+}
 

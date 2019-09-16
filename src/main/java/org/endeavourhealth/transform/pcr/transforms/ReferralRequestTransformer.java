@@ -44,9 +44,9 @@ public class ReferralRequestTransformer extends AbstractTransformer {
 //        boolean isReview = false;
 //
 //        id = enterpriseId.longValue();
-//        organizationId = params.getEnterpriseOrganisationId().longValue();
-//        patientId = params.getEnterprisePatientId().longValue();
-//        personId = params.getEnterprisePersonId().longValue();
+//        organizationId = params.getSubscriberOrganisationId().longValue();
+//        patientId = params.getSubscriberPatientId().longValue();
+//        personId = params.getSubscriberPersonId().longValue();
 //
 //        if (fhir.hasEncounter()) {
 //            Reference encounterReference = fhir.getEncounter();

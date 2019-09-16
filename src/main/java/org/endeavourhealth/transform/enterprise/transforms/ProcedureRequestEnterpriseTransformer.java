@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -9,9 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class ProcedureRequestTransformer extends AbstractTransformer {
+public class ProcedureRequestEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ProcedureRequestTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProcedureRequestEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -23,15 +25,17 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        ProcedureRequest fhir = (ProcedureRequest)resource;
+        ProcedureRequest fhir = (ProcedureRequest)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -55,7 +59,7 @@ public class ProcedureRequestTransformer extends AbstractTransformer {
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = transformOnDemandAndMapId(encounterReference, params);
         }
 
         if (fhir.hasOrderer()) {

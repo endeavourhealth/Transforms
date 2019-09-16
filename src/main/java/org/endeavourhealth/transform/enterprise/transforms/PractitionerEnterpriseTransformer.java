@@ -2,14 +2,16 @@ package org.endeavourhealth.transform.enterprise.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PractitionerTransformer extends AbstractTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransformer.class);
+public class PractitionerEnterpriseTransformer extends AbstractEnterpriseTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(PractitionerEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -21,11 +23,16 @@ public class PractitionerTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Practitioner fhir = (Practitioner)resource;
+        if (resourceWrapper.isDeleted()) {
+            csvWriter.writeDelete(enterpriseId.longValue());
+            return;
+        }
+
+        Practitioner fhir = (Practitioner)resourceWrapper.getResource();
 
         long id;
         long organizaationId;

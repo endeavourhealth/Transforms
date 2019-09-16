@@ -1,9 +1,11 @@
 package org.endeavourhealth.transform.enterprise;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
@@ -15,7 +17,7 @@ import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
-import org.endeavourhealth.transform.enterprise.transforms.AbstractTransformer;
+import org.endeavourhealth.transform.enterprise.transforms.AbstractEnterpriseTransformer;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
@@ -129,6 +131,9 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public Long getEnterpriseOrganisationId() {
+        if (enterpriseOrganisationId == null) {
+            throw new RuntimeException("Trying to get enterprise org ID but it's not been set");
+        }
         return enterpriseOrganisationId;
     }
 
@@ -140,11 +145,17 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public Long getEnterprisePatientId() {
+        if (enterprisePatientId == null) {
+            throw new RuntimeException("Trying to get enterprise patient ID but it's not been set");
+        }
         return enterprisePatientId;
     }
 
 
     public Long getEnterprisePersonId() {
+        if (enterprisePersonId == null) {
+            throw new RuntimeException("Trying to get enterprise person ID but it's not been set");
+        }
         return enterprisePersonId;
     }
 
@@ -223,37 +234,40 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
      * up the Enterprise patient ID for each resource, we can do it once at the start. To do that
      * we need the Discovery patient ID from one of the resources.
      */
-    private String findPatientId() throws Exception {
+    private String findPatientIdFromResources() throws Exception {
 
         for (ResourceWrapper resourceWrapper: allResources) {
-            if (resourceWrapper.isDeleted()) {
-                continue;
-            }
 
-            String resourceTypeStr = resourceWrapper.getResourceType();
-            ResourceType resourceType = ResourceType.valueOf(resourceTypeStr);
+            ResourceType resourceType = resourceWrapper.getResourceTypeObj();
             if (!FhirResourceFiler.isPatientResource(resourceType)) {
                 continue;
             }
 
-            try {
-                Resource resource = FhirResourceHelper.deserialiseResouce(resourceWrapper);
-                String patientId = IdHelper.getPatientId(resource);
-                if (Strings.isNullOrEmpty(patientId)) {
-                    continue;
-                }
+            //if it's a patient resource, we can just check the
+            if (resourceType == ResourceType.Patient) {
+                return resourceWrapper.getResourceIdStr();
+            }
 
-                return patientId;
+            if (!resourceWrapper.isDeleted()) {
+                try {
+                    Resource resource = FhirResourceHelper.deserialiseResouce(resourceWrapper);
+                    String patientId = IdHelper.getPatientId(resource);
+                    if (Strings.isNullOrEmpty(patientId)) {
+                        continue;
+                    }
 
-            } catch (PatientResourceException ex) {
-                //we've had this exception because a batch has ended up containing JUST
-                //a Slot resource, which means we can't get the patient ID. The matching Appointment
-                //resource was created in a separate exchange_batch, but errors meant this data was
-                //split into a separate batch. This being the case, the Slot will already have been sent
-                //to the subscriber, because that's manually done when the appointment is done. So we
-                //can safely ignore this
-                if (resourceType != ResourceType.Slot) {
-                    throw ex;
+                    return patientId;
+
+                } catch (PatientResourceException ex) {
+                    //we've had this exception because a batch has ended up containing JUST
+                    //a Slot resource, which means we can't get the patient ID. The matching Appointment
+                    //resource was created in a separate exchange_batch, but errors meant this data was
+                    //split into a separate batch. This being the case, the Slot will already have been sent
+                    //to the subscriber, because that's manually done when the appointment is done. So we
+                    //can safely ignore this
+                    if (resourceType != ResourceType.Slot) {
+                        throw ex;
+                    }
                 }
             }
         }
@@ -267,13 +281,13 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public void populatePatientAndPersonIds() throws Exception {
 
-        String discoveryPatientId = findPatientId();
+        String discoveryPatientId = findPatientIdFromResources();
         if (Strings.isNullOrEmpty(discoveryPatientId)) {
             //if no patient ID the remaining resources are patient ones
             return;
         }
 
-        Long enterprisePatientId = AbstractTransformer.findEnterpriseId(this, ResourceType.Patient.toString(), discoveryPatientId);
+        Long enterprisePatientId = AbstractEnterpriseTransformer.findEnterpriseId(this, ResourceType.Patient.toString(), discoveryPatientId);
         if (enterprisePatientId == null) {
             //with the Homerton data, we just get data from a point in time, not historic data too, so we have some episodes of
             //care where we don't have patients. If we're in this situation, then don't send over the data.
@@ -298,13 +312,34 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
         //retrieve the patient resource to see if the record has been deleted or is confidential
         Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
-        ResourceWrapper wrapper = AbstractTransformer.findResource(patientRef, this);
-        if (wrapper == null) {
-            this.shouldPatientRecordBeDeleted = true;
-        } else {
-            Patient patient = (Patient) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
-            this.shouldPatientRecordBeDeleted = AbstractTransformer.isConfidential(patient);
+        ResourceWrapper wrapper = findOrRetrieveResource(patientRef);
+        Patient patient = null;
+        if (wrapper != null) {
+            patient = (Patient) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
         }
+        this.shouldPatientRecordBeDeleted = !shouldPatientBePresentInSubscriber(patient);
+    }
+
+    public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
+
+        //deleted records shouldn't be in subscriber DBs
+        if (patient == null) {
+            return false;
+        }
+
+        //confidential records shouldn't be in subscriber DBs
+        if (AbstractEnterpriseTransformer.isConfidential(patient)) {
+            return false;
+        }
+
+        //records without NHS numbers shouldn't be in subscriber DBs
+//TODO - waiting for clarification on this
+        /*String nhsNumber = IdentifierHelper.findNhsNumber(patient);
+        if (Strings.isNullOrEmpty(nhsNumber)) {
+            return false;
+        }
+*/
+        return true;
     }
 
     public void checkForMissedResources() throws Exception {
@@ -356,4 +391,24 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         String resourceReference = ReferenceHelper.createResourceReference(resourceWrapper.getResourceType(), resourceWrapper.getResourceIdStr());
         resourcesSkippedReferences.put(resourceReference, MAP_VAL);
     }
+
+    public ResourceWrapper findOrRetrieveResource(Reference reference) throws Exception {
+
+        //look in our resources map first
+        ResourceWrapper ret = findResourceForReference(reference);
+        if (ret != null) {
+            if (ret.isDeleted()) {
+                return null;
+            } else {
+                return ret;
+            }
+        }
+
+        //if not in our map, then hit the DB
+        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+
+        return resourceDal.getCurrentVersion(getServiceId(), comps.getResourceType().toString(), UUID.fromString(comps.getId()));
+    }
+
 }

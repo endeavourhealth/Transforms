@@ -13,7 +13,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Subscrib
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -27,24 +27,26 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
     private static final EncounterCodeDalI encounterCodeDal = DalProvider.factoryEncounterCodeDal();
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Encounter;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Encounter model = params.getOutputContainer().getEncounters();
 
-        if (resourceWrapper.isDeleted()) {
-            model.writeDelete(subscriberId);
-            return;
-        }
+        Encounter fhir = (Encounter)resourceWrapper.getResource(); //returns null if deleted
 
-        Encounter fhir = (Encounter) FhirResourceHelper.deserialiseResouce(resourceWrapper);
-
-        //if confidential, don't send (and remove)
-        if (isConfidential(fhir)) {
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
             model.writeDelete(subscriberId);
             return;
         }
@@ -71,9 +73,9 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         Date endDate = null;
         String institutionLocationId = null;
 
-        organizationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        organizationId = params.getSubscriberOrganisationId().longValue();
+        patientId = params.getSubscriberPatientId().longValue();
+        personId = params.getSubscriberPersonId().longValue();
 
         if (fhir.hasParticipant()) {
 
@@ -93,14 +95,14 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
                 if (primary) {
                     Reference practitionerReference = participantComponent.getIndividual();
-                    practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+                    practitionerId = transformOnDemandAndMapId(practitionerReference, SubscriberTableId.PRACTITIONER, params);
                 }
             }
         }
 
         if (fhir.hasAppointment()) {
             Reference appointmentReference = fhir.getAppointment();
-            appointmentId = findEnterpriseId(params, SubscriberTableId.APPOINTMENT, appointmentReference);
+            appointmentId = transformOnDemandAndMapId(appointmentReference, SubscriberTableId.APPOINTMENT, params);
         }
 
         if (fhir.hasPeriod()) {
@@ -145,15 +147,15 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
-            episodeOfCareId = findEnterpriseId(params, SubscriberTableId.EPISODE_OF_CARE, episodeReference);
+            episodeOfCareId = transformOnDemandAndMapId(episodeReference, SubscriberTableId.EPISODE_OF_CARE, params);
         }
 
         if (fhir.hasServiceProvider()) {
             Reference orgReference = fhir.getServiceProvider();
-            serviceProviderOrganisationId = findEnterpriseId(params, SubscriberTableId.ORGANIZATION, orgReference);
+            serviceProviderOrganisationId = transformOnDemandAndMapId(orgReference, SubscriberTableId.ORGANIZATION, params);
         }
         if (serviceProviderOrganisationId == null) {
-            serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
+            serviceProviderOrganisationId = params.getSubscriberOrganisationId();
         }
 
         String originalTerm = null;
@@ -196,7 +198,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         if (fhir.getPatient() != null) {
             Reference ref = fhir.getPatient();
-            Patient patient = getCachedPatient(ref, params);
+            Patient patient = params.getCachedPatient(ref);
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
@@ -405,7 +407,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         return hl7MessageTypeCoding.getCode();
     }
 
-    private Long findRecordingPractitionerId(Encounter fhir, SubscriberTransformParams params) throws Exception {
+    /*private Long findRecordingPractitionerId(Encounter fhir, SubscriberTransformHelper params) throws Exception {
         if (!fhir.hasExtension()) {
             return null;
         }
@@ -416,8 +418,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         }
 
         Reference reference = (Reference)extension.getValue();
-        return transformOnDemandAndMapId(reference, params);
-    }
+        return transformOnDemandAndMapId(reference, SubscriberTableId.PRACTITIONER, params);
+    }*/
 
     private Date findEndDate(Encounter fhir) {
         if (fhir.hasPeriod()) {
@@ -430,7 +432,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         return null;
     }
 
-    private Long findLocationId(Encounter fhir, SubscriberTransformParams params) throws Exception {
+    private Long findLocationId(Encounter fhir, SubscriberTransformHelper params) throws Exception {
 
         if (!fhir.hasLocation()) {
             return null;
@@ -469,7 +471,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             return null;
 
         } else {
-            return transformOnDemandAndMapId(locationReference, params);
+            return transformOnDemandAndMapId(locationReference, SubscriberTableId.LOCATION, params);
         }
     }
 
@@ -503,7 +505,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         return findEncounterTypeTerm(fhir, null);
     }*/
 
-    private static String findEncounterTypeTerm(Encounter fhir, SubscriberTransformParams params) {
+    private static String findEncounterTypeTerm(Encounter fhir, SubscriberTransformHelper params) {
 
         String source = null;
 

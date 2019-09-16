@@ -3,7 +3,9 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -14,9 +16,9 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class MedicationOrderTransformer extends AbstractTransformer {
+public class MedicationOrderEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MedicationOrderTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MedicationOrderEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -28,15 +30,17 @@ public class MedicationOrderTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        MedicationOrder fhir = (MedicationOrder)resource;
+        MedicationOrder fhir = (MedicationOrder)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -69,7 +73,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = transformOnDemandAndMapId(encounterReference, params);
         }
 
         if (fhir.hasDateWrittenElement()) {
@@ -141,7 +145,7 @@ public class MedicationOrderTransformer extends AbstractTransformer {
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION)) {
                     Reference medicationStatementReference = (Reference)extension.getValue();
-                    medicationStatementId = findEnterpriseId(params, medicationStatementReference);
+                    medicationStatementId = transformOnDemandAndMapId(medicationStatementReference, params);
 
                     //the test pack contains medication orders (i.e. issueRecords) that point to medication statements (i.e. drugRecords)
                     //that don't exist, so log it out and just skip this bad record

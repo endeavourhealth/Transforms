@@ -8,7 +8,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Subscrib
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -21,24 +21,26 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(DiagnosticReportTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.DiagnosticReport;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Observation model = params.getOutputContainer().getObservations();
 
-        if (resourceWrapper.isDeleted()) {
-            model.writeDelete(subscriberId);
-            return;
-        }
+        DiagnosticReport fhir = (DiagnosticReport)resourceWrapper.getResource(); //returns null if deleted
 
-        DiagnosticReport fhir = (DiagnosticReport) FhirResourceHelper.deserialiseResouce(resourceWrapper);
-
-        //if confidential, don't send (and remove)
-        if (isConfidential(fhir)) {
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
             model.writeDelete(subscriberId);
             return;
         }
@@ -66,20 +68,20 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
         Integer episodicityConceptId = null;
         Boolean isPrimary = null;
 
-        organizationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        organizationId = params.getSubscriberOrganisationId().longValue();
+        patientId = params.getSubscriberPatientId().longValue();
+        personId = params.getSubscriberPersonId().longValue();
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, SubscriberTableId.ENCOUNTER, encounterReference);
+            encounterId = transformOnDemandAndMapId(encounterReference, SubscriberTableId.ENCOUNTER, params);
         }
 
         if (fhir.hasExtension()) {
             for (Extension extension: fhir.getExtension()) {
                 if (extension.getUrl().equals(FhirExtensionUri.DIAGNOSTIC_REPORT_FILED_BY)) {
                     Reference practitionerReference = (Reference)extension.getValue();
-                    practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+                    practitionerId = transformOnDemandAndMapId(practitionerReference, SubscriberTableId.PRACTITIONER, params);
                 }
             }
         }
@@ -112,14 +114,14 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
 
         if (fhir.getSubject() != null) {
             Reference ref = fhir.getSubject();
-            Patient patient = getCachedPatient(ref, params);
+            Patient patient = params.getCachedPatient(ref);
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = findEnterpriseId(params, SubscriberTableId.OBSERVATION, parentReference);
+            parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.OBSERVATION, params);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);

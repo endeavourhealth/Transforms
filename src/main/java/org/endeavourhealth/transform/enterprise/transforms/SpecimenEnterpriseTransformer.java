@@ -2,6 +2,8 @@ package org.endeavourhealth.transform.enterprise.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -12,13 +14,13 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class ImmunisationTransformer extends AbstractTransformer {
+public class SpecimenEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ImmunisationTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SpecimenEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
-        return ResourceType.Immunization;
+        return ResourceType.Specimen;
     }
 
     public boolean shouldAlwaysTransform() {
@@ -26,15 +28,17 @@ public class ImmunisationTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Immunization fhir = (Immunization)resource;
+        Specimen fhir = (Specimen)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -64,23 +68,32 @@ public class ImmunisationTransformer extends AbstractTransformer {
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
 
-        if (fhir.hasEncounter()) {
-            Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+        if (fhir.hasExtension()) {
+            for (Extension extension: fhir.getExtension()) {
+                if (extension.getUrl().equals(FhirExtensionUri.ASSOCIATED_ENCOUNTER)) {
+                    Reference encounterReference = (Reference)extension.getValue();
+                    encounterId = transformOnDemandAndMapId(encounterReference, params);
+                }
+            }
         }
 
-        if (fhir.hasPerformer()) {
-            Reference practitionerReference = fhir.getPerformer();
-            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+        if (fhir.hasCollection()) {
+
+            Specimen.SpecimenCollectionComponent fhirCollection = fhir.getCollection();
+
+            if (fhirCollection.hasCollectedDateTimeType()) {
+                DateTimeType dt = fhirCollection.getCollectedDateTimeType();
+                clinicalEffectiveDate = dt.getValue();
+                datePrecisionId = convertDatePrecision(dt.getPrecision());
+            }
+
+            if (fhirCollection.hasCollector()) {
+                Reference practitionerReference = fhirCollection.getCollector();
+                practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+            }
         }
 
-        if (fhir.hasDateElement()) {
-            DateTimeType dt = fhir.getDateElement();
-            clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
-        }
-
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getVaccineCode());
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getType());
         if (codes == null) {
             return;
         }
@@ -99,7 +112,7 @@ public class ImmunisationTransformer extends AbstractTransformer {
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = findEnterpriseId(params, parentReference);
+            parentObservationId = transformOnDemandAndMapId(parentReference, params);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
@@ -133,4 +146,5 @@ public class ImmunisationTransformer extends AbstractTransformer {
                 parentObservationId);
     }
 }
+
 

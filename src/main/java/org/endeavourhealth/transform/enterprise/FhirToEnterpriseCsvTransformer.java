@@ -147,7 +147,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //if we've not got a mapping, then we need to create one from our resource data
         if (mappedResourceId == null) {
             Resource fhir = resourceRepository.getCurrentVersionAsResource(serviceId, resourceType, resourceId.toString());
-            String mappingValue = AbstractTransformer.findInstanceMappingValue(fhir, params);
+            String mappingValue = AbstractEnterpriseTransformer.findInstanceMappingValue(fhir, params);
             mappedResourceId = instanceMappingDal.findOrCreateInstanceMappedId(resourceType, resourceId, mappingValue);
         }
 
@@ -158,7 +158,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         }
 
         //generate (or find) an enterprise ID for our organization
-        enterpriseOrganisationId = AbstractTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId.toString());
+        enterpriseOrganisationId = AbstractEnterpriseTransformer.findOrCreateEnterpriseId(params, resourceType.toString(), resourceId.toString());
         //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
         //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
@@ -291,51 +291,51 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
-    public static AbstractTransformer createTransformerForResourceType(ResourceType resourceType) throws Exception {
+    public static AbstractEnterpriseTransformer createTransformerForResourceType(ResourceType resourceType) throws Exception {
         if (resourceType == ResourceType.Organization) {
-            return new OrganisationTransformer();
+            return new OrganisationEnterpriseTransformer();
         } else if (resourceType == ResourceType.Location) {
-            return new LocationTransformer();
+            return new LocationEnterpriseTransformer();
         } else if (resourceType == ResourceType.Practitioner) {
-            return new PractitionerTransformer();
+            return new PractitionerEnterpriseTransformer();
         } else if (resourceType == ResourceType.Schedule) {
-            return new ScheduleTransformer();
+            return new ScheduleEnterpriseTransformer();
         } else if (resourceType == ResourceType.Patient) {
-            return new PatientTransformer();
+            return new PatientEnterpriseTransformer();
         } else if (resourceType == ResourceType.EpisodeOfCare) {
-            return new EpisodeOfCareTransformer();
+            return new EpisodeOfCareEnterpriseTransformer();
         } else if (resourceType == ResourceType.Appointment) {
-            return new AppointmentTransformer();
+            return new AppointmentEnterpriseTransformer();
         } else if (resourceType == ResourceType.Encounter) {
-            return new EncounterTransformer();
+            return new EncounterEnterpriseTransformer();
         } else if (resourceType == ResourceType.Flag) {
-            return new FlagTransformer();
+            return new FlagEnterpriseTransformer();
         } else if (resourceType == ResourceType.Condition) {
-            return new ConditionTransformer();
+            return new ConditionEnterpriseTransformer();
         } else if (resourceType == ResourceType.Procedure) {
-            return new ProcedureTransformer();
+            return new ProcedureEnterpriseTransformer();
         } else if (resourceType == ResourceType.ReferralRequest) {
-            return new ReferralRequestTransformer();
+            return new ReferralRequestEnterpriseTransformer();
         } else if (resourceType == ResourceType.ProcedureRequest) {
-            return new ProcedureRequestTransformer();
+            return new ProcedureRequestEnterpriseTransformer();
         } else if (resourceType == ResourceType.Observation) {
-            return new ObservationTransformer();
+            return new ObservationEnterpriseTransformer();
         } else if (resourceType == ResourceType.MedicationStatement) {
-            return new MedicationStatementTransformer();
+            return new MedicationStatementEnterpriseTransformer();
         } else if (resourceType == ResourceType.MedicationOrder) {
-            return new MedicationOrderTransformer();
+            return new MedicationOrderEnterpriseTransformer();
         } else if (resourceType == ResourceType.Immunization) {
-            return new ImmunisationTransformer();
+            return new ImmunisationEnterpriseTransformer();
         } else if (resourceType == ResourceType.FamilyMemberHistory) {
-            return new FamilyMemberHistoryTransformer();
+            return new FamilyMemberHistoryEnterpriseTransformer();
         } else if (resourceType == ResourceType.AllergyIntolerance) {
-            return new AllergyIntoleranceTransformer();
+            return new AllergyIntoleranceEnterpriseTransformer();
         } else if (resourceType == ResourceType.DiagnosticOrder) {
-            return new DiagnosticOrderTransformer();
+            return new DiagnosticOrderEnterpriseTransformer();
         } else if (resourceType == ResourceType.DiagnosticReport) {
-            return new DiagnosticReportTransformer();
+            return new DiagnosticReportEnterpriseTransformer();
         } else if (resourceType == ResourceType.Specimen) {
-            return new SpecimenTransformer();
+            return new SpecimenEnterpriseTransformer();
         } else if (resourceType == ResourceType.Slot) {
             //slots are handled in the appointment transformer, so have no dedicated one
             return null;
@@ -458,7 +458,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         @Override
         public Object call() throws Exception {
 
-            AbstractTransformer transformer = createTransformerForResourceType(resourceType);
+            AbstractEnterpriseTransformer transformer = createTransformerForResourceType(resourceType);
             if (transformer != null) {
                 transformer.transformResources(resources, csvWriter, params);
 
@@ -466,7 +466,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
                 //if no transformer (some resource types don't have one), then tell our helper that we've dealt with our resources
                 //so we don't get an error for missing some
                 for (ResourceWrapper resourceWrapper: resources) {
-                    params.hasResourceBeenTransformedAddIfNot(resourceWrapper);
+                    params.setResourceAsSkipped(resourceWrapper);
                 }
             }
             return null;

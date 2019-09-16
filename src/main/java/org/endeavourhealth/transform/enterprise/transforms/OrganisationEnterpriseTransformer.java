@@ -16,8 +16,8 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OrganisationTransformer extends AbstractTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
+public class OrganisationEnterpriseTransformer extends AbstractEnterpriseTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(OrganisationEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -29,11 +29,16 @@ public class OrganisationTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        org.hl7.fhir.instance.model.Organization fhir = (org.hl7.fhir.instance.model.Organization)resource;
+        if (resourceWrapper.isDeleted()) {
+            csvWriter.writeDelete(enterpriseId.longValue());
+            return;
+        }
+
+        org.hl7.fhir.instance.model.Organization fhir = (org.hl7.fhir.instance.model.Organization)resourceWrapper.getResource();
 
         long id;
         String odsCode = null;
@@ -90,7 +95,7 @@ public class OrganisationTransformer extends AbstractTransformer {
 
                     Reference locationReference = (Reference)extension.getValue();
 
-                    ResourceWrapper wrapper = findResource(locationReference, params);
+                    ResourceWrapper wrapper = params.findOrRetrieveResource(locationReference);
                     if (wrapper == null) {
                         //The Emis data contains organisations that refer to organisations that don't exist
                         LOG.warn("" + fhir.getResourceType() + " " + fhir.getId() + " refers to " + locationReference.getReference() + " that doesn't exist");
@@ -130,7 +135,7 @@ public class OrganisationTransformer extends AbstractTransformer {
 
                 /*Map<String, String> parents = odsOrg.getParents();
                 if (parents != null) {
-                    SubscriberInstanceMappingDalI instanceMappingDal = DalProvider.factorySubscriberInstanceMappingDal(params.getEnterpriseConfigName());
+                    SubscriberInstanceMappingDalI instanceMappingDal = DalProvider.factorySubscriberInstanceMappingDal(params.getSubscriberConfigName());
 
                     List<UUID> parentResourceIds = new ArrayList<>();
 

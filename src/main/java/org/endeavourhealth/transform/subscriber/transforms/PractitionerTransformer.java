@@ -5,7 +5,7 @@ import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -14,22 +14,26 @@ import org.slf4j.LoggerFactory;
 public class PractitionerTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Practitioner;
+    }
+
     public boolean shouldAlwaysTransform() {
         return false;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Practitioner model = params.getOutputContainer().getPractitioners();
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
-
             return;
         }
 
-        Practitioner fhir = (Practitioner) FhirResourceHelper.deserialiseResouce(resourceWrapper);
+        Practitioner fhir = (Practitioner)FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         long organizationId;
         String name = null;
@@ -70,7 +74,7 @@ public class PractitionerTransformer extends AbstractSubscriberTransformer {
 
             if (role.hasManagingOrganization()) {
                 Reference organisationReference = role.getManagingOrganization();
-                practitionerEnterpriseOrgId = transformOnDemandAndMapId(organisationReference, params);
+                practitionerEnterpriseOrgId = transformOnDemandAndMapId(organisationReference, SubscriberTableId.ORGANIZATION, params);
             }
             //LOG.trace("Got role with org ID " + practitionerEnterpriseOrgId + " from " + organisationReference);
         }
@@ -79,7 +83,7 @@ public class PractitionerTransformer extends AbstractSubscriberTransformer {
         //organisation we're doing the transform for
         if (practitionerEnterpriseOrgId == null) {
             //LOG.trace("No role, so setting to the enterpriseOrganisationUuid " + enterpriseOrganisationUuid);
-            practitionerEnterpriseOrgId = params.getEnterpriseOrganisationId();
+            practitionerEnterpriseOrgId = params.getSubscriberOrganisationId();
         }
 
         organizationId = practitionerEnterpriseOrgId.longValue();

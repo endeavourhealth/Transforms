@@ -2,9 +2,9 @@ package org.endeavourhealth.transform.enterprise.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirProfileUri;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -15,14 +15,13 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class ConditionTransformer extends AbstractTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(ConditionTransformer.class);
+public class DiagnosticOrderEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final CernerClinicalEventMappingDalI referenceDal = DalProvider.factoryCernerClinicalEventMappingDal();
+    private static final Logger LOG = LoggerFactory.getLogger(DiagnosticOrderEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
-        return ResourceType.Condition;
+        return ResourceType.DiagnosticOrder;
     }
 
     public boolean shouldAlwaysTransform() {
@@ -30,17 +29,20 @@ public class ConditionTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Condition fhir = (Condition)resource;
+        DiagnosticOrder fhir = (DiagnosticOrder)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
+
 
         long id;
         long organisationId;
@@ -70,42 +72,35 @@ public class ConditionTransformer extends AbstractTransformer {
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = transformOnDemandAndMapId(encounterReference, params);
         }
 
-        if (fhir.hasAsserter()) {
-            Reference practitionerReference = fhir.getAsserter();
+        if (fhir.hasOrderer()) {
+            Reference practitionerReference = fhir.getOrderer();
             practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
-        if (fhir.hasOnsetDateTimeType()) {
-            DateTimeType dt = fhir.getOnsetDateTimeType();
-            clinicalEffectiveDate = dt.getValue();
-            datePrecisionId = convertDatePrecision(dt.getPrecision());
+        if (fhir.hasEvent()) {
+            DiagnosticOrder.DiagnosticOrderEventComponent event = fhir.getEvent().get(0);
+            if (event.hasDateTimeElement()) {
+                DateTimeType dt = event.getDateTimeElement();
+                clinicalEffectiveDate = dt.getValue();
+                datePrecisionId = convertDatePrecision(dt.getPrecision());
+            }
         }
 
-        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(fhir.getCode());
+        if (fhir.getItem().size() > 1) {
+            throw new TransformException("DiagnosticOrder with more than one item not supported");
+        }
+        DiagnosticOrder.DiagnosticOrderItemComponent item = fhir.getItem().get(0);
+
+        ObservationCodeHelper codes = ObservationCodeHelper.extractCodeFields(item.getCode());
         if (codes == null) {
             return;
         }
         snomedConceptId = codes.getSnomedConceptId();
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
-
-        //if it's a problem set the boolean to say so
-        if (fhir.hasMeta()) {
-            for (UriType uriType: fhir.getMeta().getProfile()) {
-                if (uriType.getValue().equals(FhirProfileUri.PROFILE_URI_PROBLEM)) {
-                    isProblem = true;
-                }
-            }
-        }
-
-        if (fhir.hasAbatement()
-                && fhir.getAbatement() instanceof DateType) {
-            DateType dateType = (DateType)fhir.getAbatement();
-            problemEndDate = dateType.getValue();
-        }
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
@@ -118,7 +113,7 @@ public class ConditionTransformer extends AbstractTransformer {
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = findEnterpriseId(params, parentReference);
+            parentObservationId = transformOnDemandAndMapId(parentReference, params);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
@@ -152,3 +147,7 @@ public class ConditionTransformer extends AbstractTransformer {
                 parentObservationId);
     }
 }
+
+
+
+

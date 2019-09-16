@@ -2,9 +2,7 @@ package org.endeavourhealth.transform.subscriber;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -65,13 +63,10 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             batchSize = config.get("transform_batch_size").asInt();
         }
 
-        //hash the resources by reference to them, so the transforms can quickly look up dependant resources
-        Map<String, ResourceWrapper> resourcesMap = hashResourcesByReference(resources);
-
-        SubscriberTransformParams params = new SubscriberTransformParams(serviceId, systemId, protocolId, exchangeId, batchId, configName, resourcesMap, exchangeBody, pseudonymised);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, resources, exchangeBody, pseudonymised);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
-        params.setEnterpriseOrganisationId(enterpriseOrgId);
+        params.setSubscriberOrganisationId(enterpriseOrgId);
         params.setBatchSize(batchSize);
 
         //sometimes we may fail to find an org id, so just return null as there's nothing to send
@@ -80,7 +75,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
 
         try {
-            transformResources(resources, params);
+            runTransforms(params);
 
             OutputContainer data = params.getOutputContainer();
             byte[] bytes = data.writeToZip();
@@ -97,11 +92,11 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
-    private static void updateSubscriberStateTable(SubscriberTransformParams params) throws Exception {
+    private static void updateSubscriberStateTable(SubscriberTransformHelper params) throws Exception {
 
-        SubscriberResourceMappingDalI resourceMappingDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
+        SubscriberResourceMappingDalI resourceMappingDal = DalProvider.factorySubscriberResourceMappingDal(params.getSubscriberConfigName());
 
-        List<SubscriberId> map = params.getSubscriberIds();
+        List<SubscriberId> map = params.getSubscriberIdsUpdated();
 
         List<SubscriberId> batch = new ArrayList<>();
         for (SubscriberId id: map) {
@@ -138,10 +133,10 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
     /**
      * finds or creates the ID for the organization that all this data is for
      */
-    private static Long findEnterpriseOrgId(UUID serviceId, SubscriberTransformParams params, List<ResourceWrapper> resources) throws Exception {
+    private static Long findEnterpriseOrgId(UUID serviceId, SubscriberTransformHelper params, List<ResourceWrapper> resources) throws Exception {
 
         //if we've previously transformed for our ODS code, then we'll have a mapping to the enterprise ID for that ODS code
-        SubscriberOrgMappingDalI subscriberInstanceMappingDal = DalProvider.factorySubscriberOrgMappingDal(params.getEnterpriseConfigName());
+        SubscriberOrgMappingDalI subscriberInstanceMappingDal = DalProvider.factorySubscriberOrgMappingDal(params.getSubscriberConfigName());
         Long enterpriseOrganisationId = subscriberInstanceMappingDal.findEnterpriseOrganisationId(serviceId.toString());
         if (enterpriseOrganisationId != null) {
             return enterpriseOrganisationId;
@@ -188,7 +183,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
         //we need to see if our organisation is mapped to another instance of the same place,
         //in which case we need to use the enterprise ID of that other instance
-        SubscriberInstanceMappingDalI instanceMapper = DalProvider.factorySubscriberInstanceMappingDal(params.getEnterpriseConfigName());
+        SubscriberInstanceMappingDalI instanceMapper = DalProvider.factorySubscriberInstanceMappingDal(params.getSubscriberConfigName());
         UUID mappedResourceId = instanceMapper.findInstanceMappedId(resourceType, resourceId);
 
         //if we've not got a mapping, then we need to create one from our resource data
@@ -210,33 +205,12 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         enterpriseOrganisationId = subscriberId.getSubscriberId();
         //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
+        //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
+        ResourceWrapper resourceWrapper = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), resourceId);
+        params.addResourceToTransform(resourceWrapper);
+
         //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
         subscriberInstanceMappingDal.saveEnterpriseOrganisationId(serviceId.toString(), enterpriseOrganisationId);
-
-        //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
-        String orgReferenceValue = ReferenceHelper.createResourceReference(resourceType, resourceId.toString());
-        Map<String, ResourceWrapper> map = params.getAllResources();
-        if (!map.containsKey(orgReferenceValue)) {
-            /*LOG.info("=====Reference map doesn't contain " + orgReferenceValue);
-            for (String key: map.keySet()) {
-                LOG.info("Key = " + key);
-            }
-            LOG.info("<<<<<Reference map doesn't contain " + orgReferenceValue);*/
-
-            //record the audit of us adding a new resource to the batch
-            ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(params.getEnterpriseConfigName());
-            exchangeBatchExtraResourceDalI.saveExtraResource(params.getExchangeId(), params.getBatchId(), resourceType, resourceId);
-
-            ResourceWrapper resourceWrapper = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), resourceId);
-
-            if (resourceWrapper == null) {
-                throw new TransformException("Failed to find non-null version of " + resourceType + " " + resourceId);
-            }
-
-            //and actually add to the two collections of resources
-            resources.add(resourceWrapper);
-            map.put(orgReferenceValue, resourceWrapper);
-        }
 
         return enterpriseOrganisationId;
     }
@@ -284,10 +258,10 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         return null;
     }
 
-    private static void transformResources(List<ResourceWrapper> resources,
-                                          SubscriberTransformParams params) throws Exception {
+    private static void runTransforms(SubscriberTransformHelper params) throws Exception {
 
-        int threads = Math.min(10, resources.size()/10); //limit to 10 threads, but don't create too many unnecessarily if we only have a few resources
+        int resourceCount = params.getResourceCount();
+        int threads = Math.min(10, resourceCount/10); //limit to 10 threads, but don't create too many unnecessarily if we only have a few resources
         threads = Math.max(threads, 1); //make sure we have a min of 1
 
         ThreadPool threadPool = new ThreadPool(threads, 1000);
@@ -296,13 +270,11 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             //we detect whether we're doing an update or insert, based on whether we're previously mapped
             //a reference to a resource, so we need to transform the resources in a specific order, so
             //that we transform resources before we ones that refer to them
-            transformResources(ResourceType.Organization, resources, threadPool, params);
-            transformResources(ResourceType.Location, resources, threadPool, params);
-            transformResources(ResourceType.Practitioner, resources, threadPool, params);
-            transformResources(ResourceType.Schedule, resources, threadPool, params);
-
-            //do the patient resource
-            transformResources(ResourceType.Patient, resources, threadPool, params);
+            transformResources(ResourceType.Organization, threadPool, params);
+            transformResources(ResourceType.Location, threadPool, params);
+            transformResources(ResourceType.Practitioner, threadPool, params);
+            transformResources(ResourceType.Schedule, threadPool, params);
+            transformResources(ResourceType.Patient, threadPool, params);
 
             //if we transformed a patient resource, we need to guarantee that the patient is fully transformed before continuing
             //so we need to let the threadpool empty before doing anything more
@@ -310,86 +282,37 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             handleErrors(errors);
 
             //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
-            String discoveryPatientId = findPatientId(resources);
-            if (!Strings.isNullOrEmpty(discoveryPatientId)) {
-                String sourceId = ReferenceHelper.createResourceReference(ResourceType.Patient.toString(), discoveryPatientId);
-                Long enterprisePatientId = AbstractSubscriberTransformer.findEnterpriseId(params, SubscriberTableId.PATIENT, sourceId);
-                if (enterprisePatientId == null) {
-                    //with the Homerton data, we just get data from a point in time, not historic data too, so we have some episodes of
-                    //care where we don't have patients. If we're in this situation, then don't send over the data.
-                    LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so not doing patient resources");
-                    return;
-                    //throw new TransformException("No enterprise patient ID found for discovery patient " + discoveryPatientId);
-                }
-                if (params.getEnterprisePatientId() == null) {
-                    params.setEnterprisePatientId(enterprisePatientId);
-                }
+            params.populatePatientAndPersonIds();
 
-                String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
+            //order of the transforms is generally in order of dependence
+            transformResources(ResourceType.Appointment, threadPool, params);
+            transformResources(ResourceType.EpisodeOfCare, threadPool, params);
+            transformResources(ResourceType.Encounter, threadPool, params);
+            transformResources(ResourceType.Condition, threadPool, params);
+            transformResources(ResourceType.Procedure, threadPool, params);
+            transformResources(ResourceType.ReferralRequest, threadPool, params);
+            transformResources(ResourceType.ProcedureRequest, threadPool, params);
+            transformResources(ResourceType.Observation, threadPool, params);
+            transformResources(ResourceType.MedicationStatement, threadPool, params);
+            transformResources(ResourceType.MedicationOrder, threadPool, params);
+            transformResources(ResourceType.Immunization, threadPool, params);
+            transformResources(ResourceType.FamilyMemberHistory, threadPool, params);
+            transformResources(ResourceType.AllergyIntolerance, threadPool, params);
+            transformResources(ResourceType.DiagnosticOrder, threadPool, params);
+            transformResources(ResourceType.DiagnosticReport, threadPool, params);
+            transformResources(ResourceType.Specimen, threadPool, params);
+            transformResources(ResourceType.Flag, threadPool, params);
+            transformResources(ResourceType.Slot, threadPool, params);
 
-                //if we've got some cases where we've got a deleted patient but non-deleted patient-related resources
-                //all in the same batch, because Emis sent it like that. In that case we won't have a person ID, so
-                //return out without processing any of the remaining resources, since they're for a deleted patient.
-                if (Strings.isNullOrEmpty(discoveryPersonId)) {
-                    return;
-                }
-
-                SubscriberPersonMappingDalI subscriberPersonMappingDal = DalProvider.factorySubscriberPersonMappingDal(params.getEnterpriseConfigName());
-                Long enterprisePersonId = subscriberPersonMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
-                if (params.getEnterprisePersonId() == null) {
-                    params.setEnterprisePersonId(enterprisePersonId);
-                }
-            }
-
-            Patient patient = null;
-            if (!Strings.isNullOrEmpty(discoveryPatientId)) {
-                Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
-                patient = (Patient) AbstractSubscriberTransformer.findResource(patientRef, params);
-            }
-
-            if (patient != null
-                    && !Strings.isNullOrEmpty(IdentifierHelper.findNhsNumber(patient)) //don't send data for patients w/o NHS numbers
-                    && !AbstractSubscriberTransformer.isConfidential(patient)) { //don't send data for patients that are confidential
-                transformResources(ResourceType.EpisodeOfCare, resources, threadPool, params);
-                transformResources(ResourceType.Appointment, resources, threadPool, params);
-                transformResources(ResourceType.Encounter, resources, threadPool, params);
-                transformResources(ResourceType.Condition, resources, threadPool, params);
-                transformResources(ResourceType.Procedure, resources, threadPool, params);
-                transformResources(ResourceType.ReferralRequest, resources, threadPool, params);
-                transformResources(ResourceType.ProcedureRequest, resources, threadPool, params);
-                transformResources(ResourceType.Observation, resources, threadPool, params);
-                transformResources(ResourceType.MedicationStatement, resources, threadPool, params);
-                transformResources(ResourceType.MedicationOrder, resources, threadPool, params);
-                transformResources(ResourceType.Immunization, resources, threadPool, params);
-                transformResources(ResourceType.FamilyMemberHistory, resources, threadPool, params);
-                transformResources(ResourceType.AllergyIntolerance, resources, threadPool, params);
-                transformResources(ResourceType.DiagnosticOrder, resources, threadPool, params);
-                transformResources(ResourceType.DiagnosticReport, resources, threadPool, params);
-                transformResources(ResourceType.Specimen, resources, threadPool, params);
-                transformResources(ResourceType.Flag, resources, threadPool, params);
-
-                //for these resource types, call with a null transformer as they're actually transformed when
-                //doing one of the above entities, but we want to remove them from the resources list
-                transformResources(ResourceType.Slot, resources, threadPool, params);
-
-                //if there's anything left in the list, then we've missed a resource type
-                if (!resources.isEmpty()) {
-                    Set<String> resourceTypesMissed = new HashSet<>();
-                    for (ResourceWrapper resource : resources) {
-                        String resourceType = resource.getResourceType();
-                        resourceTypesMissed.add(resourceType);
-                    }
-                    String s = String.join(", ", resourceTypesMissed);
-                    throw new TransformException("Transform to Enterprise doesn't handle " + s + " resource type(s)");
-                }
-            }
         } finally {
 
             //close the thread pool
             List<ThreadPoolError> errors = threadPool.waitAndStop();
             handleErrors(errors);
-
         }
+
+        //if there's anything left in the list, then we've missed a resource type
+        params.checkForMissedResources();
     }
 
     /*public static AbstractSubscriberCsvWriter findCsvWriterForResourceType(ResourceType resourceType, SubscriberTransformParams params) throws Exception {
@@ -501,64 +424,34 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
-    private static void transformResources(ResourceType resourceType,
-                                         List<ResourceWrapper> resources,
-                                         ThreadPool threadPool,
-                                         SubscriberTransformParams params) throws Exception {
+    private static void transformResources(ResourceType resourceType, ThreadPool threadPool, SubscriberTransformHelper params) throws Exception {
 
         //find all the ones we want to transform
-        List<ResourceWrapper> resourcesToTransform = new ArrayList<>();
-
-        for (int i=resources.size()-1; i>=0; i--) {
-            ResourceWrapper resource = resources.get(i);
-            String resourceResourceType = resource.getResourceType();
-
-            //if it matches our type, then remove from the original list
-            if (resourceResourceType.equals(resourceType.toString())) {
-                resourcesToTransform.add(resource);
-                resources.remove(i);
-            }
-        }
-
-        if (resourcesToTransform.isEmpty()) {
-            return;
-        }
+        List<ResourceWrapper> resourcesToTransform = params.findResourcesForType(resourceType);
 
         //transform in batches
         List<ResourceWrapper> batch = new ArrayList<>();
-        AbstractSubscriberTransformer transformer = createTransformerForResourceType(resourceType);
-
-        //some resource types don't have a transformer, so just return out
-        if (transformer == null) {
-            return;
-        }
-
         for (ResourceWrapper resource: resourcesToTransform) {
-
             batch.add(resource);
 
             if (batch.size() >= params.getBatchSize()) {
-                addBatchToThreadPool(transformer, batch, threadPool, params);
-
-                //create a new batch and transformer
+                addBatchToThreadPool(resourceType, batch, threadPool, params);
                 batch = new ArrayList<>();
-                transformer = createTransformerForResourceType(resourceType);
             }
         }
 
         //don't forget to do any in the last batch
         if (!batch.isEmpty()) {
-            addBatchToThreadPool(transformer, batch, threadPool, params);
+            addBatchToThreadPool(resourceType, batch, threadPool, params);
         }
-
     }
 
-    private static void addBatchToThreadPool(AbstractSubscriberTransformer transformer,
+    private static void addBatchToThreadPool(ResourceType resourceType,
                                              List<ResourceWrapper> resources,
                                              ThreadPool threadPool,
-                                             SubscriberTransformParams params) throws Exception {
+                                             SubscriberTransformHelper params) throws Exception {
 
-        TransformResourceCallable callable = new TransformResourceCallable(transformer, resources, params);
+        Callable callable = new TransformResourceCallable(resourceType, resources, params);
         List<ThreadPoolError> errors = threadPool.submit(callable);
         handleErrors(errors);
     }
@@ -582,82 +475,39 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
 
 
-    /*private static void transformResources(ResourceType resourceType,
-                                          AbstractTransformer transformer,
-                                          OutputContainer data,
-                                          List<ResourceByExchangeBatch> resources,
-                                          Map<String, ResourceByExchangeBatch> resourcesMap,
-                                          Long enterpriseOrganisationId,
-                                          Long enterprisePatientId,
-                                          Long enterprisePersonId,
-                                          String configName) throws Exception {
-
-        HashSet<ResourceByExchangeBatch> resourcesProcessed = new HashSet<>();
-
-        *//*for (int i=resources.size()-1; i>=0; i--) {
-            ResourceByExchangeBatch resource = resources.get(i);*//*
-        for (ResourceByExchangeBatch resource: resources) {
-            if (resource.getResourceType().equals(resourceType.toString())) {
-
-                //we use this function with a null transformer for resources we want to ignore
-                if (transformer != null) {
-                    try {
-                        transformer.transform(resource, data, resourcesMap, enterpriseOrganisationId, enterprisePatientId, enterprisePersonId, configName);
-                    } catch (Exception ex) {
-                        throw new TransformException("Exception transforming " + resourceType + " " + resource.getResourceId(), ex);
-                    }
-
-                }
-
-                resourcesProcessed.add(resource);
-                //resources.remove(i);
-            }
-        }
-
-        //remove all the resources we processed, so we can check for ones we missed at the end
-        resources.removeAll(resourcesProcessed);
-    }*/
-
-    /**
-     * hashes the resources by a reference to them, so the transforms can quickly look up dependant resources
-     */
-    private static Map<String, ResourceWrapper> hashResourcesByReference(List<ResourceWrapper> allResources) throws Exception {
-
-        Map<String, ResourceWrapper> ret = new HashMap<>();
-
-        for (ResourceWrapper resource: allResources) {
-
-            ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
-            String resourceId = resource.getResourceId().toString();
-
-            Reference reference = ReferenceHelper.createReference(resourceType, resourceId);
-            String referenceStr = reference.getReference();
-            ret.put(referenceStr, resource);
-        }
-
-        return ret;
-    }
-
     static class TransformResourceCallable implements Callable {
 
-        private AbstractSubscriberTransformer transformer = null;
+        private ResourceType resourceType = null;
         private List<ResourceWrapper> resources = null;
-        private SubscriberTransformParams params = null;
+        private SubscriberTransformHelper params = null;
 
-        public TransformResourceCallable(AbstractSubscriberTransformer transformer,
+        public TransformResourceCallable(ResourceType resourceType,
                                          List<ResourceWrapper> resources,
-                                         SubscriberTransformParams params) {
+                                         SubscriberTransformHelper params) {
 
-            this.transformer = transformer;
+            this.resourceType = resourceType;
             this.resources = resources;
             this.params = params;
         }
 
         @Override
         public Object call() throws Exception {
-            transformer.transformResources(resources, params);
+
+            AbstractSubscriberTransformer transformer = createTransformerForResourceType(resourceType);
+            if (transformer != null) {
+                transformer.transformResources(resources, params);
+
+            } else {
+                //if no transformer (some resource types don't have one), then tell our helper that we've dealt with our resources
+                //so we don't get an error for missing some
+                for (ResourceWrapper resourceWrapper: resources) {
+                    params.setResourceAsSkipped(resourceWrapper);
+                }
+            }
             return null;
         }
     }
+
+
 
 }

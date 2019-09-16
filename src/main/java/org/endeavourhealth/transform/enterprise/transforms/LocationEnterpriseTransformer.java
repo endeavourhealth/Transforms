@@ -1,14 +1,16 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LocationTransformer extends AbstractTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(LocationTransformer.class);
+public class LocationEnterpriseTransformer extends AbstractEnterpriseTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(LocationEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -20,11 +22,16 @@ public class LocationTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Location fhir = (Location)resource;
+        if (resourceWrapper.isDeleted()) {
+            csvWriter.writeDelete(enterpriseId.longValue());
+            return;
+        }
+
+        Location fhir = (Location)resourceWrapper.getResource();
 
         long id;
         String name = null;

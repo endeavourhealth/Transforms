@@ -38,8 +38,8 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class PatientTransformer extends AbstractTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
+public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(PatientEnterpriseTransformer.class);
 
     /*private static final String PSEUDO_KEY_NHS_NUMBER = "NHSNumber";
     private static final String PSEUDO_KEY_PATIENT_NUMBER = "PatientNumber";
@@ -64,20 +64,24 @@ public class PatientTransformer extends AbstractTransformer {
         return true;
     }
 
+
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Patient fhirPatient = (Patient)resource;
 
-        Patient previousVersion = findPreviousVersion(fhirPatient, params);
+        Patient fhirPatient = (Patient)resourceWrapper.getResource();
+
+        //work out if something has changed that means we'll need to process the full patient record
+        Patient previousVersion = findPreviousVersion(resourceWrapper, params);
         if (previousVersion != null) {
             processChangesFromPreviousVersion(params.getServiceId(), fhirPatient, previousVersion, params);
         }
 
-        if (isConfidential(fhirPatient)) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+        //check if the patient is deleted, is confidential, has no NHS number etc.
+        if (!EnterpriseTransformHelper.shouldPatientBePresentInSubscriber(fhirPatient)) {
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -165,7 +169,7 @@ public class PatientTransformer extends AbstractTransformer {
             postcode = fhirAddress.getPostalCode();
             postcodePrefix = findPostcodePrefix(postcode);
 
-            /*HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getEnterpriseConfigName());
+            /*HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getSubscriberConfigName());
             householdId = householdIdDal.findOrCreateHouseholdId(fhirAddress);*/
         }
 
@@ -194,7 +198,7 @@ public class PatientTransformer extends AbstractTransformer {
             if (orgReference != null) {
                 //added try/catch to track down a bug in Cerner->FHIR->Enterprise
                 try {
-                    registeredPracticeId = super.findEnterpriseId(params, orgReference);
+                    registeredPracticeId = transformOnDemandAndMapId(orgReference, params);
                 } catch (Throwable t) {
                     LOG.error("Error finding enterprise ID for reference " + orgReference.getReference());
                     throw t;
@@ -220,7 +224,7 @@ public class PatientTransformer extends AbstractTransformer {
 
             LinkDistributorConfig mainPseudoSalt = getMainSaltConfig(params.getEnterpriseConfigName());
             pseudoId = pseudonymiseUsingConfig(fhirPatient, mainPseudoSalt);
-            //pseudoId = pseudonymise(fhirPatient, getEncryptedSalt(params.getEnterpriseConfigName()));
+            //pseudoId = pseudonymise(fhirPatient, getEncryptedSalt(params.getSubscriberConfigName()));
 
             if (pseudoId != null) {
 
@@ -319,17 +323,17 @@ public class PatientTransformer extends AbstractTransformer {
         }
     }
 
-    private Patient findPreviousVersion(Patient fhirPatient, EnterpriseTransformHelper params) throws Exception {
+    private Patient findPreviousVersion(ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
         UUID serviceId = params.getServiceId();
-        String resourceType = fhirPatient.getResourceType().toString();
-        UUID resourceId = UUID.fromString(fhirPatient.getId());
+        String resourceType = resourceWrapper.getResourceType();
+        UUID resourceId = resourceWrapper.getResourceId();
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
         List<ResourceWrapper> history = resourceDal.getResourceHistory(serviceId, resourceType, resourceId);
 
-        //history is most-recent-first
+        //history is most-recent first
         if (history.size() > 1) {
             ResourceWrapper wrapper = history.get(1); //want the second one
-            return (Patient)FhirResourceHelper.deserialiseResouce(wrapper.getResourceData());
+            return (Patient)wrapper.getResource();
         } else {
             return null;
         }
@@ -352,7 +356,7 @@ public class PatientTransformer extends AbstractTransformer {
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
             if (comps.getResourceType() == ResourceType.Practitioner) {
 
-                ResourceWrapper wrapper = super.findResource(reference, params);
+                ResourceWrapper wrapper = params.findOrRetrieveResource(reference);
                 if (wrapper == null) {
                     continue;
                 }
@@ -385,21 +389,52 @@ public class PatientTransformer extends AbstractTransformer {
      */
     private void processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, EnterpriseTransformHelper params) throws  Exception {
 
-        boolean isConfidential = isConfidential(current);
-        boolean wasConfidential = isConfidential(previous);
-
-        if ((isConfidential && !wasConfidential) //if become confidential, then delete everything
-                || (!isConfidential && wasConfidential)) { //if become non-confidential, then re-add everything
+        //if the present status has changed then we need to either bulk-add or bulk-delete all data for the patient
+        //and if the NHS number has changed, the person ID on each table will need updating
+        if (hasPresentStateChanged(current, previous)
+                || hasNhsNumberChanged(current, previous)) {
 
             //retrieve all resources and add them to the current transform. This will ensure they then get transformed
             //back in FhirToEnterpriseCsvTransformer. Each individual transform will know if the patient is confidential
             //or not, which will result in either a delete or insert being sent
-            UUID patientUuid = UUID.fromString(current.getId());
+            UUID patientUuid = UUID.fromString(previous.getId()); //current may be null, so get ID from previous
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
             List<ResourceWrapper> allPatientResources = resourceDal.getResourcesByPatient(serviceId, patientUuid);
             for (ResourceWrapper wrapper: allPatientResources) {
                 params.addResourceToTransform(wrapper);
             }
+        }
+    }
+
+    private boolean hasPresentStateChanged(Patient current, Patient previous) {
+
+        boolean nowShouldBePresent = EnterpriseTransformHelper.shouldPatientBePresentInSubscriber(current);
+        boolean previousShouldBePresent = EnterpriseTransformHelper.shouldPatientBePresentInSubscriber(previous);
+
+        return nowShouldBePresent != previousShouldBePresent;
+    }
+
+    private boolean hasNhsNumberChanged(Patient current, Patient previous) {
+
+        String nowNhsNumber = null;
+        if (current != null) {
+            nowNhsNumber = IdentifierHelper.findNhsNumber(current);
+        }
+
+        String previousNhsNumber = null;
+        if (previous != null) {
+            previousNhsNumber = IdentifierHelper.findNhsNumber(previous);
+        }
+
+        if (nowNhsNumber == null && previousNhsNumber == null) {
+            //if both null, no change
+            return false;
+        } else if (nowNhsNumber == null || previousNhsNumber == null) {
+            //if only one null, change found
+            return true;
+        } else {
+            //if neither null, compare values
+            return !nowNhsNumber.equals(previousNhsNumber);
         }
     }
 

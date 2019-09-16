@@ -1,9 +1,12 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -11,17 +14,17 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.crypto.dsig.TransformException;
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class ObservationTransformer extends AbstractTransformer {
+public class ConditionEnterpriseTransformer extends AbstractEnterpriseTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(ConditionEnterpriseTransformer.class);
 
-    private static final Logger LOG = LoggerFactory.getLogger(ObservationTransformer.class);
+    private static final CernerClinicalEventMappingDalI referenceDal = DalProvider.factoryCernerClinicalEventMappingDal();
 
     @Override
     protected ResourceType getExpectedResourceType() {
-        return ResourceType.Observation;
+        return ResourceType.Condition;
     }
 
     public boolean shouldAlwaysTransform() {
@@ -29,17 +32,20 @@ public class ObservationTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Observation fhir = (Observation)resource;
+        Condition fhir = (Condition)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
+
 
         long id;
         long organisationId;
@@ -54,7 +60,7 @@ public class ObservationTransformer extends AbstractTransformer {
         String resultValueUnits = null;
         Date resultDate = null;
         String resultString = null;
-        Long resultConceptId = null;
+        Long resultConcptId = null;
         String originalCode = null;
         boolean isProblem = false;
         String originalTerm = null;
@@ -69,20 +75,16 @@ public class ObservationTransformer extends AbstractTransformer {
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = transformOnDemandAndMapId(encounterReference, params);
         }
 
-        if (fhir.hasPerformer()) {
-            for (Reference reference: fhir.getPerformer()) {
-                ResourceType resourceType = ReferenceHelper.getResourceType(reference);
-                if (resourceType == ResourceType.Practitioner) {
-                    practitionerId = transformOnDemandAndMapId(reference, params);
-                }
-            }
+        if (fhir.hasAsserter()) {
+            Reference practitionerReference = fhir.getAsserter();
+            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
         }
 
-        if (fhir.hasEffectiveDateTimeType()) {
-            DateTimeType dt = fhir.getEffectiveDateTimeType();
+        if (fhir.hasOnsetDateTimeType()) {
+            DateTimeType dt = fhir.getOnsetDateTimeType();
             clinicalEffectiveDate = dt.getValue();
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
@@ -95,36 +97,20 @@ public class ObservationTransformer extends AbstractTransformer {
         originalCode = codes.getOriginalCode();
         originalTerm = codes.getOriginalTerm();
 
-        if (fhir.hasValue()) {
-            Type value = fhir.getValue();
-            if (value instanceof Quantity) {
-                Quantity quantity = (Quantity)value;
-                resultValue = quantity.getValue();
-                resultValueUnits = quantity.getUnit();
-
-                if (quantity.hasComparator()) {
-                    resultString = quantity.getComparator().toCode();
-                    resultString += resultValue.toString();
+        //if it's a problem set the boolean to say so
+        if (fhir.hasMeta()) {
+            for (UriType uriType: fhir.getMeta().getProfile()) {
+                if (uriType.getValue().equals(FhirProfileUri.PROFILE_URI_PROBLEM)) {
+                    isProblem = true;
                 }
-
-            } else if (value instanceof DateTimeType) {
-                DateTimeType dateTimeType = (DateTimeType)value;
-                resultDate = dateTimeType.getValue();
-
-            } else if (value instanceof StringType) {
-                StringType stringType = (StringType)value;
-                resultString = stringType.getValue();
-
-            } else if (value instanceof CodeableConcept) {
-                CodeableConcept resultCodeableConcept = (CodeableConcept)value;
-                resultConceptId = CodeableConceptHelper.findSnomedConceptId(resultCodeableConcept);
-
-            } else {
-                throw new TransformException("Unsupported value type " + value.getClass() + " for " + fhir.getResourceType() + " " + fhir.getId());
             }
         }
 
-
+        if (fhir.hasAbatement()
+                && fhir.getAbatement() instanceof DateType) {
+            DateType dateType = (DateType)fhir.getAbatement();
+            problemEndDate = dateType.getValue();
+        }
 
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
@@ -137,7 +123,7 @@ public class ObservationTransformer extends AbstractTransformer {
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = findEnterpriseId(params, parentReference);
+            parentObservationId = transformOnDemandAndMapId(parentReference, params);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
@@ -150,29 +136,24 @@ public class ObservationTransformer extends AbstractTransformer {
 
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
-            organisationId,
-            patientId,
-            personId,
-            encounterId,
-            practitionerId,
-            clinicalEffectiveDate,
-            datePrecisionId,
-            snomedConceptId,
-            resultValue,
-            resultValueUnits,
-            resultDate,
-            resultString,
-            resultConceptId,
-            originalCode,
-            isProblem,
-            originalTerm,
-            isReview,
-            problemEndDate,
-            parentObservationId);
+                organisationId,
+                patientId,
+                personId,
+                encounterId,
+                practitionerId,
+                clinicalEffectiveDate,
+                datePrecisionId,
+                snomedConceptId,
+                resultValue,
+                resultValueUnits,
+                resultDate,
+                resultString,
+                resultConcptId,
+                originalCode,
+                isProblem,
+                originalTerm,
+                isReview,
+                problemEndDate,
+                parentObservationId);
     }
-
-
 }
-
-
-

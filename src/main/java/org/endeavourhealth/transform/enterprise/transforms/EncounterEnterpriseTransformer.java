@@ -7,8 +7,10 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -21,9 +23,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class EncounterTransformer extends AbstractTransformer {
+public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EncounterTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EncounterEnterpriseTransformer.class);
 
     private static final EncounterCodeDalI encounterCodeDal = DalProvider.factoryEncounterCodeDal();
 
@@ -37,15 +39,17 @@ public class EncounterTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
+                          ResourceWrapper resourceWrapper,
                           AbstractEnterpriseCsvWriter csvWriter,
                           EnterpriseTransformHelper params) throws Exception {
 
-        Encounter fhir = (Encounter)resource;
+        Encounter fhir = (Encounter)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            writeDelete(enterpriseId, csvWriter, params);
             return;
         }
 
@@ -93,7 +97,7 @@ public class EncounterTransformer extends AbstractTransformer {
 
         if (fhir.hasAppointment()) {
             Reference appointmentReference = fhir.getAppointment();
-            appointmentId = findEnterpriseId(params, appointmentReference);
+            appointmentId = transformOnDemandAndMapId(appointmentReference, params);
         }
 
         if (fhir.hasPeriod()) {
@@ -137,12 +141,12 @@ public class EncounterTransformer extends AbstractTransformer {
 
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
-            episodeOfCareId = findEnterpriseId(params, episodeReference);
+            episodeOfCareId = transformOnDemandAndMapId(episodeReference, params);
         }
 
         if (fhir.hasServiceProvider()) {
             Reference orgReference = fhir.getServiceProvider();
-            serviceProviderOrganisationId = findEnterpriseId(params, orgReference);
+            serviceProviderOrganisationId = transformOnDemandAndMapId(orgReference, params);
         }
         if (serviceProviderOrganisationId == null) {
             serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
@@ -164,7 +168,7 @@ public class EncounterTransformer extends AbstractTransformer {
             serviceProviderOrganisationId);
 
         //we also need to populate the two new encounter tables
-        tranformExtraEncounterTables(resource, params,
+        tranformExtraEncounterTables(fhir, params,
                 id, organisationId, patientId, personId, practitionerId,
                 episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
                 serviceProviderOrganisationId);
@@ -718,13 +722,12 @@ public class EncounterTransformer extends AbstractTransformer {
         return ret;
     }*/
 
-    @Override
-    protected void transformResourceDelete(Long enterpriseId,
-                                           AbstractEnterpriseCsvWriter csvWriter,
-                                           EnterpriseTransformHelper params) throws Exception {
+    /**
+     * special fn for Encounters as these resources go into three target tables
+     */
+    protected void writeDelete(Long enterpriseId, AbstractEnterpriseCsvWriter csvWriter, EnterpriseTransformHelper params) throws Exception {
 
-        //we need to override this function as we also need to send the delete to the other two encounter tables
-        super.transformResourceDelete(enterpriseId, csvWriter, params);
+        csvWriter.writeDelete(enterpriseId.longValue());
 
         OutputContainer outputContainer = params.getOutputContainer();
 

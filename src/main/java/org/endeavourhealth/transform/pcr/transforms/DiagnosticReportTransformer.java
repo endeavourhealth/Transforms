@@ -46,9 +46,9 @@ public class DiagnosticReportTransformer extends AbstractTransformer {
 //        Long parentObservationId = null;
 //
 //        id = enterpriseId.longValue();
-//        organisationId = params.getEnterpriseOrganisationId().longValue();
-//        patientId = params.getEnterprisePatientId().longValue();
-//        personId = params.getEnterprisePersonId().longValue();
+//        organisationId = params.getSubscriberOrganisationId().longValue();
+//        patientId = params.getSubscriberPatientId().longValue();
+//        personId = params.getSubscriberPersonId().longValue();
 //
 //        if (fhir.hasEncounter()) {
 //            Reference encounterReference = fhir.getEncounter();

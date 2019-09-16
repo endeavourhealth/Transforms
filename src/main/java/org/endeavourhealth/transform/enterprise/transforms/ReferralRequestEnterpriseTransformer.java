@@ -18,9 +18,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class ReferralRequestTransformer extends AbstractTransformer {
+public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ReferralRequestTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReferralRequestEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -32,15 +32,17 @@ public class ReferralRequestTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        ReferralRequest fhir = (ReferralRequest)resource;
+        ReferralRequest fhir = (ReferralRequest)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -70,7 +72,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = transformOnDemandAndMapId(encounterReference, params);
         }
 
         if (fhir.hasDateElement()) {
@@ -223,7 +225,7 @@ public class ReferralRequestTransformer extends AbstractTransformer {
                                                                ReferralRequest fhir,
                                                                EnterpriseTransformHelper params) throws Exception {
 
-        ResourceWrapper wrapper = findResource(practitionerReference, params);
+        ResourceWrapper wrapper = params.findOrRetrieveResource(practitionerReference);
         if (wrapper == null) {
             //we have a number of examples of Emis data where the practitioner doesn't exist, so handle this not being found
             LOG.warn("" + fhir.getResourceType() + " " + fhir.getId() + " refers to a Practitioner that doesn't exist");

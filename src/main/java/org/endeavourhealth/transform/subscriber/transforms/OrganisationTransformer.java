@@ -5,42 +5,38 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.common.ods.OdsWebService;
-import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInstanceMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 public class OrganisationTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
+
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Organization;
+    }
 
     public boolean shouldAlwaysTransform() {
         return false;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Organization model = params.getOutputContainer().getOrganisations();
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
-
             return;
         }
 
-        Organization fhir = (Organization)FhirResourceHelper.deserialiseResouce(resourceWrapper);
-
+        Organization fhir = (Organization)resourceWrapper.getResource();
 
         String odsCode = null;
         String name = null;
@@ -72,7 +68,7 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
 
         if (fhir.hasPartOf()) {
             Reference partOfReference = fhir.getPartOf();
-            parentOrganisationId = transformOnDemandAndMapId(partOfReference, params);
+            parentOrganisationId = transformOnDemandAndMapId(partOfReference, SubscriberTableId.ORGANIZATION, params);
         }
 
         if (fhir.hasType()) {
@@ -94,7 +90,7 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
 
                     Reference locationReference = (Reference)extension.getValue();
 
-                    Location location = (Location)findResource(locationReference, params);
+                    Location location = (Location)params.findOrRetrieveResource(locationReference);
                     if (location == null) {
                         //The Emis data contains organisations that refer to organisations that don't exist
                         LOG.warn("" + fhir.getResourceType() + " " + fhir.getId() + " refers to " + locationReference.getReference() + " that doesn't exist");
@@ -134,7 +130,7 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
 
                 /*Map<String, String> parents = odsOrg.getParents();
                 if (parents != null) {
-                    SubscriberInstanceMappingDalI instanceMappingDal = DalProvider.factorySubscriberInstanceMappingDal(params.getEnterpriseConfigName());
+                    SubscriberInstanceMappingDalI instanceMappingDal = DalProvider.factorySubscriberInstanceMappingDal(params.getSubscriberConfigName());
 
                     List<UUID> parentResourceIds = new ArrayList<>();
 

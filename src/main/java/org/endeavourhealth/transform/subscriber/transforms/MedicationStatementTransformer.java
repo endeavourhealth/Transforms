@@ -11,7 +11,7 @@ import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -24,24 +24,26 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
 
     private static final Logger LOG = LoggerFactory.getLogger(MedicationStatementTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.MedicationStatement;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.MedicationStatement model = params.getOutputContainer().getMedicationStatements();
 
-        if (resourceWrapper.isDeleted()) {
-            model.writeDelete(subscriberId);
-            return;
-        }
+        MedicationStatement fhir = (MedicationStatement)resourceWrapper.getResource(); //returns null if deleted
 
-        MedicationStatement fhir = (MedicationStatement) FhirResourceHelper.deserialiseResouce(resourceWrapper);
-
-        //if confidential, don't send (and remove)
-        if (isConfidential(fhir)) {
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
             model.writeDelete(subscriberId);
             return;
         }
@@ -68,13 +70,13 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         Double ageAtEvent = null;
         String issueMethod = null;
 
-        organizationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        organizationId = params.getSubscriberOrganisationId().longValue();
+        patientId = params.getSubscriberPatientId().longValue();
+        personId = params.getSubscriberPersonId().longValue();
 
         if (fhir.hasInformationSource()) {
             Reference practitionerReference = fhir.getInformationSource();
-            practitionerId = transformOnDemandAndMapId(practitionerReference, params);
+            practitionerId = transformOnDemandAndMapId(practitionerReference, SubscriberTableId.PRACTITIONER, params);
         }
 
         if (fhir.hasDateAssertedElement()) {
@@ -176,16 +178,17 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         }
 
         if (snomedCodeString != null) {
-            bnfReference = getSnomedToBnfChapter(snomedCodeString);
+            bnfReference = params.getSnomedToBnfChapter(snomedCodeString);
             //LOG.info("bnfReference: " + bnfReference);
         }
 
         if (fhir.getPatient() != null) {
             Reference ref = fhir.getPatient();
-            Patient patient = getCachedPatient(ref, params);
+            Patient patient = params.getCachedPatient(ref);
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
+        //TODO - not sure what issueMethod is supposed to contain, and MedicationStatement note field is never used in DDS (Drew)
         if (fhir.getNote() != null && fhir.getNote().length() > 0) {
             issueMethod = fhir.getNote();
         }

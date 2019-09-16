@@ -9,7 +9,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -21,22 +21,29 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AppointmentTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Appointment;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Appointment model = params.getOutputContainer().getAppointments();
 
-        if (resourceWrapper.isDeleted()) {
-            model.writeDelete(subscriberId);
+        Appointment fhir = (Appointment)resourceWrapper.getResource(); //returns null if deleted
 
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
+            model.writeDelete(subscriberId);
             return;
         }
-
-        Appointment fhir = (Appointment) FhirResourceHelper.deserialiseResouce(resourceWrapper);
 
         long id;
         long organizationId;
@@ -61,33 +68,33 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
                 ReferenceComponents components = ReferenceHelper.getReferenceComponents(reference);
 
                 if (components.getResourceType() == ResourceType.Practitioner) {
-                    practitionerId = transformOnDemandAndMapId(reference, params);
+                    practitionerId = transformOnDemandAndMapId(reference, SubscriberTableId.PRACTITIONER, params);
                 }
             }
         }
 
         //the test pack has data that refers to deleted or missing patients, so if we get a null
         //patient ID here, then skip this resource
-        if (params.getEnterprisePatientId() == null) {
+        if (params.getSubscriberPatientId() == null) {
             LOG.warn("Skipping " + fhir.getResourceType() + " " + fhir.getId() + " as no Enterprise patient ID could be found for it");
             return;
         }
 
         id = subscriberId.getSubscriberId();
-        organizationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        organizationId = params.getSubscriberOrganisationId().longValue();
+        patientId = params.getSubscriberPatientId().longValue();
+        personId = params.getSubscriberPersonId().longValue();
 
         if (fhir.getSlot().size() > 1) {
             throw new TransformException("Cannot handle appointments linked to multiple slots " + fhir.getId());
         }
         if (fhir.getSlot().size() > 0) {
             Reference slotReference = fhir.getSlot().get(0);
-            Slot fhirSlot = (Slot) findResource(slotReference, params);
+            Slot fhirSlot = (Slot)params.findOrRetrieveResource(slotReference);
             if (fhirSlot != null) {
 
                 Reference scheduleReference = fhirSlot.getSchedule();
-                scheduleId = transformOnDemandAndMapId(scheduleReference, params);
+                scheduleId = transformOnDemandAndMapId(scheduleReference, SubscriberTableId.SCHEDULE, params);
 
             } else {
                 //a bug was found that meant this happened. So if it happens again, something is wrong

@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 
-public class EpisodeOfCareTransformer extends AbstractTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareTransformer.class);
+public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -30,15 +30,17 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        EpisodeOfCare fhir = (EpisodeOfCare)resource;
+        EpisodeOfCare fhir = (EpisodeOfCare)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -69,7 +71,7 @@ public class EpisodeOfCareTransformer extends AbstractTransformer {
         Extension regTypeExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
         if (regTypeExtension == null) {
             //if not on the episode, check the patientPatient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
-            ResourceWrapper wrapper = findResource(fhir.getPatient(), params);
+            ResourceWrapper wrapper = params.findOrRetrieveResource(fhir.getPatient());
             if (wrapper != null) { //if a patient has been subsequently deleted, this will be null)
                 Patient fhirPatient = (Patient) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
                 regTypeExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);

@@ -11,7 +11,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Subscrib
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -23,24 +23,26 @@ import java.util.List;
 public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.EpisodeOfCare;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.EpisodeOfCare model = params.getOutputContainer().getEpisodesOfCare();
 
-        if (resourceWrapper.isDeleted()) {
-            model.writeDelete(subscriberId);
-            return;
-        }
+        EpisodeOfCare fhir = (EpisodeOfCare)resourceWrapper.getResource(); //returns null if deleted
 
-        EpisodeOfCare fhirEpisode = (EpisodeOfCare) FhirResourceHelper.deserialiseResouce(resourceWrapper);
-
-        //if confidential, don't send (and remove)
-        if (isConfidential(fhirEpisode)) {
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
             model.writeDelete(subscriberId);
             return;
         }
@@ -57,21 +59,21 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         //Long managingOrganisationId = null;
 
         id = subscriberId.getSubscriberId();
-        organizationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        organizationId = params.getSubscriberOrganisationId().longValue();
+        patientId = params.getSubscriberPatientId().longValue();
+        personId = params.getSubscriberPersonId().longValue();
 
-        if (fhirEpisode.hasCareManager()) {
-            Reference practitionerReference = fhirEpisode.getCareManager();
-            usualGpPractitionerId = transformOnDemandAndMapId(practitionerReference, params);
+        if (fhir.hasCareManager()) {
+            Reference practitionerReference = fhir.getCareManager();
+            usualGpPractitionerId = transformOnDemandAndMapId(practitionerReference, SubscriberTableId.PRACTITIONER, params);
         }
 
         //registration type has moved to the EpisodeOfCare resource, although there will be some old instances (for now)
         //where the extension is on the Patient resource
-        Extension regTypeExtension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
+        Extension regTypeExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
         if (regTypeExtension == null) {
             //if not on the episode, check the patientPatient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
-            Patient fhirPatient = (Patient)findResource(fhirEpisode.getPatient(), params);
+            Patient fhirPatient = (Patient)params.findOrRetrieveResource(fhir.getPatient());
             if (fhirPatient != null) { //if a patient has been subsequently deleted, this will be null)
                 regTypeExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
             }
@@ -81,17 +83,17 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
             Coding coding = (Coding)regTypeExtension.getValue();
             RegistrationType fhirRegistrationType = RegistrationType.fromCode(coding.getCode());
 
-            registrationTypeConceptId = IMHelper.getIMConcept(params, fhirEpisode, IMConstant.FHIR_REGISTRATION_TYPE, fhirRegistrationType.getCode(), coding.getDisplay());
+            registrationTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REGISTRATION_TYPE, fhirRegistrationType.getCode(), coding.getDisplay());
         }
 
         //reg status is stored in a contained list with an extension giving the internal reference to it
-        Extension regStatusExtension = ExtensionConverter.findExtension(fhirEpisode, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_STATUS);
+        Extension regStatusExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_STATUS);
         if (regStatusExtension != null) {
             Reference idReference = (Reference)regStatusExtension.getValue();
             String idReferenceValue = idReference.getReference();
             idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
 
-            for (Resource containedResource: fhirEpisode.getContained()) {
+            for (Resource containedResource: fhir.getContained()) {
                 if (containedResource.getId().equals(idReferenceValue)) {
                     List_ list = (List_)containedResource;
 
@@ -102,7 +104,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                         CodeableConcept codeableConcept = entry.getFlag();
                         String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
                         RegistrationStatus status = RegistrationStatus.fromCode(code);
-                        registrationStatusConceptId = IMHelper.getIMConcept(params, fhirEpisode, IMConstant.FHIR_REGISTRATION_STATUS,
+                        registrationStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REGISTRATION_STATUS,
                                 status.getCode(), status.getDescription());
                     }
 
@@ -119,7 +121,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
             }
         }*/
 
-        Period period = fhirEpisode.getPeriod();
+        Period period = fhir.getPeriod();
         if (period.hasStart()) {
             dateRegistered = period.getStart();
         }

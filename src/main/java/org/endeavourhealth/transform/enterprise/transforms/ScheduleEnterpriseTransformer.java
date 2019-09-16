@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class ScheduleTransformer extends AbstractTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(ScheduleTransformer.class);
+public class ScheduleEnterpriseTransformer extends AbstractEnterpriseTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(ScheduleEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -25,11 +25,16 @@ public class ScheduleTransformer extends AbstractTransformer {
     }
 
     protected void transformResource(Long enterpriseId,
-                          Resource resource,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Schedule fhir = (Schedule)resource;
+        if (resourceWrapper.isDeleted()) {
+            csvWriter.writeDelete(enterpriseId.longValue());
+            return;
+        }
+
+        Schedule fhir = (Schedule)resourceWrapper.getResource();
 
         long id;
         long organisationId;
@@ -56,7 +61,7 @@ public class ScheduleTransformer extends AbstractTransformer {
                 if (extension.getUrl().equals(FhirExtensionUri.SCHEDULE_LOCATION)) {
                     Reference locationReference = (Reference)extension.getValue();
 
-                    ResourceWrapper wrapper = findResource(locationReference, params);
+                    ResourceWrapper wrapper = params.findOrRetrieveResource(locationReference);
                     if (wrapper != null) {
                         Location fhirLocation = (Location) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
                         location = fhirLocation.getName();

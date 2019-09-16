@@ -32,9 +32,9 @@ public class FlagTransformer extends AbstractTransformer {
 //        String flagText = null;
 //
 //        id = enterpriseId.longValue();
-//        organisationId = params.getEnterpriseOrganisationId().longValue();
-//        patientId = params.getEnterprisePatientId().longValue();
-//        personId = params.getEnterprisePersonId().longValue();
+//        organisationId = params.getSubscriberOrganisationId().longValue();
+//        patientId = params.getSubscriberPatientId().longValue();
+//        personId = params.getSubscriberPersonId().longValue();
 //
 //        if (fhir.hasPeriod()) {
 //            DateTimeType dt = fhir.getPeriod().getStartElement();

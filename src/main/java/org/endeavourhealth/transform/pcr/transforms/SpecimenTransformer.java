@@ -46,9 +46,9 @@ public class SpecimenTransformer extends AbstractTransformer {
 //        Long parentObservationId = null;
 //
 //        id = enterpriseId.longValue();
-//        organisationId = params.getEnterpriseOrganisationId().longValue();
-//        patientId = params.getEnterprisePatientId().longValue();
-//        personId = params.getEnterprisePersonId().longValue();
+//        organisationId = params.getSubscriberOrganisationId().longValue();
+//        patientId = params.getSubscriberPatientId().longValue();
+//        personId = params.getSubscriberPersonId().longValue();
 //
 //        if (fhir.hasExtension()) {
 //            for (Extension extension: fhir.getExtension()) {

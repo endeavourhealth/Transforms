@@ -3,10 +3,11 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformParams;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Flag;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,29 +17,30 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(FlagTransformer.class);
 
+    @Override
+    protected ResourceType getExpectedResourceType() {
+        return ResourceType.Flag;
+    }
+
     public boolean shouldAlwaysTransform() {
         return true;
     }
 
     @Override
-    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformParams params) throws Exception {
+    protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Flag model = params.getOutputContainer().getFlags();
 
-        if (resourceWrapper.isDeleted()) {
+        Flag fhir = (Flag)resourceWrapper.getResource(); //returns null if deleted
+
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
+                || params.getShouldPatientRecordBeDeleted()) {
             model.writeDelete(subscriberId);
             return;
         }
 
-        Flag fhir = (Flag) FhirResourceHelper.deserialiseResouce(resourceWrapper);
-
-        //if confidential, don't send (and remove)
-        if (isConfidential(fhir)) {
-            model.writeDelete(subscriberId);
-            return;
-        }
-
-        long id;
         long organisationId;
         long patientId;
         long personId;
@@ -47,10 +49,9 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
         boolean isActive = true;
         String flagText = null;
 
-        id = subscriberId.getSubscriberId();
-        organisationId = params.getEnterpriseOrganisationId().longValue();
-        patientId = params.getEnterprisePatientId().longValue();
-        personId = params.getEnterprisePersonId().longValue();
+        organisationId = params.getSubscriberOrganisationId().longValue();
+        patientId = params.getSubscriberPatientId().longValue();
+        personId = params.getSubscriberPersonId().longValue();
 
         if (fhir.hasPeriod()) {
             DateTimeType dt = fhir.getPeriod().getStartElement();

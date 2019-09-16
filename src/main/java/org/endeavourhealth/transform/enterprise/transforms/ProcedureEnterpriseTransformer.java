@@ -3,9 +3,11 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
 import org.endeavourhealth.core.database.dal.reference.CernerProcedureMapDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
@@ -16,11 +18,11 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Date;
 
-public class ProcedureTransformer extends AbstractTransformer {
+public class ProcedureEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
     CernerClinicalEventMappingDalI referenceDal = DalProvider.factoryCernerClinicalEventMappingDal();
 
-    private static final Logger LOG = LoggerFactory.getLogger(ProcedureTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProcedureEnterpriseTransformer.class);
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -31,18 +33,18 @@ public class ProcedureTransformer extends AbstractTransformer {
         return true;
     }
 
-    private static CernerProcedureMapDalI cernerProcedureMap = DalProvider.factoryCernerProcedureMapDal();
-
     protected void transformResource(Long enterpriseId,
-                                     Resource resource,
+                                     ResourceWrapper resourceWrapper,
                                      AbstractEnterpriseCsvWriter csvWriter,
                                      EnterpriseTransformHelper params) throws Exception {
 
-        Procedure fhir = (Procedure) resource;
+        Procedure fhir = (Procedure)resourceWrapper.getResource(); //returns null if deleted
 
-        if (isConfidential(fhir)
+        //if deleted, confidential or the entire patient record shouldn't be there, then delete
+        if (resourceWrapper.isDeleted()
+                || isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            super.transformResourceDelete(enterpriseId, csvWriter, params);
+            csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -74,7 +76,7 @@ public class ProcedureTransformer extends AbstractTransformer {
 
         if (fhir.hasEncounter()) {
             Reference encounterReference = fhir.getEncounter();
-            encounterId = findEnterpriseId(params, encounterReference);
+            encounterId = transformOnDemandAndMapId(encounterReference, params);
         }
 
         if (fhir.hasPerformer()) {
@@ -137,7 +139,7 @@ public class ProcedureTransformer extends AbstractTransformer {
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference) parentExtension.getValue();
-            parentObservationId = findEnterpriseId(params, parentReference);
+            parentObservationId = transformOnDemandAndMapId(parentReference, params);
         }
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
