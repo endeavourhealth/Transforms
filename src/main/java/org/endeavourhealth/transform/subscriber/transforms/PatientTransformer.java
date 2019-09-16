@@ -335,9 +335,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
             String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
-            params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+            if (subTableId != null) {
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
-            writer.writeDelete(subTableId);
+                writer.writeDelete(subTableId);
+            }
 
         }
     }
@@ -485,9 +487,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
             String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
-            params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+            if (subTableId != null) {
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
-            writer.writeDelete(subTableId);
+                writer.writeDelete(subTableId);
+            }
         }
 
         return currentAddressId;
