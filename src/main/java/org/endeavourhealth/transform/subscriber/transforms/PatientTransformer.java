@@ -49,7 +49,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     private static final String PSEUDO_KEY_PATIENT_NUMBER = "PatientNumber";
     private static final String PSEUDO_KEY_DATE_OF_BIRTH = "DOB";*/
 
-    private static final int BEST_ORG_SCORE = 10;
+    //private static final int BEST_ORG_SCORE = 10;
 
     //private static Map<String, LinkDistributorConfig> mainPseudoCacheMap = new HashMap<>();
     private static Map<String, List<LinkDistributorConfig>> linkDistributorCacheMap = new HashMap<>();
@@ -664,6 +664,44 @@ LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent
 
     private boolean shouldWritePersonRecord(Patient fhirPatient, String discoveryPersonId, UUID protocolId) throws Exception {
 
+        //find all service IDs publishing into the protocol
+        LibraryItem libraryItem = LibraryRepositoryHelper.getLibraryItemUsingCache(protocolId);
+        Protocol protocol = libraryItem.getProtocol();
+        Set<String> serviceIdsInProtocol = new HashSet<>();
+
+        for (ServiceContract serviceContract: protocol.getServiceContract()) {
+            if (serviceContract.getType().equals(ServiceContractType.PUBLISHER)
+                    && serviceContract.getActive() == ServiceContractActive.TRUE) {
+
+                serviceIdsInProtocol.add(serviceContract.getService().getUuid());
+            }
+        }
+
+        //find all patient IDs that match to our person and are from publishing services
+        List<UUID> possiblePatients = new ArrayList<>();
+
+        Map<String, String> allPatientIdMap = patientLinkDal.getPatientAndServiceIdsForPerson(discoveryPersonId);
+        for (String otherPatientId: allPatientIdMap.keySet()) {
+
+            //if this patient search record isn't in our protocol, skip it
+            String serviceId = allPatientIdMap.get(otherPatientId);
+            if (!serviceIdsInProtocol.contains(serviceId)) {
+                //LOG.trace("Patient record is not part of protocol, so skipping");
+                continue;
+            }
+
+            possiblePatients.add(UUID.fromString(otherPatientId));
+        }
+
+        //find the "best" patient UUI from the patient search table
+        UUID bestPatientId = patientSearchDal.findBestPatientRecord(possiblePatients);
+        UUID patientId = UUID.fromString(fhirPatient.getId());
+        return patientId.equals(bestPatientId);
+    }
+
+
+    /*private boolean shouldWritePersonRecord(Patient fhirPatient, String discoveryPersonId, UUID protocolId) throws Exception {
+
         //check if OUR patient record is an active one at a GP practice, in which case it definitely should define the person record
         String patientIdStr = fhirPatient.getId();
         PatientSearch patientSearch = patientSearchDal.searchByPatientId(UUID.fromString(patientIdStr));
@@ -774,7 +812,7 @@ LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent
     private static boolean isActive(PatientSearch patientSearch) {
         Date deducted = patientSearch.getRegistrationEnd();
         return deducted == null || deducted.after(new Date());
-    }
+    }*/
 
     private static final String findPostcodePrefix(String postcode) {
 
