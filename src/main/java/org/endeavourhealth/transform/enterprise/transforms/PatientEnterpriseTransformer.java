@@ -26,6 +26,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Enterpri
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.xml.QueryDocument.*;
+import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.json.ConfigParameter;
 import org.endeavourhealth.transform.enterprise.json.LinkDistributorConfig;
@@ -223,21 +224,17 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             }
 
             LinkDistributorConfig mainPseudoSalt = getMainSaltConfig(params.getEnterpriseConfigName());
-            pseudoId = pseudonymiseUsingConfig(fhirPatient, mainPseudoSalt);
-            //pseudoId = pseudonymise(fhirPatient, getEncryptedSalt(params.getSubscriberConfigName()));
+            pseudoId = pseudonymiseUsingConfig(params, fhirPatient, id, mainPseudoSalt, true);
 
             if (pseudoId != null) {
-
-                //only persist the pseudo ID if it's non-null
-                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
-                pseudoIdDal.storePseudoIdOldWay(fhirPatient.getId(), pseudoId);
 
                 //generate any other pseudo mappings - the table uses the main pseudo ID as the source key, so this
                 //can only be done if we've successfully generated a main pseudo ID
                 List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
                 for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
                     targetSaltKeyName = ldConfig.getSaltKeyName();
-                    targetSkid = pseudonymiseUsingConfig(fhirPatient, ldConfig);
+                    targetSkid = pseudonymiseUsingConfig(params, fhirPatient, id, ldConfig, false);
+
 
                     linkDistributorWriter.writeUpsert(pseudoId,
                             targetSaltKeyName,
@@ -322,6 +319,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             }
         }
     }
+
 
     private Patient findPreviousVersion(ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
         UUID serviceId = params.getServiceId();
@@ -620,7 +618,45 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         return postcode.substring(0, len-3);
     }
 
-    public static String pseudonymiseUsingConfig(Patient fhirPatient, LinkDistributorConfig config) throws Exception {
+    private String pseudonymiseUsingConfig(EnterpriseTransformHelper params, Patient fhirPatient, long enterprisePatientId, LinkDistributorConfig config, boolean mainPseudoId) throws Exception {
+
+        PseudoIdBuilder builder = new PseudoIdBuilder(params.getEnterpriseConfigName(), config.getSaltKeyName(), config.getSalt());
+
+        List<ConfigParameter> parameters = config.getParameters();
+        for (ConfigParameter param : parameters) {
+
+            String fieldName = param.getFieldName();
+            String fieldFormat = param.getFormat();
+            String fieldLabel = param.getFieldLabel();
+
+            boolean foundValue = builder.addPatientValue(fhirPatient, fieldName, fieldLabel, fieldFormat);
+
+            //if this element is mandatory, then fail if our field is empty
+            Boolean mandatory = param.getMandatory();
+            if (mandatory != null
+                    && mandatory.booleanValue()
+                    && !foundValue) {
+                return null;
+            }
+        }
+
+        String pseudoId = builder.createPseudoId();
+
+        //save the mapping to the new-style table
+        if (pseudoId != null) {
+            PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
+            pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), enterprisePatientId, config.getSaltKeyName(), pseudoId);
+
+            //the frailty API still uses the old pseudo ID map table to find pseudo ID from NHS number, so continue to populate that
+            if (mainPseudoId) {
+                pseudoIdDal.storePseudoIdOldWay(fhirPatient.getId(), pseudoId);
+            }
+        }
+
+        return pseudoId;
+    }
+
+    /*public static String pseudonymiseUsingConfig(Patient fhirPatient, LinkDistributorConfig config) throws Exception {
         TreeMap<String, String> keys = new TreeMap<>();
 
         List<ConfigParameter> parameters = config.getParameters();
@@ -672,6 +708,12 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
     }
 
+    private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
+        Crypto crypto = new Crypto();
+        crypto.SetEncryptedSalt(salt);
+        return crypto.GetDigest(keys);
+    }
+
     private static String formatPseudoNhsNumber(String nhsNumber, String fieldFormat) throws Exception {
 
         //if no explicit format provided, assume one
@@ -713,73 +755,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         return new SimpleDateFormat(fieldFormat).format(d);
-    }
+    }*/
 
-    /*private static String pseudonymise(Patient fhirPatient, byte[] encryptedSalt) throws Exception {
-
-        String dob = null;
-        if (fhirPatient.hasBirthDate()) {
-            Date d = fhirPatient.getBirthDate();
-            dob = new SimpleDateFormat("dd-MM-yyyy").format(d);
-        }
-
-        if (Strings.isNullOrEmpty(dob)) {
-            //we always need DoB for the psuedo ID
-            return null;
-        }
-
-        TreeMap<String, String> keys = new TreeMap<>();
-        keys.put(PSEUDO_KEY_DATE_OF_BIRTH, dob);
-
-        String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
-        if (!Strings.isNullOrEmpty(nhsNumber)) {
-            keys.put(PSEUDO_KEY_NHS_NUMBER, nhsNumber);
-
-        } else {
-
-            //if we don't have an NHS number, use the Emis patient number
-            String patientNumber = null;
-            if (fhirPatient.hasIdentifier()) {
-                patientNumber = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
-            }
-
-            if (!Strings.isNullOrEmpty(patientNumber)) {
-                keys.put(PSEUDO_KEY_PATIENT_NUMBER, patientNumber);
-
-            } else {
-                //if no NHS number or patient number
-                return null;
-            }
-        }
-
-        return applySaltToKeys(keys, encryptedSalt);
-    }
-
-    private static byte[] getEncryptedSalt(String configName) throws Exception {
-
-        byte[] ret = saltCacheMap.get(configName);
-        if (ret == null) {
-
-            synchronized (saltCacheMap) {
-                ret = saltCacheMap.get(configName);
-                if (ret == null) {
-
-                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-                    JsonNode saltNode = config.get("salt");
-                    if (saltNode == null) {
-                        throw new Exception("No 'Salt' element found in Enterprise config " + configName);
-                    }
-                    String base64Salt = saltNode.asText();
-
-                    ret = Base64.getDecoder().decode(base64Salt);
-                    saltCacheMap.put(configName, ret);
-                }
-            }
-        }
-        return ret;
-    }
-
-    */
 
     private LinkDistributorConfig getMainSaltConfig(String configName) throws Exception {
 
@@ -796,11 +773,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         return ret;
     }
 
-    private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
-        Crypto crypto = new Crypto();
-        crypto.SetEncryptedSalt(salt);
-        return crypto.GetDigest(keys);
-    }
+
 
     private static List<LinkDistributorConfig> getLinkedDistributorConfig(String configName) throws Exception {
 

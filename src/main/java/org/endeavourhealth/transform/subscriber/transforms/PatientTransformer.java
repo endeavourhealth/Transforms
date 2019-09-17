@@ -23,6 +23,8 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPerso
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.xml.QueryDocument.*;
+import org.endeavourhealth.transform.common.PseudoIdBuilder;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -594,7 +596,7 @@ LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent
         List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getSubscriberConfigName());
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
-            String pseudoId = pseudonymiseUsingConfig(fhirPatient, ldConfig);
+            String pseudoId = pseudonymiseUsingConfig(params, fhirPatient, ldConfig);
 
             //create a unique source ID from the patient UUID plus the salt key name
             String sourceId = ReferenceHelper.createReferenceExternal(fhirPatient).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
@@ -840,6 +842,31 @@ LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent
         return postcode.substring(0, len-3);
     }
 
+    private String pseudonymiseUsingConfig(SubscriberTransformHelper params, Patient fhirPatient, LinkDistributorConfig config) throws Exception {
+
+        PseudoIdBuilder builder = new PseudoIdBuilder(params.getSubscriberConfigName(), config.getSaltKeyName(), config.getSalt());
+
+        List<ConfigParameter> parameters = config.getParameters();
+        for (ConfigParameter param : parameters) {
+
+            String fieldName = param.getFieldName();
+            String fieldFormat = param.getFormat();
+            String fieldLabel = param.getFieldLabel();
+
+            boolean foundValue = builder.addPatientValue(fhirPatient, fieldName, fieldLabel, fieldFormat);
+
+            //if this element is mandatory, then fail if our field is empty
+            Boolean mandatory = param.getMandatory();
+            if (mandatory != null
+                    && mandatory.booleanValue()
+                    && !foundValue) {
+                return null;
+            }
+        }
+
+        return builder.createPseudoId();
+    }
+/*
     public static String pseudonymiseUsingConfig(Patient fhirPatient, LinkDistributorConfig config) throws Exception {
         TreeMap<String, String> keys = new TreeMap<>();
 
@@ -935,92 +962,11 @@ LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent
         return new SimpleDateFormat(fieldFormat).format(d);
     }
 
-    /*private static String pseudonymise(Patient fhirPatient, byte[] encryptedSalt) throws Exception {
-
-        String dob = null;
-        if (fhirPatient.hasBirthDate()) {
-            Date d = fhirPatient.getBirthDate();
-            dob = new SimpleDateFormat("dd-MM-yyyy").format(d);
-        }
-
-        if (Strings.isNullOrEmpty(dob)) {
-            //we always need DoB for the psuedo ID
-            return null;
-        }
-
-        TreeMap<String, String> keys = new TreeMap<>();
-        keys.put(PSEUDO_KEY_DATE_OF_BIRTH, dob);
-
-        String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
-        if (!Strings.isNullOrEmpty(nhsNumber)) {
-            keys.put(PSEUDO_KEY_NHS_NUMBER, nhsNumber);
-
-        } else {
-
-            //if we don't have an NHS number, use the Emis patient number
-            String patientNumber = null;
-            if (fhirPatient.hasIdentifier()) {
-                patientNumber = IdentifierHelper.findIdentifierValue(fhirPatient.getIdentifier(), FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
-            }
-
-            if (!Strings.isNullOrEmpty(patientNumber)) {
-                keys.put(PSEUDO_KEY_PATIENT_NUMBER, patientNumber);
-
-            } else {
-                //if no NHS number or patient number
-                return null;
-            }
-        }
-
-        return applySaltToKeys(keys, encryptedSalt);
-    }
-
-    private static byte[] getEncryptedSalt(String configName) throws Exception {
-
-        byte[] ret = saltCacheMap.get(configName);
-        if (ret == null) {
-
-            synchronized (saltCacheMap) {
-                ret = saltCacheMap.get(configName);
-                if (ret == null) {
-
-                    JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-                    JsonNode saltNode = config.get("salt");
-                    if (saltNode == null) {
-                        throw new Exception("No 'Salt' element found in Enterprise config " + configName);
-                    }
-                    String base64Salt = saltNode.asText();
-
-                    ret = Base64.getDecoder().decode(base64Salt);
-                    saltCacheMap.put(configName, ret);
-                }
-            }
-        }
-        return ret;
-    }
-
-    */
-
-    /*private LinkDistributorConfig getMainSaltConfig(String configName) throws Exception {
-
-        LinkDistributorConfig ret = mainPseudoCacheMap.get(configName);
-        if (ret == null) {
-            JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-            JsonNode saltNode = config.get("pseudonymisation");
-
-            String json = convertJsonNodeToString(saltNode);
-            ret = ObjectMapperPool.getInstance().readValue(json, LinkDistributorConfig.class);
-
-            mainPseudoCacheMap.put(configName, ret);
-        }
-        return ret;
-    }*/
-
     private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
         Crypto crypto = new Crypto();
         crypto.SetEncryptedSalt(salt);
         return crypto.GetDigest(keys);
-    }
+    }*/
 
     private static List<LinkDistributorConfig> getLinkedDistributorConfig(String configName) throws Exception {
 
