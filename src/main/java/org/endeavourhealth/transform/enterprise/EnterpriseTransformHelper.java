@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.enterprise;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -19,15 +21,13 @@ import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.AbstractEnterpriseTransformer;
-import org.hl7.fhir.instance.model.Patient;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(EnterpriseTransformHelper.class);
@@ -45,6 +45,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private final List<ResourceWrapper> allResources;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
+    private final ReentrantLock lock = new ReentrantLock();
 
     private int batchSize;
     private Long enterpriseOrganisationId = null;
@@ -73,6 +74,8 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
     private void dumpResourceCountsByType() {
         Map<String, List<ResourceWrapper>> hmByType = new HashMap<>();
+
+        //no lock required because this only happens when the multi-threaded work is complete
         for (ResourceWrapper wrapper: allResources) {
             String type = wrapper.getResourceType();
             List<ResourceWrapper> l = hmByType.get(type);
@@ -189,11 +192,11 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     /**
      * hashes the resources by a reference to them, so the transforms can quickly look up dependant resources
      */
-    private static Map<String, ResourceWrapper> hashResourcesByReference(List<ResourceWrapper> allResources) {
+    private static Map<String, ResourceWrapper> hashResourcesByReference(List<ResourceWrapper> resourceWrappers) {
 
         Map<String, ResourceWrapper> ret = new HashMap<>();
 
-        for (ResourceWrapper resource: allResources) {
+        for (ResourceWrapper resource: resourceWrappers) {
 
             ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
             String resourceId = resource.getResourceId().toString();
@@ -212,10 +215,19 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public void addResourceToTransform(ResourceWrapper wrapper) throws Exception {
 
-        //see if this resource is already in our list of things to transform
         String reference = ReferenceHelper.createResourceReference(wrapper.getResourceType(), wrapper.getResourceIdStr());
-        if (this.hmAllResourcesByReferenceString.containsKey(reference)) {
-            return;
+
+        try {
+            //need to lock because we may be trying to iterate through the list in another thread
+            lock.lock();
+
+            //see if this resource is already in our list of things to transform
+            if (this.hmAllResourcesByReferenceString.containsKey(reference)) {
+                return;
+            }
+
+        } finally {
+            lock.unlock();
         }
 
         //if we passed the above check, then audit that the resource was added and add to the map
@@ -225,9 +237,15 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         exchangeBatchExtraResourceDalI.saveExtraResource(getExchangeId(), getBatchId(), type, resourceId);
 
         //and add the resource to be transformed
-        this.allResources.add(wrapper);
-        this.hmAllResourcesByReferenceString.put(reference, wrapper);
+        try {
+            //need to lock because we may be trying to iterate through the list in another thread
+            lock.lock();
 
+            this.allResources.add(wrapper);
+            this.hmAllResourcesByReferenceString.put(reference, wrapper);
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -237,6 +255,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
      */
     private String findPatientIdFromResources() throws Exception {
 
+        //no locking required as this is only called from a single-threaded bit of the transform
         for (ResourceWrapper resourceWrapper: allResources) {
 
             ResourceType resourceType = resourceWrapper.getResourceTypeObj();
@@ -253,6 +272,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public int getResourceCount() {
+        //no locking required as this is only called from a single-threaded bit of the transform
         return allResources.size();
     }
 
@@ -333,6 +353,14 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
             return false;
         }
 
+        //exclude test patients
+        BooleanType isTestPatient = (BooleanType)ExtensionConverter.findExtensionValue(patient, FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
+        if (isTestPatient != null
+                && isTestPatient.hasValue()
+                && isTestPatient.getValue().booleanValue()) {
+            return false;
+        }
+
         //records without NHS numbers shouldn't be in subscriber DBs
 //TODO - waiting for clarification on this
         /*String nhsNumber = IdentifierHelper.findNhsNumber(patient);
@@ -348,6 +376,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         List<String> missedResources = new ArrayList<>();
         int countMissedResources = 0;
 
+        //no locking required as this is only called from a single-threaded bit of the transform
         for (String referenceStr: hmAllResourcesByReferenceString.keySet()) {
             if (!resourcesTransformedReferences.containsKey(referenceStr)
                     && !resourcesSkippedReferences.containsKey(referenceStr)) {
@@ -369,20 +398,22 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
     }
 
-    public ResourceWrapper findResourceForReference(Reference reference) {
-        String referenceStr = reference.getReference();
-        return hmAllResourcesByReferenceString.get(referenceStr);
-    }
 
     public List<ResourceWrapper> findResourcesForType(ResourceType resourceType) {
 
         String typeStr = resourceType.toString();
         List<ResourceWrapper> ret = new ArrayList<>();
 
-        for (ResourceWrapper resource: this.allResources) {
-            if (resource.getResourceType().equals(typeStr)) {
-                ret.add(resource);
+        try {
+            lock.lock(); //need to lock as another thread may be trying to add resources
+
+            for (ResourceWrapper resource : this.allResources) {
+                if (resource.getResourceType().equals(typeStr)) {
+                    ret.add(resource);
+                }
             }
+        } finally {
+            lock.unlock();
         }
 
         return ret;
@@ -396,13 +427,20 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     public ResourceWrapper findOrRetrieveResource(Reference reference) throws Exception {
 
         //look in our resources map first
-        ResourceWrapper ret = findResourceForReference(reference);
-        if (ret != null) {
-            if (ret.isDeleted()) {
-                return null;
-            } else {
-                return ret;
+        try {
+            lock.lock();
+
+            String referenceStr = reference.getReference();
+            ResourceWrapper ret = hmAllResourcesByReferenceString.get(referenceStr);
+            if (ret != null) {
+                if (ret.isDeleted()) {
+                    return null;
+                } else {
+                    return ret;
+                }
             }
+        } finally {
+            lock.unlock();
         }
 
         //if not in our map, then hit the DB

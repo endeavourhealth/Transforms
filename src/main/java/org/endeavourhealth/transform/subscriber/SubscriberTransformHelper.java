@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.subscriber;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.IdentifierHelper;
-import org.endeavourhealth.common.fhir.ReferenceComponents;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
@@ -22,10 +20,7 @@ import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.endeavourhealth.transform.subscriber.transforms.AbstractSubscriberTransformer;
-import org.hl7.fhir.instance.model.Patient;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +41,6 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final String subscriberConfigName;
     private final OutputContainer outputContainer;
     private final List<SubscriberId> subscriberIdsUpdated;
-    private final ReentrantLock lock;
     private final boolean isPseudonymised;
     private final Map<String, ResourceWrapper> hmAllResourcesByReferenceString;
     private final List<ResourceWrapper> allResources;
@@ -55,6 +49,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
     private Patient cachedPatient = null;
     private Map<String, String> snomedToBnfChapter = new HashMap<>();
+    private final ReentrantLock lock = new ReentrantLock();
 
     private int batchSize;
     private Long subscriberOrganisationId = null;
@@ -75,7 +70,6 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         this.outputContainer = new OutputContainer();
         this.exchangeBody = exchangeBody;
         this.subscriberIdsUpdated = new ArrayList<>();
-        this.lock = new ReentrantLock();
         this.isPseudonymised = isPseudonymised;
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
@@ -231,6 +225,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public int getResourceCount() {
+        //no locking required as this is only called when transform is single-threaded
         return allResources.size();
     }
 
@@ -241,6 +236,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
      */
     private String findPatientIdFromResources() throws Exception {
 
+        //no locking required as this is only called when transform is single-threaded
         for (ResourceWrapper resourceWrapper: allResources) {
 
             ResourceType resourceType = resourceWrapper.getResourceTypeObj();
@@ -341,6 +337,14 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             return false;
         }
 
+        //exclude test patients
+        BooleanType isTestPatient = (BooleanType) ExtensionConverter.findExtensionValue(patient, FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
+        if (isTestPatient != null
+                && isTestPatient.hasValue()
+                && isTestPatient.getValue().booleanValue()) {
+            return false;
+        }
+
         return true;
     }
 
@@ -353,10 +357,17 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public void addResourceToTransform(ResourceWrapper wrapper) throws Exception {
 
-        //see if this resource is already in our list of things to transform
         String reference = ReferenceHelper.createResourceReference(wrapper.getResourceType(), wrapper.getResourceIdStr());
-        if (this.hmAllResourcesByReferenceString.containsKey(reference)) {
-            return;
+
+        try {
+            lock.lock();
+
+            //see if this resource is already in our list of things to transform
+            if (this.hmAllResourcesByReferenceString.containsKey(reference)) {
+                return;
+            }
+        } finally {
+            lock.unlock();
         }
 
         //if we passed the above check, then audit that the resource was added and add to the map
@@ -366,9 +377,14 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         exchangeBatchExtraResourceDalI.saveExtraResource(getExchangeId(), getBatchId(), type, resourceId);
 
         //and add the resource to be transformed
-        this.allResources.add(wrapper);
-        this.hmAllResourcesByReferenceString.put(reference, wrapper);
+        try {
+            lock.lock();
 
+            this.allResources.add(wrapper);
+            this.hmAllResourcesByReferenceString.put(reference, wrapper);
+        } finally {
+            lock.unlock();
+        }
     }
 
     public void checkForMissedResources() throws Exception {
@@ -376,6 +392,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         List<String> missedResources = new ArrayList<>();
         int countMissedResources = 0;
 
+        //no locking required as this is only called when transform is single-threaded
         for (String referenceStr: hmAllResourcesByReferenceString.keySet()) {
             if (!resourcesTransformedReferences.containsKey(referenceStr)
                     && !resourcesSkippedReferences.containsKey(referenceStr)) {
@@ -399,6 +416,8 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     private void dumpResourceCountsByType() {
         Map<String, List<ResourceWrapper>> hmByType = new HashMap<>();
+
+        //no locking required as this is only called when transform is single-threaded
         for (ResourceWrapper wrapper: allResources) {
             String type = wrapper.getResourceType();
             List<ResourceWrapper> l = hmByType.get(type);
@@ -419,19 +438,21 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         String typeStr = resourceType.toString();
         List<ResourceWrapper> ret = new ArrayList<>();
 
-        for (ResourceWrapper resource: this.allResources) {
-            if (resource.getResourceType().equals(typeStr)) {
-                ret.add(resource);
+        try {
+            lock.lock();
+
+            for (ResourceWrapper resource : this.allResources) {
+                if (resource.getResourceType().equals(typeStr)) {
+                    ret.add(resource);
+                }
             }
+        } finally {
+            lock.unlock();
         }
 
         return ret;
     }
 
-    public ResourceWrapper findResourceForReference(Reference reference) {
-        String referenceStr = reference.getReference();
-        return hmAllResourcesByReferenceString.get(referenceStr);
-    }
 
     public void setResourceAsSkipped(ResourceWrapper resourceWrapper) {
         String resourceReference = ReferenceHelper.createResourceReference(resourceWrapper.getResourceType(), resourceWrapper.getResourceIdStr());
@@ -468,13 +489,20 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     public ResourceWrapper findOrRetrieveResourceWrapper(Reference reference) throws Exception {
 
         //look in our resources map first
-        ResourceWrapper ret = findResourceForReference(reference);
-        if (ret != null) {
-            if (ret.isDeleted()) {
-                return null;
-            } else {
-                return ret;
+        try {
+            lock.lock();
+
+            String referenceStr = reference.getReference();
+            ResourceWrapper ret = hmAllResourcesByReferenceString.get(referenceStr);
+            if (ret != null) {
+                if (ret.isDeleted()) {
+                    return null;
+                } else {
+                    return ret;
+                }
             }
+        } finally {
+            lock.unlock();
         }
 
         //if not in our map, then hit the DB
