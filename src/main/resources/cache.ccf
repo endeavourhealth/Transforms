@@ -56,7 +56,7 @@ jcs.region.ResourceIdentifiers.elementattributes.IsEternal=false
 # MEMORY ONLY CACHE FOR EDS to Enterprise ID MAPPING
 jcs.region.EnterpriseResourceMap=
 jcs.region.EnterpriseResourceMap.cacheattributes=org.apache.jcs.engine.CompositeCacheAttributes
-jcs.region.EnterpriseResourceMap.cacheattributes.MaxObjects=1000000
+jcs.region.EnterpriseResourceMap.cacheattributes.MaxObjects=500000
 jcs.region.EnterpriseResourceMap.cacheattributes.MemoryCacheName=org.apache.jcs.engine.memory.lru.LRUMemoryCache
 jcs.region.EnterpriseResourceMap.cacheattributes.UseMemoryShrinker=true
 jcs.region.EnterpriseResourceMap.cacheattributes.MaxMemoryIdleTimeSeconds=3600
@@ -69,7 +69,7 @@ jcs.region.EnterpriseResourceMap.elementattributes.IsEternal=false
 # MEMORY ONLY CACHE FOR Enterprise Instance MAPPING
 jcs.region.EnterpriseInstanceMap=
 jcs.region.EnterpriseInstanceMap.cacheattributes=org.apache.jcs.engine.CompositeCacheAttributes
-jcs.region.EnterpriseInstanceMap.cacheattributes.MaxObjects=100000
+jcs.region.EnterpriseInstanceMap.cacheattributes.MaxObjects=10000
 jcs.region.EnterpriseInstanceMap.cacheattributes.MemoryCacheName=org.apache.jcs.engine.memory.lru.LRUMemoryCache
 jcs.region.EnterpriseInstanceMap.cacheattributes.UseMemoryShrinker=true
 jcs.region.EnterpriseInstanceMap.cacheattributes.MaxMemoryIdleTimeSeconds=3600
@@ -119,7 +119,7 @@ jcs.region.PcrInstanceMap.elementattributes.IsEternal=false
 # MEMORY ONLY CACHE FOR EDS to Enterprise ID MAPPING
 jcs.region.SubscriberResourceMap=
 jcs.region.SubscriberResourceMap.cacheattributes=org.apache.jcs.engine.CompositeCacheAttributes
-jcs.region.SubscriberResourceMap.cacheattributes.MaxObjects=1000000
+jcs.region.SubscriberResourceMap.cacheattributes.MaxObjects=500000
 jcs.region.SubscriberResourceMap.cacheattributes.MemoryCacheName=org.apache.jcs.engine.memory.lru.LRUMemoryCache
 jcs.region.SubscriberResourceMap.cacheattributes.UseMemoryShrinker=true
 jcs.region.SubscriberResourceMap.cacheattributes.MaxMemoryIdleTimeSeconds=3600
@@ -132,7 +132,7 @@ jcs.region.SubscriberResourceMap.elementattributes.IsEternal=false
 # MEMORY ONLY CACHE FOR Enterprise Instance MAPPING
 jcs.region.SubscriberInstanceMap=
 jcs.region.SubscriberInstanceMap.cacheattributes=org.apache.jcs.engine.CompositeCacheAttributes
-jcs.region.SubscriberInstanceMap.cacheattributes.MaxObjects=100000
+jcs.region.SubscriberInstanceMap.cacheattributes.MaxObjects=10000
 jcs.region.SubscriberInstanceMap.cacheattributes.MemoryCacheName=org.apache.jcs.engine.memory.lru.LRUMemoryCache
 jcs.region.SubscriberInstanceMap.cacheattributes.UseMemoryShrinker=true
 jcs.region.SubscriberInstanceMap.cacheattributes.MaxMemoryIdleTimeSeconds=3600
