@@ -319,7 +319,39 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         }
     }
 
+    /**
+     * used by both FHIR->Subscriber and FHIR->Enterprise transforms
+     * Aligned (as of 2019/09/18) as per Kambiz's email:
+     * Confidential – include
+     * No NHS number – include
+     * Non-valid NHS – include
+     * Dummy patients and test patients – exclude
+     */
     public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
+
+        //deleted records shouldn't be in subscriber DBs
+        if (patient == null) {
+            return false;
+        }
+
+        //exclude test patients
+        BooleanType isTestPatient = (BooleanType) ExtensionConverter.findExtensionValue(patient, FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
+        if (isTestPatient != null
+                && isTestPatient.hasValue()
+                && isTestPatient.getValue().booleanValue()) {
+            return false;
+        }
+
+        //exclude the EDI test patients
+        String nhsNumber = IdentifierHelper.findNhsNumber(patient);
+        if (!Strings.isNullOrEmpty(nhsNumber)
+                && nhsNumber.startsWith("999999")) {
+            return false;
+        }
+
+        return true;
+    }
+    /*public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
 
         //deleted records shouldn't be in subscriber DBs
         if (patient == null) {
@@ -346,7 +378,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         }
 
         return true;
-    }
+    }*/
 
     public Boolean getShouldPatientRecordBeDeleted() {
         if (shouldPatientRecordBeDeleted == null) {

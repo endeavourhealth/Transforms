@@ -96,7 +96,10 @@ public abstract class AbstractEnterpriseTransformer {
 
     protected abstract ResourceType getExpectedResourceType();
 
-    public static boolean isConfidential(Resource fhir) {
+    /**
+     * 2019/09/18 Kambiz advised the confidential data should still be sent to subscribers
+     */
+    /*public static boolean isConfidential(Resource fhir) {
         DomainResource resource = (DomainResource)fhir;
         BooleanType bt = (BooleanType)ExtensionConverter.findExtensionValue(resource, FhirExtensionUri.IS_CONFIDENTIAL);
         if (bt == null
@@ -105,7 +108,7 @@ public abstract class AbstractEnterpriseTransformer {
         } else {
             return bt.getValue().booleanValue();
         }
-    }
+    }*/
 
 
 

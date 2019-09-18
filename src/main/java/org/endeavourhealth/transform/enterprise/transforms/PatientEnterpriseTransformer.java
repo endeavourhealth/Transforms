@@ -31,6 +31,7 @@ import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.json.ConfigParameter;
 import org.endeavourhealth.transform.enterprise.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
@@ -81,7 +82,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         //check if the patient is deleted, is confidential, has no NHS number etc.
-        if (!EnterpriseTransformHelper.shouldPatientBePresentInSubscriber(fhirPatient)) {
+        if (!SubscriberTransformHelper.shouldPatientBePresentInSubscriber(fhirPatient)) {
             csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
@@ -406,8 +407,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
     private boolean hasPresentStateChanged(Patient current, Patient previous) {
 
-        boolean nowShouldBePresent = EnterpriseTransformHelper.shouldPatientBePresentInSubscriber(current);
-        boolean previousShouldBePresent = EnterpriseTransformHelper.shouldPatientBePresentInSubscriber(previous);
+        boolean nowShouldBePresent = SubscriberTransformHelper.shouldPatientBePresentInSubscriber(current);
+        boolean previousShouldBePresent = SubscriberTransformHelper.shouldPatientBePresentInSubscriber(previous);
 
         return nowShouldBePresent != previousShouldBePresent;
     }

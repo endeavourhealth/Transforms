@@ -21,6 +21,7 @@ import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.AbstractEnterpriseTransformer;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -291,7 +292,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         if (patientWrapper != null) {
             patient = (Patient) FhirSerializationHelper.deserializeResource(patientWrapper.getResourceData());
         }
-        this.shouldPatientRecordBeDeleted = !shouldPatientBePresentInSubscriber(patient);
+        this.shouldPatientRecordBeDeleted = !SubscriberTransformHelper.shouldPatientBePresentInSubscriber(patient);
 
 
         PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
@@ -341,7 +342,10 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         }
     }
 
-    public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
+    /**
+     * removing, and changing to call into SubscriberTransformHelper, so both transforms use the exact same logic
+     */
+    /*public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
 
         //deleted records shouldn't be in subscriber DBs
         if (patient == null) {
@@ -361,15 +365,8 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
             return false;
         }
 
-        //records without NHS numbers shouldn't be in subscriber DBs
-//TODO - waiting for clarification on this
-        /*String nhsNumber = IdentifierHelper.findNhsNumber(patient);
-        if (Strings.isNullOrEmpty(nhsNumber)) {
-            return false;
-        }
-*/
         return true;
-    }
+    }*/
 
     public void checkForMissedResources() throws Exception {
 

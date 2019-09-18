@@ -38,7 +38,7 @@ public class MedicationOrderEnterpriseTransformer extends AbstractEnterpriseTran
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
-                || isConfidential(fhir)
+                //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
             csvWriter.writeDelete(enterpriseId.longValue());
             return;

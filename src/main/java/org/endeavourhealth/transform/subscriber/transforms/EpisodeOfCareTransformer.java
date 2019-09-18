@@ -41,7 +41,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
-                || isConfidential(fhir)
+                //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
             model.writeDelete(subscriberId);
             return;
