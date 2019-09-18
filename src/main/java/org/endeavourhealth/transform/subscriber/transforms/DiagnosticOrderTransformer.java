@@ -1,9 +1,6 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirProfileUri;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -130,7 +127,12 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
         Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
         if (parentExtension != null) {
             Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.OBSERVATION, params);
+            ResourceType parentType = ReferenceHelper.getResourceType(parentReference);
+            if (parentType == ResourceType.DiagnosticOrder) {
+                parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.DIAGNOSTIC_ORDER, params);
+            } else {
+                parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.OBSERVATION, params);
+            }
         }
 
         if (fhir.getSubject() != null) {

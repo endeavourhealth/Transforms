@@ -561,7 +561,7 @@ public abstract class AbstractSubscriberTransformer {
             //validate that the stated target table matches the table the resource actually transforms to
             SubscriberTableId mainTable = transformer.getMainSubscriberTableId();
             if (mainTable != targetTable) {
-                throw new Exception("Transforming reference " + reference + " but for " + targetTable + " when expected table is " + mainTable);
+                throw new Exception("Transforming reference " + reference.getReference() + " but for " + targetTable + " when expected table is " + mainTable);
             }
 
             //generate the new ID
