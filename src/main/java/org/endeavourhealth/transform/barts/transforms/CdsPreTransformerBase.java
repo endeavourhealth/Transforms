@@ -562,7 +562,10 @@ public abstract class CdsPreTransformerBase {
                 break;
             }
             StagingConditionCds cdsRemainder = commonContent.clone();
-
+            //TODO debug for out of bounds on word.substring(0,4)
+            if (word.length() < 4) {
+                TransformWarnings.log(LOG, csvHelper, "Word {} is too short at line {}", word, parser.getCurrentState().getRecordNumber());
+            }  // end debug
             String icdCode = word.substring(0, 4);
             icdCode = icdCode.trim(); //because we sometimes get just three chars e.g. S41
             if (icdCode.isEmpty()) {
