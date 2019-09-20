@@ -147,6 +147,11 @@ public class PatientBuilder extends ResourceBuilderBase
         createOrUpdateIsConfidentialExtension(isConfidential, sourceCells);
     }
 
+    public void clearCareProvider() {
+        if (this.patient.hasCareProvider()) {
+            this.patient.getCareProvider().clear();
+        }
+    }
 
     public void addCareProvider(Reference practitionerOrOrganizationReference, CsvCell... sourceCells) {
         //only add to the patient if not already present

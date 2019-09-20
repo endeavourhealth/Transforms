@@ -147,10 +147,40 @@ public class SRPatientRegistrationTransformer {
             }
         }
 
-
+        //the IDOrganisation field shows the organisation the registration was at, so should be carried through
+        //to the managing organisation of the episode
         CsvCell orgIdCell = parser.getIDOrganisation();
-        //LOG.debug("Doing episode of care " + episodeBuilder.getResourceId() + " for patient " + patientIdCell.getString() + " and org ID " + orgIdCell.getString());
+        if (orgIdCell.isEmpty()) {
+            //there are a tiny number of these records with an empty IDOrganisation - for these, just carry over
+            //the IDOrganisationVisibleTo and assume the episodes were done "here"
+            orgIdCell = parser.getIDOrganisationVisibleTo();
+        }
 
+        Reference orgReferenceEpisode = csvHelper.createOrganisationReference(orgIdCell);
+        if (episodeBuilder.isIdMapped()) {
+            orgReferenceEpisode = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferenceEpisode, csvHelper);
+        }
+        episodeBuilder.setManagingOrganisation(orgReferenceEpisode, orgIdCell);
+
+        //if this registration is an active GMS registration, then it's telling us the current registered GP practice,
+        //so this needs setting in the patient careManager
+        if (regType != null
+                && regType == RegistrationType.REGULAR_GMS
+                && episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE) {
+
+            PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
+
+            Reference orgReferenceCareProvider = csvHelper.createOrganisationReference(orgIdCell);
+            if (patientBuilder.isIdMapped()) {
+                orgReferenceCareProvider = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferenceCareProvider, csvHelper);
+            }
+
+            patientBuilder.clearCareProvider();
+            patientBuilder.addCareProvider(orgReferenceCareProvider, orgIdCell);
+        }
+
+
+        /*CsvCell orgIdCell = parser.getIDOrganisation();
         if (!orgIdCell.isEmpty()) {
 
             Reference orgReferenceEpisode = csvHelper.createOrganisationReference(orgIdCell);
@@ -159,7 +189,7 @@ public class SRPatientRegistrationTransformer {
             }
             episodeBuilder.setManagingOrganisation(orgReferenceEpisode, orgIdCell);
 
-            //and we need to set a couple of fields on the patient recourd
+            //and we need to set a couple of fields on the patient record
             PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
             if (patientBuilder != null) {
 
@@ -178,14 +208,8 @@ public class SRPatientRegistrationTransformer {
                     }
                     patientBuilder.addCareProvider(orgReferenceCareProvider, orgIdCell);
                 }
-
-                //if registration type is not dummy remove the test patient extension
-                //the above code never returns the Dummy reg type, so removed this. Just trust the TestPatient field on SRPatient
-                /*if (regType != null && regType != RegistrationType.DUMMY) {
-                    ExtensionConverter.removeExtension(patientBuilder.getResource(), FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
-                }*/
             }
-        }
+        }*/
 
         //save a mapping to allow us to find the active episode for the patient
         if (episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE) {

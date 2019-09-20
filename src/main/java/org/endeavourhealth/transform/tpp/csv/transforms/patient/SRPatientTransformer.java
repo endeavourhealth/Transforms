@@ -11,6 +11,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
@@ -192,14 +193,14 @@ public class SRPatientTransformer {
         CsvCell testPatientCell = parser.getTestPatient();
         patientBuilder.setTestPatient(testPatientCell.getBoolean(), testPatientCell);
 
-        /*if (!testPatientCell.isEmpty()) {
-            String value = testPatientCell.getString();
-            if (Boolean.parseBoolean(value)) {
-                patientBuilder.setTestPatient(Boolean.TRUE, testPatientCell);
-            } else {
-                patientBuilder.setTestPatient(Boolean.FALSE, testPatientCell);
-            }
-        }*/
+        //IDOrgVisible to is "here" (the service being transformed), so carry that over to the managing organisation
+        CsvCell idOrgVisibleToCell = parser.getIDOrganisationVisibleTo();
+        Reference orgReferencePatient = csvHelper.createOrganisationReference(idOrgVisibleToCell);
+        if (patientBuilder.isIdMapped()) {
+            orgReferencePatient = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferencePatient, csvHelper);
+        }
+        patientBuilder.setManagingOrganisation(orgReferencePatient, idOrgVisibleToCell);
+
     }
 
     private static NhsNumberVerificationStatus mapSpindeMatchedStatus(CsvCell spineMatched) {
