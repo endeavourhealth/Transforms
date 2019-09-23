@@ -595,8 +595,16 @@ public abstract class AbstractSubscriberTransformer {
 
     protected static Double getPatientAgeInDecimalYears(Patient patient, Date eventDate) {
         if (patient.getBirthDate() != null && eventDate != null) {
-            LocalDate date = patient.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-            Period diff = Period.between(date, eventDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+            LocalDate dob = patient.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate event = eventDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+            //got some sample data with clinical date in 9999, which results in an age_at_event too large for
+            //the Decimal(5, 2) field used in SQL Server. So just spot this bad data and return null
+            if (event.getYear() == 9999) {
+                return null;
+            }
+
+            Period diff = Period.between(dob, event);
             if (diff.getYears() == 0 && diff.getMonths() == 0) {
                 diff.plusMonths(1);
             }

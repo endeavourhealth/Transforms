@@ -47,6 +47,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final ReentrantLock lock = new ReentrantLock();
+    private final boolean skipPerson;
 
     private int batchSize;
     private Long enterpriseOrganisationId = null;
@@ -56,7 +57,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
     public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
-                                     OutputContainer outputContainer, List<ResourceWrapper> allResources, String exchangeBody) {
+                                     OutputContainer outputContainer, List<ResourceWrapper> allResources, String exchangeBody, boolean skipPerson) {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.protocolId = protocolId;
@@ -65,6 +66,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         this.enterpriseConfigName = enterpriseConfigName;
         this.outputContainer = outputContainer;
         this.exchangeBody = exchangeBody;
+        this.skipPerson = skipPerson;
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         this.allResources = allResources;
@@ -188,6 +190,10 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         }
 
         return done;
+    }
+
+    public boolean isSkipPerson() {
+        return skipPerson;
     }
 
     /**

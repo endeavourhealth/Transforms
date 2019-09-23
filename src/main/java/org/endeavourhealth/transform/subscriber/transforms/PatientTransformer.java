@@ -250,28 +250,31 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 ethnicCodeConceptId,
                 registeredPracticeId);
 
+        //person record calculation is moving to an SP in the DB itself, so we have a switch to turn
+        //if off here. When the SP is fully rolled out, this will all be removed.
+        if (!params.isSkipPerson()) {
 
-        //check if our patient demographics also should be used as the person demographics. This is typically
-        //true if our patient record is at a GP practice.
-        boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
+            //check if our patient demographics also should be used as the person demographics. This is typically
+            //true if our patient record is at a GP practice.
+            boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
 
-        //if our patient record is the one that should define the person record, then write that too
-        if (shouldWritePersonRecord) {
-            personWriter.writeUpsert(personId,
-                    organizationId,
-                    title,
-                    firstNames,
-                    lastName,
-                    genderConceptId,
-                    nhsNumber,
-                    dateOfBirth,
-                    dateOfDeath,
-                    currentAddressId,
-                    ethnicCodeConceptId,
-                    registeredPracticeId);
+            //if our patient record is the one that should define the person record, then write that too
+            if (shouldWritePersonRecord) {
+                personWriter.writeUpsert(personId,
+                        organizationId,
+                        title,
+                        firstNames,
+                        lastName,
+                        genderConceptId,
+                        nhsNumber,
+                        dateOfBirth,
+                        dateOfDeath,
+                        currentAddressId,
+                        ethnicCodeConceptId,
+                        registeredPracticeId);
 
+            }
         }
-
     }
 
     private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
@@ -697,6 +700,13 @@ LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent
             }
 
             possiblePatients.add(UUID.fromString(otherPatientId));
+        }
+
+        //if the service has been disabled in its publishing protocol, we can end up in a situation where
+        //we have no potential patient IDs, which causes the below fn to fail. So always ensure there's at least one.
+        if (possiblePatients.isEmpty()) {
+            UUID thisPatientId = UUID.fromString(fhirPatient.getId());
+            possiblePatients.add(thisPatientId);
         }
 
         //find the "best" patient UUI from the patient search table

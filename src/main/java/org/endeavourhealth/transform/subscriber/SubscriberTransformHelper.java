@@ -42,6 +42,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final OutputContainer outputContainer;
     private final List<SubscriberId> subscriberIdsUpdated;
     private final boolean isPseudonymised;
+    private final boolean skipPerson;
     private final Map<String, ResourceWrapper> hmAllResourcesByReferenceString;
     private final List<ResourceWrapper> allResources;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
@@ -60,7 +61,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
 
     public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String subscriberConfigName,
-                                     List<ResourceWrapper> allResources, String exchangeBody, boolean isPseudonymised) throws Exception {
+                                     List<ResourceWrapper> allResources, String exchangeBody, boolean isPseudonymised, boolean skipPerson) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.protocolId = protocolId;
@@ -71,6 +72,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         this.exchangeBody = exchangeBody;
         this.subscriberIdsUpdated = new ArrayList<>();
         this.isPseudonymised = isPseudonymised;
+        this.skipPerson = skipPerson;
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         this.allResources = allResources;
@@ -102,6 +104,10 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public boolean isPseudonymised() {
         return isPseudonymised;
+    }
+
+    public boolean isSkipPerson() {
+        return skipPerson;
     }
 
     public String getExchangeBody() {

@@ -210,7 +210,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         //check if our patient demographics also should be used as the person demographics. This is typically
         //true if our patient record is at a GP practice.
-        boolean shouldWritePersonRecord = shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
+        boolean shouldWritePersonRecord = !params.isSkipPerson()
+                && shouldWritePersonRecord(fhirPatient, discoveryPersonId, params.getProtocolId());
 
         org.endeavourhealth.transform.enterprise.outputModels.Patient patientWriter = (org.endeavourhealth.transform.enterprise.outputModels.Patient)csvWriter;
         org.endeavourhealth.transform.enterprise.outputModels.Person personWriter = params.getOutputContainer().getPersons();
@@ -466,6 +467,13 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             }
 
             possiblePatients.add(UUID.fromString(otherPatientId));
+        }
+
+        //if the service has been disabled in its publishing protocol, we can end up in a situation where
+        //we have no potential patient IDs, which causes the below fn to fail. So always ensure there's at least one.
+        if (possiblePatients.isEmpty()) {
+            UUID thisPatientId = UUID.fromString(fhirPatient.getId());
+            possiblePatients.add(thisPatientId);
         }
 
         //find the "best" patient UUI from the patient search table

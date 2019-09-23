@@ -58,12 +58,15 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
                 && config.get("pseudonymised").asBoolean();
         //boolean pseudonymised = config.get("pseudonymised").asBoolean();
 
+        boolean skipPerson = config.has("skipPerson")
+                && config.get("skipPerson").asBoolean();
+
         int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
         if (config.has("transform_batch_size")) {
             batchSize = config.get("transform_batch_size").asInt();
         }
 
-        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, resources, exchangeBody, pseudonymised);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, resources, exchangeBody, pseudonymised, skipPerson);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setSubscriberOrganisationId(enterpriseOrgId);
