@@ -386,6 +386,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SR18WeekWait");
             set.add("SRCarePlanPerformanceCodeLink");
             set.add("SRExpense");
+            set.add("SROverseasVisitorChargingCategory");
 
             cachedFileNamesToIgnore = set;
         }
