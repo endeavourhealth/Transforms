@@ -501,14 +501,14 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
         //we should only ever come in here after populatePatientAndPersonIds() has been successfully called
         if (cachedPatient == null) {
-            throw new Exception("Trying to get cached patient " + patientReference + " but FHIR resource is null");
+            throw new Exception("Trying to get cached patient " + patientReference.getReference() + " but FHIR resource is null");
         }
 
         //all data in an exchange batch should be for the same patient, but validate this is the case
-        String patientId = ReferenceHelper.getReferenceId(patientReference);
-        if (!patientId.equals(cachedPatient.getId())) {
-            throw new Exception("Trying to get cached patient " + patientReference + " but cached patient has ID " + patientId);
-        }
+//        String patientId = ReferenceHelper.getReferenceId(patientReference);
+//        if (!patientId.equals(cachedPatient.getId())) {
+//            throw new Exception("Trying to get cached patient " + patientReference.getReference() + " but cached patient has ID " + patientId);
+//        }
 
         return cachedPatient;
     }
