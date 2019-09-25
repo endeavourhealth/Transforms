@@ -257,6 +257,12 @@ public class FhirHl7v2Filer {
             }
         }
 
+        //need to wait here until all resources have been saved, otherwise if we let the below fn save the resource
+        //mappings (of old patient to new patient) then the mapping gets applied when deleting the old patient (since
+        //the delete is in a different thread). End result is that we end up KEEPING the minor patient and DELETING
+        //the one we want to keep!
+        fhirResourceFiler.waitUntilEverythingIsSaved();
+
         //save these resource mappings for the future
         ResourceMergeMapHelper.saveResourceMergeMapping(fhirResourceFiler.getServiceId(), idMappings);
     }

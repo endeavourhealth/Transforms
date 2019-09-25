@@ -126,18 +126,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         organizationId = params.getEnterpriseOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
 
-        if (fhirPatient.hasCareProvider()) {
-            if (fhirPatient.getCareProvider() != null) {
-                List<Reference> refs = fhirPatient.getCareProvider();
-                List<Resource> resources = fhirPatient.getCareProviderTarget();
-                for (int m = 0; m < resources.size(); m++) {
-                     if (resources.get(m).getResourceType().equals(ResourceType.Organization)) {
-                        registeredPracticeId = transformOnDemandAndMapId(refs.get(m), params);
-                        break; //Take first value
-                    }
-                }
-            }
-        }
 
         //Calendar cal = Calendar.getInstance();
 

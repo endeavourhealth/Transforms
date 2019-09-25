@@ -518,7 +518,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         TppMappingRef tppMappingRefFromDB = tppMappingRefDalI.getMappingFromRowId(rowId);
         if (tppMappingRefFromDB == null) {
-            TransformWarnings.log(LOG, this, "Failed to find TPP mapping for {}", rowId);
+            //changed to pass in the cell so it audits the file ID and record number, not just the cell value
+            TransformWarnings.log(LOG, this, "Failed to find TPP mapping for {}", cell);
+            //TransformWarnings.log(LOG, this, "Failed to find TPP mapping for {}", rowId);
             return null;
         }
 

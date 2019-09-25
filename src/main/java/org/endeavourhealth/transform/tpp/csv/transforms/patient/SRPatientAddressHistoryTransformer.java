@@ -106,7 +106,10 @@ public class SRPatientAddressHistoryTransformer {
                 } else if (term.equalsIgnoreCase("Correspondence only")) {
                     addressUse = Address.AddressUse.TEMP;
                 } else {
-                    TransformWarnings.log(LOG, parser, "Unable to convert address type {} to AddressUse", term);
+                    //not happy with silently logging this and just continuing, as it's setting ourselves up
+                    //for a big task of finding and fixing data, rather than just a tiny code fix if this ever happens
+                    throw new Exception("Unexpected TPP address term [" + term + "]");
+                    //TransformWarnings.log(LOG, parser, "Unable to convert address type {} to AddressUse", term);
                 }
             }
         }
@@ -149,10 +152,11 @@ public class SRPatientAddressHistoryTransformer {
             addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
         }
 
-        CsvCell dateEventCell = parser.getDateEvent();
+        //duplicated from above
+        /*CsvCell dateEventCell = parser.getDateEvent();
         if (!dateEventCell.isEmpty()) {
             addressBuilder.setStartDate(dateEventCell.getDateTime(), dateEventCell);
-        }
+        }*/
 
         //note, the managing organisation is set from the SRPatientRegistrationTransformer too, except
         //this means that if a patient doesn't have a record in that file, the mananging org won't get set.
