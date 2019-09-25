@@ -3,12 +3,12 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import com.google.common.base.Strings;
 import org.apache.jcs.JCS;
 import org.apache.jcs.access.exception.CacheException;
-import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.IdentifierHelper;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInstanceMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberResourceMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
@@ -600,7 +600,8 @@ public abstract class AbstractSubscriberTransformer {
 
             //got some sample data with clinical date in 9999, which results in an age_at_event too large for
             //the Decimal(5, 2) field used in SQL Server. So just spot this bad data and return null
-            if (event.getYear() == 9999) {
+            //Also handles other rubbish year values. 3000 observed so throw away those larger that 2500
+            if (event.getYear() == 9999 || event.getYear() > 2500)  {
                 return null;
             }
 
