@@ -161,17 +161,18 @@ public class SRPatientAddressHistoryTransformer {
         //note, the managing organisation is set from the SRPatientRegistrationTransformer too, except
         //this means that if a patient doesn't have a record in that file, the mananging org won't get set.
         //So set it here too, on the assumption that a patient will always have an address.
-        CsvCell orgIdCell = parser.getIDOrganisation();
-        if (!orgIdCell.isEmpty()) {
-            Reference orgReferencePatient = csvHelper.createOrganisationReference(orgIdCell);
+
+        //IDOrgVisible to is "here" (the service being transformed), so carry that over to the managing organisation
+        CsvCell idOrgVisibleToCell = parser.getIDOrganisationVisibleTo();
+        //CsvCell orgIdCell = parser.getIDOrganisation();
+        if (!idOrgVisibleToCell.isEmpty()) {
+            Reference orgReferencePatient = csvHelper.createOrganisationReference(idOrgVisibleToCell);
             if (patientBuilder.isIdMapped()) {
                 orgReferencePatient = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferencePatient, csvHelper);
             }
-            patientBuilder.setManagingOrganisation(orgReferencePatient, orgIdCell);
+            patientBuilder.setManagingOrganisation(orgReferencePatient, idOrgVisibleToCell);
         }
-
     }
-
 }
 
 
