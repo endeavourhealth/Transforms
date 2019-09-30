@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -56,9 +57,9 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasPeriod()) {
             DateTimeType dt = fhir.getPeriod().getStartElement();
             effectiveDate = dt.getValue();
-            if (dt.getPrecision() != null) {
+            if (dt.getPrecision() != null && effectiveDate != null) {
                 datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), effectiveDate.toString());
-            }
+                }
         }
 
         if (fhir.hasStatus()) {
