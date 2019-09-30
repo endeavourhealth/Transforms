@@ -147,7 +147,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
                 }
             }
         }
-
+        if (durationDays == null) { durationDays = 0;} // Not nullable in SQL
         if (fhir.hasExtension()) {
             for (Extension extension : fhir.getExtension()) {
 
