@@ -8,10 +8,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
@@ -221,6 +218,10 @@ public class SREventTransformer {
 
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
         UUID patientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, patientId.getString());
+        if (patientUuid==null) {
+            TransformWarnings.log(LOG,csvHelper, "SEVERE: Resource lookup failed for patient Id {}: Service{}", patientId.getString(), csvHelper.getServiceId());
+            return null;
+        }
         List<ResourceWrapper> episodeWrappers = resourceDal.getResourcesByPatient(csvHelper.getServiceId(), patientUuid, ResourceType.EpisodeOfCare.toString());
         for (ResourceWrapper wrapper: episodeWrappers) {
             if (wrapper.isDeleted()) {
