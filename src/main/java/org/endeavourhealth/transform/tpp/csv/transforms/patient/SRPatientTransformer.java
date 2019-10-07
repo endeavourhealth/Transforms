@@ -144,6 +144,8 @@ public class SRPatientTransformer {
 
         CsvCell emailCell = parser.getEmailAddress();
         if (!emailCell.isEmpty()) {
+            // Remove any existing email.
+            ContactPointBuilder.removeExistingContactPointsBySystem(patientBuilder, ContactPoint.ContactPointSystem.EMAIL);
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setValue(emailCell.getString(), emailCell);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);

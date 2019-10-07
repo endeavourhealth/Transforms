@@ -55,7 +55,7 @@ public class ContactPointBuilder {
         List<ContactPoint> matches = new ArrayList<>();
 
         List<ContactPoint> contactPoints = parentBuilder.getContactPoint();
-        for (ContactPoint contactPoint: contactPoints) {
+        for (ContactPoint contactPoint : contactPoints) {
             //if we match on ID, then remove this contactPoint from the parent object
             if (contactPoint.hasId()
                     && contactPoint.getId().equals(idValue)) {
@@ -91,10 +91,22 @@ public class ContactPointBuilder {
         }
     }
 
+    public static void removeExistingContactPointsBySystem(HasContactPointI parentBuilder, ContactPoint.ContactPointSystem system) {
+        List<ContactPoint> contactPoints = parentBuilder.getContactPoint();
+        for (ContactPoint contactPoint : contactPoints) {
+            if (contactPoint.hasSystem() && contactPoint.getSystem().equals(system)) {
+                //remove any audits we've created for the ContactPoint
+                String contactPointJsonPrefix = parentBuilder.getContactPointJsonPrefix(contactPoint);
+                parentBuilder.getAuditWrapper().removeAudit(contactPointJsonPrefix);
+                parentBuilder.removeContactPoint(contactPoint);
+            }
+        }
+    }
+
     public static void removeExistingContactPoints(HasContactPointI parentBuilder) {
 
         List<ContactPoint> contactPoints = parentBuilder.getContactPoint();
-        for (ContactPoint contactPoint: contactPoints) {
+        for (ContactPoint contactPoint : contactPoints) {
 
             //remove any audits we've created for the ContactPoint
             String contactPointJsonPrefix = parentBuilder.getContactPointJsonPrefix(contactPoint);
@@ -138,7 +150,7 @@ public class ContactPointBuilder {
         String jsonField = parentBuilder.getContactPointJsonPrefix(this.contactPoint) + "." + jsonSuffix;
 
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
-        for (CsvCell csvCell: sourceCells) {
+        for (CsvCell csvCell : sourceCells) {
             if (csvCell != null) {
                 if (csvCell.getOldStyleAuditId() != null) {
                     audit.auditValueOldStyle(csvCell.getOldStyleAuditId(), csvCell.getColIndex(), jsonField);
