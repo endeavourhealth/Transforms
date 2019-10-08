@@ -9,6 +9,7 @@ import org.hl7.fhir.instance.model.Period;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.ListIterator;
 
 public class ContactPointBuilder {
 
@@ -92,15 +93,26 @@ public class ContactPointBuilder {
     }
 
     public static void removeExistingContactPointsBySystem(HasContactPointI parentBuilder, ContactPoint.ContactPointSystem system) {
+        List<ContactPoint> matches = new ArrayList<>();
         List<ContactPoint> contactPoints = parentBuilder.getContactPoint();
-        for (ContactPoint contactPoint : contactPoints) {
+
+        ListIterator<ContactPoint> iterator = contactPoints.listIterator();
+        while (iterator.hasNext()) {
+            ContactPoint contactPoint = iterator.next();
             if (contactPoint.hasSystem() && contactPoint.getSystem().equals(system)) {
-                //remove any audits we've created for the ContactPoint
-                String contactPointJsonPrefix = parentBuilder.getContactPointJsonPrefix(contactPoint);
-                parentBuilder.getAuditWrapper().removeAudit(contactPointJsonPrefix);
-                parentBuilder.removeContactPoint(contactPoint);
+                matches.add(contactPoint);
             }
         }
+        if (!matches.isEmpty()) {
+            String contactPointJsonPrefix;
+            for (ContactPoint matchedContactPoint : matches) {
+                //remove any audits we've created for the ContactPoint
+                contactPointJsonPrefix = parentBuilder.getContactPointJsonPrefix(matchedContactPoint);
+                parentBuilder.getAuditWrapper().removeAudit(contactPointJsonPrefix);
+                parentBuilder.removeContactPoint(matchedContactPoint);
+            }
+        }
+
     }
 
     public static void removeExistingContactPoints(HasContactPointI parentBuilder) {

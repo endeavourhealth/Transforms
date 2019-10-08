@@ -28,7 +28,7 @@ public abstract class CdsPreTransformerBase {
     private static final Logger LOG = LoggerFactory.getLogger(CdsPreTransformerBase.class);
 
     private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
-
+    private final static String BARTS_UNKNOWN_OPCS_CODE_Y926 = "Barts unable to provide term for Y92.6";
     protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
                                          List<StagingProcedureCds> procedureBatch,
                                          List<StagingProcedureCdsCount> procedureCountBatch,
@@ -310,7 +310,12 @@ public abstract class CdsPreTransformerBase {
 
             String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
             if (Strings.isNullOrEmpty(term)) {
-                throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
+                if (opcsCode.equals("Y92.6")) {
+                    term = BARTS_UNKNOWN_OPCS_CODE_Y926;
+                    TransformWarnings.log(LOG, csvHelper,BARTS_UNKNOWN_OPCS_CODE_Y926);
+                } else {
+                    throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
+                }
             }
             cdsRemainder.setLookupProcedureOpcsTerm(term);
 
