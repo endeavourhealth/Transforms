@@ -46,10 +46,6 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
 
         boolean pseudonymised = config.has("pseudonymisation");
-        //boolean pseudonymised = config.get("pseudonymised").asBoolean();
-
-        boolean skipPerson = config.has("skipPerson")
-                && config.get("skipPerson").asBoolean();
 
         int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
         if (config.has("transform_batch_size")) {
@@ -57,7 +53,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         }
 
         OutputContainer data = new OutputContainer(pseudonymised);
-        EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, data, resources, exchangeBody, skipPerson);
+        EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, data, resources, exchangeBody);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
