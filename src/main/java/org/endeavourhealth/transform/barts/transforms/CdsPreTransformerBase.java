@@ -312,7 +312,7 @@ public abstract class CdsPreTransformerBase {
             if (Strings.isNullOrEmpty(term)) {
                 if (opcsCode.equals("Y92.6")) {
                     term = BARTS_UNKNOWN_OPCS_CODE_Y926;
-                    TransformWarnings.log(LOG, csvHelper,BARTS_UNKNOWN_OPCS_CODE_Y926);
+                    TransformWarnings.log(LOG, csvHelper,"Failed to find {}",BARTS_UNKNOWN_OPCS_CODE_Y926);
                 } else {
                     throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
                 }
