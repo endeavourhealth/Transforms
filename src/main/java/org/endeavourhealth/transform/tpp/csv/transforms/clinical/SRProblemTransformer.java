@@ -3,10 +3,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
@@ -63,6 +60,17 @@ public class SRProblemTransformer {
                 if (trueResourceType != null) {
                     //if the SRCode wouldn't normally have been a Condition, then we'll have doubled up and created a
                     //Condition as well as the other resource, in which case we need to DELETE the condition resource
+
+                    //first, check if already Id mapped and if not, needs Id mapping, i.e. not filed yet which is an erroneous for a delete
+                    boolean mapIds = !conditionBuilder.isIdMapped();
+                    if (mapIds) {
+
+                        //the condition is being deleted here and needs Id mapping, So it has NOT been previously saved,
+                        //so cannot be deleted. Therefore, Log, and return gracefully
+                        TransformWarnings.log(LOG, csvHelper, "Cannot find existing Condition: {} for deletion", codeId);
+                        return;
+                    }
+
                     conditionBuilder.setDeletedAudit(deleteData);
                     csvHelper.getConditionResourceCache().returnToCacheForDelete(dummyCodeIdCell, conditionBuilder);
 
