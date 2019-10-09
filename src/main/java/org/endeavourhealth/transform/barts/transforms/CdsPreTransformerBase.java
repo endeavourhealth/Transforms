@@ -544,6 +544,7 @@ public abstract class CdsPreTransformerBase {
         if (Strings.isNullOrEmpty(term)) {
             TransformWarnings.log(LOG, csvHelper, "#unmappedicd10 Unmapped ICD-10 code : {}", icdCode);
             //    throw new Exception("Failed to find term for ICD 10 code " + icdCode);
+            term = "unmapped code from Barts";
         }
         cdsSecondary.setLookupDiagnosisIcdTerm(term);
         cdsSecondary.setDiagnosisSeqNbr(2);
@@ -602,6 +603,7 @@ public abstract class CdsPreTransformerBase {
             if (Strings.isNullOrEmpty(term)) {
                 TransformWarnings.log(LOG, csvHelper, "#unmappedicd10 Unmapped ICD-10 code : {}", icdCode);
                 //throw new Exception("Failed to find term for ICD-10 code " + icdCode);
+                term = "Unmapped code from Barts";
             }
             cdsRemainder.setLookupDiagnosisIcdTerm(term);
 
