@@ -600,7 +600,8 @@ public abstract class CdsPreTransformerBase {
 
             String term = TerminologyService.lookupIcd10CodeDescription(icdCode);
             if (Strings.isNullOrEmpty(term)) {
-                throw new Exception("Failed to find term for ICD-10 code " + icdCode);
+                TransformWarnings.log(LOG, csvHelper, "#unmappedicd10 Unmapped ICD-10 code : {}", icdCode);
+                //throw new Exception("Failed to find term for ICD-10 code " + icdCode);
             }
             cdsRemainder.setLookupDiagnosisIcdTerm(term);
 
