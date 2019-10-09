@@ -28,7 +28,8 @@ public abstract class CdsPreTransformerBase {
     private static final Logger LOG = LoggerFactory.getLogger(CdsPreTransformerBase.class);
 
     private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
-    private final static String BARTS_UNKNOWN_OPCS_CODE_Y926 = "Barts unable to provide term for Y92.6";
+    private final static String BARTS_UNKNOWN_OPCS_CODE_Y926 = "Y92.6";
+    private final static String BARTS_UNKNOWN_ICD10_CODE_Z669 = "Z66.9";
     protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
                                          List<StagingProcedureCds> procedureBatch,
                                          List<StagingProcedureCdsCount> procedureCountBatch,
@@ -310,9 +311,9 @@ public abstract class CdsPreTransformerBase {
 
             String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
             if (Strings.isNullOrEmpty(term)) {
-                if (opcsCode.equals("Y92.6")) {
+                if (opcsCode.equals(BARTS_UNKNOWN_OPCS_CODE_Y926)) {
                     term = BARTS_UNKNOWN_OPCS_CODE_Y926;
-                    TransformWarnings.log(LOG, csvHelper,"Failed to find {}",BARTS_UNKNOWN_OPCS_CODE_Y926);
+                    TransformWarnings.log(LOG, csvHelper,"Undefined OPCS code from Barts {}",BARTS_UNKNOWN_OPCS_CODE_Y926);
                 } else {
                     throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
                 }
@@ -492,7 +493,12 @@ public abstract class CdsPreTransformerBase {
         }
         String term = TerminologyService.lookupIcd10CodeDescription(icdCode);
         if (Strings.isNullOrEmpty(term)) {
-            throw new Exception("Failed to find term for ICD-10 code " + icdCode);
+            if (icdCode.equals(BARTS_UNKNOWN_ICD10_CODE_Z669)) {
+                term = "Undefined ICD-10 code from Barts";
+                TransformWarnings.log(LOG,csvHelper, "Undefined ICD10 code from Barts {}", icdCode);
+            } else {
+                throw new Exception("Failed to find term for ICD-10 code " + icdCode);
+            }
         }
         cdsPrimary.setLookupDiagnosisIcdTerm(term);
         cdsPrimary.setDiagnosisSeqNbr(1);
