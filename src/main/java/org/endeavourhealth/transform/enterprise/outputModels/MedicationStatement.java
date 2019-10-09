@@ -26,7 +26,7 @@ public class MedicationStatement extends AbstractEnterpriseCsvWriter {
                             Date clinicalEffectiveDate,
                             Integer datePrecisionId,
                             Long dmdId,
-                            Boolean isActive,
+                            boolean isActive,
                             Date cancellationDate,
                             String dose,
                             BigDecimal quantityValue,

@@ -22,7 +22,7 @@ public class Flag extends AbstractEnterpriseCsvWriter {
                             long personId,
                             Date effectiveDate,
                             Integer datePrecisionId,
-                            Boolean isActive,
+                            boolean isActive,
                             String flagText
     ) throws Exception {
 

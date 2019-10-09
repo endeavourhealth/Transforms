@@ -38,7 +38,6 @@ public class OutputContainer {
         csvWriters.add(new Location(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Practitioner(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Schedule(csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new Person(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Patient(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EpisodeOfCare(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Appointment(csvFormat, dateFormat, timeFormat));
@@ -154,10 +153,6 @@ public class OutputContainer {
 
     public Schedule getSchedules() {
         return findCsvWriter(Schedule.class);
-    }
-
-    public Person getPersons() {
-        return findCsvWriter(Person.class);
     }
 
     public Patient getPatients() {

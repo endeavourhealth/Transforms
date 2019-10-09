@@ -58,9 +58,8 @@ public class FlagEnterpriseTransformer extends AbstractEnterpriseTransformer {
             datePrecisionId = convertDatePrecision(dt.getPrecision());
         }
 
-        if (fhir.hasStatus()) {
-            isActive = (fhir.getStatus() == Flag.FlagStatus.ACTIVE);
-        }
+        isActive = fhir.hasStatus()
+                && fhir.getStatus() == Flag.FlagStatus.ACTIVE;
 
         if (fhir.hasCode()) {
             flagText = fhir.getCode().getText();

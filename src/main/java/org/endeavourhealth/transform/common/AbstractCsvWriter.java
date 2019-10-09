@@ -110,11 +110,9 @@ public abstract class AbstractCsvWriter {
         if (b == null) {
             return null;
         } else if (b.booleanValue()) {
-            return "1";
-            //return "TRUE";
+            return "TRUE";
         } else {
-            return "0";
-            //return "FALSE";
+            return "FALSE";
         }
     }
 

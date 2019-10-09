@@ -2,8 +2,6 @@ package org.endeavourhealth.transform.subscriber.transforms;
 
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -32,7 +30,7 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
 
         org.endeavourhealth.transform.subscriber.targetTables.Flag model = params.getOutputContainer().getFlags();
 
-        Flag fhir = (Flag)resourceWrapper.getResource(); //returns null if deleted
+        Flag fhir = (Flag) resourceWrapper.getResource(); //returns null if deleted
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
@@ -59,12 +57,12 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
             effectiveDate = dt.getValue();
             if (dt.getPrecision() != null && effectiveDate != null) {
                 datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), effectiveDate.toString());
-                }
+            }
         }
 
-        if (fhir.hasStatus()) {
-            isActive = (fhir.getStatus() == Flag.FlagStatus.ACTIVE);
-        }
+        isActive = fhir.hasStatus()
+                && fhir.getStatus() == Flag.FlagStatus.ACTIVE;
+
 
         if (fhir.hasCode()) {
             flagText = fhir.getCode().getText();

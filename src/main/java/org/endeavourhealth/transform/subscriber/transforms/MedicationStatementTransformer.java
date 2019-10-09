@@ -57,7 +57,7 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         Date clinicalEffectiveDate = null;
         Integer datePrecisionConceptId = null;
         // Long dmdId = null;
-        Boolean isActive = null;
+        boolean isActive;
         Date cancellationDate = null;
         String dose = null;
         BigDecimal quantityValue = null;
@@ -109,10 +109,8 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
         nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
-        if (fhir.hasStatus()) {
-            MedicationStatement.MedicationStatementStatus fhirStatus = fhir.getStatus();
-            isActive = Boolean.valueOf(fhirStatus == MedicationStatement.MedicationStatementStatus.ACTIVE);
-        }
+        isActive = fhir.hasStatus()
+                && fhir.getStatus() == MedicationStatement.MedicationStatementStatus.ACTIVE;
 
         if (fhir.hasDosage()) {
             if (fhir.getDosage().size() > 1) {

@@ -23,7 +23,7 @@ public class Flag extends AbstractTargetTable {
                             long personId,
                             Date effectiveDate,
                             Integer datePrecisionConceptId,
-                            Boolean isActive,
+                            boolean isActive,
                             String flagText
     ) throws Exception {
 

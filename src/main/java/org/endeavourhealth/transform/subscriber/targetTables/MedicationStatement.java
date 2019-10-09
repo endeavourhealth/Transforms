@@ -27,7 +27,7 @@ public class MedicationStatement extends AbstractTargetTable {
                             Date clinicalEffectiveDate,
                             Integer datePrecisionConceptId,
                             // Long dmdId,
-                            Boolean isActive,
+                            boolean isActive,
                             Date cancellationDate,
                             String dose,
                             BigDecimal quantityValue,
