@@ -189,5 +189,14 @@ public class OrganizationBuilder extends ResourceBuilderBase
         this.organization.getTelecom().remove(contactPoint);
     }
 
+    public void setOdsCode(String odsCode, CsvCell... sourceCells) {
+        IdentifierBuilder identifierBuilder = new IdentifierBuilder(this);
+        identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+        identifierBuilder.setValue(odsCode, sourceCells);
+    }
 
+    public String getOdsCode() {
+        return IdentifierHelper.findOdsCode(this.organization);
+    }
 }

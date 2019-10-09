@@ -57,10 +57,7 @@ public class OrganisationTransformer {
 
         CsvCell odsCode = parser.getODScode();
         if (!odsCode.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-            identifierBuilder.setValue(odsCode.getString(), odsCode);
+            organizationBuilder.setOdsCode(odsCode.getString(), odsCode);
         }
 
         CsvCell name = parser.getOrganisatioName();
