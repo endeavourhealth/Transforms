@@ -250,9 +250,9 @@ public class FhirToPcrHelper {
             case FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID:
                 ret = 11;
                 break;
-            case FhirCodeUri.CODE_SYSTEM_UK_ED_CODE:
+            /*case FhirCodeUri.CODE_SYSTEM_UK_ED_CODE:
                 ret = 12;
-                break;
+                break;*/
             case FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_DRUG_ID:
                 ret = 13;
                 break;
