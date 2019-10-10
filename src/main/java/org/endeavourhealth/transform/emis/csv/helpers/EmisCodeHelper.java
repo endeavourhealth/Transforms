@@ -105,19 +105,6 @@ public class EmisCodeHelper {
         }
     }
 
-    private static String getClinicalCodeSystemForSnomedCode(EmisCsvCodeMap codeMap) {
-        String snomedConceptIdStr = "" + codeMap.getSnomedConceptId();
-        if (snomedConceptIdStr.length() > 9) {
-            //this isn't strictly going to be an Emis snomed code, as we would need
-            //to look at the namespace digits in the code to know that an cross-reference against
-            //the known Emis namespaces (google "snomed ct namespace registry") but if it's a
-            //long-form concept ID, then it's not going to be a standard snomed one
-            return FhirCodeUri.CODE_SYSTEM_EMISSNOMED;
-        } else {
-            return FhirCodeUri.CODE_SYSTEM_SNOMED_CT;
-        }
-    }
-
     private static void applyClinicalCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) throws Exception {
 
         String readCode = removeSynonymAndPadRead2Code(codeMap);
@@ -132,7 +119,7 @@ public class EmisCodeHelper {
         codeableConceptBuilder.setCodingDisplay(readTerm, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_TERM, readTerm));
 
         //create a coding for the Snomed code
-        codeableConceptBuilder.addCoding(getClinicalCodeSystemForSnomedCode(codeMap));
+        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
         codeableConceptBuilder.setCodingCode("" + snomedConceptId, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_SNOMED_CONCEPT_ID, snomedConceptId));
         if (snomedTerm == null) {
             //the snomed term will be null if we couldn't find one in our own official Snomed dictionary, in which case use the read term

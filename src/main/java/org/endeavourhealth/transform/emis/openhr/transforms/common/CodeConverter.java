@@ -54,7 +54,8 @@ public class CodeConverter
             case OPENHR_IDENTIFIER_SNOMED:
                 return FhirCodeUri.CODE_SYSTEM_SNOMED_CT;
             case OPENHR_IDENTIFIER_EMIS_SNOMED:
-                return FhirCodeUri.CODE_SYSTEM_EMISSNOMED;
+                //Emis Snomed should just be treated as true Snomed (you can tell which are which by the Emis namespace 1000006)
+                return FhirCodeUri.CODE_SYSTEM_SNOMED_CT;
             case OPENHR_IDENTIFIER_EMIS_PREPARATION:
                 return FhirCodeUri.CODE_SYSTEM_EMISPREPARATION;
             default:

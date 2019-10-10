@@ -133,7 +133,8 @@ public class ObservationCodeHelper {
             //so something has gone wrong
             throw new TransformException("Original coding has system " + system);
 
-        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_CTV3)) {
+        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_CTV3)
+                || system.equals(FhirCodeUri.CODE_SYSTEM_TPP_CTV3)) {
             return "CTV3_" + originalCoding.getCode();
 
         } else if (system.equals(FhirCodeUri.CODE_SYSTEM_ICD10)) {

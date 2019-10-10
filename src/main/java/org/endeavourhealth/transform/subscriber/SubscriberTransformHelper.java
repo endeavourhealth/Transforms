@@ -381,11 +381,11 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return true;
     }*/
 
-    public Boolean getShouldPatientRecordBeDeleted() {
+    public boolean getShouldPatientRecordBeDeleted() {
         if (shouldPatientRecordBeDeleted == null) {
             throw new RuntimeException("Null shouldPatientRecordBeDeleted variable - this should always have been set");
         }
-        return shouldPatientRecordBeDeleted;
+        return shouldPatientRecordBeDeleted.booleanValue();
     }
 
     public void addResourceToTransform(ResourceWrapper wrapper) throws Exception {

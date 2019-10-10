@@ -111,7 +111,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
             EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
-            snomedConceptId = ret.getCode();
+            snomedConceptId = new Long(ret.getCode());
         }
 
         /*if (fhir.hasExtension()) {

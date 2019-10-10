@@ -78,7 +78,7 @@ public abstract class ClinicalCodeTransformer {
 
         EmisCsvCodeMap mapping = new EmisCsvCodeMap();
         mapping.setMedication(false);
-        mapping.setCodeId(codeId.getLong());
+        mapping.setCodeId(codeId.getLong().longValue());
         mapping.setCodeType(codeType.getValue());
         mapping.setReadTerm(emisTerm.getString());
         mapping.setReadCode(emisCode.getString());

@@ -158,8 +158,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             serviceProviderOrganisationId = params.getSubscriberOrganisationId();
         }
 
-        String originalTerm = null;
-        originalTerm = findEncounterTypeTerm(fhir, params);
+        String originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
 
             // EncounterCode ret =
@@ -388,7 +387,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         return encounterClass.toCode();
     }
 
-    private String findAdtMessageCode(Encounter fhir) {
+    /*private String findAdtMessageCode(Encounter fhir) {
         if (!fhir.hasExtension()) {
             return null;
         }
@@ -405,20 +404,6 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         }
 
         return hl7MessageTypeCoding.getCode();
-    }
-
-    /*private Long findRecordingPractitionerId(Encounter fhir, SubscriberTransformHelper params) throws Exception {
-        if (!fhir.hasExtension()) {
-            return null;
-        }
-
-        Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_BY);
-        if (extension == null) {
-            return null;
-        }
-
-        Reference reference = (Reference)extension.getValue();
-        return transformOnDemandAndMapId(reference, SubscriberTableId.PRACTITIONER, params);
     }*/
 
     private Date findEndDate(Encounter fhir) {

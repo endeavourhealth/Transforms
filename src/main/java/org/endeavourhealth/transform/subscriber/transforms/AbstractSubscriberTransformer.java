@@ -618,7 +618,7 @@ public abstract class AbstractSubscriberTransformer {
 
 
 
-    protected static String getScheme(String codingSystem) {
+    protected static String getScheme(String codingSystem) throws Exception {
         String str = null;
         if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) {
             str = IMConstant.SNOMED;
@@ -634,45 +634,18 @@ public abstract class AbstractSubscriberTransformer {
             str = IMConstant.BARTS_CERNER;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) {
             str = IMConstant.EMIS_LOCAL;
-        }
-        if (str == null) {
-            str = codingSystem;
-        }
-        return str;
-    }
-
-
-
-    /*protected Long transformOnDemandAndMapId(Reference reference,
-                                             SubscriberTransformParams params) throws Exception {
-
-        Long enterpriseId = null;
-
-        if (!params.hasResourceBeenTransformedAddIfNot(reference)) {
-
-            Resource fhir = findResource(reference, params);
-            if (fhir == null) {
-                //if the target resource doesn't exist, or has been deleted, just return null as we can't use it
-                return null;
-            }
-
-            enterpriseId = findOrCreateEnterpriseId(params, reference);
-
-            ResourceType resourceType = fhir.getResourceType();
-            AbstractTransformer transformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(resourceType);
-            if (transformer == null) {
-                throw new TransformException("No transformer found for resource " + reference.getReference());
-            }
-
-            AbstractPcrCsvWriter csvWriter = FhirToSubscriberCsvTransformer.findCsvWriterForResourceType(resourceType, params);
-            transformer.transform(enterpriseId, fhir, csvWriter, params);
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_CTV3)) {
+            str = IMConstant.TPP_LOCAL;
 
         } else {
-            enterpriseId = findEnterpriseId(params, reference);
+            //confirmed that the IM does not support throwing raw URLs at it, so if we don't match
+            //any of the above something is very wrong
+            throw new Exception("No mapping to IM scheme for code scheme " + codingSystem);
+            //str = codingSystem;
         }
 
-        return enterpriseId;
-    }*/
+        return str;
+    }
 
 
 }

@@ -128,13 +128,11 @@ public class ObservationEnterpriseTransformer extends AbstractEnterpriseTransfor
             }
         }
 
-
-
         Extension reviewExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_REVIEW);
         if (reviewExtension != null) {
             BooleanType b = (BooleanType)reviewExtension.getValue();
             if (b.getValue() != null) {
-                isReview = b.getValue();
+                isReview = b.getValue().booleanValue();
             }
         }
 

@@ -26,6 +26,7 @@ public class IMConstant {
     public static final String DCE_Type_of_encounter = "DCE_type_of_encounter";
     public static final String FHIR_CONDITION_EPISODICITY = "FHIR_CEP";
     public static final String EMIS_LOCAL = "EMIS_LOCAL";
+    public static final String TPP_LOCAL = "TPP_LOCAL";
 
 
 }

@@ -166,11 +166,11 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
 
 
-    public Boolean getShouldPatientRecordBeDeleted() {
+    public boolean getShouldPatientRecordBeDeleted() {
         if (shouldPatientRecordBeDeleted == null) {
             throw new RuntimeException("Null shouldPatientRecordBeDeleted variable - this should always have been set");
         }
-        return shouldPatientRecordBeDeleted;
+        return shouldPatientRecordBeDeleted.booleanValue();
     }
 
     public boolean hasResourceBeenTransformedAddIfNot(ResourceWrapper resourceWrapper) {
