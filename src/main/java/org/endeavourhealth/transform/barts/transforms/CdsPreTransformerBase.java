@@ -311,12 +311,14 @@ public abstract class CdsPreTransformerBase {
 
             String term = TerminologyService.lookupOpcs4ProcedureName(opcsCode);
             if (Strings.isNullOrEmpty(term)) {
-                if (opcsCode.equals(BARTS_UNKNOWN_OPCS_CODE_Y926)) {
-                    term = BARTS_UNKNOWN_OPCS_CODE_Y926;
-                    TransformWarnings.log(LOG, csvHelper,"Undefined OPCS code from Barts {}",BARTS_UNKNOWN_OPCS_CODE_Y926);
-                } else {
-                    throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
-                }
+                //if (opcsCode.equals(BARTS_UNKNOWN_OPCS_CODE_Y926)) {
+                //    term = BARTS_UNKNOWN_OPCS_CODE_Y926;
+                //    TransformWarnings.log(LOG, csvHelper,"Undefined OPCS code from Barts {}",BARTS_UNKNOWN_OPCS_CODE_Y926);
+                //} else {
+                //    throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
+                //}
+                TransformWarnings.log(LOG, csvHelper,"Undefined OPCS code from Barts {}",BARTS_UNKNOWN_OPCS_CODE_Y926);
+                term = "Barts undefined OPCS code " + opcsCode;
             }
             cdsRemainder.setLookupProcedureOpcsTerm(term);
 
