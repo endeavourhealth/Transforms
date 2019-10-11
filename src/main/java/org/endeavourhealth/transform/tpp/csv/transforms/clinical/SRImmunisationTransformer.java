@@ -135,45 +135,75 @@ public class SRImmunisationTransformer {
             immunizationBuilder.setExpirationDate(expiryDate.getDate(), expiryDate);
         }
 
-        CsvCell readImmsSNOMEDCode = parser.getImmsSNOMEDCode();
-        if (readImmsSNOMEDCode != null && !readImmsSNOMEDCode.isEmpty() && !readImmsSNOMEDCode.getString().equals("-1")) {
+        CsvCell immsSNOMEDCodeCell = parser.getImmsSNOMEDCode();
+        CsvCell readV3CodeCell = parser.getImmsReadCode();
 
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
-            SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readImmsSNOMEDCode.getString());
-            if (snomedCode != null) {
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
-                codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-                codeableConceptBuilder.setText(snomedCode.getTerm());
+        //only add a codeable concept if either a Snomed code or Ctv3 code is present
+        if (!readV3CodeCell.isEmpty() ||
+                (immsSNOMEDCodeCell != null && !immsSNOMEDCodeCell.isEmpty() && immsSNOMEDCodeCell.getLong() != -1)) {
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
+
+            boolean addedSnomed = false;
+            String snomedCodeDisplayText = "";
+
+            if (immsSNOMEDCodeCell != null //might be null in older versions
+                    && !immsSNOMEDCodeCell.isEmpty()
+                    && immsSNOMEDCodeCell.getLong() != -1) {
+
+                SnomedCode snomedCode = TerminologyService.lookupSnomedFromConceptId(immsSNOMEDCodeCell.getString());
+                if (snomedCode != null) {
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
+                    codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
+                    snomedCodeDisplayText = snomedCode.getTerm();   //use to set display text later
+                    addedSnomed = true;
+                }
             }
-        } else {
-            CsvCell readV3Code = parser.getImmsReadCode();
-            if (!readV3Code.isEmpty()) {
 
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
+            if (!readV3CodeCell.isEmpty()) {
 
-                // add Ctv3 coding
-                TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(readV3Code.getString(), parser);
+                String code = readV3CodeCell.getString();
+                if (!code.startsWith("Y")) {
 
-                if (ctv3Lookup != null) {
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                    codeableConceptBuilder.setCodingCode(readV3Code.getString(), readV3Code);
-                    String readV3Term = ctv3Lookup.getCtv3Text();
-                    codeableConceptBuilder.setCodingDisplay(readV3Term, readV3Code);
-                    codeableConceptBuilder.setText(readV3Term, readV3Code);
-                }
+                    //only add the Snomed translation if not already added Snomed
+                    if (!addedSnomed) {
+                        SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(code);
+                        if (snomedCode != null) {
 
-                // translate to Snomed if code does not start with "Y" as they are local TPP codes
-                if (!readV3Code.getString().startsWith("Y")) {
-                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(readV3Code.getString());
-                    if (snomedCode != null) {
-
-                        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                        codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
-                        codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-                        codeableConceptBuilder.setText(snomedCode.getTerm());
+                            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                            codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
+                            codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
+                            snomedCodeDisplayText = snomedCode.getTerm();   //use to set display text later
+                        }
                     }
+
+                    // add Ctv3 coding
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
+
+                } else {
+
+                    //this is a TPP Ctv3 local code
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_TPP_CTV3);
                 }
+
+                //set the code from the received code cell
+                codeableConceptBuilder.setCodingCode(code, readV3CodeCell);
+
+                //perform a ctv3 lookup to get the code term details as this is not supplied in the extract
+                TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(code, parser);
+                if (ctv3Lookup != null) {
+                    String readV3Term = ctv3Lookup.getCtv3Text();
+                    codeableConceptBuilder.setCodingDisplay(readV3Term);
+                    codeableConceptBuilder.setText(readV3Term);   //display text set here in-case no Snomed term derived
+                }
+            }
+
+            // if Snomed code display text is set then use it for the display text (preferred over Ctv3 as no term supplied)
+            if (!snomedCodeDisplayText.isEmpty()) {
+                codeableConceptBuilder.setText(snomedCodeDisplayText);
             }
         }
 
