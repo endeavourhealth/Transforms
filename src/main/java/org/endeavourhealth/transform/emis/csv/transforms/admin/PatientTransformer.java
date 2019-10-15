@@ -299,9 +299,8 @@ public class PatientTransformer {
         CsvCell county = parser.getCounty();
         CsvCell postcode = parser.getPostcode();
 
-        //apparently if the patient is a temp patient, then the address supplied will be the temporary address,
+        //if the patient is a temp patient, then the address supplied will be the temporary address,
         //rather than home. Emis Web stores the home address for these patients in a table we don't get in the extract
-        //Address.AddressUse use = Address.AddressUse.HOME;
         Address.AddressUse use = null;
 
         RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);

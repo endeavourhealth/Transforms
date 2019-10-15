@@ -168,20 +168,29 @@ public class StaffMemberCache {
 
         if (nationalIdType.equalsIgnoreCase("GMC")) {
             return FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER;
+
         } else if (nationalIdType.equalsIgnoreCase("NMC")) {
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_NMC_NUMBER;
+
         } else if (nationalIdType.equalsIgnoreCase("GDP ID")) { //general dental practitioner
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_GDP_NUMBER;
+
         } else if (nationalIdType.equalsIgnoreCase("RPSGB")) { //royal pharmaceutical society of GB
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_RPSGB_NUMBER;
+
         } else if (nationalIdType.equalsIgnoreCase("GPhC")) { //general pharmaceutical council
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_GPhC_NUMBER;
-        } else if (nationalIdType.equalsIgnoreCase("HPC")) { //general pharmaceutical council
+
+        } else if (nationalIdType.equalsIgnoreCase("HPC") //old name
+                || nationalIdType.equalsIgnoreCase("HCPC")) { //new name
             return FhirIdentifierUri.IDENTIFIER_SYSTEM_HPC;
+
         } else if (nationalIdType.equalsIgnoreCase("Pathology ID")) {
                 return null;
+
         } else if (nationalIdType.equalsIgnoreCase("Local Person ID")) {
                 return null;
+
         } else {
             TransformWarnings.log(LOG, csvHelper, "TPP National ID type {} not mapped", nationalIdType);
             return null;
