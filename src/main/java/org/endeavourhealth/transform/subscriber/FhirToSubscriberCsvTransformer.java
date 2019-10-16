@@ -264,7 +264,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         int threads = Math.min(10, resourceCount/10); //limit to 10 threads, but don't create too many unnecessarily if we only have a few resources
         threads = Math.max(threads, 1); //make sure we have a min of 1
 
-        ThreadPool threadPool = new ThreadPool(threads, 1000);
+        ThreadPool threadPool = new ThreadPool(threads, 1000, "FhirToSubscriber");
         try {
 
             //we detect whether we're doing an update or insert, based on whether we're previously mapped

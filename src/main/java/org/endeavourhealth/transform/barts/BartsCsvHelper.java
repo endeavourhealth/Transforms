@@ -1311,7 +1311,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public void submitToThreadPool(Callable callable) throws Exception {
         if (this.utilityThreadPool == null) {
             int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
-            this.utilityThreadPool = new ThreadPool(threadPoolSize, 50000);
+            this.utilityThreadPool = new ThreadPool(threadPoolSize, 50000, "BartsCsvHelper");
         }
 
         List<ThreadPoolError> errors = utilityThreadPool.submit(callable);

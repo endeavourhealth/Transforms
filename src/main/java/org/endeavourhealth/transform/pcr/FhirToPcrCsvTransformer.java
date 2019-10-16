@@ -277,7 +277,7 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         int threads = Math.min(10, resources.size() / 10); //limit to 10 threads, but don't create too many unnecessarily if we only have a few resources
         threads = Math.max(threads, 1); //make sure we have a min of 1
 
-        ThreadPool threadPool = new ThreadPool(threads, 1000);
+        ThreadPool threadPool = new ThreadPool(threads, 1000, "FhirToPcr");
 
         //we detect whether we're doing an update or insert, based on whether we're previously mapped
         //a reference to a resource, so we need to transform the resources in a specific order, so
@@ -291,10 +291,8 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         //if we transformed a patient resource, we need to guarantee that the patient is fully transformed before continuing
         //so we need to close the thread pool and wait. Then re-open for any remaining resources.
         if (didPatient) {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
+            List<ThreadPoolError> errors = threadPool.waitUntilEmpty();
             handleErrors(errors);
-
-            threadPool = new ThreadPool(threads, 1000);
         }
 
         //having done any patient resource in our batch, we should have created an PCR patient ID and person ID that we can use for all remaining resources

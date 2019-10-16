@@ -28,7 +28,7 @@ public class EncounterPreTransformer {
 
         //use a thread pool to perform multiple lookups in parallel
         int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(fhirResourceFiler.getServiceId());
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000);
+        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000, "VisionEncounter");
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error

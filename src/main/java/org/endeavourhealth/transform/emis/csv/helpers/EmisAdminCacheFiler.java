@@ -39,7 +39,7 @@ public class EmisAdminCacheFiler {
         this.dataSharingAgreementGuid = dataSharingAgreementGuid;
 
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        this.threadPool = new ThreadPool(threadPoolSize, 50000);
+        this.threadPool = new ThreadPool(threadPoolSize, 50000, "EmisAdminCache");
     }
 
     public void close() throws Exception {

@@ -80,8 +80,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         //base the thread pools on the connection pool max size minus a bit of room
         int maxFilingThreads = ConnectionManager.getEhrConnectionPoolMaxSize(serviceId) - 2;
-        this.threadPoolIdMapper = new ThreadPool(maxFilingThreads, 500);
-        this.threadPoolFiler = new ThreadPool(maxFilingThreads, 500);
+        this.threadPoolIdMapper = new ThreadPool(maxFilingThreads, 500, "FhirFilerIdMapper");
+        this.threadPoolFiler = new ThreadPool(maxFilingThreads, 500, "FhirFilerSaver");
         this.creationTime = System.currentTimeMillis();
     }
 

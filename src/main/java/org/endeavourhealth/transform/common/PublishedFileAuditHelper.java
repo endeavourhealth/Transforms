@@ -67,7 +67,7 @@ public class PublishedFileAuditHelper {
 
         //use the threadpool for saving these record audit objects, so we can get better throughput
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 5000);
+        ThreadPool threadPool = new ThreadPool(threadPoolSize, 5000, "FileAuditHelper");
 
         InputStream inputStream = FileHelper.readFileFromSharedStorage(filePath);
         try {

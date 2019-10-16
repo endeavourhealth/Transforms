@@ -22,7 +22,7 @@ public class DiagnosisPreTransformer {
 
         //we need to write a lot of stuff to the DB and each record is independent, so use a thread pool to parallelise
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000);
+        ThreadPool threadPool = new ThreadPool(threadPoolSize, 10000, "HomertonDiagnosis");
 
         try {
             for (ParserI parser: parsers) {
