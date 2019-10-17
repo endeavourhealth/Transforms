@@ -392,6 +392,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRQuestionnaireAmendment");
             set.add("SRHospitalAlertIndicator");
             set.add("SRReferralAllocation");
+            set.add("SRContacts");
 
             cachedFileNamesToIgnore = set;
         }
