@@ -27,6 +27,7 @@ public class SRAppointmentTransformer {
     // mapId on slot, therefore we need to use local ids for appointment as well.
 
     private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentTransformer.class);
+    private static String TPP_EMPTY_VALUE = "-1";
 
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
@@ -82,7 +83,7 @@ public class SRAppointmentTransformer {
         }
 
         // If we don't have a patient reference, don't file the slot as the filer doesn't support saving slots without a patient
-        if (patientIdCell.isEmpty()) {
+        if (patientIdCell.isEmpty() || patientIdCell.getString().equals(TPP_EMPTY_VALUE)) {
             return;
         }
 
