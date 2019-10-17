@@ -10,6 +10,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
@@ -58,8 +59,7 @@ public abstract class TppCsvToFhirTransformer {
     public static final String VERSION_92 = "92"; //Basically 91 plus 1 new column in SRRota (DateStart), no RemovedData
     public static final String VERSION_93 = "93"; //Basically 92 plus RemovedData
 
-    private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
-
+    //private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
 
 
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
@@ -78,13 +78,13 @@ public abstract class TppCsvToFhirTransformer {
 
         //work out the version of the files by checking the headers (ignoring what was passed in)
         //version = determineVersion(files);
-        Map<String, String> parserToVersionsMap = buildParserToVersionsMap(files);
+        Map<String, String> parserToVersionsMap = buildParserToVersionsMap(files, fhirResourceFiler);
 
         boolean processPatientData = shouldProcessPatientData(files);
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            createParsers(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), files,parserToVersionsMap, parsers);
+            createParsers(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), files, parserToVersionsMap, parsers);
 
             LOG.trace("Transforming TPP CSV content in " + orgDirectory);
             transformParsers(parsers, fhirResourceFiler, processPatientData);
@@ -146,7 +146,6 @@ public abstract class TppCsvToFhirTransformer {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         return sdf.parse(startDateStr);
     }
-
 
 
     /**
@@ -215,9 +214,9 @@ public abstract class TppCsvToFhirTransformer {
      * the TPP schema changes without notice, so rather than define the version in the SFTP reader,
      * and then need to back pedal when we find it's changed, dynamically work it out from the CSV headers
      */
-    public static Map<String, String> buildParserToVersionsMap(String[] files) throws Exception {
+    public static Map<String, String> buildParserToVersionsMap(String[] files, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-       List<String> possibleVersions = new ArrayList<>();
+        List<String> possibleVersions = new ArrayList<>();
         Map<String, String> parserToVersionsMap = new HashMap<>();
         possibleVersions.add(VERSION_93);
         possibleVersions.add(VERSION_92);
@@ -230,7 +229,7 @@ public abstract class TppCsvToFhirTransformer {
         possibleVersions.add(VERSION_87);
         possibleVersions.add(VERSION_TEST_PACK);
 
-        List<String> noVersions  = new ArrayList<>();
+        List<String> noVersions = new ArrayList<>();
 
         for (String filePath : files) {
             try {
@@ -243,45 +242,47 @@ public abstract class TppCsvToFhirTransformer {
                     LOG.info("PatientRelation versions " + Arrays.toString(noVersions.toArray()));
                 }
                 if (compatibleVersions.isEmpty()) {
-                    ensureFileIsEmpty(filePath);
+                    ensureFileIsEmpty(filePath, fhirResourceFiler);
                     noVersions.add(filePath); //Not dropping straight out as multiple files may have changed.
                     //throw new TransformException("Unable to determine version for TPP CSV file: " + filePath);
-                } else  {
+                } else {
                     parserToVersionsMap.put(filePath, compatibleVersions.get(0));
                 }
             } catch (ClassNotFoundException ex) {
                 //we don't have parsers for every file, since there are a lot of secondary-care (etc.) files
                 //that we don't transform, but we also want to make sure that they're EMPTY unless we explicitly
                 //have decided to ignore a non-empty file
-                ensureFileIsEmpty(filePath);
+                ensureFileIsEmpty(filePath, fhirResourceFiler);
             } catch (IOException eio) {
                 if (eio.getMessage().contains("startline 1")) {
                     //
-                    LOG.info("Missing newline in file. Skipping : " +filePath);
-                    parserToVersionsMap.put(filePath,"0");
+                    LOG.info("Missing newline in file. Skipping : " + filePath);
+                    parserToVersionsMap.put(filePath, "0");
                 } else {
                     LOG.error("", eio);
                 }
             }
         }
-        if (noVersions.size()>0) {
+        if (noVersions.size() > 0) {
             System.out.println(Arrays.toString(noVersions.toArray()));
             throw new TransformException("Unable to determine TPP CSV version for above file(s).");
         }
 
         for (Map.Entry<String, String> entry : parserToVersionsMap.entrySet()) {
-            LOG.info("ParserMap" +entry.getKey() + "/" + entry.getValue());
+            LOG.info("ParserMap" + entry.getKey() + "/" + entry.getValue());
         }
-    return parserToVersionsMap;
+        return parserToVersionsMap;
 
     }
 
 
-    public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId,  String[] files,Map<String, String> versions, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, Map<String, String> versions, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         for (String filePath : files) {
             LOG.info("Files: " + Arrays.toString(files));
-            if (filePath == null) {continue;}
+            if (filePath == null) {
+                continue;
+            }
             try {
                 String version = versions.get(filePath);
                 if (version == null) {
@@ -306,20 +307,23 @@ public abstract class TppCsvToFhirTransformer {
         }
     }
 
-    private static void ensureFileIsEmpty(String filePath) throws Exception {
+    private static void ensureFileIsEmpty(String filePath, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //if we know it'll be non-empty but we know we want to ignore it, don't check the content
-        String baseName = FilenameUtils.getBaseName(filePath);
+        /*String baseName = FilenameUtils.getBaseName(filePath);
         if (getFilesToIgnore().contains(baseName)) {
             return;
-        }
+        }*/
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath);
         CSVParser parser = new CSVParser(reader, CSV_FORMAT);
         try {
             Iterator<CSVRecord> iterator = parser.iterator();
             if (iterator.hasNext()) {
-                throw new TransformException("" + filePath + " isn't being transformed but isn't empty");
+                //sick of hitting this exception and having to fix the code, so just log and proceed
+                String baseName = FilenameUtils.getBaseName(filePath);
+                TransformWarnings.log(LOG, fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), null, null, "TPP file {} ignored but not empty", baseName);
+                //throw new TransformException("" + filePath + " isn't being transformed but isn't empty");
             }
 
         } finally {
@@ -327,7 +331,7 @@ public abstract class TppCsvToFhirTransformer {
         }
     }
 
-    private static Set<String> getFilesToIgnore() {
+    /*private static Set<String> getFilesToIgnore() {
         if (cachedFileNamesToIgnore == null) {
 
             Set<String> set = new HashSet<>();
@@ -398,7 +402,7 @@ public abstract class TppCsvToFhirTransformer {
             cachedFileNamesToIgnore = set;
         }
         return cachedFileNamesToIgnore;
-    }
+    }*/
 
     private static void closeParsers(Collection<AbstractCsvParser> parsers) {
         for (AbstractCsvParser parser : parsers) {
@@ -496,7 +500,7 @@ public abstract class TppCsvToFhirTransformer {
                                          boolean processPatientData) throws Exception {
 
         TppCsvHelper csvHelper = new TppCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
-                                                    fhirResourceFiler.getExchangeId());
+                fhirResourceFiler.getExchangeId());
 
         //reference data
         LOG.trace("Starting reference data transforms");
