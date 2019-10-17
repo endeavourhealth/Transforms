@@ -28,10 +28,9 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
-import org.endeavourhealth.transform.enterprise.json.ConfigParameter;
-import org.endeavourhealth.transform.enterprise.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
@@ -456,27 +455,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
     private String pseudonymiseUsingConfig(EnterpriseTransformHelper params, Patient fhirPatient, long enterprisePatientId, LinkDistributorConfig config, boolean mainPseudoId) throws Exception {
 
-        PseudoIdBuilder builder = new PseudoIdBuilder(params.getEnterpriseConfigName(), config.getSaltKeyName(), config.getSalt());
-
-        List<ConfigParameter> parameters = config.getParameters();
-        for (ConfigParameter param : parameters) {
-
-            String fieldName = param.getFieldName();
-            String fieldFormat = param.getFormat();
-            String fieldLabel = param.getFieldLabel();
-
-            boolean foundValue = builder.addPatientValue(fhirPatient, fieldName, fieldLabel, fieldFormat);
-
-            //if this element is mandatory, then fail if our field is empty
-            Boolean mandatory = param.getMandatory();
-            if (mandatory != null
-                    && mandatory.booleanValue()
-                    && !foundValue) {
-                return null;
-            }
-        }
-
-        String pseudoId = builder.createPseudoId();
+        String pseudoId = PseudoIdBuilder.generatePsuedoIdFromConfig(params.getEnterpriseConfigName(), config, fhirPatient);
 
         //save the mapping to the new-style table
         if (pseudoId != null) {

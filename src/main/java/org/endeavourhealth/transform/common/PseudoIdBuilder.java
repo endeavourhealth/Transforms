@@ -5,11 +5,14 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
+import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
+import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.hl7.fhir.instance.model.Patient;
 
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 import java.util.TreeMap;
 
 public class PseudoIdBuilder {
@@ -167,5 +170,30 @@ public class PseudoIdBuilder {
 
         String value = sb.toString();
         return addValue(fieldLabel, value);
+    }
+
+    public static String generatePsuedoIdFromConfig(String subscriberConfigName, LinkDistributorConfig config, Patient fhirPatient) throws Exception {
+
+        PseudoIdBuilder builder = new PseudoIdBuilder(subscriberConfigName, config.getSaltKeyName(), config.getSalt());
+
+        List<ConfigParameter> parameters = config.getParameters();
+        for (ConfigParameter param : parameters) {
+
+            String fieldName = param.getFieldName();
+            String fieldFormat = param.getFormat();
+            String fieldLabel = param.getFieldLabel();
+
+            boolean foundValue = builder.addPatientValue(fhirPatient, fieldName, fieldLabel, fieldFormat);
+
+            //if this element is mandatory, then fail if our field is empty
+            Boolean mandatory = param.getMandatory();
+            if (mandatory != null
+                    && mandatory.booleanValue()
+                    && !foundValue) {
+                return null;
+            }
+        }
+
+        return builder.createPseudoId();
     }
 }

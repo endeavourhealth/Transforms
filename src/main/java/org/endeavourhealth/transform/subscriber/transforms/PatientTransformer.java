@@ -43,7 +43,7 @@ import java.util.*;
 public class PatientTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
 
-    private static final String PREFIX_PSEUDO_ID = "-PSEUDO-";
+    public static final String PREFIX_PSEUDO_ID = "-PSEUDO-";
     private static final String PREFIX_ADDRESS_ID = "-ADDR-";
     private static final String PREFIX_TELECOM_ID = "-TELECOM-";
 
@@ -522,10 +522,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         //if we've a null datetime, it means we've never sent for this patient
         Date dtLastSent = subscriberId.getDtUpdatedPreviouslySent();
-LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent = " + dtLastSent + " and dt current version = " + currentWrapper.getCreatedAt());
+        //LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent = " + dtLastSent + " and dt current version = " + currentWrapper.getCreatedAt());
 
         if (dtLastSent == null) {
-            LOG.debug("" + currentWrapper.getReferenceString() + " has dt_last_sent of null, so this must be first time it is being transformed (or was previously deleted)");
+            //LOG.debug("" + currentWrapper.getReferenceString() + " has dt_last_sent of null, so this must be first time it is being transformed (or was previously deleted)");
             return null;
         }
 
@@ -572,7 +572,9 @@ LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent
         List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getSubscriberConfigName());
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
-            String pseudoId = pseudonymiseUsingConfig(params, fhirPatient, ldConfig);
+
+
+            String pseudoId = PseudoIdBuilder.generatePsuedoIdFromConfig(params.getSubscriberConfigName(), ldConfig, fhirPatient);
 
             //create a unique source ID from the patient UUID plus the salt key name
             String sourceId = ReferenceHelper.createReferenceExternal(fhirPatient).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
@@ -691,107 +693,6 @@ LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent
 
         return builder.createPseudoId();
     }
-/*
-    public static String pseudonymiseUsingConfig(Patient fhirPatient, LinkDistributorConfig config) throws Exception {
-        TreeMap<String, String> keys = new TreeMap<>();
-
-        List<ConfigParameter> parameters = config.getParameters();
-
-        for (ConfigParameter param : parameters) {
-
-            String fieldName = param.getFieldName();
-            String fieldFormat = param.getFormat();
-            String fieldValue = null;
-
-            if (fieldName.equals("date_of_birth")) {
-                if (fhirPatient.hasBirthDate()) {
-                    Date d = fhirPatient.getBirthDate();
-                    fieldValue = formatPseudoDate(d, fieldFormat);
-                }
-            } else if (fieldName.equals("nhs_number")) {
-
-                String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient); //this will be in nnnnnnnnnn format
-                if (!Strings.isNullOrEmpty(nhsNumber)) {
-                    fieldValue = formatPseudoNhsNumber(nhsNumber, fieldFormat);
-                }
-
-            } else {
-                throw new Exception("Unsupported field name [" + fieldName + "]");
-            }
-
-            if (Strings.isNullOrEmpty(fieldValue)) {
-                // we always need a non null string for the psuedo ID
-                continue;
-            }
-
-            //if this element is mandatory, then fail if our field is empty
-            Boolean mandatory = param.getMandatory();
-            if (mandatory != null
-                    && mandatory.booleanValue()
-                    && Strings.isNullOrEmpty(fieldValue)) {
-                return null;
-            }
-
-            String fieldLabel = param.getFieldLabel();
-            keys.put(fieldLabel, fieldValue);
-        }
-
-        //if not keys, then we can't generate a pseudo ID
-        if (keys.isEmpty()) {
-            return null;
-        }
-
-        return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
-    }
-
-    private static String formatPseudoNhsNumber(String nhsNumber, String fieldFormat) throws Exception {
-
-        //if no explicit format provided, assume one
-        if (Strings.isNullOrEmpty(fieldFormat)) {
-            fieldFormat = "nnnnnnnnnn";
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        int pos = 0;
-        char[] chars = nhsNumber.toCharArray();
-
-        char[] formatChars = fieldFormat.toCharArray();
-        for (int i=0; i<formatChars.length; i++) {
-            char formatChar = formatChars[i];
-            if (formatChar == 'n') {
-                if (pos < chars.length) {
-                    char c = chars[pos];
-                    sb.append(c);
-                    pos ++;
-                }
-
-            } else if (Character.isAlphabetic(formatChar)) {
-                throw new Exception("Unsupported character " + formatChar + " in NHS number format [" + fieldFormat + "]");
-
-            } else {
-                sb.append(formatChar);
-            }
-        }
-
-        return sb.toString();
-    }
-
-    private static String formatPseudoDate(Date d, String fieldFormat) {
-
-        //if no explicit format provided, assume one
-        if (Strings.isNullOrEmpty(fieldFormat)) {
-            fieldFormat = "dd-MM-yyyy";
-        }
-
-        return new SimpleDateFormat(fieldFormat).format(d);
-    }
-
-    private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
-        Crypto crypto = new Crypto();
-        crypto.SetEncryptedSalt(salt);
-        return crypto.GetDigest(keys);
-    }*/
 
     private static List<LinkDistributorConfig> getLinkedDistributorConfig(String configName) throws Exception {
 
