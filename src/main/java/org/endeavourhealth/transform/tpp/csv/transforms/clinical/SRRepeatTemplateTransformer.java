@@ -100,12 +100,14 @@ public class SRRepeatTemplateTransformer {
             }
         }
 
-        if (!parser.getDateMedicationTemplateEnd().isEmpty()) {
-            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE);
-        } else {
-            CsvCell dateMedicationTemplateEnd = parser.getDateMedicationTemplateEnd();
+        //for TPP repeat medication, we receive an update when they're ended, with the end date. Carry these both
+        //over to the MedicationStatment
+        CsvCell endDateCell = parser.getDateMedicationTemplateEnd();
+        if (!endDateCell.isEmpty()) {
             medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED);
-            medicationStatementBuilder.setCancellationDate(dateMedicationTemplateEnd.getDate(), dateMedicationTemplateEnd);
+            medicationStatementBuilder.setCancellationDate(endDateCell.getDate(), endDateCell);
+        } else {
+            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE);
         }
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);

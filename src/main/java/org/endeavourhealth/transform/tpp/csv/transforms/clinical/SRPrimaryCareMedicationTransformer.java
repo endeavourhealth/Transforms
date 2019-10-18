@@ -126,12 +126,13 @@ public class SRPrimaryCareMedicationTransformer {
             }
         }
 
-        if (!parser.getDateMedicationEnd().isEmpty()) {
-            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE);
-        } else {
-            CsvCell dateMedicationTemplateEnd = parser.getDateMedicationEnd();
-            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED);
-            medicationStatementBuilder.setCancellationDate(dateMedicationTemplateEnd.getDate(),dateMedicationTemplateEnd);
+        //with TPP acute medication, the end date is always present, being the expected end date. We can safely
+        //carry that end date over to the MedicationStatement, but CANNOT safely infer the active status from it, because
+        //no further update is typically sent by TPP when this ends, so there's nothing to change the active state
+        //to false. Active state should be inferred from the end date.
+        CsvCell endDateCell = parser.getDateMedicationEnd();
+        if (!endDateCell.isEmpty()) {
+            medicationStatementBuilder.setCancellationDate(endDateCell.getDate(), endDateCell);
         }
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
