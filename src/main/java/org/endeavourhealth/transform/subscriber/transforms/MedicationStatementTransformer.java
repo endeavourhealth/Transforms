@@ -162,6 +162,25 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
             }
         }
 
+
+        //checking relationship between is_active and cancellation date
+        if (fhir.hasStatus()) {
+            boolean active = fhir.getStatus() == MedicationStatement.MedicationStatementStatus.ACTIVE;
+            if (active) {
+                //if active but a past cancellation date, something is odd
+                if (cancellationDate != null
+                        && !cancellationDate.after(new Date())) {
+                    TransformWarnings.log(LOG, params, "MedicationStatement has is active (active = {}) but has cancellation date {}", new Boolean(active), cancellationDate);
+                }
+            } else {
+                //if not active but no cancellation date, something is odd
+                if (cancellationDate == null) {
+                    TransformWarnings.log(LOG, params, "MedicationStatement has is not active (active = {}) but has no cancellation date", new Boolean(active));
+                }
+            }
+        }
+
+
         authorisationTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_MED_STATEMENT_AUTH_TYPE,
                 authorisationType.getCode(), originalTerm);
 

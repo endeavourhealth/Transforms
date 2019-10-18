@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -12,11 +13,14 @@ import org.endeavourhealth.transform.emis.csv.schema.prescribing.DrugRecord;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.MedicationStatement;
 import org.hl7.fhir.instance.model.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
 
 public class DrugRecordTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(DrugRecordTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -80,12 +84,34 @@ public class DrugRecordTransformer {
             medicationStatementBuilder.setAssertedDate(date, effectiveDateCell, effectiveDatePrecisionCell);
         }
 
-        CsvCell isActive = parser.getIsActive();
-        if (isActive.getBoolean()) {
-            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE, isActive);
+        CsvCell isActiveCell = parser.getIsActive();
+        if (isActiveCell.getBoolean()) {
+            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE, isActiveCell);
 
         } else {
-            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED, isActive);
+            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED, isActiveCell);
+        }
+
+        CsvCell cancellationDateCell = parser.getCancellationDate();
+        if (!cancellationDateCell.isEmpty()) {
+            medicationStatementBuilder.setCancellationDate(cancellationDateCell.getDate(), cancellationDateCell);
+        }
+
+        //adding validation to detect if we receive inconsistent end dates
+        boolean isActive = isActiveCell.getBoolean();
+        Date cancellationDate = cancellationDateCell.getDate();
+        if (isActive) {
+            //if active, we don't expect a cancellation date (or don't expect a past one anyway)
+            if (cancellationDate != null
+                    && !cancellationDate.after(new Date())) {
+                TransformWarnings.log(LOG, fhirResourceFiler, "Emis DrugRecord is active (is_active = {}) but has cancellation date {}", isActiveCell, cancellationDateCell);
+            }
+
+        } else {
+            //if not active, we always expect some kind of cancellation date
+            if (cancellationDate == null) {
+                TransformWarnings.log(LOG, fhirResourceFiler, "Emis DrugRecord is NOT active (is_active = {}) but has cancellation date {}", isActiveCell, cancellationDateCell);
+            }
         }
 
         CsvCell codeId = parser.getCodeId();
@@ -119,10 +145,6 @@ public class DrugRecordTransformer {
             medicationStatementBuilder.setReasonForUse(conditionReference, problemObservationGuid);
         }
 
-        CsvCell cancellationDate = parser.getCancellationDate();
-        if (!cancellationDate.isEmpty()) {
-            medicationStatementBuilder.setCancellationDate(cancellationDate.getDate(), cancellationDate);
-        }
 
         IssueRecordIssueDate firstIssueDate = csvHelper.getDrugRecordFirstIssueDate(drugRecordGuid, patientGuid);
         if (firstIssueDate != null) {
