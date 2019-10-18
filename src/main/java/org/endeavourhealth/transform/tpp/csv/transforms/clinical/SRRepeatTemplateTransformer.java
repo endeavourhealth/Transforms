@@ -105,7 +105,7 @@ public class SRRepeatTemplateTransformer {
         } else {
             CsvCell dateMedicationTemplateEnd = parser.getDateMedicationTemplateEnd();
             medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED);
-            medicationStatementBuilder.setCancellationDate(dateMedicationTemplateEnd.getDateTime(), dateMedicationTemplateEnd);
+            medicationStatementBuilder.setCancellationDate(dateMedicationTemplateEnd.getDate(), dateMedicationTemplateEnd);
         }
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
