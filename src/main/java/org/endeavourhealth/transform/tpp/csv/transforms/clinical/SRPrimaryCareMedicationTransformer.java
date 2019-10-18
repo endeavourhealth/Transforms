@@ -16,7 +16,9 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -101,15 +103,7 @@ public class SRPrimaryCareMedicationTransformer {
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-
             medicationStatementBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
-        }
-
-        CsvCell effectiveDate = parser.getDateEvent();
-        if (!effectiveDate.isEmpty()) {
-
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
-            medicationStatementBuilder.setAssertedDate(dateTimeType, effectiveDate);
         }
 
         CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
@@ -126,10 +120,18 @@ public class SRPrimaryCareMedicationTransformer {
             }
         }
 
-        //with TPP acute medication, the end date is always present, being the expected end date. We can safely
-        //carry that end date over to the MedicationStatement, but CANNOT safely infer the active status from it, because
-        //no further update is typically sent by TPP when this ends, so there's nothing to change the active state
-        //to false. Active state should be inferred from the end date.
+        //TPP acute medication can be future-dated, so use the start date as the clinically relevant date, rather than
+        //the date it was prescribed (DateEvent)
+        CsvCell startDateCell = parser.getDateMedicationStart();
+        if (!startDateCell.isEmpty()) {
+            Date startDate = startDateCell.getDate();
+            medicationStatementBuilder.setAssertedDate(new DateTimeType(startDate), startDateCell);
+        }
+
+        //with TPP acute medication, the end date is always present, being the expected end date (in the future).
+        //We can safely carry that end date over to the MedicationStatement, but CANNOT safely infer the active status
+        //from it, because no further update is typically sent by TPP when this ends, so there's nothing to trigger
+        //the change of active state to false. Active state should be inferred from the end date.
         CsvCell endDateCell = parser.getDateMedicationEnd();
         if (!endDateCell.isEmpty()) {
             medicationStatementBuilder.setCancellationDate(endDateCell.getDate(), endDateCell);
@@ -251,15 +253,25 @@ public class SRPrimaryCareMedicationTransformer {
             medicationOrderBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
-        CsvCell effectiveDate = parser.getDateEvent();
-        if (!effectiveDate.isEmpty()) {
+        //medication can be future-dated - the DateEvent would remain the same as the SREvent date, but the clinically
+        //relevant date is the start of the medication, so use that
+        CsvCell startDateCell = parser.getDateMedicationStart();
+        if (!startDateCell.isEmpty()) {
+            Date startDate = startDateCell.getDate();
+            medicationOrderBuilder.setDateWritten(new DateTimeType(startDate), startDateCell);
 
-            DateTimeType date = new DateTimeType(effectiveDate.getDateTime());
-            medicationOrderBuilder.setDateWritten(date, effectiveDate);
+            //although medication order does have an end date field, we use the duration instead, so calculate
+            //the duration from the difference between the start and end date
+            CsvCell endDateCell = parser.getDateMedicationEnd();
+            if (!endDateCell.isEmpty()) {
+                Date endDate = endDateCell.getDate();
+                long diffMillis = Math.abs(endDate.getTime() - startDate.getTime());
+                long diffDays = TimeUnit.DAYS.convert(diffMillis, TimeUnit.MILLISECONDS);
+                medicationOrderBuilder.setDurationDays(new Integer((int)diffDays), startDateCell, endDateCell);
+            }
         }
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(medicationOrderBuilder, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationOrderBuilder, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code);
         CsvCell dmdId = parser.getIDMultiLexDMD();
         CsvCell term = parser.getNameOfMedication();
         if (!dmdId.isEmpty()) {
