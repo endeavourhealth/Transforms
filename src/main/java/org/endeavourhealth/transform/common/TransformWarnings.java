@@ -1,5 +1,8 @@
 package org.endeavourhealth.transform.common;
 
+import ch.qos.logback.classic.pattern.Abbreviator;
+import ch.qos.logback.classic.pattern.TargetLengthBasedClassNameAbbreviator;
+import ch.qos.logback.classic.spi.CallerData;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.TransformWarningDalI;
 import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
@@ -98,8 +101,24 @@ public class TransformWarnings {
 
     private void logStringsImpl(Logger logger, UUID serviceId, UUID systemId, UUID exchangeId, Integer publishedFileId, Integer recordNumber, String warningText, String... parameters) throws Exception {
 
-        //write to passed in logger
-        logger.warn(warningText, (Object[])parameters);
+        //log out using our own logger, but include the name of the one passed in, so it's clear where this came from
+        //just writing the logging using the passed in logger means it logs the correct class name, but not the correct line number
+        String callingClass = logger.getName();
+        TargetLengthBasedClassNameAbbreviator abbreviator = new TargetLengthBasedClassNameAbbreviator(10);
+        String abbreviatedClass = abbreviator.abbreviate(callingClass);
+
+        String thisClass = LOG.getName();
+        int lineNumber = -1;
+        StackTraceElement[] steArray = new Throwable().getStackTrace();
+        for (StackTraceElement e: steArray) {
+            if (e.getClassName().equals(thisClass)) {
+                lineNumber = e.getLineNumber();
+                break;
+            }
+        }
+        String logPrefix = "[from " + abbreviatedClass + ":" + lineNumber + "] - ";
+        LOG.warn(logPrefix + warningText, (Object[])parameters);
+        //logger.warn(warningText, (Object[])parameters);
 
         //record in the DB
         TransformWarning toSave = new TransformWarning();
