@@ -6,6 +6,7 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
 import org.endeavourhealth.core.database.dal.reference.models.CernerClinicalEventMap;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.Coding;
 
@@ -51,6 +52,25 @@ public class ObservationCodeHelper {
         this.originalTerm = originalTerm;
     }
 
+    public static Coding findOriginalCoding(CodeableConcept codeableConcept) {
+        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
+
+        if (originalCoding != null) {
+            //a very small number of Observations were coded with the original code in a different format
+            //to everything else. The FHIR Observations need fixing, but this will mitigate that for now.
+            String system = originalCoding.getSystem();
+            if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)
+                    || system.equals(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) {
+
+                String code = originalCoding.getCode();
+                code = EmisCodeHelper.removeSynonymAndPadRead2Code(code);
+                originalCoding.setCode(code);
+            }
+        }
+
+        return originalCoding;
+    }
+
     public static ObservationCodeHelper extractCodeFields(CodeableConcept codeableConcept) throws Exception {
         if (codeableConcept == null) {
             return null;
@@ -63,7 +83,7 @@ public class ObservationCodeHelper {
             ret.setSnomedConceptId(snomedConceptId);
         }
 
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
+        Coding originalCoding = findOriginalCoding(codeableConcept);
 
         //the above function may now return a snomed Coding if Snomed was the original scheme, but for consistency
         //with how this used to work, if that happens, ignore it

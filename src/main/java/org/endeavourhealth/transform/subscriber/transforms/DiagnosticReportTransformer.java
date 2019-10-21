@@ -7,6 +7,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
@@ -92,7 +93,7 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
             datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
         }
 
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
+        Coding originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getCode());
         if (originalCoding == null) {
             TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;

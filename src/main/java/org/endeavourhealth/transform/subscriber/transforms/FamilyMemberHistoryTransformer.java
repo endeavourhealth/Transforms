@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Subscrib
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
@@ -104,7 +105,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
 
         FamilyMemberHistory.FamilyMemberHistoryConditionComponent condition = fhir.getCondition().get(0);
 
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(condition.getCode());
+        Coding originalCoding = ObservationCodeHelper.findOriginalCoding(condition.getCode());
         if (originalCoding == null) {
             TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;

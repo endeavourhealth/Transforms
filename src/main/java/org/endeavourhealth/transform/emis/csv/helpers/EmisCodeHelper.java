@@ -14,6 +14,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.hl7.fhir.instance.model.Coding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,14 @@ public class EmisCodeHelper {
 
     public static String removeSynonymAndPadRead2Code(EmisCsvCodeMap codeMap) {
         String code = codeMap.getReadCode();
+        return removeSynonymAndPadRead2Code(code);
+    }
+
+    public static String removeSynonymAndPadRead2Code(String code) {
+
+        if (Strings.isNullOrEmpty(code)) {
+            return code;
+        }
 
         //the raw CSV uses a hyphen to delimit the synonym ID from the code so detect this and substring accordingly
         //but only apply this IF the code isn't one of the Emis diagnostic order codes, which is a
@@ -84,6 +93,8 @@ public class EmisCodeHelper {
 
         return code;
     }
+
+
 
     public static String getClinicalCodeSystemForReadCode(EmisCsvCodeMap codeMap) {
         //without a Read 2 engine, there seems to be no cast-iron way to determine whether the supplied codes

@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Subscrib
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -96,7 +97,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
         }
         DiagnosticOrder.DiagnosticOrderItemComponent item = fhir.getItem().get(0);
 
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(item.getCode());
+        Coding originalCoding = ObservationCodeHelper.findOriginalCoding(item.getCode());
         if (originalCoding == null) {
             TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;

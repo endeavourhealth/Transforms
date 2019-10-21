@@ -7,6 +7,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
@@ -98,7 +99,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getType());
+        Coding originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getType());
         if (originalCoding == null) {
             TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
