@@ -74,19 +74,13 @@ public class EmisCodeHelper {
             return code;
         }
 
-        //the raw CSV uses a hyphen to delimit the synonym ID from the code so detect this and substring accordingly
-        //but only apply this IF the code isn't one of the Emis diagnostic order codes, which is a
-        //valid Read2 code but prefixed with EMISREQ.
-        //Note: the EMISREQ codes do have a valid Read2 code after them, but it's NOT the code for the test request, it's
-        //the code of the investigation being requested. e.g. EMISREQ|424.., which is the code for "Full blood count"
-        //and not a code representing a test request
-        if (!code.startsWith("EMISREQ")) {
-            int index = code.indexOf("-");
-            if (index > -1) {
-                code = code.substring(0, index);
-            }
+        //the CSV uses a hyphen to delimit the synonym ID from the code so detect this and substring accordingly
+        int index = code.indexOf("-");
+        if (index > -1) {
+            code = code.substring(0, index);
         }
 
+        //pad up to five chars so it's in the standard code format (e.g. 4JD -> 4JD..)
         while (code.length() < 5) {
             code += ".";
         }

@@ -346,7 +346,8 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         //exclude the EDI test patients
         String nhsNumber = IdentifierHelper.findNhsNumber(patient);
         if (!Strings.isNullOrEmpty(nhsNumber)
-                && nhsNumber.startsWith("999999")) {
+                //&& nhsNumber.startsWith("999999")) { //test patients from EDI test pack
+                && nhsNumber.startsWith("999")) { //more test patients with 999 NHS numbers found
             return false;
         }
 
