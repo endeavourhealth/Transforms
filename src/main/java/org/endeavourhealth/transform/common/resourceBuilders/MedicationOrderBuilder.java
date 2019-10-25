@@ -51,6 +51,10 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         auditValue("dateWritten", sourceCells);
     }
 
+    public DateTimeType getDateWritten() {
+        return this.medicationOrder.getDateWrittenElement();
+    }
+
     public void setIsConfidential(boolean isConfidential, CsvCell... sourceCells) {
         super.createOrUpdateIsConfidentialExtension(isConfidential, sourceCells);
     }
@@ -71,6 +75,10 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         Extension extension = ExtensionConverter.createOrUpdateExtension(this.medicationOrder, FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION, medicationStatementReference);
 
         auditReferenceExtension(extension, sourceCells);
+    }
+
+    public Reference getMedicationStatementReference() {
+        return (Reference)ExtensionConverter.findExtensionValue(this.medicationOrder, FhirExtensionUri.MEDICATION_ORDER_AUTHORISATION);
     }
 
     public void setReason(Reference conditionReference, CsvCell... sourceCells) {
@@ -144,6 +152,22 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         auditValue("dispenseRequest.expectedSupplyDuration.value", sourceCells);
     }
 
+    public Integer getDurationDays() {
+        MedicationOrder.MedicationOrderDispenseRequestComponent dispenseRequest = getDispenseRequest();
+        if (dispenseRequest.hasExpectedSupplyDuration()) {
+            Duration d = dispenseRequest.getExpectedSupplyDuration();
+            String unit = d.getUnit();
+            if (!unit.equalsIgnoreCase("days")) {
+                throw new RuntimeException("Expecting MedicationOrder duration in days");
+            }
+            BigDecimal val = d.getValue();
+            return new Integer(val.intValue());
+
+        } else {
+            return null;
+        }
+    }
+
 
     @Override
     public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
@@ -193,3 +217,4 @@ public class MedicationOrderBuilder extends ResourceBuilderBase
         }
     }
 }
+

@@ -8,16 +8,22 @@ import java.util.Date;
 
 public class IssueRecordIssueDate {
 
-    private DateType issueDateType = null;
-    private CsvCell[] sourceCells = null;
+    private final DateType issueDateType;
+    private final Integer issueDuration;
+    private final CsvCell[] sourceCells;
 
-    public IssueRecordIssueDate(DateTimeType issueDateTime, CsvCell... sourceCells) {
+    public IssueRecordIssueDate(DateTimeType issueDateTime, Integer issueDuration, CsvCell... sourceCells) {
         this.issueDateType = new DateType(issueDateTime.getValue());
+        this.issueDuration = issueDuration;
         this.sourceCells = sourceCells;
     }
 
     public DateType getIssueDateType() {
         return issueDateType;
+    }
+
+    public Integer getIssueDuration() {
+        return issueDuration;
     }
 
     public CsvCell[] getSourceCells() {

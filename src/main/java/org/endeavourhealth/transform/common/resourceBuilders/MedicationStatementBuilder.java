@@ -91,15 +91,19 @@ public class MedicationStatementBuilder extends ResourceBuilderBase
     }
 
     public void setCancellationDate(Date date, CsvCell... sourceCells) {
-        //the cancellation extension is a compound extension, so we have one extension inside another
-        Extension outerExtension = ExtensionConverter.findOrCreateExtension(this.medicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_CANCELLATION);
-        Extension innerExtension = ExtensionConverter.findOrCreateExtension(outerExtension, "date");
-        innerExtension.setValue(new DateType(date));
+        if (date == null) {
+            ExtensionConverter.removeExtension(this.medicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_CANCELLATION);
 
-        int outerIndex = this.medicationStatement.getExtension().indexOf(outerExtension);
-        int innerIndex = outerExtension.getExtension().indexOf(innerExtension);
-        auditValue("extension[" + outerIndex + "].extension[" + innerIndex + "].valueDate", sourceCells);
+        } else {
+            //the cancellation extension is a compound extension, so we have one extension inside another
+            Extension outerExtension = ExtensionConverter.findOrCreateExtension(this.medicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_CANCELLATION);
+            Extension innerExtension = ExtensionConverter.findOrCreateExtension(outerExtension, "date");
+            innerExtension.setValue(new DateType(date));
 
+            int outerIndex = this.medicationStatement.getExtension().indexOf(outerExtension);
+            int innerIndex = outerExtension.getExtension().indexOf(innerExtension);
+            auditValue("extension[" + outerIndex + "].extension[" + innerIndex + "].valueDate", sourceCells);
+        }
     }
 
     public void setRecordedBy(Reference reference, CsvCell... sourceCells) {

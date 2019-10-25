@@ -1,23 +1,24 @@
 package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.*;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.DrugRecord;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.MedicationStatement;
-import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
 
 public class DrugRecordTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DrugRecordTransformer.class);
@@ -84,36 +85,6 @@ public class DrugRecordTransformer {
             medicationStatementBuilder.setAssertedDate(date, effectiveDateCell, effectiveDatePrecisionCell);
         }
 
-        CsvCell isActiveCell = parser.getIsActive();
-        if (isActiveCell.getBoolean()) {
-            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE, isActiveCell);
-
-        } else {
-            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED, isActiveCell);
-        }
-
-        CsvCell cancellationDateCell = parser.getCancellationDate();
-        if (!cancellationDateCell.isEmpty()) {
-            medicationStatementBuilder.setCancellationDate(cancellationDateCell.getDate(), cancellationDateCell);
-        }
-
-        //adding validation to detect if we receive inconsistent end dates
-        boolean isActive = isActiveCell.getBoolean();
-        Date cancellationDate = cancellationDateCell.getDate();
-        if (isActive) {
-            //if active, we don't expect a cancellation date (or don't expect a past one anyway)
-            if (cancellationDate != null
-                    && !cancellationDate.after(new Date())) {
-                TransformWarnings.log(LOG, fhirResourceFiler, "Emis DrugRecord is active (is_active = {}) but has cancellation date {}", isActiveCell, cancellationDateCell);
-            }
-
-        } else {
-            //if not active, we always expect some kind of cancellation date
-            if (cancellationDate == null) {
-                TransformWarnings.log(LOG, fhirResourceFiler, "Emis DrugRecord is NOT active (is_active = {}) but has cancellation date {}", isActiveCell, cancellationDateCell);
-            }
-        }
-
         CsvCell codeId = parser.getCodeId();
         EmisCodeHelper.createCodeableConcept(medicationStatementBuilder, true, codeId, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code, csvHelper);
 
@@ -156,6 +127,29 @@ public class DrugRecordTransformer {
             medicationStatementBuilder.setLastIssueDate(mostRecentDate.getIssueDateType(), mostRecentDate.getSourceCells());
         }
 
+        CsvCell isActiveCell = parser.getIsActive();
+        if (isActiveCell.getBoolean()) {
+            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE, isActiveCell);
+
+            //there are a very small number of DrugRecords that are active but have a cancellation date. All known
+            //cases have had issues past the cancellation date, so to avoid ambiguity the cancellation date is ignored
+            medicationStatementBuilder.setCancellationDate(null);
+
+        } else {
+            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED, isActiveCell);
+
+            CsvCell cancellationDateCell = parser.getCancellationDate();
+            if (!cancellationDateCell.isEmpty()) {
+                medicationStatementBuilder.setCancellationDate(cancellationDateCell.getDate(), cancellationDateCell);
+            } else {
+                //there are a number of DrugRecords that are non-active but do not have a cancellation date. For consistency
+                //of data, the cancellation date is inferred from the last IssueRecord of the DrugRecord
+                Date inferredEndDate = calculateEndDate(parser, mostRecentDate, medicationStatementBuilder);
+                medicationStatementBuilder.setCancellationDate(inferredEndDate);
+            }
+        }
+
+
         CsvCell enteredByGuid = parser.getEnteredByUserInRoleGuid();
         if (!enteredByGuid.isEmpty()) {
             Reference reference = csvHelper.createPractitionerReference(enteredByGuid);
@@ -185,6 +179,71 @@ public class DrugRecordTransformer {
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationStatementBuilder);
+    }
+
+    /**
+     * infers the medication end date from the last issue record
+     */
+    private static Date calculateEndDate(DrugRecord parser, IssueRecordIssueDate mostRecentDate, MedicationStatementBuilder medicationStatementBuilder) throws Exception {
+
+        //if not in memory, we need to hit the DB
+        if (mostRecentDate == null) {
+
+            //work out UUID for MedicationStatement
+            String sourceDrugRecordId = medicationStatementBuilder.getResourceId();
+            UUID medicationStatementUuid = IdHelper.getOrCreateEdsResourceId(parser.getServiceId(), ResourceType.MedicationStatement, sourceDrugRecordId);
+            Reference medicationStatementReference = ReferenceHelper.createReference(ResourceType.MedicationStatement, medicationStatementUuid.toString());
+
+            //convert patient GUID to DDS UUID
+            CsvCell patientGuid = parser.getPatientGuid();
+            String sourcePatientId = EmisCsvHelper.createUniqueId(patientGuid, null);
+            UUID patientUuid = IdHelper.getEdsResourceId(parser.getServiceId(), ResourceType.Patient, sourcePatientId);
+
+            //get medication orders
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+            List<ResourceWrapper> resources = resourceDal.getResourcesByPatient(parser.getServiceId(), patientUuid, ResourceType.MedicationOrder.toString());
+            for (ResourceWrapper wrapper: resources) {
+                if (wrapper.isDeleted()) {
+                    continue;
+                }
+
+                MedicationOrder order = (MedicationOrder)wrapper.getResource();
+                MedicationOrderBuilder medicationOrderBuilder = new MedicationOrderBuilder(order);
+
+                Reference reference = medicationOrderBuilder.getMedicationStatementReference();
+                if (reference != null
+                        && ReferenceHelper.equals(reference, medicationStatementReference)) {
+
+                    DateTimeType started = medicationOrderBuilder.getDateWritten();
+                    Integer duration = medicationOrderBuilder.getDurationDays();
+
+                    IssueRecordIssueDate obj = new IssueRecordIssueDate(started, duration);
+                    if (obj.afterOrOtherIsNull(mostRecentDate)) {
+                        mostRecentDate = obj;
+                    }
+                }
+            }
+
+            //if no issues exist for it, use the start date of the DrugRecord
+            if (mostRecentDate == null) {
+                Date d = parser.getEffectiveDate().getDate();
+                mostRecentDate = new IssueRecordIssueDate(new DateTimeType(d), new Integer(0));
+            }
+        }
+
+        Date d = mostRecentDate.getIssueDateType().getValue();
+
+        int duration = 0;
+        Integer intObj = mostRecentDate.getIssueDuration();
+        if (intObj != null) {
+            duration = intObj.intValue();
+        }
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(d);
+        cal.add(Calendar.DAY_OF_YEAR, duration);
+
+        return cal.getTime();
     }
 
 

@@ -68,10 +68,14 @@ public class IssueRecordTransformer {
         DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
         medicationOrderBuilder.setDateWritten(dateTime, effectiveDate, effectiveDatePrecision);
 
+        CsvCell courseDurationCell = parser.getCourseDurationInDays();
+        Integer courseDuration = courseDurationCell.getInt();
+        medicationOrderBuilder.setDurationDays(courseDuration, courseDurationCell);
+
         //cache the date against the drug record GUID, so we can pick it up when processing the DrugRecord CSV
         CsvCell drugRecordGuid = parser.getDrugRecordGuid();
         if (!drugRecordGuid.isEmpty()) {
-            csvHelper.cacheDrugRecordDate(drugRecordGuid, patientGuid, new IssueRecordIssueDate(dateTime, effectiveDate, effectiveDatePrecision));
+            csvHelper.cacheDrugRecordDate(drugRecordGuid, patientGuid, new IssueRecordIssueDate(dateTime, courseDuration, effectiveDate, effectiveDatePrecision));
         }
 
         //need to handle mis-spelt column name in EMIS test pack
@@ -103,9 +107,6 @@ public class IssueRecordTransformer {
 
         CsvCell quantityUnit = parser.getQuantityUnit();
         medicationOrderBuilder.setQuantityUnit(quantityUnit.getString(), quantityUnit);
-
-        CsvCell courseDuration = parser.getCourseDurationInDays();
-        medicationOrderBuilder.setDurationDays(courseDuration.getInt(), courseDuration);
 
         //if the Medication is linked to a Problem, then use the problem's Observation as the Medication reason
         CsvCell problemObservationGuid = parser.getProblemObservationGuid();
