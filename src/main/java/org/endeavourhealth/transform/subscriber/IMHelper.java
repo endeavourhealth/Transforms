@@ -15,11 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class IMHelper {
     private static final Logger LOG = LoggerFactory.getLogger(IMHelper.class);
 
-    //TODO these 2 are for a quick fix until we can do in IM deploy.
-    private final static String URL_ENCODED_LEFT_CURLY = "%7B";
-    private final static String URL_ENCODED_RIGHT_CURLY = "%7D";
-
-    //simpler to use just a map in memory than mess about with JCS etc.
+      //simpler to use just a map in memory than mess about with JCS etc.
     //there won't be so many concepts that we need to worry about limiting in size
     private static Map<String, Integer> coreCache = new ConcurrentHashMap<>();
     private static Vector<String> nullCoreCache = new Vector();
@@ -76,7 +72,7 @@ public class IMHelper {
         }
     }
 
-    public static synchronized Integer getIMConcept(SubscriberTransformHelper params, Resource fhirResource, String scheme, String code, String termIn) throws Exception {
+    public static synchronized Integer getIMConcept(SubscriberTransformHelper params, Resource fhirResource, String scheme, String code, String term) throws Exception {
         String key = createCacheKey(scheme, code);
         Integer ret = null;
         if (code != null) {
@@ -85,9 +81,7 @@ public class IMHelper {
         if (ret == null && nullCoreCache.contains(key)) {
             return null;
         }
-        //TODO workaround until we can do an IM deploy. Disruptive
-        String term = termIn.replace("{", URL_ENCODED_LEFT_CURLY).replace("}", URL_ENCODED_RIGHT_CURLY); //Jersey treats {} as a parameterized parm
-        if (ret == null & code != null) {
+       if (ret == null & code != null) {
             ret = getConceptIdForSchemeCodeWithRetry(scheme, code, term);
             if (ret == null) {
                 //if null, we may let it slide if in testing, just logging it out
