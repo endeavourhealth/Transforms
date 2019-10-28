@@ -176,13 +176,14 @@ public class SRReferralOutTransformer {
 
             TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralPriority, parser);
             if (tppConfigListOption != null) {
-                ReferralPriority priority = convertPriority(tppConfigListOption.getListOptionName());
+                String desc = tppConfigListOption.getListOptionName();
+                ReferralPriority priority = convertPriority(desc);
                 if (priority != null) {
                     referralRequestBuilder.setPriority(priority, referralPriority);
 
                 } else {
                     referralRequestBuilder.setPriorityFreeText(referralPriority.getString(), referralPriority);
-                    TransformWarnings.log(LOG, csvHelper, "Unmapped TPP referral priority {}. Setting free text.", referralPriority.getString());
+                    TransformWarnings.log(LOG, csvHelper, "Unmapped TPP referral priority {} {}. Setting free text.", referralPriority.getString(), desc);
                 }
             }
         }
@@ -315,7 +316,6 @@ public class SRReferralOutTransformer {
             return ReferralPriority.SOON;
 
         } else {
-            LOG.info("Unknown:" + priority + "<>not mapped.");
             return null;
         }
     }
