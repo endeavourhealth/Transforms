@@ -217,11 +217,10 @@ public class JournalTransformer {
             medicationStatementBuilder.setAssertedDate(date, effectiveDate);
         }
 
-        if (parser.getEndDate() == null) {
-            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.ACTIVE);
-        } else {
-            medicationStatementBuilder.setStatus(MedicationStatement.MedicationStatementStatus.COMPLETED);
-            medicationStatementBuilder.setCancellationDate(parser.getEndDate().getDate(), parser.getEndDate());
+        //no longer set the active or completed status on medications, just the cancellation date if present
+        CsvCell endDateCell = parser.getEndDate();
+        if (!endDateCell.isEmpty()) {
+            medicationStatementBuilder.setCancellationDate(endDateCell.getDate(), endDateCell);
         }
 
         CodeableConceptBuilder codeableConceptBuilder
