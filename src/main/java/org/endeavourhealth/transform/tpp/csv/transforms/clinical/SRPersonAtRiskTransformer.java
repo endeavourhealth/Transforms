@@ -91,7 +91,7 @@ public class SRPersonAtRiskTransformer {
         //add the plan reason to the code text if present
         CsvCell reasonForPlan = parser.getReasonForPlan();
         if (!reasonForPlan.isEmpty()) {
-            flagBuilder.setCode("On Protection Plan. " + reasonForPlan.getString());
+            flagBuilder.setCode("On Protection Plan. " + reasonForPlan.getString(), reasonForPlan);
         } else {
             flagBuilder.setCode("On Protection Plan");
         }
