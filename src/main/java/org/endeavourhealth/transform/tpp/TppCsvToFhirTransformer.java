@@ -593,7 +593,11 @@ public abstract class TppCsvToFhirTransformer {
             SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             SRImmunisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+            //TODO - remove once no longer receiving past 21st Nov 2019
             SRChildAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            //This replaces the above.
+            SRPersonAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             SRSpecialNotesTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         }
