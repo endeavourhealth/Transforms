@@ -8,6 +8,9 @@ import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.terminology.Read2Code;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.ResourceParser;
 import org.endeavourhealth.transform.common.TransformWarnings;
@@ -18,10 +21,9 @@ import org.hl7.fhir.instance.model.Coding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class EmisCodeHelper {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCodeHelper.class);
@@ -32,6 +34,7 @@ public class EmisCodeHelper {
     public static final String AUDIT_CLINICAL_CODE_READ_TERM = "read_term";
     public static final String AUDIT_DRUG_CODE = "drug_code";
     public static final String AUDIT_DRUG_TERM = "drug_term";
+
 
 
     public static CodeableConceptBuilder createCodeableConcept(HasCodeableConceptI resourceBuilder, boolean medication, CsvCell codeIdCell, CodeableConceptBuilder.Tag tag, EmisCsvHelper csvHelper) throws Exception {
@@ -63,34 +66,9 @@ public class EmisCodeHelper {
         return codeableConceptBuilder;
     }
 
-    public static String removeSynonymAndPadRead2Code(EmisCsvCodeMap codeMap) {
-        String code = codeMap.getReadCode();
-        return removeSynonymAndPadRead2Code(code);
-    }
-
-    public static String removeSynonymAndPadRead2Code(String code) {
-
-        if (Strings.isNullOrEmpty(code)) {
-            return code;
-        }
-
-        //the CSV uses a hyphen to delimit the synonym ID from the code so detect this and substring accordingly
-        int index = code.indexOf("-");
-        if (index > -1) {
-            code = code.substring(0, index);
-        }
-
-        //pad up to five chars so it's in the standard code format (e.g. 4JD -> 4JD..)
-        while (code.length() < 5) {
-            code += ".";
-        }
-
-        return code;
-    }
 
 
-
-    public static String getClinicalCodeSystemForReadCode(EmisCsvCodeMap codeMap) {
+    /*public static String getClinicalCodeSystemForReadCode(EmisCsvCodeMap codeMap) {
         //without a Read 2 engine, there seems to be no cast-iron way to determine whether the supplied codes
         //are Read 2 codes or Emis local codes. Looking at the codes from the test data sets, this seems
         //to be a reliable way to perform the same check.
@@ -109,38 +87,46 @@ public class EmisCodeHelper {
             return FhirCodeUri.CODE_SYSTEM_READ2;
         }
     }
-
+*/
     private static void applyClinicalCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) throws Exception {
 
-        String readCode = removeSynonymAndPadRead2Code(codeMap);
-        String readTerm = codeMap.getReadTerm();
-        Long snomedConceptId = codeMap.getSnomedConceptId();
-        String snomedTerm = codeMap.getSnomedTerm();
-        Long snomedDescriptionId = codeMap.getSnomedDescriptionId();
-
         //create a coding for the raw Read code, passing in any additional cells to the main code element
-        codeableConceptBuilder.addCoding(getClinicalCodeSystemForReadCode(codeMap));
+        String readCode = codeMap.getAdjustedCode(); //note we use the adjusted code which has been properly padded to five chars
+        String readTerm = codeMap.getReadTerm();
+        String readCodeSystem = codeMap.getCodeableConceptSystem();
+
+        //just in case
+        if (Strings.isNullOrEmpty(readCodeSystem)
+                || Strings.isNullOrEmpty(readCode)) {
+            throw new Exception("Null code or system from Emis lookup for code " + codeMap.getReadCode());
+        }
+
+        codeableConceptBuilder.addCoding(readCodeSystem);
         codeableConceptBuilder.setCodingCode(readCode, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_CODE, readCode, additionalSourceCells));
         codeableConceptBuilder.setCodingDisplay(readTerm, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_TERM, readTerm));
 
         //create a coding for the Snomed code
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-        codeableConceptBuilder.setCodingCode("" + snomedConceptId, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_SNOMED_CONCEPT_ID, snomedConceptId));
-        if (snomedTerm == null) {
-            //the snomed term will be null if we couldn't find one in our own official Snomed dictionary, in which case use the read term
-            codeableConceptBuilder.setCodingDisplay(readTerm, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_TERM, readTerm));
+        Long snomedConceptId = codeMap.getSnomedConceptId();
+        if (snomedConceptId != null) {
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode("" + snomedConceptId, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_SNOMED_CONCEPT_ID, snomedConceptId));
 
-        } else {
-            //if we have a snomed term, it came from our official Snomed dictionary, not the source CSV, so don't pass in any CSV cell
-            codeableConceptBuilder.setCodingDisplay(snomedTerm);
+            //carry over the Snomed Term than we'll have found when processing the clinical code file from the TRUD data
+            String snomedTerm = codeMap.getSnomedTerm();
+            if (snomedTerm != null) {
+                codeableConceptBuilder.setCodingDisplay(snomedTerm);
+            }
         }
 
         //if we have a separate snomed description, set that in a separate coding object
+        Long snomedDescriptionId = codeMap.getSnomedDescriptionId();
         if (snomedDescriptionId != null) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID);
             codeableConceptBuilder.setCodingCode("" + snomedDescriptionId, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_SNOMED_DESCRIPTION_ID, snomedDescriptionId));
+            //we don't have any term to go with this
         }
 
+        //always use the raw read term for the Codeable Concept text
         codeableConceptBuilder.setText(readTerm, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_TERM, readTerm));
     }
 

@@ -140,26 +140,6 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         auditValue("priority.text", sourceCells);
     }
 
-    /*public void setReason(CodeableConcept codeableConcept, CsvCell... sourceCells) {
-        this.referralRequest.setReason(codeableConcept);
-
-        auditValue("reason.coding[0]", sourceCells);
-    }
-
-    public void setReasonFreeText(String freeText, CsvCell... sourceCells) {
-        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(freeText);
-        this.referralRequest.setReason(codeableConcept);
-
-        auditValue("reason.text", sourceCells);
-    }*/
-
-    public void setServiceRequestedFreeText(String freeText, CsvCell... sourceCells) {
-        CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(freeText);
-        this.referralRequest.addServiceRequested(codeableConcept);
-
-        auditValue("serviceRequested[0].text", sourceCells);
-    }
-
     public void setType(ReferralType type, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(type);
         this.referralRequest.setType(codeableConcept);

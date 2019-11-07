@@ -22,7 +22,7 @@ public class EmisMappingHelper {
     private static Map<String, String> problemRelationshipMap;
 
     public static MaritalStatus findMaritalStatus(EmisCsvCodeMap codeMapping) throws Exception {
-        String read2Code = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
+        String read2Code = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
         if (Strings.isNullOrEmpty(read2Code)) {
             return null;
         }
@@ -45,7 +45,7 @@ public class EmisMappingHelper {
 
 
     public static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) throws Exception {
-        String read2Code = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
+        String read2Code = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
         if (Strings.isNullOrEmpty(read2Code)) {
             return null;
         }

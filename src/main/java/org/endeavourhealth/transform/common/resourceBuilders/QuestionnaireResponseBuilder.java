@@ -41,12 +41,6 @@ public class QuestionnaireResponseBuilder extends ResourceBuilderBase {
         auditValue("subject", sourceCells);
     }
 
-    public void setStatus(QuestionnaireResponse.QuestionnaireResponseStatus status, CsvCell... sourceCells) {
-        this.questionnaireResponse.setStatus(status);
-
-        auditValue("status", sourceCells);
-    }
-
     public void setIdentifier(Identifier identifier, CsvCell... sourceCells) {
         this.questionnaireResponse.setIdentifier(identifier);
 

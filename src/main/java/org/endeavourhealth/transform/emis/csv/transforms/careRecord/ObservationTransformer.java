@@ -307,9 +307,9 @@ public class ObservationTransformer {
     private static boolean isDisorder(CsvCell codeIdCell, EmisCsvHelper csvHelper) throws Exception {
 
         EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeIdCell);
-        String system = EmisCodeHelper.getClinicalCodeSystemForReadCode(codeMapping);
+        String system = codeMapping.getCodeableConceptSystem();
         if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)) {
-            String readCode = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
+            String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
             return Read2.isDisorder(readCode);
         }
 
@@ -350,9 +350,9 @@ public class ObservationTransformer {
 
         EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeIdCell);
 
-        String system = EmisCodeHelper.getClinicalCodeSystemForReadCode(codeMapping);
+        String system = codeMapping.getCodeableConceptSystem();
         if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)) {
-            String readCode = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
+            String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
             return Read2.isProcedure(readCode);
         }
 

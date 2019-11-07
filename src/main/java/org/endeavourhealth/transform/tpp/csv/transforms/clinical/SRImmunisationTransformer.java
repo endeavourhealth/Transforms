@@ -116,7 +116,9 @@ public class SRImmunisationTransformer {
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(siteLocation);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
-                immunizationBuilder.setSite(mappedTerm, siteLocation);
+
+                CodeableConceptBuilder immsSiteCodeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Site);
+                immsSiteCodeableConceptBuilder.setText(mappedTerm, siteLocation);
             }
         }
 
@@ -126,7 +128,9 @@ public class SRImmunisationTransformer {
             TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(method);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
-                immunizationBuilder.setRoute(mappedTerm, method);
+
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Route, true);
+                codeableConceptBuilder.setText(mappedTerm, method);
             }
         }
 

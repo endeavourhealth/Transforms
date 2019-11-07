@@ -50,39 +50,6 @@ public class ImmunizationBuilder extends ResourceBuilderBase
         auditValue("location.reference", sourceCells);
     }*/
 
-    public void setSite(String site, CsvCell... sourceCells) {
-        if (!Strings.isNullOrEmpty(site)) {
-            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(site);
-            this.immunization.setSite(codeableConcept);
-
-            auditValue("site", sourceCells);
-        }
-    }
-
-    public void setRoute(String route, CsvCell... sourceCells) {
-        if (!Strings.isNullOrEmpty(route)) {
-            CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(route);
-            this.immunization.setRoute(codeableConcept);
-
-            auditValue("route", sourceCells);
-        }
-    }
-
-    public void setVaccineCode(CodeableConcept code, CsvCell... sourceCells) {
-        if (code != null) {
-            this.immunization.setVaccineCode(code);
-
-            auditValue("vaccineCode", sourceCells);
-        }
-    }
-
-    public void setVaccinationProtocol(Immunization.ImmunizationVaccinationProtocolComponent protocol, CsvCell... sourceCells) {
-        if (protocol != null) {
-            this.immunization.addVaccinationProtocol(protocol);
-
-            auditValue("vaccinationProtocol", sourceCells);
-        }
-    }
 
     public void setDoseQuantity(SimpleQuantity dose, CsvCell... sourceCells) {
         this.immunization.setDoseQuantity(dose);

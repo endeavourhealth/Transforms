@@ -135,7 +135,7 @@ public class ObservationPreTransformer {
         //then cache the read code of the observation
         if (csvHelper.isProblemObservationGuid(patientGuid, observationGuid)) {
             EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
-            String readCode = EmisCodeHelper.removeSynonymAndPadRead2Code(codeMapping);
+            String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
             csvHelper.cacheProblemObservationGuid(patientGuid, observationGuid, readCode);
         }
     }

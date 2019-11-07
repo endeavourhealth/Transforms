@@ -52,23 +52,8 @@ public class ObservationCodeHelper {
         this.originalTerm = originalTerm;
     }
 
-    public static Coding findOriginalCoding(CodeableConcept codeableConcept) {
-        Coding originalCoding = CodeableConceptHelper.findOriginalCoding(codeableConcept);
-
-        if (originalCoding != null) {
-            //a very small number of Observations were coded with the original code in a different format
-            //to everything else. The FHIR Observations need fixing, but this will mitigate that for now.
-            String system = originalCoding.getSystem();
-            if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)
-                    || system.equals(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) {
-
-                String code = originalCoding.getCode();
-                code = EmisCodeHelper.removeSynonymAndPadRead2Code(code);
-                originalCoding.setCode(code);
-            }
-        }
-
-        return originalCoding;
+    public static Coding findOriginalCoding(CodeableConcept codeableConcept) throws Exception {
+        return CodeableConceptHelper.findOriginalCoding(codeableConcept);
     }
 
     public static ObservationCodeHelper extractCodeFields(CodeableConcept codeableConcept) throws Exception {

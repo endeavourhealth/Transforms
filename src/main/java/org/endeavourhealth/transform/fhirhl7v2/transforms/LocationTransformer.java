@@ -181,7 +181,9 @@ public class LocationTransformer {
 
         String newName = newLocation.getName();
 
-        //the Homerton feed uses both Name and Description, but the description just appears to be a richer name
+        //both feeds uses both Name and Description, but the description just appears to be a richer name
+        //name = 02
+        //description = 02, Bay 1, RNJ KGV 1E, RNJ KGV, St Bartholomew's Hospital
         if (newLocation.hasDescription()) {
             newName = newLocation.getDescription();
         }
