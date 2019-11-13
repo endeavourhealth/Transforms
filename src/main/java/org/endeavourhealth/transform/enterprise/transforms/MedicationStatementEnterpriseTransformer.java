@@ -54,7 +54,7 @@ public class MedicationStatementEnterpriseTransformer extends AbstractEnterprise
         Date clinicalEffectiveDate = null;
         Integer datePrecisionId = null;
         Long dmdId = null;
-        boolean isActive;
+        //boolean isActive;
         Date cancellationDate = null;
         String dose = null;
         BigDecimal quantityValue = null;
@@ -94,8 +94,8 @@ public class MedicationStatementEnterpriseTransformer extends AbstractEnterprise
             originalTerm = CodeableConceptHelper.findSnomedConceptText(fhir.getMedicationCodeableConcept());
         }
 
-        isActive = fhir.hasStatus()
-                && fhir.getStatus() == MedicationStatement.MedicationStatementStatus.ACTIVE;
+//        isActive = fhir.hasStatus()
+//                && fhir.getStatus() == MedicationStatement.MedicationStatementStatus.ACTIVE;
 
         if (fhir.hasDosage()) {
             if (fhir.getDosage().size() > 1) {
@@ -157,7 +157,7 @@ public class MedicationStatementEnterpriseTransformer extends AbstractEnterprise
             clinicalEffectiveDate,
             datePrecisionId,
             dmdId,
-            isActive,
+            //isActive,
             cancellationDate,
             dose,
             quantityValue,
