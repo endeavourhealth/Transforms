@@ -77,7 +77,7 @@ public class MedicationStatement extends AbstractTargetTable {
                 "clinical_effective_date",
                 "date_precision_concept_id",
 //                "is_active",
-//                "cancellation_date",
+                "cancellation_date",
                 "dose",
                 "quantity_value",
                 "quantity_unit",
