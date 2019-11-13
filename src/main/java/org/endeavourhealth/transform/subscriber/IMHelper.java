@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.subscriber;
 
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.hl7.fhir.instance.model.Resource;
@@ -24,7 +25,7 @@ public class IMHelper {
     private static Map<Integer, String> snomedCodeCache = new ConcurrentHashMap<>();
     private static Vector<Integer> nullSnomedCodeCache = new Vector();
 
-    public static synchronized Integer getIMMappedConcept(SubscriberTransformHelper params, Resource fhirResource, String scheme, String code) throws Exception {
+    public static synchronized Integer getIMMappedConcept(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String scheme, String code) throws Exception {
         String key = createCacheKey(scheme, code);
         Integer ret = null;
         if (code != null) {
@@ -72,7 +73,7 @@ public class IMHelper {
         }
     }
 
-    public static synchronized Integer getIMConcept(SubscriberTransformHelper params, Resource fhirResource, String scheme, String code, String term) throws Exception {
+    public static synchronized Integer getIMConcept(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String scheme, String code, String term) throws Exception {
         String key = createCacheKey(scheme, code);
         Integer ret = null;
         if (code != null) {
@@ -120,7 +121,7 @@ public class IMHelper {
         }
     }
 
-    public static synchronized Integer getIMMappedConceptForTypeTerm(SubscriberTransformHelper params, Resource fhirResource, String type, String term) throws Exception {
+    public static synchronized Integer getIMMappedConceptForTypeTerm(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String type, String term) throws Exception {
         String key = createCacheKey(type, term);
         Integer ret = null;
         if (term != null) {
@@ -168,7 +169,7 @@ public class IMHelper {
         }
     }
 
-    public static synchronized Integer getIMConceptForTypeTerm(SubscriberTransformHelper params, Resource fhirResource, String type, String term) throws Exception {
+    public static synchronized Integer getIMConceptForTypeTerm(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String type, String term) throws Exception {
         String key = createCacheKey(type, term);
         Integer ret = null;
         if (term != null) {
@@ -215,7 +216,7 @@ public class IMHelper {
         }
     }
 
-    public static synchronized String getIMSnomedCodeForConceptId(SubscriberTransformHelper params, Resource fhirResource, Integer conceptId) throws Exception {
+    public static synchronized String getIMSnomedCodeForConceptId(HasServiceSystemAndExchangeIdI params, Resource fhirResource, Integer conceptId) throws Exception {
         Integer key = conceptId;
         String ret = null;
 
