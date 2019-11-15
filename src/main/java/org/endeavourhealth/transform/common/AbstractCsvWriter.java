@@ -38,6 +38,12 @@ public abstract class AbstractCsvWriter {
      */
     protected synchronized void printRecord(String... columns) throws IOException {
 
+        //validate the number of values matches the column declarations so if there's a mismatch we don't end up sending bad CSV content onwards
+        if (columns.length != 2 //when deleting, only two cols are present
+                && columns.length != getCsvHeaders().length) {
+            throw new RuntimeException("Unexpected number of columns in " + getClass().getSimpleName() + ", printing " + columns.length + ", expecting " + getCsvHeaders().length);
+        }
+
         //changed to create the printer lazily, so the pseudonymised boolean is set in the Patient class
         //before we try to get the headers
         if (csvPrinter == null) {
