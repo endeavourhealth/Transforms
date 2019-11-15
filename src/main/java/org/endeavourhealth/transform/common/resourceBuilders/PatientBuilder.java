@@ -294,7 +294,10 @@ public class PatientBuilder extends ResourceBuilderBase
         if (coding == null) {
             return null;
         }
-
+        //TODO remove this kludge to handle bad code set in hl7 postgre tables once current exchange finished
+        if (coding.getCode().equals("black-inc-black-british-african")) {
+            coding.setCode("P");
+        }
         return EthnicCategory.fromCode(coding.getCode());
     }
 
