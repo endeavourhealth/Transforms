@@ -156,6 +156,17 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
         }
     }
 
+    public RegistrationType getRegistrationType() {
+        Coding coding = (Coding)ExtensionConverter.findExtensionValue(this.episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_TYPE);
+        if (coding != null
+                && coding.hasCode()) {
+            String code = coding.getCode();
+            return RegistrationType.fromCode(code);
+        }
+
+        return null;
+    }
+
     //reg status is now stored in a contained list
     /*public void setMedicalRecordStatus(String registrationStatus, CsvCell... sourceCells) {
         StringType stringType = new StringType(registrationStatus);

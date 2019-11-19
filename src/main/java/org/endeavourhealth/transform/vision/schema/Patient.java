@@ -153,8 +153,24 @@ public class Patient extends AbstractCsvParser {
         return super.getCell("PRACT_NUMBER");
     }
 
+    /**
+     * field called ACTIVE but contains registration type codes
+         R	Currently registered for GMS
+         T	Temporary
+         S	Not registered for GMS but is registered for another service category (e.g. contraception or child health)
+         D	Deceased
+         L	Left practice (no longer registered)
+         P	Private patient
+     */
     public CsvCell getPatientTypeCode() {
         return super.getCell("ACTIVE");
+    }
+
+    /**
+     * same content as other ADDRESS_x fields but combined and pipe-delimited
+     */
+    public CsvCell getAddressCombined() {
+        return super.getCell("ADDRESS");
     }
 
     public CsvCell getHouseNameFlatNumber() {

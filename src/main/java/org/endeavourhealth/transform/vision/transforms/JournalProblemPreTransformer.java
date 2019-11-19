@@ -118,7 +118,7 @@ public class JournalProblemPreTransformer {
                 String locallyUniqueId = EmisCsvHelper.createUniqueId(patientID, observationID);
 
                 //carry over linked items from any previous instance of this problem
-                Condition previousVersion = (Condition)csvHelper.retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+                Condition previousVersion = (Condition)csvHelper.retrieveResource(locallyUniqueId, ResourceType.Condition);
                 if (previousVersion == null) {
                     //if this is the first time, then we'll have a null resource
                     return null;

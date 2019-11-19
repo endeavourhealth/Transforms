@@ -162,14 +162,14 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-    public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public Resource retrieveResource(String locallyUniqueId, ResourceType resourceType) throws Exception {
 
-        UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), resourceType, locallyUniqueId);
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(getServiceId(), resourceType, locallyUniqueId);
         if (globallyUniqueId == null) {
             return null;
         }
 
-        UUID serviceId = fhirResourceFiler.getServiceId();
+        UUID serviceId = getServiceId();
         ResourceWrapper resourceHistory = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), globallyUniqueId);
         if (resourceHistory == null) {
             return null;
@@ -190,9 +190,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             return null;
         }
 
-        UUID serviceId = fhirResourceFiler.getServiceId();
-        UUID systemId = fhirResourceFiler.getSystemId();
-        List<ResourceWrapper> resourceWrappers = resourceRepository.getResourcesByPatient(serviceId, edsPatientId);
+        List<ResourceWrapper> resourceWrappers = resourceRepository.getResourcesByPatient(getServiceId(), edsPatientId);
 
         List<Resource> ret = new ArrayList<>();
 
@@ -209,7 +207,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
                                                             List<String> childResourceRelationships,
                                                             FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        Observation fhirObservation = (Observation)retrieveResource(locallyUniqueObservationId, ResourceType.Observation, fhirResourceFiler);
+        Observation fhirObservation = (Observation)retrieveResource(locallyUniqueObservationId, ResourceType.Observation);
         if (fhirObservation == null) {
             //if the resource can't be found, it's because that EMIS observation record was saved as something other
             //than a FHIR Observation (example in the CSV test files is an Allergy that is linked to another Allergy)
@@ -357,7 +355,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
                                                    FhirResourceFiler fhirResourceFiler,
                                                    String extensionUrl) throws Exception {
 
-        DomainResource fhirResource = (DomainResource)retrieveResource(locallyUniqueResourceId, resourceType, fhirResourceFiler);
+        DomainResource fhirResource = (DomainResource)retrieveResource(locallyUniqueResourceId, resourceType);
         if (fhirResource == null) {
             //it's possible to create medication items that are linked to non-existent problems in Emis Web,
             //so ignore any data
@@ -387,7 +385,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
                                                                String locallyUniqueId,
                                                                ResourceType resourceType) throws Exception {
 
-        DomainResource previousVersion = (DomainResource)csvHelper.retrieveResource(locallyUniqueId, resourceType, fhirResourceFiler);
+        DomainResource previousVersion = (DomainResource)csvHelper.retrieveResource(locallyUniqueId, resourceType);
         if (previousVersion == null) {
             //if this is the first time, then we'll have a null resource
             return null;
@@ -556,7 +554,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         //so we'll need to retrieve it from the DB and cache the code
         String readCode = null;
 
-        Condition fhirProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition, fhirResourceFiler);
+        Condition fhirProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition);
 
         //we've had cases of data referring to non-existent problems, so check for null
         if (fhirProblem != null) {
@@ -581,7 +579,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             DateType lastIssueDate = drugRecordLastIssueDateMap.get(medicationStatementLocalId);
             DateType firstIssueDate = drugRecordFirstIssueDateMap.get(medicationStatementLocalId);
 
-            MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement, fhirResourceFiler);
+            MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement);
             if (fhirMedicationStatement == null) {
                 //if the medication statement doesn't exist or has been deleted, then just skip it
                 continue;

@@ -55,12 +55,12 @@ public class PatientTransformer {
         PatientBuilder patientBuilder = new PatientBuilder();
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
 
-        CsvCell patientID = parser.getPatientID();
-        VisionCsvHelper.setUniqueId(patientBuilder, patientID, null);
-        VisionCsvHelper.setUniqueId(episodeBuilder, patientID, null); //use the patient GUID as the ID for the episode
+        CsvCell patientIdCell = parser.getPatientID();
+        VisionCsvHelper.setUniqueId(patientBuilder, patientIdCell, null);
+        VisionCsvHelper.setUniqueId(episodeBuilder, patientIdCell, null); //use the patient GUID as the ID for the episode
 
-        Reference patientReference = csvHelper.createPatientReference(patientID);
-        episodeBuilder.setPatient(patientReference, patientID);
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+        episodeBuilder.setPatient(patientReference, patientIdCell);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell patientActionCell = parser.getPatientAction();
@@ -79,11 +79,11 @@ public class PatientTransformer {
         }
 
         //store the patient ID and patient number to the patient resource
-        if (!patientID.isEmpty()) {
+        if (!patientIdCell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_GUID);
-            identifierBuilder.setValue(patientID.getString(), patientID);
+            identifierBuilder.setValue(patientIdCell.getString(), patientIdCell);
         }
 
         CsvCell patientNumber = parser.getPatientNumber();
@@ -166,7 +166,7 @@ public class PatientTransformer {
 
         //the registration type is a property of a patient's stay at an organisation, so add to that resource instead
         CsvCell patientTypeCell = parser.getPatientTypeCode();
-        RegistrationType registrationType = convertRegistrationType(patientTypeCell.getString());
+        RegistrationType registrationType = convertRegistrationType(patientTypeCell, csvHelper, patientIdCell);
         episodeBuilder.setRegistrationType(registrationType, patientTypeCell);
 
         //the care manager on the episode is the person who cares for the patient AT THIS ORGANISATION,
@@ -198,7 +198,7 @@ public class PatientTransformer {
             patientBuilder.setMaritalStatus(maritalStatus);
         } else {
             //Nothing in patient record, try coded item check from pre-transformer
-            CodeableConcept fhirMartialStatus = csvHelper.findMaritalStatus(patientID);
+            CodeableConcept fhirMartialStatus = csvHelper.findMaritalStatus(patientIdCell);
             if (fhirMartialStatus != null) {
                 String maritalStatusCode = CodeableConceptHelper.getFirstCoding(fhirMartialStatus).getCode();
                 if (!Strings.isNullOrEmpty(maritalStatusCode)) {
@@ -208,12 +208,12 @@ public class PatientTransformer {
         }
 
         //try and get Ethnicity from Journal pre-transformer
-        CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientID);
+        CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientIdCell);
 
         //it might be a delta transform without ethnicity in the Journal pre-transformer, so try and get existing ethnicity from DB
         if (fhirEthnicity == null) {
             org.hl7.fhir.instance.model.Patient existingPatient
-                    = (org.hl7.fhir.instance.model.Patient) csvHelper.retrieveResource(patientID.getString(), ResourceType.Patient, fhirResourceFiler);
+                    = (org.hl7.fhir.instance.model.Patient) csvHelper.retrieveResource(patientIdCell.getString(), ResourceType.Patient);
             if (existingPatient != null) {
 
                 CodeableConcept oldEthnicity
@@ -324,20 +324,54 @@ public class PatientTransformer {
         fhirResourceFiler.deletePatientResource(currentState, patientBuilder, episodeBuilder);
     }
 
-    private static RegistrationType convertRegistrationType(String csvRegTypeCode) throws Exception {
+    private static RegistrationType convertRegistrationType(CsvCell patientTypeCell, VisionCsvHelper csvHelper, CsvCell patientIdCell) throws Exception {
+
+        String csvRegTypeCode = patientTypeCell.getString();
+
         switch (csvRegTypeCode) {
-            case "R":
+            case "R": //Currently registered for GMS
                 return RegistrationType.REGULAR_GMS;
-            case "T":
+            case "T": //Temporary
                 return RegistrationType.TEMPORARY;
-            case "P":
+            case "P": //Private patient
                 return RegistrationType.PRIVATE;
-            case "S":
+            case "S": //Not registered for GMS but is registered for another service category (e.g. contraception or child health)
                 return RegistrationType.OTHER;
+            case "D": //Deceased.
+                return findPreviousRegistrationType(csvHelper, patientIdCell);
+            case "L": //Left practice (no longer registered)
+                return findPreviousRegistrationType(csvHelper, patientIdCell);
             default:
                 throw new TransformException("Unexpected patient type code: [" + csvRegTypeCode + "]");
                 //return RegistrationType.OTHER;
         }
+    }
+
+    /**
+     * when a Vision patient leaves or dies, the registration type (i.e. ACTIVE field) is changed from whatever it
+     * was to L or D respectively (this in addition to the deduction date and date of death being set). So we don't
+     * lose the previous registration type, if a patient has one of these values, we attempt to carry over the
+     * previous registration type from the previously saved EpisodeOfCare
+     */
+    private static RegistrationType findPreviousRegistrationType(VisionCsvHelper csvHelper, CsvCell patientIdCell) throws Exception {
+
+        String localId = VisionCsvHelper.createUniqueId(patientIdCell, null);
+        EpisodeOfCare episodeOfCare = (EpisodeOfCare)csvHelper.retrieveResource(localId, ResourceType.EpisodeOfCare);
+
+        //if no previous instance of the episode, we have no idea what the registration type used to be
+        if (episodeOfCare == null) {
+            return RegistrationType.OTHER;
+        }
+
+        EpisodeOfCareBuilder builder = new EpisodeOfCareBuilder(episodeOfCare);
+        RegistrationType previousType = builder.getRegistrationType();
+
+        //we should never have a previous episode without a type, but just in case
+        if (previousType == null) {
+            return RegistrationType.OTHER;
+        }
+
+        return previousType;
     }
 
     private static MaritalStatus convertMaritalStatus(String statusCode) throws Exception {
