@@ -157,32 +157,33 @@ public class PatientTransformer {
             contactPointBuilder.setValue(email.getString(), email);
         }
 
-        CsvCell organisationID = parser.getOrganisationID();
-        Reference organisationReference = csvHelper.createOrganisationReference(organisationID.getString());
-        patientBuilder.setManagingOrganisation(organisationReference, organisationID);
+        CsvCell organisationIdCell = parser.getOrganisationID();
+        Reference organisationReference = csvHelper.createOrganisationReference(organisationIdCell.getString());
+        patientBuilder.setManagingOrganisation(organisationReference, organisationIdCell);
 
         //create a second reference for the Episode, since it's not an immutable object
-        organisationReference = csvHelper.createOrganisationReference(organisationID.getString());
-        episodeBuilder.setManagingOrganisation(organisationReference, organisationID);
+        organisationReference = csvHelper.createOrganisationReference(organisationIdCell.getString());
+        episodeBuilder.setManagingOrganisation(organisationReference, organisationIdCell);
 
         //the registration type is a property of a patient's stay at an organisation, so add to that resource instead
-        RegistrationType registrationType = convertRegistrationType(parser.getPatientTypeCode().getString());
-        episodeBuilder.setRegistrationType(registrationType);
+        CsvCell patientTypeCell = parser.getPatientTypeCode();
+        RegistrationType registrationType = convertRegistrationType(patientTypeCell.getString());
+        episodeBuilder.setRegistrationType(registrationType, patientTypeCell);
 
         //the care manager on the episode is the person who cares for the patient AT THIS ORGANISATION,
         //so ignore the external... fields which refer to clinicians elsewhere
-        CsvCell usualGpID = parser.getUsualGpID();
+        CsvCell usualGpID = parser.getUsualGpId();
         if (!usualGpID.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(usualGpID.getString());
             episodeBuilder.setCareManager(practitionerReference, usualGpID);
         }
 
-        if (!usualGpID.isEmpty()
+        /*if (!usualGpID.isEmpty()
                 && registrationType == RegistrationType.REGULAR_GMS) { //if they're not registered for GMS, then this isn't their usual GP
             patientBuilder.addCareProvider(csvHelper.createPractitionerReference(usualGpID.getString()));
         }
 
-        CsvCell externalGpID = parser.getExternalUsualGPID();
+        CsvCell externalGpID = parser.getRegisteredGpId();
         if (!externalGpID.isEmpty()) {
             patientBuilder.addCareProvider(csvHelper.createPractitionerReference(externalGpID.getString()));
         }
@@ -190,7 +191,7 @@ public class PatientTransformer {
         CsvCell externalOrgID = parser.getExternalUsualGPOrganisation();
         if (!externalOrgID.isEmpty()) {
             patientBuilder.addCareProvider(csvHelper.createOrganisationReference(externalOrgID.getString()));
-        }
+        }*/
 
         CsvCell maritalStatusCSV = parser.getMaritalStatus();
         MaritalStatus maritalStatus = convertMaritalStatus (maritalStatusCSV.getString());
@@ -247,8 +248,22 @@ public class PatientTransformer {
             episodeBuilder.setRegistrationEndDate(dedDate.getDate(),dedDate);
         }
 
-        boolean active = dedDate.isEmpty() || dedDate.getDate().after(new Date());
+        //setting the above dates on the episode calculates the active state of the episode, so carry over to the patient
+        boolean active = episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
         patientBuilder.setActive(active, dedDate);
+
+        //if active GMS at this service, set the careProvider (i.e. registered practice / GP) on the FHIR patient
+        if (registrationType == RegistrationType.REGULAR_GMS
+                && active) {
+
+            Reference registeredPracticeReference = csvHelper.createOrganisationReference(organisationIdCell.getString());
+            patientBuilder.addCareProvider(registeredPracticeReference, organisationIdCell);
+
+            if (!usualGpID.isEmpty()) {
+                Reference usualGpReference = csvHelper.createPractitionerReference(usualGpID.getString());
+                patientBuilder.addCareProvider(usualGpReference, usualGpID);
+            }
+        }
 
         //save both resources together, so the patient is saved before the episode
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);

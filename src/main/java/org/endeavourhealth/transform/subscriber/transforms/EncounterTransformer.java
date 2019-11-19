@@ -225,7 +225,9 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 }
             }
 
-            else {admissionMethod = encounterClass.toCode();}
+            else {
+                admissionMethod = encounterClass.toCode();
+            }
         }
 
 
