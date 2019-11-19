@@ -16,7 +16,6 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -194,7 +193,7 @@ public class PatientTransformer {
         }*/
 
         CsvCell maritalStatusCSV = parser.getMaritalStatus();
-        MaritalStatus maritalStatus = convertMaritalStatus (maritalStatusCSV.getString());
+        MaritalStatus maritalStatus = convertMaritalStatus(maritalStatusCSV.getString());
         if (maritalStatus != null) {
             patientBuilder.setMaritalStatus(maritalStatus);
         } else {
@@ -240,12 +239,12 @@ public class PatientTransformer {
 
         CsvCell regDate = parser.getDateOfRegistration();
         if (!regDate.isEmpty()) {
-            episodeBuilder.setRegistrationStartDate(regDate.getDate(),regDate);
+            episodeBuilder.setRegistrationStartDate(regDate.getDate(), regDate);
         }
 
         CsvCell dedDate = parser.getDateOfDeactivation();
         if (!dedDate.isEmpty()) {
-            episodeBuilder.setRegistrationEndDate(dedDate.getDate(),dedDate);
+            episodeBuilder.setRegistrationEndDate(dedDate.getDate(), dedDate);
         }
 
         //setting the above dates on the episode calculates the active state of the episode, so carry over to the patient
@@ -325,26 +324,40 @@ public class PatientTransformer {
         fhirResourceFiler.deletePatientResource(currentState, patientBuilder, episodeBuilder);
     }
 
-    private static RegistrationType convertRegistrationType(String csvRegTypeCode) {
+    private static RegistrationType convertRegistrationType(String csvRegTypeCode) throws Exception {
         switch (csvRegTypeCode) {
-            case "R": return RegistrationType.REGULAR_GMS;
-            case "T": return RegistrationType.TEMPORARY;
-            case "P": return RegistrationType.PRIVATE;
-            case "S": return RegistrationType.OTHER;
-            default: return RegistrationType.OTHER;
+            case "R":
+                return RegistrationType.REGULAR_GMS;
+            case "T":
+                return RegistrationType.TEMPORARY;
+            case "P":
+                return RegistrationType.PRIVATE;
+            case "S":
+                return RegistrationType.OTHER;
+            default:
+                throw new TransformException("Unexpected patient type code: [" + csvRegTypeCode + "]");
+                //return RegistrationType.OTHER;
         }
     }
 
     private static MaritalStatus convertMaritalStatus(String statusCode) throws Exception {
         switch (statusCode) {
-            case "S": return MaritalStatus.NEVER_MARRIED;
-            case "M": return MaritalStatus.MARRIED;
-            case "D": return MaritalStatus.DIVORCED;
-            case "P": return MaritalStatus.LEGALLY_SEPARATED;
-            case "C": return MaritalStatus.DOMESTIC_PARTNER;   //"Cohabiting";
-            case "W": return MaritalStatus.WIDOWED;
-            case "U": return null; //"Unspecified";
-            default: throw new TransformException("Unexpected Patient Marital Status Code: [" + statusCode + "]");
+            case "S":
+                return MaritalStatus.NEVER_MARRIED;
+            case "M":
+                return MaritalStatus.MARRIED;
+            case "D":
+                return MaritalStatus.DIVORCED;
+            case "P":
+                return MaritalStatus.LEGALLY_SEPARATED;
+            case "C":
+                return MaritalStatus.DOMESTIC_PARTNER;   //"Cohabiting";
+            case "W":
+                return MaritalStatus.WIDOWED;
+            case "U":
+                return null; //"Unspecified";
+            default:
+                throw new TransformException("Unexpected Patient Marital Status Code: [" + statusCode + "]");
         }
     }
 }
