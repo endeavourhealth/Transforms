@@ -40,7 +40,8 @@ public class JournalDrugPreTransformer {
                                     FhirResourceFiler fhirResourceFiler,
                                     VisionCsvHelper csvHelper) throws Exception {
 
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
             return;
         }
 
@@ -49,11 +50,10 @@ public class JournalDrugPreTransformer {
         if (resourceType == ResourceType.MedicationStatement) {
             CsvCell patientID = parser.getPatientID();
             CsvCell drugRecordID = parser.getObservationID();
-            CsvCell dmdId = parser.getDrugDMDCode();
 
             //cache the observation IDs of Drug records (not Issues), so  that we know what is a Drug Record
             //when we run the observation pre and main transformers, i.e. for linking and deriving medications issues
-            csvHelper.cacheDrugRecordGuid(patientID, drugRecordID, dmdId.getString());
+            csvHelper.cacheDrugRecordGuid(patientID, drugRecordID);
         }
     }
 }

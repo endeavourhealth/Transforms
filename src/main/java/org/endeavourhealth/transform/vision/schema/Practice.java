@@ -9,27 +9,19 @@ import java.util.UUID;
 public class Practice extends AbstractCsvParser {
 
     public Practice(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
-                "ID",
-                "NAME",
-                "IDENTIFIER",
-                "HA",
-                "ADDRESS",
-                "ADDRESS_1",
-                "ADDRESS_2",
-                "ADDRESS_3",
-                "ADDRESS_4",
-                "ADDRESS_5",
-                "POSTCODE",
-                "PHONE",
-                "EMAIL",
-                "FAX"),
+        super(serviceId, systemId, exchangeId, version, filePath,
+                VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(getHeaders(version)),
                 VisionCsvToFhirTransformer.DATE_FORMAT,
                 VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        return getHeaders(version);
+    }
+
+    private static String[] getHeaders(String version) {
+        //test pack has the same columns as live
         return new String[]{
                 "ID",
                 "NAME",

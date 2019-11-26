@@ -10,22 +10,8 @@ import java.util.UUID;
 public class Referral extends AbstractCsvParser {
 
     public Referral(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
-                "PID",
-                "ID",
-                "DATE",
-                "HCP",
-                "HCP_TYPE",
-                "TO_HCP",
-                "SPECIALTY",
-                "UNIT",
-                "TYPE",
-                "CONTRACTOR",
-                "CONTRACT",
-                "ACTION_DATE",
-                "LINKS",
-                "SERVICE_ID",
-                "ACTION"),
+        super(serviceId, systemId, exchangeId, version, filePath,
+                VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(getHeaders(version)),
                 VisionCsvToFhirTransformer.DATE_FORMAT,
                 VisionCsvToFhirTransformer.TIME_FORMAT);
     }
@@ -33,6 +19,11 @@ public class Referral extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        return getHeaders(version);
+    }
+
+    private static String[] getHeaders(String version) {
+        //the test pack doesn't contain any referral data, so we don't know what columns it would contain
         return new String[]{
                 "PID",
                 "ID",

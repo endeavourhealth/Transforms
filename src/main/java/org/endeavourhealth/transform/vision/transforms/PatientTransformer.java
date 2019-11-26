@@ -133,7 +133,8 @@ public class PatientTransformer {
         addressBuilder.setPostcode(postcode.getString(), postcode);
 
         CsvCell homePhone = parser.getHomePhone();
-        if (!homePhone.isEmpty()) {
+        //null check because the cell doesn't exist in the test data
+        if (homePhone != null && !homePhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
@@ -141,7 +142,8 @@ public class PatientTransformer {
         }
 
         CsvCell mobilePhone = parser.getMobilePhone();
-        if (!mobilePhone.isEmpty()) {
+        //null check because the cell doesn't exist in the test data
+        if (mobilePhone != null && !mobilePhone.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
@@ -149,7 +151,8 @@ public class PatientTransformer {
         }
 
         CsvCell email = parser.getEmail();
-        if (!email.isEmpty()) {
+        //null check because the cell doesn't exist in the test data
+        if (email != null && !email.isEmpty()) {
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
@@ -251,9 +254,11 @@ public class PatientTransformer {
         boolean active = episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE;
         patientBuilder.setActive(active, dedDate);
 
-        //if active GMS at this service, set the careProvider (i.e. registered practice / GP) on the FHIR patient
-        if (registrationType == RegistrationType.REGULAR_GMS
-                && active) {
+        //if GMS at this service, set the careProvider (i.e. registered practice / GP) on the FHIR patient
+        //note we don't factor in the "active" status of the record because this is the best information we
+        //have irrespective of the patient being deducted or not. If we have a separate publisher with the new active
+        //registration then that will give us the new details anyway.
+        if (registrationType == RegistrationType.REGULAR_GMS) {
 
             Reference registeredPracticeReference = csvHelper.createOrganisationReference(organisationIdCell.getString());
             patientBuilder.addCareProvider(registeredPracticeReference, organisationIdCell);
@@ -338,8 +343,10 @@ public class PatientTransformer {
             case "S": //Not registered for GMS but is registered for another service category (e.g. contraception or child health)
                 return RegistrationType.OTHER;
             case "D": //Deceased.
+                LOG.debug("Registration type is D so will look up previous registration type for patient " + patientIdCell.getString());
                 return findPreviousRegistrationType(csvHelper, patientIdCell);
             case "L": //Left practice (no longer registered)
+                LOG.debug("Registration type is L so will look up previous registration type for patient " + patientIdCell.getString());
                 return findPreviousRegistrationType(csvHelper, patientIdCell);
             default:
                 throw new TransformException("Unexpected patient type code: [" + csvRegTypeCode + "]");

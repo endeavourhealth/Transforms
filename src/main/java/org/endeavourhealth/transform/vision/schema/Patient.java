@@ -9,87 +9,94 @@ import java.util.UUID;
 public class Patient extends AbstractCsvParser {
 
     public Patient(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
-                "PID",
-                "REFERENCE",
-                "DATE_OF_BIRTH",
-                "SEX",
-                "POSTCODE",
-                "MARITAL_STATUS",
-                "GP",
-                "GP_USUAL",
-                "ACTIVE",
-                "REGISTERED_DATE",
-                "REMOVED_DATE",
-                "HA",
-                "PCG",
-                "SURGERY",
-                "MILEAGE",
-                "DISPENSING",
-                "ETHNIC",
-                "DATE_OF_DEATH",
-                "PRACTICE",
-                "SURNAME",
-                "FORENAME",
-                "TITLE",
-                "NHS_NUMBER",
-                "ADDRESS",
-                "ADDRESS_1",
-                "ADDRESS_2",
-                "ADDRESS_3",
-                "ADDRESS_4",
-                "ADDRESS_5",
-                "PHONE_NUMBER",
-                "MOBILE_NUMBER",
-                "EMAIL",
-                "PRACT_NUMBER",
-                "SERVICE_ID",
-                "ACTION"),
+        super(serviceId, systemId, exchangeId, version, filePath,
+                VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(getHeaders(version)),
                 VisionCsvToFhirTransformer.DATE_FORMAT,
                 VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        return getHeaders(version);
+    }
 
-        return new String[]{
-                "PID",
-                "REFERENCE",
-                "DATE_OF_BIRTH",
-                "SEX",
-                "POSTCODE",
-                "MARITAL_STATUS",
-                "GP",
-                "GP_USUAL",
-                "ACTIVE",
-                "REGISTERED_DATE",
-                "REMOVED_DATE",
-                "HA",
-                "PCG",
-                "SURGERY",
-                "MILEAGE",
-                "DISPENSING",
-                "ETHNIC",
-                "DATE_OF_DEATH",
-                "PRACTICE",
-                "SURNAME",
-                "FORENAME",
-                "TITLE",
-                "NHS_NUMBER",
-                "ADDRESS",
-                "ADDRESS_1",
-                "ADDRESS_2",
-                "ADDRESS_3",
-                "ADDRESS_4",
-                "ADDRESS_5",
-                "PHONE_NUMBER",
-                "MOBILE_NUMBER",
-                "EMAIL",
-                "PRACT_NUMBER",
-                "SERVICE_ID",
-                "ACTION"
-        };
+    private static String[] getHeaders(String version) {
 
+        if (version.equals(VisionCsvToFhirTransformer.VERSION_TEST_PACK)) {
+            //the test pack file is missing a number of columns that the live version has, the phone and email ones
+            return new String[]{
+                    "PID",
+                    "REFERENCE",
+                    "DATE_OF_BIRTH",
+                    "SEX",
+                    "POSTCODE",
+                    "MARITAL_STATUS",
+                    "GP",
+                    "GP_USUAL",
+                    "ACTIVE",
+                    "REGISTERED_DATE",
+                    "REMOVED_DATE",
+                    "HA",
+                    "PCG",
+                    "SURGERY",
+                    "MILEAGE",
+                    "DISPENSING",
+                    "ETHNIC",
+                    "DATE_OF_DEATH",
+                    "PRACTICE",
+                    "SURNAME",
+                    "FORENAME",
+                    "TITLE",
+                    "NHS_NUMBER",
+                    "ADDRESS",
+                    "ADDRESS_1",
+                    "ADDRESS_2",
+                    "ADDRESS_3",
+                    "ADDRESS_4",
+                    "ADDRESS_5",
+                    "PRACT_NUMBER",
+                    "SERVICE_ID",
+                    "ACTION"
+            };
+        } else {
+            return new String[]{
+                    "PID",
+                    "REFERENCE",
+                    "DATE_OF_BIRTH",
+                    "SEX",
+                    "POSTCODE",
+                    "MARITAL_STATUS",
+                    "GP",
+                    "GP_USUAL",
+                    "ACTIVE",
+                    "REGISTERED_DATE",
+                    "REMOVED_DATE",
+                    "HA",
+                    "PCG",
+                    "SURGERY",
+                    "MILEAGE",
+                    "DISPENSING",
+                    "ETHNIC",
+                    "DATE_OF_DEATH",
+                    "PRACTICE",
+                    "SURNAME",
+                    "FORENAME",
+                    "TITLE",
+                    "NHS_NUMBER",
+                    "ADDRESS",
+                    "ADDRESS_1",
+                    "ADDRESS_2",
+                    "ADDRESS_3",
+                    "ADDRESS_4",
+                    "ADDRESS_5",
+                    "PHONE_NUMBER",
+                    "MOBILE_NUMBER",
+                    "EMAIL",
+                    "PRACT_NUMBER",
+                    "SERVICE_ID",
+                    "ACTION"
+            };
+        }
     }
 
     @Override
@@ -113,6 +120,9 @@ public class Patient extends AbstractCsvParser {
         return super.getCell("SEX");
     }
 
+    /**
+     * note we derive ethnicity from the Journal records with ethnicity codes, so this field is ignored
+     */
     public CsvCell getEthnicOrigin() {
         return super.getCell("ETHNIC");
     }

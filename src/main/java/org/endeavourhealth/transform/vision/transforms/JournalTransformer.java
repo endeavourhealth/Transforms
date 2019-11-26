@@ -204,17 +204,18 @@ public class JournalTransformer {
             return;
         }
 
-        CsvCell clinicianID = parser.getClinicianUserID();
-        if (!Strings.isNullOrEmpty(clinicianID.getString())) {
-            String cleanClinicianID = csvHelper.cleanUserId(clinicianID.getString());
-            medicationStatementBuilder.setInformationSource(csvHelper.createPractitionerReference(cleanClinicianID));
+        CsvCell clinicianIdCell = parser.getClinicianUserID();
+        //null check because this cell is missing from the test pack
+        if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+            String cleanClinicianID = csvHelper.cleanUserId(clinicianIdCell.getString());
+            medicationStatementBuilder.setInformationSource(csvHelper.createPractitionerReference(cleanClinicianID), clinicianIdCell);
         }
 
-        CsvCell effectiveDate = parser.getEffectiveDateTime();
+        CsvCell effectiveDateCell = parser.getEffectiveDateTime();
         String effectiveDatePrecision = "YMD";
-        DateTimeType date = EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision);
+        DateTimeType date = EmisDateTimeHelper.createDateTimeType(effectiveDateCell.getDate(), effectiveDatePrecision);
         if (date != null) {
-            medicationStatementBuilder.setAssertedDate(date, effectiveDate);
+            medicationStatementBuilder.setAssertedDate(date, effectiveDateCell);
         }
 
         //no longer set the active or completed status on medications, just the cancellation date if present
@@ -226,15 +227,16 @@ public class JournalTransformer {
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
 
-        CsvCell dmdId = parser.getDrugDMDCode();
+        CsvCell dmdIdCell = parser.getDrugDMDCode();
         CsvCell readCodeCell = parser.getReadCode();
-        CsvCell term = parser.getRubric();
+        CsvCell termCell = parser.getRubric();
 
-        if (!dmdId.isEmpty()) {
+        //null check because column isn't present in test pack
+        if (dmdIdCell != null && !dmdIdCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(dmdId.getString(), dmdId);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setCodingCode(dmdIdCell.getString(), dmdIdCell);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
@@ -242,13 +244,13 @@ public class JournalTransformer {
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
             codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
-        if (!term.isEmpty()) {
-            codeableConceptBuilder.setText(term.getString(), term);
+        if (!termCell.isEmpty()) {
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
         CsvCell quantity = parser.getValue1();
@@ -256,9 +258,10 @@ public class JournalTransformer {
             medicationStatementBuilder.setQuantityValue(quantity.getDouble(), quantity);
         }
 
-        CsvCell quantityUnit = parser.getDrugPrep();
-        if (!quantityUnit.isEmpty()) {
-            medicationStatementBuilder.setQuantityUnit(quantityUnit.getString(), quantityUnit);
+        CsvCell quantityUnitCell = parser.getDrugPrep();
+        //null check because cell is missing from test pack
+        if (quantityUnitCell != null && !quantityUnitCell.isEmpty()) {
+            medicationStatementBuilder.setQuantityUnit(quantityUnitCell.getString(), quantityUnitCell);
         }
 
         CsvCell dose = parser.getAssociatedText();
@@ -282,11 +285,12 @@ public class JournalTransformer {
             medicationStatementBuilder.setLastIssueDate(mostRecentDate); //, mostRecentDate.getSourceCells());
         }
 
-        CsvCell enteredByID = parser.getClinicianUserID();
-        if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
+        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //null check because this column is missing from the test pack
+        if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            medicationStatementBuilder.setRecordedBy(reference, enteredByID);
+            medicationStatementBuilder.setRecordedBy(reference, enteredByIdCell);
         }
 
         CsvCell enteredDateTime = parser.getEnteredDateTime();
@@ -323,9 +327,10 @@ public class JournalTransformer {
             return;
         }
 
-        CsvCell clinicianID = parser.getClinicianUserID();
-        if (!clinicianID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell clinicianIdCell = parser.getClinicianUserID();
+        //null check because this cell is missing from the test pack
+        if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             medicationOrderBuilder.setPrescriber(csvHelper.createPractitionerReference(cleanUserId));
         }
 
@@ -384,11 +389,12 @@ public class JournalTransformer {
             }
         }
 
-        CsvCell enteredByID = parser.getClinicianUserID();
-        if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
+        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //null check because this column is missing from the test pack
+        if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            medicationOrderBuilder.setRecordedBy(reference, enteredByID);
+            medicationOrderBuilder.setRecordedBy(reference, enteredByIdCell);
         }
 
         CsvCell enteredDateTime = parser.getEnteredDateTime();
@@ -430,9 +436,10 @@ public class JournalTransformer {
             return;
         }
 
-        CsvCell clinicianID = parser.getClinicianUserID();
-        if (!clinicianID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell clinicianIdCell = parser.getClinicianUserID();
+        //null check because this cell is missing from the test pack
+        if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             allergyIntoleranceBuilder.setClinician(csvHelper.createPractitionerReference(cleanUserId));
         }
 
@@ -442,15 +449,16 @@ public class JournalTransformer {
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
 
-        CsvCell snomedCode = parser.getSnomedCode();
-        CsvCell term = parser.getRubric();
+        CsvCell snomedCodeCell = parser.getSnomedCode();
+        CsvCell termCell = parser.getRubric();
         CsvCell readCodeCell = parser.getReadCode();
 
-        if (!snomedCode.isEmpty()) {
+        //null check because column is missing from test pack
+        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
@@ -458,14 +466,14 @@ public class JournalTransformer {
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
             codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
         // the item may not be coded, but has a rubric, so set as text
-        if (!term.isEmpty()) {
-            codeableConceptBuilder.setText(term.getString(), term);
+        if (!termCell.isEmpty()) {
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
         CsvCell effectiveDate = parser.getEffectiveDateTime();
@@ -499,11 +507,12 @@ public class JournalTransformer {
             allergyIntoleranceBuilder.setEncounter(reference, parser.getLinks());
         }
 
-        CsvCell enteredByID = parser.getClinicianUserID();
-        if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //null check because this column is missing from the test pack
+        if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            allergyIntoleranceBuilder.setRecordedBy(reference, enteredByID);
+            allergyIntoleranceBuilder.setRecordedBy(reference, enteredByIdCell);
         }
 
         String documentId = getDocumentId(parser);
@@ -539,17 +548,18 @@ public class JournalTransformer {
             return;
         }
 
-        CsvCell snomedCode = parser.getSnomedCode();
+        CsvCell snomedCodeCell = parser.getSnomedCode();
         CsvCell readCodeCell = parser.getReadCode();
-        CsvCell term = parser.getRubric();
+        CsvCell termCell = parser.getRubric();
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
 
-        if (!snomedCode.isEmpty()) {
+        //null check because column is missing from test pack
+        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
@@ -557,25 +567,26 @@ public class JournalTransformer {
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
             codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
         // the item may not be coded, but has a rubric, so set as text
-        if (!term.isEmpty()) {
-            codeableConceptBuilder.setText(term.getString(), term);
+        if (!termCell.isEmpty()) {
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
         CsvCell effectiveDate = parser.getEffectiveDateTime();
         String effectiveDatePrecision = "YMD";
         procedureBuilder.setPerformed(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision));
 
-        CsvCell clinicianID = parser.getClinicianUserID();
-        if (!clinicianID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell clinicianIdCell = parser.getClinicianUserID();
+        //null check because this cell is missing from the test pack
+        if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            procedureBuilder.addPerformer(reference, clinicianID);
+            procedureBuilder.addPerformer(reference, clinicianIdCell);
         }
 
         CsvCell associatedText = parser.getAssociatedText();
@@ -592,11 +603,12 @@ public class JournalTransformer {
         CsvCell getEnteredDateTime = parser.getEnteredDateTime();
         procedureBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
-        CsvCell enteredByID = parser.getClinicianUserID();
-        if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //null check because this column is missing from the test pack
+        if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            procedureBuilder.setRecordedBy(reference, enteredByID);
+            procedureBuilder.setRecordedBy(reference, enteredByIdCell);
         }
 
         String documentId = getDocumentId(parser);
@@ -635,17 +647,18 @@ public class JournalTransformer {
         conditionBuilder.setCategory("complaint", observationID);
         conditionBuilder.setAsProblem(true);
 
-        CsvCell snomedCode = parser.getSnomedCode();
+        CsvCell snomedCodeCell = parser.getSnomedCode();
         CsvCell readCodeCell = parser.getReadCode();
-        CsvCell term = parser.getRubric();
+        CsvCell termCell = parser.getRubric();
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
 
-        if (!snomedCode.isEmpty()) {
+        //null check because column is missing from test pack
+        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
@@ -653,14 +666,14 @@ public class JournalTransformer {
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
             codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
         // the item may not be coded, but has a rubric, so set as text
-        if (!term.isEmpty()) {
-            codeableConceptBuilder.setText(term.getString(), term);
+        if (!termCell.isEmpty()) {
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
         CsvCell comments = parser.getAssociatedText();
@@ -691,11 +704,12 @@ public class JournalTransformer {
         String effectiveDatePrecision = "YMD";
         conditionBuilder.setOnset(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision), effectiveDate);
 
-        CsvCell clinicianID = parser.getClinicianUserID();
-        if (!clinicianID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell clinicianIdCell = parser.getClinicianUserID();
+        //null check because this cell is missing from the test pack
+        if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            conditionBuilder.setClinician(reference, clinicianID);
+            conditionBuilder.setClinician(reference, clinicianIdCell);
         }
 
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
@@ -708,11 +722,12 @@ public class JournalTransformer {
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewProblemChildren(observationID, patientID);
         containedListBuilder.addReferences(newLinkedResources);
 
-        CsvCell enteredByID = parser.getClinicianUserID();
-        if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //null check because this column is missing from the test pack
+        if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            conditionBuilder.setRecordedBy(reference, enteredByID);
+            conditionBuilder.setRecordedBy(reference, enteredByIdCell);
         }
 
         String documentId = getDocumentId(parser);
@@ -752,18 +767,18 @@ public class JournalTransformer {
         String effectiveDatePrecision = "YMD";
         observationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
 
-        CsvCell snomedCode = parser.getSnomedCode();
+        CsvCell snomedCodeCell = parser.getSnomedCode();
         CsvCell readCodeCell = parser.getReadCode();
-        CsvCell term = parser.getRubric();
+        CsvCell termCell = parser.getRubric();
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
 
-        if (!snomedCode.isEmpty()) {
+        //null check because column is missing from test pack
+        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
@@ -771,47 +786,50 @@ public class JournalTransformer {
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
             codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
         // the item may not be coded, but has a rubric, so set as text
-        if (!term.isEmpty()) {
-            codeableConceptBuilder.setText(term.getString(), term);
+        if (!termCell.isEmpty()) {
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
-        CsvCell clinicianID = parser.getClinicianUserID();
-        if (!clinicianID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell clinicianIdCell = parser.getClinicianUserID();
+        //null check because this cell is missing from the test pack
+        if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            observationBuilder.setClinician(reference, clinicianID);
+            observationBuilder.setClinician(reference, clinicianIdCell);
         }
 
         CsvCell getEnteredDateTime = parser.getEnteredDateTime();
         observationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
-        CsvCell enteredByID = parser.getClinicianUserID();
-        if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
+        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //null check because this column is missing from the test pack
+        if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            observationBuilder.setRecordedBy(reference, enteredByID);
+            observationBuilder.setRecordedBy(reference, enteredByIdCell);
         }
 
         Double value1 = null;
         String units1 = null;
         Double value2 = null;
         String units2 = null;
-        CsvCell value1Name = parser.getValue1Name();
-        CsvCell value1AsText = parser.getValue1AsText();
-        CsvCell associatedText = parser.getAssociatedText();
-        String associatedTextAsStr = associatedText.getString();
+        CsvCell value1NameCell = parser.getValue1Name();
+        CsvCell value1AsTextCell = parser.getValue1();
+        CsvCell associatedTextCell = parser.getAssociatedText();
+        String associatedTextAsStr = associatedTextCell.getString();
 
         // medication review has text in the value field, so append to associated text
-        if (value1Name.getString().equalsIgnoreCase("REVIEW_DAT")) {
-            associatedTextAsStr = "Review date: "+value1AsText.getString() + ". " + associatedTextAsStr;
-        }
-        else {
+        //null check because column is missing from test pack
+        if (value1NameCell != null && value1NameCell.getString().equalsIgnoreCase("REVIEW_DAT")) {
+            associatedTextAsStr = "Review date: "+value1AsTextCell.getString() + ". " + associatedTextAsStr;
+
+        } else {
             //get the numeric values and units
             if (!parser.getValue1().isEmpty()) {
 
@@ -821,15 +839,26 @@ public class JournalTransformer {
                     value1 = null;  //set to null to force the use of text value later
                 }
             }
-            units1 = parser.getValue1NumericUnit().getString();
+
+            CsvCell unitsCell = parser.getValue1NumericUnit();
+            //null check because column is missing from test pack
+            if (unitsCell != null) {
+                units1 = unitsCell.getString();
+            }
+
 
             if (!parser.getValue2().isEmpty()) {
                 value2 = parser.getValue2().getDouble();
             }
-            units2 = parser.getValue2NumericUnit().getString();
+
+            CsvCell value2UnitCell = parser.getValue2NumericUnit();
+            //null check because column is missing from test pack
+            if (value2UnitCell != null) {
+                units2 = value2UnitCell.getString();
+            }
         }
 
-        String obsEntity = parser.getObservationEntity().getString();
+        CsvCell obsEntityCell = parser.getObservationEntity();
 
         boolean isBP = false;
         ObservationBuilder diastolicObservationBuilder = null;
@@ -860,16 +889,17 @@ public class JournalTransformer {
             systolicObservationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
             systolicObservationBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
-            if (!clinicianID.isEmpty()) {
-                Reference clinicianReferenceSys
-                        = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianID.getString()));
-                systolicObservationBuilder.setClinician(clinicianReferenceSys, clinicianID);
+            //null check because this cell is missing from the test pack
+            if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+                Reference clinicianReferenceSys = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianIdCell.getString()));
+                systolicObservationBuilder.setClinician(clinicianReferenceSys, clinicianIdCell);
             }
 
-            if (!enteredByID.isEmpty()) {
-                String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
+            //null check because this column is missing from the test pack
+            if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+                String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
                 Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-                systolicObservationBuilder.setRecordedBy(reference, enteredByID);
+                systolicObservationBuilder.setRecordedBy(reference, enteredByIdCell);
             }
 
             CodeableConceptBuilder codeableSystolicConceptBuilder
@@ -908,16 +938,17 @@ public class JournalTransformer {
             diastolicObservationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
             diastolicObservationBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
-            if (!clinicianID.isEmpty()) {
-                Reference clinicianReferenceDia
-                        = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianID.getString()));
-                diastolicObservationBuilder.setClinician(clinicianReferenceDia, clinicianID);
+            //null check because this cell is missing from the test pack
+            if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+                Reference clinicianReferenceDia = csvHelper.createPractitionerReference(csvHelper.cleanUserId(clinicianIdCell.getString()));
+                diastolicObservationBuilder.setClinician(clinicianReferenceDia, clinicianIdCell);
             }
 
-            if (!enteredByID.isEmpty()) {
-                String cleanUserId = csvHelper.cleanUserId(enteredByID.getString());
+            //null check because this column is missing from the test pack
+            if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+                String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
                 Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-                diastolicObservationBuilder.setRecordedBy(reference, enteredByID);
+                diastolicObservationBuilder.setRecordedBy(reference, enteredByIdCell);
             }
 
             CodeableConceptBuilder codeableDistolicConceptBuilder
@@ -941,17 +972,18 @@ public class JournalTransformer {
             //otherwise, add in the 1st value if it exists
             if (value1 != null) {
                 observationBuilder.setValueNumber(value1, parser.getValue1());
-            } else if (!value1AsText.isEmpty()){
+            } else if (!value1AsTextCell.isEmpty()){
                 //the value becomes a text value if it fails the double numeric conversion earlier
-                observationBuilder.setValueString(value1AsText.getString(), parser.getValue1());
+                observationBuilder.setValueString(value1AsTextCell.getString(), parser.getValue1());
             }
 
             if (!Strings.isNullOrEmpty(units1)) {
                 observationBuilder.setValueNumberUnits(units1, parser.getValue1NumericUnit());
             } else if (value1 != null) {
                 //if value is set but no units, infer from entity type if possible
-                if (!obsEntity.isEmpty()) {
-                    String unitsMapped = getEntityTypeUnits(obsEntity);
+                //null check because column is missing from test data
+                if (obsEntityCell != null && !obsEntityCell.isEmpty()) {
+                    String unitsMapped = getEntityTypeUnits(obsEntityCell.getString());
                     if (unitsMapped != null) {
                         observationBuilder.setValueNumberUnits(unitsMapped);
                     }
@@ -965,13 +997,15 @@ public class JournalTransformer {
             }
         }
 
-        if (!obsEntity.isEmpty()) {
+        //null check because column is missing from test pack
+        if (obsEntityCell != null && !obsEntityCell.isEmpty()) {
+            String obsEntity = obsEntityCell.getString();
             if (obsEntity.equalsIgnoreCase("LETTERS") || obsEntity.equalsIgnoreCase("ATTACHMENT")) {
                 associatedTextAsStr = obsEntity.replace("S", "").concat(". " + associatedTextAsStr);
             }
         }
 
-        observationBuilder.setNotes(associatedTextAsStr,associatedText);
+        observationBuilder.setNotes(associatedTextAsStr,associatedTextCell);
 
         //set linked encounter
         String consultationID = extractEncounterLinkID(parser.getLinks().getString());
@@ -1027,15 +1061,16 @@ public class JournalTransformer {
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);
 
-        CsvCell snomedCode = parser.getSnomedCode();
+        CsvCell snomedCodeCell = parser.getSnomedCode();
         CsvCell readCodeCell = parser.getReadCode();
-        CsvCell term = parser.getRubric();
+        CsvCell termCell = parser.getRubric();
 
-        if (!snomedCode.isEmpty()) {
+        //null check because code missing from test pack
+        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
@@ -1043,14 +1078,14 @@ public class JournalTransformer {
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
             codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
         // the item may not be coded, but has a rubric, so set as text
-        if (!term.isEmpty()) {
-            codeableConceptBuilder.setText(term.getString(), term);
+        if (!termCell.isEmpty()) {
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
         CsvCell associatedText = parser.getAssociatedText();
@@ -1058,11 +1093,12 @@ public class JournalTransformer {
             familyMemberHistoryBuilder.setNotes(associatedText.getString(), associatedText);
         }
 
-        CsvCell clinicianID = parser.getClinicianUserID();
-        if (!clinicianID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell clinicianIdCell = parser.getClinicianUserID();
+        //null check because this cell is missing from the test pack
+        if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            familyMemberHistoryBuilder.setClinician(reference, clinicianID);
+            familyMemberHistoryBuilder.setClinician(reference, clinicianIdCell);
         }
 
         //set linked encounter
@@ -1074,11 +1110,12 @@ public class JournalTransformer {
         CsvCell getEnteredDateTime = parser.getEnteredDateTime();
         familyMemberHistoryBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
-        CsvCell enteredByID = parser.getClinicianUserID();
-        if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //null check because this column is missing from the test pack
+        if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            familyMemberHistoryBuilder.setRecordedBy(reference, enteredByID);
+            familyMemberHistoryBuilder.setRecordedBy(reference, enteredByIdCell);
         }
 
         String documentId = getDocumentId(parser);
@@ -1132,18 +1169,19 @@ public class JournalTransformer {
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
 
-        CsvCell snomedCode = parser.getSnomedCode();
+        CsvCell snomedCodeCell = parser.getSnomedCode();
         CsvCell readCodeCell = parser.getReadCode();
-        CsvCell term = parser.getRubric();
+        CsvCell termCell = parser.getRubric();
 
-        if (!snomedCode.isEmpty()) {
+        //null check because column is missing from test pack
+        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCode.getString(), snomedCode);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             } else {
                 // lookup Snomed term for blank immunisation term
-                String snomedTerm = TerminologyService.lookupSnomedTerm(snomedCode.getString());
+                String snomedTerm = TerminologyService.lookupSnomedTerm(snomedCodeCell.getString());
                 if (!Strings.isNullOrEmpty(snomedTerm)) {
                     codeableConceptBuilder.setCodingDisplay(snomedTerm);
                     codeableConceptBuilder.setText(snomedTerm);
@@ -1155,37 +1193,48 @@ public class JournalTransformer {
         if (!readCodeCell.isEmpty()) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
             codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
+            if (!termCell.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
             }
         }
 
         // the item may not be coded, but has a rubric, so set as text
-        if (!term.isEmpty()) {
-            codeableConceptBuilder.setText(term.getString(), term);
+        if (!termCell.isEmpty()) {
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
-        CsvCell clinicianID = parser.getClinicianUserID();
-        if (!clinicianID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell clinicianIdCell = parser.getClinicianUserID();
+        //null check because this cell is missing from the test pack
+        if (clinicianIdCell != null && !clinicianIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            immunizationBuilder.setPerformer(reference, clinicianID);
+            immunizationBuilder.setPerformer(reference, clinicianIdCell);
         }
 
-        CsvCell immsMethod = parser.getImmsMethod();
-        CodeableConceptBuilder immsMethodCodeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Route);
-        immsMethodCodeableConceptBuilder.setText(immsMethod.getString(), immsMethod);
+        CsvCell immsMethodCell = parser.getImmsMethod();
+        //null check because this cell is missing from the test pack
+        if (immsMethodCell != null) {
+            CodeableConceptBuilder immsMethodCodeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Route);
+            immsMethodCodeableConceptBuilder.setText(immsMethodCell.getString(), immsMethodCell);
+        }
 
-        CsvCell immsSite = parser.getImmsSite();
-        CodeableConceptBuilder immsSiteCodeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Site);
-        immsSiteCodeableConceptBuilder.setText(immsSite.getString(), immsSite);
+        CsvCell immsSiteCell = parser.getImmsSite();
+        //null check because this cell is missing from the test pack
+        if (immsSiteCell != null) {
+            CodeableConceptBuilder immsSiteCodeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Site);
+            immsSiteCodeableConceptBuilder.setText(immsSiteCell.getString(), immsSiteCell);
+        }
 
-        CsvCell immsBatch = parser.getImmsBatch();
-        immunizationBuilder.setLotNumber(immsBatch.getString(), immsBatch);
+        CsvCell immsBatchCell = parser.getImmsBatch();
+        //null check because this cell is missing from the test pack
+        if (immsBatchCell != null) {
+            immunizationBuilder.setLotNumber(immsBatchCell.getString(), immsBatchCell);
+        }
 
-        CsvCell immsReason = parser.getImmsReason();
-        if (!immsReason.isEmpty()) {
-            immunizationBuilder.setReason(immsReason.getString(), immsReason);
+        CsvCell immsReasonCell = parser.getImmsReason();
+        //null check because this cell is missing from the test pack
+        if (immsReasonCell != null && !immsReasonCell.isEmpty()) {
+            immunizationBuilder.setReason(immsReasonCell.getString(), immsReasonCell);
         }
 
         //set linked encounter
@@ -1198,22 +1247,24 @@ public class JournalTransformer {
         String associatedTextStr = associatedText.getString();
 
         // 'In practice' for example - add to notes
-        CsvCell immsSource = parser.getImmsSource();
-        if (!immsSource.isEmpty()) {
+        CsvCell immsSourceCell = parser.getImmsSource();
+        //null check because this cell is missing from the test pack
+        if (immsSourceCell != null && !immsSourceCell.isEmpty()) {
 
-            associatedTextStr = "Source: "+immsSource.getString()+". "+associatedTextStr;
-            immunizationBuilder.setNote(associatedTextStr, associatedText, immsSource);
+            associatedTextStr = "Source: "+immsSourceCell.getString()+". "+associatedTextStr;
+            immunizationBuilder.setNote(associatedTextStr, associatedText, immsSourceCell);
         } else {
 
             immunizationBuilder.setNote(associatedTextStr, associatedText);
         }
 
         // DTIPV for example - add to notes
-        CsvCell immsCompound = parser.getImmsCompound();
-        if (!immsCompound.isEmpty()) {
+        CsvCell immsCompoundCell = parser.getImmsCompound();
+        //null check because this cell is missing from the test pack
+        if (immsCompoundCell != null && !immsCompoundCell.isEmpty()) {
 
-            associatedTextStr = "Compound: "+immsCompound.getString()+". "+associatedTextStr;
-            immunizationBuilder.setNote(associatedTextStr, associatedText, immsCompound);
+            associatedTextStr = "Compound: "+immsCompoundCell.getString()+". "+associatedTextStr;
+            immunizationBuilder.setNote(associatedTextStr, associatedText, immsCompoundCell);
         } else {
 
             immunizationBuilder.setNote(associatedTextStr, associatedText);
@@ -1222,11 +1273,12 @@ public class JournalTransformer {
         CsvCell getEnteredDateTime = parser.getEnteredDateTime();
         immunizationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
-        CsvCell enteredByID = parser.getClinicianUserID();
-        if (!enteredByID.isEmpty()) {
-            String cleanUserId = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //null check because this column is missing from the test pack
+        if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
-            immunizationBuilder.setRecordedBy(reference, enteredByID);
+            immunizationBuilder.setRecordedBy(reference, enteredByIdCell);
         }
 
         String documentId = getDocumentId(parser);
@@ -1292,34 +1344,42 @@ public class JournalTransformer {
     // logged and the parser row will cease processing that row only
     private static boolean isInvalidData(Journal parser) throws Exception {
 
-        Boolean inValid = false;
+        boolean invalid = false;
         ResourceType type = getTargetResourceType(parser);
 
         //Fixed VEI-4 (invalid Immunisation records).  Also, invalid Allergies detected, so handled those
         if (type == ResourceType.Immunization || type == ResourceType.AllergyIntolerance) {
 
             // First invalid indicator, the Immunisation or Allergy has a value - this fails the assertValueEmpty test
-            String valueText = parser.getValue1AsText().getString();
+            String valueText = parser.getValue1().getString();
             if (!Strings.isNullOrEmpty(valueText)) {
 
                 // Second invalid indicator, it contains contains weight or BP data
-                String obsEntity = parser.getObservationEntity().getString();
-                inValid = (obsEntity.equalsIgnoreCase("WEIGHT") ||
-                        obsEntity.equalsIgnoreCase("BP"));
+                CsvCell obsEntityCell = parser.getObservationEntity();
+                invalid = obsEntityCell != null //null check required because column missing from test pack
+                        && (obsEntityCell.getString().equalsIgnoreCase("WEIGHT")
+                        || obsEntityCell.getString().equalsIgnoreCase("BP"));
             }
         }
-        return inValid;
+        return invalid;
     }
 
     private static void assertValueEmpty(ResourceBuilderBase resourceBuilder, Journal parser) throws Exception {
-        if (!Strings.isNullOrEmpty(parser.getValue1AsText().getString())
+        if (!Strings.isNullOrEmpty(parser.getValue1().getString())
                 && !parser.getValue1Name().getString().equalsIgnoreCase("REVIEW_DAT")) {
             throw new FieldNotEmptyException("Value", resourceBuilder.getResource());
         }
     }
 
     private static String getDocumentId(Journal parser) {
-        String documentIDLinks = parser.getDocumentID().getString();
+        CsvCell documentIdCell = parser.getDocumentID();
+
+        //null check because column is missing from test pack
+        if (documentIdCell == null || documentIdCell.isEmpty()) {
+            return null;
+        }
+
+        String documentIDLinks = documentIdCell.getString();
         if (!Strings.isNullOrEmpty(documentIDLinks)) {
             String[] documentIDs = documentIDLinks.split("[|]");
             if (documentIDs.length > 1) {
@@ -1485,7 +1545,7 @@ public class JournalTransformer {
         if (!Strings.isNullOrEmpty(readCode)
                 && Read2.isProcedure(readCode)
                 && !isBPCode(readCode)
-                && Strings.isNullOrEmpty(parser.getValue1AsText().getString())
+                && Strings.isNullOrEmpty(parser.getValue1().getString())
                 && !subset.equalsIgnoreCase("T")
                 && !subset.equalsIgnoreCase("I")) {
             return ResourceType.Procedure;

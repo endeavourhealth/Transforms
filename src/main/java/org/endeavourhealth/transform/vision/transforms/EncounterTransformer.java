@@ -69,11 +69,12 @@ public class EncounterTransformer {
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
-        CsvCell clinicianID = parser.getClinicianUserID();
-        if (!clinicianID.isEmpty()) {
-            String cleanUserID = csvHelper.cleanUserId(clinicianID.getString());
+        CsvCell clinicianId = parser.getClinicianUserID();
+        //note null check because this column doesn't exist on test data
+        if (clinicianId != null && !clinicianId.isEmpty()) {
+            String cleanUserID = csvHelper.cleanUserId(clinicianId.getString());
             Reference practitionerReference = csvHelper.createPractitionerReference(cleanUserID);
-            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, clinicianID);
+            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, clinicianId);
         }
 
         //NOTE: there is no recorded date for Vision encounter extracts

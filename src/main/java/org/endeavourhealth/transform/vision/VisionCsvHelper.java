@@ -54,7 +54,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
-    private Map<String, String> drugRecords = new HashMap<>();
+    private Set<String> drugRecords = new HashSet<>();
 
     public VisionCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
@@ -533,12 +533,12 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         return problemReadCodes.containsKey(createUniqueId(patientGuid, problemGuid));
     }
 
-    public void cacheDrugRecordGuid(CsvCell patientGuid, CsvCell drugRecordGuid, String drugCode) {
-        drugRecords.put(createUniqueId(patientGuid, drugRecordGuid), drugCode);
+    public void cacheDrugRecordGuid(CsvCell patientGuid, CsvCell drugRecordGuid) {
+        drugRecords.add(createUniqueId(patientGuid, drugRecordGuid));
     }
 
     public boolean isDrugRecordGuid(String patientGuid, String drugRecordGuid) {
-        return drugRecords.containsKey(createUniqueId(patientGuid, drugRecordGuid));
+        return drugRecords.contains(createUniqueId(patientGuid, drugRecordGuid));
     }
 
     public String findProblemObservationReadCode(CsvCell patientGuid, CsvCell problemGuid, FhirResourceFiler fhirResourceFiler) throws Exception {

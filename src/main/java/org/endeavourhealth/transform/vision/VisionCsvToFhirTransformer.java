@@ -4,8 +4,10 @@ import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
+import org.endeavourhealth.transform.common.ExchangePayloadFile;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.vision.schema.*;
@@ -23,6 +25,7 @@ public abstract class VisionCsvToFhirTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(VisionCsvToFhirTransformer.class);
 
+    public static final String VERSION_TEST_PACK = "TEST_PACK";
     public static final String VERSION_0_18 = "0.18";
 
     public static final String DATE_FORMAT = "yyyyMMdd";

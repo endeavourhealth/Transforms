@@ -10,99 +10,93 @@ import java.util.UUID;
 public class Journal extends AbstractCsvParser {
 
     public Journal(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-        super(serviceId, systemId, exchangeId, version, filePath, VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(
-                "PID",
-                "ID",
-                "DATE",
-                "RECORDED_DATE",
-                "CODE",
-                "SNOMED_CODE",
-                "BNF_CODE",
-                "HCP",
-                "HCP_TYPE",
-                "GMS",
-                "EPISODE",
-                "TEXT",
-                "RUBRIC",
-                "DRUG_FORM",
-                "DRUG_STRENGTH",
-                "DRUG_PACKSIZE",
-                "DMD_CODE",
-                "IMMS_STATUS",
-                "IMMS_COMPOUND",
-                "IMMS_SOURCE",
-                "IMMS_BATCH",
-                "IMMS_REASON",
-                "IMMS_METHOD",
-                "IMMS_SITE",
-                "ENTITY",
-                "VALUE1_NAME",
-                "VALUE1",
-                "VALUE1_UNITS",
-                "VALUE2_NAME",
-                "VALUE2",
-                "VALUE2_UNITS",
-                "END_DATE",
-                "TIME",
-                "CONTEXT",
-                "CERTAINTY",
-                "SEVERITY",
-                "LINKS",
-                "LINKS_EXT",
-                "SERVICE_ID",
-                "ACTION",
-                "SUBSET",
-                "DOCUMENT_ID"),
+        super(serviceId, systemId, exchangeId, version, filePath,
+                VisionCsvToFhirTransformer.CSV_FORMAT.withHeader(getHeaders(version)),
                 VisionCsvToFhirTransformer.DATE_FORMAT,
                 VisionCsvToFhirTransformer.TIME_FORMAT);
     }
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "PID",
-                "ID",
-                "DATE",
-                "RECORDED_DATE",
-                "CODE",
-                "SNOMED_CODE",
-                "BNF_CODE",
-                "HCP",
-                "HCP_TYPE",
-                "GMS",
-                "EPISODE",
-                "TEXT",
-                "RUBRIC",
-                "DRUG_FORM",
-                "DRUG_STRENGTH",
-                "DRUG_PACKSIZE",
-                "DMD_CODE",
-                "IMMS_STATUS",
-                "IMMS_COMPOUND",
-                "IMMS_SOURCE",
-                "IMMS_BATCH",
-                "IMMS_REASON",
-                "IMMS_METHOD",
-                "IMMS_SITE",
-                "ENTITY",
-                "VALUE1_NAME",
-                "VALUE1",
-                "VALUE1_UNITS",
-                "VALUE2_NAME",
-                "VALUE2",
-                "VALUE2_UNITS",
-                "END_DATE",
-                "TIME",
-                "CONTEXT",
-                "CERTAINTY",
-                "SEVERITY",
-                "LINKS",
-                "LINKS_EXT",
-                "SERVICE_ID",
-                "ACTION",
-                "SUBSET",
-                "DOCUMENT_ID"
-        };
+        return getHeaders(version);
+    }
+
+    private static String[] getHeaders(String version) {
+
+        if (version.equals(VisionCsvToFhirTransformer.VERSION_TEST_PACK)) {
+            //the test pack is missing a lot of fields and also represents HCP using their code rather than unique ID
+            return new String[]{
+                    "PID",
+                    "ID",
+                    "DATE",
+                    "RECORDED_DATE",
+                    "CODE",
+                    "BNF_CODE",
+                    "HCP_CODE", //e.g. Gxxxxxx
+                    "HCP_TYPE",
+                    "GMS",
+                    "EPISODE",
+                    "TEXT",
+                    "RUBRIC",
+                    "VALUE1",
+                    "VALUE2",
+                    "END_DATE",
+                    "TIME",
+                    "CONTEXT",
+                    "CERTAINTY",
+                    "SEVERITY",
+                    "LINKS",
+                    "SERVICE_ID",
+                    "SUBSET",
+                    "ACTION"
+            };
+
+        } else {
+            return new String[]{
+                    "PID",
+                    "ID",
+                    "DATE",
+                    "RECORDED_DATE",
+                    "CODE",
+                    "SNOMED_CODE",
+                    "BNF_CODE",
+                    "HCP",
+                    "HCP_TYPE",
+                    "GMS",
+                    "EPISODE",
+                    "TEXT",
+                    "RUBRIC",
+                    "DRUG_FORM",
+                    "DRUG_STRENGTH",
+                    "DRUG_PACKSIZE",
+                    "DMD_CODE",
+                    "IMMS_STATUS",
+                    "IMMS_COMPOUND",
+                    "IMMS_SOURCE",
+                    "IMMS_BATCH",
+                    "IMMS_REASON",
+                    "IMMS_METHOD",
+                    "IMMS_SITE",
+                    "ENTITY",
+                    "VALUE1_NAME",
+                    "VALUE1",
+                    "VALUE1_UNITS",
+                    "VALUE2_NAME",
+                    "VALUE2",
+                    "VALUE2_UNITS",
+                    "END_DATE",
+                    "TIME",
+                    "CONTEXT",
+                    "CERTAINTY",
+                    "SEVERITY",
+                    "LINKS",
+                    "LINKS_EXT",
+                    "SERVICE_ID",
+                    "ACTION",
+                    "SUBSET",
+                    "DOCUMENT_ID"
+            };
+        }
     }
 
     @Override
@@ -174,10 +168,6 @@ public class Journal extends AbstractCsvParser {
         return super.getCell("VALUE1_NAME");
     }
 
-    public CsvCell getValue1AsText() {
-        return super.getCell("VALUE1");
-    }
-
     public CsvCell getValue1() {
         return super.getCell("VALUE1");
     }   //if drug, then amount, else numeric value for investigation, value, result
@@ -246,6 +236,9 @@ public class Journal extends AbstractCsvParser {
         return super.getCell("SUBSET");
     }
 
+    /**
+     * additional classification of the record (e.g. WEIGHT, HEIGHT, PULSE)
+     */
     public CsvCell getObservationEntity() {
         return super.getCell("ENTITY");
     }
