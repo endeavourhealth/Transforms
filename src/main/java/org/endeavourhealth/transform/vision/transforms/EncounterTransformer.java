@@ -48,12 +48,12 @@ public class EncounterTransformer {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
 
-        CsvCell consultationID = parser.getConsultationID();
-        CsvCell patientID = parser.getPatientID();
+        CsvCell consultationIdCell = parser.getConsultationID();
+        CsvCell patientIdCell = parser.getPatientID();
 
-        VisionCsvHelper.setUniqueId(encounterBuilder, patientID, consultationID);
+        VisionCsvHelper.setUniqueId(encounterBuilder, patientIdCell, consultationIdCell);
 
-        encounterBuilder.setPatient(csvHelper.createPatientReference(patientID));
+        encounterBuilder.setPatient(csvHelper.createPatientReference(patientIdCell));
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell actionCell = parser.getAction();
@@ -64,7 +64,7 @@ public class EncounterTransformer {
         }
 
         //link the consultation to our episode of care
-        Reference episodeReference = csvHelper.createEpisodeReference(patientID.getString());
+        Reference episodeReference = csvHelper.createEpisodeReference(patientIdCell);
         encounterBuilder.setEpisodeOfCare(episodeReference);
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);

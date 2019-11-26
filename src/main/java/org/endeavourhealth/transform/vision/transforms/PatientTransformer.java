@@ -5,7 +5,11 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
@@ -16,6 +20,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -57,7 +62,11 @@ public class PatientTransformer {
 
         CsvCell patientIdCell = parser.getPatientID();
         VisionCsvHelper.setUniqueId(patientBuilder, patientIdCell, null);
-        VisionCsvHelper.setUniqueId(episodeBuilder, patientIdCell, null); //use the patient GUID as the ID for the episode
+
+        //factor the registration start date into the unique ID for the episode, so a change in registration start
+        //date correctly results in a new episode of care being created
+        CsvCell regDateCell = parser.getDateOfRegistration();
+        VisionCsvHelper.setUniqueId(episodeBuilder, patientIdCell, regDateCell);
 
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         episodeBuilder.setPatient(patientReference, patientIdCell);
@@ -180,6 +189,17 @@ public class PatientTransformer {
             episodeBuilder.setCareManager(practitionerReference, usualGpID);
         }
 
+        //This is set and used at the beginning for the ID value for the episode
+        if (!regDateCell.isEmpty()) {
+            episodeBuilder.setRegistrationStartDate(regDateCell.getDate(), regDateCell);
+        }
+
+        //and cache the start date in the helper since we'll need this when linking Encounters to Episodes
+        //note we must do this AFTER the above set, otherwise we'll fail to end episodes when patients are deducted and re-register on the same day
+        csvHelper.cacheLatestEpisodeStartDate(patientIdCell, regDateCell);
+
+        endOtherEpisodes(patientIdCell, regDateCell, fhirResourceFiler);
+
         /*if (!usualGpID.isEmpty()
                 && registrationType == RegistrationType.REGULAR_GMS) { //if they're not registered for GMS, then this isn't their usual GP
             patientBuilder.addCareProvider(csvHelper.createPractitionerReference(usualGpID.getString()));
@@ -238,11 +258,6 @@ public class PatientTransformer {
             if (!Strings.isNullOrEmpty(ethnicityCode)) {
                 patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
             }
-        }
-
-        CsvCell regDate = parser.getDateOfRegistration();
-        if (!regDate.isEmpty()) {
-            episodeBuilder.setRegistrationStartDate(regDate.getDate(), regDate);
         }
 
         CsvCell dedDate = parser.getDateOfDeactivation();
@@ -399,6 +414,53 @@ public class PatientTransformer {
                 return null; //"Unspecified";
             default:
                 throw new TransformException("Unexpected Patient Marital Status Code: [" + statusCode + "]");
+        }
+    }
+
+    /**
+     * if a patient was deducted and re-registered on the same day, we don't ever receive the end date for the previous
+     * registration, so we need to manually check for any active episode with a different start date and end them
+     */
+    private static void endOtherEpisodes(CsvCell patientGuidCell, CsvCell thisStartDateCell, FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        String sourceId = VisionCsvHelper.createUniqueId(patientGuidCell, null);
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Patient, sourceId);
+        if (globallyUniqueId == null) {
+            return;
+        }
+
+        Date thisStartDate = thisStartDateCell.getDate();
+
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> episodeWrappers
+                = resourceDal.getResourcesByPatient(fhirResourceFiler.getServiceId(), globallyUniqueId, ResourceType.EpisodeOfCare.toString());
+
+        for (ResourceWrapper episodeWrapper: episodeWrappers) {
+            EpisodeOfCare episode = (EpisodeOfCare) FhirSerializationHelper.deserializeResource(episodeWrapper.getResourceData());
+            if (!episode.hasPeriod()) {
+                throw new Exception("Episode " + episode.getId() + " doesn't have period");
+            }
+
+            Period period = episode.getPeriod();
+            if (!PeriodHelper.isActive(period)) {
+                continue;
+            }
+
+            Date startDate = period.getStart();
+            if (startDate == null) {
+                throw new Exception("Episode " + episode.getId() + " doesn't have start date");
+            }
+
+            //if we're re-processing old files, we will end up processing records for old start dates,
+            //and we need to ensure we don't accidentially end episodes from AFTER
+            if (!startDate.before(thisStartDate)) {
+                continue;
+            }
+
+            EpisodeOfCareBuilder builder = new EpisodeOfCareBuilder(episode);
+            builder.setRegistrationEndDate(thisStartDate, thisStartDateCell);
+
+            fhirResourceFiler.savePatientResource(null, false, builder);
         }
     }
 }

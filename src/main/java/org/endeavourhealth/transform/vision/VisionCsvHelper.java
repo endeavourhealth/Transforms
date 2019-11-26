@@ -11,6 +11,7 @@ import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
@@ -26,6 +27,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -55,6 +57,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Set<String> drugRecords = new HashSet<>();
+    private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
 
     public VisionCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
@@ -520,9 +523,60 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         return consultationNewChildMap.remove(encounterSourceId);
     }
 
-    public Reference createEpisodeReference(String patientGuid) {
-        //the episode of care just uses the patient GUID as its ID, so that's all we need to refer to it too
-        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientGuid);
+    public Reference createEpisodeReference(CsvCell patientGuid) throws Exception{
+        //we now use registration start date as part of the source ID for episodes of care, so we use the internal  ID map table to store that start date
+        CsvCell regStartCell = getLatestEpisodeStartDate(patientGuid);
+        if (regStartCell == null) {
+            throw new Exception("Failed to find latest registration date for patient " + patientGuid);
+        }
+        String episodeSourceId = createUniqueId(patientGuid, regStartCell);
+        return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeSourceId);
+    }
+
+    public void cacheLatestEpisodeStartDate(CsvCell patientGuid, CsvCell startDateCell) throws Exception {
+        String key = patientGuid.getString();
+        String value = startDateCell.getString();
+
+        latestEpisodeStartDateCache.put(key, value);
+    }
+
+    public CsvCell getLatestEpisodeStartDate(CsvCell patientGuid) throws Exception {
+        String key = patientGuid.getString();
+        String value = latestEpisodeStartDateCache.get(key);
+        if (value == null) {
+
+            //convert patient GUID to UUID
+            String sourcePatientId = createUniqueId(patientGuid, null);
+            UUID patientUuid = IdHelper.getEdsResourceId(serviceId, ResourceType.Patient, sourcePatientId);
+            if (patientUuid == null) {
+                return null;
+            }
+
+            Date latestDate = null;
+
+            List<ResourceWrapper> episodeWrappers = resourceRepository.getResourcesByPatient(serviceId, patientUuid, ResourceType.EpisodeOfCare.toString());
+            for (ResourceWrapper wrapper: episodeWrappers) {
+                EpisodeOfCare episode = (EpisodeOfCare) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
+                if (episode.hasPeriod()) {
+                    Date d = episode.getPeriod().getStart();
+                    if (latestDate == null
+                            || d.after(latestDate)) {
+                        latestDate = d;
+                    }
+                }
+            }
+
+            if (latestDate == null) {
+                return null;
+            }
+
+            //need to convert back to a string in the same format as the raw file
+            SimpleDateFormat sdf = new SimpleDateFormat(VisionCsvToFhirTransformer.DATE_FORMAT);
+            value = sdf.format(latestDate);
+            latestEpisodeStartDateCache.put(key, value);
+        }
+
+        return CsvCell.factoryDummyWrapper(value);
     }
 
     public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid, String readCode) {
