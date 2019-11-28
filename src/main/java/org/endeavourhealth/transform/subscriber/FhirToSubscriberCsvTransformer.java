@@ -207,6 +207,9 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
         //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
         ResourceWrapper resourceWrapper = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), resourceId);
+        if (resourceWrapper == null) {
+            LOG.info("Null resource history returned for : " + resourceType.toString() + ":" + resourceId);
+        }
         params.addResourceToTransform(resourceWrapper);
 
         //and store the organization's enterprise ID in a separate table so we don't have to repeat all this next time
