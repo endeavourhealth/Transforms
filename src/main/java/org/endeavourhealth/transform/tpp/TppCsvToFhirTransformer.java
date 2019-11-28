@@ -443,6 +443,7 @@ public abstract class TppCsvToFhirTransformer {
             return "appointment";
 
         } else if (fileName.equals("SRChildAtRisk")
+                || fileName.equals("SRPersonAtRisk")
                 || fileName.equals("SRCode")
                 || fileName.equals("SRDrugSensitivity")
                 || fileName.equals("SREvent")
