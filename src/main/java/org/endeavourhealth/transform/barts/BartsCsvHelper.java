@@ -66,6 +66,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public static final String SUS_RECORD_TYPE_INPATIENT = "InPatient";
     public static final String SUS_RECORD_TYPE_OUTPATIENT = "OutPatient";
     public static final String SUS_RECORD_TYPE_EMERGENCY = "Emergency";
+    public static final String SUS_RECORD_TYPE_EMERGENCY_CDS = "EmergencyCDS";
 
     private static final String PPREL_TO_RELATIONSHIP_TYPE = "PPREL_ID_TO_TYPE";
     public static final String ENCOUNTER_ID_TO_PERSON_ID = "ENCNTR_ID_TO_PERSON_ID";

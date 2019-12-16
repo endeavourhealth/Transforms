@@ -1,8 +1,8 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsTail;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCds;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.schema.SusEmergencyCareDataSetTail;
+import org.endeavourhealth.transform.barts.schema.SusEmergencyCareDataSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.slf4j.Logger;
@@ -11,25 +11,25 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SusEmergencyCareDataSetTailPreTransformer extends CdsTailPreTransformerBase {
-    private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyCareDataSetTailPreTransformer.class);
-
+public class SusEmergencyCareDataSetPreTransformer extends CdsPreTransformerBase {
+    private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyCareDataSetPreTransformer.class);
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
 
-        List<StagingCdsTail> cdsTailBatch = new ArrayList<>();
+        List<StagingEmergencyCds> emergencyCdsBatch = new ArrayList<>();
 
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
 
-                processEmergencyCdsTailRecords((SusEmergencyCareDataSetTail)parser, csvHelper, cdsTailBatch);
+                //new function to call into emergency attendances
+                processEmergencyCdsRecords((SusEmergencyCareDataSet)parser, csvHelper, emergencyCdsBatch);
             }
         }
 
-        saveCdsTailBatch(cdsTailBatch, true, csvHelper);
+        saveEmergencyCdsBatch(emergencyCdsBatch, true, csvHelper);
     }
 }

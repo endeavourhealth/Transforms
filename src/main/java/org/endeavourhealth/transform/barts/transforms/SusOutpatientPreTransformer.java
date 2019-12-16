@@ -1,11 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCds;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCdsCount;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureCds;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureCdsCount;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.*;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.schema.SusInpatient;
 import org.endeavourhealth.transform.barts.schema.SusOutpatient;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -29,11 +25,23 @@ public class SusOutpatientPreTransformer extends CdsPreTransformerBase {
         List<StagingConditionCds> conditionBatch = new ArrayList<>();
         List<StagingConditionCdsCount> conditionCountBatch = new ArrayList<>();
 
+        List<StagingOutpatientCds> outpatientCdsBatch = new ArrayList<>();
+
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
-                processRecords((SusOutpatient)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT, procedureBatch, procedureCountBatch, conditionBatch, conditionCountBatch);
+                processRecords(
+                        (SusOutpatient)parser,
+                        csvHelper,
+                        BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT,
+                        procedureBatch,
+                        procedureCountBatch,
+                        conditionBatch,
+                        conditionCountBatch);
+
+                //new function to call into Outpatient attendances
+                processOutpatientRecords((SusOutpatient)parser, csvHelper, outpatientCdsBatch);
             }
         }
 
@@ -41,7 +49,8 @@ public class SusOutpatientPreTransformer extends CdsPreTransformerBase {
         saveProcedureCountBatch(procedureCountBatch, true, csvHelper);
         saveConditionBatch(conditionBatch, true, csvHelper);
         saveConditionCountBatch(conditionCountBatch, true, csvHelper);
+
+        //new function to call into Outpatient attendances
+        saveOutpatientCdsBatch(outpatientCdsBatch, true, csvHelper);
     }
-
-
 }

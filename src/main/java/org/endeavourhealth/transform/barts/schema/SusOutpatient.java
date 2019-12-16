@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class SusOutpatient extends AbstractFixedParser implements CdsRecordI {
+public class SusOutpatient extends AbstractFixedParser implements CdsRecordI, CdsRecordOutpatientI {
     private static final Logger LOG = LoggerFactory.getLogger(SusOutpatient.class);
 
     public SusOutpatient(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
@@ -88,6 +88,36 @@ public class SusOutpatient extends AbstractFixedParser implements CdsRecordI {
     public CsvCell getPrimaryDiagnosisICD() {return super.getCell("PrimaryDiagnosisICD"); }
     public CsvCell getSecondaryDiagnosisICD() {return super.getCell("SecondaryDiagnosisICD");}
     public CsvCell getAdditionalSecondaryDiagnosisICD() {return super.getCell("2nd50thSecondaryDiagnosisICD");}
+
+    public CsvCell getPatientPathwayIdentifier() {
+        return super.getCell("PatientPathwayIdentifier");
+    }
+
+    public CsvCell getAttendanceIdentifier() {
+        return super.getCell("AttendanceIdentifier");
+    }
+
+    public CsvCell getAppointmentAttendedCode() {
+        return super.getCell("AttendedOrDidNotAttendCode");
+    }
+
+    public CsvCell getAppointmentOutcomeCode() {
+        return super.getCell("OutcomeofAttendanceCode");
+    }
+
+    public CsvCell getAppointmentDate() {
+        return super.getCell("AppointmentDate");
+    }
+
+    public CsvCell getAppointmentTime() {
+        return super.getCell("AppointmentTime");
+    }
+
+    public CsvCell getAppointmentSiteCode() {
+        return super.getCell("SiteCodeofTreatment");
+    }
+
+
 
     /*public String getConsultantCode() {
         return super.getString("ConsultantCode");

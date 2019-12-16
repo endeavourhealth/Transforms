@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class SusInpatient extends AbstractFixedParser implements CdsRecordI {
+public class SusInpatient extends AbstractFixedParser implements CdsRecordI, CdsRecordInpatientI {
     private static final Logger LOG = LoggerFactory.getLogger(SusInpatient.class);
 
     public SusInpatient(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
@@ -61,6 +61,89 @@ public class SusInpatient extends AbstractFixedParser implements CdsRecordI {
     public CsvCell getPrimaryDiagnosisICD() {return super.getCell("PrimaryDiagnosisICD"); }
     public CsvCell getSecondaryDiagnosisICD() {return super.getCell("SecondaryDiagnosisICD");}
     public CsvCell getAdditionalSecondaryDiagnosisICD() {return super.getCell("2nd50thSecondaryDiagnosisICD");}
+
+    public CsvCell getPatientPathwayIdentifier() {
+        return super.getCell("PatientPathwayIdentifier");
+    }
+
+    public CsvCell getHospitalSpellStartDate() {
+        return super.getCell("StartDateHospitalProviderSpell");
+    }
+
+    public CsvCell getHospitalSpellStartTime() {
+        return super.getCell("StartTimeHospitalProviderSpell");
+    }
+
+    public CsvCell getHospitalSpellNumber() {
+        return super.getCell("HospitalProviderSpellNumber");
+    }
+
+    public CsvCell getAdmissionMethodCode() {
+        return super.getCell("AdmissionMethodCode");
+    }
+
+    public CsvCell getAdmissionSourceCode() {
+        return super.getCell("AdmissionSourceCode");
+    }
+
+    public CsvCell getPatientClassification() {
+        return super.getCell("PatientClassification");
+    }
+
+    public CsvCell getEpisodeNumber() {
+        return super.getCell("EpisodeNumber");
+    }
+
+    public CsvCell getEpisodeStartSiteCode() {
+        return super.getCell("StartSiteCodeofTreatment");
+    }
+
+    public CsvCell getEpisodeStartWardCode() {
+        return super.getCell("StartWardCode");
+    }
+
+    public CsvCell getEpisodeStartDate() {
+        return super.getCell("EpisodeStartDate");
+    }
+
+    public CsvCell getEpisodeStartTime() {
+        return super.getCell("EpisodeStartTime");
+    }
+
+    public CsvCell getEpisodeEndSiteCode() {
+        return super.getCell("EndSiteCodeofTreatment");
+    }
+
+    public CsvCell getEpisodeEndWardCode() {
+        return super.getCell("EndWardCode");
+    }
+
+    public CsvCell getEpisodeEndDate() {
+        return super.getCell("EpisodeEndDate");
+    }
+
+    public CsvCell getEpisodeEndTime() {
+        return super.getCell("EpisodeEndTime");
+    }
+
+    public CsvCell getDischargeDate() {
+        return super.getCell("DischargeDateHospitalProviderSpell");
+    }
+
+    public CsvCell getDischargeTime() {
+        return super.getCell("DischargeTimeHospitalProviderSpell");
+    }
+
+    public CsvCell getDischargeDestinationCode() {
+        return super.getCell("DischargeDestinationCode");
+    }
+
+    public CsvCell getDischargeMethod() {
+        return super.getCell("DischargeMethod");
+    }
+
+
+
 
     //    public CsvCell getCDSRecordType() {
 //        return super.getCell("CDSRecordType");

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCdsTail;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionCdsTail;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureCdsTail;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -22,18 +23,19 @@ public class SusInpatientTailPreTransformer extends CdsTailPreTransformerBase {
 
         List<StagingProcedureCdsTail> procedureBatch = new ArrayList<>();
         List<StagingConditionCdsTail> conditionBatch = new ArrayList<>();
-
+        List<StagingCdsTail> cdsTailBatch = new ArrayList<>();
 
         for (ParserI parser : parsers) {
 
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
-                processTailRecord((SusInpatientTail)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_INPATIENT, procedureBatch, conditionBatch);
+                processTailRecord((SusInpatientTail)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_INPATIENT, procedureBatch, conditionBatch, cdsTailBatch);
             }
         }
 
         saveProcedureBatch(procedureBatch, true, csvHelper);
         saveConditionBatch(conditionBatch, true, csvHelper);
+        saveCdsTailBatch(cdsTailBatch, true, csvHelper);
     }
 
 }

@@ -52,6 +52,7 @@ public class SusOutpatientTail extends AbstractFixedParser implements CdsTailRec
     public CsvCell getCdsUpdateType() { return super.getCell("CDS_Update_Type");}
     public CsvCell getLocalPatientId() { return super.getCell("Local_Patient_ID");}
     public CsvCell getNhsNumber() { return super.getCell("NHS_Number");}
+    public CsvCell getTreatmentFunctionCd() { return super.getCell("TREATMENT_FUNCTION_CD");}
 
 
     @Override

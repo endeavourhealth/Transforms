@@ -11,14 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class SusEmergencyCareDataSetTail extends AbstractFixedParser {
+public class SusEmergencyCareDataSetTail extends AbstractFixedParser implements CdsTailRecordI {
     private static final Logger LOG = LoggerFactory.getLogger(SusEmergencyCareDataSetTail.class);
     private CsvCell responsiblePersonnelId;
 
     public SusEmergencyCareDataSetTail(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath, BartsCsvToFhirTransformer.CDS_DATE_FORMAT, BartsCsvToFhirTransformer.CDS_TIME_FORMAT);
     }
-
 
     public CsvCell getCdsUniqueId() {
         return super.getCell("CDS_Unique_Identifier");
@@ -36,6 +35,12 @@ public class SusEmergencyCareDataSetTail extends AbstractFixedParser {
         return ret;
     }
 
+    public CsvCell getNhsNumber() { return super.getCell("NHS_Number");}
+
+    public CsvCell getLocalPatientId() { return super.getCell("Local_Patient_ID");}
+
+    public CsvCell getCdsUpdateType() { return super.getCell("CDS_Update_Type");}
+
     public CsvCell getEpisodeId() {
         return super.getCell("Episode_ID");
     }
@@ -47,6 +52,8 @@ public class SusEmergencyCareDataSetTail extends AbstractFixedParser {
     public CsvCell getResponsiblePersonnelId() {
         return super.getCell("Responsible_HCP_Personal_ID");
     }
+
+    public CsvCell getTreatmentFunctionCd() { return super.getCell("TREATMENT_FUNCTION_CD");}
 
     @Override
     protected boolean isFileAudited() {

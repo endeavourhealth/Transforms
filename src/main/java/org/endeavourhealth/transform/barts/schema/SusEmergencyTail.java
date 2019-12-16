@@ -52,7 +52,7 @@ public class SusEmergencyTail extends AbstractFixedParser implements CdsTailReco
 
     public CsvCell getNhsNumber() { return super.getCell("NHS_Number");}
 
-
+    public CsvCell getTreatmentFunctionCd() { return super.getCell("TREATMENT_FUNCTION_CD");}
 
     @Override
     protected boolean isFileAudited() {

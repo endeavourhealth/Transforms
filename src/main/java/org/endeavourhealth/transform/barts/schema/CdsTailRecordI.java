@@ -11,7 +11,9 @@ public interface CdsTailRecordI {
     CsvCell getLocalPatientId();
     CsvCell getNhsNumber();
     CsvCell getEncounterId();
+    CsvCell getEpisodeId();
     CsvCell getResponsiblePersonnelId();
+    CsvCell getTreatmentFunctionCd();
 
     CsvCurrentState getCurrentState();
 }

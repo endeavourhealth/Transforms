@@ -23,6 +23,7 @@ public interface CdsRecordI {
     CsvCell getPrimaryDiagnosisICD();
     CsvCell getSecondaryDiagnosisICD();
     CsvCell getAdditionalSecondaryDiagnosisICD();
+    CsvCell getPatientPathwayIdentifier();
 
     CsvCurrentState getCurrentState();
     DateFormat getDateFormat();
