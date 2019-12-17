@@ -160,8 +160,8 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //EmergencyCareDataSets
-            SusEmergencyCareDataSetTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSet", true),fhirResourceFiler,csvHelper);
-            SusEmergencyCareDataSetPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSetTail", true),fhirResourceFiler,csvHelper);
+            SusEmergencyCareDataSetTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSetTail", true),fhirResourceFiler,csvHelper);
+            SusEmergencyCareDataSetPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSet", true),fhirResourceFiler,csvHelper);
 
             //PROCEDURES - the order is significant, going from less to more rich files
             PROCEPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PROCE", false), fhirResourceFiler, csvHelper);
