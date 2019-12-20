@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.Identifier;
@@ -317,5 +318,145 @@ public class IdentifierBuilder {
             setUse(otherIdentifier.getUse());
         }
 
+    }
+
+    /**
+     * removes the last added contact point if it already exists in the resource, if not will end any
+     * existing active ones. Anything added after the effective date will also be removed, to handle cases
+     * where we're re-processing old data.
+     */
+    public static void deDuplicateLastIdentifier(HasIdentifierI resource, Date effectiveDate) throws Exception {
+
+        List<Identifier> identifiers = resource.getIdentifiers();
+        if (identifiers.isEmpty()) {
+            return;
+        }
+
+        Identifier lastIdentifier = identifiers.get(identifiers.size()-1);
+        String lastSystem = lastIdentifier.getSystem();
+        Identifier.IdentifierUse lastUse = lastIdentifier.getUse();
+
+        //for feeds that have discrete records in the source data (e.g. TPP, Cerner) with their own unique IDs,
+        //then this function isn't suitable as it's expected that individual records will be maintained using the ID.
+        //Same goes for feeds that externally set dates on entries.
+        if (lastIdentifier.hasId()
+                || lastIdentifier.hasPeriod()) {
+            throw new Exception("De-duplication function only expected to be used when no unique IDs or explicit dates available");
+        }
+
+        //make sure to roll back if we're re-processing old data
+        rollBackToDate(resource, effectiveDate, lastSystem, lastUse);
+
+        List<Identifier> identifiersToEnd = new ArrayList<>();
+        boolean setStartDate = false;
+
+        //note the start index is the one BEFORE the last one, above
+        for (int i=identifiers.size()-2; i>=0; i--) {
+            Identifier identifier = identifiers.get(i);
+
+            //skip any that are of a different scope
+            if (!sameSystemAndUse(identifier, lastSystem, lastUse)) {
+                continue;
+            }
+
+            //if we've got previous history of entries in the same scope, then this is a delta and we can set the start date
+            setStartDate = true;
+
+            //ended ones shouldn't count towards the duplicate check
+            if (!PeriodHelper.isActive(identifier.getPeriod())) {
+                continue;
+            }
+
+            //the shallow equals fn compares the value but not the period, which is what we want
+            if (identifier.equalsShallow(lastIdentifier)) {
+                //if the latest has same value as this existing active one, then it's a duplicate and should be removed
+                identifiers.remove(identifiers.size() - 1);
+                return;
+            }
+
+            //if we make it here, then this one should be ended
+            identifiersToEnd.add(identifier);
+        }
+
+        if (setStartDate) {
+            IdentifierBuilder builder = new IdentifierBuilder(resource, lastIdentifier);
+            builder.setStartDate(effectiveDate);
+        }
+
+        //end any active ones we've found
+        if (!identifiersToEnd.isEmpty()) {
+            for (Identifier identifierToEnd: identifiersToEnd) {
+                IdentifierBuilder builder = new IdentifierBuilder(resource, identifierToEnd);
+                builder.setEndDate(effectiveDate);
+            }
+        }
+    }
+
+    /**
+     * if we know an identifier is no longer active, this function will find any active identifier (for the system and
+     * use) and end it with the given date
+     */
+    public static void endIdentifiers(HasIdentifierI resource, Date effectiveDate, String systemToEnd, Identifier.IdentifierUse useToEnd) throws Exception {
+        List<Identifier> identifiers = resource.getIdentifiers();
+        if (identifiers.isEmpty()) {
+            return;
+        }
+
+        //make sure to roll back if we're re-processing old data
+        rollBackToDate(resource, effectiveDate, systemToEnd, useToEnd);
+
+        for (int i=identifiers.size()-1; i>=0; i--) {
+            Identifier identifier = identifiers.get(i);
+            if (sameSystemAndUse(identifier, systemToEnd, useToEnd)
+                    && PeriodHelper.isActive(identifier.getPeriod())) {
+
+                IdentifierBuilder builder = new IdentifierBuilder(resource, identifier);
+                builder.setEndDate(effectiveDate);
+            }
+        }
+    }
+
+    private static boolean sameSystemAndUse(Identifier identifier, String system, Identifier.IdentifierUse use) {
+        return identifier.hasSystem()
+                && identifier.hasUse()
+                && identifier.getSystem().equals(system)
+                && identifier.getUse() == use;
+    }
+
+    /**
+     * because we sometimes need to re-process past data, we need this function to essentially roll back the
+     * list to what it would have been on a given date. Removes anything known to have been added on or after
+     * the effective date, and un-ends anything ended on or after that date.
+     */
+    private static void rollBackToDate(HasIdentifierI resource, Date effectiveDate, String system, Identifier.IdentifierUse use) throws Exception {
+        if (Strings.isNullOrEmpty(system)) {
+            throw new Exception("De-duplication function only supports last entry having a system set");
+        }
+        if (use == null) {
+            throw new Exception("De-duplication function only supports last entry having a use set");
+        }
+
+        List<Identifier> identifiers = resource.getIdentifiers();
+        for (int i=identifiers.size()-1; i>=0; i--) {
+            Identifier identifier = identifiers.get(i);
+            if (sameSystemAndUse(identifier, system, use)
+                    && identifier.hasPeriod()) {
+                Period p = identifier.getPeriod();
+
+                //if it was added on or after the effective date, remove it
+                if (p.hasStart()
+                        && !p.getStart().before(effectiveDate)) {
+                    identifiers.remove(i);
+                    continue;
+                }
+
+                //if it was ended on or after the effective date, un-end it
+                if (p.hasEnd()
+                        && !p.getEnd().before(effectiveDate)) {
+                    IdentifierBuilder builder = new IdentifierBuilder(resource, identifier);
+                    builder.setEndDate(null);
+                }
+            }
+        }
     }
 }

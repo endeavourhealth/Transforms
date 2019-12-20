@@ -180,59 +180,94 @@ public abstract class ResourceBuilderBase {
      * adding these extensions to resources that shouldn't have it
      */
     protected void createOrUpdateIsConfidentialExtension(boolean isConfidential, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.IS_CONFIDENTIAL, isConfidential);
+        if (isConfidential) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.IS_CONFIDENTIAL, isConfidential);
+            auditBooleanExtension(extension, sourceCells);
 
-        auditBooleanExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.IS_CONFIDENTIAL);
+        }
     }
 
     protected void createOrUpdateRecordedByExtension(Reference practitionerReference, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.RECORDED_BY, practitionerReference);
+        if (practitionerReference != null) {
+            Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.RECORDED_BY, practitionerReference);
+            auditReferenceExtension(extension, sourceCells);
 
-        auditReferenceExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.RECORDED_BY);
+        }
     }
 
     protected void createOrUpdateRecordedDateExtension(Date recordedDate, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateDateTimeExtension(getResource(), FhirExtensionUri.RECORDED_DATE, recordedDate);
+        if (recordedDate != null) {
+            Extension extension = ExtensionConverter.createOrUpdateDateTimeExtension(getResource(), FhirExtensionUri.RECORDED_DATE, recordedDate);
+            auditDateTimeExtension(extension, sourceCells);
 
-        auditDateTimeExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.RECORDED_DATE);
+        }
     }
 
     protected void createOrUpdateDocumentIdExtension(Identifier identifier, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.EXTERNAL_DOCUMENT, identifier);
+        if (identifier != null) {
+            Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.EXTERNAL_DOCUMENT, identifier);
+            auditIdentifierExtension(extension, sourceCells);
 
-        auditIdentifierExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.EXTERNAL_DOCUMENT);
+        }
+
     }
 
     protected void createOrUpdateIsReviewExtension(boolean isReview, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.IS_REVIEW, isReview);
+        if (isReview) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.IS_REVIEW, isReview);
+            auditBooleanExtension(extension, sourceCells);
 
-        auditBooleanExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.IS_REVIEW);
+        }
     }
 
     protected void createOrUpdateEncounterExtension(Reference reference, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.ASSOCIATED_ENCOUNTER, reference);
+        if (reference != null) {
+            Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.ASSOCIATED_ENCOUNTER, reference);
+            auditReferenceExtension(extension, sourceCells);
 
-        auditReferenceExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.ASSOCIATED_ENCOUNTER);
+        }
     }
 
     protected void createOrUpdateParentResourceExtension(Reference reference, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.PARENT_RESOURCE, reference);
+        if (reference != null) {
+            Extension extension = ExtensionConverter.createOrUpdateExtension(getResource(), FhirExtensionUri.PARENT_RESOURCE, reference);
+            auditReferenceExtension(extension, sourceCells);
 
-        auditReferenceExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.PARENT_RESOURCE);
+        }
     }
 
     protected void createOrUpdateIsPrimaryExtension(boolean isPrimary, CsvCell... sourceCells) {
-
         if (isPrimary) {
             Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(getResource(), FhirExtensionUri.IS_PRIMARY, true);
             auditBooleanExtension(extension, sourceCells);
+
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.IS_PRIMARY);
         }
     }
 
     protected void createOrUpdateContextExtension(String context, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateStringExtension(getResource(), FhirExtensionUri.RESOURCE_CONTEXT, context);
+        if (!Strings.isNullOrEmpty(context)) {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(getResource(), FhirExtensionUri.RESOURCE_CONTEXT, context);
+            auditStringExtension(extension, sourceCells);
 
-        auditStringExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(getResource(), FhirExtensionUri.RESOURCE_CONTEXT);
+        }
     }
 
     public static ResourceBuilderBase factory(Resource resource, ResourceFieldMappingAudit audit) {
@@ -321,7 +356,7 @@ public abstract class ResourceBuilderBase {
     @Override
     public String toString() {
         if (getResource() == null) {
-            return "Builder:<NULL RESOUREC>";
+            return "Builder:<NULL RESOURECE>";
         } else {
             return "Builder:" + getResource().getResourceType() + " " + getResource().getId();
         }

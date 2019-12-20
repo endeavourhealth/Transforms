@@ -120,9 +120,13 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public void setResidentialInstituteCode(String code, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.patient, FhirExtensionUri.PATIENT_RESIDENTIAL_INSTITUTE_CODE, code);
+        if (!Strings.isNullOrEmpty(code)) {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.patient, FhirExtensionUri.PATIENT_RESIDENTIAL_INSTITUTE_CODE, code);
+            auditStringExtension(extension, sourceCells);
 
-        auditStringExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_RESIDENTIAL_INSTITUTE_CODE);
+        }
     }
 
     public void setManagingOrganisation(Reference organisationReference, CsvCell... sourceCells) {
@@ -132,9 +136,13 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public void setSpineSensitive(boolean sensitive, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.patient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE, sensitive);
+        if (sensitive) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.patient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE, sensitive);
+            auditBooleanExtension(extension, sourceCells);
 
-        auditBooleanExtension(extension, sourceCells);
+        } else {
+            ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_SPINE_SENSITIVE);
+        }
     }
 
     public void setActive(boolean active, CsvCell... sourceCells) {

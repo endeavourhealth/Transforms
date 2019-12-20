@@ -23,10 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.crypto.dsig.TransformException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class PatientTransformer {
 
@@ -67,8 +64,16 @@ public class PatientTransformer {
         PatientBuilder patientBuilder = createPatientResource(parser, csvHelper);
         EpisodeOfCareBuilder episodeBuilder = createEpisodeResource(parser, csvHelper, fhirResourceFiler);
 
-        //save both resources together, so the patient is defintiely saved before the episode
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+        if (patientBuilder.isIdMapped()) {
+            //if patient has previously been saved, we need to save them separately
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, patientBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeBuilder);
+
+        } else {
+            //save both resources together, so the patient is definitely saved before the episode
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+        }
+
     }
 
     private static EpisodeOfCareBuilder createEpisodeResource(Patient parser, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -227,41 +232,26 @@ public class PatientTransformer {
 
     private static PatientBuilder createPatientResource(Patient parser, EmisCsvHelper csvHelper) throws Exception {
 
-        PatientBuilder patientBuilder = new PatientBuilder();
+        PatientBuilder patientBuilder = getPatientBuilder(parser, csvHelper);
 
-        CsvCell patientGuid = parser.getPatientGuid();
-        EmisCsvHelper.setUniqueId(patientBuilder, patientGuid, null);
-
-        CsvCell nhsNumber = parser.getNhsNumber();
-        if (!nhsNumber.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-            identifierBuilder.setValue(nhsNumber.getString(), nhsNumber);
-        }
+        CsvCell nhsNumberCell = parser.getNhsNumber();
+        createIdentifier(patientBuilder, csvHelper, nhsNumberCell, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
         //store the patient GUID and patient number to the patient resource
-        if (!patientGuid.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID);
-            identifierBuilder.setValue(patientGuid.getString(), patientGuid);
-        }
+        CsvCell patientGuidCell = parser.getPatientGuid();
+        createIdentifier(patientBuilder, csvHelper, patientGuidCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID);
 
-        CsvCell patientNumber = parser.getPatientNumber();
-        if (!patientNumber.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
-            identifierBuilder.setValue(patientNumber.getString(), patientNumber);
-        }
+        CsvCell patientNumberCell = parser.getPatientNumber();
+        createIdentifier(patientBuilder, csvHelper, patientNumberCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
 
-        CsvCell dob = parser.getDateOfBirth();
-        patientBuilder.setDateOfBirth(dob.getDate(), dob);
+        CsvCell dobCell = parser.getDateOfBirth();
+        patientBuilder.setDateOfBirth(dobCell.getDate(), dobCell);
 
-        CsvCell dod = parser.getDateOfDeath();
-        if (!dod.isEmpty()) {
-            patientBuilder.setDateOfDeath(dod.getDate(), dod);
+        CsvCell dodCell = parser.getDateOfDeath();
+        if (!dodCell.isEmpty()) {
+            patientBuilder.setDateOfDeath(dodCell.getDate(), dodCell);
+        } else {
+            patientBuilder.clearDateOfDeath();
         }
 
         //EMIS provides "sex" and FHIR requires "gender", but will treat as the same concept for this transformation
@@ -270,17 +260,7 @@ public class PatientTransformer {
         Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
         patientBuilder.setGender(gender, sex);
 
-        CsvCell title = parser.getTitle();
-        CsvCell givenName = parser.getGivenName();
-        CsvCell middleNames = parser.getMiddleNames();
-        CsvCell surname = parser.getSurname();
-
-        NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-        nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
-        nameBuilder.addPrefix(title.getString(), title);
-        nameBuilder.addGiven(givenName.getString(), givenName);
-        nameBuilder.addGiven(middleNames.getString(), middleNames);
-        nameBuilder.addFamily(surname.getString(), surname);
+        transformName(patientBuilder, parser, csvHelper);
 
         //we need to know the registration type to work out the address use
         CsvCell patientType = parser.getPatientTypeDescription();
@@ -289,136 +269,57 @@ public class PatientTransformer {
         //dummy flag can be one of two places
         if (dummyType.getBoolean()
                 || patientType.getString().equalsIgnoreCase("Dummy")) {
-            patientBuilder.setTestPatient(true, dummyType);
+            patientBuilder.setTestPatient(true, dummyType, patientType);
+        } else {
+            patientBuilder.setTestPatient(false, dummyType, patientType);
         }
-
-        CsvCell houseNameFlat = parser.getHouseNameFlatNumber();
-        CsvCell numberAndStreet = parser.getNumberAndStreet();
-        CsvCell village = parser.getVillage();
-        CsvCell town = parser.getTown();
-        CsvCell county = parser.getCounty();
-        CsvCell postcode = parser.getPostcode();
-
-        //if the patient is a temp patient, then the address supplied will be the temporary address,
-        //rather than home. Emis Web stores the home address for these patients in a table we don't get in the extract
-        Address.AddressUse use = null;
 
         RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
-        if (registrationType != null
-            && registrationType == RegistrationType.TEMPORARY) {
-            use = Address.AddressUse.TEMP;
-        } else {
-            use = Address.AddressUse.HOME;
-        }
-
-        AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-        addressBuilder.setUse(use);
-        addressBuilder.addLine(houseNameFlat.getString(), houseNameFlat);
-        addressBuilder.addLine(numberAndStreet.getString(), numberAndStreet);
-        addressBuilder.addLine(village.getString(), village);
-        addressBuilder.setCity(town.getString(), town);
-        addressBuilder.setDistrict(county.getString(), county);
-        addressBuilder.setPostcode(postcode.getString(), postcode);
-
-        CsvCell residentialInstituteCode = parser.getResidentialInstituteCode();
-        if (!residentialInstituteCode.isEmpty()) {
-            patientBuilder.setResidentialInstituteCode(residentialInstituteCode.getString(), residentialInstituteCode);
-        }
-
-        CsvCell nhsNumberStatus = parser.getNHSNumberStatus();
-        if (!nhsNumberStatus.isEmpty()) {
-
-            //convert the String to one of the official statuses. If it can't be converted, insert free-text in the codeable concept
-            NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(nhsNumberStatus.getString());
-            patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatus);
-        }
+        transformAddress(patientBuilder, parser, csvHelper, registrationType);
 
         CsvCell homePhone = parser.getHomePhone();
-        if (!homePhone.isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
-            contactPointBuilder.setValue(homePhone.getString(), homePhone);
-        }
+        createContactPoint(patientBuilder, csvHelper, homePhone, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
 
         CsvCell mobilePhone = parser.getMobilePhone();
-        if (!mobilePhone.isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
-            contactPointBuilder.setValue(mobilePhone.getString(), mobilePhone);
-        }
+        createContactPoint(patientBuilder, csvHelper, mobilePhone, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
 
         CsvCell email = parser.getEmailAddress();
-        if (!email.isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
-            contactPointBuilder.setValue(email.getString(), email);
+        createContactPoint(patientBuilder, csvHelper, email, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.EMAIL);
+
+        transformCarer(patientBuilder, parser, csvHelper);
+        transformCareProvider(patientBuilder, parser, csvHelper, registrationType);
+        transformEthnicityAndMaritalStatus(patientBuilder, patientGuidCell, csvHelper);
+
+        CsvCell residentialInstituteCodeCell = parser.getResidentialInstituteCode();
+        if (!residentialInstituteCodeCell.isEmpty()) {
+            patientBuilder.setResidentialInstituteCode(residentialInstituteCodeCell.getString(), residentialInstituteCodeCell);
+        } else {
+            patientBuilder.setResidentialInstituteCode(null, residentialInstituteCodeCell);
+        }
+
+        CsvCell nhsNumberStatusCell = parser.getNHSNumberStatus();
+        if (!nhsNumberStatusCell.isEmpty()) {
+            NhsNumberVerificationStatus verificationStatus = convertNhsNumberVeriticationStatus(nhsNumberStatusCell.getString());
+            patientBuilder.setNhsNumberVerificationStatus(verificationStatus, nhsNumberStatusCell);
+
+        } else {
+            patientBuilder.setNhsNumberVerificationStatus(null, nhsNumberStatusCell);
         }
 
         CsvCell organisationGuid = parser.getOrganisationGuid();
         Reference organisationReference = csvHelper.createOrganisationReference(organisationGuid);
-        patientBuilder.setManagingOrganisation(organisationReference, organisationGuid);
-
-        CsvCell carerName = parser.getCarerName();
-        CsvCell carerRelationship = parser.getCarerRelation();
-        if (!carerName.isEmpty() || !carerRelationship.isEmpty()) {
-
-            //add a new empty contact object to the patient which the following lines will populate
-            PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
-
-            if (!carerName.isEmpty()) {
-                HumanName humanName = NameHelper.convert(carerName.getString());
-                contactBuilder.addContactName(humanName, carerName);
-            }
-
-            if (!carerRelationship.isEmpty()) {
-                //FHIR spec states that we should map to their relationship types if possible, but if
-                //not possible, then send as a textual codeable concept
-                contactBuilder.setRelationship(carerRelationship.getString(), carerRelationship);
-            }
+        if (patientBuilder.isIdMapped()) {
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
         }
+        patientBuilder.setManagingOrganisation(organisationReference, organisationGuid);
 
         CsvCell spineSensitive = parser.getSpineSensitive();
         if (spineSensitive.getBoolean()) {
             patientBuilder.setSpineSensitive(true, spineSensitive);
-        }
-
-        //the care provider field on the patient is ONLY for the patients usual GP, so only set the Emis usual
-        //GP field in it if the patient is a GMS patient, otherwise use the "external" GP fields on the parser
-        CsvCell usualGpGuid = parser.getUsualGpUserInRoleGuid();
-        if (!usualGpGuid.isEmpty()
-                && registrationType == RegistrationType.REGULAR_GMS) {
-
-            Reference reference = csvHelper.createPractitionerReference(usualGpGuid);
-            patientBuilder.addCareProvider(reference, usualGpGuid);
-        }
-
-        CsvCell externalGpGuid = parser.getExternalUsualGPGuid();
-        if (!externalGpGuid.isEmpty()) {
-            Reference reference = csvHelper.createPractitionerReference(externalGpGuid);
-            patientBuilder.addCareProvider(reference, externalGpGuid);
-
         } else {
-
-            //have to handle the mis-spelling of the column name in EMIS test pack
-            //String externalOrgGuid = patientParser.getExternalUsualGPOrganisation();
-            CsvCell externalOrgGuid = null;
-            if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                    || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
-                externalOrgGuid = parser.getExternalUsusalGPOrganisation();
-            } else {
-                externalOrgGuid = parser.getExternalUsualGPOrganisation();
-            }
-
-            if (!externalOrgGuid.isEmpty()) {
-                Reference reference = csvHelper.createOrganisationReference(externalOrgGuid);
-                patientBuilder.addCareProvider(reference, externalOrgGuid);
-            }
+            patientBuilder.setSpineSensitive(false, spineSensitive);
         }
 
-        transformEthnicityAndMaritalStatus(patientBuilder, patientGuid, csvHelper);
 
         //patient is active if they're not deducted. We only get one record in this file for a patient's
         //most recent registration, so it's safe to just use this deduction date
@@ -430,9 +331,231 @@ public class PatientTransformer {
         if (confidential.getBoolean()) {
             //add the confidential flag to BOTH resources
             patientBuilder.setConfidential(true, confidential);
+        } else {
+            patientBuilder.setConfidential(false, confidential);
         }
 
         return patientBuilder;
+    }
+
+    private static void transformName(PatientBuilder patientBuilder, Patient parser, EmisCsvHelper csvHelper) throws Exception {
+
+        CsvCell titleCell = parser.getTitle();
+        CsvCell givenNameCell = parser.getGivenName();
+        CsvCell middleNamesCell = parser.getMiddleNames();
+        CsvCell surnameCell = parser.getSurname();
+        if (!titleCell.isEmpty()
+                || !givenNameCell.isEmpty()
+                || !middleNamesCell.isEmpty()
+                || !surnameCell.isEmpty()) {
+
+            NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+            nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
+            nameBuilder.addPrefix(titleCell.getString(), titleCell);
+            nameBuilder.addGiven(givenNameCell.getString(), givenNameCell);
+            nameBuilder.addGiven(middleNamesCell.getString(), middleNamesCell);
+            nameBuilder.addFamily(surnameCell.getString(), surnameCell);
+
+            //make sure to de-duplicate the name if we've just added a new instance with the same value
+            NameBuilder.deDuplicateLastName(patientBuilder, csvHelper.getDataDate());
+
+        } else {
+            //not sure why we'd ever have no name fields, but handle it anyway, and end any existing name record
+            NameBuilder.endNames(patientBuilder, csvHelper.getDataDate(), HumanName.NameUse.OFFICIAL);
+        }
+
+    }
+
+    private static void transformAddress(PatientBuilder patientBuilder, Patient parser, EmisCsvHelper csvHelper, RegistrationType registrationType) throws Exception {
+        //if the patient is a temp patient, then the address supplied will be the temporary address,
+        //rather than home. Emis Web stores the home address for these patients in a table we don't get in the extract
+        Address.AddressUse use = null;
+        if (registrationType != null
+                && registrationType == RegistrationType.TEMPORARY) {
+            use = Address.AddressUse.TEMP;
+        } else {
+            use = Address.AddressUse.HOME;
+        }
+
+        CsvCell houseNameFlatCell = parser.getHouseNameFlatNumber();
+        CsvCell numberAndStreetCell = parser.getNumberAndStreet();
+        CsvCell villageCell = parser.getVillage();
+        CsvCell townCell = parser.getTown();
+        CsvCell countyCell = parser.getCounty();
+        CsvCell postcodeCell = parser.getPostcode();
+
+        if (!houseNameFlatCell.isEmpty()
+                || !numberAndStreetCell.isEmpty()
+                || !villageCell.isEmpty()
+                || !townCell.isEmpty()
+                || !countyCell.isEmpty()
+                || !postcodeCell.isEmpty()) {
+
+            AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
+            addressBuilder.setUse(use);
+            addressBuilder.addLine(houseNameFlatCell.getString(), houseNameFlatCell);
+            addressBuilder.addLine(numberAndStreetCell.getString(), numberAndStreetCell);
+            addressBuilder.addLine(villageCell.getString(), villageCell);
+            addressBuilder.setCity(townCell.getString(), townCell);
+            addressBuilder.setDistrict(countyCell.getString(), countyCell);
+            addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
+
+            //make sure to de-duplicate the name if we've just added a new instance with the same value
+            AddressBuilder.deDuplicateLastAddress(patientBuilder, csvHelper.getDataDate());
+
+        } else {
+            AddressBuilder.endAddresses(patientBuilder, csvHelper.getDataDate(), use);
+        }
+
+    }
+
+    private static void transformCarer(PatientBuilder patientBuilder, Patient parser, EmisCsvHelper csvHelper) throws Exception {
+
+        CsvCell carerNameCell = parser.getCarerName();
+        CsvCell carerRelationshipCell = parser.getCarerRelation();
+        if (!carerNameCell.isEmpty() || !carerRelationshipCell.isEmpty()) {
+
+            //add a new empty contact object to the patient which the following lines will populate
+            PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
+
+            if (!carerNameCell.isEmpty()) {
+                HumanName humanName = NameHelper.convert(carerNameCell.getString());
+                contactBuilder.addContactName(humanName, carerNameCell);
+            }
+
+            List<String> relationshipTypes = new ArrayList<>();
+            relationshipTypes.add("Carer"); //by definition, this is a carer relationship
+
+            if (!carerRelationshipCell.isEmpty()) {
+                //FHIR spec states that we should map to their relationship types if possible, but if
+                //not possible, then send as a textual codeable concept
+                relationshipTypes.add(carerRelationshipCell.getString());
+            }
+
+            String typeStr = String.join(", ", relationshipTypes);
+            contactBuilder.setRelationship(typeStr, carerRelationshipCell);
+
+            //make sure to de-duplicate the name if we've just added a new instance with the same value
+            PatientContactBuilder.deDuplicateLastPatientContact(patientBuilder, csvHelper.getDataDate());
+
+        } else {
+            //if cell is empty, make sure to end any previous records
+            PatientContactBuilder.endPatientContacts(patientBuilder, csvHelper.getDataDate());
+        }
+
+    }
+
+    private static void transformCareProvider(PatientBuilder patientBuilder, Patient parser, EmisCsvHelper csvHelper, RegistrationType registrationType) throws Exception {
+
+        //clear all care provider records, before we start adding more
+        patientBuilder.clearCareProvider();
+
+        //if the patient is GMS, then their registered practice is here and their usual GP is in the usual GP field
+        if (registrationType == RegistrationType.REGULAR_GMS) {
+
+            CsvCell orgCell = parser.getOrganisationGuid();
+            Reference orgReference = csvHelper.createOrganisationReference(orgCell);
+            if (patientBuilder.isIdMapped()) {
+                orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference, csvHelper);
+            }
+            patientBuilder.addCareProvider(orgReference, orgCell);
+
+            //the care provider field on the patient is ONLY for the patients usual GP, so only set the Emis usual
+            //GP field in it if the patient is a GMS patient, otherwise use the "external" GP fields on the parser
+            CsvCell usualGpGuidCell = parser.getUsualGpUserInRoleGuid();
+            if (!usualGpGuidCell.isEmpty()) {
+
+                Reference reference = csvHelper.createPractitionerReference(usualGpGuidCell);
+                if (patientBuilder.isIdMapped()) {
+                    reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, csvHelper);
+                }
+                patientBuilder.addCareProvider(reference, usualGpGuidCell);
+            }
+
+        } else {
+            //if the patient isn't GMS then look to the "external" fields
+
+            //have to handle the mis-spelling of the column name in EMIS test pack
+            //String externalOrgGuid = patientParser.getExternalUsualGPOrganisation();
+            CsvCell externalOrgGuidCell = null;
+            if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
+                    || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
+                externalOrgGuidCell = parser.getExternalUsusalGPOrganisation();
+            } else {
+                externalOrgGuidCell = parser.getExternalUsualGPOrganisation();
+            }
+
+            if (!externalOrgGuidCell.isEmpty()) {
+                Reference reference = csvHelper.createOrganisationReference(externalOrgGuidCell);
+                if (patientBuilder.isIdMapped()) {
+                    reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, csvHelper);
+                }
+                patientBuilder.addCareProvider(reference, externalOrgGuidCell);
+            }
+
+            CsvCell externalGpGuidCell = parser.getExternalUsualGPGuid();
+            if (!externalGpGuidCell.isEmpty()) {
+                Reference reference = csvHelper.createPractitionerReference(externalGpGuidCell);
+                if (patientBuilder.isIdMapped()) {
+                    reference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, csvHelper);
+                }
+                patientBuilder.addCareProvider(reference, externalGpGuidCell);
+            }
+        }
+    }
+
+    private static void createContactPoint(PatientBuilder patientBuilder, EmisCsvHelper csvHelper, CsvCell cell,
+                                           ContactPoint.ContactPointUse use, ContactPoint.ContactPointSystem system) throws Exception {
+
+        if (!cell.isEmpty()) {
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setUse(use);
+            contactPointBuilder.setSystem(system);
+            contactPointBuilder.setValue(cell.getString(), cell);
+
+            //make sure to de-duplicate the name if we've just added a new instance with the same value
+            ContactPointBuilder.deDuplicateLastContactPoint(patientBuilder, csvHelper.getDataDate());
+
+        } else {
+            //if cell is empty, make sure to end any previous records
+            ContactPointBuilder.endContactPoints(patientBuilder, csvHelper.getDataDate(), system, use);
+        }
+
+    }
+
+    private static void createIdentifier(PatientBuilder patientBuilder, EmisCsvHelper csvHelper, CsvCell cell,
+                                         Identifier.IdentifierUse use, String system) throws Exception {
+
+        if (!cell.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
+            identifierBuilder.setUse(use);
+            identifierBuilder.setSystem(system);
+            identifierBuilder.setValue(cell.getString(), cell);
+
+            //make sure to de-duplicate the identifier if we've just added a new instance with the same value
+            IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, csvHelper.getDataDate());
+
+        } else {
+            //if cell is empty, make sure to end any previous records
+            IdentifierBuilder.endIdentifiers(patientBuilder, csvHelper.getDataDate(), system, use);
+        }
+    }
+
+    private static PatientBuilder getPatientBuilder(Patient parser, EmisCsvHelper csvHelper) throws Exception {
+
+        PatientBuilder ret = null;
+
+        CsvCell patientGuid = parser.getPatientGuid();
+        String uniqueId = csvHelper.createUniqueId(patientGuid, null);
+        org.hl7.fhir.instance.model.Patient existingResource = (org.hl7.fhir.instance.model.Patient)csvHelper.retrieveResource(uniqueId, ResourceType.Patient);
+        if (existingResource != null) {
+            ret = new PatientBuilder(existingResource);
+        } else {
+            ret = new PatientBuilder();
+            EmisCsvHelper.setUniqueId(ret, patientGuid, null);
+        }
+
+        return ret;
     }
 
 
@@ -624,36 +747,6 @@ public class PatientTransformer {
 
         CodeAndDate newEthnicity = csvHelper.findEthnicity(patientGuid);
         CodeAndDate newMaritalStatus = csvHelper.findMaritalStatus(patientGuid);
-
-        //if we don't have an ethnicity or marital status already cached, we may be performing a delta transform
-        //so need to carry over any codeable concept already stored on the DB
-        if (newEthnicity == null || newMaritalStatus == null) {
-            org.hl7.fhir.instance.model.Patient existingPatient = (org.hl7.fhir.instance.model.Patient) csvHelper.retrieveResource(patientGuid.getString(), ResourceType.Patient);
-            if (existingPatient != null) {
-
-                if (newEthnicity == null) {
-                    CodeableConcept oldEthnicity = (CodeableConcept) ExtensionConverter.findExtensionValue(existingPatient, FhirExtensionUri.PATIENT_ETHNICITY);
-                    if (oldEthnicity != null) {
-                        String oldEthnicityCode = CodeableConceptHelper.findCodingCode(oldEthnicity, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
-                        if (!Strings.isNullOrEmpty(oldEthnicityCode)) {
-                            EthnicCategory ethnicCategory = EthnicCategory.fromCode(oldEthnicityCode);
-                            patientBuilder.setEthnicity(ethnicCategory);
-                        }
-                    }
-                }
-
-                if (newMaritalStatus == null
-                        && existingPatient.hasMaritalStatus()) {
-                    CodeableConcept oldMaritalStatus = existingPatient.getMaritalStatus();
-
-                    String oldMaritalStatusCode = CodeableConceptHelper.findCodingCode(oldMaritalStatus, FhirValueSetUri.VALUE_SET_MARITAL_STATUS);
-                    if (!Strings.isNullOrEmpty(oldMaritalStatusCode)) {
-                        MaritalStatus maritalStatus = MaritalStatus.fromCode(oldMaritalStatusCode);
-                        patientBuilder.setMaritalStatus(maritalStatus);
-                    }
-                }
-            }
-        }
 
         if (newEthnicity != null) {
             EmisCsvCodeMap codeMapping = newEthnicity.getCodeMapping();
