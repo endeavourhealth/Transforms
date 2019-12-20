@@ -487,7 +487,7 @@ public class SusEmergencyCareDataSet extends AbstractCsvParser implements CdsRec
     public CsvCell getNhsNumber() { return super.getCell("NHSNumber");}
     public CsvCell getCdsActivityDate() {return super.getCell("CDSActivityDate");}
     public CsvCell getCdsUpdateType() { return super.getCell("CDSUpdateType");}
-    public CsvCell getPersonBirthDate() { return super.getCell("PersonBirthDate");}
+    public CsvCell getPersonBirthDate() { return super.getCell("DateofBirth");}
     public CsvCell getWithheldReason() { return super.getCell("WithheldReason");}
 
     public CsvCell getPatientPathwayIdentifier() { return super.getCell("PatientPathwayIdentifier");}

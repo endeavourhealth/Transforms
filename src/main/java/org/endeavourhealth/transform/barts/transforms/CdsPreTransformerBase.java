@@ -864,8 +864,9 @@ public abstract class CdsPreTransformerBase {
             stagingEmergencyCds.setLookupPersonId(Integer.valueOf(personId));
         }
 
-        if (!parser.getPersonBirthDate().isEmpty()) {
-            stagingEmergencyCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
+        CsvCell patientDob = parser.getPersonBirthDate();
+        if (patientDob != null && !patientDob.isEmpty()) {
+            stagingEmergencyCds.setDateOfBirth(patientDob.getDate());
         }
 
         stagingEmergencyCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
