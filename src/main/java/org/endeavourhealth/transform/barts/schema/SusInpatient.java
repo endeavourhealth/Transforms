@@ -83,7 +83,7 @@ public class SusInpatient extends AbstractFixedParser implements CdsRecordI, Cds
     }
 
     public CsvCell getAdmissionSourceCode() {
-        return super.getCell("AdmissionSourceCode");
+        return super.getCell("SourceofAdmissionCode");
     }
 
     public CsvCell getPatientClassification() {
