@@ -9,6 +9,9 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -58,6 +61,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Set<String> drugRecords = new HashSet<>();
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
+    private Date cachedDataDate = null;
 
     public VisionCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
@@ -746,5 +750,21 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
         }
         return data;
+    }
+
+    /**
+     * returns the original date of the data in the exchange (i.e. when actually sent to DDS)
+     */
+    public Date getDataDate() throws Exception {
+        if (cachedDataDate == null) {
+            ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
+            Exchange x = exchangeDal.getExchange(exchangeId);
+            cachedDataDate = x.getHeaderAsDate(HeaderKeys.DataDate);
+
+            if (cachedDataDate == null) {
+                throw new Exception("Failed to find data date for exchange " + exchangeId);
+            }
+        }
+        return cachedDataDate;
     }
 }

@@ -22,7 +22,6 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.Map;
 
 public class SRPatientTransformer {
@@ -54,8 +53,6 @@ public class SRPatientTransformer {
                                       TppCsvHelper csvHelper) throws Exception {
 
         CsvCell rowIdCell = parser.getRowIdentifier();
-        CsvCell nhsNumberCell = parser.getNHSNumber();
-
         PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(rowIdCell, csvHelper);
 
         CsvCell removeDataCell = parser.getRemovedData();
@@ -65,131 +62,69 @@ public class SRPatientTransformer {
             return;
         }
 
-        //remove existing PatientId identifier to prevent any duplication
-        IdentifierBuilder.removeExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID);
+        createIdentifier(patientBuilder, csvHelper, rowIdCell, FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID, Identifier.IdentifierUse.SECONDARY);
 
-        IdentifierBuilder identifierBuilderTpp = new IdentifierBuilder(patientBuilder);
-        identifierBuilderTpp.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_TPP_PATIENT_ID);
-        identifierBuilderTpp.setUse(Identifier.IdentifierUse.SECONDARY);
-        identifierBuilderTpp.setValue(rowIdCell.getString(), rowIdCell);
+        CsvCell nhsNumberCell = parser.getNHSNumber();
+        createIdentifier(patientBuilder, csvHelper, nhsNumberCell, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER, Identifier.IdentifierUse.OFFICIAL);
 
-        if (!nhsNumberCell.isEmpty()) {
-
-            //remove existing NHS number identifier to prevent any duplication
-            IdentifierBuilder.removeExistingIdentifiersForSystem(patientBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-
-            String nhsNumber = nhsNumberCell.getString();
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
-            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setValue(nhsNumber, nhsNumberCell);
-
-            //this is only relevant if there is an NHS number
-            CsvCell spineMatched = parser.getSpineMatched();
-            if (spineMatched != null && !spineMatched.isEmpty()) { //need null check because it's not in all versions
-                NhsNumberVerificationStatus numberVerificationStatus = mapSpindeMatchedStatus(spineMatched);
-                patientBuilder.setNhsNumberVerificationStatus(numberVerificationStatus, spineMatched);
-            }
+        NhsNumberVerificationStatus numberVerificationStatus = null;
+        CsvCell spineMatchedCell = parser.getSpineMatched();
+        if (spineMatchedCell != null  //need null check because it's not in all versions
+                && !spineMatchedCell.isEmpty()
+                && !nhsNumberCell.isEmpty()) { //this is only relevant if there is an NHS number
+            numberVerificationStatus = mapSpindeMatchedStatus(spineMatchedCell);
         }
+        patientBuilder.setNhsNumberVerificationStatus(numberVerificationStatus, spineMatchedCell);
 
-        //Construct the name from individual fields
-        CsvCell firstNameCell = parser.getFirstName();
-        CsvCell surnameCell = parser.getSurname();
-        CsvCell middleNamesCell = parser.getMiddleNames();
-        CsvCell titleCell = parser.getTitle();
-
-        //We don't want a new *OFFICIAL* HumanName added for every local id.
-        // Delete existing Official name and replace
-        for (Iterator<HumanName> iterator = patientBuilder.getNames().iterator(); iterator.hasNext(); ) {
-        // for (HumanName nom : patientBuilder.getNames()) {
-            HumanName nom = iterator.next();
-            if (nom.getUse().equals(HumanName.NameUse.OFFICIAL)) {
-                patientBuilder.getNames().remove(nom);
-                break;
-            }
-        }
-        NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-        nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
-
-        if (!titleCell.isEmpty()) {
-            nameBuilder.addPrefix(titleCell.getString(), titleCell);
-        }
-        if (!firstNameCell.isEmpty()) {
-            nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
-        }
-        if (!middleNamesCell.isEmpty()) {
-            nameBuilder.addGiven(middleNamesCell.getString(), middleNamesCell);
-        }
-        if (!surnameCell.isEmpty()) {
-            nameBuilder.addFamily(surnameCell.getString(), surnameCell);
-        }
+        createName(patientBuilder, parser, csvHelper);
 
         CsvCell dobCell = parser.getDateBirth();
         if (!dobCell.isEmpty()) {
             //SystmOne captures time of birth too, so don't lose this by treating just as a date
             patientBuilder.setDateOfBirth(dobCell.getDateTime(), dobCell);
             //patientBuilder.setDateOfBirth(dobCell.getDate(), dobCell);
+        } else {
+            patientBuilder.setDateOfBirth(null, dobCell);
         }
-        CsvCell dateDeathCell = parser.getDateDeath();
 
+        CsvCell dateDeathCell = parser.getDateDeath();
         if (!dateDeathCell.isEmpty()) {
             patientBuilder.setDateOfDeath(dateDeathCell.getDate(), dateDeathCell);
+        } else {
+            patientBuilder.clearDateOfDeath();
         }
 
         CsvCell genderCell = parser.getGender();
         if (!genderCell.isEmpty()) {
             Enumerations.AdministrativeGender gender = mapGender(genderCell);
             patientBuilder.setGender(gender, genderCell);
+        } else {
+            patientBuilder.setGender(null, genderCell);
         }
 
         CsvCell emailCell = parser.getEmailAddress();
-        if (!emailCell.isEmpty()) {
-            // Remove any existing email.
-            ContactPointBuilder.removeExistingContactPointsBySystem(patientBuilder, ContactPoint.ContactPointSystem.EMAIL);
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
-            contactPointBuilder.setValue(emailCell.getString(), emailCell);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
-        }
+        ceatePatientContactEmail(patientBuilder, parser, csvHelper, emailCell);
 
         //Speaks English
         //The SRPatient CSV record refers to the global mapping file, which supports only three values
         CsvCell speaksEnglishCell = parser.getSpeaksEnglish();
-        if (!speaksEnglishCell.isEmpty()) {
+        Boolean speaksEnglishValue = lookUpSpeaksEnglishValue(speaksEnglishCell, csvHelper);
+        patientBuilder.setSpeaksEnglish(speaksEnglishValue, speaksEnglishCell);
 
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(speaksEnglishCell);
-            if (mapping != null) {
-                String term = mapping.getMappedTerm();
-                if (term.equals("Unknown")) {
-                    patientBuilder.setSpeaksEnglish(null, speaksEnglishCell);
-
-                } else if (term.equals("Yes")) {
-                    patientBuilder.setSpeaksEnglish(Boolean.TRUE, speaksEnglishCell);
-
-                } else if (term.equals("No")) {
-                    patientBuilder.setSpeaksEnglish(Boolean.FALSE, speaksEnglishCell);
-
-                } else {
-                    throw new TransformException("Unexpected english speaks value [" + term + "]");
-                }
-            }
+        //see if there is a ethnicity for patient from pre-transformer (but don't set to null if a new one hasn't been received)
+        TppCsvHelper.DateAndCode newEthnicity = csvHelper.findEthnicity(rowIdCell);
+        if (newEthnicity != null) {
+            EthnicCategory ethnicCategory = EthnicCategory.fromCode(newEthnicity.getCode());
+            CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
+            patientBuilder.setEthnicity(ethnicCategory, additionalSourceCells);
         }
 
-        //see if there is a marital status for patient from pre-transformer
-        CodeableConcept fhirMartialStatus = csvHelper.findMaritalStatus(rowIdCell);
-        if (fhirMartialStatus != null) {
-            String maritalStatusCode = CodeableConceptHelper.getFirstCoding(fhirMartialStatus).getCode();
-            if (!Strings.isNullOrEmpty(maritalStatusCode)) {
-                patientBuilder.setMaritalStatus(MaritalStatus.fromCode(maritalStatusCode));
-            }
-        }
-
-        //see if there is a ethnicity for patient from pre-transformer
-        CodeableConcept fhirEthnicity = csvHelper.findEthnicity(rowIdCell);
-        if (fhirEthnicity != null) {
-            String ethnicityCode = CodeableConceptHelper.getFirstCoding(fhirEthnicity).getCode();
-            if (!Strings.isNullOrEmpty(ethnicityCode)) {
-                patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
-            }
+        //see if there is a marital status for patient from pre-transformer (but don't set to null if a new one hasn't been received)
+        TppCsvHelper.DateAndCode newMaritalStatus = csvHelper.findMaritalStatus(rowIdCell);
+        if (newMaritalStatus != null) {
+            MaritalStatus maritalStatus = MaritalStatus.fromCode(newMaritalStatus.getCode());
+            CsvCell[] additionalSourceCells = newMaritalStatus.getAdditionalSourceCells();
+            patientBuilder.setMaritalStatus(maritalStatus, additionalSourceCells);
         }
 
         CsvCell testPatientCell = parser.getTestPatient();
@@ -202,7 +137,99 @@ public class SRPatientTransformer {
             orgReferencePatient = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferencePatient, csvHelper);
         }
         patientBuilder.setManagingOrganisation(orgReferencePatient, idOrgVisibleToCell);
+    }
 
+    private static Boolean lookUpSpeaksEnglishValue(CsvCell speaksEnglishCell, TppCsvHelper csvHelper) throws Exception {
+        if (!speaksEnglishCell.isEmpty()) {
+            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(speaksEnglishCell);
+            String term = mapping.getMappedTerm();
+            if (term.equals("Unknown")) {
+                return null;
+
+            } else if (term.equals("Yes")) {
+                return Boolean.TRUE;
+
+            } else if (term.equals("No")) {
+                return Boolean.FALSE;
+
+            } else {
+                throw new TransformException("Unexpected english speaks value [" + term + "]");
+            }
+
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * adds the email address contact (all other contacts e.g. telephone numbers) are done in SRPatientContactDetailsTransformer
+     */
+    private static void ceatePatientContactEmail(PatientBuilder patientBuilder, SRPatient parser, TppCsvHelper csvHelper, CsvCell cell) throws Exception {
+        if (!cell.isEmpty()) {
+
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setValue(cell.getString(), cell);
+            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
+            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
+
+            ContactPointBuilder.deDuplicateLastContactPoint(patientBuilder, csvHelper.getDataDate());
+
+        } else {
+            ContactPointBuilder.endContactPoints(patientBuilder, csvHelper.getDataDate(), ContactPoint.ContactPointSystem.EMAIL, ContactPoint.ContactPointUse.HOME);
+        }
+
+    }
+
+    private static void createName(PatientBuilder patientBuilder, SRPatient parser, TppCsvHelper csvHelper) throws Exception {
+
+        //Construct the name from individual fields
+        CsvCell firstNameCell = parser.getFirstName();
+        CsvCell surnameCell = parser.getSurname();
+        CsvCell middleNamesCell = parser.getMiddleNames();
+        CsvCell titleCell = parser.getTitle();
+
+        if (!firstNameCell.isEmpty()
+                || !surnameCell.isEmpty()
+                || !middleNamesCell.isEmpty()
+                || !titleCell.isEmpty()) {
+
+            NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+            nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
+
+            if (!titleCell.isEmpty()) {
+                nameBuilder.addPrefix(titleCell.getString(), titleCell);
+            }
+            if (!firstNameCell.isEmpty()) {
+                nameBuilder.addGiven(firstNameCell.getString(), firstNameCell);
+            }
+            if (!middleNamesCell.isEmpty()) {
+                nameBuilder.addGiven(middleNamesCell.getString(), middleNamesCell);
+            }
+            if (!surnameCell.isEmpty()) {
+                nameBuilder.addFamily(surnameCell.getString(), surnameCell);
+            }
+
+            NameBuilder.deDuplicateLastName(patientBuilder, csvHelper.getDataDate());
+
+        } else {
+            //if no name (for some reason), just end any existing ones in the resource
+            NameBuilder.endNames(patientBuilder, csvHelper.getDataDate(), HumanName.NameUse.OFFICIAL);
+        }
+    }
+
+    private static void createIdentifier(PatientBuilder patientBuilder, TppCsvHelper csvHelper, CsvCell cell, String system, Identifier.IdentifierUse use) throws Exception {
+
+        if (!cell.isEmpty()) {
+            IdentifierBuilder identifierBuilderTpp = new IdentifierBuilder(patientBuilder);
+            identifierBuilderTpp.setSystem(system);
+            identifierBuilderTpp.setUse(use);
+            identifierBuilderTpp.setValue(cell.getString(), cell);
+
+            IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, csvHelper.getDataDate());
+
+        } else {
+            IdentifierBuilder.endIdentifiers(patientBuilder, csvHelper.getDataDate(), system, use);
+        }
     }
 
     private static NhsNumberVerificationStatus mapSpindeMatchedStatus(CsvCell spineMatched) {

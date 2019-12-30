@@ -6,6 +6,9 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
@@ -80,14 +83,12 @@ public abstract class TppCsvToFhirTransformer {
         //version = determineVersion(files);
         Map<String, String> parserToVersionsMap = buildParserToVersionsMap(files, fhirResourceFiler);
 
-        boolean processPatientData = shouldProcessPatientData(files);
-
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
             createParsers(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), files, parserToVersionsMap, parsers);
 
             LOG.trace("Transforming TPP CSV content in " + orgDirectory);
-            transformParsers(parsers, fhirResourceFiler, processPatientData);
+            transformParsers(parsers, fhirResourceFiler);
 
         } finally {
             closeParsers(parsers.values());
@@ -99,24 +100,13 @@ public abstract class TppCsvToFhirTransformer {
      * works out if we want to process (i.e. transform and store) the patient data from this extract,
      * which we don't if this extract is from before we received a later re-bulk from emis
      */
-    public static boolean shouldProcessPatientData(String[] files) throws Exception {
+    public static boolean shouldProcessPatientData(TppCsvHelper csvHelper) throws Exception {
 
-        //find the extract date from one of the CSV file names
-        String firstFile = files[0];
-        File f = new File(firstFile);
+        Date extractDate = csvHelper.getDataDate();
 
-        //our ODS code is the same as the directory name
-        File odsDir = f.getParentFile();
-        String odsCode = odsDir.getName();
-
-        //the extract date is the parent of the parent
-        File splitDir = odsDir.getParentFile();
-        File extractDir = splitDir.getParentFile();
-        String extractDateStr = extractDir.getName();
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH.mm.ss");
-        Date extractDate = sdf.parse(extractDateStr);
-
+        ServiceDalI serviceDal = DalProvider.factoryServiceDal();
+        Service service = serviceDal.getById(csvHelper.getServiceId());
+        String odsCode = service.getLocalId();
         Date startDate = findStartDate(odsCode);
 
         if (startDate == null
@@ -497,11 +487,10 @@ public abstract class TppCsvToFhirTransformer {
     }
 
     private static void transformParsers(Map<Class, AbstractCsvParser> parsers,
-                                         FhirResourceFiler fhirResourceFiler,
-                                         boolean processPatientData) throws Exception {
+                                         FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        TppCsvHelper csvHelper = new TppCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
-                fhirResourceFiler.getExchangeId());
+        TppCsvHelper csvHelper = new TppCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
+        boolean processPatientData = shouldProcessPatientData(csvHelper);
 
         //reference data
         LOG.trace("Starting reference data transforms");
@@ -554,7 +543,14 @@ public abstract class TppCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             csvHelper.getPatientResourceCache().fileResources(fhirResourceFiler);
+
+            //content from SRRecordStatus is cached by the pre-transformer and processed in SRPatientRegistrationTransformer
+            //but if there's no SRPatientRegistration update, then we need to call this to make sure the data is processed
             csvHelper.processRemainingRegistrationStatuses(fhirResourceFiler);
+
+            //content from SRCode is cached by the pre-transformer and processed in SRPatientTransformer
+            //but if there's no SRPatient update, then we need to call this to make sure the data is processed
+            csvHelper.processRemainingEthnicitiesAndMartialStatuses(fhirResourceFiler);
 
             fhirResourceFiler.waitUntilEverythingIsSaved();
 

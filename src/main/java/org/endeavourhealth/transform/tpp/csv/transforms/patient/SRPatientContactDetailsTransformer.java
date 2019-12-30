@@ -124,7 +124,9 @@ public class SRPatientContactDetailsTransformer {
                     use = ContactPoint.ContactPointUse.HOME;
                     system = ContactPoint.ContactPointSystem.EMAIL;
                 } else {
-                    TransformWarnings.log(LOG, parser, "Unable to convert contact type {} to ContactPointUse", term);
+                    //not had any warnings in months, so will assume the above is now 100% and can replace with an exception
+                    throw new Exception("Unexpected ContactDetails type [" + term + "]");
+                    //TransformWarnings.log(LOG, parser, "Unable to convert contact type {} to ContactPointUse", term);
                 }
             }
         }

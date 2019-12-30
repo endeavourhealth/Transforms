@@ -61,13 +61,11 @@ public abstract class EmisCsvToFhirTransformer {
         version = determineVersion(files);
 
         ExchangePayloadFile.validateFilesAreInSameDirectory(files);
-        boolean processPatientData = shouldProcessPatientData(processor.getServiceId(), files);
-
         Map<Class, AbstractCsvParser> parsers = new HashMap<>();
 
         try {
             createParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, parsers);
-            transformParsers(version, parsers, processor, processPatientData);
+            transformParsers(version, parsers, processor);
 
         } finally {
             closeParsers(parsers.values());
@@ -78,16 +76,14 @@ public abstract class EmisCsvToFhirTransformer {
      * works out if we want to process (i.e. transform and store) the patient data from this extract,
      * which we don't if this extract is from before we received a later re-bulk from emis
      */
-    public static boolean shouldProcessPatientData(UUID serviceId, List<ExchangePayloadFile> files) throws Exception {
+    public static boolean shouldProcessPatientData(EmisCsvHelper csvHelper) throws Exception {
 
         ServiceDalI serviceDal = DalProvider.factoryServiceDal();
-        Service service = serviceDal.getById(serviceId);
+        Service service = serviceDal.getById(csvHelper.getServiceId());
         String odsCode = service.getLocalId();
         Date startDate = findStartDate(odsCode);
 
-        //find the extract date from one of the CSV file names
-        ExchangePayloadFile firstFileObj = files.get(0);
-        Date extractDate = findExtractDate(firstFileObj.getPath());
+        Date extractDate = csvHelper.getDataDate();
 
         if (startDate == null
                 || !extractDate.before(startDate)) {
@@ -210,7 +206,7 @@ public abstract class EmisCsvToFhirTransformer {
         return toks[4];
     }
 
-    private static Date findExtractDate(String filePath) throws Exception {
+    /*private static Date findExtractDate(String filePath) throws Exception {
         String name = FilenameUtils.getBaseName(filePath);
         String[] toks = name.split("_");
         if (toks.length != 5) {
@@ -219,12 +215,11 @@ public abstract class EmisCsvToFhirTransformer {
         String dateStr = toks[3];
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         return sdf.parse(dateStr);
-    }
+    }*/
 
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
-                                         FhirResourceFiler fhirResourceFiler,
-                                         boolean processPatientData) throws Exception {
+                                         FhirResourceFiler fhirResourceFiler) throws Exception {
 
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
 
@@ -242,7 +237,10 @@ public abstract class EmisCsvToFhirTransformer {
         }
 
         EmisCsvHelper csvHelper = new EmisCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
-                fhirResourceFiler.getExchangeId(), sharingAgreementGuid, processPatientData, parsers);
+                fhirResourceFiler.getExchangeId(), sharingAgreementGuid, parsers);
+
+        boolean processPatientData = shouldProcessPatientData(csvHelper);
+        csvHelper.setProcessPatientData(processPatientData);
 
         /*ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
         UUID firstExchangeId = exchangeDal.getFirstExchangeId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());

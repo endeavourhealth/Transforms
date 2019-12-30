@@ -65,16 +65,18 @@ public class SRCodePreTransformer {
                 dateTimeType = new DateTimeType(parser.getDateEvent().getDateTime());
             }
 
+            CsvCell codeIdCell = parser.getRowIdentifier();
+
             //try to get Ethnicity from code
             EthnicCategory ethnicCategory = csvHelper.getKnownEthnicCategory(readCode.getString());
             if (ethnicCategory != null) {
-                csvHelper.cacheEthnicity(patientId, dateTimeType, ethnicCategory);
+                csvHelper.cacheEthnicity(patientId, dateTimeType, ethnicCategory, codeIdCell);
             }
 
             //try to get Marital status from code
             MaritalStatus maritalStatus = findMaritalStatus(readCode.getString());
             if (maritalStatus != null) {
-                csvHelper.cacheMaritalStatus(patientId, dateTimeType, maritalStatus);
+                csvHelper.cacheMaritalStatus(patientId, dateTimeType, maritalStatus, codeIdCell);
             }
         }
 

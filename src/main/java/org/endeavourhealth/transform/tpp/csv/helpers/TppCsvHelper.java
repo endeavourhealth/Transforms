@@ -9,6 +9,9 @@ import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.*;
@@ -26,7 +29,10 @@ import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCel
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.emis.csv.helpers.CodeAndDate;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.tpp.cache.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -89,6 +95,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private final UUID serviceId;
     private final UUID systemId;
     private final UUID exchangeId;
+    private Date cachedDataDate = null;
 
     public TppCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
@@ -264,19 +271,25 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public class DateAndCode {
         private DateTimeType date = null;
-        private CodeableConcept codeableConcept = null;
+        private String code = null;
+        private CsvCell[] additionalSourceCells;
 
-        public DateAndCode(DateTimeType date, CodeableConcept codeableConcept) {
+        public DateAndCode(DateTimeType date, String code, CsvCell... additionalSourceCells) {
             this.date = date;
-            this.codeableConcept = codeableConcept;
+            this.code = code;
+            this.additionalSourceCells = additionalSourceCells;
         }
 
         public DateTimeType getDate() {
             return date;
         }
 
-        public CodeableConcept getCodeableConcept() {
-            return codeableConcept;
+        public String getCode() {
+            return code;
+        }
+
+        public CsvCell[] getAdditionalSourceCells() {
+            return additionalSourceCells;
         }
 
         public boolean isBefore(DateTimeType other) {
@@ -468,38 +481,28 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return null;
     }
 
-    public void cacheEthnicity(CsvCell patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory) {
+    public void cacheEthnicity(CsvCell patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory, CsvCell srCodeIdCell) {
         DateAndCode dc = ethnicityMap.get(patientGuid.getLong());
         if (dc == null
                 || dc.isBefore(fhirDate)) {
-            ethnicityMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(ethnicCategory)));
+            ethnicityMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, ethnicCategory.getCode(), srCodeIdCell));
         }
     }
 
-    public CodeableConcept findEthnicity(CsvCell patientGuid) {
-        DateAndCode dc = ethnicityMap.remove(patientGuid.getLong());
-        if (dc != null) {
-            return dc.getCodeableConcept();
-        } else {
-            return null;
-        }
+    public DateAndCode findEthnicity(CsvCell patientGuid) {
+        return ethnicityMap.remove(patientGuid.getLong());
     }
 
-    public void cacheMaritalStatus(CsvCell patientGuid, DateTimeType fhirDate, MaritalStatus maritalStatus) {
+    public void cacheMaritalStatus(CsvCell patientGuid, DateTimeType fhirDate, MaritalStatus maritalStatus, CsvCell srCodeIdCell) {
         DateAndCode dc = maritalStatusMap.get(patientGuid.getLong());
         if (dc == null
                 || dc.isBefore(fhirDate)) {
-            maritalStatusMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(maritalStatus)));
+            maritalStatusMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, maritalStatus.getCode(), srCodeIdCell));
         }
     }
 
-    public CodeableConcept findMaritalStatus(CsvCell patientGuid) {
-        DateAndCode dc = maritalStatusMap.remove(patientGuid);
-        if (dc != null) {
-            return dc.getCodeableConcept();
-        } else {
-            return null;
-        }
+    public DateAndCode findMaritalStatus(CsvCell patientGuid) {
+        return maritalStatusMap.remove(patientGuid.getLong());
     }
 
     // Lookup code reference from SRMapping generated db
@@ -1184,5 +1187,60 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             default:
                 throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
         }
+    }
+
+    /**
+     * when the transform is complete, if there's any values left in the ethnicity and marital status maps,
+     * then we need to update pre-existing patients with new data
+     */
+    public void processRemainingEthnicitiesAndMartialStatuses(FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        //get a combined list of the keys (patientGuids) from both maps
+        HashSet<Long> patientIds = new HashSet<>(ethnicityMap.keySet());
+        patientIds.addAll(new HashSet<>(maritalStatusMap.keySet()));
+
+        for (Long patientId: patientIds) {
+
+            DateAndCode newEthnicity = ethnicityMap.get(patientId);
+            DateAndCode newMaritalStatus = maritalStatusMap.get(patientId);
+
+            Patient fhirPatient = (Patient)retrieveResource("" + patientId, ResourceType.Patient);
+            if (fhirPatient == null) {
+                //if we try to update the ethnicity on a deleted patient, or one we've never received, just skip it
+                continue;
+            }
+
+            PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
+
+            if (newEthnicity != null) {
+                EthnicCategory ethnicCategory = EthnicCategory.fromCode(newEthnicity.getCode());
+                CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
+                patientBuilder.setEthnicity(ethnicCategory, additionalSourceCells);
+            }
+
+            if (newMaritalStatus != null) {
+                MaritalStatus maritalStatus = MaritalStatus.fromCode(newMaritalStatus.getCode());
+                CsvCell[] additionalSourceCells = newMaritalStatus.getAdditionalSourceCells();
+                patientBuilder.setMaritalStatus(maritalStatus, additionalSourceCells);
+            }
+
+            fhirResourceFiler.savePatientResource(null, false, patientBuilder);
+        }
+    }
+
+    /**
+     * returns the original date of the data in the exchange (i.e. when actually sent to DDS)
+     */
+    public Date getDataDate() throws Exception {
+        if (cachedDataDate == null) {
+            ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
+            Exchange x = exchangeDal.getExchange(exchangeId);
+            cachedDataDate = x.getHeaderAsDate(HeaderKeys.DataDate);
+
+            if (cachedDataDate == null) {
+                throw new Exception("Failed to find data date for exchange " + exchangeId);
+            }
+        }
+        return cachedDataDate;
     }
 }
