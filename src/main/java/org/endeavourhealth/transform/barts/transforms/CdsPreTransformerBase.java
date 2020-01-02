@@ -1066,6 +1066,11 @@ public abstract class CdsPreTransformerBase {
         String safeGuardingConcerns = safeGuardingBuilder.toString();
         stagingEmergencyCds.setSafeguardingConcerns(safeGuardingConcerns);
 
+        //DEBUG ONLY to discover how withHeld emergency records are constructed
+        if (isWithheld) {
+            TransformWarnings.log(LOG, csvHelper, "Withheld record: {}", stagingEmergencyCds.toString());
+        }
+
         //finally, add the Cds batch for saving
         emergencyCdsBatch.add(stagingEmergencyCds);
         saveEmergencyCdsBatch(emergencyCdsBatch, false, csvHelper);
