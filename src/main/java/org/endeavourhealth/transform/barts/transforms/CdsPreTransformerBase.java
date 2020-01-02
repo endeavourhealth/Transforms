@@ -848,8 +848,9 @@ public abstract class CdsPreTransformerBase {
         boolean isWithheld = !withheldReasonCell.isEmpty();
         stagingEmergencyCds.setWithheld(new Boolean(isWithheld));
 
-        if (!isWithheld) { //LocalPatientId and NHS number should be empty if withheld. Get persondId from tail file
-            String localPatientId = parser.getLocalPatientId().getString();
+        String localPatientId = parser.getLocalPatientId().getString();
+        if (!isWithheld) { //LocalPatientId and NHS number should be empty if withheld. Get personId from internal lookup
+
             stagingEmergencyCds.setMrn(localPatientId);
             stagingEmergencyCds.setNhsNumber(parser.getNhsNumber().getString());
             String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, localPatientId);
@@ -862,6 +863,13 @@ public abstract class CdsPreTransformerBase {
                 return;
             }
             stagingEmergencyCds.setLookupPersonId(Integer.valueOf(personId));
+        } else {
+
+            //if withheld and mrn / local patientId is null then log and return as we cannot derive patient and mrn cannot be null
+            if (Strings.isNullOrEmpty(localPatientId)) {
+                TransformWarnings.log(LOG, csvHelper, "Skipping withheld CDS record {} with no MRN", parser.getCdsUniqueId());
+                return;
+            }
         }
 
         CsvCell patientDob = parser.getPersonBirthDate();
@@ -1065,11 +1073,6 @@ public abstract class CdsPreTransformerBase {
         //finally set the delimetered safe guarding data string
         String safeGuardingConcerns = safeGuardingBuilder.toString();
         stagingEmergencyCds.setSafeguardingConcerns(safeGuardingConcerns);
-
-        //DEBUG ONLY to discover how withHeld emergency records are constructed
-        if (isWithheld) {
-            TransformWarnings.log(LOG, csvHelper, "Withheld record: {}", stagingEmergencyCds.toString());
-        }
 
         //finally, add the Cds batch for saving
         emergencyCdsBatch.add(stagingEmergencyCds);
