@@ -19,10 +19,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 public abstract class CdsPreTransformerBase {
@@ -930,8 +927,8 @@ public abstract class CdsPreTransformerBase {
         stagingEmergencyCds.setDischargeDestination(parser.getDischargeDestination().getString());
 
         // process all Mental Health Classification data into a delimetered string format eg:
-        // code~start datetime~end datetime|code~start datetime~end datetime
-        StringBuilder mhClassificationsBuilder = new StringBuilder("");
+        // start datetime~end datetime~code|start datetime~end datetime~code
+        List<String> mhClassificationsList = new ArrayList<>();
         int dataNumber = 1;
         while (dataNumber < 11) {
 
@@ -948,18 +945,18 @@ public abstract class CdsPreTransformerBase {
             String dataEndTime = parser.getMHClassificationEndTime(dataNumber).getString();
             String dataEndDateTime = dataEndDate.concat(" ").concat(dataEndTime).trim();
 
-            mhClassificationsBuilder.append(dataCode.concat("~")
-                            .concat(dataStartDateTime).concat("~")
-                            .concat(dataEndDateTime).concat("|"));
+            mhClassificationsList.add(dataStartDateTime.concat("~").concat(dataEndDateTime).concat("~").concat(dataCode));
+
             dataNumber++;
         }
-        //finally set the delimetered MH data string
-        String mhClassifications = mhClassificationsBuilder.toString();
+        //finally set the delimetered MH data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(mhClassificationsList);
+        String mhClassifications = String.join("|", mhClassificationsList);
         stagingEmergencyCds.setMhClassifications(mhClassifications);
 
         // process all Diagnosis data into a delimetered string format eg:
         // code|code
-        StringBuilder diagnosisBuilder = new StringBuilder("");
+        List<String> diagnosisList = new ArrayList<>();
         dataNumber = 1;
         while (dataNumber < 21) {
 
@@ -969,17 +966,18 @@ public abstract class CdsPreTransformerBase {
             if (Strings.isNullOrEmpty(dataCode)) {
                 break;
             }
-            diagnosisBuilder.append(dataCode.concat("|"));
+            diagnosisList.add(dataCode);
 
             dataNumber++;
         }
         //finally set the delimetered diagnosis data string
-        String diagnosis = diagnosisBuilder.toString();
+        Collections.sort(diagnosisList);
+        String diagnosis = String.join("|",diagnosisList);
         stagingEmergencyCds.setDiagnosis(diagnosis);
 
         // process all Investigations data into a delimetered string format eg:
-        // code~datetime
-        StringBuilder invBuilder = new StringBuilder("");
+        // datetime~code
+        List<String> invList = new ArrayList<>();
         dataNumber = 1;
         while (dataNumber < 11) {
 
@@ -993,17 +991,18 @@ public abstract class CdsPreTransformerBase {
             String dataTime = parser.getInvestigationPerformedTime(dataNumber).getString();
             String dataDateTime = dataDate.concat(" ").concat(dataTime);
 
-            invBuilder.append(dataCode.concat("~").concat(dataDateTime).concat("|"));
+            invList.add(dataDateTime.concat("~").concat(dataCode));
 
             dataNumber++;
         }
-        //finally set the delimetered investigations data string
-        String inv = invBuilder.toString();
+        //finally set the delimetered investigations data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(invList);
+        String inv = String.join("|", invList);
         stagingEmergencyCds.setInvestigations(inv);
 
         // process all Treatment data into a delimetered string format eg:
-        // code~datetime
-        StringBuilder treatmentBuilder = new StringBuilder("");
+        // datetime~code
+        List<String> treatmentList = new ArrayList<>();
         dataNumber = 1;
         while (dataNumber < 11) {
 
@@ -1017,17 +1016,18 @@ public abstract class CdsPreTransformerBase {
             String dataTime = parser.getTreatmentTime(dataNumber).getString();
             String dataDateTime = dataDate.concat(" ").concat(dataTime);
 
-            treatmentBuilder.append(dataCode.concat("~").concat(dataDateTime).concat("|"));
+            treatmentList.add(dataDateTime.concat("~").concat(dataCode));
 
             dataNumber++;
         }
-        //finally set the delimetered treatments data string
-        String treatments = treatmentBuilder.toString();
+        //finally set the date time delimetered treatment data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(treatmentList);
+        String treatments = String.join("|", treatmentList);
         stagingEmergencyCds.setTreatments(treatments);
 
         // process all Referal data into a delimetered string format eg:
-        // Snomed code~request date~assessment date
-        StringBuilder referralBuilder = new StringBuilder("");
+        // request date~assessment date~code
+        List<String> referralList = new ArrayList<>();
         dataNumber = 1;
         while (dataNumber < 11) {
 
@@ -1044,19 +1044,18 @@ public abstract class CdsPreTransformerBase {
             String assessmentTime = parser.getReferralAssessmentDate(dataNumber).getString();
             String assessmentDateTime = assessmentDate.concat(" ").concat(assessmentTime);
 
-            referralBuilder.append(dataCode.concat("~")
-                                .concat(requestDateTime).concat("~")
-                                .concat(assessmentDateTime).concat("|"));
+            referralList.add(requestDateTime.concat("~").concat(assessmentDateTime).concat("~").concat(dataCode));
 
             dataNumber++;
         }
-        //finally set the delimetered referrals data string
-        String referrals = referralBuilder.toString();
+        //finally set the delimetered referrals data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(referralList);
+        String referrals = String.join("|", referralList);
         stagingEmergencyCds.setReferredToServices(referrals);
 
         // process all Safe Guarding data into a delimetered string format eg:
         // code|code
-        StringBuilder safeGuardingBuilder = new StringBuilder("");
+        List<String> safeGuardlingList = new ArrayList<>();
         dataNumber = 1;
         while (dataNumber < 21) {
 
@@ -1066,12 +1065,13 @@ public abstract class CdsPreTransformerBase {
             if (Strings.isNullOrEmpty(dataCode)) {
                 break;
             }
-            safeGuardingBuilder.append(dataCode.concat("|"));
+            safeGuardlingList.add(dataCode);
 
             dataNumber++;
         }
-        //finally set the delimetered safe guarding data string
-        String safeGuardingConcerns = safeGuardingBuilder.toString();
+        //finally set the delimetered safe guarding data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(safeGuardlingList);
+        String safeGuardingConcerns = String.join("|", safeGuardlingList);
         stagingEmergencyCds.setSafeguardingConcerns(safeGuardingConcerns);
 
         //finally, add the Cds batch for saving
