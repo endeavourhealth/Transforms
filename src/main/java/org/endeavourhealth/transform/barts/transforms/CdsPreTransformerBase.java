@@ -1041,7 +1041,7 @@ public abstract class CdsPreTransformerBase {
             String requestTime = parser.getReferralRequestTime(dataNumber).getString();
             String requestDateTime = requestDate.concat(" ").concat(requestTime);
             String assessmentDate = parser.getReferralAssessmentDate(dataNumber).getString();
-            String assessmentTime = parser.getReferralAssessmentDate(dataNumber).getString();
+            String assessmentTime = parser.getReferralAssessmentTime(dataNumber).getString();
             String assessmentDateTime = assessmentDate.concat(" ").concat(assessmentTime);
 
             referralList.add(requestDateTime.concat("~").concat(assessmentDateTime).concat("~").concat(dataCode));
