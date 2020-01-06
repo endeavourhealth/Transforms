@@ -70,6 +70,10 @@ public class ConditionResourceCache {
                 fhirResourceFiler.savePatientResource(null, mapIds, conditionBuilder);
             }
         }
+
+        //set both to null to release memory - nothing should use this class after this point
+        conditionResourceCache = null;
+        conditionsToDelete = null;
     }
 
 }

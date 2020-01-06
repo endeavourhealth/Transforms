@@ -98,7 +98,7 @@ public class SRImmunisationTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
+        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong().longValue() > -1) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 immunizationBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
@@ -144,7 +144,9 @@ public class SRImmunisationTransformer {
 
         //only add a codeable concept if either a Snomed code or Ctv3 code is present
         if (!readV3CodeCell.isEmpty() ||
-                (immsSNOMEDCodeCell != null && !immsSNOMEDCodeCell.isEmpty() && immsSNOMEDCodeCell.getLong() != -1)) {
+                (immsSNOMEDCodeCell != null
+                        && !immsSNOMEDCodeCell.isEmpty()
+                        && immsSNOMEDCodeCell.getLong().longValue() != -1)) {
 
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
@@ -154,7 +156,7 @@ public class SRImmunisationTransformer {
 
             if (immsSNOMEDCodeCell != null //might be null in older versions
                     && !immsSNOMEDCodeCell.isEmpty()
-                    && immsSNOMEDCodeCell.getLong() != -1) {
+                    && immsSNOMEDCodeCell.getLong().longValue() != -1) {
 
                 SnomedCode snomedCode = TerminologyService.lookupSnomedFromConceptId(immsSNOMEDCodeCell.getString());
                 if (snomedCode != null) {
@@ -197,9 +199,8 @@ public class SRImmunisationTransformer {
                 codeableConceptBuilder.setCodingCode(code, readV3CodeCell);
 
                 //perform a ctv3 lookup to get the code term details as this is not supplied in the extract
-                TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(code, parser);
-                if (ctv3Lookup != null) {
-                    String readV3Term = ctv3Lookup.getCtv3Text();
+                String readV3Term = csvHelper.lookUpTppCtv3Term(readV3CodeCell);
+                if (readV3Term != null) {
                     codeableConceptBuilder.setCodingDisplay(readV3Term);
                     codeableConceptBuilder.setText(readV3Term);   //display text set here in-case no Snomed term derived
                 }
@@ -224,12 +225,12 @@ public class SRImmunisationTransformer {
             }
         }
 
-        CsvCell immContent = parser.getIDImmunisationContent();
-        if (!immContent.isEmpty()) {
-            TppImmunisationContent tppImmunisationContent = csvHelper.lookUpTppImmunisationContent(immContent.getLong(), parser);
+        CsvCell immContentCell = parser.getIDImmunisationContent();
+        if (!immContentCell.isEmpty()) {
+            TppImmunisationContent tppImmunisationContent = csvHelper.lookUpTppImmunisationContent(immContentCell);
             if (tppImmunisationContent != null) {
                 String contentName = tppImmunisationContent.getName();
-                immunizationBuilder.setProtocolSeriesName(contentName, immContent);
+                immunizationBuilder.setProtocolSeriesName(contentName, immContentCell);
             }
         }
 
@@ -245,11 +246,11 @@ public class SRImmunisationTransformer {
     private static void parseDose(CsvCell dose, ImmunizationBuilder immunizationBuilder) {
         String[] strings = dose.getString().split(" ", 2);
         boolean success = false;
-        Double value = 0.0;
+        Double value = new Double(0.0);
 
         if (strings.length == 2) {
             try {
-                value = Double.parseDouble(strings[0]);
+                value = Double.valueOf(strings[0]);
                 success = true;
             } catch (Exception e) {
 

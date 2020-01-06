@@ -56,6 +56,9 @@ public class AppointmentFlagCache {
 
             fhirResourceFiler.savePatientResource(null, false, appointmentBuilder);
         }
+
+        //set to null to release any memory we can - this class should not be referenced against after this point
+        appointmentFlagsByAppointmentId = null;
     }
 
     public static void applyFlagsToAppointment(TppCsvHelper csvHelper, AppointmentBuilder appointmentBuilder, List<AppointmentFlagsPojo> pojoList) throws Exception {

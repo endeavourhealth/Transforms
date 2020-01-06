@@ -162,7 +162,7 @@ public class SRReferralOutTransformer {
         if (!reason.isEmpty() && reason.getInt() != -1) {
             //the TPP referral reason is really the objective of the referral
             //e.g. Advice/Consultation or Advice and Support
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason, parser);
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(reason);
             if (tppConfigListOption != null) {
                 //not going to attempt to map the term to the ReferralType values we have,
                 //since there are 1000+ possible options in TPP, so we really need the Information Model to support this properly
@@ -174,7 +174,7 @@ public class SRReferralOutTransformer {
         CsvCell referralPriority = parser.getUrgency();
         if (!referralPriority.isEmpty() && referralPriority.getInt() != -1) {
 
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralPriority, parser);
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralPriority);
             if (tppConfigListOption != null) {
                 String desc = tppConfigListOption.getListOptionName();
                 ReferralPriority priority = convertPriority(desc);
@@ -205,8 +205,8 @@ public class SRReferralOutTransformer {
             }
         } else {
             //code is Ctv3 so translate to Snomed
-            CsvCell referralPrimaryDiagnosisCode = parser.getPrimaryDiagnosis();
-            if (!referralPrimaryDiagnosisCode.isEmpty()) {
+            CsvCell referralPrimaryDiagnosisCodeCell = parser.getPrimaryDiagnosis();
+            if (!referralPrimaryDiagnosisCodeCell.isEmpty()) {
 
                 //we may have retrieved the Resource from the DB, so clear out any existing codeable concept
                 if (referralRequestBuilder.hasCodeableConcept(CodeableConceptBuilder.Tag.Referral_Request_Service)) {
@@ -215,23 +215,22 @@ public class SRReferralOutTransformer {
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(referralRequestBuilder, CodeableConceptBuilder.Tag.Referral_Request_Service);
 
                 // add Ctv3 coding
-                TppCtv3Lookup ctv3Lookup = csvHelper.lookUpTppCtv3Code(referralPrimaryDiagnosisCode.getString(), parser);
-
-                if (ctv3Lookup != null) {
+                String readV3Term = csvHelper.lookUpTppCtv3Term(referralPrimaryDiagnosisCodeCell);
+                if (readV3Term != null) {
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                    codeableConceptBuilder.setCodingCode(referralPrimaryDiagnosisCode.getString(), referralPrimaryDiagnosisCode);
-                    String readV3Term = ctv3Lookup.getCtv3Text();
+                    codeableConceptBuilder.setCodingCode(referralPrimaryDiagnosisCodeCell.getString(), referralPrimaryDiagnosisCodeCell);
+
                     //TODO - need to carry through the audit of where this term came from, from the audit info on TppCtv3Lookup
                     if (!Strings.isNullOrEmpty(readV3Term)) {
-                        codeableConceptBuilder.setCodingDisplay(readV3Term, referralPrimaryDiagnosisCode);
-                        codeableConceptBuilder.setText(readV3Term, referralPrimaryDiagnosisCode);
+                        codeableConceptBuilder.setCodingDisplay(readV3Term, referralPrimaryDiagnosisCodeCell);
+                        codeableConceptBuilder.setText(readV3Term, referralPrimaryDiagnosisCodeCell);
                     }
                 }
 
                 // Only try to transform to snomed if the code doesn't start with "Y" (local codes start with "Y")
-                if (!referralPrimaryDiagnosisCode.getString().startsWith("Y")) {
+                if (!referralPrimaryDiagnosisCodeCell.getString().startsWith("Y")) {
                     // translate to Snomed
-                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(referralPrimaryDiagnosisCode.getString());
+                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(referralPrimaryDiagnosisCodeCell.getString());
                     if (snomedCode != null) {
 
                         codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);

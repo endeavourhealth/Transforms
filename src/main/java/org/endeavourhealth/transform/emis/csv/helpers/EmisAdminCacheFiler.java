@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -57,6 +58,10 @@ public class EmisAdminCacheFiler {
 
     public EmisAdminResourceCache getResourceFromCache(ResourceType resourceType, String sourceId) throws Exception {
         return mappingRepository.getAdminResource(this.dataSharingAgreementGuid, resourceType, sourceId);
+    }
+
+    public Map<String, EmisAdminResourceCache> getResourcesFromCache(ResourceType resourceType, List<String> sourceIds) throws Exception {
+        return mappingRepository.getAdminResources(this.dataSharingAgreementGuid, resourceType, sourceIds);
     }
 
     private void runPendingSaves() throws Exception {

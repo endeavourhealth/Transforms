@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+/**
+ * pre-transformer to simply store the staff profile ID -> staff member ID mappings
+ */
 public class SRStaffMemberProfilePreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRStaffMemberProfile.class);
 

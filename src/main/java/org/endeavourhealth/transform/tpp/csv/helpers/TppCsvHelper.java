@@ -62,13 +62,15 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static TppMultiLexToCtv3MapDalI multiLexToCTV3MapDalI = DalProvider.factoryTppMultiLexToCtv3MapDal();
     private static TppCtv3LookupDalI tppCtv3LookupRefDal = DalProvider.factoryTppCtv3LookupDal();
     private static TppCtv3HierarchyRefDalI ctv3HierarchyRefDalI = DalProvider.factoryTppCtv3HierarchyRefDal();
+    private static ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
-    private static Map<String, TppMappingRef> tppMappingRefs = new ConcurrentHashMap<>();
-    private static Map<String, TppConfigListOption> tppConfigListOptions = new ConcurrentHashMap<>();
-    private static Map<String, TppImmunisationContent> tppImmunisationContents = new ConcurrentHashMap<>();
-    private static Map<String, String> internalIdMapCache = new ConcurrentHashMap<>();
-    private static Map<String, TppMultiLexToCtv3Map> multiLexToCTV3Map = new ConcurrentHashMap<>();
-    private static Map<String, TppCtv3Lookup> tppCtv3Lookups = new ConcurrentHashMap<>();
+    //note the below are static maps so they will apply to all transforms until the app is restarted
+    private static Map<Long, TppMappingRef> hmTppMappingRefs = new ConcurrentHashMap<>();
+    private static Map<Long, TppConfigListOption> hmTppConfigListOptions = new ConcurrentHashMap<>();
+    private static Map<Long, TppImmunisationContent> hmTppImmunisationContents = new ConcurrentHashMap<>();
+    private static Map<Long, TppMultiLexToCtv3Map> hmMultiLexToCTV3Map = new ConcurrentHashMap<>();
+    private static Map<StringMemorySaver, StringMemorySaver> hmInternalIdMapCache = new ConcurrentHashMap<>();
+    private static Map<StringMemorySaver, StringMemorySaver> hmTppCtv3TermLookups = new ConcurrentHashMap<>();
 
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>();
@@ -80,14 +82,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ConditionResourceCache conditionResourceCache = new ConditionResourceCache();
     private ReferralRequestResourceCache referralRequestResourceCache = new ReferralRequestResourceCache();
     private Map<Long, String> problemReadCodes = new HashMap<>();
-    //    private Map<String, String> allergyReadCodes = new HashMap<>();
     private Map<Long, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
-    private ArrayList<String> ctv3EthnicCodes = new ArrayList<>();
-    //    private ArrayList<String> ctv3ProcedureCodes = new ArrayList();
-//    private ArrayList<String> ctv3DisorderCodes = new ArrayList();
-//    private ArrayList<String> ctv3FamilyDisorderCodes = new ArrayList();;
     private Map<String, Long> staffMemberToProfileMap = new HashMap<>();
     private ThreadPool utilityThreadPool = null;
     private Map<String, ResourceType> codeToTypes = new HashMap<>();
@@ -104,7 +101,23 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         buildKnownEthnicCodes();
     }
 
-    private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+
+    @Override
+    public UUID getServiceId() {
+        return serviceId;
+    }
+
+    @Override
+    public UUID getSystemId() {
+        return systemId;
+    }
+
+    @Override
+    public UUID getExchangeId() {
+        return exchangeId;
+    }
+
+
 
     public Reference createOrganisationReference(CsvCell organizationGuid) {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid.getString());
@@ -134,9 +147,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Practitioner, "" + profileId);
     }
 
-    public Reference createObservationReference(String observationGuid, String patientGuid) {
+    /*public Reference createObservationReference(String observationGuid, String patientGuid) {
         return ReferenceHelper.createReference(ResourceType.Observation, patientGuid + ":" + observationGuid);
-    }
+    }*/
 
     private Long findStaffProfileIdForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell) throws Exception {
 
@@ -269,40 +282,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-    public class DateAndCode {
-        private DateTimeType date = null;
-        private String code = null;
-        private CsvCell[] additionalSourceCells;
-
-        public DateAndCode(DateTimeType date, String code, CsvCell... additionalSourceCells) {
-            this.date = date;
-            this.code = code;
-            this.additionalSourceCells = additionalSourceCells;
-        }
-
-        public DateTimeType getDate() {
-            return date;
-        }
-
-        public String getCode() {
-            return code;
-        }
-
-        public CsvCell[] getAdditionalSourceCells() {
-            return additionalSourceCells;
-        }
-
-        public boolean isBefore(DateTimeType other) {
-            if (date == null) {
-                return true;
-            } else if (other == null) {
-                return false;
-            } else {
-                return date.before(other);
-            }
-
-        }
-    }
 
     public void cacheNewConsultationChildRelationship(CsvCell consultationGuid,
                                                       String resourceGuid,
@@ -465,14 +444,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 //        return false;
 //    }
 
-    public boolean isEthnicityCode(String readCode) throws Exception {
-        if (knownEthnicCodes.containsKey(readCode)) {
-            return true;
-        } else {
-            //return ctv3HierarchyRefDalI.isChildCodeUnderParentCode(readCode, ETHNICITY_ROOT);
-            return this.ctv3EthnicCodes.contains(readCode);
-        }
-    }
 
     public EthnicCategory getKnownEthnicCategory(String readcode) {
         if (knownEthnicCodes.containsKey(readcode)) {
@@ -505,144 +476,141 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return maritalStatusMap.remove(patientGuid.getLong());
     }
 
-    // Lookup code reference from SRMapping generated db
+    /**
+     * Lookup code reference from SRMapping generated db
+     */
     public TppMappingRef lookUpTppMappingRef(CsvCell cell) throws Exception {
 
-        Long rowId = cell.getLong();
-        String codeLookup = rowId.toString();
-
-        //Find the code in the cache
-        TppMappingRef tppMappingRefFromCache = tppMappingRefs.get(codeLookup);
-
-        // return cached version if exists
-        if (tppMappingRefFromCache != null) {
-            return tppMappingRefFromCache;
-        }
-
-        TppMappingRef tppMappingRefFromDB = tppMappingRefDalI.getMappingFromRowId(rowId);
-        if (tppMappingRefFromDB == null) {
-            //changed to pass in the cell so it audits the file ID and record number, not just the cell value
-            TransformWarnings.log(LOG, this, "Failed to find TPP mapping for {}", cell);
-            //TransformWarnings.log(LOG, this, "Failed to find TPP mapping for {}", rowId);
+        if (cell.isEmpty()
+                || cell.getLong().longValue() < 0) {
             return null;
         }
-
-        // Add to the cache
-        tppMappingRefs.put(codeLookup, tppMappingRefFromDB);
-
-        return tppMappingRefFromDB;
-    }
-
-    // Lookup code reference from SRConfigureListOption generated db
-    public TppConfigListOption lookUpTppConfigListOption(CsvCell cell, AbstractCsvParser parser) throws Exception {
 
         Long rowId = cell.getLong();
-        if (rowId < 0) {
-            return null;
-        }
-        String codeLookup = rowId.toString() + "|" + serviceId.toString();
 
         //Find the code in the cache
-        TppConfigListOption tppConfigListOptionFromCache = tppConfigListOptions.get(codeLookup);
+        TppMappingRef ret = hmTppMappingRefs.get(rowId);
+        if (ret == null) {
+            ret = tppMappingRefDalI.getMappingFromRowId(rowId);
 
-        // return cached version if exists
-        if (tppConfigListOptionFromCache != null) {
-            return tppConfigListOptionFromCache;
+            if (ret == null) {
+                TransformWarnings.log(LOG, this, "Failed to find TPP mapping for {}", cell);
+                return null;
+            }
+
+            hmTppMappingRefs.put(rowId, ret);
         }
 
-        TppConfigListOption tppConfigListOptionFromDB = tppConfigListOptionDalI.getListOptionFromRowId(rowId, serviceId);
-        if (tppConfigListOptionFromDB == null) {
-            TransformWarnings.log(LOG, parser, "TPP ConfigListOption not found for id: {},  in file: {}, line: {}",
-                    rowId, parser.getFilePath(), parser.getCurrentLineNumber());
-
-            return null;
-        }
-
-        // Add to the cache
-        tppConfigListOptions.put(codeLookup, tppConfigListOptionFromDB);
-
-        return tppConfigListOptionFromDB;
+        return ret;
     }
 
-    // Lookup code reference from SRImmunisationContent generated db
-    public TppImmunisationContent lookUpTppImmunisationContent(Long rowId, AbstractCsvParser parser) throws Exception {
+    /**
+     * Lookup code reference from SRConfigureListOption generated db
+     */
+    public TppConfigListOption lookUpTppConfigListOption(CsvCell cell) throws Exception {
 
-        String codeLookup = rowId.toString() + "|" + serviceId.toString();
-
-        //Find the code in the cache
-        TppImmunisationContent tppImmunisationContentFromCache = tppImmunisationContents.get(codeLookup);
-
-        // return cached version if exists
-        if (tppImmunisationContentFromCache != null) {
-            return tppImmunisationContentFromCache;
-        }
-
-        TppImmunisationContent tppImmunisationContentFromDB = tppImmunisationContentDalI.getContentFromRowId(rowId);
-        if (tppImmunisationContentFromDB == null) {
-            TransformWarnings.log(LOG, parser, "TPP Immunisation content lookup failed for id: {},  in file: {}, line: {}",
-                    rowId, parser.getFilePath(), parser.getCurrentLineNumber());
-
+        if (cell.isEmpty()
+                || cell.getLong().longValue() < 0) {
             return null;
         }
 
-        // Add to the cache
-        tppImmunisationContents.put(codeLookup, tppImmunisationContentFromDB);
+        //Find the code in the cache
+        Long rowId = cell.getLong();
+        TppConfigListOption ret = hmTppConfigListOptions.get(rowId);
+        if (ret == null) {
+            ret = tppConfigListOptionDalI.getListOptionFromRowId(rowId, serviceId);
 
-        return tppImmunisationContentFromDB;
+            //we've done about 100 TPP practices and haven't had any unexplained missing records, so
+            //now treat this as a hard fail rather than something to pick up after the fact
+            if (ret == null) {
+                throw new Exception("Failed to find Configured List option for ID " + rowId);
+            }
+
+            hmTppConfigListOptions.put(rowId, ret);
+        }
+
+        return ret;
     }
 
-    // Lookup code reference from SRCtv3Transformer generated db
-    public TppCtv3Lookup lookUpTppCtv3Code(String ctv3Code, AbstractCsvParser parser) throws Exception {
+    /**
+     * Lookup code reference from SRImmunisationContent generated db
+     */
+    public TppImmunisationContent lookUpTppImmunisationContent(CsvCell immContentCell) throws Exception {
 
-        String codeLookup = ctv3Code;
-
-        //Find the code in the cache
-        TppCtv3Lookup tppCtv3LookupFromCache = tppCtv3Lookups.get(codeLookup);
-
-        // return cached version if exists
-        if (tppCtv3LookupFromCache != null) {
-            return tppCtv3LookupFromCache;
-        }
-
-        TppCtv3Lookup tppCtv3LookupFromDB = tppCtv3LookupRefDal.getContentFromCtv3Code(ctv3Code);
-        if (tppCtv3LookupFromDB == null) {
-            TransformWarnings.log(LOG, parser, "TPP Ctv3 lookup failed for code: {},  in file: {}, line: {}",
-                    ctv3Code, parser.getFilePath(), parser.getCurrentLineNumber());
-
+        if (immContentCell.isEmpty()
+                || immContentCell.getLong().longValue() < 0) {
             return null;
         }
 
-        // Add to the cache
-        tppCtv3Lookups.put(codeLookup, tppCtv3LookupFromDB);
+        Long rowId = immContentCell.getLong();
 
-        return tppCtv3LookupFromDB;
+        TppImmunisationContent ret = hmTppImmunisationContents.get(rowId);
+        if (ret == null) {
+            ret = tppImmunisationContentDalI.getContentFromRowId(rowId);
+
+            if (ret == null) {
+                throw new Exception("Failed to find Immunisation Content record for ID " + rowId);
+            }
+
+            hmTppImmunisationContents.put(rowId, ret);
+        }
+
+        return ret;
     }
 
-    // Lookup multi-lex read code map
-    public TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map(Long multiLexProductId, AbstractCsvParser parser) throws Exception {
+    /**
+     * Lookup code reference from SRCtv3Transformer generated db
+     */
+    public String lookUpTppCtv3Term(CsvCell ctv3CodeCell) throws Exception {
 
-        String codeLookup = multiLexProductId.toString();
-
-        //Find the code in the cache
-        TppMultiLexToCtv3Map multiLexToCTV3MapFromCache = multiLexToCTV3Map.get(codeLookup);
-
-        // return cached version if exists
-        if (multiLexToCTV3MapFromCache != null) {
-            return multiLexToCTV3MapFromCache;
-        }
-
-        TppMultiLexToCtv3Map multiLexToCTV3MapFromDB = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(multiLexProductId);
-        if (multiLexToCTV3MapFromDB == null) {
-
-            TransformWarnings.log(LOG, parser, "TPP Multilex lookup failed for id: {},  in file: {}, line: {}",
-                    multiLexProductId, parser.getFilePath(), parser.getCurrentLineNumber());
+        if (ctv3CodeCell.isEmpty()) {
             return null;
         }
 
-        // Add to the cache
-        multiLexToCTV3Map.put(codeLookup, multiLexToCTV3MapFromDB);
+        StringMemorySaver cacheKey = new StringMemorySaver(ctv3CodeCell.getString());
+        StringMemorySaver cached = hmTppCtv3TermLookups.get(cacheKey);
+        if (cached != null) {
+            return cached.toString();
+        }
 
-        return multiLexToCTV3MapFromDB;
+        TppCtv3Lookup lookup = tppCtv3LookupRefDal.getContentFromCtv3Code(ctv3CodeCell.getString());
+        if (lookup == null) {
+            throw new TransformException("Failed to look up CTV3 term for code [" + ctv3CodeCell.getString() + "]");
+        }
+
+        // Add to the cache
+        String term = lookup.getCtv3Text();
+        hmTppCtv3TermLookups.put(cacheKey, new StringMemorySaver(term));
+
+        return term;
+    }
+
+    /**
+     * Lookup multilex read code map
+     */
+    public TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map(CsvCell multiLexProductIdCell) throws Exception {
+
+        if (multiLexProductIdCell.isEmpty()
+                || multiLexProductIdCell.getLong().longValue() < 0) {
+            return null;
+        }
+
+        Long productId = multiLexProductIdCell.getLong();
+
+        TppMultiLexToCtv3Map ret = hmMultiLexToCTV3Map.get(productId);
+        if (ret == null) {
+            ret = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(productId.longValue());
+
+            if (ret == null) {
+                TransformWarnings.log(LOG, this, "TPP Multilex lookup failed for product ID {}", multiLexProductIdCell);
+                return null;
+            }
+
+            // Add to the cache
+            hmMultiLexToCTV3Map.put(productId, ret);
+        }
+
+        return ret;
     }
 
     public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
@@ -662,41 +630,31 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         internalIdDal.save(mappings);
 
+        //add them to the cache
         for (InternalIdMap mapping : mappings) {
-            String cacheKey = mapping.getIdType() + "|" + mapping.getSourceId();
-            internalIdMapCache.put(cacheKey, mapping.getDestinationId());
+            StringMemorySaver cacheKey = new StringMemorySaver(mapping.getIdType() + "|" + mapping.getSourceId());
+            hmInternalIdMapCache.put(cacheKey, new StringMemorySaver(mapping.getDestinationId()));
         }
     }
 
     public String getInternalId(String idType, String sourceId) throws Exception {
-        String cacheKey = idType + "|" + sourceId;
-        if (internalIdMapCache.containsKey(cacheKey)) {
-            return internalIdMapCache.get(cacheKey);
+        StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
+        StringMemorySaver cached = hmInternalIdMapCache.get(cacheKey);
+
+        if (cached != null) {
+            return cached.toString();
         }
 
         String ret = internalIdDal.getDestinationId(serviceId, idType, sourceId);
 
+        //add to cache
         if (ret != null) {
-            internalIdMapCache.put(cacheKey, ret);
+            hmInternalIdMapCache.put(cacheKey, new StringMemorySaver(ret));
         }
 
         return ret;
     }
 
-    @Override
-    public UUID getServiceId() {
-        return serviceId;
-    }
-
-    @Override
-    public UUID getSystemId() {
-        return systemId;
-    }
-
-    @Override
-    public UUID getExchangeId() {
-        return exchangeId;
-    }
 
 
     public String tppRelationtoFhir(String tppTerm) {
@@ -1242,5 +1200,41 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
         }
         return cachedDataDate;
+    }
+
+
+    public class DateAndCode {
+        private DateTimeType date = null;
+        private String code = null;
+        private CsvCell[] additionalSourceCells;
+
+        public DateAndCode(DateTimeType date, String code, CsvCell... additionalSourceCells) {
+            this.date = date;
+            this.code = code;
+            this.additionalSourceCells = additionalSourceCells;
+        }
+
+        public DateTimeType getDate() {
+            return date;
+        }
+
+        public String getCode() {
+            return code;
+        }
+
+        public CsvCell[] getAdditionalSourceCells() {
+            return additionalSourceCells;
+        }
+
+        public boolean isBefore(DateTimeType other) {
+            if (date == null) {
+                return true;
+            } else if (other == null) {
+                return false;
+            } else {
+                return date.before(other);
+            }
+
+        }
     }
 }

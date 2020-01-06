@@ -160,7 +160,7 @@ public class SREventTransformer {
 
         CsvCell contactEventLocationCell = parser.getContactEventLocation();
         if (!contactEventLocationCell.isEmpty() && contactEventLocationCell.getInt() != -1) {
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactEventLocationCell, parser);
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactEventLocationCell);
             if (tppConfigListOption != null) {
                 String contactEventLocation = tppConfigListOption.getListOptionName();
                 if (!Strings.isNullOrEmpty(contactEventLocation)) {
@@ -188,7 +188,7 @@ public class SREventTransformer {
 
         CsvCell contactTypeCell = parser.getContactMethod();
         if (!contactTypeCell.isEmpty() && contactTypeCell.getLong()> 0) {
-            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell, parser);
+            TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(contactTypeCell);
             if (tppConfigListOption != null) {
                 String contactType = tppConfigListOption.getListOptionName();
                 if (!Strings.isNullOrEmpty(contactType)) {

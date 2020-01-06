@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+/**
+ * pre-transformer to cache staff member details in memory for a later transform to use
+ */
 public class SRStaffMemberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRStaffMemberTransformer.class);
 

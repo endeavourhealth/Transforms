@@ -269,7 +269,7 @@ public abstract class TppCsvToFhirTransformer {
     public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, Map<String, String> versions, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         for (String filePath : files) {
-            LOG.info("Files: " + Arrays.toString(files));
+            //LOG.info("Files: " + Arrays.toString(files));
             if (filePath == null) {
                 continue;
             }
@@ -516,7 +516,6 @@ public abstract class TppCsvToFhirTransformer {
         SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this must be done before the next two
         SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
 
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just caches staff member details
         SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this actually creates Practitioner resources

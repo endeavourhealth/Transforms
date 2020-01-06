@@ -107,10 +107,10 @@ public class SRDrugSensitivityTransformer {
         allergyIntoleranceBuilder.setCategory(AllergyIntolerance.AllergyIntoleranceCategory.MEDICATION);
 
         // map multi-lex drug product code to CTV3 read for coded allergy substance
-        CsvCell drugCodeId = parser.getIDDrugCode();
-        if (!drugCodeId.isEmpty()) {
+        CsvCell drugCodeIdCell = parser.getIDDrugCode();
+        if (!drugCodeIdCell.isEmpty()) {
 
-            TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map = csvHelper.lookUpMultiLexToCTV3Map(drugCodeId.getLong(), parser);
+            TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map = csvHelper.lookUpMultiLexToCTV3Map(drugCodeIdCell);
             if (lookUpMultiLexToCTV3Map != null) {
                 // add Ctv3 coding
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);

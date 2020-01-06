@@ -81,7 +81,7 @@ public class SRRotaTransformer {
                 && locationTypeIdCell.getLong() > 0) {
 
             //the location type links to a configured list item
-            TppConfigListOption configuredListItem = csvHelper.lookUpTppConfigListOption(locationTypeIdCell, parser);
+            TppConfigListOption configuredListItem = csvHelper.lookUpTppConfigListOption(locationTypeIdCell);
             String locationTypeDesc = configuredListItem.getListOptionName();
             scheduleBuilder.setLocationType(locationTypeDesc, locationTypeIdCell);
         }

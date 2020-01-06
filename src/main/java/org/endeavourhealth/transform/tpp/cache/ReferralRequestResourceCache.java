@@ -55,7 +55,7 @@ public class ReferralRequestResourceCache {
         }
 
         //clear down as everything has been saved
-        referralRequestBuildersById.clear();
+        referralRequestBuildersById = null;
 
         for (Long referralId: referralRequestsToDelete.keySet()) {
             ReferralRequestBuilder referralRequestBuilder = referralRequestsToDelete.get(referralId);
@@ -64,7 +64,7 @@ public class ReferralRequestResourceCache {
             fhirResourceFiler.deletePatientResource(null, mapIds, referralRequestBuilder);
         }
 
-        referralRequestsToDelete.clear();
+        referralRequestsToDelete = null;
     }
 
     public void addToDeletes(CsvCell referralOutId, ReferralRequestBuilder referralRequestBuilder) {

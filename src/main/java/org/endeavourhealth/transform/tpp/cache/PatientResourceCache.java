@@ -64,7 +64,7 @@ public class PatientResourceCache {
             }
         }
 
-        patientBuildersByRowId.clear();
+        patientBuildersByRowId = null;
 
         for (Long key: patientBuildersToDelete.keySet()) {
             PatientBuilder patientBuilder = patientBuildersToDelete.get(key);
@@ -72,7 +72,7 @@ public class PatientResourceCache {
             fhirResourceFiler.deletePatientResource(null, mapIds, patientBuilder);
         }
 
-        patientBuildersToDelete.clear();
+        patientBuildersToDelete = null;
     }
 
     public void addToPendingDeletes(CsvCell rowIdCell, PatientBuilder patientBuilder) {
