@@ -163,6 +163,9 @@ public abstract class BartsCsvToFhirTransformer {
             SusEmergencyCareDataSetTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSetTail", true),fhirResourceFiler,csvHelper);
             SusEmergencyCareDataSetPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSet", true),fhirResourceFiler,csvHelper);
 
+            //CriticalCare CDS
+            CriticalCarePreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "CriticalCare", true),fhirResourceFiler,csvHelper);
+
             //PROCEDURES - the order is significant, going from less to more rich files
             PROCEPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PROCE", false), fhirResourceFiler, csvHelper);
             ProcedurePreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure", true), fhirResourceFiler, csvHelper);
@@ -174,6 +177,8 @@ public abstract class BartsCsvToFhirTransformer {
             SusEmergencyPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergency", true),fhirResourceFiler,csvHelper);
             SURCCPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCC", true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
             SURCPPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCP",true), fhirResourceFiler,csvHelper);
+
+            //TODO - processStagingFor CDS data
 
             //PROCEDURES - execute the staging procedures to target procedures stored proc
             csvHelper.waitUntilThreadPoolIsEmpty();

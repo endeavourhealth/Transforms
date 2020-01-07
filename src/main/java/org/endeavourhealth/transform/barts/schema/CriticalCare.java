@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractFixedParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FixedParserField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,12 +11,52 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class CriticalCare extends AbstractFixedParser {
+public class CriticalCare extends AbstractFixedParser implements CdsRecordCriticalCareI {
     private static final Logger LOG = LoggerFactory.getLogger(SusEmergency.class);
 
     public CriticalCare(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath, BartsCsvToFhirTransformer.CDS_DATE_FORMAT, BartsCsvToFhirTransformer.CDS_TIME_FORMAT);
     }
+
+    public CsvCell getLocalPatientId() { return super.getCell("LocalPatientID");}
+    public CsvCell getNhsNumber() { return super.getCell("NHSNumber");}
+
+    public CsvCell getSpellNumber() { return super.getCell("HospitalProviderSpellNumber");}
+    public CsvCell getEpisodeNumber() { return super.getCell("EpisodeNumber");}
+    public CsvCell getCdsUniqueId() { return super.getCell("CDSUniqueIdentifier");}
+    public CsvCell getCriticalCareTypeID() { return super.getCell("CriticalCareTypeID");}
+
+    public CsvCell getCriticalCareIdentifier() { return super.getCell("CriticalCareLocalIdentifier");}
+    public CsvCell getCriticalCareStartDate() { return super.getCell("CriticalCareStartDate");}
+    public CsvCell getCriticalCareStartTime() { return super.getCell("CriticalCareStartTime");}
+    public CsvCell getCriticalCareUnitFunction() { return super.getCell("CriticalCareUnitFunction");}
+    public CsvCell getCriticalCareAdmissionSource() { return super.getCell("CriticalCareAdmissionSource");}
+    public CsvCell getCriticalCareSourceLocation() { return super.getCell("CriticalCareSourceLocation");}
+    public CsvCell getCriticalCareAdmissionType() { return super.getCell("CriticalCareAdmissionType");}
+    public CsvCell getGestationLengthAtDelivery() { return super.getCell("GestationLengthAtDelivery");}
+    public CsvCell getAdvancedRespiratorySupportDays() { return super.getCell("AdvancedRespiratorySupportDays");}
+    public CsvCell getBasicRespiratorySupportsDays() { return super.getCell("BasicRespiratorySupportsDays");}
+    public CsvCell getAdvancedCardiovascularSupportDays() { return super.getCell("AdvancedCardiovascularSupportDays");}
+    public CsvCell getBasicCardiovascularSupportDays() { return super.getCell("BasicCardiovascularSupportDays");}
+    public CsvCell getRenalSupportDays() { return super.getCell("RenalSupportDays");}
+    public CsvCell getNeurologicalSupportDays() { return super.getCell("NeurologicalSupportDays");}
+    public CsvCell getGastroIntestinalSupportDays() { return super.getCell("GastroIntestinalSupportDays");}
+    public CsvCell getDermatologicalSupportDays() { return super.getCell("DermatologicalSupportDays");}
+    public CsvCell getLiverSupportDays() { return super.getCell("LiverSupportDays");}
+    public CsvCell getOrganSupportMaximum() { return super.getCell("OrganSupportMaximum");}
+    public CsvCell getCriticalCareLevel2Days() { return super.getCell("CriticalCareLevel2Days");}
+    public CsvCell getCriticalCareLevel3Days() { return super.getCell("CriticalCareLevel3Days");}
+    public CsvCell getCriticalCareDischargeDate() { return super.getCell("CriticalCareDischargeDate");}
+    public CsvCell getCriticalCareDischargeTime() { return super.getCell("CriticalCareDischargeTime");}
+    public CsvCell getCriticalCareDischargeReadyDate() { return super.getCell("CriticalCareDischargeReadyDate");}
+    public CsvCell getCriticalCareDischargeReadyTime() { return super.getCell("CriticalCareDischargeReadyTime");}
+    public CsvCell getCriticalCareDischargeStatus() { return super.getCell("CriticalCareDischargeStatus");}
+    public CsvCell getCriticalCareDischargeDestination() { return super.getCell("CriticalCareDischargeDestination");}
+    public CsvCell getCriticalCareDischargeLocation() { return super.getCell("CriticalCareDischargeLocation");}
+
+    public CsvCell getCareActivity1() { return super.getCell("CareActivity1");}
+    public CsvCell getCareActivity2100() { return super.getCell("CareActivity2100");}
+
 
     @Override
     protected boolean isFileAudited() {

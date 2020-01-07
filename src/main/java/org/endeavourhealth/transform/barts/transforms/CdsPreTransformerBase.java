@@ -9,10 +9,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.BartsSusHelper;
-import org.endeavourhealth.transform.barts.schema.CdsRecordEmergencyCDSI;
-import org.endeavourhealth.transform.barts.schema.CdsRecordI;
-import org.endeavourhealth.transform.barts.schema.CdsRecordInpatientI;
-import org.endeavourhealth.transform.barts.schema.CdsRecordOutpatientI;
+import org.endeavourhealth.transform.barts.schema.*;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.common.TransformWarnings;
@@ -87,6 +84,33 @@ public abstract class CdsPreTransformerBase {
 
         UUID serviceId = csvHelper.getServiceId();
         csvHelper.submitToThreadPool(new SaveCdsEmergencyCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+    protected static void processCriticalCareCdsRecords(CdsRecordCriticalCareI parser, BartsCsvHelper csvHelper,
+                                                        List<StagingCriticalCareCds> criticalCareCdsBatch) throws Exception {
+
+        if (TransformConfig.instance().isLive()) {
+
+            //move function to here for go live
+        } else {
+            processCriticalCares(parser, csvHelper, criticalCareCdsBatch);
+        }
+    }
+
+    protected static void saveCriticalCareCdsBatch(List<StagingCriticalCareCds> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SaveCdsCriticalCareCallable(new ArrayList<>(batch), serviceId));
         batch.clear();
 
         if (lastOne) {
@@ -408,6 +432,31 @@ public abstract class CdsPreTransformerBase {
         }
 
         return remainingProcedureCount;
+    }
+
+    private static class SaveCdsCriticalCareCallable implements Callable {
+
+        private List<StagingCriticalCareCds> objs = null;
+        private UUID serviceId;
+
+        public SaveCdsCriticalCareCallable(List<StagingCriticalCareCds> objs, UUID serviceId) {
+            this.objs = objs;
+            this.serviceId = serviceId;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+                repository.saveCDSCriticalCares(objs, serviceId);
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
+            }
+
+            return null;
+        }
     }
 
     private static class SaveCdsEmergencyCallable implements Callable {
@@ -820,6 +869,98 @@ public abstract class CdsPreTransformerBase {
 
             return null;
         }
+    }
+
+    private static void processCriticalCares(CdsRecordCriticalCareI parser, BartsCsvHelper csvHelper,
+                                           List<StagingCriticalCareCds> criticalCareCdsBatch) throws Exception {
+
+        StagingCriticalCareCds stagingCriticalCareCds = new StagingCriticalCareCds();
+
+        CsvCell cdsUniqueIdCell = parser.getCdsUniqueId();
+        stagingCriticalCareCds.setCdsUniqueIdentifier(cdsUniqueIdCell.getString());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(cdsUniqueIdCell.getPublishedFileId(), cdsUniqueIdCell.getRecordNumber());
+        stagingCriticalCareCds.setAudit(audit);
+
+        stagingCriticalCareCds.setExchangeId(csvHelper.getExchangeId().toString());
+        stagingCriticalCareCds.setDtReceived(csvHelper.getDataDate());
+
+        String localPatientId = parser.getLocalPatientId().getString();
+        if (!localPatientId.isEmpty()) {
+
+            stagingCriticalCareCds.setMrn(localPatientId);
+            stagingCriticalCareCds.setNhsNumber(parser.getNhsNumber().getString());
+            String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, localPatientId);
+            if (Strings.isNullOrEmpty(personId)) {
+                TransformWarnings.log(LOG, csvHelper, "Failed to find personid for CDS id {}", parser.getCdsUniqueId());
+                return;
+            }
+            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
+                return;
+            }
+            stagingCriticalCareCds.setLookupPersonId(Integer.valueOf(personId));
+
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Skipping Critical Care CDS record {} with no MRN", parser.getCdsUniqueId());
+            return;
+        }
+
+        stagingCriticalCareCds.setCriticalCareTypeId(parser.getCriticalCareTypeID().getString());
+        stagingCriticalCareCds.setSpellNumber(parser.getSpellNumber().getString());
+        stagingCriticalCareCds.setCriticalCareIdentifier(parser.getCriticalCareIdentifier().getString());
+
+        CsvCell careStartDate = parser.getCriticalCareStartDate();
+        CsvCell careStartTime = parser.getCriticalCareStartTime();
+        Date careDateTime = CsvCell.getDateTimeFromTwoCells(careStartDate, careStartTime);
+        if (careDateTime != null) {
+            stagingCriticalCareCds.setCareStartDate(careDateTime);
+        }
+
+        stagingCriticalCareCds.setCareUnitFunction(parser.getCriticalCareUnitFunction().getString());
+        stagingCriticalCareCds.setAdmissionSourceCode(parser.getCriticalCareAdmissionSource().getString());
+        stagingCriticalCareCds.setAdmissionTypeCode(parser.getCriticalCareAdmissionType().getString());
+        stagingCriticalCareCds.setAdmissionLocation(parser.getCriticalCareSourceLocation().getString());
+        stagingCriticalCareCds.setGestationLengthAtDelivery(parser.getGestationLengthAtDelivery().getString());
+
+        stagingCriticalCareCds.setAdvancedRespiratorySupportDays(parser.getAdvancedRespiratorySupportDays().getInt());
+        stagingCriticalCareCds.setBasicRespiratorySupportsDays(parser.getBasicRespiratorySupportsDays().getInt());
+        stagingCriticalCareCds.setAdvancedCardiovascularSupportDays(parser.getAdvancedCardiovascularSupportDays().getInt());
+        stagingCriticalCareCds.setBasicCardiovascularSupportDays(parser.getBasicCardiovascularSupportDays().getInt());
+        stagingCriticalCareCds.setRenalSupportDays(parser.getRenalSupportDays().getInt());
+        stagingCriticalCareCds.setNeurologicalSupportDays(parser.getNeurologicalSupportDays().getInt());
+        stagingCriticalCareCds.setGastroIntestinalSupportDays(parser.getGastroIntestinalSupportDays().getInt());
+        stagingCriticalCareCds.setDermatologicalSupportDays(parser.getDermatologicalSupportDays().getInt());
+        stagingCriticalCareCds.setLiverSupportDays(parser.getLiverSupportDays().getInt());
+        stagingCriticalCareCds.setOrganSupportMaximum(parser.getOrganSupportMaximum().getInt());
+        stagingCriticalCareCds.setCriticalCareLevel2Days(parser.getCriticalCareLevel2Days().getInt());
+        stagingCriticalCareCds.setCriticalCareLevel3Days(parser.getCriticalCareLevel3Days().getInt());
+
+        CsvCell dischargeDate = parser.getCriticalCareDischargeDate();
+        CsvCell dischargeTime = parser.getCriticalCareDischargeTime();
+        Date dischargeDateTime = CsvCell.getDateTimeFromTwoCells(dischargeDate, dischargeTime);
+        if (dischargeDateTime != null) {
+            stagingCriticalCareCds.setDischargeDate(dischargeDateTime);
+        }
+
+        CsvCell dischargeReadyDate = parser.getCriticalCareDischargeReadyDate();
+        CsvCell dischargeReadyTime = parser.getCriticalCareDischargeReadyTime();
+        Date dischargeReadyDateTime = CsvCell.getDateTimeFromTwoCells(dischargeReadyDate, dischargeReadyTime);
+        if (dischargeReadyDateTime != null) {
+            stagingCriticalCareCds.setDischargeReadyDate(dischargeReadyDateTime);
+        }
+        stagingCriticalCareCds.setDischargeStatusCode(parser.getCriticalCareDischargeStatus().getString());
+        stagingCriticalCareCds.setDischargeDestination(parser.getCriticalCareDischargeDestination().getString());
+        stagingCriticalCareCds.setDischargeLocation(parser.getCriticalCareDischargeLocation().getString());
+
+        stagingCriticalCareCds.setCareActivity1(parser.getCareActivity1().getString());
+        stagingCriticalCareCds.setCareActivity2100(parser.getCareActivity2100().getString());
+
+        //finally, add the Cds batch for saving
+        criticalCareCdsBatch.add(stagingCriticalCareCds);
+        saveCriticalCareCdsBatch(criticalCareCdsBatch, false, csvHelper);
     }
 
     private static void processEmergencies(CdsRecordEmergencyCDSI parser, BartsCsvHelper csvHelper,
