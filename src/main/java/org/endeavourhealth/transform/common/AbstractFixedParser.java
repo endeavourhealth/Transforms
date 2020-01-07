@@ -388,7 +388,14 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         if (field == null) {
             throw new IllegalArgumentException("No such field as [" + field + "]");
         }
-        String value = getFieldValue(this.curentLine, field);
+
+        String value = null;
+        try {
+            value = getFieldValue(this.curentLine, field);
+        } catch (StringIndexOutOfBoundsException ex) {
+            //if the column doesn't exist, i.e. null data, then we'll get this exception, in which case return null
+            return null;
+        }
 
         //long rowAuditId = getSourceFileRecordIdForCurrentRow();
         int colIndex = field.getColumnIndex();
