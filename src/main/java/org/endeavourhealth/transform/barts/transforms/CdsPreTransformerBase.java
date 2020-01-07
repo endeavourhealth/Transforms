@@ -955,8 +955,14 @@ public abstract class CdsPreTransformerBase {
         stagingCriticalCareCds.setDischargeDestination(parser.getCriticalCareDischargeDestination().getString());
         stagingCriticalCareCds.setDischargeLocation(parser.getCriticalCareDischargeLocation().getString());
 
-        stagingCriticalCareCds.setCareActivity1(parser.getCareActivity1().getString());
-        stagingCriticalCareCds.setCareActivity2100(parser.getCareActivity2100().getString());
+        CsvCell careActivity1Cell = parser.getCareActivity1();
+        if (careActivity1Cell != null && !careActivity1Cell.isEmpty()) {
+            stagingCriticalCareCds.setCareActivity1(parser.getCareActivity1().getString());
+        }
+        CsvCell careActivity2100Cell = parser.getCareActivity2100();
+        if (careActivity2100Cell != null && !careActivity2100Cell.isEmpty()) {
+            stagingCriticalCareCds.setCareActivity2100(parser.getCareActivity2100().getString());
+        }
 
         //finally, add the Cds batch for saving
         criticalCareCdsBatch.add(stagingCriticalCareCds);
