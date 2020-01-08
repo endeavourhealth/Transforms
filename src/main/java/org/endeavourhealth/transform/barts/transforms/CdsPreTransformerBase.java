@@ -1138,7 +1138,12 @@ public abstract class CdsPreTransformerBase {
             String dataTime = parser.getInvestigationPerformedTime(dataNumber).getString();
             String dataDateTime = dataDate.concat(" ").concat(dataTime);
 
-            invList.add(dataDateTime.concat("~").concat(dataCode));
+            // Data is in the format  datetime~treatment code.
+            // Often, the entries are duplicated, i.e. same code, date and time, so check before adding in new data again
+            String data = dataDateTime.concat("~").concat(dataCode);
+            if (!invList.contains(data)) {
+                invList.add(data);
+            }
 
             dataNumber++;
         }
@@ -1163,7 +1168,12 @@ public abstract class CdsPreTransformerBase {
             String dataTime = parser.getTreatmentTime(dataNumber).getString();
             String dataDateTime = dataDate.concat(" ").concat(dataTime);
 
-            treatmentList.add(dataDateTime.concat("~").concat(dataCode));
+            // Data is in the format  datetime~treatment code.
+            // Often, the entries are duplicated, i.e. same code, date and time, so check before adding in new data again
+            String data = dataDateTime.concat("~").concat(dataCode);
+            if (!treatmentList.contains(data)) {
+                treatmentList.add(dataDateTime.concat("~").concat(dataCode));
+            }
 
             dataNumber++;
         }
