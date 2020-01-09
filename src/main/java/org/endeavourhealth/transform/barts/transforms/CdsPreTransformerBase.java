@@ -1126,7 +1126,7 @@ public abstract class CdsPreTransformerBase {
         // datetime~code
         List<String> invList = new ArrayList<>();
         dataNumber = 1;
-        while (dataNumber < 11) {
+        while (dataNumber < 21) {
 
             //get next data cell (range could be from 1-10)
             String dataCode = parser.getInvestigation(dataNumber).getString();
@@ -1156,7 +1156,7 @@ public abstract class CdsPreTransformerBase {
         // datetime~code
         List<String> treatmentList = new ArrayList<>();
         dataNumber = 1;
-        while (dataNumber < 11) {
+        while (dataNumber < 21) {
 
             //get next data cell (range could be from 1-10)
             String dataCode = parser.getTreatment(dataNumber).getString();
@@ -1214,7 +1214,7 @@ public abstract class CdsPreTransformerBase {
         // code|code
         List<String> safeGuardlingList = new ArrayList<>();
         dataNumber = 1;
-        while (dataNumber < 21) {
+        while (dataNumber < 11) {
 
             //get next data cell (range could be from 1-20)
             String dataCode = parser.getSafeguardingConcern(dataNumber).getString();
