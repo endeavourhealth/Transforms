@@ -984,7 +984,16 @@ public abstract class CdsPreTransformerBase {
 
         stagingEmergencyCds.setExchangeId(csvHelper.getExchangeId().toString());
         stagingEmergencyCds.setDtReceived(csvHelper.getDataDate());
-        stagingEmergencyCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
+
+        //Cds activity date is common to all Sus files so if it is missing, log and exit record
+        CsvCell cdsActivityDateCell = parser.getCdsActivityDate();
+        if (!cdsActivityDateCell.isEmpty()) {
+            stagingEmergencyCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Missing EmergencyCds cdsActivityDate CDS id {}", parser.getCdsUniqueId());
+            return;
+        }
+
         stagingEmergencyCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
 
         //the file only has a withheld reason. if populated, then withHeld = true
@@ -1251,8 +1260,16 @@ public abstract class CdsPreTransformerBase {
 
         stagingOutpatientCds.setExchangeId(csvHelper.getExchangeId().toString());
         stagingOutpatientCds.setDtReceived(csvHelper.getDataDate());
-        stagingOutpatientCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
-        //stagingInpatientCds.setSusRecordType(susRecordType);
+
+        //Cds activity date is common to all Sus files so if it is missing, log and exit record
+        CsvCell cdsActivityDateCell = parser.getCdsActivityDate();
+        if (!cdsActivityDateCell.isEmpty()) {
+            stagingOutpatientCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Missing Outpatient cdsActivityDate CDS id {}", parser.getCdsUniqueId());
+            return;
+        }
+
         stagingOutpatientCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
 
         CsvCell withheldCell = parser.getWithheldFlag();
@@ -1314,8 +1331,16 @@ public abstract class CdsPreTransformerBase {
 
         stagingInpatientCds.setExchangeId(csvHelper.getExchangeId().toString());
         stagingInpatientCds.setDtReceived(csvHelper.getDataDate());
-        stagingInpatientCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
-        //stagingInpatientCds.setSusRecordType(susRecordType);
+
+        //Cds activity date is common to all Sus files so if it is missing, log and exit record
+        CsvCell cdsActivityDateCell = parser.getCdsActivityDate();
+        if (!cdsActivityDateCell.isEmpty()) {
+            stagingInpatientCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Missing Inpatient cdsActivityDate CDS id {}", parser.getCdsUniqueId());
+            return;
+        }
+
         stagingInpatientCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
 
         CsvCell withheldCell = parser.getWithheldFlag();
