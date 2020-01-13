@@ -118,6 +118,34 @@ public abstract class CdsPreTransformerBase {
         }
     }
 
+    protected static void processHomeDelBirthCdsRecords(CdsRecordInpatientI parser, BartsCsvHelper csvHelper,
+                                                        List<StagingHomeDelBirthCds> homeDelBirthCdsBatch) throws Exception {
+
+        if (TransformConfig.instance().isLive()) {
+
+            //move function to here for go live
+        } else {
+            processHomeDelBirths(parser, csvHelper, homeDelBirthCdsBatch);
+        }
+    }
+
+    protected static void saveHomeDelBirthCdsBatch(List<StagingHomeDelBirthCds> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
+
+        if (batch.isEmpty()
+                || (!lastOne && batch.size() < TransformConfig.instance().getResourceSaveBatchSize())) {
+            return;
+        }
+
+        UUID serviceId = csvHelper.getServiceId();
+        csvHelper.submitToThreadPool(new SaveCdsHomeDelBirthCallable(new ArrayList<>(batch), serviceId));
+        batch.clear();
+
+        if (lastOne) {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
+    }
+
+
     protected static void saveOutpatientCdsBatch(List<StagingOutpatientCds> batch, boolean lastOne, BartsCsvHelper csvHelper) throws Exception {
 
         if (batch.isEmpty()
@@ -432,6 +460,31 @@ public abstract class CdsPreTransformerBase {
         }
 
         return remainingProcedureCount;
+    }
+
+    private static class SaveCdsHomeDelBirthCallable implements Callable {
+
+        private List<StagingHomeDelBirthCds> objs = null;
+        private UUID serviceId;
+
+        public SaveCdsHomeDelBirthCallable(List<StagingHomeDelBirthCds> objs, UUID serviceId) {
+            this.objs = objs;
+            this.serviceId = serviceId;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+                repository.saveCDSHomeDelBirths(objs, serviceId);
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
+            }
+
+            return null;
+        }
     }
 
     private static class SaveCdsCriticalCareCallable implements Callable {
@@ -1429,5 +1482,124 @@ public abstract class CdsPreTransformerBase {
 
         inpatientCdsBatch.add(stagingInpatientCds);
         saveInpatientCdsBatch(inpatientCdsBatch, false, csvHelper);
+    }
+
+    private static void processHomeDelBirths(CdsRecordInpatientI parser, BartsCsvHelper csvHelper,
+                                          List<StagingHomeDelBirthCds> homeDelBirthCdsBatch) throws Exception {
+
+        StagingHomeDelBirthCds stagingHomeDelBirthCds = new StagingHomeDelBirthCds();
+
+        CsvCell cdsUniqueIdCell = parser.getCdsUniqueId();
+        stagingHomeDelBirthCds.setCdsUniqueIdentifier(cdsUniqueIdCell.getString());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(cdsUniqueIdCell.getPublishedFileId(), cdsUniqueIdCell.getRecordNumber());
+        stagingHomeDelBirthCds.setAudit(audit);
+
+        stagingHomeDelBirthCds.setExchangeId(csvHelper.getExchangeId().toString());
+        stagingHomeDelBirthCds.setDtReceived(csvHelper.getDataDate());
+
+        //Cds activity date is common to all Sus files so if it is missing, log and exit record
+        CsvCell cdsActivityDateCell = parser.getCdsActivityDate();
+        if (!cdsActivityDateCell.isEmpty()) {
+            stagingHomeDelBirthCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Missing HomeDelBirth cdsActivityDate CDS id {}", parser.getCdsUniqueId());
+            return;
+        }
+
+        stagingHomeDelBirthCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
+
+        CsvCell withheldCell = parser.getWithheldFlag();
+        boolean isWithheld = withheldCell.getBoolean();
+        stagingHomeDelBirthCds.setWithheld(new Boolean(isWithheld));
+
+        if (!isWithheld) { //LocalPatientId and NHS number should be empty if withheld. Get persondId from tail file
+            String localPatientId = parser.getLocalPatientId().getString();
+            stagingHomeDelBirthCds.setMrn(localPatientId);
+            stagingHomeDelBirthCds.setNhsNumber(parser.getNhsNumber().getString());
+            String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, localPatientId);
+            if (Strings.isNullOrEmpty(personId)) {
+                TransformWarnings.log(LOG, csvHelper, "Failed to find personid for CDS id {}", parser.getCdsUniqueId());
+                return;
+            }
+            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
+                return;
+            }
+            stagingHomeDelBirthCds.setLookupPersonId(Integer.valueOf(personId));
+        }
+        stagingHomeDelBirthCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
+        String consultantStr = parser.getConsultantCode().getString();
+        stagingHomeDelBirthCds.setConsultantCode(consultantStr);
+
+        String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_CONSULTANT_TO_ID, consultantStr);
+        if (!Strings.isNullOrEmpty(personnelIdStr)) {
+            stagingHomeDelBirthCds.setLookupConsultantPersonnelId(Integer.valueOf(personnelIdStr));
+        }
+        stagingHomeDelBirthCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
+
+        stagingHomeDelBirthCds.setBirthWeight(parser.getBirthWeight().getString());
+        stagingHomeDelBirthCds.setLiveOrStillBirthIndicator(parser.getLiveOrStillBirthIndicator().getString());
+        stagingHomeDelBirthCds.setTotalPreviousPregnancies(parser.getTotalPreviousPregnancies().getString());
+
+        stagingHomeDelBirthCds.setSpellNumber(parser.getHospitalSpellNumber().getString());
+        stagingHomeDelBirthCds.setAdmissionMethodCode(parser.getAdmissionMethodCode().getString());
+        stagingHomeDelBirthCds.setAdmissionSourceCode(parser.getAdmissionSourceCode().getString());
+        stagingHomeDelBirthCds.setPatientClassification(parser.getPatientClassification().getString());
+
+        CsvCell spellStartDate = parser.getHospitalSpellStartDate();
+        CsvCell spellStartTime = parser.getHospitalSpellStartTime();
+        Date spellStartDateTime = CsvCell.getDateTimeFromTwoCells(spellStartDate, spellStartTime);
+        if (spellStartDateTime != null) {
+            stagingHomeDelBirthCds.setSpellStartDate(spellStartDateTime);
+        }
+        stagingHomeDelBirthCds.setEpisodeNumber(parser.getEpisodeNumber().getString());
+        stagingHomeDelBirthCds.setEpisodeStartSiteCode(parser.getEpisodeStartSiteCode().getString());
+        stagingHomeDelBirthCds.setEpisodeStartWardCode(parser.getEpisodeStartWardCode().getString());
+
+        CsvCell episodeStartDate = parser.getEpisodeStartDate();
+        CsvCell episodeStartTime = parser.getEpisodeStartTime();
+        Date episodeStartDateTime = CsvCell.getDateTimeFromTwoCells(episodeStartDate, episodeStartTime);
+        if (episodeStartDateTime != null) {
+            stagingHomeDelBirthCds.setEpisodeStartDate(episodeStartDateTime);
+        }
+        stagingHomeDelBirthCds.setEpisodeEndSiteCode(parser.getEpisodeEndSiteCode().getString());
+        stagingHomeDelBirthCds.setEpisodeEndWardCode(parser.getEpisodeEndWardCode().getString());
+
+        CsvCell episodeEndDate = parser.getEpisodeEndDate();
+        CsvCell episodeEndTime = parser.getEpisodeEndTime();
+        Date episodeEndDateTime = CsvCell.getDateTimeFromTwoCells(episodeEndDate, episodeEndTime);
+        if (episodeEndDateTime != null) {
+            stagingHomeDelBirthCds.setEpisodeEndDate(episodeEndDateTime);
+        }
+        CsvCell dischargeDate = parser.getDischargeDate();
+        CsvCell dischargeTime = parser.getDischargeTime();
+        Date dischargeDateTime = CsvCell.getDateTimeFromTwoCells(dischargeDate, dischargeTime);
+        if (dischargeDateTime != null) {
+            stagingHomeDelBirthCds.setDischargeDate(dischargeDateTime);
+        }
+        stagingHomeDelBirthCds.setDischargeDestinationCode(parser.getDischargeDestinationCode().getString());
+        stagingHomeDelBirthCds.setDischargeMethod(parser.getDischargeMethod().getString());
+
+        stagingHomeDelBirthCds.setPrimaryDiagnosisICD(parser.getPrimaryDiagnosisICD().getString());
+        stagingHomeDelBirthCds.setSecondaryDiagnosisICD(parser.getSecondaryDiagnosisICD().getString());
+        stagingHomeDelBirthCds.setOtherDiagnosisICD(parser.getAdditionalSecondaryDiagnosisICD().getString());
+
+        stagingHomeDelBirthCds.setPrimaryProcedureOPCS(parser.getPrimaryProcedureOPCS().getString());
+        CsvCell procDateCell = parser.getPrimaryProcedureDate();
+        if (!procDateCell.isEmpty()) {
+            stagingHomeDelBirthCds.setPrimaryProcedureDate(procDateCell.getDate());
+        }
+        stagingHomeDelBirthCds.setSecondaryProcedureOPCS(parser.getSecondaryProcedureOPCS().getString());
+        CsvCell proc2DateCell = parser.getSecondaryProcedureDate();
+        if (!proc2DateCell.isEmpty()) {
+            stagingHomeDelBirthCds.setSecondaryProcedureDate(proc2DateCell.getDate());
+        }
+        stagingHomeDelBirthCds.setOtherProceduresOPCS(parser.getAdditionalSecondaryProceduresOPCS().getString());
+
+        homeDelBirthCdsBatch.add(stagingHomeDelBirthCds);
+        saveHomeDelBirthCdsBatch(homeDelBirthCdsBatch, false, csvHelper);
     }
 }

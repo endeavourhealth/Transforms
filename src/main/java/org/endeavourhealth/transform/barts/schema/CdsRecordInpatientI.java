@@ -25,4 +25,8 @@ public interface CdsRecordInpatientI extends CdsRecordI {
     CsvCell getDischargeTime();
     CsvCell getDischargeDestinationCode();
     CsvCell getDischargeMethod();
+
+    CsvCell getBirthWeight();
+    CsvCell getLiveOrStillBirthIndicator();
+    CsvCell getTotalPreviousPregnancies();
 }

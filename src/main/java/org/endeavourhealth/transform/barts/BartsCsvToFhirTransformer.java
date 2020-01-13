@@ -166,6 +166,9 @@ public abstract class BartsCsvToFhirTransformer {
             //CriticalCare CDS
             CriticalCarePreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "CriticalCare", true),fhirResourceFiler,csvHelper);
 
+            //Home Delivery and Birth CDS
+            HomeDeliveryAndBirthPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "HomeDeliveryAndBirth", true),fhirResourceFiler,csvHelper);
+
             //PROCEDURES - the order is significant, going from less to more rich files
             PROCEPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PROCE", false), fhirResourceFiler, csvHelper);
             ProcedurePreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure", true), fhirResourceFiler, csvHelper);
