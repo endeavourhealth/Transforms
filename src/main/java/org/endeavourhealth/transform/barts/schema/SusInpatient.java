@@ -186,6 +186,14 @@ public class SusInpatient extends AbstractFixedParser implements CdsRecordI, Cds
         return super.getCell("DeliveryDate");
     }
 
+    public CsvCell getDeliveryPlaceTypeActual()  {
+        return super.getCell("DeliveryPlaceTypeActual");
+    }
+
+    public CsvCell getDeliveryMethod()  {
+        return super.getCell("DeliveryMethod");
+    }
+
     public CsvCell getMotherNHSNumber()  {
         return super.getCell("MotherNHSNumber");
     }

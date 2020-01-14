@@ -190,6 +190,14 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
         return super.getCell("MotherNHSNumber");
     }
 
+    public CsvCell getDeliveryMethod()  {
+        return super.getCell("DeliveryMethod");
+    }
+
+    public CsvCell getDeliveryPlaceTypeActual()  {
+        return super.getCell("DeliveryPlaceTypeActual");
+    }
+
     @Override
     protected boolean isFileAudited() {
         return true;
@@ -563,14 +571,14 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
         ret.add(new FixedParserField("DeliveryDate", 5428, 8));
 //BIRTH DETAILS
         /*ret.add(new FixedParserField("BabyDetails1", 5436, 64));
-        ret.add(new FixedParserField("BirthOrder", 5436, 1));
+        ret.add(new FixedParserField("BirthOrder", 5436, 1));*/
         ret.add(new FixedParserField("DeliveryMethod", 5437, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5438, 2));
+        /*ret.add(new FixedParserField("GestationLengthAssessment", 5438, 2));
         ret.add(new FixedParserField("ResuscitationMethod", 5440, 1));
         ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5441, 1));
-        ret.add(new FixedParserField("LocationClass", 5442, 2));
+        ret.add(new FixedParserField("LocationClass", 5442, 2));*/
         ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5444, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5445, 3));
+        /* ret.add(new FixedParserField("ActivityLocationType", 5445, 3));
         ret.add(new FixedParserField("LocalPatientID", 5448, 10));
         ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5458, 12));
         ret.add(new FixedParserField("NHSNumber", 5470, 10));

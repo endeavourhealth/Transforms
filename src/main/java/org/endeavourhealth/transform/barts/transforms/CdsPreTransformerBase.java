@@ -1544,6 +1544,8 @@ public abstract class CdsPreTransformerBase {
         stagingHomeDelBirthCds.setDeliveryPlaceChangeReasonCode(parser.getDeliveryPlaceChangeReasonCode().getString());
         stagingHomeDelBirthCds.setGestationLengthLabourOnset(parser.getGestationLengthLabourOnset().getString());
         stagingHomeDelBirthCds.setDeliveryDate(parser.getDeliveryDate().getDate());
+        stagingHomeDelBirthCds.setDeliveryPlaceActual(parser.getDeliveryPlaceTypeActual().getString());
+        stagingHomeDelBirthCds.setDeliveryMethod(parser.getDeliveryMethod().getString());
         stagingHomeDelBirthCds.setMotherNhsNumber(parser.getMotherNHSNumber().getString());
 
         homeDelBirthCdsBatch.add(stagingHomeDelBirthCds);

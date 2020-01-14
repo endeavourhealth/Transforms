@@ -65,4 +65,8 @@ public interface CdsRecordInpatientI extends CdsRecordI {
     CsvCell getDeliveryDate();
 
     CsvCell getMotherNHSNumber();
+
+    CsvCell getDeliveryMethod();
+
+    CsvCell getDeliveryPlaceTypeActual();
 }
