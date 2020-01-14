@@ -154,6 +154,41 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
         return super.getCell("TotalPreviousPregnancies");
     }
 
+    public CsvCell getNumberOfBabies()  {
+        return super.getCell("NumberofBabies");
+    }
+
+    public CsvCell getFirstAntenatalAssessmentDate()  {
+        return super.getCell("FirstAntenatalAssessmentDate");
+    }
+
+    public CsvCell getAntenatalCarePractitioner()  {
+        return super.getCell("GeneralMedicalPractitionerAntenatalCare");
+    }
+
+    public CsvCell getAntenatalCarePractice()  {
+        return super.getCell("GeneralMedicalPracticeAntenatalCare");
+    }
+
+    public CsvCell getDeliveryPlaceTypeIntended()  {
+        return super.getCell("DeliveryPlaceTypeIntended");
+    }
+
+    public CsvCell getDeliveryPlaceChangeReasonCode()  {
+        return super.getCell("DeliveryPlaceChangeReasonCode");
+    }
+
+    public CsvCell getGestationLengthLabourOnset()  {
+        return super.getCell("GestationLengthLabourOnset");
+    }
+
+    public CsvCell getDeliveryDate()  {
+        return super.getCell("DeliveryDate");
+    }
+
+    public CsvCell getMotherNHSNumber()  {
+        return super.getCell("MotherNHSNumber");
+    }
 
     @Override
     protected boolean isFileAudited() {
@@ -511,21 +546,21 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
         ret.add(new FixedParserField("DecidedToAdmitDate", 5371, 8));
         ret.add(new FixedParserField("EarliestReasonableOfferDate", 5379, 8));
 //PREGNANCY DETAILS
-        /*ret.add(new FixedParserField("NumberofBabies", 5387, 1));*/
+        ret.add(new FixedParserField("NumberofBabies", 5387, 1));
 //ANTENATAL CARE
-        /*ret.add(new FixedParserField("FirstAntenatalAssessmentDate", 5388, 8));
+        ret.add(new FixedParserField("FirstAntenatalAssessmentDate", 5388, 8));
         ret.add(new FixedParserField("GeneralMedicalPractitionerAntenatalCare", 5396, 8));
         ret.add(new FixedParserField("GeneralMedicalPracticeAntenatalCare", 5404, 12));
         ret.add(new FixedParserField("LocationClass", 5416, 2));
         ret.add(new FixedParserField("ActivityLocationType", 5418, 3));
         ret.add(new FixedParserField("DeliveryPlaceTypeIntended", 5421, 1));
-        ret.add(new FixedParserField("DeliveryPlaceChangeReasonCode", 5422, 1));*/
+        ret.add(new FixedParserField("DeliveryPlaceChangeReasonCode", 5422, 1));
 //LABOUR DELIVERY
-        /*ret.add(new FixedParserField("AnaestheticDuringLabourOrDelivery", 5423, 1));
+        ret.add(new FixedParserField("AnaestheticDuringLabourOrDelivery", 5423, 1));
         ret.add(new FixedParserField("AnaestheticGivenPostLabourOrDelivery", 5424, 1));
         ret.add(new FixedParserField("GestationLengthLabourOnset", 5425, 2));
         ret.add(new FixedParserField("LabourOrDeliveryOnsetMethodCode", 5427, 1));
-        ret.add(new FixedParserField("DeliveryDate", 5428, 8));*/
+        ret.add(new FixedParserField("DeliveryDate", 5428, 8));
 //BIRTH DETAILS
         /*ret.add(new FixedParserField("BabyDetails1", 5436, 64));
         ret.add(new FixedParserField("BirthOrder", 5436, 1));
@@ -708,14 +743,14 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
         ret.add(new FixedParserField("PersonGenderCurrent", 6010, 1));
         ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 6011, 1));*/
 //MOTHER DETAILS
-        /*ret.add(new FixedParserField("LocalPatientID", 6012, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 6022, 12));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 6034, 2));
-        ret.add(new FixedParserField("NHSNumber", 6036, 10));
-        ret.add(new FixedParserField("WithheldFlag", 6046, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 6047, 2));
+        ret.add(new FixedParserField("MotherLocalPatientID", 6012, 10));
+        ret.add(new FixedParserField("MotherOrganisationCodeLocalPatientID", 6022, 12));
+        ret.add(new FixedParserField("MotherNHSNumberStatusIndicator", 6034, 2));
+        ret.add(new FixedParserField("MotherNHSNumber", 6036, 10));
+        ret.add(new FixedParserField("MotherWithheldFlag", 6046, 1));
+        ret.add(new FixedParserField("MotherWithheldIdentityReason", 6047, 2));
         ret.add(new FixedParserField("MotherBirthDate", 6049, 8));
-        ret.add(new FixedParserField("OverseasVisitorStatusAtCDSActivityDate", 6057, 1));*/
+        ret.add(new FixedParserField("MotherOverseasVisitorStatusAtCDSActivityDate", 6057, 1));
 //MOTHER ADDRESS
         /*ret.add(new FixedParserField("PatientAddressType", 6058, 2));
         ret.add(new FixedParserField("PatientUnstructuredAddress", 6060, 175));

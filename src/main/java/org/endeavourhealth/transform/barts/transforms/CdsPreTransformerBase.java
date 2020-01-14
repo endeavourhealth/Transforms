@@ -1531,73 +1531,20 @@ public abstract class CdsPreTransformerBase {
             stagingHomeDelBirthCds.setLookupPersonId(Integer.valueOf(personId));
         }
         stagingHomeDelBirthCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
-        String consultantStr = parser.getConsultantCode().getString();
-        stagingHomeDelBirthCds.setConsultantCode(consultantStr);
-
-        String personnelIdStr = csvHelper.getInternalId(PRSNLREFTransformer.MAPPING_ID_CONSULTANT_TO_ID, consultantStr);
-        if (!Strings.isNullOrEmpty(personnelIdStr)) {
-            stagingHomeDelBirthCds.setLookupConsultantPersonnelId(Integer.valueOf(personnelIdStr));
-        }
-        stagingHomeDelBirthCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
 
         stagingHomeDelBirthCds.setBirthWeight(parser.getBirthWeight().getString());
         stagingHomeDelBirthCds.setLiveOrStillBirthIndicator(parser.getLiveOrStillBirthIndicator().getString());
         stagingHomeDelBirthCds.setTotalPreviousPregnancies(parser.getTotalPreviousPregnancies().getString());
 
-        stagingHomeDelBirthCds.setSpellNumber(parser.getHospitalSpellNumber().getString());
-        stagingHomeDelBirthCds.setAdmissionMethodCode(parser.getAdmissionMethodCode().getString());
-        stagingHomeDelBirthCds.setAdmissionSourceCode(parser.getAdmissionSourceCode().getString());
-        stagingHomeDelBirthCds.setPatientClassification(parser.getPatientClassification().getString());
-
-        CsvCell spellStartDate = parser.getHospitalSpellStartDate();
-        CsvCell spellStartTime = parser.getHospitalSpellStartTime();
-        Date spellStartDateTime = CsvCell.getDateTimeFromTwoCells(spellStartDate, spellStartTime);
-        if (spellStartDateTime != null) {
-            stagingHomeDelBirthCds.setSpellStartDate(spellStartDateTime);
-        }
-        stagingHomeDelBirthCds.setEpisodeNumber(parser.getEpisodeNumber().getString());
-        stagingHomeDelBirthCds.setEpisodeStartSiteCode(parser.getEpisodeStartSiteCode().getString());
-        stagingHomeDelBirthCds.setEpisodeStartWardCode(parser.getEpisodeStartWardCode().getString());
-
-        CsvCell episodeStartDate = parser.getEpisodeStartDate();
-        CsvCell episodeStartTime = parser.getEpisodeStartTime();
-        Date episodeStartDateTime = CsvCell.getDateTimeFromTwoCells(episodeStartDate, episodeStartTime);
-        if (episodeStartDateTime != null) {
-            stagingHomeDelBirthCds.setEpisodeStartDate(episodeStartDateTime);
-        }
-        stagingHomeDelBirthCds.setEpisodeEndSiteCode(parser.getEpisodeEndSiteCode().getString());
-        stagingHomeDelBirthCds.setEpisodeEndWardCode(parser.getEpisodeEndWardCode().getString());
-
-        CsvCell episodeEndDate = parser.getEpisodeEndDate();
-        CsvCell episodeEndTime = parser.getEpisodeEndTime();
-        Date episodeEndDateTime = CsvCell.getDateTimeFromTwoCells(episodeEndDate, episodeEndTime);
-        if (episodeEndDateTime != null) {
-            stagingHomeDelBirthCds.setEpisodeEndDate(episodeEndDateTime);
-        }
-        CsvCell dischargeDate = parser.getDischargeDate();
-        CsvCell dischargeTime = parser.getDischargeTime();
-        Date dischargeDateTime = CsvCell.getDateTimeFromTwoCells(dischargeDate, dischargeTime);
-        if (dischargeDateTime != null) {
-            stagingHomeDelBirthCds.setDischargeDate(dischargeDateTime);
-        }
-        stagingHomeDelBirthCds.setDischargeDestinationCode(parser.getDischargeDestinationCode().getString());
-        stagingHomeDelBirthCds.setDischargeMethod(parser.getDischargeMethod().getString());
-
-        stagingHomeDelBirthCds.setPrimaryDiagnosisICD(parser.getPrimaryDiagnosisICD().getString());
-        stagingHomeDelBirthCds.setSecondaryDiagnosisICD(parser.getSecondaryDiagnosisICD().getString());
-        stagingHomeDelBirthCds.setOtherDiagnosisICD(parser.getAdditionalSecondaryDiagnosisICD().getString());
-
-        stagingHomeDelBirthCds.setPrimaryProcedureOPCS(parser.getPrimaryProcedureOPCS().getString());
-        CsvCell procDateCell = parser.getPrimaryProcedureDate();
-        if (!procDateCell.isEmpty()) {
-            stagingHomeDelBirthCds.setPrimaryProcedureDate(procDateCell.getDate());
-        }
-        stagingHomeDelBirthCds.setSecondaryProcedureOPCS(parser.getSecondaryProcedureOPCS().getString());
-        CsvCell proc2DateCell = parser.getSecondaryProcedureDate();
-        if (!proc2DateCell.isEmpty()) {
-            stagingHomeDelBirthCds.setSecondaryProcedureDate(proc2DateCell.getDate());
-        }
-        stagingHomeDelBirthCds.setOtherProceduresOPCS(parser.getAdditionalSecondaryProceduresOPCS().getString());
+        stagingHomeDelBirthCds.setNumberOfBabies(parser.getNumberOfBabies().getInt());
+        stagingHomeDelBirthCds.setFirstAntenatalAssessmentDate(parser.getFirstAntenatalAssessmentDate().getDate());
+        stagingHomeDelBirthCds.setAntenatalCarePractitioner(parser.getAntenatalCarePractitioner().getString());
+        stagingHomeDelBirthCds.setAntenatalCarePractice(parser.getAntenatalCarePractice().getString());
+        stagingHomeDelBirthCds.setDeliveryPlaceIntended(parser.getDeliveryPlaceTypeIntended().getString());
+        stagingHomeDelBirthCds.setDeliveryPlaceChangeReasonCode(parser.getDeliveryPlaceChangeReasonCode().getString());
+        stagingHomeDelBirthCds.setGestationLengthLabourOnset(parser.getGestationLengthLabourOnset().getString());
+        stagingHomeDelBirthCds.setDeliveryDate(parser.getDeliveryDate().getDate());
+        stagingHomeDelBirthCds.setMotherNhsNumber(parser.getMotherNHSNumber().getString());
 
         homeDelBirthCdsBatch.add(stagingHomeDelBirthCds);
         saveHomeDelBirthCdsBatch(homeDelBirthCdsBatch, false, csvHelper);
