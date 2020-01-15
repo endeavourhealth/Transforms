@@ -135,10 +135,10 @@ public class SusEmergencyCareDataSet extends AbstractCsvParser implements CdsRec
                 "MHALegalStatusClassificationCode10",
                 "GeneralMedicalPractionerSpecified",
                 "GeneralMedicalPracticeCodePatientRegistration",
-                "OrganisationSiteIdentifierofTreatment",
+                "OrganisationSiteIdentifierofTreatment",                            //staging
                 "EmergencyCareDepartmentType",                                      //staging
                 "AmbulanceIncidentNumber",                                          //staging
-                "OrganisationCodeConveyingAmbulanceTrust",                          //staging
+                "OrganisationCodeConveyingAmbulanceTrust",
                 "EmergencyCareAttendanceIdentifier",                                //staging
                 "EmergencyCareArrivalMode",                                         //staging
                 "EmergencyCareAttendanceCategory",                                  //staging
@@ -471,7 +471,7 @@ public class SusEmergencyCareDataSet extends AbstractCsvParser implements CdsRec
                 "SafeguardingConcernSnomed9",
                 "SafeguardingConcernSnomed10",
                 "EmergencyCareDischargeDestination",                            //staging
-                "OrganisationSiteIdentifierDischargeFromEmergencyCare",
+                "OrganisationSiteIdentifierDischargeFromEmergencyCare",         //staging
                 "EmergencyCareDischargeFollowup",
                 "EmergencyCareDischargeInformationGiven",
                 "ClinicalTrialIdentifier",
@@ -493,7 +493,7 @@ public class SusEmergencyCareDataSet extends AbstractCsvParser implements CdsRec
     public CsvCell getPatientPathwayIdentifier() { return super.getCell("PatientPathwayIdentifier");}
     public CsvCell getDepartmentType() { return super.getCell("EmergencyCareDepartmentType");}
     public CsvCell getAmbulanceIncidentNumber() { return super.getCell("AmbulanceIncidentNumber");}
-    public CsvCell getAmbulanceTrustOrganisationCode() { return super.getCell("OrganisationCodeConveyingAmbulanceTrust");}
+    public CsvCell getTreatmentOrganisationCode() { return super.getCell("OrganisationSiteIdentifierofTreatment");}
     public CsvCell getAttendanceIdentifier() { return super.getCell("EmergencyCareAttendanceIdentifier");}
     public CsvCell getArrivalMode() { return super.getCell("EmergencyCareArrivalMode");}
     public CsvCell getAttendanceCategory() { return super.getCell("EmergencyCareAttendanceCategory");}
@@ -514,6 +514,7 @@ public class SusEmergencyCareDataSet extends AbstractCsvParser implements CdsRec
     public CsvCell getDepartureDate() { return super.getCell("EmergencyCareDepartureDate");}
     public CsvCell getDepartureTime() { return super.getCell("EmergencyCareDischargeStatusSnomed");}
     public CsvCell getDischargeDestination() { return super.getCell("EmergencyCareDischargeDestination");}
+    public CsvCell getDischargeDestinationSiteId() { return super.getCell("OrganisationSiteIdentifierDischargeFromEmergencyCare");}
 
     //mental health classifications 1-10
     public CsvCell getMHClassificationCode(int dataNumber) { return super.getCell("MHALegalStatusClassificationCode"+dataNumber);}

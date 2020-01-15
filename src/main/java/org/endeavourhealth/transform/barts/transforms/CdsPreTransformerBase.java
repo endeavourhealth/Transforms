@@ -1086,7 +1086,7 @@ public abstract class CdsPreTransformerBase {
         stagingEmergencyCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
         stagingEmergencyCds.setDepartmentType(parser.getDepartmentType().getString());
         stagingEmergencyCds.setAmbulanceIncidentNumber(parser.getAmbulanceIncidentNumber().getString());
-        stagingEmergencyCds.setAmbulanceTrustOrganisationCode(parser.getAmbulanceTrustOrganisationCode().getString());
+        stagingEmergencyCds.setTreatmentOrganisationCode(parser.getTreatmentOrganisationCode().getString());
         stagingEmergencyCds.setAttendanceIdentifier(parser.getAttendanceIdentifier().getString());
         stagingEmergencyCds.setArrivalMode(parser.getArrivalMode().getString());
         stagingEmergencyCds.setAttendanceCategory(parser.getAttendanceCategory().getString());
@@ -1134,6 +1134,7 @@ public abstract class CdsPreTransformerBase {
             stagingEmergencyCds.setDepartureDate(departureDateTime);
         }
         stagingEmergencyCds.setDischargeDestination(parser.getDischargeDestination().getString());
+        stagingEmergencyCds.setDischargeDestinationSiteId(parser.getDischargeDestinationSiteId().getString());
 
         // process all Mental Health Classification data into a delimetered string format eg:
         // start datetime~end datetime~code|start datetime~end datetime~code

@@ -18,7 +18,7 @@ public interface CdsRecordEmergencyCDSI {
     CsvCell getPatientPathwayIdentifier();
     CsvCell getDepartmentType();
     CsvCell getAmbulanceIncidentNumber();
-    CsvCell getAmbulanceTrustOrganisationCode();
+    CsvCell getTreatmentOrganisationCode();
     CsvCell getAttendanceIdentifier();
     CsvCell getArrivalMode();
     CsvCell getAttendanceCategory();
@@ -39,6 +39,7 @@ public interface CdsRecordEmergencyCDSI {
     CsvCell getDepartureDate();
     CsvCell getDepartureTime();
     CsvCell getDischargeDestination();
+    CsvCell getDischargeDestinationSiteId();
 
     //Mental Health Classifications 1 - 10
     CsvCell getMHClassificationCode(int dataNumber);
