@@ -532,9 +532,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         //history is most-recent-first
         for (ResourceWrapper wrapper: history) {
             Date dtCreatedAt = wrapper.getCreatedAt();
-            LOG.debug("Compare dt_last_sent " + dtLastSent + " (" + dtLastSent.getTime() + ") against dtCreatedAt " + dtCreatedAt + " (" + dtCreatedAt.getTime() + ")");
+            //LOG.debug("Compare dt_last_sent " + dtLastSent + " (" + dtLastSent.getTime() + ") against dtCreatedAt " + dtCreatedAt + " (" + dtCreatedAt.getTime() + ")");
             if (dtCreatedAt.equals(dtLastSent)) {
-                LOG.debug("" + currentWrapper.getReferenceString() + " has dt_last_sent of " + dtLastSent + " so using version from that date");
+                //LOG.debug("" + currentWrapper.getReferenceString() + " has dt_last_sent of " + dtLastSent + " so using version from that date");
                 return (Patient)wrapper.getResource();
             }
         }
