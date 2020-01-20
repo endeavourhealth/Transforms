@@ -55,7 +55,8 @@ public class SROrganisationTransformer {
         CsvCell idCell = parser.getID();
 
         if (idCell.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "Skipping organisation RowIdentifier {} because no ID present", parser.getRowIdentifier());
+            //no point logging this tens of thousands of times if no action will be taken
+            //TransformWarnings.log(LOG, parser, "Skipping organisation RowIdentifier {} because no ID present", parser.getRowIdentifier());
             return;
         }
 
