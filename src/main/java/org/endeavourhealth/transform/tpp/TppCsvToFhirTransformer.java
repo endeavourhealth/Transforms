@@ -258,9 +258,9 @@ public abstract class TppCsvToFhirTransformer {
             throw new TransformException("Unable to determine TPP CSV version for above file(s).");
         }
 
-        for (Map.Entry<String, String> entry : parserToVersionsMap.entrySet()) {
+        /*for (Map.Entry<String, String> entry : parserToVersionsMap.entrySet()) {
             LOG.info("ParserMap" + entry.getKey() + "/" + entry.getValue());
-        }
+        }*/
         return parserToVersionsMap;
 
     }
