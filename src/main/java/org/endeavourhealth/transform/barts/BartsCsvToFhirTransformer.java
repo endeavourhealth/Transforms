@@ -181,10 +181,11 @@ public abstract class BartsCsvToFhirTransformer {
             SURCCPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCC", true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
             SURCPPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCP",true), fhirResourceFiler,csvHelper);
 
-            //Process the Target tables for Cds based encounter data (Emergency, Inpatient) //TODO - CriticalCare, HDB, Outpatient
+            //Process the Target tables for Cds based encounter data (Emergency, Inpatient) //TODO - CriticalCare, HomeDelBirth
             csvHelper.waitUntilThreadPoolIsEmpty();
             csvHelper.processStagingForTargetEmergencyCds();
             csvHelper.processStagingForTargetInpatientCds();
+            csvHelper.processStagingForTargetOutpatientCds();
 
             //PROCEDURES - execute the staging procedures to target procedures stored proc
             csvHelper.waitUntilThreadPoolIsEmpty();
