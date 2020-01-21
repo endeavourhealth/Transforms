@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StaffMemberCache {
     private static final Logger LOG = LoggerFactory.getLogger(StaffMemberCache.class);
 
-    private HashMap<Long, StaffMemberCacheObj> cache = new HashMap<>();
+    private ConcurrentHashMap<Long, StaffMemberCacheObj> cache = new ConcurrentHashMap<>();
     private Set<String> staffProfileIdsProcessed = ConcurrentHashMap.newKeySet(); //gives us a concurrent hash set
     private String cachedOdsCode = null;
     private Set<Long> staffProfileIdsThatMustBeTransformed = ConcurrentHashMap.newKeySet(); //gives us a concurrent hash set
