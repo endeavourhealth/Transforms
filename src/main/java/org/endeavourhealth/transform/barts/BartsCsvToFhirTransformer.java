@@ -181,7 +181,10 @@ public abstract class BartsCsvToFhirTransformer {
             SURCCPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCC", true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
             SURCPPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCP",true), fhirResourceFiler,csvHelper);
 
-            //TODO - processStagingFor CDS data
+            //Process the Target tables for Cds based encounter data (Emergency, Inpatient) //TODO - CriticalCare, HDB, Outpatient
+            csvHelper.waitUntilThreadPoolIsEmpty();
+            csvHelper.processStagingForTargetEmergencyCds();
+            csvHelper.processStagingForTargetInpatientCds();
 
             //PROCEDURES - execute the staging procedures to target procedures stored proc
             csvHelper.waitUntilThreadPoolIsEmpty();
@@ -189,7 +192,6 @@ public abstract class BartsCsvToFhirTransformer {
 
             //Procedure data transformation on final procedure target staging table
             ProcedureTargetTransformer.transform(fhirResourceFiler, csvHelper);
-
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //DIAGNOSES / PROBLEMS - NOTE:  Any Sus Diagnosis data will have been processed during the transforms above, i.e. Inpatient, Outpatient
