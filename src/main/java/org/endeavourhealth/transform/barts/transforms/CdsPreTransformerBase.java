@@ -1366,6 +1366,23 @@ public abstract class CdsPreTransformerBase {
         if (apptStartDateTime != null) {
             stagingOutpatientCds.setApptDate(apptStartDateTime);
         }
+
+        stagingOutpatientCds.setPrimaryDiagnosisICD(parser.getPrimaryDiagnosisICD().getString());
+        stagingOutpatientCds.setSecondaryDiagnosisICD(parser.getSecondaryDiagnosisICD().getString());
+        stagingOutpatientCds.setOtherDiagnosisICD(parser.getAdditionalSecondaryDiagnosisICD().getString());
+
+        stagingOutpatientCds.setPrimaryProcedureOPCS(parser.getPrimaryProcedureOPCS().getString());
+        CsvCell procDateCell = parser.getPrimaryProcedureDate();
+        if (!procDateCell.isEmpty()) {
+            stagingOutpatientCds.setPrimaryProcedureDate(procDateCell.getDate());
+        }
+        stagingOutpatientCds.setSecondaryProcedureOPCS(parser.getSecondaryProcedureOPCS().getString());
+        CsvCell proc2DateCell = parser.getSecondaryProcedureDate();
+        if (!proc2DateCell.isEmpty()) {
+            stagingOutpatientCds.setSecondaryProcedureDate(proc2DateCell.getDate());
+        }
+        stagingOutpatientCds.setOtherProceduresOPCS(parser.getAdditionalSecondaryProceduresOPCS().getString());
+
         outpatientCdsBatch.add(stagingOutpatientCds);
         saveOutpatientCdsBatch(outpatientCdsBatch, false, csvHelper);
     }
