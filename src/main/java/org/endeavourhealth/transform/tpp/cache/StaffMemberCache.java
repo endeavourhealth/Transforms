@@ -33,11 +33,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StaffMemberCache {
     private static final Logger LOG = LoggerFactory.getLogger(StaffMemberCache.class);
 
-    private HashMap<Long, StaffMemberCacheObj> cache = new HashMap<>();
-    private Set<String> staffProfileIdsProcessed = new HashSet<>();
+    private ConcurrentHashMap<Long, StaffMemberCacheObj> cache = new ConcurrentHashMap<>();
+    private Set<String> staffProfileIdsProcessed = ConcurrentHashMap.newKeySet(); //gives us a concurrent hash set
     private String cachedOdsCode = null;
-    private Set<Long> staffProfileIdsThatMustBeTransformed = ConcurrentHashMap.newKeySet(); //this gives us a concurrent hash set
-    private Set<Long> staffMemberIdsThatMustBeTransformed = ConcurrentHashMap.newKeySet(); //this gives us a concurrent hash set
+    private Set<Long> staffProfileIdsThatMustBeTransformed = ConcurrentHashMap.newKeySet(); //gives us a concurrent hash set
+    private Set<Long> staffMemberIdsThatMustBeTransformed = ConcurrentHashMap.newKeySet(); //gives us a concurrent hash set
     private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
 
     public void addStaffMemberObj(CsvCell staffMemberIdCell, StaffMemberCacheObj obj) {
