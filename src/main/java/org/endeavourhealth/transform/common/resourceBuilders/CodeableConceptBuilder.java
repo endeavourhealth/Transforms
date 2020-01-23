@@ -42,7 +42,8 @@ public class CodeableConceptBuilder {
         Procedure_Request_Main_Code,
         Medication_Order_Drug_Code,
         Medication_Statement_Drug_Code,
-        Location_Type
+        Location_Type,
+        Composition_Type
     }
 
 
