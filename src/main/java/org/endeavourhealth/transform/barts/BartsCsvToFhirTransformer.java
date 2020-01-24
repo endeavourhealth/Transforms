@@ -131,7 +131,7 @@ public abstract class BartsCsvToFhirTransformer {
             csvHelper.waitUntilThreadPoolIsEmpty();
             csvHelper.processStagingForTargetClinicalEvents();
 
-            //Clinical events data transformation on final procedure target staging table
+            //Clinical events data transformation on final clinical events target staging table
             ClinicalEventTargetTransformer.transform(fhirResourceFiler, csvHelper);
 
             //while we're just doing the pre-transformer only, allow it to remove from the map, to reduce memory use
@@ -206,7 +206,10 @@ public abstract class BartsCsvToFhirTransformer {
 
             //Condition data transformation on final condition target staging table
             ConditionTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            fhirResourceFiler.waitUntilEverythingIsSaved();
 
+            //EmergencyCds data transformation on final emergencyCds target staging table for Encounters
+            EmergencyCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //other clinical transformers

@@ -14,9 +14,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingTargetDalI;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingClinicalEventTarget;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingConditionTarget;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedureTarget;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -395,6 +393,30 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         List<StagingConditionTarget> ret = stagingRepository.getTargetConditions(this.exchangeId, this.serviceId);
         return ret;
+    }
+
+    public List<StagingEmergencyCdsTarget> retrieveTargetEmergencyCds() throws Exception {
+
+        if (TransformConfig.instance().isLive()) {
+
+            //remove this check for go live, removing null
+            return null;
+        } else {
+            List<StagingEmergencyCdsTarget> ret = stagingRepository.getTargetEmergencyCds(this.exchangeId, this.serviceId);
+            return ret;
+        }
+    }
+
+    public List<StagingInpatientCdsTarget> retrieveTargetInpatientCds() throws Exception {
+
+        if (TransformConfig.instance().isLive()) {
+
+            //remove this check for go live, removing null
+            return null;
+        } else {
+            List<StagingInpatientCdsTarget> ret = stagingRepository.getTargetInpatientCds(this.exchangeId, this.serviceId);
+            return ret;
+        }
     }
 
     public List<Resource> retrieveResourceByPatient(UUID patientId) throws Exception {

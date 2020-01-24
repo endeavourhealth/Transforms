@@ -53,7 +53,7 @@ public class CompositionBuilder extends ResourceBuilderBase implements HasCodeab
         auditValue("status", sourceCells);
     }
 
-    public void setSubject(Reference patientReference, CsvCell... sourceCells) {
+    public void setPatientSubject(Reference patientReference, CsvCell... sourceCells) {
         this.composition.setSubject(patientReference);
 
         auditValue("subject", sourceCells);
@@ -65,17 +65,11 @@ public class CompositionBuilder extends ResourceBuilderBase implements HasCodeab
         auditValue("author", sourceCells);
     }
 
-    public void addSection(String title, String jsonDataRef) {
+    public void addSection(String title, String jsonData) {
 
         Composition.SectionComponent section = this.composition.addSection();
         section.setTitle(title);
-
-        //TODO - work out how to store the json inline against the composition section reference
-//        Binary binaryRef = new Binary();
-//        binaryRef.setContentType("json");
-//
-//        byte[] bytes = null;
-//        binaryRef.setContent(bytes);
+        section.setUserData(title, jsonData);
     }
 
     public void setIsConfidential(boolean isConfidential, CsvCell... sourceCells) {
