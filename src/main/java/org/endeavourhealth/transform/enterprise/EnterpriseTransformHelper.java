@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.enterprise;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.ReferenceComponents;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
@@ -447,4 +444,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         return resourceDal.getCurrentVersion(getServiceId(), comps.getResourceType().toString(), UUID.fromString(comps.getId()));
     }
 
+    public boolean shouldClinicalConceptBeDeleted(CodeableConcept codeableConcept) {
+        return !SubscriberTransformHelper.isCodeableConceptSafe(codeableConcept);
+    }
 }

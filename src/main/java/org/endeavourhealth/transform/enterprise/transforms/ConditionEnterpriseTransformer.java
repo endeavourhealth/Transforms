@@ -41,7 +41,8 @@ public class ConditionEnterpriseTransformer extends AbstractEnterpriseTransforme
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
-                || params.getShouldPatientRecordBeDeleted()) {
+                || params.getShouldPatientRecordBeDeleted()
+                || params.shouldClinicalConceptBeDeleted(fhir.getCode())) {
             csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }

@@ -33,6 +33,10 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     private static final Object MAP_VAL = new Object(); //concurrent hash map requires non-null values, so just use this
 
+    private static Set<String> protectedCodesRead2;
+    private static Set<String> protectedCodesCTV3;
+    private static Set<String> protectedCodesSnomed;
+
     private final UUID serviceId;
     private final UUID systemId;
     private final UUID protocolId;
@@ -566,4 +570,160 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     }
 
+    public boolean shouldClinicalConceptBeDeleted(CodeableConcept codeableConcept) {
+        return !isCodeableConceptSafe(codeableConcept);
+    }
+
+    /**
+     * tests if a codeable concept is one that is known to break de-identification
+     * because it contains something like a patient's name, address or DoB
+     */
+    public static boolean isCodeableConceptSafe(CodeableConcept codeableConcept) {
+
+        //9155. and 184099003 are "patient date of birth" which breaks de-identification
+        if (codeableConcept.hasCoding()) {
+
+            for (Coding coding: codeableConcept.getCoding()) {
+                if (!coding.hasSystem()
+                        || !coding.hasCode()) {
+                    continue;
+                }
+
+                String system = coding.getSystem();
+                String code = coding.getCode();
+
+                if ((system.equals(FhirCodeUri.CODE_SYSTEM_READ2) && getProtectedCodesRead2().contains(code))
+                    || (system.equals(FhirCodeUri.CODE_SYSTEM_CTV3) && getProtectedCodesCTV3().contains(code))
+                    || (system.equals(FhirCodeUri.CODE_SYSTEM_SNOMED_CT) && getProtectedCodesSnomed().contains(code))) {
+
+                    LOG.debug("Will not transform " + code + " in system " + system + " as breaks de-identification");
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+
+    private static Set<String> getProtectedCodesSnomed() {
+        if (protectedCodesSnomed == null) {
+            Set<String> s = new HashSet<>();
+
+            //below Snomed codes derived from the Emis Read2->Snomed mappings
+            s.add("184095009"); //Patient forename
+            s.add("184096005"); //Patient surnam
+            s.add("184097001"); //Patient address
+            s.add("184098006"); //Patient title
+            s.add("184099003"); //Date of birth
+            s.add("184102003"); //Patient postal cod
+            s.add("184103008"); //Patient telephone number
+            s.add("395451000000101"); //Patient NHS numbe
+            s.add("184107009"); //Patient hospital number
+            s.add("247841000000109"); //Patient previous surname
+            s.add("428481002"); //Patient mobile telephone number
+            s.add("424966008"); //Patient - email address
+            s.add("823131000000105"); //Patient door access key code
+            s.add("185975009"); //Hospital reference number
+
+            //below Snomed codes derived from TRUD CTV3->Snomed mappings (there may be overlap with above)
+            s.add("823131000000105"); // Patient door access key code
+            s.add("424966008"); //  Patient - email address
+            s.add("406548001"); // Emergency contact details
+            s.add("108651000000103"); // Social services identification number
+            s.add("408588000"); //  Service user's alias
+            s.add("408587005"); //  Legal guardian - email address
+            s.add("408586001"); // Legal guardian - work telephone number
+            s.add("408585002"); // Legal guardian - mobile telephone number
+            s.add("408584003"); // Legal guardian - home telephone number
+            s.add("184095009"); // Patient forename
+            s.add("184096005"); // Patient surname
+            s.add("247841000000109"); //  Patient previous surname
+            s.add("184097001"); //  Patient address
+            s.add("184099003"); // Date of birth
+            s.add("184098006"); // Patient title
+            s.add("125680007"); // Marital status
+            s.add("184102003"); // Patient postal code
+            s.add("428481002"); //  Patient mobile telephone number
+            s.add("184103008"); // Patient telephone number
+            s.add("395451000000101"); // Patient NHS number
+            s.add("184142008"); // Patient's next of kin
+            s.add("185975009"); // Hospital reference number
+            s.add("184107009"); // Patient hospital number
+            s.add("408576002"); // Carer - email address
+            s.add("824521000000100"); // Email address of informal carer
+            s.add("408401005"); //  Carer - work telephone number
+            s.add("824571000000101"); // Work telephone number of informal carer
+            s.add("408400006"); // Carer - home telephone number
+            s.add("824591000000102"); // Home telephone number of informal carer
+            s.add("184149004"); // Key Holder
+
+            protectedCodesSnomed = s;
+        }
+        return protectedCodesSnomed;
+    }
+
+    private static Set<String> getProtectedCodesCTV3() {
+        if (protectedCodesCTV3 == null) {
+            Set<String> s = new HashSet<>();
+            s.add("XaZ1Q"); //Patient door access key code
+            s.add("XaYak"); //Patient email address
+            s.add("XaXTm"); //Emergency contact details
+            s.add("XaJQs"); //Social services identification number
+            s.add("XaJQL"); //Service user's alias
+            s.add("XaJQB"); //Legal guardian - email address
+            s.add("XaJQ9"); //Legal guardian - work telephone number
+            s.add("XaJQ7"); //Legal guardian - mobile telephone number
+            s.add("XaJQ4"); //Legal guardian - home telephone number
+            s.add("9151."); //Patient forename
+            s.add("9152."); //Patient surname
+            s.add("XaLva"); //Patient previous surname
+            s.add("9153."); //Patient address
+            s.add("9155."); //Date of birth
+            s.add("9154."); //Patient title
+            s.add("9157."); //Patient marital status
+            s.add("9158."); //Patient post-code
+            s.add("XaQgn"); //Patient mobile telephone number
+            s.add("9159."); //Patient telephone number
+            s.add("XE2Hj"); //Patient NHS number
+            s.add("9182."); //Patient's next of kin
+            s.add("9R6.."); //Hospital reference number:
+            s.add("915D."); //Patient hospital number
+            s.add("XaJPa"); //Carer - email address
+            s.add("XaZ4o"); //Email address of informal carer
+            s.add("XaJOL"); //Carer - mobile telephone number
+            s.add("XaZ4q"); //Mobile telephone number of informal carer
+            s.add("XaJOK"); //Carer - work telephone number
+            s.add("XaZ4r"); //Work telephone number of informal carer
+            s.add("XaJOJ"); //Carer - home telephone number
+            s.add("XaZ4s"); //Home telephone number of informal carer
+            s.add("9189."); //Key Holder
+
+            protectedCodesCTV3 = s;
+        }
+        return protectedCodesCTV3;
+    }
+
+    private static Set<String> getProtectedCodesRead2() {
+        if (protectedCodesRead2 == null) {
+            Set<String> s = new HashSet<>();
+            s.add("9151."); //Patient fore-name
+            s.add("9152."); //Patient surname
+            s.add("9153."); //Patient address
+            s.add("9154."); //Patient title
+            s.add("9155."); //Patient date of birth
+            s.add("9158."); //Patient post-code
+            s.add("9159."); //Patient telephone no.
+            s.add("915B."); //Patient NHS number
+            s.add("915D."); //Patient hospital no.
+            s.add("915H."); //Patient previous surname
+            s.add("915J."); //Patient mobile telephone number
+            s.add("915K."); //Patient email address
+            s.add("915L."); //Patient door access key code
+            s.add("9R6.."); //Hospital reference number:
+
+            protectedCodesRead2 = s;
+        }
+        return protectedCodesRead2;
+    }
 }

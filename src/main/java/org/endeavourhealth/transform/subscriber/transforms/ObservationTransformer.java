@@ -45,7 +45,8 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
-                || params.getShouldPatientRecordBeDeleted()) {
+                || params.getShouldPatientRecordBeDeleted()
+                || params.shouldClinicalConceptBeDeleted(fhir.getCode())) {
             model.writeDelete(subscriberId);
             return;
         }

@@ -37,7 +37,8 @@ public class SpecimenEnterpriseTransformer extends AbstractEnterpriseTransformer
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
-                || params.getShouldPatientRecordBeDeleted()) {
+                || params.getShouldPatientRecordBeDeleted()
+                || params.shouldClinicalConceptBeDeleted(fhir.getType())) {
             csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
@@ -55,7 +56,7 @@ public class SpecimenEnterpriseTransformer extends AbstractEnterpriseTransformer
         String resultValueUnits = null;
         Date resultDate = null;
         String resultString = null;
-        Long resultConcptId = null;
+        Long resultConceptId = null;
         String originalCode = null;
         boolean isProblem = false;
         String originalTerm = null;
@@ -137,7 +138,7 @@ public class SpecimenEnterpriseTransformer extends AbstractEnterpriseTransformer
                 resultValueUnits,
                 resultDate,
                 resultString,
-                resultConcptId,
+                resultConceptId,
                 originalCode,
                 isProblem,
                 originalTerm,
