@@ -675,16 +675,17 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             s.add("XaJQ9"); //Legal guardian - work telephone number
             s.add("XaJQ7"); //Legal guardian - mobile telephone number
             s.add("XaJQ4"); //Legal guardian - home telephone number
+            s.add("XaLva"); //Patient previous surname
             s.add("9151."); //Patient forename
             s.add("9152."); //Patient surname
-            s.add("XaLva"); //Patient previous surname
             s.add("9153."); //Patient address
-            s.add("9155."); //Date of birth
             s.add("9154."); //Patient title
+            s.add("9155."); //Date of birth
+            s.add("9156."); //Patient sex
             s.add("9157."); //Patient marital status
             s.add("9158."); //Patient post-code
-            s.add("XaQgn"); //Patient mobile telephone number
             s.add("9159."); //Patient telephone number
+            s.add("XaQgn"); //Patient mobile telephone number
             s.add("XE2Hj"); //Patient NHS number
             s.add("9182."); //Patient's next of kin
             s.add("9R6.."); //Hospital reference number:
@@ -712,6 +713,8 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             s.add("9153."); //Patient address
             s.add("9154."); //Patient title
             s.add("9155."); //Patient date of birth
+            s.add("9156."); //Patient sex
+            s.add("9157."); //Patient marital status
             s.add("9158."); //Patient post-code
             s.add("9159."); //Patient telephone no.
             s.add("915B."); //Patient NHS number
@@ -720,7 +723,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             s.add("915J."); //Patient mobile telephone number
             s.add("915K."); //Patient email address
             s.add("915L."); //Patient door access key code
-            s.add("9R6.."); //Hospital reference number:
+            s.add("9R6.."); //Hospital reference number
 
             protectedCodesRead2 = s;
         }
