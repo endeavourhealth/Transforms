@@ -135,7 +135,7 @@ public class CLEVEPreTransformer {
 
             CsvCell orderIdCell = parser.getOrderId();
             if (!orderIdCell.isEmpty()) {
-                stagingClinicalEvent.setOrderId(orderIdCell.getInt());
+                stagingClinicalEvent.setOrderId(orderIdCell.getLong());
             }
 
             CsvCell parentEventIdCell = parser.getParentEventId();
