@@ -444,7 +444,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         return resourceDal.getCurrentVersion(getServiceId(), comps.getResourceType().toString(), UUID.fromString(comps.getId()));
     }
 
-    public boolean shouldClinicalConceptBeDeleted(CodeableConcept codeableConcept) {
+    public boolean shouldClinicalConceptBeDeleted(CodeableConcept codeableConcept) throws Exception {
         return !SubscriberTransformHelper.isCodeableConceptSafe(codeableConcept);
     }
 }

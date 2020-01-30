@@ -1,0 +1,60 @@
+"Code","Term"
+"184095009","Patient forename
+"184096005","Patient surnam
+"184097001","Patient address
+"184098006","Patient title
+"184099003","Date of birth
+"184102003","Patient postal cod
+"184103008","Patient telephone number
+"395451000000101","Patient NHS numbe
+"184107009","Patient hospital number
+"247841000000109","Patient previous surname
+"428481002","Patient mobile telephone number
+"424966008","Patient - email address
+"823131000000105","Patient door access key code
+"185975009","Hospital reference number
+"184100006","Patient sex (observable entity)
+"184142008","Patient's next of kin (observable entity)
+"184149004","Key Holder (observable entity)
+"406548001","Emergency contact details (observable entity)
+"408400006","Carer - home telephone number (observable entity)
+"408401005","Carer - work telephone number (observable entity)
+"408402003","Carer - mobile telephone number (observable entity)
+"408576002","Carer - email address (observable entity)
+"408584003","Legal guardian - home telephone number (observable entity)
+"408585002","Legal guardian - mobile telephone number (observable entity)
+"408586001","Legal guardian - work telephone number (observable entity)
+"408587005","Legal guardian - email address (observable entity)
+"824521000000100","Email address of informal carer (observable entity)
+"824551000000105","Mobile telephone number of informal carer (observable entity)
+"824571000000101","Work telephone number of informal carer (observable entity)
+"824591000000102","Home telephone number of informal carer (observable entity)
+"823131000000105","Patient door access key code
+"424966008","Patient - email address
+"406548001","Emergency contact details
+"108651000000103","Social services identification number
+"408588000","Service user's alias
+"408587005","Legal guardian - email address
+"408586001","Legal guardian - work telephone number
+"408585002","Legal guardian - mobile telephone number
+"408584003","Legal guardian - home telephone number
+"184095009","Patient forename
+"184096005","Patient surname
+"247841000000109","Patient previous surname
+"184097001","Patient address
+"184099003","Date of birth
+"184098006","Patient title
+"184102003","Patient postal code
+"428481002","Patient mobile telephone number
+"184103008","Patient telephone number
+"395451000000101","Patient NHS number
+"184142008","Patient's next of kin
+"185975009","Hospital reference number
+"184107009","Patient hospital number
+"408576002","Carer - email address
+"824521000000100","Email address of informal carer
+"408401005","Carer - work telephone number
+"824571000000101","Work telephone number of informal carer
+"408400006","Carer - home telephone number
+"824591000000102","Home telephone number of informal carer
+"184149004","Key Holder
