@@ -671,6 +671,7 @@ public class SRCodeTransformer {
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, familyMemberHistoryBuilder);
                 return;
             }
+            return;
         }
 
         FamilyMemberHistoryBuilder familyMemberHistoryBuilder = new FamilyMemberHistoryBuilder();
