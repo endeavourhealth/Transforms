@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import com.google.gson.JsonObject;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
@@ -17,7 +18,6 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -107,7 +107,7 @@ public class EmergencyCdsTargetTransformer {
 
             // sub encounter: the A&E attendance  (sequence #1)
             Encounter encounterArrival = new Encounter();
-            encounterArrival.setEncounterType("a&e attendance");
+            encounterArrival.setEncounterType("emergency attendance");
             encounterArrival.setEncounterId(attendanceId+":1");
             encounterArrival.setPatientId(personId);
             encounterArrival.setEffectiveDate(targetEmergencyCds.getDtArrival());
@@ -118,12 +118,11 @@ public class EmergencyCdsTargetTransformer {
             encounterArrival.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
 
             // create a list of additional data to store as Json for this encounterArrival instance
-            List <Object> additionalArrivalObjs = new ArrayList<>();
-            additionalArrivalObjs.add(targetEmergencyCds.getDepartmentType());
-            additionalArrivalObjs.add(targetEmergencyCds.getAmbulanceNo());
-            additionalArrivalObjs.add(targetEmergencyCds.getArrivalMode());
-            String additionalArrivalObjsAsJson = ObjectMapperPool.getInstance().writeValueAsString(additionalArrivalObjs);
-            encounterArrival.setAdditionalFieldsJson(additionalArrivalObjsAsJson);
+            JsonObject additionalArrivalObjs = new JsonObject();
+            additionalArrivalObjs.addProperty("department_type", targetEmergencyCds.getDepartmentType());
+            additionalArrivalObjs.addProperty("ambulance_no", targetEmergencyCds.getAmbulanceNo());
+            additionalArrivalObjs.addProperty("arrival_mode", targetEmergencyCds.getArrivalMode());
+            encounterArrival.setAdditionalFieldsJson(additionalArrivalObjs.toString());
 
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterArrival);
             compositionBuilder.addSection("encounter-1-1", encounterInstanceAsJson);
@@ -139,7 +138,7 @@ public class EmergencyCdsTargetTransformer {
             if (initialAssessmentDate != null) {
 
                 Encounter encounterAssessment = new Encounter();
-                encounterAssessment.setEncounterType("a&e assessment");
+                encounterAssessment.setEncounterType("emergency initial assessment");
                 encounterAssessment.setEncounterId(attendanceId+":2");
                 encounterAssessment.setPatientId(personId);
                 encounterAssessment.setEffectiveDate(initialAssessmentDate);
@@ -150,10 +149,9 @@ public class EmergencyCdsTargetTransformer {
                 encounterAssessment.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
 
                 //create a list of additional data to store as Json for this encounterAssessment instance
-                List<Object> additionalAssessmentObjs = new ArrayList<>();
-                additionalAssessmentObjs.add(chiefComplaint);
-                String additionalAssessmentObjsAsJson = ObjectMapperPool.getInstance().writeValueAsString(additionalAssessmentObjs);
-                encounterAssessment.setAdditionalFieldsJson(additionalAssessmentObjsAsJson);
+                JsonObject additionalAssessmentObjs = new JsonObject();
+                additionalAssessmentObjs.addProperty("chief_complaint", chiefComplaint);
+                encounterAssessment.setAdditionalFieldsJson(additionalAssessmentObjs.toString());
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterAssessment);
                 compositionBuilder.addSection("encounter-1-2", encounterInstanceAsJson);
@@ -161,7 +159,7 @@ public class EmergencyCdsTargetTransformer {
 
             // sub encounter: the investigation and treatment  (sequence #3)
             Encounter encounterInvTreat = new Encounter();
-            encounterInvTreat.setEncounterType("a&e investigations and treatments");
+            encounterInvTreat.setEncounterType("emergency investigations and treatments");
             encounterInvTreat.setEncounterId(attendanceId+":3");
             encounterInvTreat.setPatientId(personId);
             encounterInvTreat.setEffectiveDate(targetEmergencyCds.getDtSeenForTreatment());
@@ -172,14 +170,12 @@ public class EmergencyCdsTargetTransformer {
             encounterInvTreat.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
 
             // create a list of additional data to store as Json for this encounterInvTreat instance
-            List <Object> additionalInvTreatObjs = new ArrayList<>();
-            additionalInvTreatObjs.add(targetEmergencyCds.getDiagnosis());
-            additionalInvTreatObjs.add(targetEmergencyCds.getInvestigations());
-            additionalInvTreatObjs.add(targetEmergencyCds.getTreatments());
-            additionalInvTreatObjs.add(targetEmergencyCds.getSafeguardingConcerns());
-
-            String additionalInvTreatObjsAsJson = ObjectMapperPool.getInstance().writeValueAsString(additionalInvTreatObjs);
-            encounterInvTreat.setAdditionalFieldsJson(additionalInvTreatObjsAsJson);
+            JsonObject additionalInvTreatObjs = new JsonObject();
+            additionalInvTreatObjs.addProperty("diagnosis", targetEmergencyCds.getDiagnosis());
+            additionalInvTreatObjs.addProperty("investigations", targetEmergencyCds.getInvestigations());
+            additionalInvTreatObjs.addProperty("treatments", targetEmergencyCds.getTreatments());
+            additionalInvTreatObjs.addProperty("safeguarding_concerns", targetEmergencyCds.getSafeguardingConcerns());
+            encounterInvTreat.setAdditionalFieldsJson(additionalInvTreatObjs.toString());
 
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInvTreat);
             compositionBuilder.addSection("encounter-1-3", encounterInstanceAsJson);
@@ -189,7 +185,7 @@ public class EmergencyCdsTargetTransformer {
             Date admissionDate = targetEmergencyCds.getDtDecidedToAdmit();
             if (admissionDate != null) {
                 Encounter encounterAdmission = new Encounter();
-                encounterAdmission.setEncounterType("admission");
+                encounterAdmission.setEncounterType("inpatient admission");
                 encounterAdmission.setEncounterId(attendanceId + ":4");
                 encounterAdmission.setPatientId(personId);
                 encounterAdmission.setEffectiveDate(admissionDate);
@@ -211,7 +207,7 @@ public class EmergencyCdsTargetTransformer {
             if (departureDate != null) {
 
                 Encounter encounterDischarge = new Encounter();
-                encounterDischarge.setEncounterType("discharge");
+                encounterDischarge.setEncounterType("emergency discharge");
                 encounterDischarge.setEncounterId(attendanceId + ":5");
                 encounterDischarge.setPatientId(personId);
                 encounterDischarge.setEffectiveDate(departureDate);
@@ -222,12 +218,11 @@ public class EmergencyCdsTargetTransformer {
                 encounterDischarge.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
 
                 // additional data to store as Json for this encounterAdmission instance
-                List <Object> additionalDischargeObjs = new ArrayList<>();
-                additionalDischargeObjs.add(targetEmergencyCds.getDischargeStatus());
-                additionalDischargeObjs.add(targetEmergencyCds.getDischargeDestination());
-                additionalDischargeObjs.add(targetEmergencyCds.getReferredToServices());
-                String additionalDischargeObjsAsJson = ObjectMapperPool.getInstance().writeValueAsString(additionalDischargeObjs);
-                encounterDischarge.setAdditionalFieldsJson(additionalDischargeObjsAsJson);
+                JsonObject additionalDischargeObjs = new JsonObject();
+                additionalDischargeObjs.addProperty("discharge_status", targetEmergencyCds.getDischargeStatus());
+                additionalDischargeObjs.addProperty("discharge_destination", targetEmergencyCds.getDischargeDestination());
+                additionalDischargeObjs.addProperty("referred_to_services", targetEmergencyCds.getReferredToServices());
+                encounterDischarge.setAdditionalFieldsJson(additionalDischargeObjs.toString());
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterDischarge);
                 compositionBuilder.addSection("encounter-1-5", encounterInstanceAsJson);
