@@ -92,6 +92,7 @@ public class EmergencyCdsTargetTransformer {
             Encounter encounterEmergencyParent = new Encounter();
             encounterEmergencyParent.setEncounterType("emergency");
             encounterEmergencyParent.setEncounterId(Integer.toString(parentEncounterId));
+            encounterEmergencyParent.setPatientId(personId);
             encounterEmergencyParent.setEffectiveDate(targetEmergencyCds.getDtArrival());
             encounterEmergencyParent.setEffectiveEndDate(targetEmergencyCds.getDtDeparture());
             encounterEmergencyParent.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
@@ -101,12 +102,21 @@ public class EmergencyCdsTargetTransformer {
             encounterEmergencyParent.setAdditionalFieldsJson(null);
             String encounterInstanceAsJson = null;
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterEmergencyParent);
-            compositionBuilder.addSection("encounter-1", encounterInstanceAsJson);
+            String title = "encounter-1";
+            LOG.debug("Adding CompositionId: "+uniqueId+", Section: "+title+", Json: "+encounterInstanceAsJson);
+            compositionBuilder.addSection(title, encounterInstanceAsJson);
+
+            ///DEBUG only
+            Composition.SectionComponent section = compositionBuilder.getSection(title);
+            if (section != null) {
+                LOG.debug("Retrieving CompositionId: "+uniqueId+", Section: "+title+", UserData: "+section.getUserData(title));
+            }
 
             // sub encounter: the A&E attendance  (sequence #1)
             Encounter encounterArrival = new Encounter();
             encounterArrival.setEncounterType("a&e attendance");
             encounterArrival.setEncounterId(attendanceId+":1");
+            encounterArrival.setPatientId(personId);
             encounterArrival.setEffectiveDate(targetEmergencyCds.getDtArrival());
             encounterArrival.setEffectiveEndDate(null);
             encounterArrival.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
@@ -138,7 +148,7 @@ public class EmergencyCdsTargetTransformer {
                 Encounter encounterAssessment = new Encounter();
                 encounterAssessment.setEncounterType("a&e assessment");
                 encounterAssessment.setEncounterId(attendanceId+":2");
-
+                encounterAssessment.setPatientId(personId);
                 encounterAssessment.setEffectiveDate(initialAssessmentDate);
                 encounterAssessment.setEffectiveEndDate(null);
                 encounterAssessment.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
@@ -160,6 +170,7 @@ public class EmergencyCdsTargetTransformer {
             Encounter encounterInvTreat = new Encounter();
             encounterInvTreat.setEncounterType("a&e investigations and treatments");
             encounterInvTreat.setEncounterId(attendanceId+":3");
+            encounterInvTreat.setPatientId(personId);
             encounterInvTreat.setEffectiveDate(targetEmergencyCds.getDtSeenForTreatment());
             encounterInvTreat.setEffectiveEndDate(null);
             encounterInvTreat.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
@@ -187,6 +198,7 @@ public class EmergencyCdsTargetTransformer {
                 Encounter encounterAdmission = new Encounter();
                 encounterAdmission.setEncounterType("admission");
                 encounterAdmission.setEncounterId(attendanceId + ":4");
+                encounterAdmission.setPatientId(personId);
                 encounterAdmission.setEffectiveDate(admissionDate);
                 encounterAdmission.setEffectiveEndDate(null);
                 encounterAdmission.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
@@ -208,6 +220,7 @@ public class EmergencyCdsTargetTransformer {
                 Encounter encounterDischarge = new Encounter();
                 encounterDischarge.setEncounterType("discharge");
                 encounterDischarge.setEncounterId(attendanceId + ":5");
+                encounterDischarge.setPatientId(personId);
                 encounterDischarge.setEffectiveDate(departureDate);
                 encounterDischarge.setEffectiveEndDate(null);
                 encounterDischarge.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
