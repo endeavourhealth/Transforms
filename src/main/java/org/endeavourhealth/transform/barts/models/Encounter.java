@@ -5,12 +5,12 @@ import java.util.Date;
 public class Encounter {
 
     private String encounterId;
-    private int patientId;
-    private int practitionerId;
-    private int appointmentId;
+    private Integer patientId;
+    private Integer practitionerId;
+    private Integer appointmentId;
     private Date effectiveDate;
     private Date effectiveEndDate;
-    private int episodeOfCareId;
+    private Integer episodeOfCareId;
     private String serviceProviderOrganisationId;
     private String encounterType;
     private String parentEncounterId;
@@ -28,27 +28,27 @@ public class Encounter {
         this.encounterId = encounterId;
     }
 
-    public int getPatientId() {
+    public Integer getPatientId() {
         return patientId;
     }
 
-    public void setPatientId(int patientId) {
+    public void setPatientId(Integer patientId) {
         this.patientId = patientId;
     }
 
-    public int getPractitionerId() {
+    public Integer getPractitionerId() {
         return practitionerId;
     }
 
-    public void setPractitionerId(int practitionerId) {
+    public void setPractitionerId(Integer practitionerId) {
         this.practitionerId = practitionerId;
     }
 
-    public int getAppointmentId() {
+    public Integer getAppointmentId() {
         return appointmentId;
     }
 
-    public void setAppointmentId(int appointmentId) {
+    public void setAppointmentId(Integer appointmentId) {
         this.appointmentId = appointmentId;
     }
 
@@ -68,11 +68,11 @@ public class Encounter {
         this.effectiveEndDate = effectiveEndDate;
     }
 
-    public int getEpisodeOfCareId() {
+    public Integer getEpisodeOfCareId() {
         return episodeOfCareId;
     }
 
-    public void setEpisodeOfCareId(int episodeOfCareId) {
+    public void setEpisodeOfCareId(Integer episodeOfCareId) {
         this.episodeOfCareId = episodeOfCareId;
     }
 
