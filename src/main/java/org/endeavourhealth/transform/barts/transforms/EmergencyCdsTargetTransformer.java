@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.models.Encounter;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -102,15 +103,7 @@ public class EmergencyCdsTargetTransformer {
             encounterEmergencyParent.setAdditionalFieldsJson(null);
             String encounterInstanceAsJson = null;
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterEmergencyParent);
-            String title = "encounter-1";
-            LOG.debug("Adding CompositionId: "+uniqueId+", Section: "+title+", Json: "+encounterInstanceAsJson);
-            compositionBuilder.addSection(title, encounterInstanceAsJson);
-
-            ///DEBUG only
-            Composition.SectionComponent section = compositionBuilder.getSection(title);
-            if (section != null) {
-                LOG.debug("Retrieving CompositionId: "+uniqueId+", Section: "+title+", UserData: "+section.getUserData(title));
-            }
+            compositionBuilder.addSection("encounter-1", encounterInstanceAsJson);
 
             // sub encounter: the A&E attendance  (sequence #1)
             Encounter encounterArrival = new Encounter();
@@ -240,6 +233,7 @@ public class EmergencyCdsTargetTransformer {
                 compositionBuilder.addSection("encounter-1-5", encounterInstanceAsJson);
             }
 
+            LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));
 
             //save composition record
             fhirResourceFiler.savePatientResource(null, compositionBuilder);
