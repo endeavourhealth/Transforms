@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.models.Encounter;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -103,7 +102,7 @@ public class EmergencyCdsTargetTransformer {
             encounterEmergencyParent.setAdditionalFieldsJson(null);
             String encounterInstanceAsJson = null;
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterEmergencyParent);
-            compositionBuilder.addSection("encounter-1", encounterInstanceAsJson);
+            compositionBuilder.addSection("encounter-1", encounterEmergencyParent.getEncounterId(), encounterInstanceAsJson);
 
             // sub encounter: the A&E attendance  (sequence #1)
             Encounter encounterArrival = new Encounter();
@@ -125,7 +124,7 @@ public class EmergencyCdsTargetTransformer {
             encounterArrival.setAdditionalFieldsJson(additionalArrivalObjs.toString());
 
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterArrival);
-            compositionBuilder.addSection("encounter-1-1", encounterInstanceAsJson);
+            compositionBuilder.addSection("encounter-1-1", encounterArrival.getEncounterId(), encounterInstanceAsJson);
 
             // sub encounter: the initial assessment  (sequence #2)
             // get initial assessment date. if null and there is a chief complaint value, use arrival date which is always present
@@ -154,7 +153,7 @@ public class EmergencyCdsTargetTransformer {
                 encounterAssessment.setAdditionalFieldsJson(additionalAssessmentObjs.toString());
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterAssessment);
-                compositionBuilder.addSection("encounter-1-2", encounterInstanceAsJson);
+                compositionBuilder.addSection("encounter-1-2", encounterAssessment.getEncounterId(), encounterInstanceAsJson);
             }
 
             // sub encounter: the investigation and treatment  (sequence #3)
@@ -178,7 +177,7 @@ public class EmergencyCdsTargetTransformer {
             encounterInvTreat.setAdditionalFieldsJson(additionalInvTreatObjs.toString());
 
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInvTreat);
-            compositionBuilder.addSection("encounter-1-3", encounterInstanceAsJson);
+            compositionBuilder.addSection("encounter-1-3", encounterInvTreat.getEncounterId(), encounterInstanceAsJson);
 
             // sub encounter: the inpatient admission  (sequence #4) - this ultimately links up with the
             // inpatient_cds record with the same encounter_id
@@ -199,7 +198,7 @@ public class EmergencyCdsTargetTransformer {
                 encounterAdmission.setAdditionalFieldsJson(null);
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterAdmission);
-                compositionBuilder.addSection("encounter-1-4", encounterInstanceAsJson);
+                compositionBuilder.addSection("encounter-1-4", encounterAdmission.getEncounterId(), encounterInstanceAsJson);
             }
 
             // sub encounter: the discharge/departure from emergency  (sequence #5)
@@ -225,10 +224,10 @@ public class EmergencyCdsTargetTransformer {
                 encounterDischarge.setAdditionalFieldsJson(additionalDischargeObjs.toString());
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterDischarge);
-                compositionBuilder.addSection("encounter-1-5", encounterInstanceAsJson);
+                compositionBuilder.addSection("encounter-1-5", encounterDischarge.getEncounterId(), encounterInstanceAsJson);
             }
 
-            LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));
+            //LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));
 
             //save composition record
             fhirResourceFiler.savePatientResource(null, compositionBuilder);

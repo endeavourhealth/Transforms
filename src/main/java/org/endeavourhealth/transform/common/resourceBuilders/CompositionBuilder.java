@@ -66,9 +66,10 @@ public class CompositionBuilder extends ResourceBuilderBase implements HasCodeab
         auditValue("author", sourceCells);
     }
 
-    public void addSection(String title, String jsonData) throws Exception {
+    public void addSection(String title, String id, String jsonData) throws Exception {
 
         Composition.SectionComponent section = this.composition.addSection();
+        section.setId(id);
         section.setTitle(title);
 
         Narrative data = new Narrative();
