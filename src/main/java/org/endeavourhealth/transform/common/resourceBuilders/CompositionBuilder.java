@@ -73,6 +73,7 @@ public class CompositionBuilder extends ResourceBuilderBase implements HasCodeab
         section.setTitle(title);
 
         Narrative data = new Narrative();
+        data.setStatus(Narrative.NarrativeStatus.ADDITIONAL);
         data.setDivAsString(jsonData);
         section.setText(data);
 

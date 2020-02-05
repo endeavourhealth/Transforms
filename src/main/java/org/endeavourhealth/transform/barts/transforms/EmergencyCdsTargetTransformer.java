@@ -4,10 +4,11 @@ import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.ehr.models.Encounter;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.models.Encounter;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CompositionBuilder;
 import org.hl7.fhir.instance.model.Composition;
@@ -77,6 +78,8 @@ public class EmergencyCdsTargetTransformer {
             compositionBuilder.setId(uniqueId);
 
             Integer personId = targetEmergencyCds.getPersonId();
+            String patientIdStr
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Patient, Integer.toString(personId));
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
             compositionBuilder.setPatientSubject(patientReference);
             compositionBuilder.setTitle("Encounter Composition");
@@ -86,35 +89,59 @@ public class EmergencyCdsTargetTransformer {
             compositionBuilder.setIdentifier(identifier);
 
             Integer parentEncounterId = targetEmergencyCds.getEncounterId();  //the top level encounterId
-            String attendanceId = targetEmergencyCds.getAttendanceId();  //the attendanceId associated with each sub-encounter
 
             // set top level encounter which encapsulates the other sub-encounters (up to 5 in composition sections)
             Encounter encounterEmergencyParent = new Encounter();
             encounterEmergencyParent.setEncounterType("emergency");
-            encounterEmergencyParent.setEncounterId(Integer.toString(parentEncounterId));
-            encounterEmergencyParent.setPatientId(personId);
+            String parentEncounterIdStr
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
+            encounterEmergencyParent.setEncounterId(parentEncounterIdStr);
+            encounterEmergencyParent.setPatientId(patientIdStr);
             encounterEmergencyParent.setEffectiveDate(targetEmergencyCds.getDtArrival());
             encounterEmergencyParent.setEffectiveEndDate(targetEmergencyCds.getDtDeparture());
-            encounterEmergencyParent.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
+
+            String episodeIdStr = null;
+            if (targetEmergencyCds.getEpisodeId() != null) {
+                episodeIdStr =
+                        IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, targetEmergencyCds.getEpisodeId().toString());
+            }
+            encounterEmergencyParent.setEpisodeOfCareId(episodeIdStr);
+
             encounterEmergencyParent.setParentEncounterId(null);
-            encounterEmergencyParent.setPractitionerId(targetEmergencyCds.getPerformerPersonnelId());
-            encounterEmergencyParent.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
+
+            String performerIdStr = null;
+            if (targetEmergencyCds.getPerformerPersonnelId() != null) {
+                performerIdStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Practitioner, targetEmergencyCds.getPerformerPersonnelId().toString());
+            }
+            encounterEmergencyParent.setPractitionerId(performerIdStr);
+
+            String serviceProviderOrgStr = null;
+            if (!Strings.isNullOrEmpty(targetEmergencyCds.getOrganisationCode())) {
+                serviceProviderOrgStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Organization, targetEmergencyCds.getOrganisationCode());
+            }
+            encounterEmergencyParent.setServiceProviderOrganisationId(serviceProviderOrgStr);
             encounterEmergencyParent.setAdditionalFieldsJson(null);
             String encounterInstanceAsJson = null;
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterEmergencyParent);
             compositionBuilder.addSection("encounter-1", encounterEmergencyParent.getEncounterId(), encounterInstanceAsJson);
 
+            String attendanceId = targetEmergencyCds.getAttendanceId();  //the attendanceId associated with each sub-encounter
+
             // sub encounter: the A&E attendance  (sequence #1)
             Encounter encounterArrival = new Encounter();
             encounterArrival.setEncounterType("emergency attendance");
-            encounterArrival.setEncounterId(attendanceId+":1");
-            encounterArrival.setPatientId(personId);
+            String attendanceIdStr
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":1");
+            encounterArrival.setEncounterId(attendanceIdStr);
+            encounterArrival.setPatientId(patientIdStr);
             encounterArrival.setEffectiveDate(targetEmergencyCds.getDtArrival());
             encounterArrival.setEffectiveEndDate(null);
-            encounterArrival.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
-            encounterArrival.setParentEncounterId(Integer.toString(parentEncounterId));
-            encounterArrival.setPractitionerId(targetEmergencyCds.getPerformerPersonnelId());
-            encounterArrival.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
+            encounterArrival.setEpisodeOfCareId(episodeIdStr);
+            encounterArrival.setParentEncounterId(parentEncounterIdStr);
+            encounterArrival.setPractitionerId(performerIdStr);
+            encounterArrival.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
             // create a list of additional data to store as Json for this encounterArrival instance
             JsonObject additionalArrivalObjs = new JsonObject();
@@ -138,14 +165,16 @@ public class EmergencyCdsTargetTransformer {
 
                 Encounter encounterAssessment = new Encounter();
                 encounterAssessment.setEncounterType("emergency initial assessment");
-                encounterAssessment.setEncounterId(attendanceId+":2");
-                encounterAssessment.setPatientId(personId);
+                attendanceIdStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":2");
+                encounterAssessment.setEncounterId(attendanceIdStr);
+                encounterAssessment.setPatientId(patientIdStr);
                 encounterAssessment.setEffectiveDate(initialAssessmentDate);
                 encounterAssessment.setEffectiveEndDate(null);
-                encounterAssessment.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
-                encounterAssessment.setParentEncounterId(Integer.toString(parentEncounterId));
-                encounterAssessment.setPractitionerId(targetEmergencyCds.getPerformerPersonnelId());
-                encounterAssessment.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
+                encounterAssessment.setEpisodeOfCareId(episodeIdStr);
+                encounterAssessment.setParentEncounterId(parentEncounterIdStr);
+                encounterAssessment.setPractitionerId(performerIdStr);
+                encounterAssessment.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
                 //create a list of additional data to store as Json for this encounterAssessment instance
                 JsonObject additionalAssessmentObjs = new JsonObject();
@@ -159,14 +188,16 @@ public class EmergencyCdsTargetTransformer {
             // sub encounter: the investigation and treatment  (sequence #3)
             Encounter encounterInvTreat = new Encounter();
             encounterInvTreat.setEncounterType("emergency investigations and treatments");
-            encounterInvTreat.setEncounterId(attendanceId+":3");
-            encounterInvTreat.setPatientId(personId);
+            attendanceIdStr
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":3");
+            encounterInvTreat.setEncounterId(attendanceIdStr);
+            encounterInvTreat.setPatientId(patientIdStr);
             encounterInvTreat.setEffectiveDate(targetEmergencyCds.getDtSeenForTreatment());
             encounterInvTreat.setEffectiveEndDate(null);
-            encounterInvTreat.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
-            encounterInvTreat.setParentEncounterId(Integer.toString(parentEncounterId));
-            encounterInvTreat.setPractitionerId(targetEmergencyCds.getPerformerPersonnelId());
-            encounterInvTreat.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
+            encounterInvTreat.setEpisodeOfCareId(episodeIdStr);
+            encounterInvTreat.setParentEncounterId(parentEncounterIdStr);
+            encounterInvTreat.setPractitionerId(performerIdStr);
+            encounterInvTreat.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
             // create a list of additional data to store as Json for this encounterInvTreat instance
             JsonObject additionalInvTreatObjs = new JsonObject();
@@ -185,14 +216,16 @@ public class EmergencyCdsTargetTransformer {
             if (admissionDate != null) {
                 Encounter encounterAdmission = new Encounter();
                 encounterAdmission.setEncounterType("inpatient admission");
-                encounterAdmission.setEncounterId(attendanceId + ":4");
-                encounterAdmission.setPatientId(personId);
+                attendanceIdStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":4");
+                encounterAdmission.setEncounterId(attendanceIdStr);
+                encounterAdmission.setPatientId(patientIdStr);
                 encounterAdmission.setEffectiveDate(admissionDate);
                 encounterAdmission.setEffectiveEndDate(null);
-                encounterAdmission.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
-                encounterAdmission.setParentEncounterId(Integer.toString(parentEncounterId));
-                encounterAdmission.setPractitionerId(targetEmergencyCds.getPerformerPersonnelId());
-                encounterAdmission.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
+                encounterAdmission.setEpisodeOfCareId(episodeIdStr);
+                encounterAdmission.setParentEncounterId(parentEncounterIdStr);
+                encounterAdmission.setPractitionerId(performerIdStr);
+                encounterAdmission.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
                 // no additional data to store as Json for this encounterAdmission instance
                 encounterAdmission.setAdditionalFieldsJson(null);
@@ -207,14 +240,16 @@ public class EmergencyCdsTargetTransformer {
 
                 Encounter encounterDischarge = new Encounter();
                 encounterDischarge.setEncounterType("emergency discharge");
-                encounterDischarge.setEncounterId(attendanceId + ":5");
-                encounterDischarge.setPatientId(personId);
+                attendanceIdStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":5");
+                encounterDischarge.setEncounterId(attendanceIdStr);
+                encounterDischarge.setPatientId(patientIdStr);
                 encounterDischarge.setEffectiveDate(departureDate);
                 encounterDischarge.setEffectiveEndDate(null);
-                encounterDischarge.setEpisodeOfCareId(targetEmergencyCds.getEpisodeId());
-                encounterDischarge.setParentEncounterId(Integer.toString(parentEncounterId));
-                encounterDischarge.setPractitionerId(targetEmergencyCds.getPerformerPersonnelId());
-                encounterDischarge.setServiceProviderOrganisationId(targetEmergencyCds.getOrganisationCode());
+                encounterDischarge.setEpisodeOfCareId(episodeIdStr);
+                encounterDischarge.setParentEncounterId(parentEncounterIdStr);
+                encounterDischarge.setPractitionerId(performerIdStr);
+                encounterDischarge.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
                 // additional data to store as Json for this encounterAdmission instance
                 JsonObject additionalDischargeObjs = new JsonObject();
