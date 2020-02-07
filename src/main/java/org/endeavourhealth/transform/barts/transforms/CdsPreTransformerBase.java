@@ -963,6 +963,7 @@ public abstract class CdsPreTransformerBase {
 
         stagingCriticalCareCds.setCriticalCareTypeId(parser.getCriticalCareTypeID().getString());
         stagingCriticalCareCds.setSpellNumber(parser.getSpellNumber().getString());
+        stagingCriticalCareCds.setEpisodeNumber(parser.getEpisodeNumber().getString());
         stagingCriticalCareCds.setCriticalCareIdentifier(parser.getCriticalCareIdentifier().getString());
 
         CsvCell careStartDate = parser.getCriticalCareStartDate();
