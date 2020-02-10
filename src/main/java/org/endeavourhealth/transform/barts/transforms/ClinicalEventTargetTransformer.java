@@ -97,7 +97,7 @@ public class ClinicalEventTargetTransformer {
             }
 
 
-            Integer parentEventId =  targetClinicalEvent.getParentEventId();
+            Long parentEventId =  targetClinicalEvent.getParentEventId();
             if (parentEventId != null) {
                 Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.DiagnosticReport, parentEventId.toString());
                 observationBuilder.setParentResource(parentDiagnosticReportReference);
