@@ -362,6 +362,16 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         }
     }
 
+    public void processStagingForTargetCriticalCareCds() throws Exception {
+
+        if (TransformConfig.instance().isLive()) {
+
+            //move function to here for go live
+        } else {
+            stagingRepository.processStagingForTargetCriticalCareCds(this.exchangeId, this.serviceId);
+        }
+    }
+
     public void processStagingForTargetProcedures() throws Exception {
 
         stagingRepository.processStagingForTargetProcedures(this.exchangeId, this.serviceId);
