@@ -289,8 +289,8 @@ public abstract class EmisCsvToFhirTransformer {
             LOG.trace("Starting patient pre-transforms");
             ProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             ObservationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            IssueRecordPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be done before DrugRecord pre-transformer
             DrugRecordPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            IssueRecordPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             DiaryPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             ConsultationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 

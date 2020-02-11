@@ -119,6 +119,43 @@ public class ObservationTransformer {
         potentialResourceTypes.add(ResourceType.Condition);
         potentialResourceTypes.add(ResourceType.Observation);
 
+        String sourceId = EmisCsvHelper.createUniqueId(patientGuid, observationGuid);
+
+        Set<Reference> sourceReferences = new HashSet<>();
+        for (ResourceType resourceType: potentialResourceTypes) {
+            Reference ref = ReferenceHelper.createReference(resourceType, sourceId);
+            sourceReferences.add(ref);
+        }
+
+        Map<Reference, UUID> idMap = IdHelper.getEdsResourceIds(hasServiceId.getServiceId(), sourceReferences);
+
+        Set<ResourceType> ret = new HashSet<>();
+
+        for (Reference ref: sourceReferences) {
+            UUID id = idMap.get(ref);
+            if (id != null) {
+                ResourceType resourceType = ReferenceHelper.getResourceType(ref);
+                ret.add(resourceType);
+            }
+        }
+
+        return ret;
+    }
+
+    /*public static Set<ResourceType> findOriginalTargetResourceTypes(HasServiceSystemAndExchangeIdI hasServiceId, CsvCell patientGuid, CsvCell observationGuid) throws Exception {
+
+        List<ResourceType> potentialResourceTypes = new ArrayList<>();
+        potentialResourceTypes.add(ResourceType.Procedure);
+        potentialResourceTypes.add(ResourceType.AllergyIntolerance);
+        potentialResourceTypes.add(ResourceType.FamilyMemberHistory);
+        potentialResourceTypes.add(ResourceType.Immunization);
+        potentialResourceTypes.add(ResourceType.DiagnosticOrder);
+        potentialResourceTypes.add(ResourceType.Specimen);
+        potentialResourceTypes.add(ResourceType.DiagnosticReport);
+        potentialResourceTypes.add(ResourceType.ReferralRequest);
+        potentialResourceTypes.add(ResourceType.Condition);
+        potentialResourceTypes.add(ResourceType.Observation);
+
         Set<ResourceType> ret = new HashSet<>();
         
         for (ResourceType resourceType: potentialResourceTypes) {
@@ -134,7 +171,7 @@ public class ObservationTransformer {
         String sourceId = EmisCsvHelper.createUniqueId(patientGuid, observationGuid);
         UUID uuid = IdHelper.getEdsResourceId(hasServiceId.getServiceId(), resourceType, sourceId);
         return uuid != null;
-    }
+    }*/
     
 
     public static void createResource(Observation parser,

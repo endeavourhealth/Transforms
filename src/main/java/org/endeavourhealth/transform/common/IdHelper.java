@@ -98,36 +98,33 @@ public class IdHelper {
     /**
      * checks for multiple target UUIDs for a set of source IDs
      */
-    public static Map<String, UUID> getEdsResourceIds(UUID serviceId, ResourceType resourceType, Set<String> sourceIds) throws Exception {
+     public static Map<Reference, UUID> getEdsResourceIds(UUID serviceId, Set<Reference> sourceIds) throws Exception {
 
-        Map<String, UUID> ret = new HashMap<>();
+        Map<Reference, UUID> ret = new HashMap<>();
 
-        Map<Reference, String> hmReferencesForDb = new HashMap<>();
+        List<Reference> referencesForDb = new ArrayList<>();
 
-        for (String sourceId: sourceIds) {
-            Reference sourceReference = ReferenceHelper.createReference(resourceType, sourceId);
+        for (Reference sourceReference: sourceIds) {
             String sourceReferenceValue = sourceReference.getReference();
 
             UUID edsId = checkCache(serviceId, sourceReferenceValue);
             if (edsId != null) {
-                ret.put(sourceId, edsId);
+                ret.put(sourceReference, edsId);
             } else {
-                hmReferencesForDb.put(sourceReference, sourceId);
+                referencesForDb.add(sourceReference);
             }
         }
 
         //if we need to hit the DB for any...
-        if (!hmReferencesForDb.isEmpty()) {
-            List<Reference> sourceReferences = new ArrayList<>(hmReferencesForDb.keySet());
-            Map<Reference, Reference> map = repository.findEdsReferencesFromSourceReferences(serviceId, sourceReferences);
-            for (Reference sourceReference: hmReferencesForDb.keySet()) {
+        if (!referencesForDb.isEmpty()) {
+            Map<Reference, Reference> map = repository.findEdsReferencesFromSourceReferences(serviceId, referencesForDb);
+            for (Reference sourceReference: referencesForDb) {
 
                 Reference edsReference = map.get(sourceReference);
                 if (edsReference != null) {
                     String edsIdStr = ReferenceHelper.getReferenceId(edsReference);
                     UUID edsId = UUID.fromString(edsIdStr);
-                    String sourceId = hmReferencesForDb.get(sourceReference);
-                    ret.put(sourceId, edsId);
+                    ret.put(sourceReference, edsId);
 
                     String sourceReferenceValue = sourceReference.getReference();
                     addToCache(serviceId, sourceReferenceValue, edsId);

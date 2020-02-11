@@ -62,11 +62,12 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ResourceCache<StringMemorySaver, ConditionBuilder> problemMap = new ResourceCache<>();
     private ResourceCache<StringMemorySaver, ReferralRequestBuilder> referralMap = new ResourceCache<>();
     private Map<StringMemorySaver, ReferenceList> observationChildMap = new HashMap<>(); //now keyed on just ObservationGUID and w/o PatientGUID
-    private Map<StringMemorySaver, ReferenceList> newProblemChildren = new HashMap<>();
+    private Map<StringMemorySaver, ReferenceList> newProblemChildren = new ConcurrentHashMap<>();
     private Map<StringMemorySaver, ReferenceList> consultationNewChildMap = new HashMap<>();
     private Map<StringMemorySaver, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
-    private Map<StringMemorySaver, IssueRecordIssueDate> drugRecordLastIssueDateMap = new HashMap<>();
-    private Map<StringMemorySaver, IssueRecordIssueDate> drugRecordFirstIssueDateMap = new HashMap<>();
+    private Map<StringMemorySaver, IssueRecordIssueDate> drugRecordNewLastIssueDateMap = new ConcurrentHashMap<>();
+    private Map<StringMemorySaver, IssueRecordIssueDate> drugRecordExistingLastIssueDateMap = new ConcurrentHashMap<>();
+    private Map<StringMemorySaver, IssueRecordIssueDate> drugRecordNewFirstIssueDateMap = new ConcurrentHashMap<>();
     private Map<StringMemorySaver, List<BpComponent>> bpComponentMap = new HashMap<>();
     private Map<StringMemorySaver, SessionPractitioners> sessionPractitionerMap = new HashMap<>();
     private Map<StringMemorySaver, List<CsvCell>> locationOrganisationMap = new HashMap<>();
@@ -592,31 +593,50 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         return IdHelper.convertEdsReferencesToLocallyUniqueReferences(serviceId, edsReferences);
     }*/
 
-    public void cacheDrugRecordDate(CsvCell drugRecordGuid, CsvCell patientGuid, IssueRecordIssueDate newIssueDate) {
+    public void cacheNewDrugRecordDate(CsvCell drugRecordGuid, CsvCell patientGuid, IssueRecordIssueDate newIssueDate) {
         String uniqueId = createUniqueId(patientGuid, drugRecordGuid);
         StringMemorySaver key = new StringMemorySaver(uniqueId);
 
-        IssueRecordIssueDate previous = drugRecordFirstIssueDateMap.get(key);
+        IssueRecordIssueDate previous = drugRecordNewFirstIssueDateMap.get(key);
         if (newIssueDate.beforeOrOtherIsNull(previous)) {
-            drugRecordFirstIssueDateMap.put(key, newIssueDate);
+            drugRecordNewFirstIssueDateMap.put(key, newIssueDate);
         }
 
-        previous = drugRecordLastIssueDateMap.get(key);
+        previous = drugRecordNewLastIssueDateMap.get(key);
         if (newIssueDate.afterOrOtherIsNull(previous)) {
-            drugRecordLastIssueDateMap.put(key, newIssueDate);
+            drugRecordNewLastIssueDateMap.put(key, newIssueDate);
         }
     }
 
-    public IssueRecordIssueDate getDrugRecordFirstIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
+    public IssueRecordIssueDate getNewDrugRecordFirstIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
         String uniqueId = createUniqueId(patientGuid, drugRecordId);
         StringMemorySaver key = new StringMemorySaver(uniqueId);
-        return drugRecordFirstIssueDateMap.remove(key);
+        return drugRecordNewFirstIssueDateMap.remove(key);
     }
 
-    public IssueRecordIssueDate getDrugRecordLastIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
+    public IssueRecordIssueDate getNewDrugRecordLastIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
         String uniqueId = createUniqueId(patientGuid, drugRecordId);
         StringMemorySaver key = new StringMemorySaver(uniqueId);
-        return drugRecordLastIssueDateMap.remove(key);
+        return drugRecordNewLastIssueDateMap.remove(key);
+    }
+
+    public boolean hasNewDrugRecordLastIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
+        String uniqueId = createUniqueId(patientGuid, drugRecordId);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
+        return drugRecordNewLastIssueDateMap.containsKey(key);
+    }
+
+    public void cacheExistingDrugRecordDate(CsvCell drugRecordGuid, CsvCell patientGuid, IssueRecordIssueDate newIssueDate) {
+        String uniqueId = createUniqueId(patientGuid, drugRecordGuid);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
+
+        drugRecordExistingLastIssueDateMap.put(key, newIssueDate);
+    }
+
+    public IssueRecordIssueDate getExistingDrugRecordLastIssueDate(CsvCell drugRecordIdCell, CsvCell patientGuidCell) {
+        String uniqueId = createUniqueId(patientGuidCell, drugRecordIdCell);
+        StringMemorySaver key = new StringMemorySaver(uniqueId);
+        return drugRecordExistingLastIssueDateMap.remove(key);
     }
 
 
@@ -1155,7 +1175,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void processRemainingMedicationIssueDates(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //both maps (first and last issue dates) will have the same key set
-        for (StringMemorySaver key: drugRecordLastIssueDateMap.keySet()) {
+        for (StringMemorySaver key: drugRecordNewLastIssueDateMap.keySet()) {
 
             String medicationStatementLocalId = key.toString();
             MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement);
@@ -1164,8 +1184,8 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
                 continue;
             }
 
-            IssueRecordIssueDate newFirstIssueDate = drugRecordFirstIssueDateMap.get(key);
-            IssueRecordIssueDate newLastIssueDate = drugRecordLastIssueDateMap.get(key);
+            IssueRecordIssueDate newFirstIssueDate = drugRecordNewFirstIssueDateMap.get(key);
+            IssueRecordIssueDate newLastIssueDate = drugRecordNewLastIssueDateMap.get(key);
 
             MedicationStatementBuilder medicationStatementBuilder = new MedicationStatementBuilder(fhirMedicationStatement);
             boolean changed = false;
@@ -1255,7 +1275,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void pruneUnnecessaryParentObservationResourceTypes() {
 
         //just removing the unnecessary keys from the map doesn't shrink the map back down,
-        //so it ends up chewing memory up. So rewritten to recreate the map, so keep it leaner
+        //so it ends up chewing memory up. So recreate the map, so keep it leaner
         Map<StringMemorySaver, ResourceType> tmp = new HashMap<>();
 
         for (StringMemorySaver key: observationChildMap.keySet()) {
@@ -1267,12 +1287,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         this.parentObservationResourceTypes = tmp;
 
-        /*Set<StringMemorySaver> idsToRemove = new HashSet<>(parentObservationResourceTypes.keySet());
-        idsToRemove.removeAll(observationChildMap.keySet());
-
-        for (StringMemorySaver idToRemove: idsToRemove) {
-            parentObservationResourceTypes.remove(idToRemove);
-        }*/
     }
 
     public void submitToThreadPool(Callable callable) throws Exception {

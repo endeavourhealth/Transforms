@@ -192,7 +192,9 @@ public class ENCNTPreTransformer {
             //generate UUIDs for each encounter, copying from HL7 Receiver where possible
 
             //first do a bulk check to see which encounters have UUID already assigned
-            Set<String> encounterIds = new HashSet<>();
+            Set<Reference> encounterReferences = new HashSet<>();
+            Map<CacheENCNT, Reference> hmReferences = new HashMap<>();
+
             for (CacheENCNT o : batch) {
 
                 //99%+ of ENCNT records have a VISIT ID, but a tiny number don't, so we can't match them to the HL7 Receiver
@@ -202,24 +204,27 @@ public class ENCNTPreTransformer {
                     continue;
                 }
 
-                encounterIds.add(o.getEncounterId());
+                Reference reference = ReferenceHelper.createReference(ResourceType.Encounter, o.getEncounterId());
+                encounterReferences.add(reference);
+                hmReferences.put(o, reference); //this map lets us look up the refererences again
             }
 
-            Map<String, UUID> hmExistingUuids = IdHelper.getEdsResourceIds(csvHelper.getServiceId(), ResourceType.Encounter, encounterIds);
-
+            Map<Reference, UUID> hmExistingUuids = IdHelper.getEdsResourceIds(csvHelper.getServiceId(), encounterReferences);
 
             List<CacheENCNT> encountersWithoutUuids = new ArrayList<>();
             Set<String> hsPersonIds = new HashSet<>();
 
             for (CacheENCNT o : batch) {
 
+                Reference reference = hmReferences.get(o);
+
                 //if no source reference, then encounter doesn't have a VISIT ID, so we can't try to copy from HL7 Receiver
-                if (!encounterIds.contains(o.getEncounterId())) {
+                if (reference == null) {
                     continue;
                 }
 
                 //if we already have a UUID for our encounter, then skip it
-                UUID existingMappedUuid = hmExistingUuids.get(o.getEncounterId());
+                UUID existingMappedUuid = hmExistingUuids.get(reference);
                 if (existingMappedUuid != null) {
                     continue;
                 }

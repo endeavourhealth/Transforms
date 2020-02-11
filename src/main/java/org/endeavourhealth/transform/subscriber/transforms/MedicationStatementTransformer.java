@@ -100,7 +100,8 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
 
         Coding originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getMedicationCodeableConcept());
         if (originalCoding == null) {
-            TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+            //we get lots of free-text medication from TPP, so removed this as there's no point logging it when there's no fix
+            //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
         }
         String originalCode = originalCoding.getCode();
