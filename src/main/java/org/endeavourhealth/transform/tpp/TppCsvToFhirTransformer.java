@@ -499,7 +499,7 @@ public abstract class TppCsvToFhirTransformer {
         SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
         SRMappingTransformer.transform(parsers, fhirResourceFiler);
         SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
-        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler);
+        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         //organisational admin data
         LOG.trace("Starting admin transforms");
