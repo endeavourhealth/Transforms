@@ -32,10 +32,7 @@ import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTrans
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
@@ -299,13 +296,12 @@ public abstract class TppCsvToFhirTransformer {
 
     private static void ensureFileIsEmpty(String filePath, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        //if we know it'll be non-empty but we know we want to ignore it, don't check the content
-        /*String baseName = FilenameUtils.getBaseName(filePath);
-        if (getFilesToIgnore().contains(baseName)) {
-            return;
-        }*/
+        //S3 complains if we open a stream and kill it before we get to the end, so avoid this by
+        //explicitly reading only the first 5KB of the file and testing that
+        //InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath);
+        String firstChars = FileHelper.readFirstCharactersFromSharedStorage(filePath, 5 * 1024);
+        StringReader reader = new StringReader(firstChars);
 
-        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath);
         CSVParser parser = new CSVParser(reader, CSV_FORMAT);
         try {
             Iterator<CSVRecord> iterator = parser.iterator();
