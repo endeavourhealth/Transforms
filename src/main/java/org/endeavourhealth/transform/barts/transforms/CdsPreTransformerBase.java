@@ -1087,7 +1087,13 @@ public abstract class CdsPreTransformerBase {
         stagingEmergencyCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
         stagingEmergencyCds.setDepartmentType(parser.getDepartmentType().getString());
         stagingEmergencyCds.setAmbulanceIncidentNumber(parser.getAmbulanceIncidentNumber().getString());
-        stagingEmergencyCds.setTreatmentOrganisationCode(parser.getTreatmentOrganisationCode().getString());
+
+        String odsCode = parser.getTreatmentOrganisationCode().getString();
+        if (!Strings.isNullOrEmpty(odsCode)) {
+            String orgId = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCode);
+            stagingEmergencyCds.setTreatmentOrganisationCode(orgId);
+        }
+
         stagingEmergencyCds.setAttendanceIdentifier(parser.getAttendanceIdentifier().getString());
         stagingEmergencyCds.setArrivalMode(parser.getArrivalMode().getString());
         stagingEmergencyCds.setAttendanceCategory(parser.getAttendanceCategory().getString());
@@ -1359,7 +1365,12 @@ public abstract class CdsPreTransformerBase {
         stagingOutpatientCds.setApptAttendanceIdentifier(parser.getAttendanceIdentifier().getString());
         stagingOutpatientCds.setApptAttendedCode(parser.getAppointmentAttendedCode().getString());
         stagingOutpatientCds.setApptOutcomeCode(parser.getAppointmentOutcomeCode().getString());
-        stagingOutpatientCds.setApptSiteCode(parser.getAppointmentSiteCode().getString());
+
+        String odsCode = parser.getAppointmentSiteCode().getString();
+        if (!Strings.isNullOrEmpty(odsCode)) {
+            String orgId = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCode);
+            stagingOutpatientCds.setApptSiteCode(orgId);
+        }
 
         CsvCell apptStartDate = parser.getAppointmentDate();
         CsvCell apptStartTime = parser.getAppointmentTime();
@@ -1456,7 +1467,12 @@ public abstract class CdsPreTransformerBase {
             stagingInpatientCds.setSpellStartDate(spellStartDateTime);
         }
         stagingInpatientCds.setEpisodeNumber(parser.getEpisodeNumber().getString());
-        stagingInpatientCds.setEpisodeStartSiteCode(parser.getEpisodeStartSiteCode().getString());
+
+        String odsCodeStart = parser.getEpisodeStartSiteCode().getString();
+        if (!Strings.isNullOrEmpty(odsCodeStart)) {
+            String orgIdStart = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCodeStart);
+            stagingInpatientCds.setEpisodeStartSiteCode(orgIdStart);
+        }
         stagingInpatientCds.setEpisodeStartWardCode(parser.getEpisodeStartWardCode().getString());
 
         CsvCell episodeStartDate = parser.getEpisodeStartDate();
@@ -1465,7 +1481,12 @@ public abstract class CdsPreTransformerBase {
         if (episodeStartDateTime != null) {
             stagingInpatientCds.setEpisodeStartDate(episodeStartDateTime);
         }
-        stagingInpatientCds.setEpisodeEndSiteCode(parser.getEpisodeEndSiteCode().getString());
+
+        String odsCodeEnd = parser.getEpisodeEndSiteCode().getString();
+        if (!Strings.isNullOrEmpty(odsCodeEnd)) {
+            String orgIdEnd = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCodeEnd);
+            stagingInpatientCds.setEpisodeEndSiteCode(orgIdEnd);
+        }
         stagingInpatientCds.setEpisodeEndWardCode(parser.getEpisodeEndWardCode().getString());
 
         CsvCell episodeEndDate = parser.getEpisodeEndDate();
