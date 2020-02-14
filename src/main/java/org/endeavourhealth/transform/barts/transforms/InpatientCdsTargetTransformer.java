@@ -110,11 +110,7 @@ public class InpatientCdsTargetTransformer {
             encounterInpatient.setParentEncounterId(parentEncounterIdStr);
 
             String performerIdStr = null;
-            if (targetInpatientCds.getPerformerPersonnelId() != null) {
-                performerIdStr
-                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Practitioner, targetInpatientCds.getPerformerPersonnelId().toString());
-            }
-            encounterInpatient.setPractitionerId(performerIdStr);
+            encounterInpatient.setPractitionerId(performerIdStr);   //top level inpatient encounter has no practitioner
 
             String serviceProviderOrgStr = null;
             if (!Strings.isNullOrEmpty(targetInpatientCds.getEpisodeStartSiteCode())) {
@@ -143,6 +139,12 @@ public class InpatientCdsTargetTransformer {
             String encounterIdStr
                     = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, SpellId+":"+episodeNumber);
 
+            // each inpatient episode has a specific practitioner
+            if (targetInpatientCds.getPerformerPersonnelId() != null) {
+                performerIdStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Practitioner, targetInpatientCds.getPerformerPersonnelId().toString());
+            }
+
             encounterInpatientEpisode.setEncounterId(encounterIdStr);
             encounterInpatientEpisode.setPatientId(patientIdStr);
             encounterInpatientEpisode.setEffectiveDate(targetInpatientCds.getDtEpisodeStart());
@@ -156,12 +158,24 @@ public class InpatientCdsTargetTransformer {
             JsonObject additionalObjs = new JsonObject();
             additionalObjs.addProperty("episode_start_ward_code", targetInpatientCds.getEpisodeStartWardCode());
             additionalObjs.addProperty("episode_end_ward_code", targetInpatientCds.getEpisodeEndWardCode());
-            additionalObjs.addProperty("primary_diagnosis", targetInpatientCds.getPrimaryDiagnosisICD());
-            additionalObjs.addProperty("secondary_diagnosis", targetInpatientCds.getSecondaryDiagnosisICD());
-            additionalObjs.addProperty("other_diagnosis", targetInpatientCds.getOtherDiagnosisICD());
-            additionalObjs.addProperty("primary_procedure", targetInpatientCds.getPrimaryProcedureOPCS());
-            additionalObjs.addProperty("secondary_procedure", targetInpatientCds.getSecondaryProcedureOPCS());
-            additionalObjs.addProperty("other_procedures", targetInpatientCds.getOtherProceduresOPCS());
+            if (!Strings.isNullOrEmpty(targetInpatientCds.getPrimaryDiagnosisICD())) {
+                additionalObjs.addProperty("primary_diagnosis", targetInpatientCds.getPrimaryDiagnosisICD());
+            }
+            if (!Strings.isNullOrEmpty(targetInpatientCds.getSecondaryDiagnosisICD())) {
+                additionalObjs.addProperty("secondary_diagnosis", targetInpatientCds.getSecondaryDiagnosisICD());
+            }
+            if (!Strings.isNullOrEmpty(targetInpatientCds.getOtherDiagnosisICD())) {
+                additionalObjs.addProperty("other_diagnosis", targetInpatientCds.getOtherDiagnosisICD());
+            }
+            if (!Strings.isNullOrEmpty(targetInpatientCds.getPrimaryProcedureOPCS())) {
+                additionalObjs.addProperty("primary_procedure", targetInpatientCds.getPrimaryProcedureOPCS());
+            }
+            if (!Strings.isNullOrEmpty(targetInpatientCds.getSecondaryProcedureOPCS())) {
+                additionalObjs.addProperty("secondary_procedure", targetInpatientCds.getSecondaryProcedureOPCS());
+            }
+            if (!Strings.isNullOrEmpty(targetInpatientCds.getOtherProceduresOPCS())) {
+                additionalObjs.addProperty("other_procedures", targetInpatientCds.getOtherProceduresOPCS());
+            }
 
             encounterInpatientEpisode.setAdditionalFieldsJson(additionalObjs.toString());
 

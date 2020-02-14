@@ -127,12 +127,24 @@ public class OutpatientCdsTargetTransformer {
             JsonObject additionalArrivalObjs = new JsonObject();
             additionalArrivalObjs.addProperty("appt_attended_code", targetOutpatientCds.getApptAttendedCode());
             additionalArrivalObjs.addProperty("appt_outcome_code", targetOutpatientCds.getApptOutcomeCode());
-            additionalArrivalObjs.addProperty("primary_diagnosis", targetOutpatientCds.getPrimaryDiagnosisICD());
-            additionalArrivalObjs.addProperty("secondary_diagnosis", targetOutpatientCds.getSecondaryDiagnosisICD());
-            additionalArrivalObjs.addProperty("other_diagnosis", targetOutpatientCds.getOtherDiagnosisICD());
-            additionalArrivalObjs.addProperty("primary_procedure", targetOutpatientCds.getPrimaryProcedureOPCS());
-            additionalArrivalObjs.addProperty("secondary_procedure", targetOutpatientCds.getSecondaryProcedureOPCS());
-            additionalArrivalObjs.addProperty("other_procedures", targetOutpatientCds.getOtherProceduresOPCS());
+            if (!Strings.isNullOrEmpty(targetOutpatientCds.getPrimaryDiagnosisICD())) {
+                additionalArrivalObjs.addProperty("primary_diagnosis", targetOutpatientCds.getPrimaryDiagnosisICD());
+            }
+            if (!Strings.isNullOrEmpty(targetOutpatientCds.getSecondaryDiagnosisICD())) {
+                additionalArrivalObjs.addProperty("secondary_diagnosis", targetOutpatientCds.getSecondaryDiagnosisICD());
+            }
+            if (!Strings.isNullOrEmpty(targetOutpatientCds.getOtherDiagnosisICD())) {
+                additionalArrivalObjs.addProperty("other_diagnosis", targetOutpatientCds.getOtherDiagnosisICD());
+            }
+            if (!Strings.isNullOrEmpty(targetOutpatientCds.getPrimaryProcedureOPCS())) {
+                additionalArrivalObjs.addProperty("primary_procedure", targetOutpatientCds.getPrimaryProcedureOPCS());
+            }
+            if (!Strings.isNullOrEmpty(targetOutpatientCds.getSecondaryProcedureOPCS())) {
+                additionalArrivalObjs.addProperty("secondary_procedure", targetOutpatientCds.getSecondaryProcedureOPCS());
+            }
+            if (!Strings.isNullOrEmpty(targetOutpatientCds.getOtherProceduresOPCS())) {
+                additionalArrivalObjs.addProperty("other_procedures", targetOutpatientCds.getOtherProceduresOPCS());
+            }
 
             encounterOutpatient.setAdditionalFieldsJson(additionalArrivalObjs.toString());
             String encounterInstanceAsJson = null;
