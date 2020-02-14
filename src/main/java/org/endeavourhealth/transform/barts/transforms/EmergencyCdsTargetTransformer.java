@@ -88,14 +88,15 @@ public class EmergencyCdsTargetTransformer {
             identifier.setValue(uniqueId);
             compositionBuilder.setIdentifier(identifier);
 
-            Integer parentEncounterId = targetEmergencyCds.getEncounterId();  //the top level encounterId
-
             // set top level encounter which encapsulates the other sub-encounters (up to 5 in composition sections)
             Encounter encounterEmergencyParent = new Encounter();
             encounterEmergencyParent.setEncounterType("emergency");
-            String parentEncounterIdStr
-                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
-            encounterEmergencyParent.setEncounterId(parentEncounterIdStr);
+
+            //the attendanceId associated with the emergency encounter(s), used for top level parent encounter
+            String attendanceId = targetEmergencyCds.getAttendanceId();
+            String parentAttendanceIdStr
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId);
+            encounterEmergencyParent.setEncounterId(parentAttendanceIdStr);
             encounterEmergencyParent.setPatientId(patientIdStr);
             encounterEmergencyParent.setEffectiveDate(targetEmergencyCds.getDtArrival());
             encounterEmergencyParent.setEffectiveEndDate(targetEmergencyCds.getDtDeparture());
@@ -107,7 +108,11 @@ public class EmergencyCdsTargetTransformer {
             }
             encounterEmergencyParent.setEpisodeOfCareId(episodeIdStr);
 
-            encounterEmergencyParent.setParentEncounterId(null);
+            //the top level encounterId which links to ENCTR and other associated records
+            Integer parentEncounterId = targetEmergencyCds.getEncounterId();
+            String parentEncounterIdStr
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
+            encounterEmergencyParent.setParentEncounterId(parentEncounterIdStr);
 
             String performerIdStr = null;
             if (targetEmergencyCds.getPerformerPersonnelId() != null) {
@@ -127,7 +132,6 @@ public class EmergencyCdsTargetTransformer {
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterEmergencyParent);
             compositionBuilder.addSection("encounter-1", encounterEmergencyParent.getEncounterId(), encounterInstanceAsJson);
 
-            String attendanceId = targetEmergencyCds.getAttendanceId();  //the attendanceId associated with each sub-encounter
 
             // sub encounter: the A&E attendance  (sequence #1)
             Encounter encounterArrival = new Encounter();
@@ -139,7 +143,7 @@ public class EmergencyCdsTargetTransformer {
             encounterArrival.setEffectiveDate(targetEmergencyCds.getDtArrival());
             encounterArrival.setEffectiveEndDate(null);
             encounterArrival.setEpisodeOfCareId(episodeIdStr);
-            encounterArrival.setParentEncounterId(parentEncounterIdStr);
+            encounterArrival.setParentEncounterId(parentAttendanceIdStr);
             encounterArrival.setPractitionerId(performerIdStr);
             encounterArrival.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
@@ -148,18 +152,14 @@ public class EmergencyCdsTargetTransformer {
             additionalArrivalObjs.addProperty("department_type", targetEmergencyCds.getDepartmentType());
             additionalArrivalObjs.addProperty("ambulance_no", targetEmergencyCds.getAmbulanceNo());
             additionalArrivalObjs.addProperty("arrival_mode", targetEmergencyCds.getArrivalMode());
+            additionalArrivalObjs.addProperty("chief_complaint", targetEmergencyCds.getChiefComplaint());
             encounterArrival.setAdditionalFieldsJson(additionalArrivalObjs.toString());
 
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterArrival);
-            compositionBuilder.addSection("encounter-1-1", encounterArrival.getEncounterId(), encounterInstanceAsJson);
+            compositionBuilder.addSection("encounter-1-01", encounterArrival.getEncounterId(), encounterInstanceAsJson);
 
             // sub encounter: the initial assessment  (sequence #2)
-            // get initial assessment date. if null and there is a chief complaint value, use arrival date which is always present
             Date initialAssessmentDate = targetEmergencyCds.getDtInitialAssessment();
-            String chiefComplaint = targetEmergencyCds.getChiefComplaint();
-            if (initialAssessmentDate == null && !Strings.isNullOrEmpty(chiefComplaint)) {
-                initialAssessmentDate = targetEmergencyCds.getDtArrival();
-            }
             if (initialAssessmentDate != null) {
 
                 Encounter encounterAssessment = new Encounter();
@@ -171,17 +171,17 @@ public class EmergencyCdsTargetTransformer {
                 encounterAssessment.setEffectiveDate(initialAssessmentDate);
                 encounterAssessment.setEffectiveEndDate(null);
                 encounterAssessment.setEpisodeOfCareId(episodeIdStr);
-                encounterAssessment.setParentEncounterId(parentEncounterIdStr);
+                encounterAssessment.setParentEncounterId(parentAttendanceIdStr);
                 encounterAssessment.setPractitionerId(performerIdStr);
                 encounterAssessment.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
                 //create a list of additional data to store as Json for this encounterAssessment instance
                 JsonObject additionalAssessmentObjs = new JsonObject();
-                additionalAssessmentObjs.addProperty("chief_complaint", chiefComplaint);
+                additionalAssessmentObjs.addProperty("safeguarding_concerns", targetEmergencyCds.getSafeguardingConcerns());
                 encounterAssessment.setAdditionalFieldsJson(additionalAssessmentObjs.toString());
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterAssessment);
-                compositionBuilder.addSection("encounter-1-2", encounterAssessment.getEncounterId(), encounterInstanceAsJson);
+                compositionBuilder.addSection("encounter-1-02", encounterAssessment.getEncounterId(), encounterInstanceAsJson);
             }
 
             // sub encounter: the diagnosis, investigation and treatments  (sequence #3)
@@ -197,7 +197,7 @@ public class EmergencyCdsTargetTransformer {
                 encounterInvTreat.setEffectiveDate(targetEmergencyCds.getDtSeenForTreatment());
                 encounterInvTreat.setEffectiveEndDate(null);
                 encounterInvTreat.setEpisodeOfCareId(episodeIdStr);
-                encounterInvTreat.setParentEncounterId(parentEncounterIdStr);
+                encounterInvTreat.setParentEncounterId(parentAttendanceIdStr);
                 encounterInvTreat.setPractitionerId(performerIdStr);
                 encounterInvTreat.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
@@ -206,11 +206,11 @@ public class EmergencyCdsTargetTransformer {
                 additionalInvTreatObjs.addProperty("diagnosis", targetEmergencyCds.getDiagnosis());
                 additionalInvTreatObjs.addProperty("investigations", targetEmergencyCds.getInvestigations());
                 additionalInvTreatObjs.addProperty("treatments", targetEmergencyCds.getTreatments());
-                additionalInvTreatObjs.addProperty("safeguarding_concerns", targetEmergencyCds.getSafeguardingConcerns());
+                additionalInvTreatObjs.addProperty("referred_to_services", targetEmergencyCds.getReferredToServices());
                 encounterInvTreat.setAdditionalFieldsJson(additionalInvTreatObjs.toString());
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInvTreat);
-                compositionBuilder.addSection("encounter-1-3", encounterInvTreat.getEncounterId(), encounterInstanceAsJson);
+                compositionBuilder.addSection("encounter-1-03", encounterInvTreat.getEncounterId(), encounterInstanceAsJson);
             }
 
             // sub encounter: the inpatient admission  (sequence #4) - this ultimately links up with the
@@ -227,7 +227,7 @@ public class EmergencyCdsTargetTransformer {
                 encounterAdmission.setEffectiveDate(admissionDate);
                 encounterAdmission.setEffectiveEndDate(null);
                 encounterAdmission.setEpisodeOfCareId(episodeIdStr);
-                encounterAdmission.setParentEncounterId(parentEncounterIdStr);
+                encounterAdmission.setParentEncounterId(parentAttendanceIdStr);
                 encounterAdmission.setPractitionerId(performerIdStr);
                 encounterAdmission.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
@@ -235,7 +235,7 @@ public class EmergencyCdsTargetTransformer {
                 encounterAdmission.setAdditionalFieldsJson(null);
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterAdmission);
-                compositionBuilder.addSection("encounter-1-4", encounterAdmission.getEncounterId(), encounterInstanceAsJson);
+                compositionBuilder.addSection("encounter-1-04", encounterAdmission.getEncounterId(), encounterInstanceAsJson);
             }
 
             // sub encounter: the discharge/departure from emergency  (sequence #5)
@@ -251,7 +251,7 @@ public class EmergencyCdsTargetTransformer {
                 encounterDischarge.setEffectiveDate(departureDate);
                 encounterDischarge.setEffectiveEndDate(null);
                 encounterDischarge.setEpisodeOfCareId(episodeIdStr);
-                encounterDischarge.setParentEncounterId(parentEncounterIdStr);
+                encounterDischarge.setParentEncounterId(parentAttendanceIdStr);
                 encounterDischarge.setPractitionerId(performerIdStr);
                 encounterDischarge.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
@@ -259,11 +259,10 @@ public class EmergencyCdsTargetTransformer {
                 JsonObject additionalDischargeObjs = new JsonObject();
                 additionalDischargeObjs.addProperty("discharge_status", targetEmergencyCds.getDischargeStatus());
                 additionalDischargeObjs.addProperty("discharge_destination", targetEmergencyCds.getDischargeDestination());
-                additionalDischargeObjs.addProperty("referred_to_services", targetEmergencyCds.getReferredToServices());
                 encounterDischarge.setAdditionalFieldsJson(additionalDischargeObjs.toString());
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterDischarge);
-                compositionBuilder.addSection("encounter-1-5", encounterDischarge.getEncounterId(), encounterInstanceAsJson);
+                compositionBuilder.addSection("encounter-1-05", encounterDischarge.getEncounterId(), encounterInstanceAsJson);
             }
 
             //LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));

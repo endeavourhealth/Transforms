@@ -429,6 +429,30 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         }
     }
 
+    public List<StagingOutpatientCdsTarget> retrieveTargetOutpatientCds() throws Exception {
+
+        if (TransformConfig.instance().isLive()) {
+
+            //remove this check for go live, removing null
+            return null;
+        } else {
+            List<StagingOutpatientCdsTarget> ret = stagingRepository.getTargetOutpatientCds(this.exchangeId, this.serviceId);
+            return ret;
+        }
+    }
+
+    public List<StagingCriticalCareCdsTarget> retrieveTargetCriticalCareCds() throws Exception {
+
+        if (TransformConfig.instance().isLive()) {
+
+            //remove this check for go live, removing null
+            return null;
+        } else {
+            List<StagingCriticalCareCdsTarget> ret = stagingRepository.getTargetCriticalCareCds(this.exchangeId, this.serviceId);
+            return ret;
+        }
+    }
+
     public List<Resource> retrieveResourceByPatient(UUID patientId) throws Exception {
         List<Resource> ret = new ArrayList<>();
         List<ResourceWrapper> resourceList = resourceRepository.getResourcesByPatient(serviceId, patientId);
