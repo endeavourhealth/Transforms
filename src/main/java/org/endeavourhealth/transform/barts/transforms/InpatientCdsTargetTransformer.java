@@ -87,7 +87,7 @@ public class InpatientCdsTargetTransformer {
 
             // Set top level encounter which encapsulates the other sub-encounters (up to X episode encounters in composition sections)
             String spellId = targetInpatientCds.getSpellNumber();
-            String topLevelEncounterId = spellId + ":00";
+            String topLevelEncounterId = spellId + ":00:IP";
             String topLevelEncounterIdStr
                     = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, topLevelEncounterId);
             String episodeIdStr = null;
@@ -141,8 +141,9 @@ public class InpatientCdsTargetTransformer {
             Encounter encounterInpatientEpisode = new Encounter();
             encounterInpatientEpisode.setEncounterType("inpatient episode");
 
+            String encounterId = spellId +":"+episodeNumber+":IP";
             String encounterIdStr
-                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, spellId+":"+episodeNumber);
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, encounterId);
 
             // each inpatient episode has a specific practitioner
             String performerIdStr = null;
