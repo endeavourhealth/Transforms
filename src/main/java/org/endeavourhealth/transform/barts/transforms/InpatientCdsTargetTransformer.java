@@ -85,61 +85,67 @@ public class InpatientCdsTargetTransformer {
             identifier.setValue(uniqueId);
             compositionBuilder.setIdentifier(identifier);
 
-            // set top level encounter which encapsulates the other sub-encounters (up to X episode encounters in commposition sections)
-            Encounter encounterInpatient = new Encounter();
-            encounterInpatient.setEncounterType("inpatient");
-            String SpellId = targetInpatientCds.getSpellNumber();
-            String SpellIdStr
-                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, SpellId);
-            encounterInpatient.setEncounterId(SpellIdStr);
-            encounterInpatient.setPatientId(patientIdStr);
-            encounterInpatient.setEffectiveDate(targetInpatientCds.getDtSpellStart());
-            encounterInpatient.setEffectiveEndDate(targetInpatientCds.getDtDischarge());
-
+            // Set top level encounter which encapsulates the other sub-encounters (up to X episode encounters in composition sections)
+            String spellId = targetInpatientCds.getSpellNumber();
+            String topLevelEncounterId = spellId + ":00";
+            String topLevelEncounterIdStr
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, topLevelEncounterId);
             String episodeIdStr = null;
             if (targetInpatientCds.getEpisodeId() != null) {
                 episodeIdStr =
                         IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, targetInpatientCds.getEpisodeId().toString());
             }
-            encounterInpatient.setEpisodeOfCareId(episodeIdStr);
-
-            //the top level encounterId which links to ENCNTR and other associated records
-            Integer parentEncounterId = targetInpatientCds.getEncounterId();
-            String parentEncounterIdStr
-                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
-            encounterInpatient.setParentEncounterId(parentEncounterIdStr);
-
-            String performerIdStr = null;
-            encounterInpatient.setPractitionerId(performerIdStr);   //top level inpatient encounter has no practitioner
-
             String serviceProviderOrgStr = null;
             if (!Strings.isNullOrEmpty(targetInpatientCds.getEpisodeStartSiteCode())) {
                 serviceProviderOrgStr
                         = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Organization, targetInpatientCds.getEpisodeStartSiteCode());
             }
-            encounterInpatient.setServiceProviderOrganisationId(serviceProviderOrgStr);
+            String episodeNumber = targetInpatientCds.getEpisodeNumber();
 
-            //add in additional fields data
-            JsonObject additionalInpatientObjs = new JsonObject();
-            additionalInpatientObjs.addProperty("admission_method_code", targetInpatientCds.getAdmissionMethodCode());
-            additionalInpatientObjs.addProperty("admission_source_code", targetInpatientCds.getAdmissionSourceCode());
-            additionalInpatientObjs.addProperty("patient_classification", targetInpatientCds.getPatientClassification());
-            additionalInpatientObjs.addProperty("discharge_method", targetInpatientCds.getDischargeMethod());
-            additionalInpatientObjs.addProperty("discharge_destination", targetInpatientCds.getDischargeDestinationCode());
+            // NOTE: top level inpatient encounter is only created / updated when episodeNumber = 01 to prevent duplicates
+            if (episodeNumber.equalsIgnoreCase("01")) {
+                Encounter encounterInpatient = new Encounter();
+                encounterInpatient.setEncounterType("inpatient");
+                encounterInpatient.setEncounterId(topLevelEncounterIdStr);
+                encounterInpatient.setPatientId(patientIdStr);
+                encounterInpatient.setEffectiveDate(targetInpatientCds.getDtSpellStart());
+                encounterInpatient.setEffectiveEndDate(targetInpatientCds.getDtDischarge());
+                encounterInpatient.setEpisodeOfCareId(episodeIdStr);
 
-            encounterInpatient.setAdditionalFieldsJson(additionalInpatientObjs.toString());
-            String encounterInstanceAsJson = null;
-            encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInpatient);
-            compositionBuilder.addSection("encounter-1", encounterInpatient.getEncounterId(), encounterInstanceAsJson);
+                //This is the top level encounterId which links to ENCNTR and other associated records
+                Integer parentEncounterId = targetInpatientCds.getEncounterId();
+                String parentEncounterIdStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
+                encounterInpatient.setParentEncounterId(parentEncounterIdStr);
+                encounterInpatient.setPractitionerId(null);   //top level inpatient encounter has no practitioner
+                encounterInpatient.setServiceProviderOrganisationId(serviceProviderOrgStr);
+
+                //add in additional fields data
+                JsonObject additionalInpatientObjs = new JsonObject();
+                additionalInpatientObjs.addProperty("admission_method_code", targetInpatientCds.getAdmissionMethodCode());
+                additionalInpatientObjs.addProperty("admission_source_code", targetInpatientCds.getAdmissionSourceCode());
+                additionalInpatientObjs.addProperty("patient_classification", targetInpatientCds.getPatientClassification());
+                if (!Strings.isNullOrEmpty(targetInpatientCds.getDischargeMethod())) {
+                    additionalInpatientObjs.addProperty("discharge_method", targetInpatientCds.getDischargeMethod());
+                }
+                if (!Strings.isNullOrEmpty(targetInpatientCds.getDischargeDestinationCode())) {
+                    additionalInpatientObjs.addProperty("discharge_destination", targetInpatientCds.getDischargeDestinationCode());
+                }
+
+                encounterInpatient.setAdditionalFieldsJson(additionalInpatientObjs.toString());
+                String encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInpatient);
+                compositionBuilder.addSection("encounter-1", encounterInpatient.getEncounterId(), encounterInstanceAsJson);
+            }
 
             //an inpatient sub encounter has an episode number which is used with the top level spellNumber to create the encounterId reference
             Encounter encounterInpatientEpisode = new Encounter();
             encounterInpatientEpisode.setEncounterType("inpatient episode");
-            String episodeNumber = targetInpatientCds.getEpisodeNumber();
+
             String encounterIdStr
-                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, SpellId+":"+episodeNumber);
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, spellId+":"+episodeNumber);
 
             // each inpatient episode has a specific practitioner
+            String performerIdStr = null;
             if (targetInpatientCds.getPerformerPersonnelId() != null) {
                 performerIdStr
                         = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Practitioner, targetInpatientCds.getPerformerPersonnelId().toString());
@@ -150,7 +156,7 @@ public class InpatientCdsTargetTransformer {
             encounterInpatientEpisode.setEffectiveDate(targetInpatientCds.getDtEpisodeStart());
             encounterInpatientEpisode.setEffectiveEndDate(targetInpatientCds.getDtEpisodeEnd());
             encounterInpatientEpisode.setEpisodeOfCareId(episodeIdStr);
-            encounterInpatientEpisode.setParentEncounterId(SpellIdStr);
+            encounterInpatientEpisode.setParentEncounterId(topLevelEncounterIdStr);
             encounterInpatientEpisode.setPractitionerId(performerIdStr);
             encounterInpatientEpisode.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
@@ -179,9 +185,9 @@ public class InpatientCdsTargetTransformer {
 
             encounterInpatientEpisode.setAdditionalFieldsJson(additionalObjs.toString());
 
-            encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInpatientEpisode);
+            String encounterEpisodeInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInpatientEpisode);
             String encounterEpisodeDesc = "encounter-1-"+episodeNumber;
-            compositionBuilder.addSection(encounterEpisodeDesc, encounterInpatientEpisode.getEncounterId(), encounterInstanceAsJson);
+            compositionBuilder.addSection(encounterEpisodeDesc, encounterInpatientEpisode.getEncounterId(), encounterEpisodeInstanceAsJson);
 
             //LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));
 

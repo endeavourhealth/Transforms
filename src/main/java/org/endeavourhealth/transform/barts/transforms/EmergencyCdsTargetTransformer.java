@@ -94,9 +94,10 @@ public class EmergencyCdsTargetTransformer {
 
             //the attendanceId associated with the emergency encounter(s), used for top level parent encounter
             String attendanceId = targetEmergencyCds.getAttendanceId();
-            String parentAttendanceIdStr
-                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId);
-            encounterEmergencyParent.setEncounterId(parentAttendanceIdStr);
+            String topLevelEncounterId = attendanceId + ":00";
+            String topLevelEncounterIdStr
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, topLevelEncounterId);
+            encounterEmergencyParent.setEncounterId(topLevelEncounterIdStr);
             encounterEmergencyParent.setPatientId(patientIdStr);
             encounterEmergencyParent.setEffectiveDate(targetEmergencyCds.getDtArrival());
             encounterEmergencyParent.setEffectiveEndDate(targetEmergencyCds.getDtDeparture());
@@ -135,15 +136,15 @@ public class EmergencyCdsTargetTransformer {
 
             // sub encounter: the A&E attendance  (sequence #1)
             Encounter encounterArrival = new Encounter();
-            encounterArrival.setEncounterType("emergency attendance");
+            encounterArrival.setEncounterType("emergency arrival");
             String attendanceIdStr
-                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":1");
+                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":01");
             encounterArrival.setEncounterId(attendanceIdStr);
             encounterArrival.setPatientId(patientIdStr);
             encounterArrival.setEffectiveDate(targetEmergencyCds.getDtArrival());
             encounterArrival.setEffectiveEndDate(null);
             encounterArrival.setEpisodeOfCareId(episodeIdStr);
-            encounterArrival.setParentEncounterId(parentAttendanceIdStr);
+            encounterArrival.setParentEncounterId(topLevelEncounterIdStr);
             encounterArrival.setPractitionerId(performerIdStr);
             encounterArrival.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
@@ -165,13 +166,13 @@ public class EmergencyCdsTargetTransformer {
                 Encounter encounterAssessment = new Encounter();
                 encounterAssessment.setEncounterType("emergency initial assessment");
                 attendanceIdStr
-                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":2");
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":02");
                 encounterAssessment.setEncounterId(attendanceIdStr);
                 encounterAssessment.setPatientId(patientIdStr);
                 encounterAssessment.setEffectiveDate(initialAssessmentDate);
                 encounterAssessment.setEffectiveEndDate(null);
                 encounterAssessment.setEpisodeOfCareId(episodeIdStr);
-                encounterAssessment.setParentEncounterId(parentAttendanceIdStr);
+                encounterAssessment.setParentEncounterId(topLevelEncounterIdStr);
                 encounterAssessment.setPractitionerId(performerIdStr);
                 encounterAssessment.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
@@ -191,13 +192,13 @@ public class EmergencyCdsTargetTransformer {
                 Encounter encounterInvTreat = new Encounter();
                 encounterInvTreat.setEncounterType("emergency investigations and treatments");
                 attendanceIdStr
-                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId + ":3");
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId + ":03");
                 encounterInvTreat.setEncounterId(attendanceIdStr);
                 encounterInvTreat.setPatientId(patientIdStr);
                 encounterInvTreat.setEffectiveDate(targetEmergencyCds.getDtSeenForTreatment());
                 encounterInvTreat.setEffectiveEndDate(null);
                 encounterInvTreat.setEpisodeOfCareId(episodeIdStr);
-                encounterInvTreat.setParentEncounterId(parentAttendanceIdStr);
+                encounterInvTreat.setParentEncounterId(topLevelEncounterIdStr);
                 encounterInvTreat.setPractitionerId(performerIdStr);
                 encounterInvTreat.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
@@ -221,13 +222,13 @@ public class EmergencyCdsTargetTransformer {
                 Encounter encounterAdmission = new Encounter();
                 encounterAdmission.setEncounterType("inpatient admission");
                 attendanceIdStr
-                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":4");
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":04");
                 encounterAdmission.setEncounterId(attendanceIdStr);
                 encounterAdmission.setPatientId(patientIdStr);
                 encounterAdmission.setEffectiveDate(admissionDate);
                 encounterAdmission.setEffectiveEndDate(null);
                 encounterAdmission.setEpisodeOfCareId(episodeIdStr);
-                encounterAdmission.setParentEncounterId(parentAttendanceIdStr);
+                encounterAdmission.setParentEncounterId(topLevelEncounterIdStr);
                 encounterAdmission.setPractitionerId(performerIdStr);
                 encounterAdmission.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
@@ -245,13 +246,13 @@ public class EmergencyCdsTargetTransformer {
                 Encounter encounterDischarge = new Encounter();
                 encounterDischarge.setEncounterType("emergency discharge");
                 attendanceIdStr
-                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":5");
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":05");
                 encounterDischarge.setEncounterId(attendanceIdStr);
                 encounterDischarge.setPatientId(patientIdStr);
                 encounterDischarge.setEffectiveDate(departureDate);
                 encounterDischarge.setEffectiveEndDate(null);
                 encounterDischarge.setEpisodeOfCareId(episodeIdStr);
-                encounterDischarge.setParentEncounterId(parentAttendanceIdStr);
+                encounterDischarge.setParentEncounterId(topLevelEncounterIdStr);
                 encounterDischarge.setPractitionerId(performerIdStr);
                 encounterDischarge.setServiceProviderOrganisationId(serviceProviderOrgStr);
 
