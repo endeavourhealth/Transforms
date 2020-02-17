@@ -178,7 +178,9 @@ public class EmergencyCdsTargetTransformer {
 
                 //create a list of additional data to store as Json for this encounterAssessment instance
                 JsonObject additionalAssessmentObjs = new JsonObject();
-                additionalAssessmentObjs.addProperty("safeguarding_concerns", targetEmergencyCds.getSafeguardingConcerns());
+                if (!Strings.isNullOrEmpty(targetEmergencyCds.getSafeguardingConcerns())){
+                    additionalAssessmentObjs.addProperty("safeguarding_concerns", targetEmergencyCds.getSafeguardingConcerns());
+                }
                 encounterAssessment.setAdditionalFieldsJson(additionalAssessmentObjs.toString());
 
                 encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterAssessment);
