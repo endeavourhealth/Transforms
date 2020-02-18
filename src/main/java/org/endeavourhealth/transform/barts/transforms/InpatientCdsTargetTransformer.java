@@ -109,7 +109,7 @@ public class InpatientCdsTargetTransformer {
                 encounterInpatient.setEncounterId(topLevelEncounterIdStr);
                 encounterInpatient.setPatientId(patientIdStr);
                 encounterInpatient.setEffectiveDate(targetInpatientCds.getDtSpellStart());
-                encounterInpatient.setEffectiveEndDate(targetInpatientCds.getDtDischarge());
+                encounterInpatient.setEffectiveEndDate(targetInpatientCds.getDtDischarge());  //the discharge date if present
                 encounterInpatient.setEpisodeOfCareId(episodeIdStr);
 
                 //This is the top level encounterId which links to ENCNTR and other associated records
@@ -128,12 +128,6 @@ public class InpatientCdsTargetTransformer {
                 additionalInpatientObjs.addProperty("admission_method_code", targetInpatientCds.getAdmissionMethodCode());
                 additionalInpatientObjs.addProperty("admission_source_code", targetInpatientCds.getAdmissionSourceCode());
                 additionalInpatientObjs.addProperty("patient_classification", targetInpatientCds.getPatientClassification());
-                if (!Strings.isNullOrEmpty(targetInpatientCds.getDischargeMethod())) {
-                    additionalInpatientObjs.addProperty("discharge_method", targetInpatientCds.getDischargeMethod());
-                }
-                if (!Strings.isNullOrEmpty(targetInpatientCds.getDischargeDestinationCode())) {
-                    additionalInpatientObjs.addProperty("discharge_destination", targetInpatientCds.getDischargeDestinationCode());
-                }
 
                 encounterInpatient.setAdditionalFieldsJson(additionalInpatientObjs.toString());
                 String encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInpatient);
@@ -192,6 +186,34 @@ public class InpatientCdsTargetTransformer {
             String encounterEpisodeInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInpatientEpisode);
             String encounterEpisodeDesc = "encounter-1-"+episodeNumber;
             compositionBuilder.addSection(encounterEpisodeDesc, encounterInpatientEpisode.getEncounterId(), encounterEpisodeInstanceAsJson);
+
+            // if the episodeNumber record is 01 and the DischargeDate is present then create the discharge encounter
+            if (episodeNumber.equalsIgnoreCase("01") && targetInpatientCds.getDtDischarge() != null) {
+
+                Encounter encounterInpatientDischarge = new Encounter();
+                encounterInpatientDischarge.setEncounterType("inpatient discharge");
+
+                encounterId = spellId +":"+episodeNumber+":IP:D";
+                encounterInpatientDischarge.setEncounterId(encounterId);
+                encounterInpatientDischarge.setPatientId(patientIdStr);
+                encounterInpatientDischarge.setEffectiveDate(targetInpatientCds.getDtDischarge());
+                encounterInpatientDischarge.setEffectiveEndDate(null);
+                encounterInpatientDischarge.setEpisodeOfCareId(episodeIdStr);
+                encounterInpatientDischarge.setParentEncounterId(topLevelEncounterIdStr);
+                encounterInpatientDischarge.setPractitionerId(performerIdStr);
+                encounterInpatientDischarge.setServiceProviderOrganisationId(serviceProviderOrgStr);
+
+                //add in additional fields data
+                JsonObject additionalDischargeObjs = new JsonObject();
+                additionalDischargeObjs.addProperty("discharge_method", targetInpatientCds.getDischargeMethod());
+                additionalDischargeObjs.addProperty("discharge_destination", targetInpatientCds.getDischargeDestinationCode());
+
+                encounterInpatientDischarge.setAdditionalFieldsJson(additionalDischargeObjs.toString());
+                String encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInpatientDischarge);
+                String encounterDischargeDesc = "encounter-1-"+episodeNumber+"D";
+                compositionBuilder.addSection(encounterDischargeDesc, encounterInpatientDischarge.getEncounterId(), encounterInstanceAsJson);
+            }
+
 
             //LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));
 
