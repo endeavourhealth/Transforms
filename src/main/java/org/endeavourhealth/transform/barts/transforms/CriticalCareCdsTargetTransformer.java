@@ -112,7 +112,13 @@ public class CriticalCareCdsTargetTransformer {
                         = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Practitioner, targetCriticalCareCds.getPerformerPersonnelId().toString());
             }
             encounterCriticalCare.setPractitionerId(performerIdStr);
-            encounterCriticalCare.setServiceProviderOrganisationId(null);   //part of the linked inpatient record
+
+            String serviceProviderOrgStr = null;
+            if (!Strings.isNullOrEmpty(targetCriticalCareCds.getOrganisationCode())) {
+                serviceProviderOrgStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Organization, targetCriticalCareCds.getOrganisationCode());
+            }
+            encounterCriticalCare.setServiceProviderOrganisationId(serviceProviderOrgStr);   //originally derived from the linked inpatient record
 
             //add in additional fields data
             JsonObject additionalObjs = new JsonObject();
