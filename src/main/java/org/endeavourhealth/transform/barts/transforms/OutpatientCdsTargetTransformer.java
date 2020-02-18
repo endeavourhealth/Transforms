@@ -104,9 +104,12 @@ public class OutpatientCdsTargetTransformer {
             encounterOutpatient.setEpisodeOfCareId(episodeIdStr);
 
             //the top level encounterId which links to ENCNTR and other associated records
+            String parentEncounterIdStr = null;
             Integer parentEncounterId = targetOutpatientCds.getEncounterId();
-            String parentEncounterIdStr
-                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
+            if (parentEncounterId != null) {
+                parentEncounterIdStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
+            }
             encounterOutpatient.setParentEncounterId(parentEncounterIdStr);
 
             String performerIdStr = null;

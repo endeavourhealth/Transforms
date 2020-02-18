@@ -111,8 +111,11 @@ public class EmergencyCdsTargetTransformer {
 
             //the top level encounterId which links to ENCTR and other associated records
             Integer parentEncounterId = targetEmergencyCds.getEncounterId();
-            String parentEncounterIdStr
-                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
+            String parentEncounterIdStr = null;
+            if (parentEncounterId != null) {
+                parentEncounterIdStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
+            }
             encounterEmergencyParent.setParentEncounterId(parentEncounterIdStr);
 
             String performerIdStr = null;
