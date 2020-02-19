@@ -88,7 +88,7 @@ public class OutpatientCdsTargetTransformer {
             // set single outpatient encounter, i.e. no sub encounters
             Encounter encounterOutpatient = new Encounter();
             encounterOutpatient.setEncounterType("outpatient");
-            String attendanceId = targetOutpatientCds.getApptAttendanceIdentifier();
+            String attendanceId = targetOutpatientCds.getApptAttendanceIdentifier()+":OP";
             String attendanceEncounterIdStr
                     = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId);
             encounterOutpatient.setEncounterId(attendanceEncounterIdStr);

@@ -89,7 +89,7 @@ public class CriticalCareCdsTargetTransformer {
             // These encounters link to inpatient records using the spellNumber and episodeNumber
             Encounter encounterCriticalCare = new Encounter();
             encounterCriticalCare.setEncounterType("critical care");
-            String criticalCareId = targetCriticalCareCds.getCriticalCareIdentifier();
+            String criticalCareId = targetCriticalCareCds.getCriticalCareIdentifier()+":CC";
             String criticalCareEncounterIdStr
                     = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, criticalCareId);
             encounterCriticalCare.setEncounterId(criticalCareEncounterIdStr);
