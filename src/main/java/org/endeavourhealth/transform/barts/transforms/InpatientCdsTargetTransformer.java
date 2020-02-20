@@ -194,7 +194,9 @@ public class InpatientCdsTargetTransformer {
                 encounterInpatientDischarge.setEncounterType("inpatient discharge");
 
                 encounterId = spellId +":"+episodeNumber+":IP:D";
-                encounterInpatientDischarge.setEncounterId(encounterId);
+                encounterIdStr
+                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, encounterId);
+                encounterInpatientDischarge.setEncounterId(encounterIdStr);
                 encounterInpatientDischarge.setPatientId(patientIdStr);
                 encounterInpatientDischarge.setEffectiveDate(targetInpatientCds.getDtDischarge());
                 encounterInpatientDischarge.setEffectiveEndDate(null);
