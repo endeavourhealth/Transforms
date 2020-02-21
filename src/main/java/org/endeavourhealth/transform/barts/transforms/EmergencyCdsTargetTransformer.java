@@ -131,7 +131,13 @@ public class EmergencyCdsTargetTransformer {
                         = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Organization, targetEmergencyCds.getOrganisationCode());
             }
             encounterEmergencyParent.setServiceProviderOrganisationId(serviceProviderOrgStr);
-            encounterEmergencyParent.setAdditionalFieldsJson(null);
+
+            // create a list of additional data to store as Json for this encounter instance
+            JsonObject additionalObjs = new JsonObject();
+            additionalObjs.addProperty("attendance_category", targetEmergencyCds.getAttendanceCategory());
+            additionalObjs.addProperty("attendance_source", targetEmergencyCds.getAttendanceSource());
+            encounterEmergencyParent.setAdditionalFieldsJson(additionalObjs.toString());
+
             String encounterInstanceAsJson = null;
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterEmergencyParent);
             compositionBuilder.addSection("encounter-1", encounterEmergencyParent.getEncounterId(), encounterInstanceAsJson);
