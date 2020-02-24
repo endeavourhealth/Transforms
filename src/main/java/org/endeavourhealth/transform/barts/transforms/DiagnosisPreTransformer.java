@@ -100,7 +100,9 @@ public class DiagnosisPreTransformer {
         obj.setDiagType(diagnosisTypeCell.getString());
 
         CsvCell diagnosisConsultant = parser.getDiagPrnsl();
-        obj.setConsultant(diagnosisConsultant.getString());
+        if (!diagnosisConsultant.isEmpty()) {
+            obj.setConsultant(diagnosisConsultant.getString());
+        }
 
         CsvCell vocabCell = parser.getVocabulary();
         String vocab = vocabCell.getString();
