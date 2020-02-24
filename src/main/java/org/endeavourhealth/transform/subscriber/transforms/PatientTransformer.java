@@ -86,7 +86,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
         //check if the patient is deleted, is confidential, has no NHS number etc.
-        if (!SubscriberTransformHelper.shouldPatientBePresentInSubscriber(fhirPatient)) {
+        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)) {
 
             //delete the patient
             patientWriter.writeDelete(subscriberId);
@@ -734,7 +734,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         //if the present status has changed then we need to either bulk-add or bulk-delete all data for the patient
         //and if the NHS number has changed, the person ID on each table will need updating
         //and if the DoB has changed, then the age_at_event will need recalculating for everything
-        if (hasPresentStateChanged(current, previous)
+        if (hasPresentStateChanged(params, current, previous)
             || hasDobChanged(current, previous)
             || hasNhsNumberChanged(current, previous)) {
 
@@ -750,10 +750,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private boolean hasPresentStateChanged(Patient current, Patient previous) {
+    private boolean hasPresentStateChanged(SubscriberTransformHelper helper, Patient current, Patient previous) {
 
-        boolean nowShouldBePresent = SubscriberTransformHelper.shouldPatientBePresentInSubscriber(current);
-        boolean previousShouldBePresent = SubscriberTransformHelper.shouldPatientBePresentInSubscriber(previous);
+        boolean nowShouldBePresent = helper.shouldPatientBePresentInSubscriber(current);
+        boolean previousShouldBePresent = helper.shouldPatientBePresentInSubscriber(previous);
 
         return nowShouldBePresent != previousShouldBePresent;
     }

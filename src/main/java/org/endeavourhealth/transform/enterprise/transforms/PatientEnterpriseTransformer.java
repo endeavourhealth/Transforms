@@ -81,7 +81,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         //check if the patient is deleted, is confidential, has no NHS number etc.
-        if (!SubscriberTransformHelper.shouldPatientBePresentInSubscriber(fhirPatient)) {
+        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)) {
             csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
@@ -338,7 +338,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         //if the present status has changed then we need to either bulk-add or bulk-delete all data for the patient
         //and if the NHS number has changed, the person ID on each table will need updating
-        if (hasPresentStateChanged(current, previous)
+        if (hasPresentStateChanged(params, current, previous)
                 || hasNhsNumberChanged(current, previous)) {
 
             //retrieve all resources and add them to the current transform. This will ensure they then get transformed
@@ -353,10 +353,10 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
     }
 
-    private boolean hasPresentStateChanged(Patient current, Patient previous) {
+    private boolean hasPresentStateChanged(EnterpriseTransformHelper params, Patient current, Patient previous) {
 
-        boolean nowShouldBePresent = SubscriberTransformHelper.shouldPatientBePresentInSubscriber(current);
-        boolean previousShouldBePresent = SubscriberTransformHelper.shouldPatientBePresentInSubscriber(previous);
+        boolean nowShouldBePresent = params.shouldPatientBePresentInSubscriber(current);
+        boolean previousShouldBePresent = params.shouldPatientBePresentInSubscriber(previous);
 
         return nowShouldBePresent != previousShouldBePresent;
     }

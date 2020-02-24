@@ -1,7 +1,9 @@
 package org.endeavourhealth.transform.subscriber;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
@@ -29,11 +31,13 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Pattern;
 
 public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(SubscriberTransformHelper.class);
 
     private static final Object MAP_VAL = new Object(); //concurrent hash map requires non-null values, so just use this
+    private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
 
     private static Set<String> protectedCodesRead2;
     private static Set<String> protectedCodesCTV3;
@@ -52,21 +56,21 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final List<ResourceWrapper> allResources;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
+    private final int batchSize;
+    private final String excludeNhsNumberRegex;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
     private Patient cachedPatient = null;
     private Map<String, String> snomedToBnfChapter = new HashMap<>();
     private final ReentrantLock lock = new ReentrantLock();
 
-    private int batchSize;
+
     private Long subscriberOrganisationId = null;
     private Long subscriberPatientId = null;
     private Long subscriberPersonId = null;
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-
-
     public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String subscriberConfigName,
-                                     List<ResourceWrapper> allResources, String exchangeBody, boolean isPseudonymised) throws Exception {
+                                     List<ResourceWrapper> allResources, String exchangeBody) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.protocolId = protocolId;
@@ -76,7 +80,24 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         this.outputContainer = new OutputContainer();
         this.exchangeBody = exchangeBody;
         this.subscriberIdsUpdated = new ArrayList<>();
-        this.isPseudonymised = isPseudonymised;
+
+        //load our config record for some parameters
+        JsonNode config = ConfigManager.getConfigurationAsJson(subscriberConfigName, "db_subscriber");
+
+        this.isPseudonymised = config.has("pseudonymised")
+                && config.get("pseudonymised").asBoolean();
+
+        if (config.has("transform_batch_size")) {
+            this.batchSize = config.get("transform_batch_size").asInt();
+        } else {
+            this.batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
+        }
+
+        if (config.has("excluded_nhs_number_regex")) {
+            this.excludeNhsNumberRegex = config.get("excluded_nhs_number_regex").asText();
+        } else {
+            this.excludeNhsNumberRegex = null;
+        }
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         this.allResources = allResources;
@@ -150,9 +171,6 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return batchSize;
     }
 
-    public void setBatchSize(int batchSize) {
-        this.batchSize = batchSize;
-    }
 
     public Long getSubscriberOrganisationId() {
         if (subscriberOrganisationId == null) {
@@ -273,7 +291,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         if (patientWrapper != null) {
             this.cachedPatient = (Patient)patientWrapper.getResource();
         }
-        this.shouldPatientRecordBeDeleted = !shouldPatientBePresentInSubscriber(cachedPatient);
+        this.shouldPatientRecordBeDeleted = new Boolean(!shouldPatientBePresentInSubscriber(cachedPatient));
 
 
         PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
@@ -322,8 +340,12 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             }
         }
         if (subscriberId != null) {
-            this.subscriberPatientId = subscriberId.getSubscriberId();
+            this.subscriberPatientId = new Long(subscriberId.getSubscriberId());
         }
+    }
+
+    public boolean shouldPatientBePresentInSubscriber(Patient patient) {
+        return shouldPatientBePresentInSubscriber(patient, this.excludeNhsNumberRegex);
     }
 
     /**
@@ -334,7 +356,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
      * Non-valid NHS – include
      * Dummy patients and test patients – exclude
      */
-    public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
+    public static boolean shouldPatientBePresentInSubscriber(Patient patient, String excludeNhsNumberRegex) {
 
         //deleted records shouldn't be in subscriber DBs
         if (patient == null) {
@@ -349,44 +371,19 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             return false;
         }
 
-        //exclude the EDI test patients
-        String nhsNumber = IdentifierHelper.findNhsNumber(patient);
-        if (!Strings.isNullOrEmpty(nhsNumber)
-                //&& nhsNumber.startsWith("999999")) { //test patients from EDI test pack
-                && nhsNumber.startsWith("999")) { //more test patients with 999 NHS numbers found
-            return false;
+        //exclude the EDI test patients using regex, so it can be configured per subscriber
+        //NOTE: changing the configured regex will not affect any data already in (or not in) a subscriber,
+        //so that will need to be manually resolved
+        if (!Strings.isNullOrEmpty(excludeNhsNumberRegex)) {
+            String nhsNumber = IdentifierHelper.findNhsNumber(patient);
+            if (!Strings.isNullOrEmpty(nhsNumber)
+                    && Pattern.matches(excludeNhsNumberRegex, nhsNumber)) {
+                return false;
+            }
         }
 
         return true;
     }
-    /*public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
-
-        //deleted records shouldn't be in subscriber DBs
-        if (patient == null) {
-            return false;
-        }
-
-        //confidential records shouldn't be in subscriber DBs
-        if (AbstractSubscriberTransformer.isConfidential(patient)) {
-            return false;
-        }
-
-        //records without NHS numbers shouldn't be in subscriber DBs
-        String nhsNumber = IdentifierHelper.findNhsNumber(patient);
-        if (Strings.isNullOrEmpty(nhsNumber)) {
-            return false;
-        }
-
-        //exclude test patients
-        BooleanType isTestPatient = (BooleanType) ExtensionConverter.findExtensionValue(patient, FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
-        if (isTestPatient != null
-                && isTestPatient.hasValue()
-                && isTestPatient.getValue().booleanValue()) {
-            return false;
-        }
-
-        return true;
-    }*/
 
     public boolean getShouldPatientRecordBeDeleted() {
         if (shouldPatientRecordBeDeleted == null) {
