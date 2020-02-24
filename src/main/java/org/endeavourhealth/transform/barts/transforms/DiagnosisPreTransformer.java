@@ -102,6 +102,8 @@ public class DiagnosisPreTransformer {
         CsvCell diagnosisConsultant = parser.getDiagPrnsl();
         if (!diagnosisConsultant.isEmpty()) {
             obj.setConsultant(diagnosisConsultant.getString());
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "No Diagnosis personnel id for Diagnosis {} ", diagnosisIdCell);
         }
 
         CsvCell vocabCell = parser.getVocabulary();
