@@ -1538,7 +1538,6 @@ public abstract class CdsPreTransformerBase {
             maternityDataObjs.addProperty("gender", parser.getPersonGender().getString());
             maternityDataObjs.addProperty("mother_nhs_number", parser.getMotherNHSNumber().getString());
             stagingInpatientCds.setMaternityDataBirth(maternityDataObjs.toString());
-            stagingInpatientCds.setMaternityDataDelivery(null);
 
         } else if (cdsRecordType.equalsIgnoreCase(CDS_RECORD_TYPE_DELIVERY)) {
 
@@ -1557,7 +1556,6 @@ public abstract class CdsPreTransformerBase {
                 maternityDataObjs.addProperty("baby_nhs_number_"+i, parser.getBabyNHSNumber(i).getString());
             }
             stagingInpatientCds.setMaternityDataDelivery(maternityDataObjs.toString());
-            stagingInpatientCds.setMaternityDataBirth(null);
         }
 
         inpatientCdsBatch.add(stagingInpatientCds);

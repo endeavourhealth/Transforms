@@ -184,7 +184,7 @@ public class InpatientCdsTargetTransformer {
             if (!Strings.isNullOrEmpty(targetInpatientCds.getMaternityDataBirth())) {
                 additionalObjs.addProperty("maternity_birth", targetInpatientCds.getMaternityDataBirth());
             }
-            if (!Strings.isNullOrEmpty(targetInpatientCds.getMaternityDataBirth())) {
+            if (!Strings.isNullOrEmpty(targetInpatientCds.getMaternityDataDelivery())) {
                 additionalObjs.addProperty("maternity_delivery", targetInpatientCds.getMaternityDataDelivery());
             }
             encounterInpatientEpisode.setAdditionalFieldsJson(additionalObjs.toString());
