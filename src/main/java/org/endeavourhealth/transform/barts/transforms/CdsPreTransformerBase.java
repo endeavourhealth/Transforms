@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import com.google.gson.JsonObject;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.*;
@@ -25,6 +26,11 @@ public abstract class CdsPreTransformerBase {
     private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
     private final static String BARTS_UNKNOWN_OPCS_CODE_Y926 = "Y92.6";
     private final static String BARTS_UNKNOWN_ICD10_CODE_Z669 = "Z66.9";
+
+    private final static String CDS_RECORD_TYPE_BIRTH = "120";
+    private final static String CDS_RECORD_TYPE_DELIVERY = "140";
+    private final static String CDS_RECORD_TYPE_GENERAL = "130";
+
     protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
                                          List<StagingProcedureCds> procedureBatch,
                                          List<StagingProcedureCdsCount> procedureCountBatch,
@@ -1520,6 +1526,41 @@ public abstract class CdsPreTransformerBase {
         }
         stagingInpatientCds.setOtherProceduresOPCS(parser.getAdditionalSecondaryProceduresOPCS().getString());
 
+        //TODO: process maternity data if that type and data present
+        String cdsRecordType = parser.getCDSRecordType().getString();
+        if (cdsRecordType.equalsIgnoreCase(CDS_RECORD_TYPE_BIRTH)) {
+
+            JsonObject maternityDataObjs = new JsonObject();
+            int babyNumber = 1;  //only a single baby for a birth record
+            maternityDataObjs.addProperty("birth_date", parser.getBabyBirthDate(babyNumber).getString());
+            maternityDataObjs.addProperty("birth_weight", parser.getBirthWeight(babyNumber).getString());
+            maternityDataObjs.addProperty("live_or_still_birth_indicator", parser.getLiveOrStillBirthIndicator(babyNumber).getString());
+            maternityDataObjs.addProperty("delivery_method", parser.getDeliveryMethod(babyNumber).getString());
+            maternityDataObjs.addProperty("gender", parser.getBabyGender(babyNumber).getString());
+            maternityDataObjs.addProperty("mother_nhs_number", parser.getMotherNHSNumber().getString());
+            stagingInpatientCds.setMaternityDataBirth(maternityDataObjs.toString());
+            stagingInpatientCds.setMaternityDataDelivery(null);
+
+        } else if (cdsRecordType.equalsIgnoreCase(CDS_RECORD_TYPE_DELIVERY)) {
+
+            //a delivery record may contain 1-9 baby records for the mother
+            JsonObject maternityDataObjs = new JsonObject();
+            int numberOfBabies = parser.getNumberOfBabies().getInt();
+            maternityDataObjs.addProperty("number_of_babies", numberOfBabies);
+            maternityDataObjs.addProperty("delivery_date", parser.getDeliveryDate().getString());
+
+            for (int i = 1; i <= numberOfBabies; i++) {
+                maternityDataObjs.addProperty("birth_date_"+i, parser.getBabyBirthDate(i).getString());
+                maternityDataObjs.addProperty("birth_weight_"+i, parser.getBirthWeight(i).getString());
+                maternityDataObjs.addProperty("live_or_still_birth_indicator_"+i, parser.getLiveOrStillBirthIndicator(i).getString());
+                maternityDataObjs.addProperty("delivery_method_"+i, parser.getDeliveryMethod(i).getString());
+                maternityDataObjs.addProperty("gender_"+i, parser.getBabyGender(i).getString());
+                maternityDataObjs.addProperty("baby_nhs_number", parser.getBabyNHSNumber(i).getString());
+            }
+            stagingInpatientCds.setMaternityDataDelivery(maternityDataObjs.toString());
+            stagingInpatientCds.setMaternityDataBirth(null);
+        }
+
         inpatientCdsBatch.add(stagingInpatientCds);
         saveInpatientCdsBatch(inpatientCdsBatch, false, csvHelper);
     }
@@ -1572,21 +1613,22 @@ public abstract class CdsPreTransformerBase {
         }
         stagingHomeDelBirthCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
 
-        stagingHomeDelBirthCds.setBirthWeight(parser.getBirthWeight().getString());
-        stagingHomeDelBirthCds.setLiveOrStillBirthIndicator(parser.getLiveOrStillBirthIndicator().getString());
-        stagingHomeDelBirthCds.setTotalPreviousPregnancies(parser.getTotalPreviousPregnancies().getString());
-
-        stagingHomeDelBirthCds.setNumberOfBabies(parser.getNumberOfBabies().getInt());
-        stagingHomeDelBirthCds.setFirstAntenatalAssessmentDate(parser.getFirstAntenatalAssessmentDate().getDate());
-        stagingHomeDelBirthCds.setAntenatalCarePractitioner(parser.getAntenatalCarePractitioner().getString());
-        stagingHomeDelBirthCds.setAntenatalCarePractice(parser.getAntenatalCarePractice().getString());
-        stagingHomeDelBirthCds.setDeliveryPlaceIntended(parser.getDeliveryPlaceTypeIntended().getString());
-        stagingHomeDelBirthCds.setDeliveryPlaceChangeReasonCode(parser.getDeliveryPlaceChangeReasonCode().getString());
-        stagingHomeDelBirthCds.setGestationLengthLabourOnset(parser.getGestationLengthLabourOnset().getString());
-        stagingHomeDelBirthCds.setDeliveryDate(parser.getDeliveryDate().getDate());
-        stagingHomeDelBirthCds.setDeliveryPlaceActual(parser.getDeliveryPlaceTypeActual().getString());
-        stagingHomeDelBirthCds.setDeliveryMethod(parser.getDeliveryMethod().getString());
-        stagingHomeDelBirthCds.setMotherNhsNumber(parser.getMotherNHSNumber().getString());
+        //todo - REDO INLINE WITH INPATIENT FORMAT
+//        stagingHomeDelBirthCds.setBirthWeight(parser.getBirthWeight().getString());
+//        stagingHomeDelBirthCds.setLiveOrStillBirthIndicator(parser.getLiveOrStillBirthIndicator().getString());
+//        stagingHomeDelBirthCds.setTotalPreviousPregnancies(parser.getTotalPreviousPregnancies().getString());
+//
+//        stagingHomeDelBirthCds.setNumberOfBabies(parser.getNumberOfBabies().getInt());
+//        stagingHomeDelBirthCds.setFirstAntenatalAssessmentDate(parser.getFirstAntenatalAssessmentDate().getDate());
+//        stagingHomeDelBirthCds.setAntenatalCarePractitioner(parser.getAntenatalCarePractitioner().getString());
+//        stagingHomeDelBirthCds.setAntenatalCarePractice(parser.getAntenatalCarePractice().getString());
+//        stagingHomeDelBirthCds.setDeliveryPlaceIntended(parser.getDeliveryPlaceTypeIntended().getString());
+//        stagingHomeDelBirthCds.setDeliveryPlaceChangeReasonCode(parser.getDeliveryPlaceChangeReasonCode().getString());
+//        stagingHomeDelBirthCds.setGestationLengthLabourOnset(parser.getGestationLengthLabourOnset().getString());
+//        stagingHomeDelBirthCds.setDeliveryDate(parser.getDeliveryDate().getDate());
+//        stagingHomeDelBirthCds.setDeliveryPlaceActual(parser.getDeliveryPlaceTypeActual().getString());
+//        stagingHomeDelBirthCds.setDeliveryMethod(parser.getDeliveryMethod().getString());
+//        stagingHomeDelBirthCds.setMotherNhsNumber(parser.getMotherNHSNumber().getString());
 
         homeDelBirthCdsBatch.add(stagingHomeDelBirthCds);
         saveHomeDelBirthCdsBatch(homeDelBirthCdsBatch, false, csvHelper);

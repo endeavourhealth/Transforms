@@ -22,6 +22,8 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
         return super.getCell("CDSUniqueIdentifier");
     }
 
+    public CsvCell getCDSRecordType()  { return super.getCell("CDSRecordType"); }
+
     public CsvCell getLocalPatientId() { return super.getCell("LocalPatientID");}
 
     public CsvCell getNhsNumber() { return super.getCell("NHSNumber");}
@@ -154,10 +156,6 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
         return super.getCell("TotalPreviousPregnancies");
     }
 
-    public CsvCell getNumberOfBabies()  {
-        return super.getCell("NumberofBabies");
-    }
-
     public CsvCell getFirstAntenatalAssessmentDate()  {
         return super.getCell("FirstAntenatalAssessmentDate");
     }
@@ -182,20 +180,31 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
         return super.getCell("GestationLengthLabourOnset");
     }
 
-    public CsvCell getDeliveryDate()  {
-        return super.getCell("DeliveryDate");
-    }
-
-    public CsvCell getMotherNHSNumber()  {
-        return super.getCell("MotherNHSNumber");
-    }
-
     public CsvCell getDeliveryMethod()  {
         return super.getCell("DeliveryMethod");
     }
 
     public CsvCell getDeliveryPlaceTypeActual()  {
         return super.getCell("DeliveryPlaceTypeActual");
+    }
+
+    // birth records, can be up to 9 based on NumberofBabies count
+    public CsvCell getNumberOfBabies()  {
+        return super.getCell("NumberofBabies");
+    }
+    public CsvCell getDeliveryDate()  {
+        return super.getCell("DeliveryDate");
+    }
+
+    public CsvCell getBirthOrder(int dataNumber) { return super.getCell("BirthOrder"+dataNumber);}
+    public CsvCell getDeliveryMethod(int dataNumber)  { return super.getCell("DeliveryMethod"+dataNumber); }
+    public CsvCell getBabyNHSNumber(int dataNumber)  { return super.getCell("BabyNHSNumber"+dataNumber); }
+    public CsvCell getBabyBirthDate(int dataNumber)  { return super.getCell("BabyBirthDate"+dataNumber); }
+    public CsvCell getBirthWeight(int dataNumber)  { return super.getCell("BirthWeight"+dataNumber); }
+    public CsvCell getLiveOrStillBirthIndicator(int dataNumber)  { return super.getCell("LiveOrStillBirthIndicator"+dataNumber); }
+    public CsvCell getBabyGender(int dataNumber)  { return super.getCell("PersonGenderCurrent"+dataNumber); }
+    public CsvCell getMotherNHSNumber()  {
+        return super.getCell("MotherNHSNumber");
     }
 
     @Override

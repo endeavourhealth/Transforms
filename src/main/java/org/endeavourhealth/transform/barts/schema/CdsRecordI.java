@@ -7,6 +7,7 @@ import java.text.DateFormat;
 
 public interface CdsRecordI {
 
+    CsvCell getCDSRecordType();
     CsvCell getPrimaryProcedureOPCS();
     CsvCell getWithheldFlag();
     CsvCell getCdsUniqueId();

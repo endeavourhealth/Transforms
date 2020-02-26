@@ -180,7 +180,13 @@ public class InpatientCdsTargetTransformer {
             if (!Strings.isNullOrEmpty(targetInpatientCds.getOtherProceduresOPCS())) {
                 additionalObjs.addProperty("other_procedures", targetInpatientCds.getOtherProceduresOPCS());
             }
-
+            //episode entry wil either have none, one or the other maternity json records
+            if (!Strings.isNullOrEmpty(targetInpatientCds.getMaternityDataBirth())) {
+                additionalObjs.addProperty("maternity_birth", targetInpatientCds.getMaternityDataBirth());
+            }
+            if (!Strings.isNullOrEmpty(targetInpatientCds.getMaternityDataBirth())) {
+                additionalObjs.addProperty("maternity_delivery", targetInpatientCds.getMaternityDataDelivery());
+            }
             encounterInpatientEpisode.setAdditionalFieldsJson(additionalObjs.toString());
 
             String encounterEpisodeInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInpatientEpisode);
@@ -215,7 +221,6 @@ public class InpatientCdsTargetTransformer {
                 String encounterDischargeDesc = "encounter-1-"+episodeNumber+"D";
                 compositionBuilder.addSection(encounterDischargeDesc, encounterInpatientDischarge.getEncounterId(), encounterInstanceAsJson);
             }
-
 
             //LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));
 
