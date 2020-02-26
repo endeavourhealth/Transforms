@@ -191,7 +191,7 @@ public class SusInpatient extends AbstractFixedParser implements CdsRecordI, Cds
     public CsvCell getBabyNHSNumber(int dataNumber)  { return super.getCell("BabyNHSNumber"+dataNumber); }
     public CsvCell getBabyBirthDate(int dataNumber)  { return super.getCell("BabyBirthDate"+dataNumber); }
     public CsvCell getBirthWeight(int dataNumber)  { return super.getCell("BirthWeight"+dataNumber); }
-    public CsvCell getLiveOrStillBirthIndicator(int dataNumber)  { return super.getCell("LiveOrStillBirthIndicator"+dataNumber); }
+    public CsvCell getLiveOrStillBirthIndicator(int dataNumber)  { return super.getCell("LiveOrStillBirth"+dataNumber); }
     public CsvCell getBabyGender(int dataNumber)  { return super.getCell("PersonGenderCurrent"+dataNumber); }
     public CsvCell getMotherNHSNumber()  {
         return super.getCell("MotherNHSNumber");
