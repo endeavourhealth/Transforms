@@ -1554,7 +1554,7 @@ public abstract class CdsPreTransformerBase {
                 maternityDataObjs.addProperty("live_or_still_birth_indicator_"+i, parser.getLiveOrStillBirthIndicator(i).getString());
                 maternityDataObjs.addProperty("delivery_method_"+i, parser.getDeliveryMethod(i).getString());
                 maternityDataObjs.addProperty("gender_"+i, parser.getBabyGender(i).getString());
-                maternityDataObjs.addProperty("baby_nhs_number", parser.getBabyNHSNumber(i).getString());
+                maternityDataObjs.addProperty("baby_nhs_number_"+i, parser.getBabyNHSNumber(i).getString());
             }
             stagingInpatientCds.setMaternityDataDelivery(maternityDataObjs.toString());
             stagingInpatientCds.setMaternityDataBirth(null);
