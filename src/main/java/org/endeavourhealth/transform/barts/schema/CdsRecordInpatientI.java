@@ -69,6 +69,9 @@ public interface CdsRecordInpatientI extends CdsRecordI {
     CsvCell getBabyNHSNumber(int dataNumber);
     CsvCell getBabyBirthDate(int dataNumber);
     CsvCell getBirthWeight(int dataNumber);
+    CsvCell getBirthWeight();
     CsvCell getLiveOrStillBirthIndicator(int dataNumber);
+    CsvCell getLiveOrStillBirthIndicator();
     CsvCell getBabyGender(int dataNumber);
+    CsvCell getPersonGender();
 }

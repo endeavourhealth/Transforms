@@ -203,6 +203,8 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
     public CsvCell getBirthWeight(int dataNumber)  { return super.getCell("BirthWeight"+dataNumber); }
     public CsvCell getLiveOrStillBirthIndicator(int dataNumber)  { return super.getCell("LiveOrStillBirthIndicator"+dataNumber); }
     public CsvCell getBabyGender(int dataNumber)  { return super.getCell("PersonGenderCurrent"+dataNumber); }
+    public CsvCell getPersonGender()  { return super.getCell("PersonCurrentGender"); }
+
     public CsvCell getMotherNHSNumber()  {
         return super.getCell("MotherNHSNumber");
     }

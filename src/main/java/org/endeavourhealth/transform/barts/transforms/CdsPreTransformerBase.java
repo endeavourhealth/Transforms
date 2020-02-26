@@ -1526,17 +1526,16 @@ public abstract class CdsPreTransformerBase {
         }
         stagingInpatientCds.setOtherProceduresOPCS(parser.getAdditionalSecondaryProceduresOPCS().getString());
 
-        //TODO: process maternity data if that type and data present
         String cdsRecordType = parser.getCDSRecordType().getString();
         if (cdsRecordType.equalsIgnoreCase(CDS_RECORD_TYPE_BIRTH)) {
 
+            //these records are not stored in delivery details, but other sections
             JsonObject maternityDataObjs = new JsonObject();
-            int babyNumber = 1;  //only a single baby for a birth record
-            maternityDataObjs.addProperty("birth_date", parser.getBabyBirthDate(babyNumber).getString());
-            maternityDataObjs.addProperty("birth_weight", parser.getBirthWeight(babyNumber).getString());
-            maternityDataObjs.addProperty("live_or_still_birth_indicator", parser.getLiveOrStillBirthIndicator(babyNumber).getString());
-            maternityDataObjs.addProperty("delivery_method", parser.getDeliveryMethod(babyNumber).getString());
-            maternityDataObjs.addProperty("gender", parser.getBabyGender(babyNumber).getString());
+            maternityDataObjs.addProperty("delivery_date", parser.getDeliveryDate().getString());
+            maternityDataObjs.addProperty("birth_weight", parser.getBirthWeight().getString());
+            maternityDataObjs.addProperty("live_or_still_birth_indicator", parser.getLiveOrStillBirthIndicator().getString());
+            maternityDataObjs.addProperty("delivery_method", parser.getDeliveryMethod(1).getString());
+            maternityDataObjs.addProperty("gender", parser.getPersonGender().getString());
             maternityDataObjs.addProperty("mother_nhs_number", parser.getMotherNHSNumber().getString());
             stagingInpatientCds.setMaternityDataBirth(maternityDataObjs.toString());
             stagingInpatientCds.setMaternityDataDelivery(null);
