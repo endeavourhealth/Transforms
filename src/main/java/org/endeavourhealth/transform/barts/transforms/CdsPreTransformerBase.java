@@ -1541,7 +1541,7 @@ public abstract class CdsPreTransformerBase {
 
         } else if (cdsRecordType.equalsIgnoreCase(CDS_RECORD_TYPE_DELIVERY)) {
 
-            if (parser.getNumberOfBabies() != null) {
+            if (!parser.getNumberOfBabies().isEmpty()) {
                 //a delivery record may contain 1-9 baby records for the mother
                 JsonObject maternityDataObjs = new JsonObject();
 
