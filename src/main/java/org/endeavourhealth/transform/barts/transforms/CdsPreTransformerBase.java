@@ -1541,21 +1541,28 @@ public abstract class CdsPreTransformerBase {
 
         } else if (cdsRecordType.equalsIgnoreCase(CDS_RECORD_TYPE_DELIVERY)) {
 
-            //a delivery record may contain 1-9 baby records for the mother
-            JsonObject maternityDataObjs = new JsonObject();
-            int numberOfBabies = parser.getNumberOfBabies().getInt();
-            maternityDataObjs.addProperty("number_of_babies", numberOfBabies);
-            maternityDataObjs.addProperty("delivery_date", parser.getDeliveryDate().getString());
+            if (parser.getNumberOfBabies() != null) {
+                //a delivery record may contain 1-9 baby records for the mother
+                JsonObject maternityDataObjs = new JsonObject();
 
-            for (int i = 1; i <= numberOfBabies; i++) {
-                maternityDataObjs.addProperty("birth_date_"+i, parser.getBabyBirthDate(i).getString());
-                maternityDataObjs.addProperty("birth_weight_"+i, parser.getBirthWeight(i).getString());
-                maternityDataObjs.addProperty("live_or_still_birth_indicator_"+i, parser.getLiveOrStillBirthIndicator(i).getString());
-                maternityDataObjs.addProperty("delivery_method_"+i, parser.getDeliveryMethod(i).getString());
-                maternityDataObjs.addProperty("gender_"+i, parser.getBabyGender(i).getString());
-                maternityDataObjs.addProperty("baby_nhs_number_"+i, parser.getBabyNHSNumber(i).getString());
+                int numberOfBabies = parser.getNumberOfBabies().getInt();
+
+                maternityDataObjs.addProperty("number_of_babies", numberOfBabies);
+                maternityDataObjs.addProperty("delivery_date", parser.getDeliveryDate().getString());
+
+                for (int i = 1; i <= numberOfBabies; i++) {
+                    maternityDataObjs.addProperty("birth_date_" + i, parser.getBabyBirthDate(i).getString());
+                    maternityDataObjs.addProperty("birth_weight_" + i, parser.getBirthWeight(i).getString());
+                    maternityDataObjs.addProperty("live_or_still_birth_indicator_" + i, parser.getLiveOrStillBirthIndicator(i).getString());
+                    maternityDataObjs.addProperty("delivery_method_" + i, parser.getDeliveryMethod(i).getString());
+                    maternityDataObjs.addProperty("gender_" + i, parser.getBabyGender(i).getString());
+                    maternityDataObjs.addProperty("baby_nhs_number_" + i, parser.getBabyNHSNumber(i).getString());
+                }
+                stagingInpatientCds.setMaternityDataDelivery(maternityDataObjs.toString());
+            } else {
+
+                TransformWarnings.log(LOG, csvHelper, "Inpatient CDS Maternity Delivery record id {} with no baby records", parser.getCdsUniqueId());
             }
-            stagingInpatientCds.setMaternityDataDelivery(maternityDataObjs.toString());
         }
 
         inpatientCdsBatch.add(stagingInpatientCds);
