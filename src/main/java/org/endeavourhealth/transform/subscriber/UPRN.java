@@ -49,7 +49,7 @@ public class UPRN {
 		String token = "";
 
 		try {
-			// String encoded = "password=X%26y8_WmRKj%25Z4CBT&username=uprn&client_id=uprn&grant_type=password";
+			
 			String encoded = "password=" + password + "&username=" + username + "&client_id=" + clientid + "&grant_type=password";
 
 			// URL obj = new URL("https://www.discoverydataservice.net/auth/realms/endeavour-machine/protocol/openid-connect/token");
