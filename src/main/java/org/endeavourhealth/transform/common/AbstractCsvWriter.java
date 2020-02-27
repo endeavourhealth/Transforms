@@ -19,6 +19,7 @@ public abstract class AbstractCsvWriter {
     private final CSVFormat csvFormat;
     private final DateFormat dateFormat;
     private final DateFormat timeFormat;
+    private final DateFormat dateTimeFormat;
 
     private ByteArrayOutputStream byteOutput = null;
     private CSVPrinter csvPrinter;
@@ -30,6 +31,7 @@ public abstract class AbstractCsvWriter {
         this.csvFormat = csvFormat;
         this.dateFormat = new SimpleDateFormat(dateFormat);
         this.timeFormat = new SimpleDateFormat(timeFormat);
+        this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
         this.rowCount = 0;
     }
 
@@ -85,6 +87,14 @@ public abstract class AbstractCsvWriter {
             return null;
         } else {
             return i.toString();
+        }
+    }
+
+    protected synchronized String convertDateTime(Date d) {
+        if (d == null) {
+            return null;
+        } else {
+            return new SimpleDateFormat("yyyy-MM-dd kk:mm:ss").format(d);
         }
     }
 

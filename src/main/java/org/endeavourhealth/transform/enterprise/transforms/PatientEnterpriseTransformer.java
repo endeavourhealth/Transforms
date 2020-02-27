@@ -36,8 +36,12 @@ import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
+
+import org.endeavourhealth.transform.subscriber.UPRN;
+import org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch;
 
 public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientEnterpriseTransformer.class);
@@ -56,6 +60,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
     //private static byte[] saltBytes = null;
     //private static ResourceRepository resourceRepository = new ResourceRepository();
 
+    public static String uprn_token = "";
+
     @Override
     protected ResourceType getExpectedResourceType() {
         return ResourceType.Patient;
@@ -65,6 +71,95 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         return true;
     }
 
+    public void UPRN(Patient fhirPatient, long id, long personId,  AbstractEnterpriseCsvWriter csvWriter)  throws Exception {
+        if (!fhirPatient.hasAddress()) {return;}
+
+        Iterator var2 = fhirPatient.getAddress().iterator();
+        String adrec = "";
+
+        JsonNode config = ConfigManager.getConfigurationAsJson("UPRN", "db_enterprise");
+        if (config==null) {return;}
+
+        // call the UPRN API
+        JsonNode token_endpoint=config.get("token_endpoint");
+        JsonNode clientid = config.get("clientid");
+        JsonNode password = config.get("password");
+        JsonNode username = config.get("username");
+
+        JsonNode uprn_endpoint = config.get("uprn_endpoint");
+
+        uprn_token = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
+
+        org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch uprnWriter = (org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch)csvWriter;
+
+        while (true) {
+            Address address;
+            if (!var2.hasNext()) {break;}
+            address = (Address) var2.next();
+            adrec = AddressHelper.generateDisplayText(address);
+            LOG.debug(adrec);
+
+            String csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
+
+            // token time out?
+            if (csv.isEmpty()) {
+                UPRN.uprn_token="";
+                uprn_token = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
+                csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
+                if (csv.isEmpty()) {
+                    LOG.debug("Unable to get address from UPRN API");
+                    return;
+                }
+            }
+
+            String[] ss = csv.split("\\~",-1);
+            String sLat=ss[14]; String sLong = ss[15]; String sX=ss[17]; String sY=ss[18]; String sClass = ss[19]; String sQuality = ss[7];
+
+            String sUprn = ss[20];
+            Long luprn=new Long(0);
+            if (!sUprn.isEmpty()) {luprn = new Long(sUprn);}
+
+            BigDecimal lat = new BigDecimal(0);
+            if (!sLat.isEmpty()) {lat=new BigDecimal(sLat);}
+
+            BigDecimal longitude = new BigDecimal(0);
+            if (!sLong.isEmpty()) {longitude=new BigDecimal(sLong);}
+
+            BigDecimal x = new BigDecimal(0);
+            if (!sX.isEmpty()) {x = new BigDecimal(sX);}
+
+            BigDecimal y = new BigDecimal(0);
+            if (!sY.isEmpty()) {y = new BigDecimal(sY);}
+
+            Date match_date = new Date();
+
+            uprnWriter.writeUpsert(id,
+                    personId,
+                    luprn,
+                    1, // status
+                    sClass,
+                    lat,
+                    longitude,
+                    x,
+                    y,
+                    sQuality,
+                    ss[6],
+                    match_date,
+                    ss[1], // number
+                    ss[4], // street
+                    ss[0], // locality
+                    ss[5], // town
+                    ss[3], // postcode
+                    ss[2], // org
+                    ss[11], // match post
+                    ss[12], // match street
+                    ss[10], // match number
+                    ss[8], // match building
+                    ss[9], // match flat
+                    "", // alg_version
+                    ""); // epoc
+        }
+    }
 
     protected void transformResource(Long enterpriseId,
                                      ResourceWrapper resourceWrapper,
@@ -267,6 +362,9 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                     localAuthorityCode,
                     registeredPracticeId);
         }
+
+        PatientAddressMatch uprnwriter = params.getOutputContainer().findCsvWriter(PatientAddressMatch.class);
+        UPRN(fhirPatient, id, personId, uprnwriter);
     }
 
 

@@ -31,14 +31,18 @@ import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.PatientAddress;
+import org.endeavourhealth.transform.subscriber.targetTables.PatientAddressMatch;
 import org.endeavourhealth.transform.subscriber.targetTables.PatientContact;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
+
+import org.endeavourhealth.transform.subscriber.UPRN;
 
 public class PatientTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
@@ -46,6 +50,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     public static final String PREFIX_PSEUDO_ID = "-PSEUDO-";
     private static final String PREFIX_ADDRESS_ID = "-ADDR-";
     private static final String PREFIX_TELECOM_ID = "-TELECOM-";
+    private static final String PREFIX_ADDRESS_MATCH_ID = "-ADDRMATCH-";
 
     /*private static final String PSEUDO_KEY_NHS_NUMBER = "NHSNumber";
     private static final String PSEUDO_KEY_PATIENT_NUMBER = "PatientNumber";
@@ -61,6 +66,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     //private static byte[] saltBytes = null;
     //private static ResourceRepository resourceRepository = new ResourceRepository();
 
+    public static String uprn_token = "";
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -352,6 +358,110 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 writer.writeDelete(subTableId);
             }
         }
+    }
+
+    private void UPRN(SubscriberTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode) throws Exception {
+
+        JsonNode config = ConfigManager.getConfigurationAsJson("UPRN", "db_subscriber");
+        if (config==null) {return;}
+
+        //JsonNode enabled = config.get("enabled");
+        //if (enabled.asText().equals("0")) {return;}
+
+        String uprn_sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_MATCH_ID + i;
+        SubscriberId uprn_subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS_MATCH, uprn_sourceId); // was sourceId
+
+        params.setSubscriberIdTransformed(resourceWrapper, uprn_subTableId);
+
+        // call the UPRN API
+        JsonNode token_endpoint=config.get("token_endpoint");
+        JsonNode clientid = config.get("clientid");
+        JsonNode password = config.get("password");
+        JsonNode username = config.get("username");
+
+        JsonNode uprn_endpoint = config.get("uprn_endpoint");
+
+        uprn_token = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
+
+        if (addressLine1==null) {addressLine1="";}
+        if (addressLine2==null) {addressLine2="";}
+        if (addressLine3==null) {addressLine3="";}
+        if (addressLine4==null) {addressLine4="";}
+        if (city==null) {city="";}
+        if (postcode==null) {postcode="";}
+
+        String adrec = addressLine1+","+addressLine2+","+addressLine3+","+addressLine4+","+city+","+postcode;
+
+        // debug
+        // adrec="201,Darkes Lane,Potters Bar,EN6 1BX";
+
+        String csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
+        // token time out?
+        if (csv.isEmpty()) {
+            UPRN.uprn_token="";
+            // get another token
+            uprn_token = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
+            csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
+            if (csv.isEmpty()) {
+                LOG.debug("Unable to get address from UPRN API");
+                return;
+            }
+        }
+
+        PatientAddressMatch uprnwriter = params.getOutputContainer().getPatientAddressMatch();
+
+        Date match_date = new Date();
+
+        String[] ss = csv.split("\\~",-1);
+
+        // 0=locality, 1=number, 2=org, 3=postcode, 4=street, 5=town, 6=alg, 7=qual
+        // 8=matpatbuild, 9=matpatflat, 10=matpatnumber, 11=matpatpostcode, 12=matpatstreet
+        // 13=quality, 14=latitude, 15=longitude, 16=point
+        // 17=X, 18=Y, 19=class, 20=uprn
+
+        String sLat=ss[14]; String sLong = ss[15]; String sX=ss[17]; String sY=ss[18]; String sClass = ss[19]; String sQuality = ss[7];
+
+        String sUprn = ss[20];
+        Long luprn=new Long(0);
+        if (!sUprn.isEmpty()) {luprn = new Long(sUprn);}
+
+        BigDecimal lat = new BigDecimal(0);
+        if (!sLat.isEmpty()) {lat=new BigDecimal(sLat);}
+
+        BigDecimal longitude = new BigDecimal(0);
+        if (!sLong.isEmpty()) {longitude=new BigDecimal(sLong);}
+
+        BigDecimal x = new BigDecimal(0);
+        if (!sX.isEmpty()) {x = new BigDecimal(sX);}
+
+        BigDecimal y = new BigDecimal(0);
+        if (!sY.isEmpty()) {y = new BigDecimal(sY);}
+
+        uprnwriter.writeUpsert(uprn_subTableId,
+                subTableId.getSubscriberId(),
+                luprn,
+                1, // status
+                sClass,
+                lat,
+                longitude,
+                x,
+                y,
+                sQuality,
+                ss[6],
+                match_date, // match_date
+                ss[1], // number
+                ss[4], // street
+                ss[0], // locality
+                ss[5], // town
+                ss[3], // postcode
+                ss[2], // org
+                ss[11], // match post
+                ss[12], // match street
+                ss[10], // match number
+                ss[8], // match building
+                ss[9], // match flat
+                "", // alg version ** TO DO
+                ""); // epoc ** TO DO
     }
 
     private Long transformAddresses(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
