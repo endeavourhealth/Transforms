@@ -22,6 +22,7 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisMissingC
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.CodeNotFoundException;
+import org.endeavourhealth.core.exceptions.CodeType;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
@@ -174,16 +175,15 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             ret = mappingRepository.getCodeMapping(false, codeIdCell.getLong());
             if (ret == null) {
                 LOG.info("Clinical CodeMap value not found " + codeIdCell.getLong() + " for Record Number " + codeIdCell.getRecordNumber());
-                throw new CodeNotFoundException(codeIdCell.getLong(),"Clinical code value not found");
+                throw new CodeNotFoundException(codeIdCell.getLong(), CodeType.CLINICAL_CODE, "Clinical code not found");
             }
             clinicalCodes.put(codeIdCell.getLong(), ret);
         }
         return ret;
     }
 
-    public void saveErrorRecords(EmisMissingCodes errorCodeValues) throws Exception{
+    public void saveErrorRecords(EmisMissingCodes errorCodeValues) throws Exception {
         mappingRepository.saveErrorRecords(errorCodeValues);
-
     }
 
     public ClinicalCodeType findClinicalCodeType(CsvCell codeIdCell) throws Exception {
@@ -203,7 +203,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
              }*/
             if (ret == null) {
                 LOG.info("Drug code Map value not found " + codeIdCell.getLong() + " for Record Number " + codeIdCell.getRecordNumber());
-                throw new CodeNotFoundException(codeIdCell.getLong(),"Drug code value not found");
+                throw new CodeNotFoundException(codeIdCell.getLong(), CodeType.DRUG_CODE, "Drug code not found");
             }
             medication.put(codeIdCell.getLong(), ret);
         }
@@ -1362,16 +1362,16 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     /**
      * To log the missing Clinical/Drug codeIds into the table.
      */
-    public void logErrorRecord(CodeNotFoundException rex, CsvCell patientRecordGuid, CsvCell recordGuid, String errorRecclassName) throws Exception{
+    public void logErrorRecord(CodeNotFoundException rex, CsvCell patientRecordGuid, CsvCell recordGuid, String errorRecclassName) throws Exception {
 
         EmisMissingCodes errorCodeObj = new EmisMissingCodes();
-        errorCodeObj.setCodeId(rex.getCodeValue());
+        errorCodeObj.setCodeId(rex.getCode());
         errorCodeObj.setExchangeId(getExchangeId().toString());
         errorCodeObj.setServiceId(getServiceId().toString());
         errorCodeObj.setPatientGuid(patientRecordGuid.getString());
         errorCodeObj.setRecordGuid(recordGuid.getString());
         errorCodeObj.setErrorRecclassName(errorRecclassName);
-       saveErrorRecords(errorCodeObj);
-   }
-
+        errorCodeObj.setCodeType(rex.getCodeValue());
+        saveErrorRecords(errorCodeObj);
+    }
 }
