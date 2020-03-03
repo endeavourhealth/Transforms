@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.exceptions.RecordNotFoundException;
 import org.endeavourhealth.core.terminology.Read2;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
@@ -32,11 +33,8 @@ public class ObservationTransformer {
 
         AbstractCsvParser parser = parsers.get(Observation.class);
         while (parser != null && parser.nextRecord()) {
-
             try {
-
-                Observation observationParser = (Observation)parser;
-
+                Observation observationParser = (Observation) parser;
                 //if it's deleted we need to look up what the original resource type was before we can do the delete
                 CsvCell deleted = observationParser.getDeleted();
                 if (deleted.getBoolean()) {
@@ -44,8 +42,11 @@ public class ObservationTransformer {
                 } else {
                     createResource(observationParser, fhirResourceFiler, csvHelper);
                 }
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+            } catch (RecordNotFoundException ex) {
+                String codeIdString= ex.getMessage();
+                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
+                codeIdString = codeIdString.contains(":") ? codeIdString.split(":")[1] :codeIdString;
+                csvHelper.logErrorRecord(Long.parseLong(codeIdString), ((Observation) parser).getPatientGuid(), ((Observation) parser).getObservationGuid(),errorRecClsName);
             }
         }
 
@@ -207,8 +208,11 @@ public class ObservationTransformer {
                                                      EmisCsvHelper csvHelper) throws Exception {
 
         CsvCell codeId = parser.getCodeId();
+        CsvCell patientGuid = parser.getPatientGuid();
+        CsvCell observationGuid = parser.getObservationGuid();
         ClinicalCodeType codeType = csvHelper.findClinicalCodeType(codeId);
         CsvCell value = parser.getValue();
+
 
         if (!value.isEmpty()
             || codeType == ClinicalCodeType.Biochemistry
@@ -258,9 +262,9 @@ public class ObservationTransformer {
 
         } else if (codeType == ClinicalCodeType.Conditions_Operations_Procedures) {
 
-            if (isProcedure(codeId, csvHelper)) {
+            if (isProcedure(codeId, csvHelper,patientGuid,observationGuid)) {
                 return ResourceType.Procedure;
-            } else if (isDisorder(codeId, csvHelper)) {
+            } else if (isDisorder(codeId, csvHelper,patientGuid,observationGuid)) {
                 return ResourceType.Condition;
             } else {
                 return ResourceType.Observation;
@@ -304,7 +308,7 @@ public class ObservationTransformer {
         }
     }
 
-    private static boolean isDisorder(CsvCell codeIdCell, EmisCsvHelper csvHelper) throws Exception {
+    private static boolean isDisorder(CsvCell codeIdCell, EmisCsvHelper csvHelper,CsvCell patientGuid, CsvCell observationGuid) throws Exception {
 
         EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeIdCell);
         String system = codeMapping.getCodeableConceptSystem();
@@ -335,6 +339,8 @@ public class ObservationTransformer {
 
         //if we pass the above checks, then check what kind of code it is. If one of the below types, then store as a report.
         CsvCell codeIdCell = parser.getCodeId();
+        CsvCell patientGuidCell = parser.getPatientGuid();
+        CsvCell observationGuidCell = parser.getObservationGuid();
         ClinicalCodeType codeType = csvHelper.findClinicalCodeType(codeIdCell);
         return codeType == ClinicalCodeType.Biochemistry
             || codeType == ClinicalCodeType.Cyology_Histology
@@ -346,7 +352,7 @@ public class ObservationTransformer {
     }
 
     private static boolean isProcedure(CsvCell codeIdCell,
-                                       EmisCsvHelper csvHelper) throws Exception {
+                                       EmisCsvHelper csvHelper, CsvCell patientGuid ,CsvCell observationGuid) throws Exception {
 
         EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeIdCell);
 

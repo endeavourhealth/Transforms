@@ -1,13 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.core.exceptions.RecordNotFoundException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
@@ -28,12 +30,13 @@ public class DrugRecordTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(DrugRecord.class);
-        while (parser != null && parser.nextRecord()) {
 
-            try {
+        while (parser != null && parser.nextRecord()) {
+           try {
                 createResource((DrugRecord)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+            } catch (RecordNotFoundException ex) {
+                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
+                csvHelper.logErrorRecord( ((DrugRecord) parser).getCodeId().getLong(),((DrugRecord) parser).getPatientGuid(), ((DrugRecord) parser).getDrugRecordGuid(),errorRecClsName);
             }
         }
 

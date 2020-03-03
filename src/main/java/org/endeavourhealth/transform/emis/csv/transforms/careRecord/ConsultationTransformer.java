@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.exceptions.RecordNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -33,9 +34,12 @@ public class ConsultationTransformer {
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((Consultation)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                createResource((Consultation) parser, fhirResourceFiler, csvHelper);
+            } catch (RecordNotFoundException ex) {
+                String codeIdString= ex.getMessage();
+                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
+                codeIdString = codeIdString.contains(":") ? codeIdString.split(":")[1] :codeIdString;
+                csvHelper.logErrorRecord(Long.parseLong(codeIdString), ((Consultation) parser).getPatientGuid(), ((Consultation) parser).getConsultationGuid(),errorRecClsName);
             }
         }
 

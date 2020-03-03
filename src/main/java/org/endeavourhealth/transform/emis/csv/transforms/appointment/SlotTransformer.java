@@ -1,10 +1,8 @@
 package org.endeavourhealth.transform.emis.csv.transforms.appointment;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
+import org.endeavourhealth.core.exceptions.RecordNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -29,14 +27,17 @@ public class SlotTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(Slot.class);
-        while (parser != null && parser.nextRecord()) {
-
-            try {
-                createSlotAndAppointment((Slot)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+           while (parser != null && parser.nextRecord()) {
+                try {
+                    createSlotAndAppointment((Slot) parser, fhirResourceFiler, csvHelper);
+                } catch (RecordNotFoundException ex) {
+                    String codeIdString= ex.getMessage();
+                    String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
+                    codeIdString = codeIdString.contains(":") ? codeIdString.split(":")[1] :codeIdString;
+                     csvHelper.logErrorRecord(Long.parseLong(codeIdString), ((Slot) parser).getPatientGuid(), ((Slot) parser).getSlotGuid(),errorRecClsName);
+                }
             }
-        }
+
 
         //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
@@ -48,6 +49,7 @@ public class SlotTransformer {
 
         CsvCell slotGuid = parser.getSlotGuid();
         CsvCell patientGuid = parser.getPatientGuid();
+
 
         //the slots CSV contains data on empty slots too; ignore them
         if (patientGuid.isEmpty()) {

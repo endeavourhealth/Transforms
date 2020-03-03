@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class ClinicalCodeTransformer {
@@ -44,12 +43,13 @@ public abstract class ClinicalCodeTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         try {
+
             List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
-
             AbstractCsvParser parser = parsers.get(ClinicalCode.class);
-            while (parser != null && parser.nextRecord()) {
 
-                //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
+
+            while (parser != null && parser.nextRecord()) {
+                 //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
                 //to parse any record in this file it a critical error
                 try {
                     transform((ClinicalCode)parser, fhirResourceFiler, csvHelper, mappingsToSave);

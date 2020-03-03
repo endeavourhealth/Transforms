@@ -34,12 +34,10 @@ public class DrugCodeTransformer {
         //to parse any record in this file it a critical error
         try {
             List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
-
             AbstractCsvParser parser = parsers.get(DrugCode.class);
-            while (parser != null && parser.nextRecord()) {
-
+          while (parser != null && parser.nextRecord()) {
                 try {
-                    transform((DrugCode)parser, fhirResourceFiler, csvHelper, mappingsToSave);
+                    transform((DrugCode) parser, fhirResourceFiler, csvHelper, mappingsToSave);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -116,7 +114,7 @@ public class DrugCodeTransformer {
 
             } catch (Throwable t) {
                 String msg = "Error saving drug code records for code IDs ";
-                for (EmisCsvCodeMap mapping: mappings) {
+                for (EmisCsvCodeMap mapping : mappings) {
                     msg += mapping.getCodeId();
                     msg += ", ";
                 }

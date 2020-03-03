@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
+import org.endeavourhealth.core.exceptions.RecordNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -28,12 +29,14 @@ public class IssueRecordTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(IssueRecord.class);
+        IssueRecord parseRec = (IssueRecord) parser;
         while (parser != null && parser.nextRecord()) {
 
             try {
                 createResource((IssueRecord)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+            } catch (RecordNotFoundException ex) {
+                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
+                csvHelper.logErrorRecord(((IssueRecord) parser).getCodeId().getLong(), ((IssueRecord) parser).getPatientGuid(), ((IssueRecord) parser).getIssueRecordGuid(),errorRecClsName);
             }
         }
 

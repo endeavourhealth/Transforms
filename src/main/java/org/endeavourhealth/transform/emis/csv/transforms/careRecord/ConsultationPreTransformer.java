@@ -1,11 +1,14 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
+import org.endeavourhealth.core.exceptions.RecordNotFoundException;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.schema.appointment.Slot;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Consultation;
+import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -24,7 +27,7 @@ public class ConsultationPreTransformer {
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
-        try {
+  /* Manju      try {
             AbstractCsvParser parser = parsers.get(Consultation.class);
             while (parser != null && parser.nextRecord()) {
 
@@ -37,7 +40,28 @@ public class ConsultationPreTransformer {
 
         } finally {
             csvHelper.waitUntilThreadPoolIsEmpty();
+        } Manju */
+
+        try {
+            AbstractCsvParser parser = parsers.get(Consultation.class);
+             while (parser != null && parser.nextRecord()) {
+
+                try {
+                    processRecord((Consultation)parser, fhirResourceFiler, csvHelper);
+                } catch (RecordNotFoundException ex) {
+                    String codeIdString= ex.getMessage();
+                    String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
+                    codeIdString = codeIdString.contains(":") ? codeIdString.split(":")[1] :codeIdString;
+                    csvHelper.logErrorRecord(Long.parseLong(codeIdString), ((Consultation) parser).getPatientGuid(),((Consultation) parser).getConsultationGuid(),errorRecClsName);
+
+                }
+            }
+
+        } finally {
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
+
+
     }
 
     public static void processRecord(Consultation parser,

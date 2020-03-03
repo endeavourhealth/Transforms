@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.exceptions.RecordNotFoundException;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -30,8 +31,12 @@ public class ObservationPreTransformer {
 
             try {
                 processLine((Observation)parser, csvHelper, fhirResourceFiler);
-            } catch (Exception ex) {
-                throw new TransformException(parser.getCurrentState().toString(), ex);
+
+            } catch (RecordNotFoundException ex) {
+                String codeIdString= ex.getMessage();
+                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
+                codeIdString = codeIdString.contains(":") ? codeIdString.split(":")[1] :codeIdString;
+                csvHelper.logErrorRecord(Long.parseLong(codeIdString),((Observation) parser).getPatientGuid(),((Observation) parser).getObservationGuid(),errorRecClsName);
             }
         }
 
@@ -51,7 +56,7 @@ public class ObservationPreTransformer {
         //the test pack has non-deleted rows with missing CodeIds, so skip these rows
         if ((parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
                 || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1))
-            && parser.getCodeId().isEmpty()) {
+                && parser.getCodeId().isEmpty()) {
             return;
         }
 

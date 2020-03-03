@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
+import org.endeavourhealth.core.exceptions.RecordNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -23,13 +24,17 @@ public class DiaryTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Diary.class);
-        while (parser != null && parser.nextRecord()) {
+       AbstractCsvParser parser = parsers.get(Diary.class);
+      while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((Diary)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                createResource((Diary) parser, fhirResourceFiler, csvHelper);
+            } catch (RecordNotFoundException ex) {
+                String codeIdString= ex.getMessage();
+                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
+                codeIdString = codeIdString.contains(":") ? codeIdString.split(":")[1] :codeIdString;
+                System.out.println("CodeIdStringValue " + codeIdString);
+                csvHelper.logErrorRecord(Long.parseLong(codeIdString),((Diary) parser).getPatientGuid(),((Diary) parser).getDiaryGuid(),errorRecClsName);
             }
         }
 
