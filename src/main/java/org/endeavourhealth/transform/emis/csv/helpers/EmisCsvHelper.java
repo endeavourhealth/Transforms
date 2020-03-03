@@ -1,6 +1,9 @@
 package org.endeavourhealth.transform.emis.csv.helpers;
 
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -15,8 +18,10 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisMissingCodes;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.core.exceptions.RecordNotFoundException;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
@@ -34,6 +39,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+
+
 
 public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCsvHelper.class);
@@ -161,20 +168,22 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }*/
 
 
-
-
-
     public EmisCsvCodeMap findClinicalCode(CsvCell codeIdCell) throws Exception {
         EmisCsvCodeMap ret = clinicalCodes.get(codeIdCell.getLong());
         if (ret == null) {
             ret = mappingRepository.getCodeMapping(false, codeIdCell.getLong());
             if (ret == null) {
-                throw new Exception("Failed to find clinical code for codeId " + codeIdCell.getLong());
+                LOG.info("Clinical CodeMap value not found " + codeIdCell.getLong() + " Record Number " + codeIdCell.getRecordNumber());
+                throw new RecordNotFoundException(codeIdCell.getString());
             }
             clinicalCodes.put(codeIdCell.getLong(), ret);
         }
-
         return ret;
+    }
+
+    public void saveErrorRecords(EmisMissingCodes errorCodeValues) throws Exception{
+        mappingRepository.saveErrorRecords(errorCodeValues);
+
     }
 
     public ClinicalCodeType findClinicalCodeType(CsvCell codeIdCell) throws Exception {
@@ -189,8 +198,11 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         EmisCsvCodeMap ret = medication.get(codeIdCell.getLong());
         if (ret == null) {
             ret = mappingRepository.getCodeMapping(true, codeIdCell.getLong());
-            if (ret == null) {
+            /**if (ret == null) {
                 throw new Exception("Failed to find drug code for codeId " + codeIdCell.getLong());
+            }*/
+            if (ret == null) {
+                throw new RecordNotFoundException(codeIdCell.getString());
             }
             medication.put(codeIdCell.getLong(), ret);
         }
@@ -1346,4 +1358,21 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
         return cachedDataDate;
     }
+
+    /**
+     * To log the missing Clinical/Drug codeIds into the table.
+     */
+    public void logErrorRecord(Long codeId,CsvCell patientRecordGuid,CsvCell recordGuid, String errorRecclassName) throws Exception{
+
+        EmisMissingCodes errorCodeObj = new EmisMissingCodes();
+
+        errorCodeObj.setCodeId(codeId);
+        errorCodeObj.setExchangeId(getExchangeId().toString());
+        errorCodeObj.setServiceId(getServiceId().toString());
+        errorCodeObj.setPatientGuid(patientRecordGuid.getString());
+        errorCodeObj.setRecordGuid(recordGuid.getString());
+        errorCodeObj.setErrorRecclassName(errorRecclassName);
+       saveErrorRecords(errorCodeObj);
+   }
+
 }
