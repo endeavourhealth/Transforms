@@ -5,7 +5,7 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
-import org.endeavourhealth.core.exceptions.RecordNotFoundException;
+import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.core.terminology.Read2;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
@@ -42,11 +42,9 @@ public class ObservationTransformer {
                 } else {
                     createResource(observationParser, fhirResourceFiler, csvHelper);
                 }
-            } catch (RecordNotFoundException ex) {
-                String codeIdString= ex.getMessage();
+            } catch (CodeNotFoundException ex) {
                 String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                codeIdString = codeIdString.contains(":") ? codeIdString.split(":")[1] :codeIdString;
-                csvHelper.logErrorRecord(Long.parseLong(codeIdString), ((Observation) parser).getPatientGuid(), ((Observation) parser).getObservationGuid(),errorRecClsName);
+                csvHelper.logErrorRecord(ex, ((Observation) parser).getPatientGuid(), ((Observation) parser).getObservationGuid(),errorRecClsName);
             }
         }
 

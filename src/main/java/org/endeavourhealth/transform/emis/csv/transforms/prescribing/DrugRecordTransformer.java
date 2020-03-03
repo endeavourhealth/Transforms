@@ -5,7 +5,7 @@ import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.exceptions.RecordNotFoundException;
+import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -30,13 +30,12 @@ public class DrugRecordTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(DrugRecord.class);
-
         while (parser != null && parser.nextRecord()) {
-           try {
-                createResource((DrugRecord)parser, fhirResourceFiler, csvHelper);
-            } catch (RecordNotFoundException ex) {
+            try {
+                createResource((DrugRecord) parser, fhirResourceFiler, csvHelper);
+            } catch (CodeNotFoundException ex) {
                 String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                csvHelper.logErrorRecord( ((DrugRecord) parser).getCodeId().getLong(),((DrugRecord) parser).getPatientGuid(), ((DrugRecord) parser).getDrugRecordGuid(),errorRecClsName);
+                csvHelper.logErrorRecord(ex, ((DrugRecord) parser).getPatientGuid(), ((DrugRecord) parser).getDrugRecordGuid(), errorRecClsName);
             }
         }
 

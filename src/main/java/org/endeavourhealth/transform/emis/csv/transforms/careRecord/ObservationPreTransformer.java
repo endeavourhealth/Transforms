@@ -1,13 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
-import org.endeavourhealth.core.exceptions.RecordNotFoundException;
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.helpers.*;
+import org.endeavourhealth.transform.emis.csv.helpers.BpComponent;
+import org.endeavourhealth.transform.emis.csv.helpers.CodeAndDate;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -28,15 +30,11 @@ public class ObservationPreTransformer {
         //to parse any record in this file it a critical error
         AbstractCsvParser parser = parsers.get(Observation.class);
         while (parser != null && parser.nextRecord()) {
-
-            try {
+         try {
                 processLine((Observation)parser, csvHelper, fhirResourceFiler);
-
-            } catch (RecordNotFoundException ex) {
-                String codeIdString= ex.getMessage();
-                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                codeIdString = codeIdString.contains(":") ? codeIdString.split(":")[1] :codeIdString;
-                csvHelper.logErrorRecord(Long.parseLong(codeIdString),((Observation) parser).getPatientGuid(),((Observation) parser).getObservationGuid(),errorRecClsName);
+           } catch (CodeNotFoundException ex) {
+               String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
+               csvHelper.logErrorRecord(ex,((Observation) parser).getPatientGuid(),((Observation) parser).getObservationGuid(),errorRecClsName);
             }
         }
 
@@ -44,7 +42,6 @@ public class ObservationPreTransformer {
         //so call this to remove the unnecessary ones and free up some memory
         csvHelper.pruneUnnecessaryParentObservationResourceTypes();
     }
-
 
     private static void processLine(Observation parser, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 

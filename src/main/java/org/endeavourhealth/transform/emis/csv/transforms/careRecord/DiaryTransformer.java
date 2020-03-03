@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.core.exceptions.RecordNotFoundException;
+import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -29,12 +29,9 @@ public class DiaryTransformer {
 
             try {
                 createResource((Diary) parser, fhirResourceFiler, csvHelper);
-            } catch (RecordNotFoundException ex) {
-                String codeIdString= ex.getMessage();
+            } catch (CodeNotFoundException ex) {
                 String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                codeIdString = codeIdString.contains(":") ? codeIdString.split(":")[1] :codeIdString;
-                System.out.println("CodeIdStringValue " + codeIdString);
-                csvHelper.logErrorRecord(Long.parseLong(codeIdString),((Diary) parser).getPatientGuid(),((Diary) parser).getDiaryGuid(),errorRecClsName);
+                csvHelper.logErrorRecord(ex,((Diary) parser).getPatientGuid(),((Diary) parser).getDiaryGuid(),errorRecClsName);
             }
         }
 

@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
-import org.endeavourhealth.core.exceptions.RecordNotFoundException;
+import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -21,16 +21,14 @@ public class DrugRecordPreTransformer {
         AbstractCsvParser parser = parsers.get(DrugRecord.class);
 
         while (parser != null && parser.nextRecord()) {
-
             try {
                 processLine((DrugRecord) parser, fhirResourceFiler, csvHelper);
-            } catch (RecordNotFoundException ex) {
+            } catch (CodeNotFoundException ex) {
                 String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                csvHelper.logErrorRecord((Long) ((DrugRecord) parser).getCodeId().getLong(), ((DrugRecord) parser).getPatientGuid(), ((DrugRecord) parser).getDrugRecordGuid(), errorRecClsName);
+                csvHelper.logErrorRecord(ex, ((DrugRecord) parser).getPatientGuid(), ((DrugRecord) parser).getDrugRecordGuid(), errorRecClsName);
             }
         }
-  }
-
+    }
 
     private static void processLine(DrugRecord parser,
                                     FhirResourceFiler fhirResourceFiler,
