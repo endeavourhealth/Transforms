@@ -59,9 +59,6 @@ public class SRCodeTransformer {
                                        TppCsvHelper csvHelper) throws Exception {
 
         CsvCell codeIdCell = parser.getRowIdentifier();
-       if (IdHelper.getEdsResourceId(parser.getServiceId(), ResourceType.Condition, codeIdCell.getString()) != null) {
-
-       }
 
         ResourceType resourceType = wasOriginallySavedAsOtherThanCondition(fhirResourceFiler, codeIdCell);
 
