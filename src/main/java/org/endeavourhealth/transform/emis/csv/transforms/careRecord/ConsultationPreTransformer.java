@@ -26,16 +26,15 @@ public class ConsultationPreTransformer {
         //to parse any record in this file it a critical error
         try {
             AbstractCsvParser parser = parsers.get(Consultation.class);
-             while (parser != null && parser.nextRecord()) {
-               try {
+            while (parser != null && parser.nextRecord()) {
+                try {
                     processRecord((Consultation)parser, fhirResourceFiler, csvHelper);
                 } catch (CodeNotFoundException ex) {
-                    String codeIdString= ex.getMessage();
                     String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
                     csvHelper.logErrorRecord(ex, ((Consultation) parser).getPatientGuid(),((Consultation) parser).getConsultationGuid(),errorRecClsName);
-              }
+                }
             }
-      } finally {
+        } finally {
             csvHelper.waitUntilThreadPoolIsEmpty();
         }
 
@@ -43,8 +42,8 @@ public class ConsultationPreTransformer {
     }
 
     public static void processRecord(Consultation parser,
-                                      FhirResourceFiler fhirResourceFiler,
-                                      EmisCsvHelper csvHelper) throws Exception {
+                                     FhirResourceFiler fhirResourceFiler,
+                                     EmisCsvHelper csvHelper) throws Exception {
 
         CsvCell consultationGuid = parser.getConsultationGuid();
         CsvCell patientGuid = parser.getPatientGuid();
