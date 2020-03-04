@@ -42,10 +42,6 @@ public interface CdsRecordInpatientI extends CdsRecordI {
 
     CsvCell getDischargeMethod();
 
-    CsvCell getBirthWeight();
-
-    CsvCell getLiveOrStillBirthIndicator();
-
     CsvCell getTotalPreviousPregnancies();
 
     CsvCell getNumberOfBabies();
@@ -66,7 +62,16 @@ public interface CdsRecordInpatientI extends CdsRecordI {
 
     CsvCell getMotherNHSNumber();
 
-    CsvCell getDeliveryMethod();
-
     CsvCell getDeliveryPlaceTypeActual();
+
+    CsvCell getBirthOrder(int dataNumber);
+    CsvCell getDeliveryMethod(int dataNumber);
+    CsvCell getBabyNHSNumber(int dataNumber);
+    CsvCell getBabyBirthDate(int dataNumber);
+    CsvCell getBirthWeight(int dataNumber);
+    CsvCell getBirthWeight();
+    CsvCell getLiveOrStillBirthIndicator(int dataNumber);
+    CsvCell getLiveOrStillBirthIndicator();
+    CsvCell getBabyGender(int dataNumber);
+    CsvCell getPersonGender();
 }

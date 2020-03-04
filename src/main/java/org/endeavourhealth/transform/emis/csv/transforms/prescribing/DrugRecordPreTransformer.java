@@ -19,8 +19,8 @@ public class DrugRecordPreTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         AbstractCsvParser parser = parsers.get(DrugRecord.class);
-
         while (parser != null && parser.nextRecord()) {
+
             try {
                 processLine((DrugRecord) parser, fhirResourceFiler, csvHelper);
             } catch (CodeNotFoundException ex) {
@@ -29,6 +29,7 @@ public class DrugRecordPreTransformer {
             }
         }
     }
+
 
     private static void processLine(DrugRecord parser,
                                     FhirResourceFiler fhirResourceFiler,

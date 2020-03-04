@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.enterprise;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
@@ -31,6 +33,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private static final Logger LOG = LoggerFactory.getLogger(EnterpriseTransformHelper.class);
 
     private static final Object MAP_VAL = new Object(); //concurrent hash map requires non-null values, so just use this
+    private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -44,6 +47,8 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final ReentrantLock lock = new ReentrantLock();
+    private final boolean isPseudonymised;
+    private final String excludeNhsNumberRegex;
 
     private int batchSize;
     private Long enterpriseOrganisationId = null;
@@ -53,15 +58,32 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
     public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
-                                     OutputContainer outputContainer, List<ResourceWrapper> allResources, String exchangeBody) {
+                                     List<ResourceWrapper> allResources, String exchangeBody) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.protocolId = protocolId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.enterpriseConfigName = enterpriseConfigName;
-        this.outputContainer = outputContainer;
         this.exchangeBody = exchangeBody;
+
+        //load our config record for some parameters
+        JsonNode config = ConfigManager.getConfigurationAsJson(enterpriseConfigName, "db_subscriber");
+
+        this.isPseudonymised = config.has("pseudonymisation");
+        this.outputContainer = new OutputContainer(isPseudonymised);
+
+        if (config.has("transform_batch_size")) {
+            this.batchSize = config.get("transform_batch_size").asInt();
+        } else {
+            this.batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
+        }
+
+        if (config.has("excluded_nhs_number_regex")) {
+            this.excludeNhsNumberRegex = config.get("excluded_nhs_number_regex").asText();
+        } else {
+            this.excludeNhsNumberRegex = null;
+        }
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         this.allResources = allResources;
@@ -128,8 +150,8 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         return batchSize;
     }
 
-    public void setBatchSize(int batchSize) {
-        this.batchSize = batchSize;
+    public boolean isPseudonymised() {
+        return isPseudonymised;
     }
 
     public Long getEnterpriseOrganisationId() {
@@ -289,7 +311,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         if (patientWrapper != null) {
             patient = (Patient) FhirSerializationHelper.deserializeResource(patientWrapper.getResourceData());
         }
-        this.shouldPatientRecordBeDeleted = !SubscriberTransformHelper.shouldPatientBePresentInSubscriber(patient);
+        this.shouldPatientRecordBeDeleted = !shouldPatientBePresentInSubscriber(patient);
 
 
         PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
@@ -339,31 +361,11 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         }
     }
 
-    /**
-     * removing, and changing to call into SubscriberTransformHelper, so both transforms use the exact same logic
-     */
-    /*public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
 
-        //deleted records shouldn't be in subscriber DBs
-        if (patient == null) {
-            return false;
-        }
+    public boolean shouldPatientBePresentInSubscriber(Patient patient) {
+        return SubscriberTransformHelper.shouldPatientBePresentInSubscriber(patient, this.excludeNhsNumberRegex);
+    }
 
-        //confidential records shouldn't be in subscriber DBs
-        if (AbstractEnterpriseTransformer.isConfidential(patient)) {
-            return false;
-        }
-
-        //exclude test patients
-        BooleanType isTestPatient = (BooleanType)ExtensionConverter.findExtensionValue(patient, FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
-        if (isTestPatient != null
-                && isTestPatient.hasValue()
-                && isTestPatient.getValue().booleanValue()) {
-            return false;
-        }
-
-        return true;
-    }*/
 
     public void checkForMissedResources() throws Exception {
 
@@ -444,7 +446,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         return resourceDal.getCurrentVersion(getServiceId(), comps.getResourceType().toString(), UUID.fromString(comps.getId()));
     }
 
-    public boolean shouldClinicalConceptBeDeleted(CodeableConcept codeableConcept) {
+    public boolean shouldClinicalConceptBeDeleted(CodeableConcept codeableConcept) throws Exception {
         return !SubscriberTransformHelper.isCodeableConceptSafe(codeableConcept);
     }
 }

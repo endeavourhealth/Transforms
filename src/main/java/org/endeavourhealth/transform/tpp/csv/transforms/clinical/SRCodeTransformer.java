@@ -59,6 +59,7 @@ public class SRCodeTransformer {
                                        TppCsvHelper csvHelper) throws Exception {
 
         CsvCell codeIdCell = parser.getRowIdentifier();
+
         ResourceType resourceType = wasOriginallySavedAsOtherThanCondition(fhirResourceFiler, codeIdCell);
 
         if (resourceType != null) {
@@ -671,6 +672,7 @@ public class SRCodeTransformer {
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, familyMemberHistoryBuilder);
                 return;
             }
+            return;
         }
 
         FamilyMemberHistoryBuilder familyMemberHistoryBuilder = new FamilyMemberHistoryBuilder();
@@ -798,11 +800,11 @@ public class SRCodeTransformer {
         potentialResourceTypes.add(ResourceType.Procedure);
         potentialResourceTypes.add(ResourceType.AllergyIntolerance);
         potentialResourceTypes.add(ResourceType.FamilyMemberHistory);
-        potentialResourceTypes.add(ResourceType.Immunization);
-        potentialResourceTypes.add(ResourceType.DiagnosticOrder);
-        potentialResourceTypes.add(ResourceType.Specimen);
-        potentialResourceTypes.add(ResourceType.DiagnosticReport);
-        potentialResourceTypes.add(ResourceType.ReferralRequest);
+        //otentialResourceTypes.add(ResourceType.Immunization);
+        //potentialResourceTypes.add(ResourceType.DiagnosticOrder);
+        //potentialResourceTypes.add(ResourceType.Specimen);
+        //potentialResourceTypes.add(ResourceType.DiagnosticReport);
+        //potentialResourceTypes.add(ResourceType.ReferralRequest);
 
         for (ResourceType resourceType : potentialResourceTypes) {
             if (checkIfWasSavedAsResourceType(fhirResourceFiler, codeId, resourceType)) {

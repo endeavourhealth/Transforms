@@ -1,6 +1,9 @@
 package org.endeavourhealth.transform.subscriber;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
@@ -16,6 +19,7 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.ResourceParser;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
@@ -27,11 +31,13 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Pattern;
 
 public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(SubscriberTransformHelper.class);
 
     private static final Object MAP_VAL = new Object(); //concurrent hash map requires non-null values, so just use this
+    private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
 
     private static Set<String> protectedCodesRead2;
     private static Set<String> protectedCodesCTV3;
@@ -50,21 +56,21 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final List<ResourceWrapper> allResources;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
+    private final int batchSize;
+    private final String excludeNhsNumberRegex;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
     private Patient cachedPatient = null;
     private Map<String, String> snomedToBnfChapter = new HashMap<>();
     private final ReentrantLock lock = new ReentrantLock();
 
-    private int batchSize;
+
     private Long subscriberOrganisationId = null;
     private Long subscriberPatientId = null;
     private Long subscriberPersonId = null;
     private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-
-
     public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String subscriberConfigName,
-                                     List<ResourceWrapper> allResources, String exchangeBody, boolean isPseudonymised) throws Exception {
+                                     List<ResourceWrapper> allResources, String exchangeBody) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.protocolId = protocolId;
@@ -74,7 +80,24 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         this.outputContainer = new OutputContainer();
         this.exchangeBody = exchangeBody;
         this.subscriberIdsUpdated = new ArrayList<>();
-        this.isPseudonymised = isPseudonymised;
+
+        //load our config record for some parameters
+        JsonNode config = ConfigManager.getConfigurationAsJson(subscriberConfigName, "db_subscriber");
+
+        this.isPseudonymised = config.has("pseudonymised")
+                && config.get("pseudonymised").asBoolean();
+
+        if (config.has("transform_batch_size")) {
+            this.batchSize = config.get("transform_batch_size").asInt();
+        } else {
+            this.batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
+        }
+
+        if (config.has("excluded_nhs_number_regex")) {
+            this.excludeNhsNumberRegex = config.get("excluded_nhs_number_regex").asText();
+        } else {
+            this.excludeNhsNumberRegex = null;
+        }
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         this.allResources = allResources;
@@ -148,9 +171,6 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return batchSize;
     }
 
-    public void setBatchSize(int batchSize) {
-        this.batchSize = batchSize;
-    }
 
     public Long getSubscriberOrganisationId() {
         if (subscriberOrganisationId == null) {
@@ -271,7 +291,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         if (patientWrapper != null) {
             this.cachedPatient = (Patient)patientWrapper.getResource();
         }
-        this.shouldPatientRecordBeDeleted = !shouldPatientBePresentInSubscriber(cachedPatient);
+        this.shouldPatientRecordBeDeleted = new Boolean(!shouldPatientBePresentInSubscriber(cachedPatient));
 
 
         PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
@@ -320,8 +340,12 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             }
         }
         if (subscriberId != null) {
-            this.subscriberPatientId = subscriberId.getSubscriberId();
+            this.subscriberPatientId = new Long(subscriberId.getSubscriberId());
         }
+    }
+
+    public boolean shouldPatientBePresentInSubscriber(Patient patient) {
+        return shouldPatientBePresentInSubscriber(patient, this.excludeNhsNumberRegex);
     }
 
     /**
@@ -332,7 +356,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
      * Non-valid NHS – include
      * Dummy patients and test patients – exclude
      */
-    public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
+    public static boolean shouldPatientBePresentInSubscriber(Patient patient, String excludeNhsNumberRegex) {
 
         //deleted records shouldn't be in subscriber DBs
         if (patient == null) {
@@ -347,44 +371,19 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             return false;
         }
 
-        //exclude the EDI test patients
-        String nhsNumber = IdentifierHelper.findNhsNumber(patient);
-        if (!Strings.isNullOrEmpty(nhsNumber)
-                //&& nhsNumber.startsWith("999999")) { //test patients from EDI test pack
-                && nhsNumber.startsWith("999")) { //more test patients with 999 NHS numbers found
-            return false;
+        //exclude the EDI test patients using regex, so it can be configured per subscriber
+        //NOTE: changing the configured regex will not affect any data already in (or not in) a subscriber,
+        //so that will need to be manually resolved
+        if (!Strings.isNullOrEmpty(excludeNhsNumberRegex)) {
+            String nhsNumber = IdentifierHelper.findNhsNumber(patient);
+            if (!Strings.isNullOrEmpty(nhsNumber)
+                    && Pattern.matches(excludeNhsNumberRegex, nhsNumber)) {
+                return false;
+            }
         }
 
         return true;
     }
-    /*public static boolean shouldPatientBePresentInSubscriber(Patient patient) {
-
-        //deleted records shouldn't be in subscriber DBs
-        if (patient == null) {
-            return false;
-        }
-
-        //confidential records shouldn't be in subscriber DBs
-        if (AbstractSubscriberTransformer.isConfidential(patient)) {
-            return false;
-        }
-
-        //records without NHS numbers shouldn't be in subscriber DBs
-        String nhsNumber = IdentifierHelper.findNhsNumber(patient);
-        if (Strings.isNullOrEmpty(nhsNumber)) {
-            return false;
-        }
-
-        //exclude test patients
-        BooleanType isTestPatient = (BooleanType) ExtensionConverter.findExtensionValue(patient, FhirExtensionUri.PATIENT_IS_TEST_PATIENT);
-        if (isTestPatient != null
-                && isTestPatient.hasValue()
-                && isTestPatient.getValue().booleanValue()) {
-            return false;
-        }
-
-        return true;
-    }*/
 
     public boolean getShouldPatientRecordBeDeleted() {
         if (shouldPatientRecordBeDeleted == null) {
@@ -570,7 +569,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     }
 
-    public boolean shouldClinicalConceptBeDeleted(CodeableConcept codeableConcept) {
+    public boolean shouldClinicalConceptBeDeleted(CodeableConcept codeableConcept) throws Exception {
         return !isCodeableConceptSafe(codeableConcept);
     }
 
@@ -578,7 +577,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
      * tests if a codeable concept is one that is known to break de-identification
      * because it contains something like a patient's name, address or DoB
      */
-    public static boolean isCodeableConceptSafe(CodeableConcept codeableConcept) {
+    public static boolean isCodeableConceptSafe(CodeableConcept codeableConcept) throws Exception {
 
         //9155. and 184099003 are "patient date of birth" which breaks de-identification
         if (codeableConcept.hasCoding()) {
@@ -606,123 +605,29 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
 
-    private static Set<String> getProtectedCodesSnomed() {
+    private static Set<String> getProtectedCodesSnomed() throws Exception {
         if (protectedCodesSnomed == null) {
-            Set<String> s = new HashSet<>();
 
-            //below Snomed codes derived from the Emis Read2->Snomed mappings
-            s.add("184095009"); //Patient forename
-            s.add("184096005"); //Patient surnam
-            s.add("184097001"); //Patient address
-            s.add("184098006"); //Patient title
-            s.add("184099003"); //Date of birth
-            s.add("184102003"); //Patient postal cod
-            s.add("184103008"); //Patient telephone number
-            s.add("395451000000101"); //Patient NHS numbe
-            s.add("184107009"); //Patient hospital number
-            s.add("247841000000109"); //Patient previous surname
-            s.add("428481002"); //Patient mobile telephone number
-            s.add("424966008"); //Patient - email address
-            s.add("823131000000105"); //Patient door access key code
-            s.add("185975009"); //Hospital reference number
-
-            //below Snomed codes derived from TRUD CTV3->Snomed mappings (there may be overlap with above)
-            s.add("823131000000105"); // Patient door access key code
-            s.add("424966008"); //  Patient - email address
-            s.add("406548001"); // Emergency contact details
-            s.add("108651000000103"); // Social services identification number
-            s.add("408588000"); //  Service user's alias
-            s.add("408587005"); //  Legal guardian - email address
-            s.add("408586001"); // Legal guardian - work telephone number
-            s.add("408585002"); // Legal guardian - mobile telephone number
-            s.add("408584003"); // Legal guardian - home telephone number
-            s.add("184095009"); // Patient forename
-            s.add("184096005"); // Patient surname
-            s.add("247841000000109"); //  Patient previous surname
-            s.add("184097001"); //  Patient address
-            s.add("184099003"); // Date of birth
-            s.add("184098006"); // Patient title
-            s.add("125680007"); // Marital status
-            s.add("184102003"); // Patient postal code
-            s.add("428481002"); //  Patient mobile telephone number
-            s.add("184103008"); // Patient telephone number
-            s.add("395451000000101"); // Patient NHS number
-            s.add("184142008"); // Patient's next of kin
-            s.add("185975009"); // Hospital reference number
-            s.add("184107009"); // Patient hospital number
-            s.add("408576002"); // Carer - email address
-            s.add("824521000000100"); // Email address of informal carer
-            s.add("408401005"); //  Carer - work telephone number
-            s.add("824571000000101"); // Work telephone number of informal carer
-            s.add("408400006"); // Carer - home telephone number
-            s.add("824591000000102"); // Home telephone number of informal carer
-            s.add("184149004"); // Key Holder
-
-            protectedCodesSnomed = s;
+            Map<String, String> map = ResourceParser.readCsvResourceIntoMap("SubscriberProtectedCodesSnomed.csv", "Code", "Term", CSVFormat.DEFAULT.withHeader());
+            protectedCodesSnomed = map.keySet();
         }
         return protectedCodesSnomed;
     }
 
-    private static Set<String> getProtectedCodesCTV3() {
+    private static Set<String> getProtectedCodesCTV3() throws Exception {
         if (protectedCodesCTV3 == null) {
-            Set<String> s = new HashSet<>();
-            s.add("XaZ1Q"); //Patient door access key code
-            s.add("XaYak"); //Patient email address
-            s.add("XaXTm"); //Emergency contact details
-            s.add("XaJQs"); //Social services identification number
-            s.add("XaJQL"); //Service user's alias
-            s.add("XaJQB"); //Legal guardian - email address
-            s.add("XaJQ9"); //Legal guardian - work telephone number
-            s.add("XaJQ7"); //Legal guardian - mobile telephone number
-            s.add("XaJQ4"); //Legal guardian - home telephone number
-            s.add("9151."); //Patient forename
-            s.add("9152."); //Patient surname
-            s.add("XaLva"); //Patient previous surname
-            s.add("9153."); //Patient address
-            s.add("9155."); //Date of birth
-            s.add("9154."); //Patient title
-            s.add("9157."); //Patient marital status
-            s.add("9158."); //Patient post-code
-            s.add("XaQgn"); //Patient mobile telephone number
-            s.add("9159."); //Patient telephone number
-            s.add("XE2Hj"); //Patient NHS number
-            s.add("9182."); //Patient's next of kin
-            s.add("9R6.."); //Hospital reference number:
-            s.add("915D."); //Patient hospital number
-            s.add("XaJPa"); //Carer - email address
-            s.add("XaZ4o"); //Email address of informal carer
-            s.add("XaJOL"); //Carer - mobile telephone number
-            s.add("XaZ4q"); //Mobile telephone number of informal carer
-            s.add("XaJOK"); //Carer - work telephone number
-            s.add("XaZ4r"); //Work telephone number of informal carer
-            s.add("XaJOJ"); //Carer - home telephone number
-            s.add("XaZ4s"); //Home telephone number of informal carer
-            s.add("9189."); //Key Holder
 
-            protectedCodesCTV3 = s;
+            Map<String, String> map = ResourceParser.readCsvResourceIntoMap("SubscriberProtectedCodesCTV3.csv", "Code", "Term", CSVFormat.DEFAULT.withHeader());
+            protectedCodesCTV3 = map.keySet();
         }
         return protectedCodesCTV3;
     }
 
-    private static Set<String> getProtectedCodesRead2() {
+    private static Set<String> getProtectedCodesRead2() throws Exception {
         if (protectedCodesRead2 == null) {
-            Set<String> s = new HashSet<>();
-            s.add("9151."); //Patient fore-name
-            s.add("9152."); //Patient surname
-            s.add("9153."); //Patient address
-            s.add("9154."); //Patient title
-            s.add("9155."); //Patient date of birth
-            s.add("9158."); //Patient post-code
-            s.add("9159."); //Patient telephone no.
-            s.add("915B."); //Patient NHS number
-            s.add("915D."); //Patient hospital no.
-            s.add("915H."); //Patient previous surname
-            s.add("915J."); //Patient mobile telephone number
-            s.add("915K."); //Patient email address
-            s.add("915L."); //Patient door access key code
-            s.add("9R6.."); //Hospital reference number:
 
-            protectedCodesRead2 = s;
+            Map<String, String> map = ResourceParser.readCsvResourceIntoMap("SubscriberProtectedCodesRead2.csv", "Code", "Term", CSVFormat.DEFAULT.withHeader());
+            protectedCodesRead2 = map.keySet();
         }
         return protectedCodesRead2;
     }

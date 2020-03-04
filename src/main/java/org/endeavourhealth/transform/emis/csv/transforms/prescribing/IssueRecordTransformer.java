@@ -74,12 +74,6 @@ public class IssueRecordTransformer {
         Integer courseDuration = courseDurationCell.getInt();
         medicationOrderBuilder.setDurationDays(courseDuration, courseDurationCell);
 
-        //cache the date against the drug record GUID, so we can pick it up when processing the DrugRecord CSV
-        CsvCell drugRecordGuid = parser.getDrugRecordGuid();
-        if (!drugRecordGuid.isEmpty()) {
-            csvHelper.cacheDrugRecordDate(drugRecordGuid, patientGuid, new IssueRecordIssueDate(dateTime, courseDuration, effectiveDate, effectiveDatePrecision));
-        }
-
         //need to handle mis-spelt column name in EMIS test pack
         //String clinicianGuid = parser.getClinicianUserInRoleGuid();
         CsvCell clinicianGuid = null;
@@ -119,9 +113,11 @@ public class IssueRecordTransformer {
 
         //specification states that there will always be a drug record GUID, but we've had a small number of cases
         //where this isn't the case. Emis haven't fixed this in eight months, so I'm changing the transform to handle this
+        CsvCell drugRecordGuid = parser.getDrugRecordGuid();
         if (!drugRecordGuid.isEmpty()) {
             Reference medicationStatementReference = csvHelper.createMedicationStatementReference(drugRecordGuid, patientGuid);
             medicationOrderBuilder.setMedicationStatementReference(medicationStatementReference, drugRecordGuid);
+
         } else {
             TransformWarnings.log(LOG, fhirResourceFiler, "Emis IssueRecord {} has missing drugRecordGuid", issueRecordGuid);
         }

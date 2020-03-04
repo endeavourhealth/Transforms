@@ -6,6 +6,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
 import java.util.Date;
+import java.util.List;
 
 public class CompositionBuilder extends ResourceBuilderBase implements HasCodeableConceptI {
 
@@ -65,11 +66,27 @@ public class CompositionBuilder extends ResourceBuilderBase implements HasCodeab
         auditValue("author", sourceCells);
     }
 
-    public void addSection(String title, String jsonData) {
+    public void addSection(String title, String id, String jsonData) throws Exception {
 
         Composition.SectionComponent section = this.composition.addSection();
+        section.setId(id);
         section.setTitle(title);
-        section.setUserData(title, jsonData);
+
+        Narrative data = new Narrative();
+        data.setStatus(Narrative.NarrativeStatus.ADDITIONAL);
+        data.setDivAsString(jsonData);
+        section.setText(data);
+    }
+
+    public Composition.SectionComponent getSection(String title) {
+
+        List<Composition.SectionComponent> sections = this.composition.getSection();
+        for (Composition.SectionComponent section : sections) {
+            if (section.getTitle().equals(title)) {
+                return section;
+            }
+        }
+        return null;
     }
 
     public void setIsConfidential(boolean isConfidential, CsvCell... sourceCells) {

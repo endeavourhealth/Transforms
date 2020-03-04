@@ -51,6 +51,7 @@ public class OutputContainer {
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new PatientAddressMatch("patient_address_match.csv",csvFormat,dateFormat,timeFormat));
     }
 
     public byte[] writeToZip() throws Exception {
@@ -135,6 +136,10 @@ public class OutputContainer {
             }
         }
         return null;
+    }
+
+    public PatientAddressMatch getPatientAddressMatch()  {
+        return findCsvWriter(PatientAddressMatch.class);
     }
 
     public Organization getOrganisations() {

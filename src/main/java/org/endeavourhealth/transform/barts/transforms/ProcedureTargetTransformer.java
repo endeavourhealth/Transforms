@@ -50,7 +50,7 @@ public class ProcedureTargetTransformer {
             return;
         }
 
-        TransformWarnings.log(LOG, csvHelper, "Target Procedures to transform to FHIR: {} for exchangeId: {}", targetProcedures.size(), csvHelper.getExchangeId());
+        //TransformWarnings.log(LOG, csvHelper, "Target Procedures to transform to FHIR: {} for exchangeId: {}", targetProcedures.size(), csvHelper.getExchangeId());
 
         for (StagingProcedureTarget targetProcedure : targetProcedures) {
 

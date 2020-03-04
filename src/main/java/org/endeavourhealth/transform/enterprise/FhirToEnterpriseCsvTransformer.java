@@ -29,9 +29,6 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(FhirToEnterpriseCsvTransformer.class);
 
-    private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
-    
-    
     public static String transformFromFhir(UUID serviceId,
                                            UUID systemId,
                                            UUID exchangeId,
@@ -43,21 +40,12 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
         LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
-        JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-
-        boolean pseudonymised = config.has("pseudonymisation");
-
-        int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
-        if (config.has("transform_batch_size")) {
-            batchSize = config.get("transform_batch_size").asInt();
-        }
-
-        OutputContainer data = new OutputContainer(pseudonymised);
-        EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, data, resources, exchangeBody);
+        EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, resources, exchangeBody);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
-        params.setBatchSize(batchSize);
+
+        OutputContainer data = params.getOutputContainer();
 
         //sometimes we may fail to find an org id, so just return null as there's nothing to send
         if (enterpriseOrgId == null) {

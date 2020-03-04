@@ -103,12 +103,12 @@ public class DrugRecordTransformer {
 
         CsvCell issuesAuthorised = parser.getNumberOfIssuesAuthorised();
         if (!issuesAuthorised.isEmpty()) {
-            medicationStatementBuilder.setNumberIssuesAuthorised(issuesAuthorised.getInt(), issuesAuthorised);
+            medicationStatementBuilder.setNumberIssuesAuthorised(issuesAuthorised.getInt().intValue(), issuesAuthorised);
         }
 
         CsvCell issuesReceived = parser.getNumberOfIssues();
         if (!issuesReceived.isEmpty()) {
-            medicationStatementBuilder.setNumberIssuesIssued(issuesReceived.getInt(), issuesReceived);
+            medicationStatementBuilder.setNumberIssuesIssued(issuesReceived.getInt().intValue(), issuesReceived);
         }
 
         //if the Medication is linked to a Problem, then use the problem's Observation as the Medication reason
@@ -119,14 +119,14 @@ public class DrugRecordTransformer {
         }
 
 
-        IssueRecordIssueDate firstIssueDate = csvHelper.getDrugRecordFirstIssueDate(drugRecordGuid, patientGuid);
+        IssueRecordIssueDate firstIssueDate = csvHelper.getNewDrugRecordFirstIssueDate(drugRecordGuid, patientGuid);
         if (firstIssueDate != null) {
             medicationStatementBuilder.setFirstIssueDate(firstIssueDate.getIssueDateType(), firstIssueDate.getSourceCells());
         }
 
-        IssueRecordIssueDate mostRecentDate = csvHelper.getDrugRecordLastIssueDate(drugRecordGuid, patientGuid);
-        if (mostRecentDate != null) {
-            medicationStatementBuilder.setLastIssueDate(mostRecentDate.getIssueDateType(), mostRecentDate.getSourceCells());
+        IssueRecordIssueDate mostRecentIssueDate = csvHelper.getNewDrugRecordLastIssueDate(drugRecordGuid, patientGuid);
+        if (mostRecentIssueDate != null) {
+            medicationStatementBuilder.setLastIssueDate(mostRecentIssueDate.getIssueDateType(), mostRecentIssueDate.getSourceCells());
         }
 
         CsvCell isActiveCell = parser.getIsActive();
@@ -146,7 +146,16 @@ public class DrugRecordTransformer {
             } else {
                 //there are a number of DrugRecords that are non-active but do not have a cancellation date. For consistency
                 //of data, the cancellation date is inferred from the last IssueRecord of the DrugRecord
-                Date inferredEndDate = calculateEndDate(parser, mostRecentDate, medicationStatementBuilder);
+                Date inferredEndDate = null;
+                if (mostRecentIssueDate == null) {
+                    //if we don't have a new last issue date, we'll have pre-cached the existing one from our pre-transformer
+                    IssueRecordIssueDate existingIssueDate = csvHelper.getExistingDrugRecordLastIssueDate(drugRecordGuid, patientGuid);
+                    inferredEndDate = calculateEndDate(existingIssueDate);
+
+                } else {
+                    inferredEndDate = calculateEndDate(mostRecentIssueDate);
+                }
+
                 medicationStatementBuilder.setCancellationDate(inferredEndDate);
             }
         }
@@ -186,53 +195,9 @@ public class DrugRecordTransformer {
     /**
      * infers the medication end date from the last issue record
      */
-    private static Date calculateEndDate(DrugRecord parser, IssueRecordIssueDate mostRecentDate, MedicationStatementBuilder medicationStatementBuilder) throws Exception {
+    private static Date calculateEndDate(IssueRecordIssueDate mostRecentDate) throws Exception {
 
-        //if not in memory, we need to hit the DB
-        if (mostRecentDate == null) {
-
-            //work out UUID for MedicationStatement
-            String sourceDrugRecordId = medicationStatementBuilder.getResourceId();
-            UUID medicationStatementUuid = IdHelper.getOrCreateEdsResourceId(parser.getServiceId(), ResourceType.MedicationStatement, sourceDrugRecordId);
-            Reference medicationStatementReference = ReferenceHelper.createReference(ResourceType.MedicationStatement, medicationStatementUuid.toString());
-
-            //convert patient GUID to DDS UUID
-            CsvCell patientGuid = parser.getPatientGuid();
-            String sourcePatientId = EmisCsvHelper.createUniqueId(patientGuid, null);
-            UUID patientUuid = IdHelper.getEdsResourceId(parser.getServiceId(), ResourceType.Patient, sourcePatientId);
-
-            //get medication orders
-            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-            List<ResourceWrapper> resources = resourceDal.getResourcesByPatient(parser.getServiceId(), patientUuid, ResourceType.MedicationOrder.toString());
-            for (ResourceWrapper wrapper: resources) {
-                if (wrapper.isDeleted()) {
-                    continue;
-                }
-
-                MedicationOrder order = (MedicationOrder)wrapper.getResource();
-                MedicationOrderBuilder medicationOrderBuilder = new MedicationOrderBuilder(order);
-
-                Reference reference = medicationOrderBuilder.getMedicationStatementReference();
-                if (reference != null
-                        && ReferenceHelper.equals(reference, medicationStatementReference)) {
-
-                    DateTimeType started = medicationOrderBuilder.getDateWritten();
-                    Integer duration = medicationOrderBuilder.getDurationDays();
-
-                    IssueRecordIssueDate obj = new IssueRecordIssueDate(started, duration);
-                    if (obj.afterOrOtherIsNull(mostRecentDate)) {
-                        mostRecentDate = obj;
-                    }
-                }
-            }
-
-            //if no issues exist for it, use the start date of the DrugRecord
-            if (mostRecentDate == null) {
-                Date d = parser.getEffectiveDate().getDate();
-                mostRecentDate = new IssueRecordIssueDate(new DateTimeType(d), new Integer(0));
-            }
-        }
-
+        //derive the cancellation date from the last issue date, plus the duration
         Date d = mostRecentDate.getIssueDateType().getValue();
 
         int duration = 0;

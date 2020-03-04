@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import com.google.gson.JsonObject;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingCdsDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.*;
@@ -25,6 +26,11 @@ public abstract class CdsPreTransformerBase {
     private static StagingCdsDalI repository = DalProvider.factoryStagingCdsDalI();
     private final static String BARTS_UNKNOWN_OPCS_CODE_Y926 = "Y92.6";
     private final static String BARTS_UNKNOWN_ICD10_CODE_Z669 = "Z66.9";
+
+    private final static String CDS_RECORD_TYPE_BIRTH = "120";
+    private final static String CDS_RECORD_TYPE_DELIVERY = "140";
+    private final static String CDS_RECORD_TYPE_GENERAL = "130";
+
     protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
                                          List<StagingProcedureCds> procedureBatch,
                                          List<StagingProcedureCdsCount> procedureCountBatch,
@@ -963,6 +969,7 @@ public abstract class CdsPreTransformerBase {
 
         stagingCriticalCareCds.setCriticalCareTypeId(parser.getCriticalCareTypeID().getString());
         stagingCriticalCareCds.setSpellNumber(parser.getSpellNumber().getString());
+        stagingCriticalCareCds.setEpisodeNumber(parser.getEpisodeNumber().getString());
         stagingCriticalCareCds.setCriticalCareIdentifier(parser.getCriticalCareIdentifier().getString());
 
         CsvCell careStartDate = parser.getCriticalCareStartDate();
@@ -1086,7 +1093,13 @@ public abstract class CdsPreTransformerBase {
         stagingEmergencyCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
         stagingEmergencyCds.setDepartmentType(parser.getDepartmentType().getString());
         stagingEmergencyCds.setAmbulanceIncidentNumber(parser.getAmbulanceIncidentNumber().getString());
-        stagingEmergencyCds.setTreatmentOrganisationCode(parser.getTreatmentOrganisationCode().getString());
+
+        String odsCode = parser.getTreatmentOrganisationCode().getString();
+        if (!Strings.isNullOrEmpty(odsCode)) {
+            String orgId = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCode);
+            stagingEmergencyCds.setTreatmentOrganisationCode(orgId);
+        }
+
         stagingEmergencyCds.setAttendanceIdentifier(parser.getAttendanceIdentifier().getString());
         stagingEmergencyCds.setArrivalMode(parser.getArrivalMode().getString());
         stagingEmergencyCds.setAttendanceCategory(parser.getAttendanceCategory().getString());
@@ -1358,7 +1371,12 @@ public abstract class CdsPreTransformerBase {
         stagingOutpatientCds.setApptAttendanceIdentifier(parser.getAttendanceIdentifier().getString());
         stagingOutpatientCds.setApptAttendedCode(parser.getAppointmentAttendedCode().getString());
         stagingOutpatientCds.setApptOutcomeCode(parser.getAppointmentOutcomeCode().getString());
-        stagingOutpatientCds.setApptSiteCode(parser.getAppointmentSiteCode().getString());
+
+        String odsCode = parser.getAppointmentSiteCode().getString();
+        if (!Strings.isNullOrEmpty(odsCode)) {
+            String orgId = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCode);
+            stagingOutpatientCds.setApptSiteCode(orgId);
+        }
 
         CsvCell apptStartDate = parser.getAppointmentDate();
         CsvCell apptStartTime = parser.getAppointmentTime();
@@ -1455,7 +1473,12 @@ public abstract class CdsPreTransformerBase {
             stagingInpatientCds.setSpellStartDate(spellStartDateTime);
         }
         stagingInpatientCds.setEpisodeNumber(parser.getEpisodeNumber().getString());
-        stagingInpatientCds.setEpisodeStartSiteCode(parser.getEpisodeStartSiteCode().getString());
+
+        String odsCodeStart = parser.getEpisodeStartSiteCode().getString();
+        if (!Strings.isNullOrEmpty(odsCodeStart)) {
+            String orgIdStart = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCodeStart);
+            stagingInpatientCds.setEpisodeStartSiteCode(orgIdStart);
+        }
         stagingInpatientCds.setEpisodeStartWardCode(parser.getEpisodeStartWardCode().getString());
 
         CsvCell episodeStartDate = parser.getEpisodeStartDate();
@@ -1464,7 +1487,12 @@ public abstract class CdsPreTransformerBase {
         if (episodeStartDateTime != null) {
             stagingInpatientCds.setEpisodeStartDate(episodeStartDateTime);
         }
-        stagingInpatientCds.setEpisodeEndSiteCode(parser.getEpisodeEndSiteCode().getString());
+
+        String odsCodeEnd = parser.getEpisodeEndSiteCode().getString();
+        if (!Strings.isNullOrEmpty(odsCodeEnd)) {
+            String orgIdEnd = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCodeEnd);
+            stagingInpatientCds.setEpisodeEndSiteCode(orgIdEnd);
+        }
         stagingInpatientCds.setEpisodeEndWardCode(parser.getEpisodeEndWardCode().getString());
 
         CsvCell episodeEndDate = parser.getEpisodeEndDate();
@@ -1497,6 +1525,45 @@ public abstract class CdsPreTransformerBase {
             stagingInpatientCds.setSecondaryProcedureDate(proc2DateCell.getDate());
         }
         stagingInpatientCds.setOtherProceduresOPCS(parser.getAdditionalSecondaryProceduresOPCS().getString());
+
+        String cdsRecordType = parser.getCDSRecordType().getString();
+        if (cdsRecordType.equalsIgnoreCase(CDS_RECORD_TYPE_BIRTH)) {
+
+            //these records are not stored in delivery details, but other sections
+            JsonObject maternityDataObjs = new JsonObject();
+            maternityDataObjs.addProperty("delivery_date", parser.getDeliveryDate().getString());
+            maternityDataObjs.addProperty("birth_weight", parser.getBirthWeight().getString());
+            maternityDataObjs.addProperty("live_or_still_birth_indicator", parser.getLiveOrStillBirthIndicator().getString());
+            maternityDataObjs.addProperty("delivery_method", parser.getDeliveryMethod(1).getString());
+            maternityDataObjs.addProperty("gender", parser.getPersonGender().getString());
+            maternityDataObjs.addProperty("mother_nhs_number", parser.getMotherNHSNumber().getString());
+            stagingInpatientCds.setMaternityDataBirth(maternityDataObjs.toString());
+
+        } else if (cdsRecordType.equalsIgnoreCase(CDS_RECORD_TYPE_DELIVERY)) {
+
+            if (!parser.getNumberOfBabies().isEmpty()) {
+                //a delivery record may contain 1-9 baby records for the mother
+                JsonObject maternityDataObjs = new JsonObject();
+
+                int numberOfBabies = parser.getNumberOfBabies().getInt();
+
+                maternityDataObjs.addProperty("number_of_babies", numberOfBabies);
+                maternityDataObjs.addProperty("delivery_date", parser.getDeliveryDate().getString());
+
+                for (int i = 1; i <= numberOfBabies; i++) {
+                    maternityDataObjs.addProperty("birth_date_" + i, parser.getBabyBirthDate(i).getString());
+                    maternityDataObjs.addProperty("birth_weight_" + i, parser.getBirthWeight(i).getString());
+                    maternityDataObjs.addProperty("live_or_still_birth_indicator_" + i, parser.getLiveOrStillBirthIndicator(i).getString());
+                    maternityDataObjs.addProperty("delivery_method_" + i, parser.getDeliveryMethod(i).getString());
+                    maternityDataObjs.addProperty("gender_" + i, parser.getBabyGender(i).getString());
+                    maternityDataObjs.addProperty("baby_nhs_number_" + i, parser.getBabyNHSNumber(i).getString());
+                }
+                stagingInpatientCds.setMaternityDataDelivery(maternityDataObjs.toString());
+            } else {
+
+                TransformWarnings.log(LOG, csvHelper, "Inpatient CDS Maternity Delivery record id {} with no baby records", parser.getCdsUniqueId());
+            }
+        }
 
         inpatientCdsBatch.add(stagingInpatientCds);
         saveInpatientCdsBatch(inpatientCdsBatch, false, csvHelper);
@@ -1550,21 +1617,22 @@ public abstract class CdsPreTransformerBase {
         }
         stagingHomeDelBirthCds.setDateOfBirth(parser.getPersonBirthDate().getDate());
 
-        stagingHomeDelBirthCds.setBirthWeight(parser.getBirthWeight().getString());
-        stagingHomeDelBirthCds.setLiveOrStillBirthIndicator(parser.getLiveOrStillBirthIndicator().getString());
-        stagingHomeDelBirthCds.setTotalPreviousPregnancies(parser.getTotalPreviousPregnancies().getString());
-
-        stagingHomeDelBirthCds.setNumberOfBabies(parser.getNumberOfBabies().getInt());
-        stagingHomeDelBirthCds.setFirstAntenatalAssessmentDate(parser.getFirstAntenatalAssessmentDate().getDate());
-        stagingHomeDelBirthCds.setAntenatalCarePractitioner(parser.getAntenatalCarePractitioner().getString());
-        stagingHomeDelBirthCds.setAntenatalCarePractice(parser.getAntenatalCarePractice().getString());
-        stagingHomeDelBirthCds.setDeliveryPlaceIntended(parser.getDeliveryPlaceTypeIntended().getString());
-        stagingHomeDelBirthCds.setDeliveryPlaceChangeReasonCode(parser.getDeliveryPlaceChangeReasonCode().getString());
-        stagingHomeDelBirthCds.setGestationLengthLabourOnset(parser.getGestationLengthLabourOnset().getString());
-        stagingHomeDelBirthCds.setDeliveryDate(parser.getDeliveryDate().getDate());
-        stagingHomeDelBirthCds.setDeliveryPlaceActual(parser.getDeliveryPlaceTypeActual().getString());
-        stagingHomeDelBirthCds.setDeliveryMethod(parser.getDeliveryMethod().getString());
-        stagingHomeDelBirthCds.setMotherNhsNumber(parser.getMotherNHSNumber().getString());
+        //todo - REDO INLINE WITH INPATIENT FORMAT
+//        stagingHomeDelBirthCds.setBirthWeight(parser.getBirthWeight().getString());
+//        stagingHomeDelBirthCds.setLiveOrStillBirthIndicator(parser.getLiveOrStillBirthIndicator().getString());
+//        stagingHomeDelBirthCds.setTotalPreviousPregnancies(parser.getTotalPreviousPregnancies().getString());
+//
+//        stagingHomeDelBirthCds.setNumberOfBabies(parser.getNumberOfBabies().getInt());
+//        stagingHomeDelBirthCds.setFirstAntenatalAssessmentDate(parser.getFirstAntenatalAssessmentDate().getDate());
+//        stagingHomeDelBirthCds.setAntenatalCarePractitioner(parser.getAntenatalCarePractitioner().getString());
+//        stagingHomeDelBirthCds.setAntenatalCarePractice(parser.getAntenatalCarePractice().getString());
+//        stagingHomeDelBirthCds.setDeliveryPlaceIntended(parser.getDeliveryPlaceTypeIntended().getString());
+//        stagingHomeDelBirthCds.setDeliveryPlaceChangeReasonCode(parser.getDeliveryPlaceChangeReasonCode().getString());
+//        stagingHomeDelBirthCds.setGestationLengthLabourOnset(parser.getGestationLengthLabourOnset().getString());
+//        stagingHomeDelBirthCds.setDeliveryDate(parser.getDeliveryDate().getDate());
+//        stagingHomeDelBirthCds.setDeliveryPlaceActual(parser.getDeliveryPlaceTypeActual().getString());
+//        stagingHomeDelBirthCds.setDeliveryMethod(parser.getDeliveryMethod().getString());
+//        stagingHomeDelBirthCds.setMotherNhsNumber(parser.getMotherNHSNumber().getString());
 
         homeDelBirthCdsBatch.add(stagingHomeDelBirthCds);
         saveHomeDelBirthCdsBatch(homeDelBirthCdsBatch, false, csvHelper);

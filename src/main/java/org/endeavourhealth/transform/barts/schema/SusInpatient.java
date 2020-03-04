@@ -142,20 +142,8 @@ public class SusInpatient extends AbstractFixedParser implements CdsRecordI, Cds
         return super.getCell("DischargeMethod");
     }
 
-    public CsvCell getBirthWeight()  {
-        return super.getCell("BirthWeight");
-    }
-
-    public CsvCell getLiveOrStillBirthIndicator()  {
-        return super.getCell("LiveOrStillBirthIndicator");
-    }
-
     public CsvCell getTotalPreviousPregnancies()  {
         return super.getCell("TotalPreviousPregnancies");
-    }
-
-    public CsvCell getNumberOfBabies()  {
-        return super.getCell("NumberofBabies");
     }
 
     public CsvCell getFirstAntenatalAssessmentDate()  {
@@ -182,154 +170,35 @@ public class SusInpatient extends AbstractFixedParser implements CdsRecordI, Cds
         return super.getCell("GestationLengthLabourOnset");
     }
 
-    public CsvCell getDeliveryDate()  {
-        return super.getCell("DeliveryDate");
-    }
-
     public CsvCell getDeliveryPlaceTypeActual()  {
         return super.getCell("DeliveryPlaceTypeActual");
     }
 
-    public CsvCell getDeliveryMethod()  {
-        return super.getCell("DeliveryMethod");
+    public CsvCell getCDSRecordType()  {
+        return super.getCell("CDSRecordType");
     }
 
+    // birth records, can be up to 9 based on NumberofBabies count
+    public CsvCell getNumberOfBabies()  {
+        return super.getCell("NumberofBabies");
+    }
+    public CsvCell getDeliveryDate()  {
+        return super.getCell("DeliveryDate");
+    }
+
+    public CsvCell getBirthOrder(int dataNumber) { return super.getCell("BirthOrder"+dataNumber);}
+    public CsvCell getDeliveryMethod(int dataNumber)  { return super.getCell("DeliveryMethod"+dataNumber); }
+    public CsvCell getBabyNHSNumber(int dataNumber)  { return super.getCell("BabyNHSNumber"+dataNumber); }
+    public CsvCell getBabyBirthDate(int dataNumber)  { return super.getCell("BabyBirthDate"+dataNumber); }
+    public CsvCell getBirthWeight(int dataNumber)  { return super.getCell("BirthWeight"+dataNumber); }
+    public CsvCell getBirthWeight()  { return super.getCell("BirthWeight"); }
+    public CsvCell getLiveOrStillBirthIndicator(int dataNumber)  { return super.getCell("LiveOrStillBirth"+dataNumber); }
+    public CsvCell getLiveOrStillBirthIndicator()  { return super.getCell("LiveOrStillBirthIndicator"); }
+    public CsvCell getBabyGender(int dataNumber)  { return super.getCell("PersonGenderCurrent"+dataNumber); }
+    public CsvCell getPersonGender()  { return super.getCell("PersonCurrentGender"); }
     public CsvCell getMotherNHSNumber()  {
         return super.getCell("MotherNHSNumber");
     }
-
-
-
-    //    public CsvCell getCDSRecordType() {
-//        return super.getCell("CDSRecordType");
-//    }
-//
-//
-//    public CsvCell getPrimaryMainOperatingHCPRegistrationEntryIdentifier() {
-//        return super.getCell("PrimaryMainOperatingHCPRegistrationEntryIdentifier");
-//    }
-//
-//    public CsvCell getPrimaryResponsibleAnaesthetistRegistrationEntryIdentifier() {
-//        return super.getCell("PrimaryResponsibleAnaesthetistRegistrationEntryIdentifier");
-//    }
-
-    /*public Date getAdmissionDate() throws TransformException {
-        return super.getDate("StartDateHospitalProviderSpell");
-    }
-
-    public Date getAdmissionTime() throws TransformException {
-        return super.getTime("StartTimeHospitalProviderSpell");
-    }
-
-    public Date getAdmissionDateTime() throws TransformException {
-        return super.getDateTime("StartDateHospitalProviderSpell", "StartTimeHospitalProviderSpell");
-    }
-
-    public Date getDischargeDate() throws TransformException {
-        return super.getDate("DischargeDateHospitalProviderSpell");
-    }
-
-    public Date getDischargeTime() throws TransformException {
-        return super.getTime("DischargeTimeHospitalProviderSpell");
-    }
-
-    public Date getDischargeDateTime() throws TransformException {
-        return super.getDateTime("DischargeDateHospitalProviderSpell", "DischargeTimeHospitalProviderSpell");
-    }
-
-    public String getConsultantCode() {
-        return super.getString("ConsultantCode");
-    }
-
-
-
-
-    public String getCDSUniqueID() {
-        return super.getString("CDSUniqueIdentifier");
-    }
-
-    // 1 = Delete, 9 = New/Replace
-    public int getCDSUpdateType() {
-        return super.getInt("CDSUpdateType");
-    }
-
-    public String getLocalPatientId() {
-        return super.getString("LocalPatientID");
-    }
-
-    public String getNHSNo() {
-        return super.getString("NHSNumber");
-    }
-
-    public Date getDOB() throws TransformException {
-        return super.getDate("PersonBirthDate");
-    }
-
-    public String getPatientTitle() {
-        return super.getString("PatientTitle");
-    }
-
-    public String getPatientForename() {
-        return super.getString("PatientForename");
-    }
-
-    public String getPatientSurname() {
-        return super.getString("PatientSurname");
-    }
-
-    public String getAddressType() {
-        return super.getString("PatientAddressType");
-    }
-
-    public String getUnstructuredAddress() {
-        return super.getString("PatientUnstructuredAddress");
-    }
-
-    public String getAddress1() {
-        return super.getString("PatientAddressStructured1");
-    }
-
-    public String getAddress2() {
-        return super.getString("PatientAddressStructured2");
-    }
-
-    public String getAddress3() {
-        return super.getString("PatientAddressStructured3");
-    }
-
-    public String getAddress4() {
-        return super.getString("PatientAddressStructured4");
-    }
-
-    public String getAddress5() {
-        return super.getString("PatientAddressStructured5");
-    }
-
-    public String getPostCode() {
-        return super.getString("Postcode");
-    }
-
-    public int getGender() {
-        return Integer.parseInt(super.getString("PersonCurrentGender"));
-    }
-
-    public String getEthnicCategory() {
-        return super.getString("EthnicCategory");
-    }
-
-    public String getGP() {
-        return super.getString("GeneralMedicalPractitionerRegistered");
-    }
-
-    public String getGPPractice() {
-        return super.getString("GPPracticeRegistered");
-    }
-
-    public String getICDPrimaryDiagnosis() {
-        return super.getString("PrimaryDiagnosisICD");
-    }
-
-    */
 
     @Override
     protected boolean isFileAudited() {
@@ -684,7 +553,7 @@ public class SusInpatient extends AbstractFixedParser implements CdsRecordI, Cds
         ret.add(new FixedParserField("DecidedToAdmitDate", 5371, 8));
         ret.add(new FixedParserField("EarliestReasonableOfferDate", 5379, 8));
 //PREGNANCY DETAILS
-        /*ret.add(new FixedParserField("NumberofBabies", 5387, 1));*/
+        ret.add(new FixedParserField("NumberofBabies", 5387, 1));
 //ANTENATAL CARE
         /*ret.add(new FixedParserField("FirstAntenatalAssessmentDate", 5388, 8));
         ret.add(new FixedParserField("GeneralMedicalPractitionerAntenatalCare", 5396, 8));
@@ -694,201 +563,201 @@ public class SusInpatient extends AbstractFixedParser implements CdsRecordI, Cds
         ret.add(new FixedParserField("DeliveryPlaceTypeIntended", 5421, 1));
         ret.add(new FixedParserField("DeliveryPlaceChangeReasonCode", 5422, 1));*/
 //LABOUR DELIVERY
-        /*ret.add(new FixedParserField("AnaestheticDuringLabourOrDelivery", 5423, 1));
+        ret.add(new FixedParserField("AnaestheticDuringLabourOrDelivery", 5423, 1));
         ret.add(new FixedParserField("AnaestheticGivenPostLabourOrDelivery", 5424, 1));
         ret.add(new FixedParserField("GestationLengthLabourOnset", 5425, 2));
         ret.add(new FixedParserField("LabourOrDeliveryOnsetMethodCode", 5427, 1));
-        ret.add(new FixedParserField("DeliveryDate", 5428, 8));*/
+        ret.add(new FixedParserField("DeliveryDate", 5428, 8));
 //BIRTH DETAILS
-        /*ret.add(new FixedParserField("BabyDetails1", 5436, 64));
-        ret.add(new FixedParserField("BirthOrder", 5436, 1));
-        ret.add(new FixedParserField("DeliveryMethod", 5437, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5438, 2));
-        ret.add(new FixedParserField("ResuscitationMethod", 5440, 1));
-        ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5441, 1));
-        ret.add(new FixedParserField("LocationClass", 5442, 2));
-        ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5444, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5445, 3));
-        ret.add(new FixedParserField("LocalPatientID", 5448, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5458, 12));
-        ret.add(new FixedParserField("NHSNumber", 5470, 10));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 5480, 2));
-        ret.add(new FixedParserField("WithheldFlag", 5482, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 5483, 2));
-        ret.add(new FixedParserField("BabyBirthDate", 5485, 8));
-        ret.add(new FixedParserField("BirthWeight", 5493, 4));
-        ret.add(new FixedParserField("LiveOrStillBirth", 5497, 1));
-        ret.add(new FixedParserField("PersonGenderCurrent", 5498, 1));
-        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 5499, 1));
+        ret.add(new FixedParserField("BabyDetails1", 5436, 64));
+        ret.add(new FixedParserField("BirthOrder1", 5436, 1));
+        ret.add(new FixedParserField("DeliveryMethod1", 5437, 1));
+        ret.add(new FixedParserField("GestationLengthAssessment1", 5438, 2));
+        ret.add(new FixedParserField("ResuscitationMethod1", 5440, 1));
+        ret.add(new FixedParserField("StatusofPersonConductingDelivery1", 5441, 1));
+        ret.add(new FixedParserField("LocationClass1", 5442, 2));
+        ret.add(new FixedParserField("DeliveryPlaceTypeActual1", 5444, 1));
+        ret.add(new FixedParserField("ActivityLocationType1", 5445, 3));
+        ret.add(new FixedParserField("LocalPatientID1", 5448, 10));
+        ret.add(new FixedParserField("OrganisationCodeLocalPatientID1", 5458, 12));
+        ret.add(new FixedParserField("BabyNHSNumber1", 5470, 10));
+        ret.add(new FixedParserField("BabyNHSNumberStatusIndicator1", 5480, 2));
+        ret.add(new FixedParserField("WithheldFlag1", 5482, 1));
+        ret.add(new FixedParserField("WithheldIdentityReason1", 5483, 2));
+        ret.add(new FixedParserField("BabyBirthDate1", 5485, 8));
+        ret.add(new FixedParserField("BirthWeight1", 5493, 4));
+        ret.add(new FixedParserField("LiveOrStillBirth1", 5497, 1));
+        ret.add(new FixedParserField("PersonGenderCurrent1", 5498, 1));
+        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate1", 5499, 1));
         ret.add(new FixedParserField("BabyDetails2", 5500, 64));
-        ret.add(new FixedParserField("BirthOrder", 5500, 1));
-        ret.add(new FixedParserField("DeliveryMethod", 5501, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5502, 2));
-        ret.add(new FixedParserField("ResuscitationMethod", 5504, 1));
-        ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5505, 1));
-        ret.add(new FixedParserField("LocationClass", 5506, 2));
-        ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5508, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5509, 3));
-        ret.add(new FixedParserField("LocalPatientID", 5512, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5522, 12));
-        ret.add(new FixedParserField("NHSNumber", 5534, 10));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 5544, 2));
-        ret.add(new FixedParserField("WithheldFlag", 5546, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 5547, 2));
-        ret.add(new FixedParserField("BabyBirthDate", 5549, 8));
-        ret.add(new FixedParserField("BirthWeight", 5557, 4));
-        ret.add(new FixedParserField("LiveOrStillBirth", 5561, 1));
-        ret.add(new FixedParserField("PersonGenderCurrent", 5562, 1));
-        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 5563, 1));
+        ret.add(new FixedParserField("BirthOrder2", 5500, 1));
+        ret.add(new FixedParserField("DeliveryMethod2", 5501, 1));
+        ret.add(new FixedParserField("GestationLengthAssessment2", 5502, 2));
+        ret.add(new FixedParserField("ResuscitationMethod2", 5504, 1));
+        ret.add(new FixedParserField("StatusofPersonConductingDelivery2", 5505, 1));
+        ret.add(new FixedParserField("LocationClass2", 5506, 2));
+        ret.add(new FixedParserField("DeliveryPlaceTypeActual2", 5508, 1));
+        ret.add(new FixedParserField("ActivityLocationType2", 5509, 3));
+        ret.add(new FixedParserField("LocalPatientID2", 5512, 10));
+        ret.add(new FixedParserField("OrganisationCodeLocalPatientID2", 5522, 12));
+        ret.add(new FixedParserField("BabyNHSNumber2", 5534, 10));
+        ret.add(new FixedParserField("BabyNHSNumberStatusIndicator2", 5544, 2));
+        ret.add(new FixedParserField("WithheldFlag2", 5546, 1));
+        ret.add(new FixedParserField("WithheldIdentityReason2", 5547, 2));
+        ret.add(new FixedParserField("BabyBirthDate2", 5549, 8));
+        ret.add(new FixedParserField("BirthWeight2", 5557, 4));
+        ret.add(new FixedParserField("LiveOrStillBirth2", 5561, 1));
+        ret.add(new FixedParserField("PersonGenderCurrent2", 5562, 1));
+        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate2", 5563, 1));
         ret.add(new FixedParserField("BabyDetails3", 5564, 64));
-        ret.add(new FixedParserField("BirthOrder", 5564, 1));
-        ret.add(new FixedParserField("DeliveryMethod", 5565, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5566, 2));
-        ret.add(new FixedParserField("ResuscitationMethod", 5568, 1));
-        ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5569, 1));
-        ret.add(new FixedParserField("LocationClass", 5570, 2));
-        ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5572, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5573, 3));
-        ret.add(new FixedParserField("LocalPatientID", 5576, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5586, 12));
-        ret.add(new FixedParserField("NHSNumber", 5598, 10));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 5608, 2));
-        ret.add(new FixedParserField("WithheldFlag", 5610, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 5611, 2));
-        ret.add(new FixedParserField("BabyBirthDate", 5613, 8));
-        ret.add(new FixedParserField("BirthWeight", 5621, 4));
-        ret.add(new FixedParserField("LiveOrStillBirth", 5625, 1));
-        ret.add(new FixedParserField("PersonGenderCurrent", 5626, 1));
-        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 5627, 1));
+        ret.add(new FixedParserField("BirthOrder3", 5564, 1));
+        ret.add(new FixedParserField("DeliveryMethod3", 5565, 1));
+        ret.add(new FixedParserField("GestationLengthAssessment3", 5566, 2));
+        ret.add(new FixedParserField("ResuscitationMethod3", 5568, 1));
+        ret.add(new FixedParserField("StatusofPersonConductingDeliver3", 5569, 1));
+        ret.add(new FixedParserField("LocationClass3", 5570, 2));
+        ret.add(new FixedParserField("DeliveryPlaceTypeActual3", 5572, 1));
+        ret.add(new FixedParserField("ActivityLocationType3", 5573, 3));
+        ret.add(new FixedParserField("LocalPatientID3", 5576, 10));
+        ret.add(new FixedParserField("OrganisationCodeLocalPatientID3", 5586, 12));
+        ret.add(new FixedParserField("BabyNHSNumber3", 5598, 10));
+        ret.add(new FixedParserField("BabyNHSNumberStatusIndicator3", 5608, 2));
+        ret.add(new FixedParserField("WithheldFlag3", 5610, 1));
+        ret.add(new FixedParserField("WithheldIdentityReason3", 5611, 2));
+        ret.add(new FixedParserField("BabyBirthDate3", 5613, 8));
+        ret.add(new FixedParserField("BirthWeight3", 5621, 4));
+        ret.add(new FixedParserField("LiveOrStillBirth3", 5625, 1));
+        ret.add(new FixedParserField("PersonGenderCurrent3", 5626, 1));
+        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate3", 5627, 1));
         ret.add(new FixedParserField("BabyDetails4", 5628, 64));
-        ret.add(new FixedParserField("BirthOrder", 5628, 1));
-        ret.add(new FixedParserField("DeliveryMethod", 5629, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5630, 2));
-        ret.add(new FixedParserField("ResuscitationMethod", 5632, 1));
-        ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5633, 1));
-        ret.add(new FixedParserField("LocationClass", 5634, 2));
-        ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5636, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5637, 3));
-        ret.add(new FixedParserField("LocalPatientID", 5640, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5650, 12));
-        ret.add(new FixedParserField("NHSNumber", 5662, 10));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 5672, 2));
-        ret.add(new FixedParserField("WithheldFlag", 5674, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 5675, 2));
-        ret.add(new FixedParserField("BabyBirthDate", 5677, 8));
-        ret.add(new FixedParserField("BirthWeight", 5685, 4));
-        ret.add(new FixedParserField("LiveOrStillBirth", 5689, 1));
-        ret.add(new FixedParserField("PersonGenderCurrent", 5690, 1));
-        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 5691, 1));
+        ret.add(new FixedParserField("BirthOrder4", 5628, 1));
+        ret.add(new FixedParserField("DeliveryMethod4", 5629, 1));
+        ret.add(new FixedParserField("GestationLengthAssessment4", 5630, 2));
+        ret.add(new FixedParserField("ResuscitationMethod4", 5632, 1));
+        ret.add(new FixedParserField("StatusofPersonConductingDelivery4", 5633, 1));
+        ret.add(new FixedParserField("LocationClass4", 5634, 2));
+        ret.add(new FixedParserField("DeliveryPlaceTypeActual4", 5636, 1));
+        ret.add(new FixedParserField("ActivityLocationType4", 5637, 3));
+        ret.add(new FixedParserField("LocalPatientID4", 5640, 10));
+        ret.add(new FixedParserField("OrganisationCodeLocalPatientID4", 5650, 12));
+        ret.add(new FixedParserField("BabyNHSNumber4", 5662, 10));
+        ret.add(new FixedParserField("BabyNHSNumberStatusIndicator4", 5672, 2));
+        ret.add(new FixedParserField("WithheldFlag4", 5674, 1));
+        ret.add(new FixedParserField("WithheldIdentityReason4", 5675, 2));
+        ret.add(new FixedParserField("BabyBirthDate4", 5677, 8));
+        ret.add(new FixedParserField("BirthWeight4", 5685, 4));
+        ret.add(new FixedParserField("LiveOrStillBirth4", 5689, 1));
+        ret.add(new FixedParserField("PersonGenderCurrent4", 5690, 1));
+        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate4", 5691, 1));
         ret.add(new FixedParserField("BabyDetails5", 5692, 64));
-        ret.add(new FixedParserField("BirthOrder", 5692, 1));
-        ret.add(new FixedParserField("DeliveryMethod", 5693, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5694, 2));
-        ret.add(new FixedParserField("ResuscitationMethod", 5696, 1));
-        ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5697, 1));
-        ret.add(new FixedParserField("LocationClass", 5698, 2));
-        ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5700, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5701, 3));
-        ret.add(new FixedParserField("LocalPatientID", 5704, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5714, 12));
-        ret.add(new FixedParserField("NHSNumber", 5726, 10));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 5736, 2));
-        ret.add(new FixedParserField("WithheldFlag", 5738, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 5739, 2));
-        ret.add(new FixedParserField("BabyBirthDate", 5741, 8));
-        ret.add(new FixedParserField("BirthWeight", 5749, 4));
-        ret.add(new FixedParserField("LiveOrStillBirth", 5753, 1));
-        ret.add(new FixedParserField("PersonGenderCurrent", 5754, 1));
-        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 5755, 1));
+        ret.add(new FixedParserField("BirthOrder5", 5692, 1));
+        ret.add(new FixedParserField("DeliveryMethod5", 5693, 1));
+        ret.add(new FixedParserField("GestationLengthAssessment5", 5694, 2));
+        ret.add(new FixedParserField("ResuscitationMethod5", 5696, 1));
+        ret.add(new FixedParserField("StatusofPersonConductingDelivery5", 5697, 1));
+        ret.add(new FixedParserField("LocationClass5", 5698, 2));
+        ret.add(new FixedParserField("DeliveryPlaceTypeActual5", 5700, 1));
+        ret.add(new FixedParserField("ActivityLocationType5", 5701, 3));
+        ret.add(new FixedParserField("LocalPatientID5", 5704, 10));
+        ret.add(new FixedParserField("OrganisationCodeLocalPatientID5", 5714, 12));
+        ret.add(new FixedParserField("BabyNHSNumber5", 5726, 10));
+        ret.add(new FixedParserField("BabyNHSNumberStatusIndicator5", 5736, 2));
+        ret.add(new FixedParserField("WithheldFlag5", 5738, 1));
+        ret.add(new FixedParserField("WithheldIdentityReason5", 5739, 2));
+        ret.add(new FixedParserField("BabyBirthDate5", 5741, 8));
+        ret.add(new FixedParserField("BirthWeight5", 5749, 4));
+        ret.add(new FixedParserField("LiveOrStillBirth5", 5753, 1));
+        ret.add(new FixedParserField("PersonGenderCurrent5", 5754, 1));
+        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate5", 5755, 1));
         ret.add(new FixedParserField("BabyDetails6", 5756, 64));
-        ret.add(new FixedParserField("BirthOrder", 5756, 1));
-        ret.add(new FixedParserField("DeliveryMethod", 5757, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5758, 2));
-        ret.add(new FixedParserField("ResuscitationMethod", 5760, 1));
-        ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5761, 1));
-        ret.add(new FixedParserField("LocationClass", 5762, 2));
-        ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5764, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5765, 3));
-        ret.add(new FixedParserField("LocalPatientID", 5768, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5778, 12));
-        ret.add(new FixedParserField("NHSNumber", 5790, 10));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 5800, 2));
-        ret.add(new FixedParserField("WithheldFlag", 5802, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 5803, 2));
-        ret.add(new FixedParserField("BabyBirthDate", 5805, 8));
-        ret.add(new FixedParserField("BirthWeight", 5813, 4));
-        ret.add(new FixedParserField("LiveOrStillBirth", 5817, 1));
-        ret.add(new FixedParserField("PersonGenderCurrent", 5818, 1));
-        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 5819, 1));
+        ret.add(new FixedParserField("BirthOrder6", 5756, 1));
+        ret.add(new FixedParserField("DeliveryMethod6", 5757, 1));
+        ret.add(new FixedParserField("GestationLengthAssessment6", 5758, 2));
+        ret.add(new FixedParserField("ResuscitationMethod6", 5760, 1));
+        ret.add(new FixedParserField("StatusofPersonConductingDelivery6", 5761, 1));
+        ret.add(new FixedParserField("LocationClass6", 5762, 2));
+        ret.add(new FixedParserField("DeliveryPlaceTypeActual6", 5764, 1));
+        ret.add(new FixedParserField("ActivityLocationType6", 5765, 3));
+        ret.add(new FixedParserField("LocalPatientID6", 5768, 10));
+        ret.add(new FixedParserField("OrganisationCodeLocalPatientID6", 5778, 12));
+        ret.add(new FixedParserField("BabyNHSNumber6", 5790, 10));
+        ret.add(new FixedParserField("BabyNHSNumberStatusIndicator6", 5800, 2));
+        ret.add(new FixedParserField("WithheldFlag6", 5802, 1));
+        ret.add(new FixedParserField("WithheldIdentityReason6", 5803, 2));
+        ret.add(new FixedParserField("BabyBirthDate6", 5805, 8));
+        ret.add(new FixedParserField("BirthWeight6", 5813, 4));
+        ret.add(new FixedParserField("LiveOrStillBirth6", 5817, 1));
+        ret.add(new FixedParserField("PersonGenderCurrent6", 5818, 1));
+        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate6", 5819, 1));
         ret.add(new FixedParserField("BabyDetails7", 5820, 64));
-        ret.add(new FixedParserField("BirthOrder", 5820, 1));
-        ret.add(new FixedParserField("DeliveryMethod", 5821, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5822, 2));
-        ret.add(new FixedParserField("ResuscitationMethod", 5824, 1));
-        ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5825, 1));
-        ret.add(new FixedParserField("LocationClass", 5826, 2));
-        ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5828, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5829, 3));
-        ret.add(new FixedParserField("LocalPatientID", 5832, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5842, 12));
-        ret.add(new FixedParserField("NHSNumber", 5854, 10));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 5864, 2));
-        ret.add(new FixedParserField("WithheldFlag", 5866, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 5867, 2));
-        ret.add(new FixedParserField("BabyBirthDate", 5869, 8));
-        ret.add(new FixedParserField("BirthWeight", 5877, 4));
-        ret.add(new FixedParserField("LiveOrStillBirth", 5881, 1));
-        ret.add(new FixedParserField("PersonGenderCurrent", 5882, 1));
-        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 5883, 1));
+        ret.add(new FixedParserField("BirthOrder7", 5820, 1));
+        ret.add(new FixedParserField("DeliveryMethod7", 5821, 1));
+        ret.add(new FixedParserField("GestationLengthAssessment7", 5822, 2));
+        ret.add(new FixedParserField("ResuscitationMethod7", 5824, 1));
+        ret.add(new FixedParserField("StatusofPersonConductingDelivery7", 5825, 1));
+        ret.add(new FixedParserField("LocationClas7s", 5826, 2));
+        ret.add(new FixedParserField("DeliveryPlaceTypeActual7", 5828, 1));
+        ret.add(new FixedParserField("ActivityLocationType7", 5829, 3));
+        ret.add(new FixedParserField("LocalPatientID7", 5832, 10));
+        ret.add(new FixedParserField("OrganisationCodeLocalPatientID7", 5842, 12));
+        ret.add(new FixedParserField("BabyNHSNumber7", 5854, 10));
+        ret.add(new FixedParserField("BabyNHSNumberStatusIndicator7", 5864, 2));
+        ret.add(new FixedParserField("WithheldFlag7", 5866, 1));
+        ret.add(new FixedParserField("WithheldIdentityReason7", 5867, 2));
+        ret.add(new FixedParserField("BabyBirthDate7", 5869, 8));
+        ret.add(new FixedParserField("BirthWeight7", 5877, 4));
+        ret.add(new FixedParserField("LiveOrStillBirth7", 5881, 1));
+        ret.add(new FixedParserField("PersonGenderCurrent7", 5882, 1));
+        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate7", 5883, 1));
         ret.add(new FixedParserField("BabyDetails8", 5884, 64));
-        ret.add(new FixedParserField("BirthOrder", 5884, 1));
-        ret.add(new FixedParserField("DeliveryMethod", 5885, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5886, 2));
-        ret.add(new FixedParserField("ResuscitationMethod", 5888, 1));
-        ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5889, 1));
-        ret.add(new FixedParserField("LocationClass", 5890, 2));
-        ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5892, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5893, 3));
-        ret.add(new FixedParserField("LocalPatientID", 5896, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5906, 12));
-        ret.add(new FixedParserField("NHSNumber", 5918, 10));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 5928, 2));
-        ret.add(new FixedParserField("WithheldFlag", 5930, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 5931, 2));
-        ret.add(new FixedParserField("BabyBirthDate", 5933, 8));
-        ret.add(new FixedParserField("BirthWeight", 5941, 4));
-        ret.add(new FixedParserField("LiveOrStillBirth", 5945, 1));
-        ret.add(new FixedParserField("PersonGenderCurrent", 5946, 1));
-        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 5947, 1));
+        ret.add(new FixedParserField("BirthOrder8", 5884, 1));
+        ret.add(new FixedParserField("DeliveryMethod8", 5885, 1));
+        ret.add(new FixedParserField("GestationLengthAssessment8", 5886, 2));
+        ret.add(new FixedParserField("ResuscitationMethod8", 5888, 1));
+        ret.add(new FixedParserField("StatusofPersonConductingDelivery8", 5889, 1));
+        ret.add(new FixedParserField("LocationClass8", 5890, 2));
+        ret.add(new FixedParserField("DeliveryPlaceTypeActual8", 5892, 1));
+        ret.add(new FixedParserField("ActivityLocationType8", 5893, 3));
+        ret.add(new FixedParserField("LocalPatientID8", 5896, 10));
+        ret.add(new FixedParserField("OrganisationCodeLocalPatientID8", 5906, 12));
+        ret.add(new FixedParserField("BabyNHSNumber8", 5918, 10));
+        ret.add(new FixedParserField("BabyNHSNumberStatusIndicator8", 5928, 2));
+        ret.add(new FixedParserField("WithheldFlag8", 5930, 1));
+        ret.add(new FixedParserField("WithheldIdentityReason8", 5931, 2));
+        ret.add(new FixedParserField("BabyBirthDate8", 5933, 8));
+        ret.add(new FixedParserField("BirthWeight8", 5941, 4));
+        ret.add(new FixedParserField("LiveOrStillBirth8", 5945, 1));
+        ret.add(new FixedParserField("PersonGenderCurrent8", 5946, 1));
+        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate8", 5947, 1));
         ret.add(new FixedParserField("BabyDetails9", 5948, 64));
-        ret.add(new FixedParserField("BirthOrder", 5948, 1));
-        ret.add(new FixedParserField("DeliveryMethod", 5949, 1));
-        ret.add(new FixedParserField("GestationLengthAssessment", 5950, 2));
-        ret.add(new FixedParserField("ResuscitationMethod", 5952, 1));
-        ret.add(new FixedParserField("StatusofPersonConductingDelivery", 5953, 1));
-        ret.add(new FixedParserField("LocationClass", 5954, 2));
-        ret.add(new FixedParserField("DeliveryPlaceTypeActual", 5956, 1));
-        ret.add(new FixedParserField("ActivityLocationType", 5957, 3));
-        ret.add(new FixedParserField("LocalPatientID", 5960, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 5970, 12));
-        ret.add(new FixedParserField("NHSNumber", 5982, 10));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 5992, 2));
-        ret.add(new FixedParserField("WithheldFlag", 5994, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 5995, 2));
-        ret.add(new FixedParserField("BabyBirthDate", 5997, 8));
-        ret.add(new FixedParserField("BirthWeight", 6005, 4));
-        ret.add(new FixedParserField("LiveOrStillBirth", 6009, 1));
-        ret.add(new FixedParserField("PersonGenderCurrent", 6010, 1));
-        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate", 6011, 1));*/
+        ret.add(new FixedParserField("BirthOrder9", 5948, 1));
+        ret.add(new FixedParserField("DeliveryMethod9", 5949, 1));
+        ret.add(new FixedParserField("GestationLengthAssessment9", 5950, 2));
+        ret.add(new FixedParserField("ResuscitationMethod9", 5952, 1));
+        ret.add(new FixedParserField("StatusofPersonConductingDelivery9", 5953, 1));
+        ret.add(new FixedParserField("LocationClass9", 5954, 2));
+        ret.add(new FixedParserField("DeliveryPlaceTypeActual9", 5956, 1));
+        ret.add(new FixedParserField("ActivityLocationType9", 5957, 3));
+        ret.add(new FixedParserField("LocalPatientID9", 5960, 10));
+        ret.add(new FixedParserField("OrganisationCodeLocalPatientID9", 5970, 12));
+        ret.add(new FixedParserField("BabyNHSNumber9", 5982, 10));
+        ret.add(new FixedParserField("BabyNHSNumberStatusIndicator9", 5992, 2));
+        ret.add(new FixedParserField("WithheldFlag9", 5994, 1));
+        ret.add(new FixedParserField("WithheldIdentityReason9", 5995, 2));
+        ret.add(new FixedParserField("BabyBirthDate9", 5997, 8));
+        ret.add(new FixedParserField("BirthWeight9", 6005, 4));
+        ret.add(new FixedParserField("LiveOrStillBirth9", 6009, 1));
+        ret.add(new FixedParserField("PersonGenderCurrent9", 6010, 1));
+        ret.add(new FixedParserField("OverseasVisitorStatusClassificationAtCDSActivityDate9", 6011, 1));
 //MOTHER DETAILS
-        /*ret.add(new FixedParserField("LocalPatientID", 6012, 10));
-        ret.add(new FixedParserField("OrganisationCodeLocalPatientID", 6022, 12));
-        ret.add(new FixedParserField("NHSNumberStatusIndicator", 6034, 2));
-        ret.add(new FixedParserField("NHSNumber", 6036, 10));
-        ret.add(new FixedParserField("WithheldFlag", 6046, 1));
-        ret.add(new FixedParserField("WithheldIdentityReason", 6047, 2));
+        ret.add(new FixedParserField("MotherLocalPatientID", 6012, 10));
+        ret.add(new FixedParserField("MotherOrganisationCodeLocalPatientID", 6022, 12));
+        ret.add(new FixedParserField("MotherNHSNumberStatusIndicator", 6034, 2));
+        ret.add(new FixedParserField("MotherNHSNumber", 6036, 10));
+        ret.add(new FixedParserField("MotherWithheldFlag", 6046, 1));
+        ret.add(new FixedParserField("MotherWithheldIdentityReason", 6047, 2));
         ret.add(new FixedParserField("MotherBirthDate", 6049, 8));
-        ret.add(new FixedParserField("OverseasVisitorStatusAtCDSActivityDate", 6057, 1));*/
+        ret.add(new FixedParserField("MotherOverseasVisitorStatusAtCDSActivityDate", 6057, 1));
 //MOTHER ADDRESS
         /*ret.add(new FixedParserField("PatientAddressType", 6058, 2));
         ret.add(new FixedParserField("PatientUnstructuredAddress", 6060, 175));

@@ -33,11 +33,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 
 public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
-
     private static final Logger LOG = LoggerFactory.getLogger(FhirToSubscriberCsvTransformer.class);
-
-    private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
-    //private static Map<String, Integer> transformBatchSizeCache = new HashMap<>();
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
 
@@ -52,22 +48,10 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
         LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
-        JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-
-        boolean pseudonymised = config.has("pseudonymised")
-                && config.get("pseudonymised").asBoolean();
-        //boolean pseudonymised = config.get("pseudonymised").asBoolean();
-
-        int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
-        if (config.has("transform_batch_size")) {
-            batchSize = config.get("transform_batch_size").asInt();
-        }
-
-        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, resources, exchangeBody, pseudonymised);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, resources, exchangeBody);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setSubscriberOrganisationId(enterpriseOrgId);
-        params.setBatchSize(batchSize);
 
         //sometimes we may fail to find an org id, so just return null as there's nothing to send
         if (enterpriseOrgId == null) {
