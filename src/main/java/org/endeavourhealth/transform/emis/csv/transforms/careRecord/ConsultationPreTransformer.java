@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.core.exceptions.CodeNotFoundException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
@@ -22,23 +22,21 @@ public class ConsultationPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
-        //to parse any record in this file it a critical error
         try {
-            AbstractCsvParser parser = parsers.get(Consultation.class);
+            Consultation parser = (Consultation)parsers.get(Consultation.class);
             while (parser != null && parser.nextRecord()) {
                 try {
-                    processRecord((Consultation)parser, fhirResourceFiler, csvHelper);
-                } catch (CodeNotFoundException ex) {
-                    String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                    csvHelper.logErrorRecord(ex, ((Consultation) parser).getPatientGuid(),((Consultation) parser).getConsultationGuid(),errorRecClsName);
+                    processRecord(parser, fhirResourceFiler, csvHelper);
+
+                } catch (Exception ex) {
+                    //because this is a pre-transformer to cache data, throw any exception so we don't continue
+                    throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
+
         } finally {
             csvHelper.waitUntilThreadPoolIsEmpty();
         }
-
-
     }
 
     public static void processRecord(Consultation parser,
@@ -77,7 +75,7 @@ public class ConsultationPreTransformer {
         public Object call() throws Exception {
             try {
                 //carry over linked items from any previous instance of this problem
-                Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterSourceId, ResourceType.Encounter);
+                Encounter previousVersion = (Encounter) csvHelper.retrieveResource(encounterSourceId, ResourceType.Encounter);
                 if (previousVersion == null) {
                     //if this is the first time, then we'll have a null resource
                     return null;

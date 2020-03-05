@@ -31,8 +31,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilde
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
-import org.endeavourhealth.transform.emis.csv.helpers.CodeAndDate;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.tpp.cache.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;

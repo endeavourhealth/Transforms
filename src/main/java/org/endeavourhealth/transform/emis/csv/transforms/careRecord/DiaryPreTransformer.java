@@ -1,10 +1,12 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.core.exceptions.CodeNotFoundException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.schema.appointment.Slot;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Diary;
 import org.hl7.fhir.instance.model.ResourceType;
 
@@ -16,14 +18,15 @@ public class DiaryPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Diary.class);
-       while (parser != null && parser.nextRecord()) {
-          try {
-                createResource((Diary)parser, fhirResourceFiler, csvHelper);
-            } catch (CodeNotFoundException ex) {
-               String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                csvHelper.logErrorRecord(ex,((Diary) parser).getPatientGuid(),((Diary) parser).getDiaryGuid(),errorRecClsName);
-           }
+        Diary parser = (Diary)parsers.get(Diary.class);
+        while (parser != null && parser.nextRecord()) {
+            try {
+                createResource(parser, fhirResourceFiler, csvHelper);
+
+            } catch (Exception ex) {
+                //because this is a pre-transform to cache data, if we have any exceptions, don't continue - just throw it up
+                throw new TransformException(parser.getCurrentState().toString(), ex);
+            }
         }
     }
 

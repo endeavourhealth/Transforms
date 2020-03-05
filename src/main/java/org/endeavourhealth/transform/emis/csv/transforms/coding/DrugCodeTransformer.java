@@ -30,15 +30,15 @@ public class DrugCodeTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
-        //to parse any record in this file it a critical error
         try {
             List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
-            AbstractCsvParser parser = parsers.get(DrugCode.class);
-          while (parser != null && parser.nextRecord()) {
+            DrugCode parser = (DrugCode)parsers.get(DrugCode.class);
+            while (parser != null && parser.nextRecord()) {
                 try {
-                    transform((DrugCode) parser, fhirResourceFiler, csvHelper, mappingsToSave);
+                    transform(parser, fhirResourceFiler, csvHelper, mappingsToSave);
                 } catch (Exception ex) {
+
+                    //because this file contains key reference data, if there's any errors, just throw up
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
@@ -64,7 +64,7 @@ public class DrugCodeTransformer {
 
         EmisCsvCodeMap mapping = new EmisCsvCodeMap();
         mapping.setMedication(true);
-        mapping.setCodeId(codeId.getLong());
+        mapping.setCodeId(codeId.getLong().longValue());
         mapping.setSnomedConceptId(dmdId.getLong());
         mapping.setSnomedTerm(term.getString());
         mapping.setDtLastReceived(csvHelper.getDataDate());

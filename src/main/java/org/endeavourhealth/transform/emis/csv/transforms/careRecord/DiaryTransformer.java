@@ -1,12 +1,12 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureRequestBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
+import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
@@ -24,14 +24,18 @@ public class DiaryTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-       AbstractCsvParser parser = parsers.get(Diary.class);
-      while (parser != null && parser.nextRecord()) {
+        Diary parser = (Diary) parsers.get(Diary.class);
+        while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((Diary) parser, fhirResourceFiler, csvHelper);
-            } catch (CodeNotFoundException ex) {
-                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                csvHelper.logErrorRecord(ex,((Diary) parser).getPatientGuid(),((Diary) parser).getDiaryGuid(),errorRecClsName);
+                createResource(parser, fhirResourceFiler, csvHelper);
+
+            } catch (EmisCodeNotFoundException ex) {
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getCodeId(), parser);
+
+            } catch (Exception ex) {
+                //if we get an exception, log it and continue with the remaining records
+                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
 

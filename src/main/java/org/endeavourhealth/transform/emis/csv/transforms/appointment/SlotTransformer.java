@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.emis.csv.transforms.appointment;
 
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -10,6 +9,7 @@ import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
+import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.appointment.Slot;
@@ -26,27 +26,30 @@ public class SlotTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Slot.class);
-           while (parser != null && parser.nextRecord()) {
-                try {
-                    createSlotAndAppointment((Slot) parser, fhirResourceFiler, csvHelper);
-                } catch (CodeNotFoundException ex) {
-                   String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                    csvHelper.logErrorRecord(ex, ((Slot) parser).getPatientGuid(), ((Slot) parser).getSlotGuid(),errorRecClsName);
-                }
+        Slot parser = (Slot)parsers.get(Slot.class);
+        while (parser != null && parser.nextRecord()) {
+            try {
+                createSlotAndAppointment(parser, fhirResourceFiler, csvHelper);
+
+            } catch (EmisCodeNotFoundException ex) {
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getSlotGuid(), parser);
+
+            } catch (Exception ex) {
+                //if we get an exception, log and carry on
+                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
+        }
 
         //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
     }
 
     public static void createSlotAndAppointment(Slot parser,
-                                                 FhirResourceFiler fhirResourceFiler,
-                                                 EmisCsvHelper csvHelper) throws Exception {
+                                                FhirResourceFiler fhirResourceFiler,
+                                                EmisCsvHelper csvHelper) throws Exception {
 
         CsvCell slotGuid = parser.getSlotGuid();
         CsvCell patientGuid = parser.getPatientGuid();
-
 
         //the slots CSV contains data on empty slots too; ignore them
         if (patientGuid.isEmpty()) {
@@ -97,7 +100,7 @@ public class SlotTransformer {
 
         //calculate expected end datetime from start, plus duration in mins
         CsvCell durationMins = parser.getPlannedDurationInMinutes();
-        long endMillis = startDateTime.getTime() + (durationMins.getInt() * 60 * 1000);
+        long endMillis = startDateTime.getTime() + (durationMins.getInt().intValue() * 60 * 1000);
 
         slotBuilder.setEndDateTime(new Date(endMillis), durationMins);
         appointmentBuilder.setEndDateTime(new Date(endMillis), durationMins);
@@ -176,22 +179,19 @@ public class SlotTransformer {
     }
 
 
-
-
-
     private static List<CsvCell> retrieveExistingPractitioners(CsvCell slotGuidCell, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         List<CsvCell> ret = new ArrayList<>();
 
         String slotGuid = slotGuidCell.getString();
-        Appointment existingAppointment = (Appointment)csvHelper.retrieveResource(slotGuid, ResourceType.Appointment);
+        Appointment existingAppointment = (Appointment) csvHelper.retrieveResource(slotGuid, ResourceType.Appointment);
         if (existingAppointment != null
                 && existingAppointment.hasParticipant()) {
 
             List<Reference> edsReferences = new ArrayList<>();
 
             //note the participant list will also have the PATIENT reference in, so skip that
-            for (Appointment.AppointmentParticipantComponent participant: existingAppointment.getParticipant()) {
+            for (Appointment.AppointmentParticipantComponent participant : existingAppointment.getParticipant()) {
                 Reference reference = participant.getActor();
                 ResourceType resourceType = ReferenceHelper.getResourceType(reference);
                 if (resourceType != ResourceType.Patient) {

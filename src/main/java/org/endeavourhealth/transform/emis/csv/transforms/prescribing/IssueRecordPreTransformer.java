@@ -21,12 +21,14 @@ public class IssueRecordPreTransformer {
 
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
-        AbstractCsvParser parser = parsers.get(IssueRecord.class);
+        IssueRecord parser = (IssueRecord)parsers.get(IssueRecord.class);
         while (parser != null && parser.nextRecord()) {
 
             try {
-                processLine((IssueRecord)parser, fhirResourceFiler, csvHelper);
+                processLine(parser, fhirResourceFiler, csvHelper);
+
             } catch (Exception ex) {
+                //because this is a pre-transformer to cache data, throw any exception so we don't continue
                 throw new TransformException(parser.getCurrentState().toString(), ex);
             }
         }

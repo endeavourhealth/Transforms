@@ -1,19 +1,14 @@
 package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
-import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
+import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
 import org.endeavourhealth.transform.emis.csv.helpers.*;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.DrugRecord;
 import org.hl7.fhir.instance.model.*;
@@ -29,13 +24,17 @@ public class DrugRecordTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(DrugRecord.class);
+        DrugRecord parser = (DrugRecord)parsers.get(DrugRecord.class);
         while (parser != null && parser.nextRecord()) {
             try {
-                createResource((DrugRecord) parser, fhirResourceFiler, csvHelper);
-            } catch (CodeNotFoundException ex) {
-                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                csvHelper.logErrorRecord(ex, ((DrugRecord) parser).getPatientGuid(), ((DrugRecord) parser).getDrugRecordGuid(), errorRecClsName);
+                createResource(parser, fhirResourceFiler, csvHelper);
+
+            } catch (EmisCodeNotFoundException ex) {
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getCodeId(), parser);
+
+            } catch (Exception ex) {
+                //log any record-level exception and carry on to the next record
+                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
 

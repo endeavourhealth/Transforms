@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
-import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -8,6 +7,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.MedicationOrderBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
+import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
@@ -28,14 +28,18 @@ public class IssueRecordTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(IssueRecord.class);
-        IssueRecord parseRec = (IssueRecord) parser;
+        IssueRecord parser = (IssueRecord)parsers.get(IssueRecord.class);
         while (parser != null && parser.nextRecord()) {
-           try {
-                createResource((IssueRecord)parser, fhirResourceFiler, csvHelper);
-            } catch (CodeNotFoundException ex) {
-                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                csvHelper.logErrorRecord(ex, ((IssueRecord) parser).getPatientGuid(), ((IssueRecord) parser).getIssueRecordGuid(),errorRecClsName);
+
+            try {
+                createResource(parser, fhirResourceFiler, csvHelper);
+
+            } catch (EmisCodeNotFoundException ex) {
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getCodeId(), parser);
+
+            } catch (Exception ex) {
+                //log any record-level exception and carry on to the next record
+                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
 

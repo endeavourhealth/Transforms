@@ -6,7 +6,6 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
 import org.endeavourhealth.core.database.dal.reference.models.CernerClinicalEventMap;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.Coding;
 

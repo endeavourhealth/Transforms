@@ -5,7 +5,11 @@ import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
+import org.endeavourhealth.common.utility.ExpiringCache;
+import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCodeType;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -17,6 +21,8 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
+import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.Coding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +41,12 @@ public class EmisCodeHelper {
     public static final String AUDIT_DRUG_CODE = "drug_code";
     public static final String AUDIT_DRUG_TERM = "drug_term";
 
+    private static EmisTransformDalI mappingRepository = DalProvider.factoryEmisTransformDal();
 
+    //note that these caches are purposefully static since they apply to ALL emis practices (not all caches do)
+    private static final long ONE_HOUR = 60L * 60L * 1000L;
+    private static Map<Long, EmisCsvCodeMap> clinicalCodes = new ExpiringCache<>(ONE_HOUR);
+    private static Map<Long, EmisCsvCodeMap> medication = new ExpiringCache<>(ONE_HOUR);
 
     public static CodeableConceptBuilder createCodeableConcept(HasCodeableConceptI resourceBuilder, boolean medication, CsvCell codeIdCell, CodeableConceptBuilder.Tag tag, EmisCsvHelper csvHelper) throws Exception {
         if (codeIdCell.isEmpty()) {
@@ -44,9 +55,9 @@ public class EmisCodeHelper {
 
         EmisCsvCodeMap codeMap = null;
         if (medication) {
-            codeMap = csvHelper.findMedication(codeIdCell);
+            codeMap = findMedication(codeIdCell);
         } else {
-            codeMap = csvHelper.findClinicalCode(codeIdCell);
+            codeMap = findClinicalCode(codeIdCell);
         }
 
         return applyCodeMap(resourceBuilder, codeMap, tag, codeIdCell);
@@ -193,4 +204,41 @@ public class EmisCodeHelper {
 
 
 
+    public static EmisCsvCodeMap findClinicalCode(CsvCell codeIdCell) throws Exception {
+        EmisCsvCodeMap ret = clinicalCodes.get(codeIdCell.getLong());
+        if (ret == null) {
+            ret = mappingRepository.getCodeMapping(false, codeIdCell.getLong());
+            if (ret == null) {
+                LOG.error("Clinical CodeMap value not found " + codeIdCell.getLong() + " for Record Number " + codeIdCell.getRecordNumber());
+                throw new EmisCodeNotFoundException(codeIdCell.getLong().longValue(), EmisCodeType.CLINICAL_CODE, "Clinical code not found");
+            }
+            clinicalCodes.put(codeIdCell.getLong(), ret);
+        }
+        return ret;
+    }
+
+
+    public static ClinicalCodeType findClinicalCodeType(CsvCell codeIdCell) throws Exception {
+
+        EmisCsvCodeMap ret = findClinicalCode(codeIdCell);
+        String typeStr = ret.getCodeType();
+        return ClinicalCodeType.fromValue(typeStr);
+    }
+
+    public static EmisCsvCodeMap findMedication(CsvCell codeIdCell) throws Exception {
+
+        EmisCsvCodeMap ret = medication.get(codeIdCell.getLong());
+        if (ret == null) {
+            ret = mappingRepository.getCodeMapping(true, codeIdCell.getLong());
+            /**if (ret == null) {
+             throw new Exception("Failed to find drug code for codeId " + codeIdCell.getLong());
+             }*/
+            if (ret == null) {
+                LOG.info("Drug code Map value not found " + codeIdCell.getLong() + " for Record Number " + codeIdCell.getRecordNumber());
+                throw new EmisCodeNotFoundException(codeIdCell.getLong().longValue(), EmisCodeType.DRUG_CODE, "Drug code not found");
+            }
+            medication.put(codeIdCell.getLong(), ret);
+        }
+        return ret;
+    }
 }

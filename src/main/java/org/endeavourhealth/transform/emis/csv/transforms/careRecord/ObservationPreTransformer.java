@@ -1,15 +1,13 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
-import org.endeavourhealth.core.exceptions.CodeNotFoundException;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.helpers.BpComponent;
-import org.endeavourhealth.transform.emis.csv.helpers.CodeAndDate;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
+import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
+import org.endeavourhealth.transform.emis.csv.helpers.*;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Observation;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -26,15 +24,17 @@ public class ObservationPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
-        //to parse any record in this file it a critical error
-        AbstractCsvParser parser = parsers.get(Observation.class);
+        Observation parser = (Observation) parsers.get(Observation.class);
         while (parser != null && parser.nextRecord()) {
-         try {
-                processLine((Observation)parser, csvHelper, fhirResourceFiler);
-           } catch (CodeNotFoundException ex) {
-               String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-               csvHelper.logErrorRecord(ex,((Observation) parser).getPatientGuid(),((Observation) parser).getObservationGuid(),errorRecClsName);
+            try {
+                processLine(parser, csvHelper, fhirResourceFiler);
+
+            } catch (EmisCodeNotFoundException ex) {
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getCodeId(), parser);
+
+            } catch (Exception ex) {
+                //because this is a pre-transformer to cache data, throw any exception so we don't continue
+                throw new TransformException(parser.getCurrentState().toString(), ex);
             }
         }
 
@@ -111,14 +111,14 @@ public class ObservationPreTransformer {
         }
 
         CsvCell codeId = parser.getCodeId();
-        ClinicalCodeType codeType = csvHelper.findClinicalCodeType(codeId);
+        ClinicalCodeType codeType = EmisCodeHelper.findClinicalCodeType(codeId);
         if (codeType == ClinicalCodeType.Ethnicity) {
 
             CsvCell effectiveDate = parser.getEffectiveDate();
             CsvCell effectiveDatePrecision = parser.getEffectiveDatePrecision();
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
-            EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
+            EmisCsvCodeMap codeMapping = EmisCodeHelper.findClinicalCode(codeId);
             CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
             csvHelper.cacheEthnicity(patientGuid, codeAndDate);
 
@@ -128,7 +128,7 @@ public class ObservationPreTransformer {
             CsvCell effectiveDatePrecision = parser.getEffectiveDatePrecision();
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
-            EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
+            EmisCsvCodeMap codeMapping = EmisCodeHelper.findClinicalCode(codeId);
             CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
             csvHelper.cacheMaritalStatus(patientGuid, codeAndDate);
         }
@@ -136,7 +136,7 @@ public class ObservationPreTransformer {
         //if we've previously found that our observation is a problem (via the problem pre-transformer)
         //then cache the read code of the observation
         if (csvHelper.isProblemObservationGuid(patientGuid, observationGuid)) {
-            EmisCsvCodeMap codeMapping = csvHelper.findClinicalCode(codeId);
+            EmisCsvCodeMap codeMapping = EmisCodeHelper.findClinicalCode(codeId);
             String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
             csvHelper.cacheProblemObservationGuid(patientGuid, observationGuid, readCode);
         }

@@ -10,9 +10,11 @@ import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuil
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
+import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
+import org.endeavourhealth.transform.emis.csv.schema.appointment.Slot;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Consultation;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Encounter;
@@ -30,15 +32,19 @@ public class ConsultationTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Consultation.class);
+        Consultation parser = (Consultation)parsers.get(Consultation.class);
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((Consultation) parser, fhirResourceFiler, csvHelper);
-            } catch (CodeNotFoundException ex) {
-                String errorRecClsName = Thread.currentThread().getStackTrace()[1].getClassName();
-                csvHelper.logErrorRecord(ex, ((Consultation) parser).getPatientGuid(), ((Consultation) parser).getConsultationGuid(),errorRecClsName);
-           }
+                createResource(parser, fhirResourceFiler, csvHelper);
+
+            } catch (EmisCodeNotFoundException ex) {
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getConsultationSourceCodeId(), parser);
+
+            } catch (Exception ex) {
+                //any exception should be logged but then carry on
+                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+            }
         }
 
         //call this to abort if we had any errors, during the above processing
