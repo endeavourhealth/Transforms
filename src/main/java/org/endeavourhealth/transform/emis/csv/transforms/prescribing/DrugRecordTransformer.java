@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.prescribing;
 
 import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
-import org.endeavourhealth.core.exceptions.CodeNotFoundException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
