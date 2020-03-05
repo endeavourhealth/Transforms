@@ -71,7 +71,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         return true;
     }
 
-    public void UPRN(Patient fhirPatient, long id, long personId,  AbstractEnterpriseCsvWriter csvWriter)  throws Exception {
+    public void UPRN(Patient fhirPatient, long id, long personId,  AbstractEnterpriseCsvWriter csvWriter, String configName)  throws Exception {
         if (!fhirPatient.hasAddress()) {return;}
 
         Iterator var2 = fhirPatient.getAddress().iterator();
@@ -92,18 +92,26 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch uprnWriter = (org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch)csvWriter;
 
+        Integer stati = 0;
+
         while (true) {
             Address address;
-            if (!var2.hasNext()) {break;}
+            if (!var2.hasNext()) {
+                break;
+            }
             address = (Address) var2.next();
             adrec = AddressHelper.generateDisplayText(address);
             LOG.debug(adrec);
+
+            boolean isActive = PeriodHelper.isActive(address.getPeriod());
+            stati=0;
+            if (isActive) {stati=1;}
 
             String csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
 
             // token time out?
             if (csv.isEmpty()) {
-                UPRN.uprn_token="";
+                UPRN.uprn_token = "";
                 uprn_token = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
                 csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
                 if (csv.isEmpty()) {
@@ -112,31 +120,82 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                 }
             }
 
-            String[] ss = csv.split("\\~",-1);
-            String sLat=ss[14]; String sLong = ss[15]; String sX=ss[17]; String sY=ss[18]; String sClass = ss[19]; String sQuality = ss[7];
+            String[] ss = csv.split("\\~", -1);
+            String sLat = ss[14];
+            String sLong = ss[15];
+            String sX = ss[17];
+            String sY = ss[18];
+            String sClass = ss[19];
+            String sQuality = ss[7];
 
             String sUprn = ss[20];
-            Long luprn=new Long(0);
-            if (!sUprn.isEmpty()) {luprn = new Long(sUprn);}
+            Long luprn = new Long(0);
+
+            //if (luprn == 0) {
+            //    LOG.debug("UPRN = 0");
+            //    return;
+            //}
+
+            if (!sUprn.isEmpty()) {
+                luprn = new Long(sUprn);
+            }
 
             BigDecimal lat = new BigDecimal(0);
-            if (!sLat.isEmpty()) {lat=new BigDecimal(sLat);}
+            if (!sLat.isEmpty()) {
+                lat = new BigDecimal(sLat);
+            }
 
             BigDecimal longitude = new BigDecimal(0);
-            if (!sLong.isEmpty()) {longitude=new BigDecimal(sLong);}
+            if (!sLong.isEmpty()) {
+                longitude = new BigDecimal(sLong);
+            }
 
             BigDecimal x = new BigDecimal(0);
-            if (!sX.isEmpty()) {x = new BigDecimal(sX);}
+            if (!sX.isEmpty()) {
+                x = new BigDecimal(sX);
+            }
 
             BigDecimal y = new BigDecimal(0);
-            if (!sY.isEmpty()) {y = new BigDecimal(sY);}
+            if (!sY.isEmpty()) {
+                y = new BigDecimal(sY);
+            }
 
             Date match_date = new Date();
 
+            if (uprnWriter.isPseduonymised()) {
+
+                LOG.debug("Pseduonymise!");
+
+                config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
+                JsonNode pseudoNode = config.get("pseudonymisation");
+                JsonNode saltNode = pseudoNode.get("salt");
+                String base64Salt = saltNode.asText();
+                byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
+
+                String pseudoUprn = null;
+                TreeMap<String, String> keys = new TreeMap<>();
+                keys.put("UPRN", "" + sUprn);
+
+                Crypto crypto = new Crypto();
+                crypto.SetEncryptedSalt(saltBytes);
+                pseudoUprn = crypto.GetDigest(keys);
+
+                uprnWriter.writeUpsertPseudonymised(id,
+                        personId,
+                        pseudoUprn,
+                        stati,
+                        sClass,
+                        sQuality,
+                        ss[6],
+                        match_date,
+                        "",
+                        ""
+                        );
+            } else {
             uprnWriter.writeUpsert(id,
                     personId,
                     luprn,
-                    1, // status
+                    stati, // status
                     sClass,
                     lat,
                     longitude,
@@ -158,6 +217,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                     ss[9], // match flat
                     "", // alg_version
                     ""); // epoc
+            }
         }
     }
 
@@ -364,7 +424,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         PatientAddressMatch uprnwriter = params.getOutputContainer().findCsvWriter(PatientAddressMatch.class);
-        UPRN(fhirPatient, id, personId, uprnwriter);
+        UPRN(fhirPatient, id, personId, uprnwriter, params.getEnterpriseConfigName());
     }
 
 
