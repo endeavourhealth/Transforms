@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.terminology.SnomedCode;

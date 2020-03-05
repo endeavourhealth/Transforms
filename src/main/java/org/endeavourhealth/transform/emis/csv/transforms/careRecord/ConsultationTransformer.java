@@ -38,7 +38,7 @@ public class ConsultationTransformer {
                 createResource(parser, fhirResourceFiler, csvHelper);
 
             } catch (EmisCodeNotFoundException ex) {
-                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getConsultationSourceCodeId(), parser);
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getConsultationGuid(), parser);
 
             } catch (Exception ex) {
                 //any exception should be logged but then carry on

@@ -29,7 +29,7 @@ public class DrugRecordTransformer {
                 createResource(parser, fhirResourceFiler, csvHelper);
 
             } catch (EmisCodeNotFoundException ex) {
-                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getCodeId(), parser);
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getDrugRecordGuid(), parser);
 
             } catch (Exception ex) {
                 //log any record-level exception and carry on to the next record

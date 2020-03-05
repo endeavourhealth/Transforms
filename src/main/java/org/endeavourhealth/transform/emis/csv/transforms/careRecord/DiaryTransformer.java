@@ -31,7 +31,7 @@ public class DiaryTransformer {
                 createResource(parser, fhirResourceFiler, csvHelper);
 
             } catch (EmisCodeNotFoundException ex) {
-                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getCodeId(), parser);
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getDiaryGuid(), parser);
 
             } catch (Exception ex) {
                 //if we get an exception, log it and continue with the remaining records

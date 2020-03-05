@@ -43,7 +43,7 @@ public class ObservationTransformer {
                 }
 
             } catch (EmisCodeNotFoundException ex) {
-                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getCodeId(), parser);
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getObservationGuid(), parser);
 
             } catch (Exception ex) {
                 //log any record-level exception and continue

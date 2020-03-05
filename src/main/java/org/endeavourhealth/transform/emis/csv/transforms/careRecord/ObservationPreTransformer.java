@@ -30,7 +30,7 @@ public class ObservationPreTransformer {
                 processLine(parser, csvHelper, fhirResourceFiler);
 
             } catch (EmisCodeNotFoundException ex) {
-                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getCodeId(), parser);
+                csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getObservationGuid(), parser);
 
             } catch (Exception ex) {
                 //because this is a pre-transformer to cache data, throw any exception so we don't continue
