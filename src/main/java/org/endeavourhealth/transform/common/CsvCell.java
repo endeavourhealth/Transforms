@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CsvCell {
 
     public static final Charset CHARSET = Charset.forName("UTF-8");
-    static final ReentrantLock dateFormatLock = new ReentrantLock();
+    private static final ReentrantLock dateFormatLock = new ReentrantLock();
     //changed to store as a UTF-8 encoded byte array to save 50% memory; the additional
     //CPU needed to decode seems minimal (100M encodes & decodes took 20s in testing)
     private byte[] valueBytes;
