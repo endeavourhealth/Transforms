@@ -11,11 +11,12 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CsvCell {
 
     public static final Charset CHARSET = Charset.forName("UTF-8");
-
+    static final ReentrantLock dateFormatLock = new ReentrantLock();
     //changed to store as a UTF-8 encoded byte array to save 50% memory; the additional
     //CPU needed to decode seems minimal (100M encodes & decodes took 20s in testing)
     private byte[] valueBytes;
@@ -138,10 +139,13 @@ public class CsvCell {
         }
 
         try {
+            dateFormatLock.lock();
             return dateFormat.parse(getString());
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid date format [" + getString() + "]", pe);
-        }
+        }  finally {
+           dateFormatLock.unlock();
+    }
     }
     public Date getTime() throws TransformException {
         if (isEmpty()) {
@@ -161,9 +165,12 @@ public class CsvCell {
         }
 
         try {
+            dateFormatLock.lock();
             return timeFormat.parse(getString());
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid time format [" + getString() + "]", pe);
+        } finally {
+            dateFormatLock.unlock();
         }
     }
     public Date getDateTime() throws TransformException {
@@ -184,9 +191,12 @@ public class CsvCell {
         }
 
         try {
+            dateFormatLock.lock();
             return dateTimeFormat.parse(getString());
         } catch (ParseException pe) {
             throw new FileFormatException("", "Invalid date time format [" + getString() + "]", pe);
+        } finally {
+            dateFormatLock.unlock();
         }
     }
     public boolean getBoolean() {
