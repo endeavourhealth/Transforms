@@ -288,7 +288,32 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             } finally {
                 batchIdLock.unlock();
             }
+
+        } else {
+            //to prevent downstream queue readers having memory problems, limit the size of each admin batch
+            //so generate a new admin batch ID when we hit the configured limit
+            AtomicInteger adminResourceSaved = countResourcesActuallySaved.get(adminBatch.getBatchId());
+            int maxSize = TransformConfig.instance().getAdminBatchMaxSize();
+            if (adminResourceSaved != null //we're not locked, so this may be null if the batch has just been created
+                && adminResourceSaved.get() >= maxSize) {
+
+                try {
+                    batchIdLock.lock();
+
+                    //now we're locked, check again, to prevent two threads doing this at the same time
+                    adminResourceSaved = countResourcesActuallySaved.get(adminBatch.getBatchId());
+                    if (adminResourceSaved.get() >= maxSize) {
+                        LOG.warn("Admin batch now over " + maxSize + " so creating new admin batch");
+                        adminBatch = createAndSaveExchangeBatch(null);
+                    }
+
+                } finally {
+                    batchIdLock.unlock();
+                }
+
+            }
         }
+
         return adminBatch;
     }
 

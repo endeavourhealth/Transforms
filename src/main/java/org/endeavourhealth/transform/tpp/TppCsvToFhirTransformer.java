@@ -273,7 +273,7 @@ public abstract class TppCsvToFhirTransformer {
             try {
                 String version = versions.get(filePath);
                 if (version == null) {
-                    LOG.info("Null version for " + filePath);
+                    //LOG.info("Null version for " + filePath);
                     continue;
 //                    for (Map.Entry<String, String> entry : versions.entrySet()) {
 //                        LOG.info("ParserMap" + entry.getKey() + "/" + entry.getValue());

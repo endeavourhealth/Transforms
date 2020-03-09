@@ -32,6 +32,7 @@ public class TransformConfig {
     private Map<String, Set<String>> hmFileTypeFilters;
     private int rabbitMessagePerSecondThrottle;
     private Map<String, String> emisOdsCodesAndStartDates;
+    private int adminBatchMaxSize;
 
     //singleton
     private static TransformConfig instance;
@@ -69,6 +70,7 @@ public class TransformConfig {
         this.hmFileTypeFilters = new HashMap<>();
         this.rabbitMessagePerSecondThrottle = 5000;
         this.emisOdsCodesAndStartDates = new HashMap<>();
+        this.adminBatchMaxSize = 50000;
 
         try {
 
@@ -223,6 +225,10 @@ public class TransformConfig {
             }
         }
 
+        node = json.get("admin_batch_max_size");
+        if (node != null) {
+            this.adminBatchMaxSize = node.asInt();
+        }
     }
 
     private void loadEmisConfig(JsonNode json) throws Exception {
@@ -345,5 +351,9 @@ public class TransformConfig {
 
     public String getEmisStartDate(String odsCode) {
         return emisOdsCodesAndStartDates.get(odsCode);
+    }
+
+    public int getAdminBatchMaxSize() {
+        return adminBatchMaxSize;
     }
 }
