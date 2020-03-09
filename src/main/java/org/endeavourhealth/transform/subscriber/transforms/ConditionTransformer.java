@@ -127,11 +127,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-        if (parentExtension != null) {
-            Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.OBSERVATION, params);
-        }
+        parentObservationId = ObservationTransformer.transformParentResourceReference(fhir, params);
 
         if (fhir.getPatient() != null) {
             Reference ref = fhir.getPatient();

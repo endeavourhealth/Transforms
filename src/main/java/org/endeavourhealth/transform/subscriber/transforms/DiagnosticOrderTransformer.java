@@ -125,16 +125,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-        if (parentExtension != null) {
-            Reference parentReference = (Reference)parentExtension.getValue();
-            ResourceType parentType = ReferenceHelper.getResourceType(parentReference);
-            if (parentType == ResourceType.DiagnosticOrder) {
-                parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.DIAGNOSTIC_ORDER, params);
-            } else {
-                parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.OBSERVATION, params);
-            }
-        }
+        parentObservationId = ObservationTransformer.transformParentResourceReference(fhir, params);
 
         if (fhir.getSubject() != null) {
             Reference ref = fhir.getSubject();

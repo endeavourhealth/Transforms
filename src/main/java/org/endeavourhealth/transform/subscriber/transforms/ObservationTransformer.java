@@ -135,20 +135,11 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
         if (reviewExtension != null) {
             BooleanType b = (BooleanType)reviewExtension.getValue();
             if (b.getValue() != null) {
-                isReview = b.getValue();
+                isReview = b.getValue().booleanValue();
             }
         }
 
-        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-        if (parentExtension != null) {
-            Reference parentReference = (Reference)parentExtension.getValue();
-            ResourceType parentType = ReferenceHelper.getResourceType(parentReference);
-            if (parentType == ResourceType.DiagnosticOrder) {
-                parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.DIAGNOSTIC_ORDER, params);
-            } else {
-                parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.OBSERVATION, params);
-            }
-        }
+        parentObservationId = transformParentResourceReference(fhir, params);
 
         if (fhir.getSubject() != null) {
             Reference ref = fhir.getSubject();
@@ -194,6 +185,39 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             episodicityConceptId,
             isPrimary);
 
+    }
+
+    public static Long transformParentResourceReference(DomainResource fhir, SubscriberTransformHelper params) throws Exception {
+
+        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
+        if (parentExtension == null) {
+            return null;
+        }
+
+        Reference parentReference = (Reference)parentExtension.getValue();
+        ResourceType parentType = ReferenceHelper.getResourceType(parentReference);
+        if (parentType == ResourceType.DiagnosticOrder) {
+            return transformOnDemandAndMapId(parentReference, SubscriberTableId.DIAGNOSTIC_ORDER, params);
+
+        } else if (parentType == ResourceType.Observation
+                || parentType == ResourceType.Condition
+                || parentType == ResourceType.Procedure
+                || parentType == ResourceType.FamilyMemberHistory
+                || parentType == ResourceType.Immunization
+                || parentType == ResourceType.DiagnosticReport
+                || parentType == ResourceType.Specimen) {
+            return transformOnDemandAndMapId(parentReference, SubscriberTableId.OBSERVATION, params);
+
+        } else if (parentType == ResourceType.AllergyIntolerance) {
+            return transformOnDemandAndMapId(parentReference, SubscriberTableId.ALLERGY_INTOLERANCE, params);
+
+        } else if (parentType == ResourceType.ReferralRequest) {
+            return transformOnDemandAndMapId(parentReference, SubscriberTableId.REFERRAL_REQUEST, params);
+
+        } else {
+            //if it's one of these resource types, then the table doesn't support the link, so ignore
+            throw new Exception("Unexpected parent resource type " + parentType + " for " + fhir.getResourceType() + " " + fhir.getId());
+        }
     }
 
     @Override

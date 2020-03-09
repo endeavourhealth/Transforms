@@ -9,6 +9,7 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,11 +138,7 @@ public class ObservationEnterpriseTransformer extends AbstractEnterpriseTransfor
             }
         }
 
-        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-        if (parentExtension != null) {
-            Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = transformOnDemandAndMapId(parentReference, params);
-        }
+        parentObservationId = transformParentResourceReference(fhir, params);
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
         if (isPrimaryExtension != null) {
@@ -174,6 +171,15 @@ public class ObservationEnterpriseTransformer extends AbstractEnterpriseTransfor
             parentObservationId);
     }
 
+    public static Long transformParentResourceReference(DomainResource fhir, EnterpriseTransformHelper params) throws Exception {
+        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
+        if (parentExtension == null) {
+            return null;
+        }
+
+        Reference parentReference = (Reference)parentExtension.getValue();
+        return transformOnDemandAndMapId(parentReference, params);
+    }
 
 }
 

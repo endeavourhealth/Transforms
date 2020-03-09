@@ -121,14 +121,7 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
-        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-        if (parentExtension != null) {
-            Reference parentReference = (Reference)parentExtension.getValue();
-            ResourceType resourceType = ReferenceHelper.getResourceType(parentReference);
-            if (resourceType == ResourceType.Observation) {
-                parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.OBSERVATION, params);
-            }
-        }
+        parentObservationId = ObservationTransformer.transformParentResourceReference(fhir, params);
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
         if (isPrimaryExtension != null) {

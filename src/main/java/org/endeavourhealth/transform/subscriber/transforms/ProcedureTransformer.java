@@ -113,11 +113,7 @@ public class ProcedureTransformer extends AbstractSubscriberTransformer {
         nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
 
-        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-        if (parentExtension != null) {
-            Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = transformOnDemandAndMapId(parentReference, SubscriberTableId.OBSERVATION, params);
-        }
+        parentObservationId = ObservationTransformer.transformParentResourceReference(fhir, params);
 
         if (fhir.getSubject() != null) {
             Reference ref = fhir.getSubject();

@@ -101,11 +101,7 @@ public class ImmunisationEnterpriseTransformer extends AbstractEnterpriseTransfo
             }
         }
 
-        Extension parentExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PARENT_RESOURCE);
-        if (parentExtension != null) {
-            Reference parentReference = (Reference)parentExtension.getValue();
-            parentObservationId = transformOnDemandAndMapId(parentReference, params);
-        }
+        parentObservationId = ObservationEnterpriseTransformer.transformParentResourceReference(fhir, params);
 
         Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
         if (isPrimaryExtension != null) {
