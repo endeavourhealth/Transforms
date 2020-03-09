@@ -70,7 +70,7 @@ public class TransformConfig {
         this.hmFileTypeFilters = new HashMap<>();
         this.rabbitMessagePerSecondThrottle = 5000;
         this.emisOdsCodesAndStartDates = new HashMap<>();
-        this.adminBatchMaxSize = 50000;
+        this.adminBatchMaxSize = 30000; //largest known patient has 14k resources, so cap at double
 
         try {
 
