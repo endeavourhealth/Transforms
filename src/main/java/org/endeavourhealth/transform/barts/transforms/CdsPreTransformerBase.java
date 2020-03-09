@@ -1462,6 +1462,9 @@ public abstract class CdsPreTransformerBase {
         stagingInpatientCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
 
         stagingInpatientCds.setSpellNumber(parser.getHospitalSpellNumber().getString());
+
+        parser.getAdministrativeCategoryCode();
+
         stagingInpatientCds.setAdmissionMethodCode(parser.getAdmissionMethodCode().getString());
         stagingInpatientCds.setAdmissionSourceCode(parser.getAdmissionSourceCode().getString());
         stagingInpatientCds.setPatientClassification(parser.getPatientClassification().getString());

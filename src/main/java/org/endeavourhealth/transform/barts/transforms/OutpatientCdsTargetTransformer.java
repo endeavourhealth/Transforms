@@ -128,6 +128,7 @@ public class OutpatientCdsTargetTransformer {
 
             //add in additional fields data - note, all dates for either diagnosis or procedure data match the encounter date
             JsonObject additionalArrivalObjs = new JsonObject();
+            additionalArrivalObjs.addProperty("administrative_category_code", targetOutpatientCds.getAdministrativeCategoryCode());
             additionalArrivalObjs.addProperty("appt_attended_code", targetOutpatientCds.getApptAttendedCode());
             additionalArrivalObjs.addProperty("appt_outcome_code", targetOutpatientCds.getApptOutcomeCode());
             if (!Strings.isNullOrEmpty(targetOutpatientCds.getPrimaryDiagnosisICD())) {
@@ -153,7 +154,6 @@ public class OutpatientCdsTargetTransformer {
             String encounterInstanceAsJson = null;
             encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterOutpatient);
             compositionBuilder.addSection("encounter-1", encounterOutpatient.getEncounterId(), encounterInstanceAsJson);
-
 
             //LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));
 

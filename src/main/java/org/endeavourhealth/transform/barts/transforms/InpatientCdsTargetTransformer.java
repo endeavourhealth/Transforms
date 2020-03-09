@@ -125,6 +125,7 @@ public class InpatientCdsTargetTransformer {
 
                 //add in additional fields data
                 JsonObject additionalInpatientObjs = new JsonObject();
+                additionalInpatientObjs.addProperty("administrative_category_code", targetInpatientCds.getAdministrativeCategoryCode());
                 additionalInpatientObjs.addProperty("admission_method_code", targetInpatientCds.getAdmissionMethodCode());
                 additionalInpatientObjs.addProperty("admission_source_code", targetInpatientCds.getAdmissionSourceCode());
                 additionalInpatientObjs.addProperty("patient_classification", targetInpatientCds.getPatientClassification());
