@@ -16,9 +16,9 @@ public class PatientAddressMatch extends AbstractTargetTable {
     public Class[] getColumnTypes() {
         return new Class[]{
                 Byte.TYPE, // thingy
-                Long.TYPE, // id (bigint)
+                //Long.TYPE, // id (bigint)
                 Long.TYPE, // patient_address_id (bigint)
-                Long.TYPE, // uprn (bigint)
+                String.class, // uprn (varchar)
                 Integer.class, // status (tinyint)
                 String.class, // classification (varchar)
                 BigDecimal.class, // latitude (double)
@@ -48,8 +48,7 @@ public class PatientAddressMatch extends AbstractTargetTable {
     public String[] getCsvHeaders() {
         return new String[]{
                 "is_delete",
-                "id",
-                "patient_address_id",
+                "id", // "patient_address_id"
                 "uprn",
                 "status",
                 "classification",
@@ -88,9 +87,9 @@ public class PatientAddressMatch extends AbstractTargetTable {
         );
     }
 
-    public void writeUpsert(SubscriberId subscriberId,
+    public void writeUpsert(//SubscriberId subscriberId,
                             long patient_address_id,
-                            long uprn,
+                            String uprn,
                             Integer status,
                             String classification,
                             BigDecimal latitude,
@@ -117,9 +116,9 @@ public class PatientAddressMatch extends AbstractTargetTable {
 
         super.printRecord(
                 convertBoolean(false),
-                "" + subscriberId.getSubscriberId(),
+                //"" + subscriberId.getSubscriberId(),
                 "" + patient_address_id,
-                convertLong(uprn),
+                uprn,
                 convertInt(status),
                 classification,
                 convertBigDecimal(latitude),

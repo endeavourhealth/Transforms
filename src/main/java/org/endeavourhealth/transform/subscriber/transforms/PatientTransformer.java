@@ -360,7 +360,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void UPRN(SubscriberTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode) throws Exception {
+    private void UPRN(SubscriberTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode, Long currentAddressId) throws Exception {
 
         JsonNode config = ConfigManager.getConfigurationAsJson("UPRN", "db_subscriber");
         if (config==null) {return;}
@@ -419,11 +419,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         // 13=quality, 14=latitude, 15=longitude, 16=point
         // 17=X, 18=Y, 19=class, 20=uprn
 
-        String sLat=ss[14]; String sLong = ss[15]; String sX=ss[17]; String sY=ss[18]; String sClass = ss[19]; String sQuality = ss[7];
+        String sLat=ss[14]; String sLong = ss[15]; String sX=ss[17]; String sY=ss[18]; String sClass = ss[19]; String sQualifier = ss[7];
 
         String sUprn = ss[20];
-        Long luprn=new Long(0);
-        if (!sUprn.isEmpty()) {luprn = new Long(sUprn);}
+        //Long luprn=new Long(0);
+        //if (!sUprn.isEmpty()) {luprn = new Long(sUprn);}
 
         BigDecimal lat = new BigDecimal(0);
         if (!sLat.isEmpty()) {lat=new BigDecimal(sLat);}
@@ -437,29 +437,60 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         BigDecimal y = new BigDecimal(0);
         if (!sY.isEmpty()) {y = new BigDecimal(sY);}
 
-        uprnwriter.writeUpsert(uprn_subTableId,
+        Integer stati = 0;
+        if (currentAddressId!=null) {stati=1;}
+
+        String znumber = ss[1]; String zstreet = ss[4]; String zlocality = ss[0]; String ztown = ss[5]; String zpostcode = ss[3]; String zorg = ss[2];
+        String match_post = ss[11]; String match_street = ss[12]; String match_number = ss[10]; String match_building = ss[8];
+        String match_flat = ss[9];
+
+        // null fields because isPseudonymised
+        if (params.isPseudonymised()) {
+            LOG.debug("Pseduonymise!");
+
+            config = ConfigManager.getConfigurationAsJson(params.getSubscriberConfigName(), "db_subscriber");
+            JsonNode pseudoNode = config.get("pseudonymisation");
+            JsonNode saltNode = pseudoNode.get("salt");
+            String base64Salt = saltNode.asText();
+            byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
+
+            sUprn = null;
+            TreeMap<String, String> keys = new TreeMap<>();
+            keys.put("UPRN", "" + sUprn);
+
+            Crypto crypto = new Crypto();
+            crypto.SetEncryptedSalt(saltBytes);
+            sUprn = crypto.GetDigest(keys);
+            // nullify fields
+            znumber=null; zstreet=null; zlocality=null; ztown=null; zpostcode=null; zorg=null;
+            match_post=null; match_street=null; match_number=null; match_building=null; match_flat=null;
+            lat = null; longitude=null; x=null; y=null;
+        }
+
+        uprnwriter.writeUpsert(//uprn_subTableId,
+                //subTableId.getSubscriberId(),
                 subTableId.getSubscriberId(),
-                luprn,
-                1, // status
+                sUprn,
+                stati, // status
                 sClass,
                 lat,
                 longitude,
                 x,
                 y,
-                sQuality,
-                ss[6],
+                sQualifier,
+                ss[6], // algorithm
                 match_date, // match_date
-                ss[1], // number
-                ss[4], // street
-                ss[0], // locality
-                ss[5], // town
-                ss[3], // postcode
-                ss[2], // org
-                ss[11], // match post
-                ss[12], // match street
-                ss[10], // match number
-                ss[8], // match building
-                ss[9], // match flat
+                znumber, // number [1]
+                zstreet, // street [4]
+                zlocality, // locality [0]
+                ztown, // town [5]
+                zpostcode, // postcode [3]
+                zorg, // org [2]
+                match_post, // match post [11]
+                match_street, // match street [12]
+                match_number, // match number [10]
+                match_building, // match building [8]
+                match_flat, // match flat [9]
                 "", // alg version ** TO DO
                 ""); // epoc ** TO DO
     }
@@ -559,6 +590,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         ward,
                         localAuthority);
 
+                UPRN(params,currentPatient,i,resourceWrapper,subTableId,addressLine1,addressLine2,addressLine3,addressLine4,city,postcode,currentAddressId);
             }
         }
 
