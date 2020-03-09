@@ -126,7 +126,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             String sX = ss[17];
             String sY = ss[18];
             String sClass = ss[19];
-            String sQuality = ss[7];
+            String sQualifier = ss[7];
 
             String sUprn = ss[20];
             Long luprn = new Long(0);
@@ -185,7 +185,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                         pseudoUprn,
                         stati,
                         sClass,
-                        sQuality,
+                        sQualifier,
                         ss[6],
                         match_date,
                         "",
@@ -201,7 +201,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                     longitude,
                     x,
                     y,
-                    sQuality,
+                    sQualifier,
                     ss[6],
                     match_date,
                     ss[1], // number
