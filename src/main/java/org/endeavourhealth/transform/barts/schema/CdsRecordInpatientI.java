@@ -6,6 +6,8 @@ public interface CdsRecordInpatientI extends CdsRecordI {
 
     CsvCell getHospitalSpellNumber();
 
+    CsvCell getAdministrativeCategoryCode();
+
     CsvCell getAdmissionMethodCode();
 
     CsvCell getAdmissionSourceCode();

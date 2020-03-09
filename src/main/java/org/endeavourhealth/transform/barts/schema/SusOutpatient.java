@@ -97,6 +97,10 @@ public class SusOutpatient extends AbstractFixedParser implements CdsRecordI, Cd
         return super.getCell("AttendanceIdentifier");
     }
 
+    public CsvCell getAdministrativeCategoryCode() {
+        return super.getCell("AdministrativeCategoryCode");
+    }
+
     public CsvCell getAppointmentAttendedCode() {
         return super.getCell("AttendedOrDidNotAttendCode");
     }

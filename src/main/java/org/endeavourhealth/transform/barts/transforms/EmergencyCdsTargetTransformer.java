@@ -215,6 +215,7 @@ public class EmergencyCdsTargetTransformer {
 
                 // create a list of additional data to store as Json for this encounterInvTreat instance
                 JsonObject additionalInvTreatObjs = new JsonObject();
+                additionalInvTreatObjs.addProperty("treatment_function_code", targetEmergencyCds.getTreatmentFunctionCode());
                 additionalInvTreatObjs.addProperty("diagnosis", targetEmergencyCds.getDiagnosis());
                 additionalInvTreatObjs.addProperty("investigations", targetEmergencyCds.getInvestigations());
                 additionalInvTreatObjs.addProperty("treatments", targetEmergencyCds.getTreatments());

@@ -80,6 +80,10 @@ public class HomeDeliveryAndBirth extends AbstractFixedParser implements CdsReco
         return super.getCell("HospitalProviderSpellNumber");
     }
 
+    public CsvCell getAdministrativeCategoryCode() {
+        return super.getCell("AdministrativeCategoryCode");
+    }
+
     public CsvCell getAdmissionMethodCode() {
         return super.getCell("AdmissionMethodCode");
     }
