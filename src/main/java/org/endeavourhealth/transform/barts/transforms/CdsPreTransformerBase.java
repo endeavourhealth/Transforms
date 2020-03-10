@@ -1366,9 +1366,10 @@ public abstract class CdsPreTransformerBase {
         if (!Strings.isNullOrEmpty(personnelIdStr)) {
             stagingOutpatientCds.setLookupConsultantPersonnelId(Integer.valueOf(personnelIdStr));
         }
+        stagingOutpatientCds.setReferralSource(parser.getReferralSource().getString());
         stagingOutpatientCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
-
         stagingOutpatientCds.setApptAttendanceIdentifier(parser.getAttendanceIdentifier().getString());
+        stagingOutpatientCds.setAdministrativeCategoryCode(parser.getAdministrativeCategoryCode().getString());
         stagingOutpatientCds.setApptAttendedCode(parser.getAppointmentAttendedCode().getString());
         stagingOutpatientCds.setApptOutcomeCode(parser.getAppointmentOutcomeCode().getString());
 
@@ -1462,9 +1463,7 @@ public abstract class CdsPreTransformerBase {
         stagingInpatientCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
 
         stagingInpatientCds.setSpellNumber(parser.getHospitalSpellNumber().getString());
-
-        parser.getAdministrativeCategoryCode();
-
+        stagingInpatientCds.setAdministrativeCategoryCode(parser.getAdministrativeCategoryCode().getString());
         stagingInpatientCds.setAdmissionMethodCode(parser.getAdmissionMethodCode().getString());
         stagingInpatientCds.setAdmissionSourceCode(parser.getAdmissionSourceCode().getString());
         stagingInpatientCds.setPatientClassification(parser.getPatientClassification().getString());

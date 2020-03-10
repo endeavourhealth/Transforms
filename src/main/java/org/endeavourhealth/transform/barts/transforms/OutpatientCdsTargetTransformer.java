@@ -128,6 +128,7 @@ public class OutpatientCdsTargetTransformer {
 
             //add in additional fields data - note, all dates for either diagnosis or procedure data match the encounter date
             JsonObject additionalArrivalObjs = new JsonObject();
+            additionalArrivalObjs.addProperty("referral_source", targetOutpatientCds.getReferralSource());
             additionalArrivalObjs.addProperty("administrative_category_code", targetOutpatientCds.getAdministrativeCategoryCode());
             additionalArrivalObjs.addProperty("appt_attended_code", targetOutpatientCds.getApptAttendedCode());
             additionalArrivalObjs.addProperty("appt_outcome_code", targetOutpatientCds.getApptOutcomeCode());

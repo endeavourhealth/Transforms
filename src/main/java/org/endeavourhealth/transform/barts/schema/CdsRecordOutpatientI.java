@@ -11,4 +11,5 @@ public interface CdsRecordOutpatientI extends CdsRecordI {
     CsvCell getAppointmentDate();
     CsvCell getAppointmentTime();
     CsvCell getAppointmentSiteCode();
+    CsvCell getReferralSource();
 }

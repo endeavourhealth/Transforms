@@ -121,6 +121,10 @@ public class SusOutpatient extends AbstractFixedParser implements CdsRecordI, Cd
         return super.getCell("SiteCodeofTreatment");
     }
 
+    public CsvCell getReferralSource() {
+        return super.getCell("SourceOfReferralOutpatients");
+    }
+
 
 
     /*public String getConsultantCode() {
