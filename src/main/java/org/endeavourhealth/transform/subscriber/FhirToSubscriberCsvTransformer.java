@@ -117,7 +117,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
     /**
      * finds or creates the ID for the organization that all this data is for
      */
-    private static Long findEnterpriseOrgId(UUID serviceId, SubscriberTransformHelper params, List<ResourceWrapper> resources) throws Exception {
+    public static Long findEnterpriseOrgId(UUID serviceId, SubscriberTransformHelper params, List<ResourceWrapper> resources) throws Exception {
 
         //if we've previously transformed for our ODS code, then we'll have a mapping to the enterprise ID for that ODS code
         SubscriberOrgMappingDalI subscriberInstanceMappingDal = DalProvider.factorySubscriberOrgMappingDal(params.getSubscriberConfigName());
