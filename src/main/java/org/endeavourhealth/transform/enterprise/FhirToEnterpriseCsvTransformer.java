@@ -78,7 +78,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         return i.intValue();
     }*/
 
-    private static Long findEnterpriseOrgId(UUID serviceId, EnterpriseTransformHelper params) throws Exception {
+    public static Long findEnterpriseOrgId(UUID serviceId, EnterpriseTransformHelper params) throws Exception {
 
         //if we've previously transformed for our ODS code, then we'll have a mapping to the enterprise ID for that ODS code
         SubscriberOrgMappingDalI subscriberOrgDal = DalProvider.factorySubscriberOrgMappingDal(params.getEnterpriseConfigName());

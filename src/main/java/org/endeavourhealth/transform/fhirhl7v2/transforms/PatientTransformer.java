@@ -625,6 +625,9 @@ public class PatientTransformer {
         } else if (newStatus.equalsIgnoreCase("Trace Attempted")) {
             newStatusEnum = NhsNumberVerificationStatus.TRACE_ATTEMPTED_NO_MATCH;
 
+        } else if (newStatus.equalsIgnoreCase("Trace Postponed")) {
+            newStatusEnum = NhsNumberVerificationStatus.TRACE_POSTPONED;
+
         } else {
          //TODO Does this enum have correct strings? We saw "Trace Attempted" for ex.
             for (NhsNumberVerificationStatus s : NhsNumberVerificationStatus.values()) {

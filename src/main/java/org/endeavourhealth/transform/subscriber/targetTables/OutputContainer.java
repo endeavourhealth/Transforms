@@ -86,6 +86,11 @@ public class OutputContainer {
         return baos.toByteArray();
     }
 
+    public void clearDownOutputContainer(List<String> filesToKeep) throws Exception {
+
+        this.csvWriters.removeIf(c -> !filesToKeep.contains(c.getFileNameWithoutExtension()));
+    }
+
     private static void writeColumnClassMappings(AbstractTargetTable csvWriter, ObjectNode columnClassMappingJson) throws Exception {
 
         //we only write CSV files with rows, so don't bother writing their column mappings either

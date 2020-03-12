@@ -83,6 +83,11 @@ public class OutputContainer {
         //return as base64 encoded string
         return baos.toByteArray();
     }
+
+    public void clearDownOutputContainer(List<String> filesToKeep) throws Exception {
+
+        this.csvWriters.removeIf(c -> !filesToKeep.contains(c.getFileNameWithoutExtension()));
+    }
     
     private static void writeColumnClassMappings(AbstractEnterpriseCsvWriter csvWriter, ObjectNode columnClassMappingJson) throws Exception {
 
