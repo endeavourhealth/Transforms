@@ -66,7 +66,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     //private static byte[] saltBytes = null;
     //private static ResourceRepository resourceRepository = new ResourceRepository();
 
-    public static String uprn_token = "";
+    public static String uprnToken = "";
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -381,7 +381,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         JsonNode uprn_endpoint = config.get("uprn_endpoint");
 
-        uprn_token = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
+        uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
 
         if (addressLine1==null) {addressLine1="";}
         if (addressLine2==null) {addressLine2="";}
@@ -395,13 +395,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         // debug
         // adrec="201,Darkes Lane,Potters Bar,EN6 1BX";
 
-        String csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
+        String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText());
         // token time out?
         if (csv.isEmpty()) {
-            UPRN.uprn_token="";
+            UPRN.uprnToken="";
             // get another token
-            uprn_token = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
-            csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
+            uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
+            csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText());
             if (csv.isEmpty()) {
                 LOG.debug("Unable to get address from UPRN API");
                 return;
@@ -422,8 +422,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         String sLat=ss[14]; String sLong = ss[15]; String sX=ss[17]; String sY=ss[18]; String sClass = ss[19]; String sQualifier = ss[7];
 
         String sUprn = ss[20];
-        //Long luprn=new Long(0);
-        //if (!sUprn.isEmpty()) {luprn = new Long(sUprn);}
+
+        if (sUprn.isEmpty()) {
+            LOG.debug("UPRN = 0");
+            return;
+        }
 
         BigDecimal lat = new BigDecimal(0);
         if (!sLat.isEmpty()) {lat=new BigDecimal(sLat);}

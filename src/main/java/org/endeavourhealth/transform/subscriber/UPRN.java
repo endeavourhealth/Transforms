@@ -10,12 +10,10 @@ import java.net.URLEncoder;
 import org.json.*;
 
 public class UPRN {
-	public static String uprn_token = "";
+	public static String uprnToken = "";
 
 	public static String getAdrec(String adrec, String token, String token_endpoint) throws Exception {
 		String response = "";
-
-		//String url= "https://uprnapi.discoverydataservice.net:8443/api/getinfo?adrec="+adrec;
 
 		String url = token_endpoint+"api/getcsv?adrec=" + URLEncoder.encode(adrec, "UTF-8")+"&delim=~";
 
@@ -49,7 +47,7 @@ public class UPRN {
 		String token = "";
 
 		try {
-			
+
 			String encoded = "password=" + password + "&username=" + username + "&client_id=" + clientid + "&grant_type=password";
 
 			// URL obj = new URL("https://www.discoverydataservice.net/auth/realms/endeavour-machine/protocol/openid-connect/token");
@@ -103,12 +101,14 @@ public class UPRN {
 
 		return token;
 	}
+
+	// synchronized
 	public static String getUPRNToken(String password, String username, String clientid, Logger LOG, String token_endpoint) {
-		if (uprn_token.isEmpty()) {
+		if (uprnToken.isEmpty()) {
 			LOG.debug("UPRN: refreshing token");
-			uprn_token = getToken(password, username, clientid, token_endpoint);
+			uprnToken = getToken(password, username, clientid, token_endpoint);
 		}
-		return uprn_token;
+		return uprnToken;
 	}
 }
 

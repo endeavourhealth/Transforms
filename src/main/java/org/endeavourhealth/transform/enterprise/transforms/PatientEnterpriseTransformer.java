@@ -60,7 +60,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
     //private static byte[] saltBytes = null;
     //private static ResourceRepository resourceRepository = new ResourceRepository();
 
-    public static String uprn_token = "";
+    public static String uprnToken = "";
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -88,7 +88,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         JsonNode uprn_endpoint = config.get("uprn_endpoint");
 
-        uprn_token = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
+        uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
 
         org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch uprnWriter = (org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch)csvWriter;
 
@@ -107,13 +107,13 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             stati=0;
             if (isActive) {stati=1;}
 
-            String csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
+            String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText());
 
             // token time out?
             if (csv.isEmpty()) {
-                UPRN.uprn_token = "";
-                uprn_token = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
-                csv = UPRN.getAdrec(adrec, uprn_token, uprn_endpoint.asText());
+                UPRN.uprnToken = "";
+                uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
+                csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText());
                 if (csv.isEmpty()) {
                     LOG.debug("Unable to get address from UPRN API");
                     return;
@@ -131,10 +131,10 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             String sUprn = ss[20];
             Long luprn = new Long(0);
 
-            //if (luprn == 0) {
-            //    LOG.debug("UPRN = 0");
-            //    return;
-            //}
+            if (luprn == 0) {
+                LOG.debug("UPRN = 0");
+                return;
+            }
 
             if (!sUprn.isEmpty()) {
                 luprn = new Long(sUprn);
