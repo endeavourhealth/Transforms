@@ -131,14 +131,12 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             String sUprn = ss[20];
             Long luprn = new Long(0);
 
-            if (luprn == 0) {
+            if (sUprn.isEmpty()) {
                 LOG.debug("UPRN = 0");
                 return;
             }
 
-            if (!sUprn.isEmpty()) {
-                luprn = new Long(sUprn);
-            }
+            luprn = new Long(sUprn);
 
             BigDecimal lat = new BigDecimal(0);
             if (!sLat.isEmpty()) {
