@@ -1131,7 +1131,6 @@ public abstract class CdsPreTransformerBase {
         if (decidedToAdmitDateTime != null) {
             stagingEmergencyCds.setDecidedToAdmitDate(decidedToAdmitDateTime);
         }
-        stagingEmergencyCds.setTreatmentFunctionCode(parser.getActivityTreatmentFunctionCode().getString());
         stagingEmergencyCds.setDischargeStatus(parser.getDischargeStatus().getString());
 
         CsvCell conclusionDate = parser.getConclusionDate();
