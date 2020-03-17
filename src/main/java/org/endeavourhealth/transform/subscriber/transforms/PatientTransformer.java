@@ -593,6 +593,14 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         ward,
                         localAuthority);
 
+                // get the address details again for UPRN (might be Pseudonymised)
+                addressLine1 = getAddressLine(address, 0);
+                addressLine2 = getAddressLine(address, 1);
+                addressLine3 = getAddressLine(address, 2);
+                addressLine4 = getAddressLine(address, 3);
+                city = address.getCity();
+                postcode = address.getPostalCode();
+
                 UPRN(params,currentPatient,i,resourceWrapper,subTableId,addressLine1,addressLine2,addressLine3,addressLine4,city,postcode,currentAddressId);
             }
         }
