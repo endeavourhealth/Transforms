@@ -637,7 +637,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public String getInternalId(String idType, String sourceId) throws Exception {
-        StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
+//        StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
 //        StringMemorySaver cached = hmInternalIdMapCache.get(cacheKey);
 //
 //        if (cached != null) {
