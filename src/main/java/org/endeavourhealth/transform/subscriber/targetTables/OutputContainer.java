@@ -86,9 +86,9 @@ public class OutputContainer {
         return baos.toByteArray();
     }
 
-    public void clearDownOutputContainer(List<String> filesToKeep) throws Exception {
+    public void clearDownOutputContainer(List<SubscriberTableId> filesToKeep) throws Exception {
 
-        this.csvWriters.removeIf(c -> !filesToKeep.contains(c.getFileNameWithoutExtension()));
+        this.csvWriters.removeIf(c -> !filesToKeep.contains(c.getTableId()));
     }
 
     private static void writeColumnClassMappings(AbstractTargetTable csvWriter, ObjectNode columnClassMappingJson) throws Exception {
