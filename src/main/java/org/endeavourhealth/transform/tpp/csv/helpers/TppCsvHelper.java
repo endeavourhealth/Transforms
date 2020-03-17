@@ -67,7 +67,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static Map<Long, TppConfigListOption> hmTppConfigListOptions = new ConcurrentHashMap<>();
     private static Map<Long, TppImmunisationContent> hmTppImmunisationContents = new ConcurrentHashMap<>();
     private static Map<Long, TppMultiLexToCtv3Map> hmMultiLexToCTV3Map = new ConcurrentHashMap<>();
-    private static Map<StringMemorySaver, StringMemorySaver> hmInternalIdMapCache = new ConcurrentHashMap<>();
+    //TODO potentially revisit for performance benefit of cache. Need to save memory for now.
+   // private static Map<StringMemorySaver, StringMemorySaver> hmInternalIdMapCache = new ConcurrentHashMap<>();
     private static Map<StringMemorySaver, StringMemorySaver> hmTppCtv3TermLookups = new ConcurrentHashMap<>();
 
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
@@ -629,26 +630,26 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         internalIdDal.save(mappings);
 
         //add them to the cache
-        for (InternalIdMap mapping : mappings) {
-            StringMemorySaver cacheKey = new StringMemorySaver(mapping.getIdType() + "|" + mapping.getSourceId());
-            hmInternalIdMapCache.put(cacheKey, new StringMemorySaver(mapping.getDestinationId()));
-        }
+//        for (InternalIdMap mapping : mappings) {
+//            StringMemorySaver cacheKey = new StringMemorySaver(mapping.getIdType() + "|" + mapping.getSourceId());
+//            hmInternalIdMapCache.put(cacheKey, new StringMemorySaver(mapping.getDestinationId()));
+//        }
     }
 
     public String getInternalId(String idType, String sourceId) throws Exception {
         StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
-        StringMemorySaver cached = hmInternalIdMapCache.get(cacheKey);
-
-        if (cached != null) {
-            return cached.toString();
-        }
+//        StringMemorySaver cached = hmInternalIdMapCache.get(cacheKey);
+//
+//        if (cached != null) {
+//            return cached.toString();
+//        }
 
         String ret = internalIdDal.getDestinationId(serviceId, idType, sourceId);
 
         //add to cache
-        if (ret != null) {
-            hmInternalIdMapCache.put(cacheKey, new StringMemorySaver(ret));
-        }
+//        if (ret != null) {
+//            hmInternalIdMapCache.put(cacheKey, new StringMemorySaver(ret));
+//        }
 
         return ret;
     }
