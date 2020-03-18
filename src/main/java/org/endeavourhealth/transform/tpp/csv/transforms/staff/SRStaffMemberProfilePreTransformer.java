@@ -94,7 +94,7 @@ public class SRStaffMemberProfilePreTransformer {
         public Object call() throws Exception {
 
             try {
-                csvHelper.saveInternalIds(mappings);
+                csvHelper.saveInternalIdsNoCache(mappings);
 
             } catch (Throwable t) {
                 String msg = "Error saving internal ID maps for staff member profile IDs ";
