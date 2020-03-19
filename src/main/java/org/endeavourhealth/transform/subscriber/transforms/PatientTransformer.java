@@ -462,15 +462,18 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             JsonNode arrayElement = arrayNode.get(0);
             String base64Salt = arrayElement.get("salt").asText();
 
+            LOG.debug(base64Salt);
+
             byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
 
-            sUprn = null;
+            String pseudoUprn = null;
             TreeMap<String, String> keys = new TreeMap<>();
             keys.put("UPRN", "" + sUprn);
 
             Crypto crypto = new Crypto();
             crypto.SetEncryptedSalt(saltBytes);
-            sUprn = crypto.GetDigest(keys);
+            pseudoUprn = crypto.GetDigest(keys);
+            sUprn = pseudoUprn;
             // nullify fields
             znumber=null; zstreet=null; zlocality=null; ztown=null; zpostcode=null; zorg=null;
             match_post=null; match_street=null; match_number=null; match_building=null; match_flat=null;
