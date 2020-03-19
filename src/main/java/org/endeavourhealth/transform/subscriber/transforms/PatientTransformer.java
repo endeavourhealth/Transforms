@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
@@ -452,9 +453,15 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             LOG.debug("Pseduonymise!");
 
             config = ConfigManager.getConfigurationAsJson(params.getSubscriberConfigName(), "db_subscriber");
-            JsonNode pseudoNode = config.get("pseudonymisation");
-            JsonNode saltNode = pseudoNode.get("salt");
-            String base64Salt = saltNode.asText();
+
+            JsonNode s = config.get("pseudo_salts");
+            ArrayNode arrayNode = (ArrayNode) s;
+
+            if (s == null) {throw new Exception("Unable to find UPRN salt");}
+
+            JsonNode arrayElement = arrayNode.get(0);
+            String base64Salt = arrayElement.get("salt").toString();
+
             byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
 
             sUprn = null;
