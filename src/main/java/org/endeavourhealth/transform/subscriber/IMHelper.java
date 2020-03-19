@@ -38,9 +38,7 @@ public class IMHelper {
             ret = getIMMappedConceptWithRetry(scheme, code);
             if (ret == null) {
                 //if null, we may let it slide if in testing, just logging it out
-                if (TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
-                    TransformWarnings.log(LOG, params, "Null mapped IM concept for scheme {} and code {} for resource {} {}", scheme, code, fhirResource.getResourceType(), fhirResource.getId());
-                } else {
+                if (!TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
                     throw new TransformException("Null mapped IM concept for scheme " + scheme + " and code " + code + " for resource " + fhirResource.getResourceType() + " " + fhirResource.getId());
                 }
 
