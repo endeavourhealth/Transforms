@@ -254,6 +254,20 @@ ESCTMI5,Mixed ethnic census group,G,OTHER_MIXED
 ^ESCTET627038,Ethnic groups (1991 census) (UK),,Leave blank
 ^ESCTET627039,Ethnic groups (1991 census) (United Kingdom),,Leave blank
 ^ESCTBU297184,Ethnic groups (Bulgarian),,Leave blank
-^ESCTOT474034,Other ethnic Black/White origin,,OTHER_MIXED
-^ESCTOT474038,Other ethnic mixed white origin,,OTHER_MIXED
 ^ESCTET474042,Ethnicity / related nationality data,,Leave blank
+^ESCTOT474038,Other ethnic mixed white origin,,Leave blank
+^ESCTET636480,Ethnic category,,Leave blank
+^ESCT1200937,Patient declined to provide information about ethnic group,,Leave blank
+^ESCTET659191,Ethnic groups,,Leave blank
+^ESCTET659190,Ethnicity,,Leave blank
+^ESCTTO474054,Tokelau,,Leave blank
+^ESCTGY314643,Gypsy,,Leave blank
+^ESCTCA684637,Caucasian,C,OTHER_WHITE
+^ESCTOT474036,Other ethnic, Asian/White origin,F,MIXED_ASIAN
+^ESCTCA684639,Caucasoid race,C,OTHER_WHITE
+^ESCTBR474024,British ethnic minority specified (NMO),,Leave blank
+^ESCTBR474026,British ethnic minority unspecified (NMO),,Leave blank
+^ESCTOT474038,Other ethnic, mixed white origin,C,OTHER_WHITE
+^ESCTBL551668,Black Caribbean/West India/Guyana,M,BLACK_CARIBBEAN
+^ESCTOT474034,Other ethnic, Black/White origin,G,OTHER_MIXED
+^ESCTOT474040,Other ethnic, other mixed origin,G,OTHER_MIXED
