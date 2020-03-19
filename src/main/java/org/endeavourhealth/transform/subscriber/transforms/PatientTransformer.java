@@ -460,7 +460,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             if (s == null) {throw new Exception("Unable to find UPRN salt");}
 
             JsonNode arrayElement = arrayNode.get(0);
-            String base64Salt = arrayElement.get("salt").toString();
+            String base64Salt = arrayElement.get("salt").asText();
 
             byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
 
