@@ -40,6 +40,7 @@ public class InpatientCdsTargetTransformer {
             boolean isDeleted = targetInpatientCds.isDeleted();
 
             //TODO: file into v2 Core publisher
+            //treatmentFunctionCode is a Cerner code which is mapped to an NHS alias
 
 //            if (isDeleted) {
 //

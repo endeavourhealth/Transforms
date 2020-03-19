@@ -7,6 +7,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.transforms.*;
+import org.endeavourhealth.transform.barts.transforms.v2.ORGREFTransformerV2;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +87,8 @@ public abstract class BartsCsvToFhirTransformer {
             //admin transformers
             LOG.trace("Starting admin transformers");
             ORGREFPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ORGREF", false), fhirResourceFiler, csvHelper);
-            ORGREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ORGREF", true), fhirResourceFiler, csvHelper);
+            ORGREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ORGREF", false), fhirResourceFiler, csvHelper);
+            ORGREFTransformerV2.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ORGREF", true), fhirResourceFiler, csvHelper);
             CVREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "CVREF", true), fhirResourceFiler, csvHelper);
             NOMREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "NOMREF", true), fhirResourceFiler, csvHelper);
             LOREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "LOREF", true), fhirResourceFiler, csvHelper);

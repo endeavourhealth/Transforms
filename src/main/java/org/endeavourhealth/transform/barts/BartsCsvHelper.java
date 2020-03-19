@@ -9,7 +9,9 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
+import org.endeavourhealth.core.database.dal.ehr.CoreFilerDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.CoreId;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
@@ -88,6 +90,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private List<InternalIdMap> internalIdSaveBatch = new ArrayList<>();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private StagingTargetDalI stagingRepository = DalProvider.factoryStagingTargetDalI();
+    private CoreFilerDalI coreFilerRepository = DalProvider.factoryCoreFilerDal();
 
     private Map<String, CernerCodeValueRef> cernerCodes = new ConcurrentHashMap<>();
     private Map<Long, List<CernerCodeValueRef>> cernerCodesBySet = new ConcurrentHashMap<>();
@@ -330,6 +333,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         }
 
         return ret;
+    }
+
+    public CoreId getCoreId (byte coreTable, String sourceId) throws Exception {
+
+        return coreFilerRepository.findOrCreateCoreId(this.serviceId, coreTable, sourceId);
     }
 
     public void processStagingForTargetEmergencyCds() throws Exception {

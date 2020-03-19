@@ -42,6 +42,7 @@ public class EmergencyCdsTargetTransformer {
             boolean isDeleted = targetEmergencyCds.isDeleted();
 
             //TODO: file into v2 Core publisher
+            //treatmentFunctionCode is a Cerner code which is mapped to an NHS alias
 
 //            if (isDeleted) {
 //
