@@ -396,7 +396,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         // debug
         // adrec="201,Darkes Lane,Potters Bar,EN6 1BX";
 
-        String ids = Long.toString(subTableId.getSubscriberId());
+        String configName = params.getSubscriberConfigName();
+        String ids = Long.toString(subTableId.getSubscriberId())+"`"+configName;
         String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
         // token time out?
         if (csv.isEmpty()) {

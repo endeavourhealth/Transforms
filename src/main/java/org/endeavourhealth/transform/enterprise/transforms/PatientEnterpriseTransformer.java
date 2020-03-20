@@ -107,7 +107,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             stati=0;
             if (isActive) {stati=1;}
 
-            String ids = Long.toString(id)+"`"+Long.toString(personId);
+            String ids = Long.toString(id)+"`"+Long.toString(personId)+"`"+configName;
             String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
 
             // token time out?
