@@ -6,6 +6,9 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
@@ -28,6 +31,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -259,27 +264,38 @@ public abstract class EmisCsvToFhirTransformer {
         ClinicalCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         DrugCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-        LOG.trace("Starting orgs, locations and user transforms");
-        OrganisationLocationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        LocationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        OrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        UserInRoleTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        csvHelper.processRemainingOrganisationLocationMappings(fhirResourceFiler); //process any changes to Org-Location links without a change to the Location itself
+        boolean processAdminData = true;
 
-        //appointments
-        LOG.trace("Starting appointments transforms");
-        SessionUserTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SessionTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        if (processPatientData) {
-            //the Slot transformer requires Discovery UUIDs to be generated for all patients, so we must call this Pre-transformer before it
-            PatientPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SlotPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SlotTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        //massive hack to allow the clinical observations to be processed faster - audit skipping it so we can come back later
+        if (true) {
+            auditSkippingAdminData(fhirResourceFiler);
+            processAdminData = false;
         }
-        //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
-        //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
-        //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
-        csvHelper.clearCachedSessionPractitioners(); //clear this down as it's a huge memory sink
+
+        if (processAdminData) {
+
+            LOG.trace("Starting orgs, locations and user transforms");
+            OrganisationLocationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            LocationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            OrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            UserInRoleTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            csvHelper.processRemainingOrganisationLocationMappings(fhirResourceFiler); //process any changes to Org-Location links without a change to the Location itself
+
+            //appointments
+            LOG.trace("Starting appointments transforms");
+            SessionUserTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SessionTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            if (processPatientData) {
+                //the Slot transformer requires Discovery UUIDs to be generated for all patients, so we must call this Pre-transformer before it
+                PatientPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+                SlotPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+                SlotTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            }
+            //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
+            //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
+            //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
+            csvHelper.clearCachedSessionPractitioners(); //clear this down as it's a huge memory sink
+        }
 
         //if this extract is one of the ones from BEFORE we got a subsequent re-bulk, we don't want to process
         //the patient data in the extract, as we know we'll be getting a later extract saying to delete it and then
@@ -328,6 +344,35 @@ public abstract class EmisCsvToFhirTransformer {
 
         //close down the utility thread pool
         csvHelper.stopThreadPool();
+    }
+
+    private static void auditSkippingAdminData(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
+
+        LOG.info("Skipping admin data for exchange " + fhirFiler.getExchangeId());
+        AuditWriter.writeExchangeEvent(fhirFiler.getExchangeId(), "Skipped admin data");
+
+        //write to audit table so we can find out
+        Connection connection = ConnectionManager.getAuditConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "INSERT INTO skipped_admin_data VALUES (?, ?, ?, ?)";
+            ps = connection.prepareStatement(sql);
+
+            int col = 1;
+            ps.setString(col++, fhirFiler.getServiceId().toString());
+            ps.setString(col++, fhirFiler.getSystemId().toString());
+            ps.setString(col++, fhirFiler.getExchangeId().toString());
+            ps.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));
+
+            ps.executeUpdate();
+            connection.commit();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
     }
 
 
