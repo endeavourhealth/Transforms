@@ -99,7 +99,9 @@ public class ORGREFTransformerV2 {
         if (!orgPostCodeCell.isEmpty()) {
 
             String postCode = orgPostCodeCell.getString();
-            postCode = postCode.substring(0, 10);  //some invalid long non post codes, so trim to 10.
+            if (postCode.length() > 10) {
+                postCode = postCode.substring(0, 10);  //some invalid long non post codes, so trim to 10.
+            }
             organization.setPostCode(postCode);
         }
 
