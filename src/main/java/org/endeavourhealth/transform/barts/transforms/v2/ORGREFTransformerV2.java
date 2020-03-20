@@ -97,7 +97,10 @@ public class ORGREFTransformerV2 {
 
         CsvCell orgPostCodeCell = parser.getPostCodeTxt();
         if (!orgPostCodeCell.isEmpty()) {
-            organization.setPostCode(orgPostCodeCell.getString());
+
+            String postCode = orgPostCodeCell.getString();
+            postCode = postCode.substring(0, 10);  //some invalid long non post codes, so trim to 10.
+            organization.setPostCode(postCode);
         }
 
         //create the CoreFilerWrapper for filing
