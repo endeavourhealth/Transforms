@@ -58,7 +58,7 @@ public class ORGREFTransformerV2 {
                 = new org.endeavourhealth.core.database.dal.ehr.models.Organization();
 
         CsvCell orgIdCell = parser.getOrgId();
-        CoreId orgId = csvHelper.getCoreId(CoreTableId.ORGANIZATION.getId(), orgIdCell.toString());
+        CoreId orgId = csvHelper.getCoreId(CoreTableId.ORGANIZATION.getId(), orgIdCell.getString());
         organization.setId(orgId.getCoreId());
 
         CsvCell orgNameCell = parser.getOrgNameText();
