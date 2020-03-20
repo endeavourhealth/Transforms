@@ -71,7 +71,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         return true;
     }
 
-    public void UPRN(Patient fhirPatient, long id, long personId,  AbstractEnterpriseCsvWriter csvWriter, String configName)  throws Exception {
+    public void UPRN(Patient fhirPatient, long id, long personId, AbstractEnterpriseCsvWriter csvWriter, String configName)  throws Exception {
         if (!fhirPatient.hasAddress()) {return;}
 
         Iterator var2 = fhirPatient.getAddress().iterator();
@@ -107,13 +107,14 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             stati=0;
             if (isActive) {stati=1;}
 
-            String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText());
+            String ids = Long.toString(id)+"`"+Long.toString(personId);
+            String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
 
             // token time out?
             if (csv.isEmpty()) {
                 UPRN.uprnToken = "";
                 uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
-                csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText());
+                csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
                 if (csv.isEmpty()) {
                     LOG.debug("Unable to get address from UPRN API");
                     return;

@@ -396,13 +396,14 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         // debug
         // adrec="201,Darkes Lane,Potters Bar,EN6 1BX";
 
-        String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText());
+        String ids = Long.toString(subTableId.getSubscriberId());
+        String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
         // token time out?
         if (csv.isEmpty()) {
             UPRN.uprnToken="";
             // get another token
             uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
-            csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText());
+            csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
             if (csv.isEmpty()) {
                 LOG.debug("Unable to get address from UPRN API");
                 return;

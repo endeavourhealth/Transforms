@@ -12,10 +12,10 @@ import org.json.*;
 public class UPRN {
 	public static String uprnToken = "";
 
-	public static String getAdrec(String adrec, String token, String token_endpoint) throws Exception {
+	public static String getAdrec(String adrec, String token, String token_endpoint, String ids) throws Exception {
 		String response = "";
 
-		String url = token_endpoint+"api/getcsv?adrec=" + URLEncoder.encode(adrec, "UTF-8")+"&delim=~";
+		String url = token_endpoint+"api/getcsv?adrec=" + URLEncoder.encode(adrec, "UTF-8")+"&delim=~&ids="+ids;
 
 		try {
 			URL obj = new URL(url);
