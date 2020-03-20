@@ -52,7 +52,10 @@ public class ORGREFTransformerV2 {
     }
 
 
-    public static void createOrganization(ORGREF parser, FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper, List<CoreFilerWrapper> batch) throws Exception {
+    public static void createOrganization(ORGREF parser,
+                                          FhirResourceFiler fhirResourceFiler,
+                                          BartsCsvHelper csvHelper,
+                                          List<CoreFilerWrapper> batch) throws Exception {
 
         org.endeavourhealth.core.database.dal.ehr.models.Organization organization
                 = new org.endeavourhealth.core.database.dal.ehr.models.Organization();

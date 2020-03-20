@@ -8,6 +8,8 @@ import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.transforms.*;
 import org.endeavourhealth.transform.barts.transforms.v2.ORGREFTransformerV2;
+import org.endeavourhealth.transform.barts.transforms.v2.PPADDTransformerV2;
+import org.endeavourhealth.transform.barts.transforms.v2.PRSNLREFTransformerV2;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +97,8 @@ public abstract class BartsCsvToFhirTransformer {
             csvHelper.getLocationCache().fileLocationResources(fhirResourceFiler);
 
             PRSNLREFPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PRSNLREF", false), fhirResourceFiler, csvHelper); //saves mappings in multiple threads
-            PRSNLREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PRSNLREF", true), fhirResourceFiler, csvHelper); //updates/creates FHIR practitioners
+            PRSNLREFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PRSNLREF", false), fhirResourceFiler, csvHelper); //updates/creates FHIR practitioners
+            PRSNLREFTransformerV2.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PRSNLREF", true), fhirResourceFiler, csvHelper);
 
             //patient PRE transformers - to save and cache stuff fast (mostly PPxxx ID to Person ID mappings)
             LOG.trace("Starting PPxxx pre-transformers");
@@ -113,7 +116,8 @@ public abstract class BartsCsvToFhirTransformer {
             LOG.trace("Starting PPxxx transformers");
             PPATITransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPATI", true), fhirResourceFiler, csvHelper);
             PPALITransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPALI", true), fhirResourceFiler, csvHelper);
-            PPADDTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPADD", true), fhirResourceFiler, csvHelper);
+            PPADDTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPADD", false), fhirResourceFiler, csvHelper);
+            PPADDTransformerV2.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPADD", true), fhirResourceFiler, csvHelper);
             //PPINFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPINF", csvHelper), fhirResourceFiler, csvHelper); //nothing interesting in this file
             PPNAMTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPNAM", true), fhirResourceFiler, csvHelper);
             PPPHOTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPPHO", true), fhirResourceFiler, csvHelper);
