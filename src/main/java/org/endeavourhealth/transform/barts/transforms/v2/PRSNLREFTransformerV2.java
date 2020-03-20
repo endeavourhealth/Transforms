@@ -80,7 +80,7 @@ public class PRSNLREFTransformerV2 {
         practitioner.setName(fullName);
 
         CsvCell positionCodeCell = parser.getMilleniumPositionCode();
-        if (!positionCodeCell.isEmpty()) {
+        if (!BartsCsvHelper.isEmptyOrIsZero(positionCodeCell)) {
 
             CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.PERSONNEL_POSITION, positionCodeCell);
             if (cernerCodeValueRef != null) {

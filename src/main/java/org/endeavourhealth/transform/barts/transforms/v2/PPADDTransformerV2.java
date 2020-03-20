@@ -156,9 +156,6 @@ public class PPADDTransformerV2 {
         batch.add(coreFilerWrapper);
 
         saveBatch(batch, false, csvHelper);
-
-
-
     }
 
 
