@@ -269,5 +269,5 @@ ESCTMI5,Mixed ethnic census group,G,OTHER_MIXED
 ^ESCTBR474026,British ethnic minority unspecified (NMO),,Leave blank
 ^ESCTOT474038,Other ethnic, mixed white origin,C,OTHER_WHITE
 ^ESCTBL551668,Black Caribbean/West India/Guyana,M,BLACK_CARIBBEAN
-^ESCTOT474034,Other ethnic, Black/White origin,G,OTHER_MIXED
-^ESCTOT474040,Other ethnic, other mixed origin,G,OTHER_MIXED
+^ESCTOT474034,"Other ethnic, Black/White origin",G,OTHER_MIXED
+^ESCTOT474040,"Other ethnic, other mixed origin",G,OTHER_MIXED
