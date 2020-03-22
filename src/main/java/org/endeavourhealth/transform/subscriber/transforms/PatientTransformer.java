@@ -369,6 +369,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         //JsonNode enabled = config.get("enabled");
         //if (enabled.asText().equals("0")) {return;}
 
+        String configName = params.getSubscriberConfigName();
+
         String uprn_sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_MATCH_ID + i;
         SubscriberId uprn_subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS_MATCH, uprn_sourceId); // was sourceId
 
@@ -379,8 +381,14 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         JsonNode clientid = config.get("clientid");
         JsonNode password = config.get("password");
         JsonNode username = config.get("username");
-
         JsonNode uprn_endpoint = config.get("uprn_endpoint");
+
+        JsonNode zs = config.get("subscribers");
+        Integer ok = UPRN.Activated(zs, configName);
+        if (ok.equals(0)) {
+            LOG.debug("subscriber "+configName+" not activated, exiting");
+            return;
+        }
 
         uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
 
@@ -396,7 +404,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         // debug
         // adrec="201,Darkes Lane,Potters Bar,EN6 1BX";
 
-        String configName = params.getSubscriberConfigName();
         String ids = Long.toString(subTableId.getSubscriberId())+"`"+configName;
         String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
         // token time out?
