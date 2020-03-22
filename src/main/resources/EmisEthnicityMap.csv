@@ -263,7 +263,7 @@ ESCTMI5,Mixed ethnic census group,G,OTHER_MIXED
 ^ESCTTO474054,Tokelau,,Leave blank
 ^ESCTGY314643,Gypsy,,Leave blank
 ^ESCTCA684637,Caucasian,C,OTHER_WHITE
-^ESCTOT474036,Other ethnic, Asian/White origin,F,MIXED_ASIAN
+^ESCTOT474036,"Other ethnic, Asian/White origin",F,MIXED_ASIAN
 ^ESCTCA684639,Caucasoid race,C,OTHER_WHITE
 ^ESCTBR474024,British ethnic minority specified (NMO),,Leave blank
 ^ESCTBR474026,British ethnic minority unspecified (NMO),,Leave blank
