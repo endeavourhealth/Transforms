@@ -126,13 +126,17 @@ public class PPADDTransformerV2 {
 
         boolean isActive = true;
         CsvCell startDate = parser.getBeginEffectiveDate();
-        if (!startDate.isEmpty()) {
-            patientAddress.setStartDate(startDate.getDate());
+        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(startDate)) {
+
+            Date sd = BartsCsvHelper.parseDate(startDate);
+            patientAddress.setStartDate(sd);
             isActive = true;
         }
-        CsvCell endDate = parser.getBeginEffectiveDate();
-        if (!endDate.isEmpty()) {
-            patientAddress.setEndDate(endDate.getDate());
+        CsvCell endDate = parser.getEndEffectiveDate();
+        if (!BartsCsvHelper.isEmptyOrIsStartOfTime(endDate)) {
+
+            Date ed = BartsCsvHelper.parseDate(endDate);
+            patientAddress.setEndDate(ed);
             isActive = false;
         }
 
@@ -157,9 +161,6 @@ public class PPADDTransformerV2 {
 
         saveBatch(batch, false, csvHelper);
     }
-
-
-
 
     private static Address.AddressType convertAddressType(String typeDesc) throws TransformException {
 
