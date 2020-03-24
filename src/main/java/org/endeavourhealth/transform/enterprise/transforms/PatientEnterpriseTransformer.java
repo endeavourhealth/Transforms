@@ -88,6 +88,13 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         JsonNode uprn_endpoint = config.get("uprn_endpoint");
 
+        JsonNode zs = config.get("subscribers");
+        Integer ok = UPRN.Activated(zs, configName);
+        if (ok.equals(0)) {
+            LOG.debug("subscriber "+configName+" not activated, exiting");
+            return;
+        }
+
         uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
 
         org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch uprnWriter = (org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch)csvWriter;

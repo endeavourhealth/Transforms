@@ -92,6 +92,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private StagingTargetDalI stagingRepository = DalProvider.factoryStagingTargetDalI();
     private CoreFilerDalI coreFilerRepository = DalProvider.factoryCoreFilerDal();
 
+    private Map<String, Integer> odsCodeToOrganizationId = new ConcurrentHashMap<>();
+
     private Map<String, CernerCodeValueRef> cernerCodes = new ConcurrentHashMap<>();
     private Map<Long, List<CernerCodeValueRef>> cernerCodesBySet = new ConcurrentHashMap<>();
     private Map<Long, CernerNomenclatureRef> nomenclatureCache = new ConcurrentHashMap<>();
@@ -109,6 +111,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
     private Map<Long, ReferenceList> clinicalEventChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
+
     //private Map<Long, String> patientRelationshipTypeMap = new HashMap<>();
     private Date extractDateTime = null;
     private EncounterResourceCache encounterCache = new EncounterResourceCache(this);
@@ -981,6 +984,23 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         return cachedBartsOrgRefId;
     }
+
+    //This Core v2 function looks up the Organization.Id value for the provided odsCode
+    public Integer findOrganizationIdForOds(String odsCode) throws Exception {
+
+        if (odsCodeToOrganizationId.containsKey(odsCode)) {
+            return odsCodeToOrganizationId.get(odsCode);
+        }
+
+        Integer orgId = coreFilerRepository.findOrganizationIdFromOdsCode(this.serviceId, odsCode);
+
+        if (orgId != null) {
+            odsCodeToOrganizationId.put(odsCode, orgId);
+        }
+
+        return orgId;
+    }
+
 
     /**
      * bulks and deltas have different date formats, so use this to handle both

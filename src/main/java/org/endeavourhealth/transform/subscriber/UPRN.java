@@ -1,4 +1,6 @@
 package org.endeavourhealth.transform.subscriber;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +13,17 @@ import org.json.*;
 
 public class UPRN {
 	public static String uprnToken = "";
+
+	public static Integer Activated(JsonNode zs, String configName)
+	{
+		ArrayNode arrNode = (ArrayNode) zs;
+		String zc = ""; Integer ok=0;
+		for (JsonNode objNode : arrNode) {
+			zc = objNode.asText();
+			if (zc.equals(configName)) {ok=1; break;}
+		}
+		return ok;
+	}
 
 	public static String getAdrec(String adrec, String token, String token_endpoint, String ids) throws Exception {
 		String response = "";
