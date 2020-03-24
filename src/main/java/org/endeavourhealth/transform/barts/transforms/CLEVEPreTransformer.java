@@ -26,7 +26,7 @@ public class CLEVEPreTransformer {
     private static StagingClinicalEventDalI repository = DalProvider.factoryBartsStagingClinicalEventDalI();
 
     private static final String[] comparators = {"<=", "<", ">=", ">"};
-    private static final Integer COVID_TEST=687309281;
+    //private static final Integer COVID_TEST=687309281;
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -88,8 +88,9 @@ public class CLEVEPreTransformer {
         if (activeInd) {
 
             // ignore non numeric events bt allow Covid results
-            if (!isNumericResult(parser, csvHelper) && !isCovidText(parser,csvHelper)) {
-                return;
+           //if (!isNumericResult(parser, csvHelper) && !isCovidText(parser,csvHelper)) {
+            if (!isNumericResult(parser, csvHelper)) {
+            return;
             }
 
             CsvCell eventCodeClassCell = parser.getEventCodeClass();
@@ -246,13 +247,13 @@ public class CLEVEPreTransformer {
         return isNumericResult(classCell, resultValueCell, resultTextCell, csvHelper);
     }
 
-    private static boolean isCovidText(CLEVE parser, BartsCsvHelper csvHelper) {
-        CsvCell eventCodeCell = parser.getEventCode();
-        if ((!eventCodeCell.isEmpty()) && (eventCodeCell.getInt().equals(COVID_TEST))) {
-            return true;
-        }
-        return false;
-    }
+//    private static boolean isCovidText(CLEVE parser, BartsCsvHelper csvHelper) {
+//        CsvCell eventCodeCell = parser.getEventCode();
+//        if ((!eventCodeCell.isEmpty()) && (eventCodeCell.getInt().equals(COVID_TEST))) {
+//            return true;
+//        }
+//        return false;
+//    }
 
     public static boolean isNumericResult(CsvCell classCell, CsvCell resultValueCell, CsvCell resultTextCell, BartsCsvHelper csvHelper) throws Exception {
 
