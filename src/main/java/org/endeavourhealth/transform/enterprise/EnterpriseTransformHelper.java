@@ -254,7 +254,10 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(getEnterpriseConfigName());
         ResourceType type = wrapper.getResourceTypeObj();
         UUID resourceId = wrapper.getResourceId();
-        exchangeBatchExtraResourceDalI.saveExtraResource(getExchangeId(), getBatchId(), type, resourceId);
+
+        if (getExchangeId() != null) {
+            exchangeBatchExtraResourceDalI.saveExtraResource(getExchangeId(), getBatchId(), type, resourceId);
+        }
 
         //and add the resource to be transformed
         try {
