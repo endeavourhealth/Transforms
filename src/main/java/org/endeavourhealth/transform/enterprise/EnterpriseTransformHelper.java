@@ -255,6 +255,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         ResourceType type = wrapper.getResourceTypeObj();
         UUID resourceId = wrapper.getResourceId();
 
+        //when invoked by the Bulk UPRN utility we don't have an exchange ID, so skip this in that case
         if (getExchangeId() != null) {
             exchangeBatchExtraResourceDalI.saveExtraResource(getExchangeId(), getBatchId(), type, resourceId);
         }

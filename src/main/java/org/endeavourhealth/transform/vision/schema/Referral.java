@@ -57,17 +57,57 @@ public class Referral extends AbstractCsvParser {
     public CsvCell getReferralDate() throws TransformException {
         return super.getCell("DATE");
     }
-    public CsvCell getActionDate() throws TransformException {
-        return super.getCell("ACTION_DATE");
-    }
-    public CsvCell getReferralUserID() {
+
+    /**
+     * Identity of the healthcare professional responsible for making referral
+     */
+    public CsvCell getReferralSenderUserId() {
         return super.getCell("HCP");
     }
+
+    /**
+     * Profession of the HCP responsible for making referral type.
+     * Should be derived within the Respondent System from the identifier of the person involved.
+     */
     public CsvCell getReferralUserType() {
         return super.getCell("HCP_TYPE");
     }
-    public CsvCell getReferralDestOrgID() {
+
+    /**
+     * Healthcare professional to whom referral is made.
+     */
+    public CsvCell getReferralRecipientUserId() {
         return super.getCell("TO_HCP");
+    }
+    public CsvCell getSpecialty() {
+        return super.getCell("SPECIALTY");
+    }
+    public CsvCell getUnit() {
+        return super.getCell("UNIT");
+    }
+
+    /**
+     * Type of referral or resource use requested.
+         O	OPD
+         A	Admission
+         D	Day-case
+         I	Investigation
+         V 	Domiciliary visit
+     */
+    public CsvCell getReferralType() {
+        return super.getCell("TYPE");
+    }
+    public CsvCell getContractor() {
+        return super.getCell("CONTRACTOR");
+    }
+    public CsvCell getContract() {
+        return super.getCell("CONTRACT");
+    }
+    public CsvCell getActionDate() throws TransformException {
+        return super.getCell("ACTION_DATE");
+    }
+    public CsvCell getLinks() {
+        return super.getCell("LINKS");
     }
     public CsvCell getOrganisationID() {
         return super.getCell("SERVICE_ID");
@@ -75,12 +115,8 @@ public class Referral extends AbstractCsvParser {
     public CsvCell getAction() {
         return super.getCell("ACTION");
     }
-    public CsvCell getReferralType() {
-        return super.getCell("TYPE");
-    }
-    public CsvCell getLinks() {
-        return super.getCell("LINKS");
-    }
+
+
 
 //    public String getPatientID() {
 //        return super.getString("PID");
@@ -94,13 +130,13 @@ public class Referral extends AbstractCsvParser {
 //    public Date getActionDate() throws TransformException {
 //        return super.getDate("ACTION_DATE");
 //    }
-//    public String getReferralUserID() {
+//    public String getReferralSenderUserId() {
 //        return cleanUserId(super.getString("HCP"));
 //    }
 //    public String getReferralUserType() {
 //        return super.getString("HCP_TYPE");
 //    }
-//    public String getReferralDestOrgID() {
+//    public String getReferralRecipientUserId() {
 //        return super.getString("TO_HCP");
 //    }
 //    public String getOrganisationID() {

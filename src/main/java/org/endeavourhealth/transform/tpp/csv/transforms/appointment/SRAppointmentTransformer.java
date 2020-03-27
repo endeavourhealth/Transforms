@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
+import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -10,10 +11,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.tpp.cache.AppointmentFlagCache;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
-import org.hl7.fhir.instance.model.Appointment;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
-import org.hl7.fhir.instance.model.Slot;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,11 +125,12 @@ public class SRAppointmentTransformer {
             appointmentBuilder.setEndDateTime(endDateTime, endDateCell);
         }
 
-        if (endDateTime != null && startDateTime != null) {
+        //the field in the builder is for the actual duration, if known (which we don't for TPP without the dt finished)
+        /*if (endDateTime != null && startDateTime != null) {
             long durationMillis = endDateTime.getTime() - startDateTime.getTime();
             int durationMins = (int) (durationMillis / 1000 / 60);
-            appointmentBuilder.setMinutesDuration(durationMins);
-        }
+            appointmentBuilder.setMinutesActualDuration(durationMins);
+        }*/
 
         CsvCell profileIdClinician = parser.getIDProfileClinician();
         if (!profileIdClinician.isEmpty()) {
@@ -143,6 +142,32 @@ public class SRAppointmentTransformer {
         if (!patientSeenDateCell.isEmpty()) {
             Date d = patientSeenDateCell.getDateTime();
             appointmentBuilder.setSentInDateTime(d, patientSeenDateCell);
+        }
+
+        //calculate the delay as the difference between the scheduled start and actual start
+        if (!startDateCell.isEmpty()
+                && !patientSeenDateCell.isEmpty()) {
+            Date dtScheduledStart = startDateCell.getDateTime();
+            Date dtSeen = patientSeenDateCell.getDateTime();
+            long msDiff = dtSeen.getTime() - dtScheduledStart.getTime();
+            if (msDiff >= 0) { //if patient was seen early, then there's no delay
+                long minDiff = msDiff / (1000L * 60L);
+                Duration fhirDuration = QuantityHelper.createDuration(new Integer((int) minDiff), "minutes");
+                appointmentBuilder.setPatientDelay(fhirDuration, startDateCell, patientSeenDateCell);
+            }
+        }
+
+        //calculate the total patient wait as the difference between the arrival time and when they were seen
+        CsvCell dtArrivedCell = parser.getDatePatientArrival();
+        if (!dtArrivedCell.isEmpty()
+                && !patientSeenDateCell.isEmpty()) {
+
+            Date dtArrived = dtArrivedCell.getDateTime();
+            Date dtSeen = patientSeenDateCell.getDateTime();
+            long msDiff = dtSeen.getTime() - dtArrived.getTime();
+            long minDiff = msDiff / (1000L * 60L);
+            Duration fhirDuration = QuantityHelper.createDuration(new Integer((int) minDiff), "minutes");
+            appointmentBuilder.setPatientWait(fhirDuration, dtArrivedCell, patientSeenDateCell);
         }
 
         CsvCell cancelledDateCell = parser.getDateAppointmentCancelled();

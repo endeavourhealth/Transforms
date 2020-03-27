@@ -89,7 +89,7 @@ public class SRVisitTransformer {
 
         CsvCell visitDuration = parser.getDuration();
         if (!visitDuration.isEmpty()) {
-            appointmentBuilder.setMinutesDuration(visitDuration.getInt());
+            appointmentBuilder.setMinutesActualDuration(visitDuration.getInt());
         }
 
         CsvCell followUpDetails = parser.getFollowUpDetails();

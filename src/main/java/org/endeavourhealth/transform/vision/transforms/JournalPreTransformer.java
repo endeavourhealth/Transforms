@@ -78,7 +78,7 @@ public class JournalPreTransformer {
         }
 
         //linked consultation encounter record
-        String consultationID = extractEncounterLinkID (parser.getLinks().getString());
+        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
             csvHelper.cacheNewConsultationChildRelationship(consultationID,
                     patientID.getString(),
