@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -96,9 +97,14 @@ public class ObservationBuilder extends ResourceBuilderBase
     }
 
     public void setValueString(String resultText, CsvCell... sourceCells) {
-        this.observation.setValue(new StringType(resultText));
+        if (Strings.isNullOrEmpty(resultText)) {
+            this.observation.setValue(null);
 
-        auditValue("valueString", sourceCells);
+        } else {
+            this.observation.setValue(new StringType(resultText));
+
+            auditValue("valueString", sourceCells);
+        }
     }
 
     public void setValueNumber(Double value, CsvCell... sourceCells) {

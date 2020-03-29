@@ -1,17 +1,16 @@
 package org.endeavourhealth.transform.subscriber;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.TransformConfig;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -26,10 +25,14 @@ public class IMHelper {
     private static Map<String, Integer> coreCache = new ConcurrentHashMap<>();
     private static Set<String> nullCoreCache = ConcurrentHashMap.newKeySet();
 
-    private static Map<Integer, String> snomedCodeCache = new ConcurrentHashMap<>();
-    private static Set<Integer> nullSnomedCodeCache = ConcurrentHashMap.newKeySet();
+    private static Map<Integer, String> snomedConceptForCoreDBIDCache = new ConcurrentHashMap<>();
+    private static Set<Integer> nullSnomedConceptForCoreDBIDCache = ConcurrentHashMap.newKeySet();
 
-    private static Map<String, String> conceptCache = new ConcurrentHashMap<>();
+    private static Map<String, String> snomedConceptForLegacyCodeCache = new ConcurrentHashMap<>();
+    private static Set<String> nullSnomedConceptForLegacyCodeCache = ConcurrentHashMap.newKeySet();
+
+    private static Map<String, String> mappedLegacyCodeForLegacyCodeAndTermCache = new ConcurrentHashMap<>();
+    private static Set<String> nullMappedLegacyCodeForLegacyCodeAndTermCache = ConcurrentHashMap.newKeySet();
 
     private static final ReentrantLock lock = new ReentrantLock();
 
@@ -133,7 +136,7 @@ public class IMHelper {
             while (true) {
                 lives--;
                 try {
-                    return IMClient.getConceptDbidForSchemeCode(scheme, code,  term, true);
+                    return IMClient.getConceptDbidForSchemeCode(scheme, code, term, true);
                 } catch (Exception ex) {
                     if (lives <= 0) {
                         throw ex;
@@ -261,7 +264,11 @@ public class IMHelper {
         }
     }
 
-    public static String getIMSnomedCodeForConceptId(HasServiceSystemAndExchangeIdI params, Resource fhirResource, Integer conceptId) throws Exception {
+    /**
+     * returns the correspondiong Snomed/DM+D concept ID for a core IM DBIB
+     * will return null if called for non-core DBIDs
+     */
+    public static String getSnomedConceptIdForCoreDBID(HasServiceSystemAndExchangeIdI params, Resource fhirResource, Integer conceptId) throws Exception {
 
         if (conceptId == null) {
             return null;
@@ -269,30 +276,30 @@ public class IMHelper {
 
         //check cache
         Integer key = conceptId;
-        String ret = snomedCodeCache.get(key);
-        if (ret != null || nullSnomedCodeCache.contains(key)) {
+        String ret = snomedConceptForCoreDBIDCache.get(key);
+        if (ret != null || nullSnomedConceptForCoreDBIDCache.contains(key)) {
             return ret;
         }
 
         //hit IM API
-        ret = getIMSnomedCodeForConceptIdWithRetry(conceptId);
+        ret = getSnomedConceptIdForCoreDBIDWithRetry(conceptId);
 
         //add to cache
         if (ret == null) {
-            nullSnomedCodeCache.add(key);
+            nullSnomedConceptForCoreDBIDCache.add(key);
 
             if (!TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
                 throw new TransformException("Null mapped Snomed Code for Concept Id " + conceptId + " for Resource " + fhirResource.getResourceType() + " " + fhirResource.getId());
             }
 
         } else {
-            snomedCodeCache.put(key, ret);
+            snomedConceptForCoreDBIDCache.put(key, ret);
         }
 
         return ret;
     }
 
-    private static String getIMSnomedCodeForConceptIdWithRetry(Integer conceptId) throws Exception {
+    private static String getSnomedConceptIdForCoreDBIDWithRetry(Integer conceptId) throws Exception {
 
         try {
             lock.lock();
@@ -317,36 +324,40 @@ public class IMHelper {
         }
     }
 
-    public static String getMappedCoreCodeForSchemeCode(String scheme, String code) throws Exception {
+    /**
+     * returns a Snomed concept ID for a given legacy code and scheme
+     * e.g. for Barts code 687309281 it will return 1240511000000106
+     */
+    public static String getMappedSnomedConceptForSchemeCode(String scheme, String code) throws Exception {
         if (code == null) {
             return null;
         }
 
-        //check cache
-        try {
-            Integer key = Integer.parseInt(code);
-
-        String ret = snomedCodeCache.get(key);
-        if (ret != null || nullSnomedCodeCache.contains(key)) {
+        //check the cache first
+        String key = createCacheKey(scheme, code);
+        String ret = snomedConceptForLegacyCodeCache.get(key);
+        if (ret != null
+                || nullSnomedConceptForLegacyCodeCache.contains(key)) {
             return ret;
         }
-        //hit IM API
-        ret =getMappedCoreCodeForSchemeCodeWithRetry(scheme, code);
-            //add to cache
-            if (ret == null) {
-                nullSnomedCodeCache.add(key);
 
-            } else {
-                snomedCodeCache.put(key, ret);
-            }
+        //hit the IM API
+        ret = getMappedSnomedConceptForSchemeCodeWithRetry(scheme, code);
+
+        //store in the cache
+        if (ret == null) {
+            nullSnomedConceptForLegacyCodeCache.add(key);
+            //note that this fn is expected to return null quite often
+            //so there's no logging or warning for nulls
+
+        } else {
+            snomedConceptForLegacyCodeCache.put(key, ret);
+        }
+
         return ret;
-        }
-        catch (NumberFormatException e) {
-            throw new TransformException("IMHelper called with non integer code");
-        }
     }
 
-    private static String getMappedCoreCodeForSchemeCodeWithRetry(String scheme, String code) throws Exception {
+    private static String getMappedSnomedConceptForSchemeCodeWithRetry(String scheme, String code) throws Exception {
         try {
             lock.lock();
 
@@ -356,7 +367,7 @@ public class IMHelper {
             while (true) {
                 lives--;
                 try {
-                     return  IMClient.getMappedCoreCodeForSchemeCode(scheme, code);
+                    return IMClient.getMappedCoreCodeForSchemeCode(scheme, code);
                 } catch (Exception ex) {
                     if (lives <= 0) {
                         throw ex;
@@ -370,22 +381,47 @@ public class IMHelper {
         }
     }
 
-    public static String getCodeForTypeTerm(String scheme, String context, String term, boolean autoCreate) throws Exception {
-        //TODO need to think if all will have autoCreate set?
-        if (context == null || term == null) {
-            return null;
+    /**
+     * returns the mapped IM DBID for a legacy code and textual term
+     * e.g. for Cerner code 687309281 and term "SARS-CoV-2 RNA DETECTED" will return the artificially
+     * generated "Cerner code" 7f472a28-7374-4f49-bcd1-7fafcbb1be4c
+     */
+    public static String getMappedLegacyCodeForLegacyCodeAndTerm(String scheme, String context, String term) throws Exception {
+        if (Strings.isNullOrEmpty(scheme)) {
+            throw new Exception("Null or empty scheme");
         }
-         String key = context + term;
-         String ret = conceptCache.get(key);
-            if (ret != null) {
-                return ret;
-            }
-        // hit IM API
-        ret = getCodeForTypeTermWithRetry(scheme, context, term, autoCreate);
-        conceptCache.put(key, ret);
+        if (Strings.isNullOrEmpty(context)) {
+            throw new Exception("Null or empty context");
+        }
+        if (Strings.isNullOrEmpty(term)) {
+            throw new Exception("Null or empty term");
+        }
+
+        //check the cache first
+        String cacheKey = scheme + ":" + context + ":" + term;
+        String ret = mappedLegacyCodeForLegacyCodeAndTermCache.get(cacheKey);
+        if (ret != null
+                || nullMappedLegacyCodeForLegacyCodeAndTermCache.contains(cacheKey)) {
+            return ret;
+        }
+
+        //hit the IM API
+        ret = getMappedLegacyCodeForLegacyCodeAndTermWithRetry(scheme, context, term);
+
+        //store in the cache
+        if (ret == null) {
+            nullMappedLegacyCodeForLegacyCodeAndTermCache.add(cacheKey);
+            //note that this fn is expected to return null quite often
+            //so there's no logging or warning for nulls
+
+        } else {
+            mappedLegacyCodeForLegacyCodeAndTermCache.put(cacheKey, ret);
+        }
+
         return ret;
     }
-    private static String getCodeForTypeTermWithRetry(String scheme, String context, String term, boolean autoCreate) throws Exception {
+
+    private static String getMappedLegacyCodeForLegacyCodeAndTermWithRetry(String scheme, String context, String term) throws Exception {
         try {
             lock.lock();
 
@@ -395,7 +431,7 @@ public class IMHelper {
             while (true) {
                 lives--;
                 try {
-                    return IMClient.getCodeForTypeTerm(scheme, context, term, autoCreate);
+                    return IMClient.getCodeForTypeTerm(scheme, context, term, false);
                 } catch (Exception ex) {
                     if (lives <= 0) {
                         throw ex;

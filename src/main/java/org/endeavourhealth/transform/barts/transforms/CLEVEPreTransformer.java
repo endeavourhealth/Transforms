@@ -27,7 +27,7 @@ public class CLEVEPreTransformer {
     private static StagingClinicalEventDalI repository = DalProvider.factoryBartsStagingClinicalEventDalI();
 
     private static final String[] comparators = {"<=", "<", ">=", ">"};
-    private static final Integer COVID_TEST=687309281;
+
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -37,7 +37,7 @@ public class CLEVEPreTransformer {
         for (ParserI parser : parsers) {
             while (parser.nextRecord()) {
 
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
                 //no try/catch here, since any failure here means we don't want to continue
@@ -75,7 +75,7 @@ public class CLEVEPreTransformer {
         stagingClinicalEvent.setDtReceived(csvHelper.getDataDate());
 
         CsvCell eventIdCell = parser.getEventId();
-        stagingClinicalEvent.setEventId(eventIdCell.getLong());
+        stagingClinicalEvent.setEventId(eventIdCell.getLong().longValue());
 
         //audit that our staging object came from this file and record
         ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
@@ -89,9 +89,9 @@ public class CLEVEPreTransformer {
         if (activeInd) {
 
             // ignore non numeric events bt allow Covid results
-           if (!isNumericResult(parser, csvHelper) && !isMappedIMCode(parser,csvHelper)) {
-           // if (!isNumericResult(parser, csvHelper)) {
-            return;
+            if (!isNumericResult(parser, csvHelper)
+                    && !isMappedTextualResult(parser)) {
+                return;
             }
 
             CsvCell eventCodeClassCell = parser.getEventCodeClass();
@@ -106,7 +106,6 @@ public class CLEVEPreTransformer {
                 }
             }
 
-            transformResultNumericValue(parser, stagingClinicalEvent, csvHelper);
 
             Integer personId = parser.getPersonId().getInt();
             if (Strings.isNullOrEmpty(personId.toString())) {
@@ -114,7 +113,7 @@ public class CLEVEPreTransformer {
                 return;
             }
 
-            stagingClinicalEvent.setPersonId(personId);
+            stagingClinicalEvent.setPersonId(personId.intValue());
 
             //TYPE_MILLENNIUM_PERSON_ID_TO_MRN
             String mrn = csvHelper.getInternalId(InternalIdMap.TYPE_MILLENNIUM_PERSON_ID_TO_MRN, personId.toString());
@@ -158,19 +157,17 @@ public class CLEVEPreTransformer {
                 }
             }
 
-            Date procDate;
-
             CsvCell eventStartDateCell = parser.getEventStartDateTime();
-            procDate = BartsCsvHelper.parseDate(eventStartDateCell);
-            stagingClinicalEvent.setEventStartDtTm(procDate);
+            Date startDate = BartsCsvHelper.parseDate(eventStartDateCell);
+            stagingClinicalEvent.setEventStartDtTm(startDate);
 
             CsvCell eventEndDateCell = parser.getEventEndDateTime();
-            procDate = BartsCsvHelper.parseDate(eventEndDateCell);
-            stagingClinicalEvent.setEventEndDtTm(procDate);
+            Date endDate = BartsCsvHelper.parseDate(eventEndDateCell);
+            stagingClinicalEvent.setEventEndDtTm(endDate);
 
             CsvCell clinicalSignificantDateCell = parser.getClinicallySignificantDateTime();
-            procDate = BartsCsvHelper.parseDate(clinicalSignificantDateCell);
-            stagingClinicalEvent.setClinicallySignificantDtTm(procDate);
+            Date clinicalSigDate = BartsCsvHelper.parseDate(clinicalSignificantDateCell);
+            stagingClinicalEvent.setClinicallySignificantDtTm(clinicalSigDate);
 
             CsvCell resultNormalcyCell = parser.getEventNormalcyCode();
             if (!BartsCsvHelper.isEmptyOrIsZero(resultNormalcyCell)) {
@@ -183,14 +180,23 @@ public class CLEVEPreTransformer {
                 }
             }
 
+            //carry over numeric result
+            if (isNumericResult(parser, csvHelper)) {
+                transformResultNumericFields(parser, stagingClinicalEvent, csvHelper);
+            }
+
+            //carry over textual result
             CsvCell resultTextCell = parser.getEventResultText();
             if (!resultTextCell.isEmpty()) {
                 stagingClinicalEvent.setEventResultTxt(resultTextCell.getString());
             }
 
+            //carry over date result
             CsvCell eventResultDateCell = parser.getEventResultDateTime();
-            procDate = BartsCsvHelper.parseDate(eventResultDateCell);
-            stagingClinicalEvent.setEventResultDt(procDate);
+            if (!eventResultDateCell.isEmpty()) {
+                Date resultDate = BartsCsvHelper.parseDate(eventResultDateCell);
+                stagingClinicalEvent.setEventResultDt(resultDate);
+            }
 
             CsvCell resultClassCode = parser.getEventResultStatusCode();
             if (!BartsCsvHelper.isEmptyOrIsZero(resultClassCode)) {
@@ -204,8 +210,8 @@ public class CLEVEPreTransformer {
             }
 
             CsvCell eventPerformedDateCell = parser.getEventPerformedDateTime();
-            procDate = BartsCsvHelper.parseDate(eventPerformedDateCell);
-            stagingClinicalEvent.setEventPerformedDtTm(procDate);
+            Date performedDate = BartsCsvHelper.parseDate(eventPerformedDateCell);
+            stagingClinicalEvent.setEventPerformedDtTm(performedDate);
 
             CsvCell eventPerformedPersonCell = parser.getEventPerformedPersonnelId();
             if (!eventPerformedPersonCell.isEmpty()) {
@@ -248,14 +254,16 @@ public class CLEVEPreTransformer {
         return isNumericResult(classCell, resultValueCell, resultTextCell, csvHelper);
     }
 
-    private static boolean isMappedIMCode(CLEVE parser, BartsCsvHelper csvHelper) throws Exception {
+    private static boolean isMappedTextualResult(CLEVE parser) throws Exception {
         CsvCell eventCodeCell = parser.getEventCode();
-        String ret = IMHelper.getMappedCoreCodeForSchemeCode("BartsCerner", eventCodeCell.getString());
-        if (ret != null) {
-            LOG.info("Passing through text result for " + parser.getEventId());
+        String mappedSnomedConcept = IMHelper.getMappedSnomedConceptForSchemeCode("BartsCerner", eventCodeCell.getString());
+        if (!Strings.isNullOrEmpty(mappedSnomedConcept)) {
+            LOG.debug("Passing through text result for " + parser.getEventId() + " with raw code [" + eventCodeCell.getString() + "] mapped to Snomed concept [" + mappedSnomedConcept + "]");
             return true;
+
+        } else {
+            return false;
         }
-        return false;
     }
 
     public static boolean isNumericResult(CsvCell classCell, CsvCell resultValueCell, CsvCell resultTextCell, BartsCsvHelper csvHelper) throws Exception {
@@ -306,7 +314,7 @@ public class CLEVEPreTransformer {
         return false;
     }
 
-    private static void transformResultNumericValue(CLEVE parser, StagingClinicalEvent stagingClinicalEvent, BartsCsvHelper csvHelper) throws Exception {
+    private static void transformResultNumericFields(CLEVE parser, StagingClinicalEvent stagingClinicalEvent, BartsCsvHelper csvHelper) throws Exception {
 
         //numeric results have their number in both the result text column and the result number column
         //HOWEVER the result number column seems to round them to the nearest int, so it less useful. So
@@ -324,7 +332,7 @@ public class CLEVEPreTransformer {
             }
         }
 
-        //test if the remaining result text is a number, othewise it could just have been free-text that started with a number
+        //test if the remaining result text is a number, otherwise it could just have been free-text that started with a number
         try {
             //try treating it as a number
             Double valueNumber = new Double(resultText);
@@ -355,8 +363,8 @@ public class CLEVEPreTransformer {
             //it's an inclusive range. If we only have one bound, then it's non-inclusive.
 
             //sometimes the brackets are passed down from the path system to Cerner so strip them off
-            String lowParsed = low.getString().replace("(","");
-            String highParsed = high.getString().replace(")","");
+            String lowParsed = low.getString().replace("(", "");
+            String highParsed = high.getString().replace(")", "");
 
             try {
                 if (!Strings.isNullOrEmpty(lowParsed)) {
@@ -368,8 +376,7 @@ public class CLEVEPreTransformer {
                     stagingClinicalEvent.setNormalRangeHighTxt(high.getString());
                     stagingClinicalEvent.setNormalRangeHighValue(new Double(lowParsed));
                 }
-            }
-            catch (NumberFormatException ex) {
+            } catch (NumberFormatException ex) {
                 // LOG.warn("Range not set for Clinical Event " + parser.getEventId().getString() + " due to invalid reference range");
                 TransformWarnings.log(LOG, parser, "Range not set for clinical event due to invalid reference range. Id:{}", parser.getEventId().getString());
 

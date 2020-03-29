@@ -1,13 +1,10 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -177,7 +174,7 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
             // LOG.info("originalCode snomedCodeString: " + snomedCodeString);
         }
         else {
-            snomedCodeString = IMHelper.getIMSnomedCodeForConceptId(params, fhir, coreConceptId);
+            snomedCodeString = IMHelper.getSnomedConceptIdForCoreDBID(params, fhir, coreConceptId);
             // LOG.info("IM snomedCodeString: " + snomedCodeString);
         }
 
