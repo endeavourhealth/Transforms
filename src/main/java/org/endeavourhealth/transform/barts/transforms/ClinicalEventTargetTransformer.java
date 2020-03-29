@@ -28,7 +28,7 @@ public class ClinicalEventTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ClinicalEventTargetTransformer.class);
 
-    private static final String RESULT_OBSERVATION_ID_SUFFIX = "_RESULT";
+    //private static final String RESULT_OBSERVATION_ID_SUFFIX = "_RESULT";
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -73,12 +73,12 @@ public class ClinicalEventTargetTransformer {
             }
 
             //see if this observation was previously duplicated with a "result" observation and delete that too
-            String resultUniqueId = uniqueId + RESULT_OBSERVATION_ID_SUFFIX;
+            /*String resultUniqueId = uniqueId + RESULT_OBSERVATION_ID_SUFFIX;
             Observation existingResultObservation = (Observation) csvHelper.retrieveResourceForLocalId(ResourceType.Observation, resultUniqueId);
             if (existingResultObservation != null) {
                 ObservationBuilder observationBuilder = new ObservationBuilder(existingResultObservation, target.getAuditJson());
                 fhirResourceFiler.deletePatientResource(null, false, observationBuilder); //pass in false since this procedure is already ID mapped
-            }
+            }*/
 
             return;
         }
@@ -217,7 +217,12 @@ public class ClinicalEventTargetTransformer {
             observationBuilder.setIsConfidential(true);
         }
 
-        //if our observation has a result text that's mapped to a concept in the IM, then we should create a second
+        updateCodeForMappedResultTexts(observationBuilder, csvHelper);
+
+        //save resource
+        fhirResourceFiler.savePatientResource(null, observationBuilder);
+
+        /*//if our observation has a result text that's mapped to a concept in the IM, then we should create a second
         //observation for that result concept
         ObservationBuilder resultObservationBuilder = createResultObservationIfNecessary(observationBuilder, csvHelper);
         if (resultObservationBuilder != null) {
@@ -227,10 +232,74 @@ public class ClinicalEventTargetTransformer {
         } else {
             //save resource
             fhirResourceFiler.savePatientResource(null, observationBuilder);
-        }
+        }*/
     }
 
-    private static ObservationBuilder createResultObservationIfNecessary(ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) throws Exception {
+    /**
+     * if the observation has a textual result that's mapped to a concept via the IM, then replace
+     * the CodeableConcept with the mapped codes
+     */
+    private static void updateCodeForMappedResultTexts(ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) throws Exception {
+        Observation observation = (Observation)observationBuilder.getResource();
+
+        //if no result text, then return false
+        if (!observation.hasValue()) {
+            return;
+        }
+        Type value = observation.getValue();
+        if (!(value instanceof StringType)) {
+            return;
+        }
+        StringType st = (StringType)value;
+        String resultString = st.getValue();
+
+        //find the Cerner Code ID from the observation
+        CodeableConcept cc = observation.getCode();
+        Coding cernerCodeCoding = CodeableConceptHelper.findCoding(cc, FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+        if (cernerCodeCoding == null) {
+            throw new Exception("Failed to find Cerner coding in codeable concept for observation " + observation.getId());
+        }
+
+        //if the result text isn't mapped to a concept then return out
+        String cernerCode = cernerCodeCoding.getCode();
+        String mappedCernerCodeForResult = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(IMConstant.BARTS_CERNER, cernerCode, resultString);
+        if (Strings.isNullOrEmpty(mappedCernerCodeForResult)) {
+            TransformWarnings.log(LOG, csvHelper, "CLEVE {} result with Code ID {} and result text [{}] not mapped to concept", observation.getId(), cernerCode, resultString);
+            return;
+        }
+
+        //remove the existing codeable concept that was copied from the parent
+        CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code, null);
+
+        //create a new codeable concept with the mapped code
+        CodeableConceptBuilder ccBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+
+        ccBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+        ccBuilder.setCodingCode(mappedCernerCodeForResult);
+        ccBuilder.setCodingDisplay(resultString);
+        ccBuilder.setText(resultString);
+
+        //if this cerner code is mapped to a snomed code, then set that in the codeable concept too
+        String mappedSnomedConceptId = IMHelper.getMappedSnomedConceptForSchemeCode(IMConstant.BARTS_CERNER, mappedCernerCodeForResult);
+        if (!Strings.isNullOrEmpty(mappedSnomedConceptId)) {
+
+            ccBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            ccBuilder.setCodingCode(mappedSnomedConceptId);
+
+            //look up the term for the snomed concept ID
+            String snomedTerm = TerminologyService.lookupSnomedTerm(mappedSnomedConceptId);
+            if (Strings.isNullOrEmpty(snomedTerm)) {
+                TransformWarnings.log(LOG, csvHelper, "Failed to find Snomed term for concept {} when processing Barts CLEVE {}", mappedSnomedConceptId, observation.getId());
+            } else {
+                ccBuilder.setCodingDisplay(snomedTerm);
+            }
+        }
+
+        //set result text to NULL since it's now in the CodeableConcept
+        observationBuilder.setValueString(null);
+    }
+
+    /*private static ObservationBuilder createResultObservationIfNecessary(ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) throws Exception {
 
         Observation observation = (Observation)observationBuilder.getResource();
 
@@ -302,10 +371,8 @@ public class ClinicalEventTargetTransformer {
         //set result text to NULL
         resultObBuilder.setValueString(null);
 
-        //recreate Codeable Concept
-
         return resultObBuilder;
-    }
+    }*/
 
 
 

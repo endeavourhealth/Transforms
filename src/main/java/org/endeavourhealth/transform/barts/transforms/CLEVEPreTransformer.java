@@ -28,6 +28,7 @@ public class CLEVEPreTransformer {
 
     private static final String[] comparators = {"<=", "<", ">=", ">"};
 
+
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -258,7 +259,7 @@ public class CLEVEPreTransformer {
         CsvCell eventCodeCell = parser.getEventCode();
         String mappedSnomedConcept = IMHelper.getMappedSnomedConceptForSchemeCode("BartsCerner", eventCodeCell.getString());
         if (!Strings.isNullOrEmpty(mappedSnomedConcept)) {
-            LOG.debug("Passing through text result for " + parser.getEventId() + " with raw code [" + eventCodeCell.getString() + "] mapped to Snomed concept [" + mappedSnomedConcept + "]");
+            LOG.debug("Passing through text result for CLEVE " + parser.getEventId().getString() + " with raw code [" + eventCodeCell.getString() + "] mapped to Snomed concept [" + mappedSnomedConcept + "]");
             return true;
 
         } else {
