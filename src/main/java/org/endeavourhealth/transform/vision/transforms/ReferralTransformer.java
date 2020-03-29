@@ -1,26 +1,31 @@
 package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ResourceParser;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Referral;
+import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-import static org.endeavourhealth.transform.vision.transforms.JournalTransformer.extractEncounterLinkID;
+import static org.endeavourhealth.transform.vision.transforms.JournalTransformer.extractEncounterLinkId;
 
 public class ReferralTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReferralTransformer.class);
+
+    private static Map<String, String> specialtyCodeMapCache = null;
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -50,13 +55,13 @@ public class ReferralTransformer {
 
 
         ReferralRequestBuilder referralRequestBuilder = new ReferralRequestBuilder();
-        CsvCell referralID = parser.getReferralID();
-        CsvCell patientID = parser.getPatientID();
+        CsvCell referralIdCell = parser.getReferralID();
+        CsvCell patientIdCell = parser.getPatientID();
 
-        VisionCsvHelper.setUniqueId(referralRequestBuilder, patientID, referralID);
+        VisionCsvHelper.setUniqueId(referralRequestBuilder, patientIdCell, referralIdCell);
 
-        Reference patientReference = csvHelper.createPatientReference(patientID);
-        referralRequestBuilder.setPatient(patientReference, patientID);
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+        referralRequestBuilder.setPatient(patientReference, patientIdCell);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell actionCell = parser.getAction();
@@ -66,32 +71,68 @@ public class ReferralTransformer {
             return;
         }
 
-        CsvCell referralDate = parser.getReferralDate();
-        referralRequestBuilder.setDate(EmisDateTimeHelper.createDateTimeType(referralDate.getDate(), "YMD"), referralDate);
+        CsvCell referralDateCell = parser.getReferralDate();
+        DateTimeType dt = EmisDateTimeHelper.createDateTimeType(referralDateCell.getDate(), "YMD");
+        referralRequestBuilder.setDate(dt, referralDateCell);
 
-        CsvCell referralUserID = parser.getReferralUserID();
-        if (!referralUserID.isEmpty()) {
-            String cleanReferralUserID = csvHelper.cleanUserId(referralUserID.getString());
-            referralRequestBuilder.setRequester(csvHelper.createPractitionerReference(cleanReferralUserID));
+        CsvCell referralSenderUserId = parser.getReferralSenderUserId();
+        if (!referralSenderUserId.isEmpty()) {
+            String cleanReferralUserID = VisionCsvHelper.cleanUserId(referralSenderUserId.getString());
+            Reference ref = csvHelper.createPractitionerReference(cleanReferralUserID);
+            referralRequestBuilder.setRequester(ref, referralSenderUserId);
         }
 
-        CsvCell referralType = parser.getReferralType();
-        if (!referralType.isEmpty()) {
-            ReferralType type = convertReferralType(referralType.getString());
+        CsvCell referralTypeCell = parser.getReferralType();
+        if (!referralTypeCell.isEmpty()) {
+            ReferralType type = convertReferralType(referralTypeCell.getString());
             if (type != null) {
-                referralRequestBuilder.setType(type);
+                referralRequestBuilder.setType(type, referralTypeCell);
             }
         }
 
-        CsvCell recipientOrgID = parser.getReferralDestOrgID();
-        if (!recipientOrgID.isEmpty()) {
-            referralRequestBuilder.addRecipient(csvHelper.createOrganisationReference(recipientOrgID.getString()));
+        CsvCell recipientUserIdCell = parser.getReferralRecipientUserId();
+        if (!recipientUserIdCell.isEmpty()) {
+            Reference ref = csvHelper.createPractitionerReference(recipientUserIdCell.getString());
+            referralRequestBuilder.addRecipient(ref, recipientUserIdCell);
         }
 
         //set linked encounter
-        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
-        if (!Strings.isNullOrEmpty(consultationID)) {
-            referralRequestBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
+        CsvCell linksCell = parser.getLinks();
+        String consultationId = extractEncounterLinkId(linksCell.getString());
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            Reference ref = csvHelper.createEncounterReference(consultationId, patientIdCell.getString());
+            referralRequestBuilder.setEncounter(ref, linksCell);
+        }
+
+        CsvCell specialtyCell = parser.getSpecialty();
+        if (!specialtyCell.isEmpty()) {
+            //the specialty is a NHS Data Dictionary specialty code
+            if (specialtyCodeMapCache == null) {
+                specialtyCodeMapCache = ResourceParser.readCsvResourceIntoMap("DataDictionarySpecialtyCodes.csv", "Code", "Term", CSVFormat.DEFAULT.withHeader());
+            }
+            String term = specialtyCodeMapCache.get(specialtyCell.getString());
+            if (term == null) {
+                throw new Exception("Failed to find clinical specialty term for code [" + specialtyCell.getString() + "]");
+            }
+            referralRequestBuilder.setRecipientServiceType(term, specialtyCell);
+        }
+
+        //there are a few fields that are always empty, so we don't transform them. But validate that they ARE empty.
+        CsvCell contractorCell = parser.getContractor();
+        if (!contractorCell.isEmpty()) {
+            throw new Exception("Referal CONTRACTOR cell not empty");
+        }
+        CsvCell contractCell = parser.getContract();
+        if (!contractCell.isEmpty()) {
+            throw new Exception("Referal CONTRACT cell not empty");
+        }
+        CsvCell actionDateCell = parser.getActionDate();
+        if (!actionDateCell.isEmpty()) {
+            throw new Exception("Referal ACTION_DATE cell not empty");
+        }
+        CsvCell unitCell = parser.getUnit();
+        if (!unitCell.isEmpty()) {
+            throw new Exception("Referal UNIT cell not empty");
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), referralRequestBuilder);

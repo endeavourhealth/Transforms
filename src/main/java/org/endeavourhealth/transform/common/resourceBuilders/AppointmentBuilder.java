@@ -61,7 +61,7 @@ public class AppointmentBuilder extends ResourceBuilderBase
         auditValue("end", sourceCells);
     }
 
-    public void setMinutesDuration(Integer mins, CsvCell... sourceCells) {
+    public void setMinutesActualDuration(Integer mins, CsvCell... sourceCells) {
         this.appointment.setMinutesDuration(mins);
 
         auditValue("minutesDuration", sourceCells);

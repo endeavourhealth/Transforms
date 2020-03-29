@@ -83,7 +83,12 @@ public class BulkHelper {
         params.setEnterpriseOrganisationId(enterpriseOrgId);
 
         // transform the fhir resource
-        enterpriseTransformer.transformResources(resources,
+        //enterpriseTransformer.transformResources(resources,
+                //params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.Patient.class), params);
+
+        // take a copy of resources to avoid ConcurrentModificationException
+        List<ResourceWrapper> copy = new ArrayList(resources);
+        enterpriseTransformer.transformResources(copy,
                 params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.Patient.class), params);
 
 

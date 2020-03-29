@@ -298,7 +298,7 @@ public class JournalTransformer {
             medicationStatementBuilder.setRecordedDate(enteredDateTime.getDate(), enteredDateTime);
         }
 
-        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
+        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
             Reference reference = csvHelper.createEncounterReference(consultationID, patientID.getString());
             medicationStatementBuilder.setEncounter(reference, parser.getLinks());
@@ -402,7 +402,7 @@ public class JournalTransformer {
             medicationOrderBuilder.setRecordedDate(enteredDateTime.getDate(), enteredDateTime);
         }
 
-        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
+        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
             Reference reference = csvHelper.createEncounterReference(consultationID, patientID.getString());
             medicationOrderBuilder.setEncounter(reference, parser.getLinks());
@@ -501,7 +501,7 @@ public class JournalTransformer {
             }
         }
 
-        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
+        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
             Reference reference = csvHelper.createEncounterReference(consultationID, patientID.getString());
             allergyIntoleranceBuilder.setEncounter(reference, parser.getLinks());
@@ -595,7 +595,7 @@ public class JournalTransformer {
         }
 
         //set linked encounter
-        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
+        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
             procedureBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
         }
@@ -1008,7 +1008,7 @@ public class JournalTransformer {
         observationBuilder.setNotes(associatedTextAsStr,associatedTextCell);
 
         //set linked encounter
-        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
+        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
             observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
         }
@@ -1102,7 +1102,7 @@ public class JournalTransformer {
         }
 
         //set linked encounter
-        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
+        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
         if (!consultationID.isEmpty()) {
             familyMemberHistoryBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
         }
@@ -1238,7 +1238,7 @@ public class JournalTransformer {
         }
 
         //set linked encounter
-        String consultationID = extractEncounterLinkID(parser.getLinks().getString());
+        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
         if (!Strings.isNullOrEmpty(consultationID)) {
             immunizationBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
         }
@@ -1294,7 +1294,7 @@ public class JournalTransformer {
     }
 
     // the consultation encounter link value is pre-fixed with E
-    public static String extractEncounterLinkID(String links) {
+    public static String extractEncounterLinkId(String links) {
         if (!Strings.isNullOrEmpty(links)) {
             String[] linkIDs = links.split("[|]");
             for (String link : linkIDs) {

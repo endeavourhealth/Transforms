@@ -107,7 +107,7 @@ public class SlotTransformer {
 
         CsvCell duration = parser.getActualDurationInMinutes();
         if (!duration.isEmpty()) {
-            appointmentBuilder.setMinutesDuration(duration.getInt(), duration);
+            appointmentBuilder.setMinutesActualDuration(duration.getInt(), duration);
         }
 
         Reference slotReference = csvHelper.createSlotReference(patientGuid, slotGuid);

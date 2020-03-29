@@ -285,17 +285,19 @@ public abstract class EmisCsvToFhirTransformer {
             LOG.trace("Starting appointments transforms");
             SessionUserTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SessionTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            if (processPatientData) {
-                //the Slot transformer requires Discovery UUIDs to be generated for all patients, so we must call this Pre-transformer before it
-                PatientPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-                SlotPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-                SlotTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            }
-            //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
-            //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
-            //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
-            csvHelper.clearCachedSessionPractitioners(); //clear this down as it's a huge memory sink
         }
+
+        if (processPatientData) {
+            //the Slot transformer requires Discovery UUIDs to be generated for all patients, so we must call this Pre-transformer before it
+            PatientPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SlotPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SlotTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        }
+        
+        //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
+        //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
+        //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
+        csvHelper.clearCachedSessionPractitioners(); //clear this down as it's a huge memory sink
 
         //if this extract is one of the ones from BEFORE we got a subsequent re-bulk, we don't want to process
         //the patient data in the extract, as we know we'll be getting a later extract saying to delete it and then

@@ -254,7 +254,11 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         ExchangeBatchExtraResourceDalI exchangeBatchExtraResourceDalI = DalProvider.factoryExchangeBatchExtraResourceDal(getEnterpriseConfigName());
         ResourceType type = wrapper.getResourceTypeObj();
         UUID resourceId = wrapper.getResourceId();
-        exchangeBatchExtraResourceDalI.saveExtraResource(getExchangeId(), getBatchId(), type, resourceId);
+
+        //when invoked by the Bulk UPRN utility we don't have an exchange ID, so skip this in that case
+        if (getExchangeId() != null) {
+            exchangeBatchExtraResourceDalI.saveExtraResource(getExchangeId(), getBatchId(), type, resourceId);
+        }
 
         //and add the resource to be transformed
         try {
