@@ -130,7 +130,8 @@ public class ClinicalEventTargetTransformer {
             observationBuilder.setValueString(target.getEventResultTxt());
 
         } else {
-            throw new Exception("Clinical Event " + uniqueId + " has no numeric or textual result");
+            //this is fine
+            //throw new Exception("Clinical Event " + uniqueId + " has no numeric or textual result");
         }
 
         if (target.getComparator() != null) {
