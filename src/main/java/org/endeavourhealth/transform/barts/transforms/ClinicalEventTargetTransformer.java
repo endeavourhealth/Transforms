@@ -120,7 +120,8 @@ public class ClinicalEventTargetTransformer {
             //events may refer to themselves as their own parent, so only set this if it's different
             long eventId = target.getEventId();
             if (parentEventId.longValue() != eventId) {
-                Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.Observation, parentEventId.toString());
+                String parentEventUniqueId = "CLEVE-" + parentEventId.toString();
+                Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.Observation, parentEventUniqueId);
                 observationBuilder.setParentResource(parentDiagnosticReportReference);
             }
         }
