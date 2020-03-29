@@ -51,10 +51,17 @@ public class ClinicalEventTargetTransformer {
             return;
         }
 
-        TransformWarnings.log(LOG, csvHelper, "Target Clinical events to transform to FHIR: {} for exchangeId: {}", targetClinicalEvents.size(), csvHelper.getExchangeId());
+        int size = targetClinicalEvents.size();
+        int done = 0;
+        TransformWarnings.log(LOG, csvHelper, "Target Clinical events to transform to FHIR: {} for exchangeId: {}", new Integer(size), csvHelper.getExchangeId());
 
         for (StagingClinicalEventTarget targetClinicalEvent : targetClinicalEvents) {
             createObservationFromTarget(targetClinicalEvent, fhirResourceFiler, csvHelper);
+
+            done ++;
+            if (done % 1000 == 0) {
+                LOG.debug("Done " + done + " of " + size);
+            }
         }
     }
 
@@ -107,10 +114,15 @@ public class ClinicalEventTargetTransformer {
             observationBuilder.setEffectiveDate(eventPerformedDateTime);
         }
 
-        Long parentEventId =  target.getParentEventId();
+        Long parentEventId = target.getParentEventId();
         if (parentEventId != null) {
-            Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.DiagnosticReport, parentEventId.toString());
-            observationBuilder.setParentResource(parentDiagnosticReportReference);
+
+            //events may refer to themselves as their own parent, so only set this if it's different
+            long eventId = target.getEventId();
+            if (parentEventId.longValue() != eventId) {
+                Reference parentDiagnosticReportReference = ReferenceHelper.createReference(ResourceType.Observation, parentEventId.toString());
+                observationBuilder.setParentResource(parentDiagnosticReportReference);
+            }
         }
 
         // Order Id is referenced in the diagnostic report resource rather than the child event
