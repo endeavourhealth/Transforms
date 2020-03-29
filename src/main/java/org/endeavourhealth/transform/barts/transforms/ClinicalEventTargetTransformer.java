@@ -4,15 +4,18 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingClinicalEventTarget;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -20,6 +23,17 @@ import java.util.List;
 public class ClinicalEventTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ClinicalEventTargetTransformer.class);
+
+    private static final String BARTS_CERNER = "BartsCerner";
+    private static final Integer CERNER_COVID_TEST=687309281;
+    private static final String CERNER_COVID_TEST_DETECTED =       "SARS-CoV-2 RNA DETECTED";
+    private static final String CERNER_COVID_TEST_NOT_DETECTED =   "SARS-CoV-2 RNA NOT detected";
+    private static final String SNOMED_COVID_TEST_CODE =           "1240511000000106";
+    private static final String SNOMED_COVID_TEST_POSITIVE_CODE =  "1240581000000104";
+    private static final String SNOMED_COVID_TEST_NEGATIVE_CODE =  "1240591000000102";
+    private static final String SNOMED_COVID_TEST_TERM = 	       "Detection of 2019 novel coronavirus using polymerase chain reaction technique (procedure)";
+    private static final String SNOMED_COVID_TEST_POSITIVE_TERM =  "2019 novel coronavirus detected (finding)";
+    private static final String SNOMED_COVID_TEST_NEGATIVE_TERM =  "2019 novel coronavirus not detected (finding)";
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -162,21 +176,7 @@ public class ClinicalEventTargetTransformer {
 
             // All codes are cerner codes??
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
-            /*// can be either of these three coded types
-            String procedureCodeType = targetClinicalEvent.getProcedureType().trim();
-            if (procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED)
-                    || procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_SNOMED_CT)) {
 
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-
-            } else if (procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
-
-            } else if (procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_CERNER)) {
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
-            } else {
-                throw new TransformException("Unknown Procedure Target code type [" + procedureCodeType + "]");
-            }*/
             String procedureCode = targetClinicalEvent.getLookupEventCode();
             if (!Strings.isNullOrEmpty(procedureCode)) {
 
@@ -199,11 +199,82 @@ public class ClinicalEventTargetTransformer {
                     && targetClinicalEvent.getConfidential().booleanValue()) {
                 observationBuilder.setIsConfidential(true);
             }
+            if (needMultipleObservations(targetClinicalEvent)) {
+                   // File one Observation for the test (observationBuilder), one for the result (newObservationbBuilder).
+                observationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code, codeableConceptBuilder.getCodeableConcept());
 
-            fhirResourceFiler.savePatientResource(null, observationBuilder);
+                Observation observation = (Observation) observationBuilder.getResource();
+                String json = FhirSerializationHelper.serializeResource(observation);
+                Observation newObservation = (Observation)FhirSerializationHelper.deserializeResource(json);
+                newObservation.setId((observation.getId()+"-RESULT"));
+                ObservationBuilder newObservationBuilder = new ObservationBuilder(newObservation);
+                newObservationBuilder.setId(uniqueId+"-RESULT");
+
+                Reference parentReference = ReferenceHelper.createReference(ResourceType.Observation, observation.getId());
+                newObservationBuilder.setParentResource(parentReference);
+                //Build the TEST Observation
+                CodeableConceptBuilder ccBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+                ccBuilder.setText(targetClinicalEvent.getLookupEventTerm());
+                ccBuilder.addCoding((FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID));
+                ccBuilder.setCodingCode(targetClinicalEvent.getLookupEventCode());
+                ccBuilder.setCodingDisplay(targetClinicalEvent.getLookupEventTerm());
+                String eventCode = targetClinicalEvent.getLookupEventCode();
+                String cc = IMHelper.getMappedCoreCodeForSchemeCode(BARTS_CERNER,eventCode);
+                ccBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT) ;
+                ccBuilder.setCodingCode(cc);
+                ccBuilder.setCodingDisplay(targetClinicalEvent.getLookupEventTerm());
+                observationBuilder.setValueString(targetClinicalEvent.getEventResultTxt());
+                fhirResourceFiler.savePatientResource(null, observationBuilder);
+
+                //Build the RESULT Observation only if we have a result text
+                String resultTxt = targetClinicalEvent.getEventResultTxt();
+                if (!Strings.isNullOrEmpty(resultTxt)) {
+                    String resultLegacy = IMHelper.getCodeForTypeTerm(BARTS_CERNER, eventCode, resultTxt, true);
+                    String resultSnomed = IMHelper.getMappedCoreCodeForSchemeCode(BARTS_CERNER, resultLegacy);
+                    newObservationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code, codeableConceptBuilder.getCodeableConcept());
+                    CodeableConceptBuilder ccBuilderResult
+                            = new CodeableConceptBuilder(newObservationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+                    ccBuilderResult.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    if (resultTxt.equalsIgnoreCase(CERNER_COVID_TEST_DETECTED)) {
+                        String code = IMHelper.getCodeForTypeTerm(BARTS_CERNER, eventCode,
+                                CERNER_COVID_TEST_DETECTED, true);
+                        ccBuilderResult.setCodingCode(resultLegacy);
+                        ccBuilderResult.setCodingDisplay(SNOMED_COVID_TEST_POSITIVE_TERM);
+                    } else if (resultTxt.equalsIgnoreCase(CERNER_COVID_TEST_NOT_DETECTED)) {
+                        //String code = IMHelper.getCodeForTypeTerm(BARTS_CERNER, eventCode, CERNER_COVID_TEST_NOT_DETECTED, true);
+                        ccBuilderResult.setCodingCode(resultSnomed);
+                        ccBuilderResult.setCodingDisplay(SNOMED_COVID_TEST_NEGATIVE_TERM);
+                    } else {
+                        TransformWarnings.log(LOG,csvHelper,"Unexpected coronavirus resultText:<" + resultTxt + ">");
+                    }
+                    ccBuilderResult.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+                    String cc2 = IMHelper.getMappedCoreCodeForSchemeCode(BARTS_CERNER,targetClinicalEvent.getLookupEventCode());
+                    ccBuilderResult.setCodingCode(cc2);
+                    ccBuilderResult.setCodingDisplay(targetClinicalEvent.getLookupEventTerm());
+                    newObservationBuilder.setValueString(targetClinicalEvent.getEventResultTxt());
+                    fhirResourceFiler.savePatientResource(null, newObservationBuilder);
+                }   //TODO anything here for when no/other result?
+
+            } else {
+                fhirResourceFiler.savePatientResource(null, observationBuilder);
+            }
+
         }
     }
 
+   private static boolean needMultipleObservations(StagingClinicalEventTarget target) {
+        // So far only needed for Barts Covid
+        try {
+            String ret = IMHelper.getMappedCoreCodeForSchemeCode("BartsCerner", target.getLookupEventCode());
+            if (ret != null) {
+                LOG.debug("needMultipleObservations for " + ret);
+               return true;
+           }
+       } catch (Exception e) {
+           LOG.error("Exception calling IMHelper for type " + BARTS_CERNER + " code " + target.getLookupEventCode());
+       }
+        return false;
+   }
     public static Date setTime235959(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
@@ -231,4 +302,6 @@ public class ClinicalEventTargetTransformer {
             return null;
         }
     }
+
+
 }

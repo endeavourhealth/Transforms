@@ -29,6 +29,8 @@ public class IMHelper {
     private static Map<Integer, String> snomedCodeCache = new ConcurrentHashMap<>();
     private static Set<Integer> nullSnomedCodeCache = ConcurrentHashMap.newKeySet();
 
+    private static Map<String, String> conceptCache = new ConcurrentHashMap<>();
+
     private static final ReentrantLock lock = new ReentrantLock();
 
     public static Integer getIMMappedConcept(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String scheme, String code) throws Exception {
@@ -75,7 +77,7 @@ public class IMHelper {
             while (true) {
                 lives--;
                 try {
-                    return IMClient.getMappedCoreConceptIdForSchemeCode(scheme, code);
+                    return IMClient.getMappedCoreConceptDbidForSchemeCode(scheme, code);
                 } catch (Exception ex) {
                     if (lives <= 0) {
                         throw ex;
@@ -131,7 +133,7 @@ public class IMHelper {
             while (true) {
                 lives--;
                 try {
-                    return IMClient.getConceptIdForSchemeCode(scheme, code, true, term);
+                    return IMClient.getConceptDbidForSchemeCode(scheme, code,  term, true);
                 } catch (Exception ex) {
                     if (lives <= 0) {
                         throw ex;
@@ -189,7 +191,7 @@ public class IMHelper {
             while (true) {
                 lives--;
                 try {
-                    return IMClient.getMappedCoreConceptIdForTypeTerm(type, term);
+                    return IMClient.getMappedCoreConceptDbidForTypeTerm(type, term);
                 } catch (Exception ex) {
                     if (lives <= 0) {
                         throw ex;
@@ -246,7 +248,7 @@ public class IMHelper {
             while (true) {
                 lives--;
                 try {
-                    return IMClient.getConceptIdForTypeTerm(type, term, true);
+                    return IMClient.getConceptDbidForTypeTerm(type, term, true);
                 } catch (Exception ex) {
                     if (lives <= 0) {
                         throw ex;
@@ -301,12 +303,103 @@ public class IMHelper {
             while (true) {
                 lives--;
                 try {
-                    return IMClient.getCodeForConceptId(conceptId);
+                    return IMClient.getCodeForConceptDbid(conceptId);
                 } catch (Exception ex) {
                     if (lives <= 0) {
                         throw ex;
                     }
 
+                    LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+                }
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public static String getMappedCoreCodeForSchemeCode(String scheme, String code) throws Exception {
+        if (code == null) {
+            return null;
+        }
+
+        //check cache
+        try {
+            Integer key = Integer.parseInt(code);
+
+        String ret = snomedCodeCache.get(key);
+        if (ret != null || nullSnomedCodeCache.contains(key)) {
+            return ret;
+        }
+        //hit IM API
+        ret =getMappedCoreCodeForSchemeCodeWithRetry(scheme, code);
+            //add to cache
+            if (ret == null) {
+                nullSnomedCodeCache.add(key);
+
+            } else {
+                snomedCodeCache.put(key, ret);
+            }
+        return ret;
+        }
+        catch (NumberFormatException e) {
+            throw new TransformException("IMHelper called with non integer code");
+        }
+    }
+
+    private static String getMappedCoreCodeForSchemeCodeWithRetry(String scheme, String code) throws Exception {
+        try {
+            lock.lock();
+
+            //during development, we get fairly frequent timeouts, so give it a couple of attempts
+            int lives = 5;
+
+            while (true) {
+                lives--;
+                try {
+                     return  IMClient.getMappedCoreCodeForSchemeCode(scheme, code);
+                } catch (Exception ex) {
+                    if (lives <= 0) {
+                        throw ex;
+                    }
+
+                    LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+                }
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public static String getCodeForTypeTerm(String scheme, String context, String term, boolean autoCreate) throws Exception {
+        //TODO need to think if all will have autoCreate set?
+        if (context == null || term == null) {
+            return null;
+        }
+         String key = context + term;
+         String ret = conceptCache.get(key);
+            if (ret != null) {
+                return ret;
+            }
+        // hit IM API
+        ret = getCodeForTypeTermWithRetry(scheme, context, term, autoCreate);
+        conceptCache.put(key, ret);
+        return ret;
+    }
+    private static String getCodeForTypeTermWithRetry(String scheme, String context, String term, boolean autoCreate) throws Exception {
+        try {
+            lock.lock();
+
+            //during development, we get fairly frequent timeouts, so give it a couple of attempts
+            int lives = 5;
+
+            while (true) {
+                lives--;
+                try {
+                    return IMClient.getCodeForTypeTerm(scheme, context, term, autoCreate);
+                } catch (Exception ex) {
+                    if (lives <= 0) {
+                        throw ex;
+                    }
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
                 }
             }
