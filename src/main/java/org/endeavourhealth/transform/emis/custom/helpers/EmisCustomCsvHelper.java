@@ -456,7 +456,7 @@ public class EmisCustomCsvHelper {
 
         public int compareTo(RegStatusObj other) {
 
-            //after going round the houses for over a year, we've agreeds that the records should be sorted by DATE TIME
+            //after going round the houses for over a year, we've agreed that the records should be sorted by DATE TIME
             //and then only by PROCESSING ORDER if the date times are the same
 
             //sort by datetime
@@ -477,6 +477,14 @@ public class EmisCustomCsvHelper {
             if (processingOrder == null) {
                 throw new RuntimeException("No processing order column in Registration Status file");
             }
+
+            // if the processingOrder value of the compared data is a 1 then this always takes reverse precedence in the
+            // list as its the "current" registration status and needs to reverse head up the list where there is a matching
+            // date so it gets transformed as the latest registration_status_id
+            if (other.getProcessingOrder().intValue() == 1) {
+                return -1;
+            }
+
             int comp = processingOrder.compareTo(other.getProcessingOrder());
             if (comp != 0) {
                 return comp;
