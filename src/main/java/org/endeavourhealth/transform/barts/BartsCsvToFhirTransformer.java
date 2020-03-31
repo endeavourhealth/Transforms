@@ -7,9 +7,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.transforms.*;
-import org.endeavourhealth.transform.barts.transforms.v2.ORGREFTransformerV2;
-import org.endeavourhealth.transform.barts.transforms.v2.PPADDTransformerV2;
-import org.endeavourhealth.transform.barts.transforms.v2.PRSNLREFTransformerV2;
+import org.endeavourhealth.transform.barts.transforms.v2.*;
 import org.endeavourhealth.transform.common.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,18 +112,29 @@ public abstract class BartsCsvToFhirTransformer {
 
             //patient transformers
             LOG.trace("Starting PPxxx transformers");
-            PPATITransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPATI", true), fhirResourceFiler, csvHelper);
+            PPATITransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPATI", false), fhirResourceFiler, csvHelper);
+            PPATITransformerV2.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPATI", true), fhirResourceFiler, csvHelper);
+
             PPALITransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPALI", true), fhirResourceFiler, csvHelper);
+
             PPADDTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPADD", false), fhirResourceFiler, csvHelper);
             PPADDTransformerV2.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPADD", true), fhirResourceFiler, csvHelper);
-            //PPINFTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPINF", csvHelper), fhirResourceFiler, csvHelper); //nothing interesting in this file
-            PPNAMTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPNAM", true), fhirResourceFiler, csvHelper);
+
+            PPNAMTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPNAM", false), fhirResourceFiler, csvHelper);
+            PPNAMTransformerV2.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPNAM", true), fhirResourceFiler, csvHelper);
+
             PPPHOTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPPHO", true), fhirResourceFiler, csvHelper);
+
             PPRELTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPREL", true), fhirResourceFiler, csvHelper);
-            PPAGPTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPAGP", true), fhirResourceFiler, csvHelper);
+
+            PPAGPTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPAGP", false), fhirResourceFiler, csvHelper);
+            PPAGPTransformerV2.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PPAGP", true), fhirResourceFiler, csvHelper);
 
             //we're now good to save our patient resources
             csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
+
+            //save the v2 resources
+            csvHelper.getPatientCache().filePatientV2Instances();
 
             //subsequent transforms may refer to Patient resources, so ensure they're all on the DB before continuing
             fhirResourceFiler.waitUntilEverythingIsSaved();

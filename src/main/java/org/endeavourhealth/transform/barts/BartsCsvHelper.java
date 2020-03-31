@@ -56,7 +56,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public static final String CODE_TYPE_SNOMED = "SNOMED";
     public static final String CODE_TYPE_SNOMED_CT = "SNOMED CT";
     public static final String CODE_TYPE_UK_ED_SUBSET = "UK ED Subset";
-    public static final String CODE_TYPE_SNOMED_UK_SUBSET ="SNMUKEMED";  // Found in Barts DIAGN files.
+    public static final String CODE_TYPE_SNOMED_UK_SUBSET = "SNMUKEMED";  // Found in Barts DIAGN files.
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
     public static final String CODE_TYPE_ICD_10_d = "ICD-10";           // Found in Barts Diagnosis files, v rare.
     public static final String CODE_TYPE_OPCS_4 = "OPCS4";
@@ -104,6 +104,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private String cachedBartsOrgRefId = null;
     private Date cachedDataDate = null;
 
+    private Map<Integer, Integer> patientCurrentAddressIdMap = new ConcurrentHashMap<>();
     private Map<String, String> snomedDescToConceptCache = new ConcurrentHashMap<>();
 
     //private Map<Long, String> encounterIdToPersonIdMap = new HashMap<>(); //specifically not a concurrent map because we don't multi-thread and add null values
@@ -289,7 +290,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         //check the cache - note we cache null lookups in the cache
         Set<String> idsForDb = new HashSet<>();
-        for (String sourceId: sourceIds) {
+        for (String sourceId : sourceIds) {
             StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
 
             try {
@@ -317,7 +318,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
             try {
                 cacheLock.lock();
 
-                for (String sourceId: idsForDb) {
+                for (String sourceId : idsForDb) {
                     StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
 
                     String dbVal = dbResults.get(sourceId);
@@ -336,6 +337,21 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         }
 
         return ret;
+    }
+
+    public void cachePatientCurrentAddressId(Integer corePatientId, Integer coreAddressId) {
+
+        patientCurrentAddressIdMap.put(corePatientId, coreAddressId);
+    }
+
+    public Integer findPatientCurrentAddressId(Integer corePatientId) {
+
+        return patientCurrentAddressIdMap.get(corePatientId);
+    }
+
+    public org.endeavourhealth.core.database.dal.ehr.models.Patient getCorePatient (Integer coreId) throws Exception {
+
+        return coreFilerRepository.findPatientFromCoreId(this.serviceId, coreId);
     }
 
     public CoreId getCoreId (byte coreTable, String sourceId) throws Exception {

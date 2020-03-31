@@ -68,12 +68,12 @@ public class PPADDTransformerV2 {
         PatientAddress patientAddress = new PatientAddress();
 
         CsvCell addressIdCell = parser.getMillenniumAddressId();
-        CoreId patientAddressId = csvHelper.getCoreId(CoreTableId.PATIENT_ADDRESS.getId(), addressIdCell.getString());
-        patientAddress.setId(patientAddressId.getCoreId());
+        CoreId corePatientAddressId = csvHelper.getCoreId(CoreTableId.PATIENT_ADDRESS.getId(), addressIdCell.getString());
+        patientAddress.setId(corePatientAddressId.getCoreId());
 
         CsvCell personIdCell = parser.getPersonId();
-        CoreId patientId = csvHelper.getCoreId(CoreTableId.PATIENT.getId(), personIdCell.getString());
-        patientAddress.setPatientId(patientId.getCoreId());
+        CoreId corePatientId = csvHelper.getCoreId(CoreTableId.PATIENT.getId(), personIdCell.getString());
+        patientAddress.setPatientId(corePatientId.getCoreId());
 
         //if non-active (i.e. deleted) we should REMOVE the address from the patient
         CsvCell active = parser.getActiveIndicator();
@@ -144,6 +144,10 @@ public class PPADDTransformerV2 {
         CsvCell typeDescCell = BartsCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.ADDRESS_TYPE, typeCell);
         String typeDesc = typeDescCell.getString();
         Address.AddressUse use = convertAddressUse(typeDesc, isActive);
+        if (use == Address.AddressUse.HOME) {
+            //Cache the current address Id for filing against the patient
+            csvHelper.cachePatientCurrentAddressId(corePatientId.getCoreId(), corePatientAddressId.getCoreId());
+        }
         patientAddress.setUseTypeId(-1);
 
         //TODO:  how do we map the msoa, lsoa and ward / local authority codes?
