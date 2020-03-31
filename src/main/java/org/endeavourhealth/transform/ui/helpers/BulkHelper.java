@@ -63,7 +63,7 @@ public class BulkHelper {
         return true;
     }
 
-    public static String getEnterpriseContainerForUPRNData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, String subscriberConfigName, UUID patientId) throws Exception {
+    public static String getEnterpriseContainerForUPRNData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, String subscriberConfigName, UUID patientId, String debug) throws Exception {
 
         EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceUUID, null, null, null, batchUUID, subscriberConfigName, resources, null);
 
@@ -73,6 +73,13 @@ public class BulkHelper {
         if (!patientFoundInSubscriber) {
             LOG.info("Skipping patient " + patientId + " as not found in enterprise DB");
             return null;
+        }
+
+        if (debug.equals("1")) {
+            LOG.info("*not* skipped");
+            System.out.println("Press Enter key to continue...");
+            Scanner scan = new Scanner(System.in);
+            scan.nextLine();
         }
 
         // create a patient transformer
