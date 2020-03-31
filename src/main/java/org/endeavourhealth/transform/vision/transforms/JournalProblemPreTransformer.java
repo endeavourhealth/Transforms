@@ -30,7 +30,7 @@ public class JournalProblemPreTransformer {
 
         //use a thread pool to perform multiple lookups in parallel
         int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(fhirResourceFiler.getServiceId());
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 50000, "VisionJournalProblem");
+        ThreadPool threadPool = new ThreadPool(threadPoolSize, 1000, "VisionJournalProblem"); //lower from 50k to save memory
 
         AbstractCsvParser parser = parsers.get(Journal.class);
 

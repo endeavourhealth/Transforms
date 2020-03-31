@@ -977,7 +977,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void submitToThreadPool(Callable callable) throws Exception {
         if (this.utilityThreadPool == null) {
             int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
-            this.utilityThreadPool = new ThreadPool(threadPoolSize, 50000, "TppCsvHelper");
+            this.utilityThreadPool = new ThreadPool(threadPoolSize, 1000, "TppCsvHelper"); //lower from 50k to save memory
         }
 
         List<ThreadPoolError> errors = utilityThreadPool.submit(callable);

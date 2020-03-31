@@ -184,7 +184,7 @@ public class FhirDeltaResourceFilter {
         //don't set a limit on the pool to start blocking, since the resources
         //are already in memory, so having them all in the queue won't use much more
         int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(filer.getServiceId());
-        ThreadPool idMappingPool = new ThreadPool(threadPoolSize, Integer.MAX_VALUE, "DeltaFilerIdMapper");
+        ThreadPool idMappingPool = new ThreadPool(threadPoolSize, 1000, "DeltaFilerIdMapper");
 
         for (Resource resource: resources) {
 
