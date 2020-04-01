@@ -1,14 +1,18 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.endeavourhealth.transform.ui.helpers.IdentifierHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class PractitionerEnterpriseTransformer extends AbstractEnterpriseTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PractitionerEnterpriseTransformer.class);
@@ -35,10 +39,11 @@ public class PractitionerEnterpriseTransformer extends AbstractEnterpriseTransfo
         Practitioner fhir = (Practitioner)resourceWrapper.getResource();
 
         long id;
-        long organizaationId;
+        long organizationId;
         String name = null;
         String roleCode = null;
         String roleDesc = null;
+        String gmcCode = null;
 
         id = enterpriseId.longValue();
         //LOG.debug("Transforming " + resource.getResourceType() + " " + resource.getId() + " -> " + id);
@@ -93,14 +98,21 @@ public class PractitionerEnterpriseTransformer extends AbstractEnterpriseTransfo
             //LOG.debug("Had no managing org so used main org -> " + practitionerEnterpriseOrgId);
         }
 
-        organizaationId = practitionerEnterpriseOrgId.longValue();
+        organizationId = practitionerEnterpriseOrgId.longValue();
+
+        gmcCode = getGMCCode(fhir.getIdentifier());
 
         org.endeavourhealth.transform.enterprise.outputModels.Practitioner model = (org.endeavourhealth.transform.enterprise.outputModels.Practitioner)csvWriter;
         model.writeUpsert(id,
-            organizaationId,
+            organizationId,
             name,
             roleCode,
-            roleDesc);
+            roleDesc,
+            gmcCode);
+    }
+
+    private static String getGMCCode(List<Identifier> identifiers) {
+        return IdentifierHelper.getIdentifierBySystem(identifiers, FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER);
     }
 
     private static String createNameFromElements(HumanName name) {

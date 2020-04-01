@@ -19,14 +19,16 @@ public class Practitioner extends AbstractTargetTable {
                             long organizaationId,
                             String name,
                             String roleCode,
-                            String roleDesc) throws Exception {
+                            String roleDesc,
+                            String gmcCode) throws Exception {
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 "" + organizaationId,
                 name,
                 roleCode,
-                roleDesc);
+                roleDesc,
+                gmcCode);
     }
 
     @Override
@@ -37,7 +39,8 @@ public class Practitioner extends AbstractTargetTable {
                 "organization_id",
                 "name",
                 "role_code",
-                "role_desc"
+                "role_desc",
+                "gmc_code"
         };
     }
 
@@ -53,6 +56,7 @@ public class Practitioner extends AbstractTargetTable {
                 Byte.TYPE,
                 Long.TYPE,
                 Long.TYPE,
+                String.class,
                 String.class,
                 String.class,
                 String.class

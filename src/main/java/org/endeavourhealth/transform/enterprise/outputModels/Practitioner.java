@@ -16,17 +16,19 @@ public class Practitioner extends AbstractEnterpriseCsvWriter {
 
 
     public void writeUpsert(long id,
-                            long organizaationId,
+                            long organizationId,
                             String name,
                             String roleCode,
-                            String roleDesc) throws Exception {
+                            String roleDesc,
+                            String gmcCode) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
-                "" + organizaationId,
+                "" + organizationId,
                 name,
                 roleCode,
-                roleDesc);
+                roleDesc,
+                gmcCode);
     }
 
     @Override
@@ -37,7 +39,8 @@ public class Practitioner extends AbstractEnterpriseCsvWriter {
                 "organization_id",
                 "name",
                 "role_code",
-                "role_desc"
+                "role_desc",
+                "gmc_code"
         };
     }
 
@@ -48,6 +51,7 @@ public class Practitioner extends AbstractEnterpriseCsvWriter {
                 String.class,
                 Long.TYPE,
                 Long.TYPE,
+                String.class,
                 String.class,
                 String.class,
                 String.class

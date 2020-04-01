@@ -1,15 +1,19 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
+import org.endeavourhealth.transform.ui.helpers.IdentifierHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class PractitionerTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransformer.class);
@@ -39,6 +43,7 @@ public class PractitionerTransformer extends AbstractSubscriberTransformer {
         String name = null;
         String roleCode = null;
         String roleDesc = null;
+        String gmcCode = null;
 
         if (fhir.hasName()) {
             HumanName fhirName = fhir.getName();
@@ -88,14 +93,20 @@ public class PractitionerTransformer extends AbstractSubscriberTransformer {
 
         organizationId = practitionerEnterpriseOrgId.longValue();
 
+        gmcCode = getGMCCode(fhir.getIdentifier());
 
         model.writeUpsert(subscriberId,
             organizationId,
             name,
             roleCode,
-            roleDesc);
+            roleDesc,
+            gmcCode);
 
 
+    }
+
+    private static String getGMCCode(List<Identifier> identifiers) {
+        return IdentifierHelper.getIdentifierBySystem(identifiers, FhirIdentifierUri.IDENTIFIER_SYSTEM_GMC_NUMBER);
     }
 
     @Override
