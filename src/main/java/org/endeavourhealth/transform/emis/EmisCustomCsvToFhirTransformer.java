@@ -26,7 +26,7 @@ public class EmisCustomCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCustomCsvToFhirTransformer.class);
 
     private static final String DATE_FORMAT = "dd/MM/yyyy";
-    private static final String TIME_FORMAT = "hh:mm:ss";
+    private static final String TIME_FORMAT = "HH:mm:ss";
     private static final CSVFormat CSV_FORMAT = CSVFormat.TDF
                                                 .withHeader()
                                                 .withEscape((Character)null)
