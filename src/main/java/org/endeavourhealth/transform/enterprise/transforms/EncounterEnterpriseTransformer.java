@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
@@ -71,6 +72,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         organisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
+        Date dateRecorded = null;
 
         if (fhir.hasParticipant()) {
 
@@ -142,6 +144,13 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
             episodeOfCareId = transformOnDemandAndMapId(episodeReference, params);
+            EpisodeOfCare episodeOfCare =
+                    (EpisodeOfCare) FhirResourceHelper.deserialiseResouce(params.findOrRetrieveResource(episodeReference));
+            if (episodeOfCare.hasPeriod()) {
+                if (episodeOfCare.getPeriod().hasStart()) {
+                    dateRecorded = episodeOfCare.getPeriod().getStart();
+                }
+            }
         }
 
         if (fhir.hasServiceProvider()) {
@@ -165,7 +174,8 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
             originalCode,
             originalTerm,
             episodeOfCareId,
-            serviceProviderOrganisationId);
+            serviceProviderOrganisationId,
+            dateRecorded);
 
         //we also need to populate the two new encounter tables
         tranformExtraEncounterTables(fhir, params,

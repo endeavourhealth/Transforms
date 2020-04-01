@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -72,6 +73,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         String admissionMethod = null;
         Date endDate = null;
         String institutionLocationId = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -148,6 +150,12 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
             episodeOfCareId = transformOnDemandAndMapId(episodeReference, SubscriberTableId.EPISODE_OF_CARE, params);
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare) params.findOrRetrieveResource(episodeReference);
+            if (episodeOfCare.hasPeriod()) {
+                if (episodeOfCare.getPeriod().hasStart()) {
+                    dateRecorded = episodeOfCare.getPeriod().getStart();
+                }
+            }
         }
 
         if (fhir.hasServiceProvider()) {
@@ -245,7 +253,6 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-
         model.writeUpsert(
                 subscriberId,
                 organizationId,
@@ -264,7 +271,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 subtype,
                 admissionMethod,
                 endDate,
-                institutionLocationId);
+                institutionLocationId,
+                dateRecorded);
 
         //we also need to populate the two new encounter tables
         //tranformExtraEncounterTables(resource, params,

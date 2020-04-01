@@ -35,7 +35,8 @@ public class Encounter extends AbstractTargetTable {
                             String subtype,
                             String admissionMethod,
                             Date endDate,
-                            String institutionLocationId) throws Exception {
+                            String institutionLocationId,
+                            Date dateRecorded) throws Exception {
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
@@ -58,7 +59,8 @@ public class Encounter extends AbstractTargetTable {
                 subtype,
                 admissionMethod,
                 convertDate(endDate),
-                institutionLocationId);
+                institutionLocationId,
+                convertDate(dateRecorded));
     }
 
     @Override
@@ -82,7 +84,8 @@ public class Encounter extends AbstractTargetTable {
                 "sub_type",
                 "admission_method",
                 "end_date",
-                "institution_location_id"
+                "institution_location_id",
+                "date_recorded"
         };
     }
 
@@ -112,7 +115,8 @@ public class Encounter extends AbstractTargetTable {
                 String.class,
                 String.class,
                 Date.class,
-                String.class
+                String.class,
+                Date.class
         };
     }
 }
