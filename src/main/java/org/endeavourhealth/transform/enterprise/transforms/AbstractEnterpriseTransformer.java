@@ -10,12 +10,14 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInstanceMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberResourceMappingDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.FhirToEnterpriseCsvTransformer;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -486,7 +488,50 @@ public abstract class AbstractEnterpriseTransformer {
         instanceCache.put(key, mappedResourceId);
     }
 
+    public static SubscriberId findOrCreateSubscriberId(EnterpriseTransformHelper params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
+        SubscriberId ret = checkCacheForId(params.getEnterpriseConfigName(), subscriberTable, sourceId);
+        if (ret == null) {
+            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
+            ret = enterpriseIdDal.findOrCreateSubscriberId(subscriberTable.getId(), sourceId);
 
+            addIdToCache(params.getEnterpriseConfigName(), subscriberTable, sourceId, ret);
+        }
+        return ret;
+    }
+
+    private static void addIdToCache(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId, SubscriberId toCache) throws Exception {
+        if (toCache == null) {
+            return;
+        }
+        idCache.put(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId), toCache);
+    }
+
+    private static SubscriberId checkCacheForId(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId) throws Exception {
+        return (SubscriberId) idCache.get(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId));
+    }
+
+    private static String createSubscriberIdCacheKey(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(enterpriseConfigName);
+        sb.append(":");
+        sb.append(subscriberTableId.getId());
+        sb.append(":");
+        sb.append(sourceId);
+        return sb.toString();
+    }
+
+    public static SubscriberId findSubscriberId(EnterpriseTransformHelper params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
+
+        SubscriberId ret = checkCacheForId(params.getEnterpriseConfigName(), subscriberTable, sourceId);
+        if (ret == null) {
+            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
+            ret = enterpriseIdDal.findSubscriberId(subscriberTable.getId(), sourceId);
+            if (ret != null) {
+                addIdToCache(params.getEnterpriseConfigName(), subscriberTable, sourceId, ret);
+            }
+        }
+        return ret;
+    }
 
     /*protected Long transformOnDemandAndMapId(Reference reference,
                                              EnterpriseTransformParams params) throws Exception {

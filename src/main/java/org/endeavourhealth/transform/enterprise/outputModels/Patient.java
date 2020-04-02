@@ -40,7 +40,11 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                              String ethnicCode,
                              String wardCode,
                              String localAuthorityCode,
-                             Long registeredPracticeId) throws Exception {
+                             Long registeredPracticeId,
+                             String title,
+                             String firstNames,
+                             String lastNames,
+                             long currentAddressId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                         "" + id,
@@ -58,7 +62,11 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                         ethnicCode,
                         wardCode,
                         localAuthorityCode,
-                        convertLong(registeredPracticeId));
+                        convertLong(registeredPracticeId),
+                        title,
+                        firstNames,
+                        lastNames,
+                        convertLong(currentAddressId));
     }
 
 
@@ -75,7 +83,11 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                                         String ethnicCode,
                                         String wardCode,
                                         String localAuthorityCode,
-                                        Long registeredPracticeId) throws Exception {
+                                        Long registeredPracticeId,
+                                        String title,
+                                        String firstNames,
+                                        String lastNames,
+                                        long currentAddressId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -91,7 +103,11 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                 ethnicCode,
                 wardCode,
                 localAuthorityCode,
-                convertLong(registeredPracticeId));
+                convertLong(registeredPracticeId),
+                title,
+                firstNames,
+                lastNames,
+                convertLong(currentAddressId));
     }
 
     @Override
@@ -114,7 +130,11 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                     "ethnic_code",
                     "ward_code",
                     "local_authority_code",
-                    "registered_practice_organization_id"
+                    "registered_practice_organization_id",
+                    "title",
+                    "first_names",
+                    "last_names",
+                    "current_address_id"
             };
         } else {
             return new String[]{
@@ -132,7 +152,11 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                     "ethnic_code",
                     "ward_code",
                     "local_authority_code",
-                    "registered_practice_organization_id"
+                    "registered_practice_organization_id",
+                    "title",
+                    "first_names",
+                    "last_names",
+                    "current_address_id"
             };
         }
     }
@@ -157,6 +181,10 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                     String.class,
                     String.class,
                     String.class,
+                    Long.class,
+                    String.class,
+                    String.class,
+                    String.class,
                     Long.class
             };
         } else {
@@ -172,6 +200,10 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                     String.class,
                     String.class,
                     String.class,
+                    String.class,
+                    String.class,
+                    String.class,
+                    Long.class,
                     String.class,
                     String.class,
                     String.class,

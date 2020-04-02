@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
@@ -44,6 +45,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private final OutputContainer outputContainer;
     private final Map<String, ResourceWrapper> hmAllResourcesByReferenceString;
     private final List<ResourceWrapper> allResources;
+    private final List<SubscriberId> subscriberIdsUpdated;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final ReentrantLock lock = new ReentrantLock();
@@ -67,6 +69,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         this.batchId = batchId;
         this.enterpriseConfigName = enterpriseConfigName;
         this.exchangeBody = exchangeBody;
+        this.subscriberIdsUpdated = new ArrayList<>();
 
         //load our config record for some parameters
         JsonNode config = ConfigManager.getConfigurationAsJson(enterpriseConfigName, "db_subscriber");
@@ -469,5 +472,21 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public boolean shouldClinicalConceptBeDeleted(CodeableConcept codeableConcept) throws Exception {
         return !SubscriberTransformHelper.isCodeableConceptSafe(codeableConcept);
+    }
+
+    public void setSubscriberIdTransformed(ResourceWrapper resourceWrapper, SubscriberId subscriberId) {
+
+        //we need to copy the subscriber ID object otherwise when we set setDtUpdatedPreviouslySent on it, it'll
+        //look like we've already sent over the current version when getting the previous version in the PatientTransformer
+        Date dtCurrentVersion = resourceWrapper.getCreatedAt(); //note: this may be null if we've deleted the resource
+        SubscriberId copy = new SubscriberId(subscriberId.getSubscriberTable(), subscriberId.getSubscriberId(), subscriberId.getSourceId(), dtCurrentVersion);
+
+        try {
+            //called from multiple threads, so need to lock
+            lock.lock();
+            subscriberIdsUpdated.add(copy);
+        } finally {
+            lock.unlock();
+        }
     }
 }
