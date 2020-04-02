@@ -132,9 +132,7 @@ public class ConditionEnterpriseTransformer extends AbstractEnterpriseTransforme
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasDateRecorded()) {
-            dateRecorded = fhir.getDateRecorded();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,

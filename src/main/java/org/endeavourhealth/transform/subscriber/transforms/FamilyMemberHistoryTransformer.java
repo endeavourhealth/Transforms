@@ -143,9 +143,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasDate()) {
-            dateRecorded = fhir.getDate();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(subscriberId,
                 organizationId,

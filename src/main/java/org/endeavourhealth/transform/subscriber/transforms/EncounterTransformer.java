@@ -150,14 +150,6 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
             episodeOfCareId = transformOnDemandAndMapId(episodeReference, SubscriberTableId.EPISODE_OF_CARE, params);
-            if (params.includeDateRecorded()) {
-                EpisodeOfCare episodeOfCare = (EpisodeOfCare) params.findOrRetrieveResource(episodeReference);
-                if (episodeOfCare.hasPeriod()) {
-                    if (episodeOfCare.getPeriod().hasStart()) {
-                        dateRecorded = episodeOfCare.getPeriod().getStart();
-                    }
-                }
-            }
         }
 
         if (fhir.hasServiceProvider()) {
@@ -254,6 +246,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 institutionLocationId = ref.getValue();
             }
         }
+
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(
                 subscriberId,

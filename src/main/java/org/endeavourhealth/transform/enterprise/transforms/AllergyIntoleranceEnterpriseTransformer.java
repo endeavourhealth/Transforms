@@ -100,9 +100,7 @@ public class AllergyIntoleranceEnterpriseTransformer extends AbstractEnterpriseT
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasRecordedDate()) {
-            dateRecorded = fhir.getRecordedDate();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         org.endeavourhealth.transform.enterprise.outputModels.AllergyIntolerance model = (org.endeavourhealth.transform.enterprise.outputModels.AllergyIntolerance)csvWriter;
         model.writeUpsert(id,

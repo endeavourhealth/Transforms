@@ -241,9 +241,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
-        if (params.includeDateRecorded() && fhir.hasDate()) {
-            dateRecorded = fhir.getDate();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(
                 subscriberId,

@@ -117,9 +117,7 @@ public class DiagnosticReportEnterpriseTransformer extends AbstractEnterpriseTra
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasIssued()) {
-            dateRecorded = fhir.getIssued();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,

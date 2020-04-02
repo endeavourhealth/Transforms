@@ -163,9 +163,7 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
                     episodicity.getValue(), episodicity.getValue());
         }
 
-        if (params.includeDateRecorded() && fhir.hasIssued()) {
-            dateRecorded = fhir.getIssued();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(subscriberId,
             organizationId,

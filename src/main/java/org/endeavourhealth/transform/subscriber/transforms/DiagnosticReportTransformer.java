@@ -132,9 +132,7 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasIssued()) {
-            dateRecorded = fhir.getIssued();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(subscriberId,
                 organizationId,

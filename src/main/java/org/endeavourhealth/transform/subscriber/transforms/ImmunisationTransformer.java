@@ -125,9 +125,7 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasDate()) {
-            dateRecorded = fhir.getDate();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(subscriberId,
                 organizationId,

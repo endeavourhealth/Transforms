@@ -137,9 +137,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasReceivedTime()) {
-            dateRecorded = fhir.getReceivedTime();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(subscriberId,
                 organizationId,

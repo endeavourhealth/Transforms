@@ -110,9 +110,7 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
-        if (params.includeDateRecorded() && fhir.hasRecordedDate()) {
-            dateRecorded = fhir.getRecordedDate();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(
                 subscriberId,

@@ -144,15 +144,6 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
             episodeOfCareId = transformOnDemandAndMapId(episodeReference, params);
-            if (params.includeDateRecorded()) {
-                EpisodeOfCare episodeOfCare =
-                        (EpisodeOfCare) FhirResourceHelper.deserialiseResouce(params.findOrRetrieveResource(episodeReference));
-                if (episodeOfCare.hasPeriod()) {
-                    if (episodeOfCare.getPeriod().hasStart()) {
-                        dateRecorded = episodeOfCare.getPeriod().getStart();
-                    }
-                }
-            }
         }
 
         if (fhir.hasServiceProvider()) {
@@ -162,6 +153,8 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         if (serviceProviderOrganisationId == null) {
             serviceProviderOrganisationId = params.getEnterpriseOrganisationId();
         }
+
+        dateRecorded = params.includeDateRecorded(fhir);
 
         org.endeavourhealth.transform.enterprise.outputModels.Encounter model = (org.endeavourhealth.transform.enterprise.outputModels.Encounter)csvWriter;
         model.writeUpsert(id,

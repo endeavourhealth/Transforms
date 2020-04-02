@@ -150,9 +150,7 @@ public class ObservationEnterpriseTransformer extends AbstractEnterpriseTransfor
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasIssued()) {
-            dateRecorded = fhir.getIssued();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         //we changed the locally generated "original code" for the Coronavirus from UUIDs to a hash
         //results, which will be changed throughout the estate, but this temporary fix will make it easier

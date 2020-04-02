@@ -122,9 +122,7 @@ public class DiagnosticOrderEnterpriseTransformer extends AbstractEnterpriseTran
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasEvent()) {
-            dateRecorded = fhir.getEvent().get(0).getDateTime();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,

@@ -99,16 +99,7 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
-        if (params.includeDateRecorded() && fhir.hasEncounter() && fhir.getEncounterTarget().hasEpisodeOfCare()) {
-            Reference episodeReference = fhir.getEncounterTarget().getEpisodeOfCare().get(0);
-            transformOnDemandAndMapId(episodeReference, SubscriberTableId.EPISODE_OF_CARE, params);
-            EpisodeOfCare episodeOfCare = (EpisodeOfCare) params.findOrRetrieveResource(episodeReference);
-            if (episodeOfCare.hasPeriod()) {
-                if (episodeOfCare.getPeriod().hasStart()) {
-                    dateRecorded = episodeOfCare.getPeriod().getStart();
-                }
-            }
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(
                 subscriberId,

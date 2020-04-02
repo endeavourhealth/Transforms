@@ -151,9 +151,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        if (params.includeDateRecorded() && fhir.hasDateRecorded()) {
-            dateRecorded = fhir.getDateRecorded();
-        }
+        dateRecorded = params.includeDateRecorded(fhir);
 
         model.writeUpsert(subscriberId,
                 organizationId,
