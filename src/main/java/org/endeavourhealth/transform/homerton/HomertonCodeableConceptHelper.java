@@ -59,7 +59,7 @@ public class HomertonCodeableConceptHelper {
         CsvCell termCsvCell = createCsvCell(cernerCodeValueRef, elementToApply, term);
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, resourceBuilderTag);
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID);
         codeableConceptBuilder.setCodingCode(codeCell.getString(), codeCell);
         codeableConceptBuilder.setCodingDisplay(term, termCsvCell);
 

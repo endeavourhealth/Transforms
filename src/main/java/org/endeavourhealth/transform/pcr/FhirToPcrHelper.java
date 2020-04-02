@@ -247,16 +247,16 @@ public class FhirToPcrHelper {
             case FhirCodeUri.CODE_SYSTEM_OPCS4:
                 ret = 10;
                 break;
-            case FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID:
+            case FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID:
                 ret = 11;
                 break;
             /*case FhirCodeUri.CODE_SYSTEM_UK_ED_CODE:
                 ret = 12;
                 break;*/
-            case FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_DRUG_ID:
+            case FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_MULTUM_DRUG_ID:
                 ret = 13;
                 break;
-            case FhirCodeUri.CODE_SYSTEM_CERNER_MULTUM_ALLERGY_CATEGORY_ID:
+            case FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_MULTUM_ALLERGY_CATEGORY_ID:
                 ret = 14;
                 break;
             default:

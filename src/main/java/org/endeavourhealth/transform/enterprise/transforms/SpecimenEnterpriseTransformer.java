@@ -63,6 +63,7 @@ public class SpecimenEnterpriseTransformer extends AbstractEnterpriseTransformer
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
+        Date dateRecorded = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -120,6 +121,10 @@ public class SpecimenEnterpriseTransformer extends AbstractEnterpriseTransformer
             }
         }
 
+        if (params.includeDateRecorded() && fhir.hasReceivedTime()) {
+            dateRecorded = fhir.getReceivedTime();
+        }
+
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
                 organisationId,
@@ -140,7 +145,8 @@ public class SpecimenEnterpriseTransformer extends AbstractEnterpriseTransformer
                 originalTerm,
                 isReview,
                 problemEndDate,
-                parentObservationId);
+                parentObservationId,
+                dateRecorded);
     }
 }
 

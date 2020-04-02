@@ -94,7 +94,7 @@ public class ObservationCodeHelper {
         //if we've not got a Snomed code and our original code was a Cerner code, then see if can map to a Snomed concept
         if (ret.getSnomedConceptId() == null
                 && originalCoding != null
-                && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
+                && originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID)) {
 
             Long mappedSnomedConceptId = mapCernerCodeToSnomed(originalCoding);
             if (mappedSnomedConceptId != null) {
@@ -147,7 +147,7 @@ public class ObservationCodeHelper {
         } else if (system.equals(FhirCodeUri.CODE_SYSTEM_OPCS4)) {
             return "OPCS4_" + originalCoding.getCode();
 
-        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
+        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID)) {
             return "CERNER_" + originalCoding.getCode();
 
         } else {
@@ -160,7 +160,7 @@ public class ObservationCodeHelper {
 
         //Try to get a SNOMED code mapped from a Barts Cerner value.
         if (originalCoding == null
-                || !originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)
+                || !originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID)
                 || !StringUtils.isNumeric(originalCoding.getCode())) {
             return null;
         }

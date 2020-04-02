@@ -71,6 +71,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
         Double ageAtEvent = null;
         Integer episodicityConceptId = null;
         Boolean isPrimary = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -150,6 +151,10 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
             }
         }
 
+        if (params.includeDateRecorded() && fhir.hasDateRecorded()) {
+            dateRecorded = fhir.getDateRecorded();
+        }
+
         model.writeUpsert(subscriberId,
                 organizationId,
                 patientId,
@@ -171,7 +176,8 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
                 nonCoreConceptId,
                 ageAtEvent,
                 episodicityConceptId,
-                isPrimary);
+                isPrimary,
+                dateRecorded);
 
 
     }

@@ -137,7 +137,7 @@ public class ProcedureTargetTransformer {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
 
             } else if (procedureCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_CERNER)) {
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID);
             } else {
                 throw new TransformException("Unknown Procedure Target code type [" + procedureCodeType + "]");
             }

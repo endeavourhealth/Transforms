@@ -142,7 +142,7 @@ public class ProblemTransformer {
 
             } else if (vocab.equalsIgnoreCase("Cerner")) {
                 //in this file, Cerner VOCAB doesn't seem to mean it refers to the CVREF file, so don't make any attempt to look up an official term
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID, vocabCell);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID, vocabCell);
                 codeableConceptBuilder.setCodingCode(code, problemCodeCell);
 
             } else {

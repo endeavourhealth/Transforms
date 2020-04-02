@@ -68,6 +68,7 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
         Double ageAtEvent = null;
         Integer episodicityConceptId = null;
         Boolean isPrimary = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -124,6 +125,9 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
             }
         }
 
+        if (params.includeDateRecorded() && fhir.hasDate()) {
+            dateRecorded = fhir.getDate();
+        }
 
         model.writeUpsert(subscriberId,
                 organizationId,
@@ -146,7 +150,8 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
                 nonCoreConceptId,
                 ageAtEvent,
                 episodicityConceptId,
-                isPrimary);
+                isPrimary,
+                dateRecorded);
 
     }
 

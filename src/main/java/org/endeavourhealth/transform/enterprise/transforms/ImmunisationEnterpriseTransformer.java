@@ -63,6 +63,7 @@ public class ImmunisationEnterpriseTransformer extends AbstractEnterpriseTransfo
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
+        Date dateRecorded = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -111,6 +112,10 @@ public class ImmunisationEnterpriseTransformer extends AbstractEnterpriseTransfo
             }
         }
 
+        if (params.includeDateRecorded() && fhir.hasDate()) {
+            dateRecorded = fhir.getDate();
+        }
+
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
                 organisationId,
@@ -131,7 +136,8 @@ public class ImmunisationEnterpriseTransformer extends AbstractEnterpriseTransfo
                 originalTerm,
                 isReview,
                 problemEndDate,
-                parentObservationId);
+                parentObservationId,
+                dateRecorded);
     }
 }
 

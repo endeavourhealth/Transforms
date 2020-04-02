@@ -75,7 +75,7 @@ public class ObservationCodeHelper {
         //so return null to prevent that
         if (ret.getSnomedConceptId() == null) {
             if (originalCoding == null
-                    || originalCoding.getSystem().equals(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
+                    || originalCoding.getSystem().equals(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID)) {
                 return null;
             }
         }
@@ -118,7 +118,7 @@ public class ObservationCodeHelper {
         } else if (system.equals(FhirCodeUri.CODE_SYSTEM_OPCS4)) {
             return "OPCS4_" + originalCoding.getCode();
 
-        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
+        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID)) {
             return "CERNER_" + originalCoding.getCode();
 
         } else {

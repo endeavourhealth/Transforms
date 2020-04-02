@@ -70,6 +70,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
         Double ageAtEvent = null;
         Integer episodicityConceptId = null;
         Boolean isPrimary = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -142,6 +143,10 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
             }
         }
 
+        if (params.includeDateRecorded() && fhir.hasDate()) {
+            dateRecorded = fhir.getDate();
+        }
+
         model.writeUpsert(subscriberId,
                 organizationId,
                 patientId,
@@ -163,7 +168,8 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
                 nonCoreConceptId,
                 ageAtEvent,
                 episodicityConceptId,
-                isPrimary);
+                isPrimary,
+                dateRecorded);
     }
 
     @Override

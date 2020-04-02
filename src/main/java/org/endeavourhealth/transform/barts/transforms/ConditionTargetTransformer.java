@@ -178,7 +178,7 @@ public class ConditionTargetTransformer {
 
             } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_CERNER)) {
 
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID);
 
             } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_PATIENT_CARE)) {
 

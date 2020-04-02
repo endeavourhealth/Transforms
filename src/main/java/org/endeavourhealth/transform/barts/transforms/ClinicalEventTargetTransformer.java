@@ -190,7 +190,7 @@ public class ClinicalEventTargetTransformer {
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
 
         // All codes are cerner codes??
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID);
 
         String procedureCode = target.getLookupEventCode();
         if (Strings.isNullOrEmpty(procedureCode)) {
@@ -269,7 +269,7 @@ public class ClinicalEventTargetTransformer {
 
         //find the Cerner Code ID from the observation
         CodeableConcept cc = observation.getCode();
-        Coding cernerCodeCoding = CodeableConceptHelper.findCoding(cc, FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+        Coding cernerCodeCoding = CodeableConceptHelper.findCoding(cc, FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID);
         if (cernerCodeCoding == null) {
             throw new Exception("Failed to find Cerner coding in codeable concept for observation " + observation.getId());
         }
@@ -288,7 +288,7 @@ public class ClinicalEventTargetTransformer {
         //create a new codeable concept with the mapped code
         CodeableConceptBuilder ccBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
 
-        ccBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+        ccBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID);
         ccBuilder.setCodingCode(mappedCernerCodeForResult);
         ccBuilder.setCodingDisplay(resultString);
         ccBuilder.setText(resultString);
@@ -330,7 +330,7 @@ public class ClinicalEventTargetTransformer {
 
         //find the Cerner Code ID from the observation
         CodeableConcept cc = observation.getCode();
-        Coding cernerCodeCoding = CodeableConceptHelper.findCoding(cc, FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+        Coding cernerCodeCoding = CodeableConceptHelper.findCoding(cc, FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID);
         if (cernerCodeCoding == null) {
             throw new Exception("Failed to find Cerner coding in codeable concept for observation " + observation.getId());
         }
@@ -361,7 +361,7 @@ public class ClinicalEventTargetTransformer {
         //create a new codeable concept with the mapped code
         CodeableConceptBuilder ccBuilder = new CodeableConceptBuilder(resultObBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
 
-        ccBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID);
+        ccBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID);
         ccBuilder.setCodingCode(mappedCernerCodeForResult);
         ccBuilder.setCodingDisplay(resultString);
         ccBuilder.setText(resultString);

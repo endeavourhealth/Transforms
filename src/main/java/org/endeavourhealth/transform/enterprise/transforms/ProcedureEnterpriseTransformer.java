@@ -116,7 +116,7 @@ public class ProcedureEnterpriseTransformer extends AbstractEnterpriseTransforme
 
         /*if (snomedConceptId == null && CodeableConceptHelper.findOriginalCoding(fhir.getCode()) != null) {
             Coding originalCoding = CodeableConceptHelper.findOriginalCoding(fhir.getCode());
-            if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CERNER_CODE_ID)) {
+            if (originalCoding.getSystem().equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID)) {
                 if (StringUtils.isNumeric(originalCoding.getCode())) {
                     Long codeLong = Long.parseLong(originalCoding.getCode());
                     CernerClinicalEventMap mapping = referenceDal.findMappingForCvrefCode(codeLong);

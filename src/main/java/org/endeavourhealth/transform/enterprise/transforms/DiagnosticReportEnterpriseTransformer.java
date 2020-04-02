@@ -64,6 +64,7 @@ public class DiagnosticReportEnterpriseTransformer extends AbstractEnterpriseTra
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
+        Date dateRecorded = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -116,6 +117,10 @@ public class DiagnosticReportEnterpriseTransformer extends AbstractEnterpriseTra
             }
         }
 
+        if (params.includeDateRecorded() && fhir.hasIssued()) {
+            dateRecorded = fhir.getIssued();
+        }
+
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
         model.writeUpsert(id,
                 organisationId,
@@ -136,6 +141,7 @@ public class DiagnosticReportEnterpriseTransformer extends AbstractEnterpriseTra
                 originalTerm,
                 isReview,
                 problemEndDate,
-                parentObservationId);
+                parentObservationId,
+                dateRecorded);
     }
 }

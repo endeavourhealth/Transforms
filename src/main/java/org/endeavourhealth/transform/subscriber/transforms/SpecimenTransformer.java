@@ -69,6 +69,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
         Double ageAtEvent = null;
         Integer episodicityConceptId = null;
         Boolean isPrimary = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -136,6 +137,10 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
             }
         }
 
+        if (params.includeDateRecorded() && fhir.hasReceivedTime()) {
+            dateRecorded = fhir.getReceivedTime();
+        }
+
         model.writeUpsert(subscriberId,
                 organizationId,
                 patientId,
@@ -157,8 +162,8 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
                 nonCoreConceptId,
                 ageAtEvent,
                 episodicityConceptId,
-                isPrimary);
-
+                isPrimary,
+                dateRecorded);
     }
 
     @Override
