@@ -161,9 +161,11 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         Date dateRecorded = null;
         if (includeDateRecorded) {
             Extension recordedDate = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
-            DateType value = (DateType) recordedDate.getValue();
-            if (value.getValue() != null) {
-                dateRecorded = value.getValue();
+            if (recordedDate != null) {
+                DateTimeType value = (DateTimeType) recordedDate.getValue();
+                if (value.getValue() != null) {
+                    dateRecorded = value.getValue();
+                }
             }
         }
         return dateRecorded;
