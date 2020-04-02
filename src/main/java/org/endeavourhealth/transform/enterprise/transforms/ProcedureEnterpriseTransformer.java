@@ -7,6 +7,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
 import org.endeavourhealth.core.database.dal.reference.CernerProcedureMapDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
@@ -69,6 +70,7 @@ public class ProcedureEnterpriseTransformer extends AbstractEnterpriseTransforme
         boolean isReview = false;
         Date problemEndDate = null;
         Long parentObservationId = null;
+        Date dateRecorded = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
@@ -147,6 +149,18 @@ public class ProcedureEnterpriseTransformer extends AbstractEnterpriseTransforme
             }
         }
 
+        if (params.includeDateRecorded() && fhir.hasEncounter() && fhir.getEncounterTarget().hasEpisodeOfCare()) {
+            Reference episodeReference = fhir.getEncounterTarget().getEpisodeOfCare().get(0);
+            transformOnDemandAndMapId(episodeReference, params);
+            EpisodeOfCare episodeOfCare =
+                    (EpisodeOfCare) FhirResourceHelper.deserialiseResouce(params.findOrRetrieveResource(episodeReference));
+            if (episodeOfCare.hasPeriod()) {
+                if (episodeOfCare.getPeriod().hasStart()) {
+                    dateRecorded = episodeOfCare.getPeriod().getStart();
+                }
+            }
+        }
+
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation) csvWriter;
 
         model.writeUpsert(id,
@@ -168,7 +182,8 @@ public class ProcedureEnterpriseTransformer extends AbstractEnterpriseTransforme
                 originalTerm,
                 isReview,
                 problemEndDate,
-                parentObservationId);
+                parentObservationId,
+                dateRecorded);
     }
 }
 

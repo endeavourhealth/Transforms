@@ -32,7 +32,8 @@ public class AllergyIntolerance extends AbstractTargetTable {
                             boolean isReview,
                             Integer coreConceptId,
                             Integer nonCoreConceptId,
-                            Double ageAtEvent) throws Exception {
+                            Double ageAtEvent,
+                            Date dateRecorded) throws Exception {
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
@@ -49,7 +50,8 @@ public class AllergyIntolerance extends AbstractTargetTable {
                 convertBoolean(isReview),
                 convertInt(coreConceptId),
                 convertInt(nonCoreConceptId),
-                convertDouble(ageAtEvent));
+                convertDouble(ageAtEvent),
+                convertDateTime(dateRecorded));
     }
 
 
@@ -69,7 +71,8 @@ public class AllergyIntolerance extends AbstractTargetTable {
                 "is_review",
                 "core_concept_id",
                 "non_core_concept_id",
-                "age_at_event"
+                "age_at_event",
+                "date_recorded"
         };
     }
 
@@ -93,7 +96,8 @@ public class AllergyIntolerance extends AbstractTargetTable {
                 Boolean.TYPE,
                 Integer.class,
                 Integer.class,
-                BigDecimal.class
+                BigDecimal.class,
+                Date.class
         };
     }
 }

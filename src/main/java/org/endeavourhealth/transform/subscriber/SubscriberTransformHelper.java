@@ -52,6 +52,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final OutputContainer outputContainer;
     private final List<SubscriberId> subscriberIdsUpdated;
     private final boolean isPseudonymised;
+    private final boolean includeDateRecorded;
     private final Map<String, ResourceWrapper> hmAllResourcesByReferenceString;
     private final List<ResourceWrapper> allResources;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
@@ -86,6 +87,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
         this.isPseudonymised = config.has("pseudonymised")
                 && config.get("pseudonymised").asBoolean();
+        this.includeDateRecorded = config.has("include_date_recorded") && config.get("include_date_recorded").asBoolean();
 
         if (config.has("transform_batch_size")) {
             this.batchSize = config.get("transform_batch_size").asInt();
@@ -131,6 +133,9 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return isPseudonymised;
     }
 
+    public boolean includeDateRecorded() {
+        return includeDateRecorded;
+    }
 
     public String getExchangeBody() {
         return exchangeBody;

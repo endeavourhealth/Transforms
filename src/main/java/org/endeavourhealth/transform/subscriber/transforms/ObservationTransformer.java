@@ -71,6 +71,7 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
         Double ageAtEvent = null;
         Integer episodicityConceptId = null;
         Boolean isPrimary = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -162,6 +163,10 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
                     episodicity.getValue(), episodicity.getValue());
         }
 
+        if (params.includeDateRecorded() && fhir.hasIssued()) {
+            dateRecorded = fhir.getIssued();
+        }
+
         model.writeUpsert(subscriberId,
             organizationId,
             patientId,
@@ -183,7 +188,8 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             nonCoreConceptId,
             ageAtEvent,
             episodicityConceptId,
-            isPrimary);
+            isPrimary,
+            dateRecorded);
 
     }
 

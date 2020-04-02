@@ -56,6 +56,7 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -109,6 +110,10 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
+        if (params.includeDateRecorded() && fhir.hasRecordedDate()) {
+            dateRecorded = fhir.getRecordedDate();
+        }
+
         model.writeUpsert(
                 subscriberId,
                 organizationId,
@@ -121,7 +126,8 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
                 isReview,
                 coreConceptId,
                 nonCoreConceptId,
-                ageAtEvent);
+                ageAtEvent,
+                dateRecorded);
     }
 
     @Override

@@ -60,7 +60,7 @@ public class Encounter extends AbstractTargetTable {
                 admissionMethod,
                 convertDate(endDate),
                 institutionLocationId,
-                convertDate(dateRecorded));
+                convertDateTime(dateRecorded));
     }
 
     @Override

@@ -42,7 +42,8 @@ public class Observation extends AbstractTargetTable {
                             Integer nonCoreConceptId,
                             Double ageAtEvent,
                             Integer episodicityConceptId,
-                            Boolean isPrimary) throws Exception {
+                            Boolean isPrimary,
+                            Date dateRecorded) throws Exception {
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
@@ -69,7 +70,8 @@ public class Observation extends AbstractTargetTable {
                 convertInt(nonCoreConceptId),
                 convertDouble(ageAtEvent),
                 convertInt(episodicityConceptId),
-                convertBoolean(isPrimary));
+                convertBoolean(isPrimary),
+                convertDateTime(dateRecorded));
     }
 
 
@@ -98,7 +100,8 @@ public class Observation extends AbstractTargetTable {
                 "non_core_concept_id",
                 "age_at_event",
                 "episodicity_concept_id",
-                "is_primary"
+                "is_primary",
+                "date_recorded"
         };
     }
 
@@ -133,6 +136,7 @@ public class Observation extends AbstractTargetTable {
                 BigDecimal.class,
                 Long.TYPE,
                 Boolean.TYPE,
+                Date.class
         };
     }
 }

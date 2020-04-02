@@ -29,7 +29,8 @@ public class ProcedureRequest extends AbstractTargetTable {
                             Integer procedureRequestStatusConceptId,
                             Integer coreConceptId,
                             Integer nonCoreConceptId,
-                            Double ageAtEvent) throws Exception {
+                            Double ageAtEvent,
+                            Date dateRecorded) throws Exception {
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
@@ -43,7 +44,8 @@ public class ProcedureRequest extends AbstractTargetTable {
                 convertInt(procedureRequestStatusConceptId),
                 convertInt(coreConceptId),
                 convertInt(nonCoreConceptId),
-                convertDouble(ageAtEvent));
+                convertDouble(ageAtEvent),
+                convertDateTime(dateRecorded));
     }
 
     @Override
@@ -61,7 +63,8 @@ public class ProcedureRequest extends AbstractTargetTable {
                 "status_concept_id",
                 "core_concept_id",
                 "non_core_concept_id",
-                "age_at_event"
+                "age_at_event",
+                "date_recorded"
         };
     }
 
@@ -85,7 +88,8 @@ public class ProcedureRequest extends AbstractTargetTable {
                 Integer.class,
                 Integer.class,
                 Integer.class,
-                BigDecimal.class
+                BigDecimal.class,
+                Date.class
         };
     }
 }

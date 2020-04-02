@@ -55,6 +55,7 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -98,6 +99,17 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
+        if (params.includeDateRecorded() && fhir.hasEncounter() && fhir.getEncounterTarget().hasEpisodeOfCare()) {
+            Reference episodeReference = fhir.getEncounterTarget().getEpisodeOfCare().get(0);
+            transformOnDemandAndMapId(episodeReference, SubscriberTableId.EPISODE_OF_CARE, params);
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare) params.findOrRetrieveResource(episodeReference);
+            if (episodeOfCare.hasPeriod()) {
+                if (episodeOfCare.getPeriod().hasStart()) {
+                    dateRecorded = episodeOfCare.getPeriod().getStart();
+                }
+            }
+        }
+
         model.writeUpsert(
                 subscriberId,
                 organizationId,
@@ -110,7 +122,8 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
                 procedureRequestStatusConceptId,
                 coreConceptId,
                 nonCoreConceptId,
-                ageAtEvent);
+                ageAtEvent,
+                dateRecorded);
     }
 
     @Override

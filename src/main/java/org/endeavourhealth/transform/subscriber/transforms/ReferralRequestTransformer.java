@@ -69,6 +69,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
         Double ageAtEvent = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -240,6 +241,10 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
+        if (params.includeDateRecorded() && fhir.hasDate()) {
+            dateRecorded = fhir.getDate();
+        }
+
         model.writeUpsert(
                 subscriberId,
                 organizationId,
@@ -258,7 +263,8 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 isReview,
                 coreConceptId,
                 nonCoreConceptId,
-                ageAtEvent);
+                ageAtEvent,
+                dateRecorded);
 
     }
 

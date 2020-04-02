@@ -36,7 +36,8 @@ public class Observation extends AbstractEnterpriseCsvWriter {
                             String originalTerm,
                             boolean isReview,
                             Date problemEndDate,
-                            Long parentObservationId) throws Exception {
+                            Long parentObservationId,
+                            Date dateRecorded) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -58,7 +59,8 @@ public class Observation extends AbstractEnterpriseCsvWriter {
                 originalTerm,
                 convertBoolean(isReview),
                 convertDate(problemEndDate),
-                convertLong(parentObservationId));
+                convertLong(parentObservationId),
+                convertDateTime(dateRecorded));
     }
 
 
@@ -85,7 +87,8 @@ public class Observation extends AbstractEnterpriseCsvWriter {
                 "original_term",
                 "is_review",
                 "problem_end_date",
-                "parent_observation_id"
+                "parent_observation_id",
+                "date_recorded"
         };
     }
 
@@ -113,6 +116,7 @@ public class Observation extends AbstractEnterpriseCsvWriter {
                 Boolean.TYPE,
                 Date.class,
                 Long.class,
+                Date.class
         };
 
     }

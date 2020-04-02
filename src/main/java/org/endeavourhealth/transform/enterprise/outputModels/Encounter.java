@@ -45,7 +45,7 @@ public class Encounter extends AbstractEnterpriseCsvWriter {
                 originalTerm,
                 convertLong(episodeOfCareId),
                 convertLong(serviceProviderOrganisationId),
-                convertDate(dateRecorded));
+                convertDateTime(dateRecorded));
     }
 
     @Override

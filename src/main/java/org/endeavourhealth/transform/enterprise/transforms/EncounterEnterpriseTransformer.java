@@ -67,12 +67,12 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         String originalTerm = null;
         Long episodeOfCareId = null;
         Long serviceProviderOrganisationId = null;
+        Date dateRecorded = null;
 
         id = enterpriseId.longValue();
         organisationId = params.getEnterpriseOrganisationId().longValue();
         patientId = params.getEnterprisePatientId().longValue();
         personId = params.getEnterprisePersonId().longValue();
-        Date dateRecorded = null;
 
         if (fhir.hasParticipant()) {
 
@@ -144,11 +144,13 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
             episodeOfCareId = transformOnDemandAndMapId(episodeReference, params);
-            EpisodeOfCare episodeOfCare =
-                    (EpisodeOfCare) FhirResourceHelper.deserialiseResouce(params.findOrRetrieveResource(episodeReference));
-            if (episodeOfCare.hasPeriod()) {
-                if (episodeOfCare.getPeriod().hasStart()) {
-                    dateRecorded = episodeOfCare.getPeriod().getStart();
+            if (params.includeDateRecorded()) {
+                EpisodeOfCare episodeOfCare =
+                        (EpisodeOfCare) FhirResourceHelper.deserialiseResouce(params.findOrRetrieveResource(episodeReference));
+                if (episodeOfCare.hasPeriod()) {
+                    if (episodeOfCare.getPeriod().hasStart()) {
+                        dateRecorded = episodeOfCare.getPeriod().getStart();
+                    }
                 }
             }
         }

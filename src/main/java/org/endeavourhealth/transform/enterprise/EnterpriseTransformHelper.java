@@ -48,6 +48,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final ReentrantLock lock = new ReentrantLock();
     private final boolean isPseudonymised;
+    private final boolean includeDateRecorded;
     private final String excludeNhsNumberRegex;
 
     private int batchSize;
@@ -72,6 +73,8 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
         this.isPseudonymised = config.has("pseudonymisation");
         this.outputContainer = new OutputContainer(isPseudonymised);
+
+        this.includeDateRecorded = config.has("include_date_recorded") && config.get("include_date_recorded").asBoolean();
 
         if (config.has("transform_batch_size")) {
             this.batchSize = config.get("transform_batch_size").asInt();
@@ -152,6 +155,10 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public boolean isPseudonymised() {
         return isPseudonymised;
+    }
+
+    public boolean includeDateRecorded() {
+        return includeDateRecorded;
     }
 
     public Long getEnterpriseOrganisationId() {

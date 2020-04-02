@@ -64,6 +64,7 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
         String originalCode = null;
         String originalTerm = null;
         boolean isReview = false;
+        Date dateRecorded = null;
 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
@@ -200,6 +201,10 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
             }
         }
 
+        if (params.includeDateRecorded() && fhir.hasDate()) {
+            dateRecorded = fhir.getDate();
+        }
+
         org.endeavourhealth.transform.enterprise.outputModels.ReferralRequest model = (org.endeavourhealth.transform.enterprise.outputModels.ReferralRequest)csvWriter;
         model.writeUpsert(id,
             organizationId,
@@ -218,7 +223,8 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
             outgoing,
             originalCode,
             originalTerm,
-            isReview);
+            isReview,
+            dateRecorded);
     }
 
     private Long findOrganisationEnterpriseIdFromPractictioner(Reference practitionerReference,
