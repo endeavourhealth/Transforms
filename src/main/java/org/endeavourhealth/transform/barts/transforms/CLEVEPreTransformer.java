@@ -11,6 +11,7 @@ import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
 import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -257,7 +258,7 @@ public class CLEVEPreTransformer {
 
     private static boolean isMappedTextualResult(CLEVE parser) throws Exception {
         CsvCell eventCodeCell = parser.getEventCode();
-        String mappedSnomedConcept = IMHelper.getMappedSnomedConceptForSchemeCode("BartsCerner", eventCodeCell.getString());
+        String mappedSnomedConcept = IMHelper.getMappedSnomedConceptForSchemeCode(IMConstant.BARTS_CERNER, eventCodeCell.getString());
         if (!Strings.isNullOrEmpty(mappedSnomedConcept)) {
             LOG.debug("Passing through text result for CLEVE " + parser.getEventId().getString() + " with raw code [" + eventCodeCell.getString() + "] mapped to Snomed concept [" + mappedSnomedConcept + "]");
             return true;

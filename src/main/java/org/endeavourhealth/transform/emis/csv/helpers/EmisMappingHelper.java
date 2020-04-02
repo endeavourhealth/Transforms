@@ -128,7 +128,7 @@ public class EmisMappingHelper {
 
         String code = organisationTypeMap.get(type);
         if (code == null) {
-            throw new RuntimeException("Unknown organisation type " + type);
+            throw new RuntimeException("Unknown organisation type [" + type + "]");
 
         } else if (!Strings.isNullOrEmpty(code)) {
             return OrganisationType.fromCode(code);

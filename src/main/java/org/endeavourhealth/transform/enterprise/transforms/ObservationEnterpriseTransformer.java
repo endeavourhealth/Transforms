@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
@@ -151,6 +152,21 @@ public class ObservationEnterpriseTransformer extends AbstractEnterpriseTransfor
 
         if (params.includeDateRecorded() && fhir.hasIssued()) {
             dateRecorded = fhir.getIssued();
+        }
+
+        //we changed the locally generated "original code" for the Coronavirus from UUIDs to a hash
+        //results, which will be changed throughout the estate, but this temporary fix will make it easier
+        //this can be removed once all
+        if (!Strings.isNullOrEmpty(originalCode)) {
+
+            if (originalCode.equals("BC_7f472a28-7374-4f49-bcd1-7fafcbb1be4c")) {
+                //positive Coronavirus test result
+                originalCode = "BC_Fr1gvtFQJAIPqpoHK";
+
+            } else if (originalCode.equals("BC_0b6dc3b2-d1ae-4d9d-b4ff-f001f9528e99")) {
+                //negative Coronavirus test result
+                originalCode = "BC_ddOYGVC0cM33GsbmH";
+            }
         }
 
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;

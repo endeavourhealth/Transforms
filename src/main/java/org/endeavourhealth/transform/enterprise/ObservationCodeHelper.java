@@ -148,7 +148,9 @@ public class ObservationCodeHelper {
             return "OPCS4_" + originalCoding.getCode();
 
         } else if (system.equals(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID)) {
-            return "CERNER_" + originalCoding.getCode();
+            //changing prefix for Cerner to "Barts Cerner" (BC) as not all Cerners are the same
+            return "BC_" + originalCoding.getCode();
+            //return "CERNER_" + originalCoding.getCode();
 
         } else {
             throw new TransformException("Unsupported original code system [" + system + "]");
@@ -165,7 +167,7 @@ public class ObservationCodeHelper {
             return null;
         }
 
-        Long codeLong = Long.parseLong(originalCoding.getCode());
+        Long codeLong = Long.valueOf(originalCoding.getCode());
 
         //check the cache - note we cache lookup failures too (as null values)
         try {
@@ -186,7 +188,7 @@ public class ObservationCodeHelper {
             cacheLock.lock();
 
             if (mapping != null) {
-                Long val = Long.parseLong(mapping.getSnomedConceptId());
+                Long val = Long.valueOf(mapping.getSnomedConceptId());
                 hmCernerSnomedMapCache.put(codeLong, val);
                 return val;
             } else {

@@ -38,14 +38,14 @@ public class Appointment extends AbstractEnterpriseCsvWriter {
                 "" + personId,
                 convertLong(practitionerId),
                 convertLong(scheduleId),
-                convertDate(startDate),
+                convertDateTime(startDate),
                 convertInt(plannedDuration),
                 convertInt(actualDuration),
                 "" + statusId,
                 convertInt(patientWait),
                 convertInt(patientDelay),
-                convertDate(sentIn),
-                convertDate(left));
+                convertDateTime(sentIn),
+                convertDateTime(left));
     }
 
     @Override

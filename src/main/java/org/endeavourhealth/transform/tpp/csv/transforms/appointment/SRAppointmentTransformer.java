@@ -187,18 +187,20 @@ public class SRAppointmentTransformer {
             appointmentBuilder.setType("Telephone Appointment", telephoneApptCell);
         }
 
-        CsvCell appointmentStatus = parser.getAppointmentStatus();
-        if (!appointmentStatus.isEmpty()) {
+        CsvCell appointmentStatusCell = parser.getAppointmentStatus();
+        if (!appointmentStatusCell.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatus);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatusCell);
             if (tppMappingRef != null) {
                 String statusTerm = tppMappingRef.getMappedTerm();
                 Appointment.AppointmentStatus status = convertAppointmentStatus(statusTerm, parser);
-                appointmentBuilder.setStatus(status, appointmentStatus);
+                appointmentBuilder.setStatus(status, appointmentStatusCell);
             } else {
+                TransformWarnings.log(LOG, csvHelper, "Missing appointment status Mapping record {}", appointmentStatusCell);
                 appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
             }
         } else {
+            TransformWarnings.log(LOG, csvHelper, "Empty appointment status");
             appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
         }
 

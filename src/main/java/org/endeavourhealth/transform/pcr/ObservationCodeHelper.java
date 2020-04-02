@@ -119,7 +119,9 @@ public class ObservationCodeHelper {
             return "OPCS4_" + originalCoding.getCode();
 
         } else if (system.equals(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID)) {
-            return "CERNER_" + originalCoding.getCode();
+            //changing prefix for Cerner to "Barts Cerner" (BC) as not all Cerners are the same
+            return "BC_" + originalCoding.getCode();
+            //return "CERNER_" + originalCoding.getCode();
 
         } else {
             throw new TransformException("Unsupported original code system [" + system + "]");
