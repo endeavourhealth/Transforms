@@ -11,7 +11,6 @@ import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundExcepti
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
-import org.endeavourhealth.transform.emis.csv.helpers.IssueRecordIssueDate;
 import org.endeavourhealth.transform.emis.csv.schema.prescribing.IssueRecord;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
@@ -29,10 +28,17 @@ public class IssueRecordTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         IssueRecord parser = (IssueRecord)parsers.get(IssueRecord.class);
+        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource(parser, fhirResourceFiler, csvHelper);
+                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                        createResource(parser, fhirResourceFiler, csvHelper);
+                    }
+                } else {
+                    createResource(parser, fhirResourceFiler, csvHelper);
+                }
 
             } catch (EmisCodeNotFoundException ex) {
                 csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getIssueRecordGuid(), parser);

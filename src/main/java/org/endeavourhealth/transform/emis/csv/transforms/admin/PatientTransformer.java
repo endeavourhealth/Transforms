@@ -1,8 +1,10 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.schema.*;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.NameHelper;
+import org.endeavourhealth.common.fhir.PeriodHelper;
+import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
+import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -33,11 +35,19 @@ public class PatientTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Patient.class);
+        Patient parser = (Patient)parsers.get(Patient.class);
+        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResources((Patient) parser, fhirResourceFiler, csvHelper);
+                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                        createResources(parser, fhirResourceFiler, csvHelper);
+                    }
+                } else {
+                    createResources(parser, fhirResourceFiler, csvHelper);
+                }
+
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }

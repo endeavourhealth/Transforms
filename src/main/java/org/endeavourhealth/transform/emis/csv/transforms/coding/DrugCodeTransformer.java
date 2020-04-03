@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.coding;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCodeType;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -32,8 +33,18 @@ public class DrugCodeTransformer {
 
         try {
             List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
+            List<String> emisMissingDrugCodesMatch = new ArrayList<>();
+            //Retrieve the full code list from the error table where dt_fixed is null
+            List<String> emisMissingDrugCodeList = csvHelper.retrieveEmisMissingCodeList(EmisCodeType.DRUG_CODE);
+            LOG.info("Emis missing Drug code list size " + emisMissingDrugCodeList.size());
             DrugCode parser = (DrugCode)parsers.get(DrugCode.class);
             while (parser != null && parser.nextRecord()) {
+                if (emisMissingDrugCodeList != null && emisMissingDrugCodeList.size() > 0) {
+                    //Verify if the list of codeIds matches with the parsed codeId,if matches add it to list.
+                    if (emisMissingDrugCodeList.contains(parser.getCodeId().getString())) {
+                        emisMissingDrugCodesMatch.add(parser.getCodeId().getString());
+                    }
+                }
                 try {
                     transform(parser, fhirResourceFiler, csvHelper, mappingsToSave);
                 } catch (Exception ex) {
@@ -42,7 +53,10 @@ public class DrugCodeTransformer {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
-
+            if (emisMissingDrugCodesMatch != null && emisMissingDrugCodesMatch.size() > 0) {
+                LOG.info("Emis Missing Drug Code Records count:: " + emisMissingDrugCodesMatch.size());
+                csvHelper.setEmisMissingDrugCodesMatch(emisMissingDrugCodesMatch);
+            }
             //and save any still pending
             if (!mappingsToSave.isEmpty()) {
                 csvHelper.submitToThreadPool(new Task(mappingsToSave));

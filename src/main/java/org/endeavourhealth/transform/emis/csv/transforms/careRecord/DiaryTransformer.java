@@ -25,10 +25,17 @@ public class DiaryTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         Diary parser = (Diary) parsers.get(Diary.class);
+        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource(parser, fhirResourceFiler, csvHelper);
+                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                        createResource(parser, fhirResourceFiler, csvHelper);
+                    }
+                } else {
+                    createResource(parser, fhirResourceFiler, csvHelper);
+                }
 
             } catch (EmisCodeNotFoundException ex) {
                 csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getDiaryGuid(), parser);

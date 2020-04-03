@@ -29,11 +29,19 @@ public class ProblemTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Problem.class);
+        Problem parser = (Problem)parsers.get(Problem.class);
+        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
 
             try {
-                createResource((Problem)parser, fhirResourceFiler, csvHelper);
+                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                        createResource(parser, fhirResourceFiler, csvHelper);
+                    }
+                } else {
+                    createResource(parser, fhirResourceFiler, csvHelper);
+                }
+
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }

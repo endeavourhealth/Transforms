@@ -25,9 +25,16 @@ public class ObservationPreTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         Observation parser = (Observation) parsers.get(Observation.class);
+        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
             try {
-                processLine(parser, csvHelper, fhirResourceFiler);
+                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                        processLine(parser, csvHelper, fhirResourceFiler);
+                    }
+                } else {
+                    processLine(parser, csvHelper, fhirResourceFiler);
+                }
 
             } catch (EmisCodeNotFoundException ex) {
                 csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getObservationGuid(), parser);

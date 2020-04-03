@@ -2,10 +2,8 @@ package org.endeavourhealth.transform.emis.csv.transforms.appointment;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingPROCE;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -38,11 +36,19 @@ public class SlotPreTransformer {
 
         Map<CsvCell, CsvCell> batch = new HashMap<>();
 
-        AbstractCsvParser parser = parsers.get(Slot.class);
+        Slot parser =(Slot)parsers.get(Slot.class);
+        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
 
             try {
                 processRecord((Slot) parser, fhirResourceFiler, csvHelper, batch);
+                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                        processRecord(parser, fhirResourceFiler, csvHelper, batch);
+                    }
+                } else {
+                    processRecord(parser, fhirResourceFiler, csvHelper, batch);
+                }
             } catch (Exception ex) {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }

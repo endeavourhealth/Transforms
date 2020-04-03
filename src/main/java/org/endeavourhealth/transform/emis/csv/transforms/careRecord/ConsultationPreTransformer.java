@@ -24,9 +24,16 @@ public class ConsultationPreTransformer {
 
         try {
             Consultation parser = (Consultation)parsers.get(Consultation.class);
+            String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
             while (parser != null && parser.nextRecord()) {
                 try {
-                    processRecord(parser, fhirResourceFiler, csvHelper);
+                    if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                        if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                            processRecord(parser, fhirResourceFiler, csvHelper);
+                        }
+                    } else {
+                        processRecord(parser, fhirResourceFiler, csvHelper);
+                    }
 
                 } catch (Exception ex) {
                     //because this is a pre-transformer to cache data, throw any exception so we don't continue

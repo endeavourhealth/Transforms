@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCodeType;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
@@ -45,8 +46,18 @@ public abstract class ClinicalCodeTransformer {
         try {
 
             List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
+            List<String> emisMissingClinicalCodesMatch = new ArrayList<>();
+            //Retrieve the full code list from the error table where dt_fixed is null
+            List<String> emisMissingClinicalCodeList = csvHelper.retrieveEmisMissingCodeList(EmisCodeType.CLINICAL_CODE);
+            LOG.info("Emis missing Clinical code list size ::" + emisMissingClinicalCodeList.size());
             ClinicalCode parser = (ClinicalCode)parsers.get(ClinicalCode.class);
             while (parser != null && parser.nextRecord()) {
+                if (emisMissingClinicalCodeList != null && emisMissingClinicalCodeList.size() > 0) {
+                    //Verify if the list of codeIds matches with the parsed codeId,if matches, add it to list.
+                    if (emisMissingClinicalCodeList.contains(parser.getCodeId().getString())) {
+                        emisMissingClinicalCodesMatch.add(parser.getCodeId().getString());
+                    }
+                }
                 try {
                     transform(parser, fhirResourceFiler, csvHelper, mappingsToSave);
                 } catch (Exception ex) {
@@ -55,7 +66,10 @@ public abstract class ClinicalCodeTransformer {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
-
+            if (emisMissingClinicalCodesMatch != null && emisMissingClinicalCodesMatch.size() > 0) {
+                LOG.info("EmisMissing Clinical Code Records count:: " + emisMissingClinicalCodesMatch.size());
+                csvHelper.setEmisMissingClinicalCodesMatch(emisMissingClinicalCodesMatch);
+            }
             //and save any still pending
             if (!mappingsToSave.isEmpty()) {
                 csvHelper.submitToThreadPool(new Task(mappingsToSave));

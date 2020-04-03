@@ -19,9 +19,16 @@ public class DiaryPreTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         Diary parser = (Diary)parsers.get(Diary.class);
+        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
             try {
-                createResource(parser, fhirResourceFiler, csvHelper);
+                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                        createResource(parser, fhirResourceFiler, csvHelper);
+                    }
+                } else {
+                    createResource(parser, fhirResourceFiler, csvHelper);
+                }
 
             } catch (Exception ex) {
                 //because this is a pre-transform to cache data, if we have any exceptions, don't continue - just throw it up

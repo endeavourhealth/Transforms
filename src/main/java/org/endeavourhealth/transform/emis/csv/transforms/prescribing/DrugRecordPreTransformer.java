@@ -30,10 +30,17 @@ public class DrugRecordPreTransformer {
         //to parse any record in this file it a critical error
         try {
             DrugRecord parser = (DrugRecord)parsers.get(DrugRecord.class);
+            String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
             while (parser != null && parser.nextRecord()) {
 
                 try {
-                    processLine(parser, fhirResourceFiler, csvHelper);
+                    if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                        if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                            processLine(parser, fhirResourceFiler, csvHelper);
+                        }
+                    } else {
+                        processLine(parser, fhirResourceFiler, csvHelper);
+                    }
 
                 } catch (Exception ex) {
                     //because this is a pre-transform to cache data, if anything goes wrong, just throw the exception and don't continue

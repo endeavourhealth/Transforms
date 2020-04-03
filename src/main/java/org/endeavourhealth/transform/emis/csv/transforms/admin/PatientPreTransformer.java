@@ -26,11 +26,19 @@ public class PatientPreTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         try {
-            AbstractCsvParser parser = parsers.get(Patient.class);
+            Patient parser = (Patient)parsers.get(Patient.class);
+            String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
             while (parser != null && parser.nextRecord()) {
 
                 try {
-                    processLine((Patient) parser, fhirResourceFiler, csvHelper);
+                    if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                        if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                            processLine(parser, fhirResourceFiler, csvHelper);
+                        }
+                    } else {
+                        processLine(parser, fhirResourceFiler, csvHelper);
+                    }
+
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }

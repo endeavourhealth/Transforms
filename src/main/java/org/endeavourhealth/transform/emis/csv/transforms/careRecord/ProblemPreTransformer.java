@@ -26,11 +26,18 @@ public class ProblemPreTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         try {
-            AbstractCsvParser parser = parsers.get(Problem.class);
+            Problem parser = (Problem) parsers.get(Problem.class);
+            String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
             while (parser != null && parser.nextRecord()) {
 
                 try {
-                    processLine((Problem) parser, fhirResourceFiler, csvHelper);
+                    if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                        if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                            processLine(parser, fhirResourceFiler, csvHelper);
+                        }
+                    } else {
+                        processLine(parser, fhirResourceFiler, csvHelper);
+                    }
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
