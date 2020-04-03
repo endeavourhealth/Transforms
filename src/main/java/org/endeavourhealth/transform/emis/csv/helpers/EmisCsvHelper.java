@@ -1,11 +1,15 @@
 package org.endeavourhealth.transform.emis.csv.helpers;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.endeavourhealth.common.cache.ObjectMapperPool;
+import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
+import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -36,6 +40,11 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -49,6 +58,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     //private static final String CODEABLE_CONCEPT = "CodeableConcept";
     private static final String ID_DELIMITER = ":";
     //private static final String EMIS_LATEST_REG_DATE = "Emis_Latest_Reg_Date";
+    private static KeycloakClient kcClient;
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -84,6 +94,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ThreadPool utilityThreadPool = null;
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
     private Date cachedDataDate = null;
+
+    private List<String> emisMissingClinicalCodesMatch = new ArrayList<String>();
+    private List<String> emisMissingDrugCodesMatch = new ArrayList<String>();
+    private String emisMissingPatientGuids;
+    private static JsonNode kcConfig;
+    private static String path;
+
 
     public EmisCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String dataSharingAgreementGuid, Map<Class, AbstractCsvParser> parsers) {
         this.serviceId = serviceId;
@@ -1345,4 +1362,90 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         mappingRepository.saveErrorRecords(errorCodeObj);
     }
+    //Combine both the matched CLinical and Drug Codes
+    public List<String> retrieveEmisCombineClinicalDrugCodes() {
+
+        if (emisMissingClinicalCodesMatch != null && emisMissingClinicalCodesMatch.size() > 0) {
+            emisMissingClinicalCodesMatch.addAll(emisMissingDrugCodesMatch);
+        } else {
+            emisMissingClinicalCodesMatch.addAll(emisMissingDrugCodesMatch);
+        }
+        return emisMissingClinicalCodesMatch;
+    }
+
+    /*
+    Pass the latestExchangeId and get the latest timestamp and in the same way pass the OldestExchangeId and get the OldestTimeStamp,
+    Outcome of this method is to  get all the exchangeIds from the date Error logged in the EmisMissingCodeError table to the latest date in the Exchange Table.
+     */
+    public List<String> retrieveEmisAllExchangeIds(String emisOldestExchangeId, String emisLatestExchangeId) throws Exception {
+
+        List<Exchange> emisExchangeIdsFrToDate = new ArrayList<Exchange>();
+        List<String> emisAllExchangeIds = new ArrayList<>();
+        ExchangeDalI auditExchangeDal = DalProvider.factoryExchangeDal();
+        Exchange exchangeObjOld = auditExchangeDal.getExchange(UUID.fromString(emisOldestExchangeId));
+        Date emisOldestTimeStamp = exchangeObjOld.getTimestamp();
+        Exchange exchangeObjLatest = auditExchangeDal.getExchange(UUID.fromString(emisLatestExchangeId));
+        Date emisLatestTimeStamp = exchangeObjLatest.getTimestamp();
+        emisExchangeIdsFrToDate = auditExchangeDal.getExchangesByService(getServiceId(), getSystemId(), 10000, emisOldestTimeStamp, emisLatestTimeStamp);
+        if(emisExchangeIdsFrToDate!=null && emisExchangeIdsFrToDate.size()>0){
+            for(Exchange exchangeIds : emisExchangeIdsFrToDate){
+                emisAllExchangeIds.add(exchangeIds.getId().toString());
+            }
+        }
+
+        return emisAllExchangeIds;
+    }
+
+    public String retrieveEmisOldestExchangeId(List<String> emisMissingCodes) throws Exception{
+        return mappingRepository.retrieveEmisOldestExchangeId(emisMissingCodes);
+    }
+
+    public List<String> retrieveEmisPatientGuids(List<String> emisMissingCodes) throws Exception {
+        return mappingRepository.retrieveEmisPatientGuids(emisMissingCodes);
+    }
+
+    public void updateStatusInEmisErrorTable(List<String> emisCombinedClinicalDrugCodes) throws Exception{
+        mappingRepository.updateStatusInEmisErrorTable(emisCombinedClinicalDrugCodes);
+    }
+
+    public List<String> retrieveEmisMissingCodeList(EmisCodeType emisCodeType) throws Exception {
+        return mappingRepository.retrieveEmisMissingCodeList(emisCodeType);
+    }
+    public void setEmisMissingClinicalCodesMatch(List<String> emisMissingClinicalCodesMatch) {
+        this.emisMissingClinicalCodesMatch = emisMissingClinicalCodesMatch;
+    }
+    public String getEmisMissingPatientGuids() {
+        return emisMissingPatientGuids;
+    }
+
+    public void setEmisMissingPatientGuids(String emisMissingPatientGuids) {
+        this.emisMissingPatientGuids = emisMissingPatientGuids;
+    }
+    public void setEmisMissingDrugCodesMatch(List<String> emisMissingDrugCodesMatch) {
+        this.emisMissingDrugCodesMatch = emisMissingDrugCodesMatch;
+    }
+
+    //Requeue the missing patientGuids by invoking the rest method.
+    public Response reprocessEmisPatientGuids(List<String> emisPatientGuIds, List<String> emisAllExchangeIds) throws Exception {
+
+        Map<String, List<String>> map = new HashMap<String, List<String>>();
+
+        map.put("patientGuids", emisPatientGuIds);
+        map.put("exchangeIds", emisAllExchangeIds);
+        map.put("systemId", Arrays.asList(getSystemId().toString()));
+        map.put("serviceId", Arrays.asList(getServiceId().toString()));
+
+        if (kcConfig == null) {
+            kcConfig = ObjectMapperPool.getInstance().readTree(ConfigManager.getConfiguration("emis-reprocess-codes", "keycloak-reprocess-codes"));
+            if (kcConfig == null)
+                throw new IllegalStateException("Keycloak config not found to reprocess EmisPatientGuids!");
+        }
+        if (kcClient == null)
+            kcClient = new KeycloakClient(kcConfig.get("auth-server-url").asText(), kcConfig.get("realm").asText(), kcConfig.get("username").asText(), kcConfig.get("password").asText(), "eds-ui");
+        WebTarget target = ClientBuilder.newClient().target(kcConfig.get("emis-missingcodes-url").asText()).path(kcConfig.get("path").asText());
+
+        return target.request().header("Authorization", "Bearer " + kcClient.getToken().getToken()).post(Entity.entity(map, MediaType.APPLICATION_JSON));
+    }
+
 }
+

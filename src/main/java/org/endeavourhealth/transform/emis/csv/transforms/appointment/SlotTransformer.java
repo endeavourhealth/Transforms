@@ -27,9 +27,16 @@ public class SlotTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         Slot parser = (Slot)parsers.get(Slot.class);
+        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
             try {
-                createSlotAndAppointment(parser, fhirResourceFiler, csvHelper);
+                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
+                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
+                        createSlotAndAppointment(parser, fhirResourceFiler, csvHelper);
+                    }
+                } else {
+                    createSlotAndAppointment(parser, fhirResourceFiler, csvHelper);
+                }
 
             } catch (EmisCodeNotFoundException ex) {
                 csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getSlotGuid(), parser);

@@ -4,6 +4,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
@@ -34,8 +35,9 @@ public class EmisCustomCsvToFhirTransformer {
                                                 .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this;
 
 
-    public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
+    public static void transform(Exchange exchange, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
+        String exchangeBody = exchange.getBody();
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         UUID serviceId = fhirResourceFiler.getServiceId();
         Service service = DalProvider.factoryServiceDal().getById(serviceId);

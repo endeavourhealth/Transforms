@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.emis;
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.http.HttpStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
@@ -28,6 +29,7 @@ import org.endeavourhealth.transform.emis.csv.transforms.prescribing.IssueRecord
 import org.endeavourhealth.transform.emis.csv.transforms.prescribing.IssueRecordTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -48,12 +50,17 @@ public abstract class EmisCsvToFhirTransformer {
     public static final String TIME_FORMAT = "hh:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();   //EMIS csv files always contain a header
 
-    public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
+    public static void transform(Exchange exchange, FhirResourceFiler processor, String version) throws Exception {
 
+        String exchangeBody = exchange.getBody();
+        String emisMissingPatientGuids = null;
         List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         UUID serviceId = processor.getServiceId();
         Service service = DalProvider.factoryServiceDal().getById(serviceId);
         ExchangeHelper.filterFileTypes(files, service, processor.getExchangeId());
+        if (exchange.getHeader(HeaderKeys.EmisPatientGuids) != null) {
+            emisMissingPatientGuids = exchange.getHeader(HeaderKeys.EmisPatientGuids);
+        }
         LOG.info("Invoking EMIS CSV transformer for " + files.size() + " files and service " + service.getName() + " " + service.getId());
 
         if (files.isEmpty()) {
@@ -70,7 +77,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         try {
             createParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, parsers);
-            transformParsers(version, parsers, processor);
+            transformParsers(version, parsers, processor,emisMissingPatientGuids);
 
         } finally {
             closeParsers(parsers.values());
@@ -224,7 +231,7 @@ public abstract class EmisCsvToFhirTransformer {
 
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
-                                         FhirResourceFiler fhirResourceFiler) throws Exception {
+                                         FhirResourceFiler fhirResourceFiler, String emisMissingPatientGuids) throws Exception {
 
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
 
@@ -246,6 +253,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         boolean processPatientData = shouldProcessPatientData(csvHelper);
         csvHelper.setProcessPatientData(processPatientData);
+        csvHelper.setEmisMissingPatientGuids(emisMissingPatientGuids);
 
         /*ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
         UUID firstExchangeId = exchangeDal.getFirstExchangeId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
@@ -342,6 +350,24 @@ public abstract class EmisCsvToFhirTransformer {
 
             //update any MedicationStatements to set the last issue date on them
             csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);
+
+            //retrieve both the matched Clinical and Drug codes saved in the  Clinical and Drug code transformers.
+            List<String> emisCombinedClinicalDrugCodes = csvHelper.retrieveEmisCombineClinicalDrugCodes();
+
+            //Check if EmisMissing Clinical or Drug codes found, if found, requeue/reproess it into rabbit else skip the entire if condition and process normally.
+            if (emisCombinedClinicalDrugCodes != null && emisCombinedClinicalDrugCodes.size() > 0) {
+                //Pass the EmisCombined Clinical and Drug codeIds and get the emisOldestExchangeId.
+                String emisOldestExchangeId = csvHelper.retrieveEmisOldestExchangeId(emisCombinedClinicalDrugCodes);
+                String emisLatestExchangeId = fhirResourceFiler.getExchangeId().toString();
+                List<String> emisAllExchangeIds = csvHelper.retrieveEmisAllExchangeIds(emisOldestExchangeId, emisLatestExchangeId);
+                List<String> emisPatientGuids = csvHelper.retrieveEmisPatientGuids(emisCombinedClinicalDrugCodes);
+                Response response = csvHelper.reprocessEmisPatientGuids(emisPatientGuids, emisAllExchangeIds);
+                LOG.info("Requeue/Reprocess of EmisMissingPatientGuids Status :: " + response.getStatus());
+                if (response.getStatus() == HttpStatus.SC_OK) {
+                    csvHelper.updateStatusInEmisErrorTable(emisCombinedClinicalDrugCodes);
+                }
+            }
+
         }
 
         //close down the utility thread pool
