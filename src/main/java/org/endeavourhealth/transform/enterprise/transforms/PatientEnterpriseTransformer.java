@@ -9,13 +9,10 @@ import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
-import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.admin.LibraryRepositoryHelper;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
 import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
-import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
@@ -25,25 +22,22 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.PatientAddress;
+import org.endeavourhealth.transform.enterprise.outputModels.PatientContact;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
-import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.endeavourhealth.transform.subscriber.UPRN;
@@ -58,6 +52,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
     //private static final int BEST_ORG_SCORE = 10;
     private static final String PREFIX_ADDRESS_ID = "-ADDR-";
+    private static final String PREFIX_TELECOM_ID = "-TELECOM-";
     private static final String PREFIX_ADDRESS_MATCH_ID = "-ADDRMATCH-";
 
     private static Map<String, LinkDistributorConfig> mainPseudoCacheMap = new HashMap<>();
@@ -379,8 +374,9 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             title = NameHelper.findPrefix(fhirPatient);
             firstNames = NameHelper.findForenames(fhirPatient);
             lastNames = NameHelper.findSurname(fhirPatient);
+            currentAddressId = transformAddresses(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
+            transformTelecoms(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
         }
-        currentAddressId = transformAddresses(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
 
         if (patientWriter.isPseduonymised()) {
 
@@ -1147,5 +1143,91 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                 match_flat, // match flat [9]
                 "", // alg version ** TO DO
                 ""); // epoc ** TO DO
+    }
+
+    private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient,
+                                   List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
+
+        PatientContact writer = params.getOutputContainer().getPatientContact();
+
+        //update all addresses, delete any extra
+        if (currentPatient.hasTelecom()) {
+            for (int i = 0; i < currentPatient.getTelecom().size(); i++) {
+                ContactPoint telecom = currentPatient.getTelecom().get(i);
+
+                String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
+                SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+
+                long organisationId = params.getEnterpriseOrganisationId();
+                Integer useConceptId = null;
+                Integer typeConceptId = null;
+                Date startDate = null;
+                Date endDate = null;
+                String value = null;
+
+                if (telecom.hasUse()) {
+                    useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_USE, telecom.getUse().toCode(), telecom.getValue());
+                }
+
+                if (telecom.hasSystem()) {
+                    typeConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_TELECOM_SYSTEM, telecom.getSystem().toCode(), telecom.getValue());
+                }
+
+                if (!params.isPseudonymised()) {
+                    value = telecom.getValue();
+                }
+
+                if (telecom.hasPeriod()) {
+                    startDate = telecom.getPeriod().getStart();
+                    endDate = telecom.getPeriod().getEnd();
+                }
+
+                writer.writeUpsert(subTableId,
+                        organisationId,
+                        subscriberPatientId,
+                        subscriberPersonId,
+                        useConceptId,
+                        typeConceptId,
+                        startDate,
+                        endDate,
+                        value);
+
+            }
+        }
+
+        //and make sure to delete any that we previously sent over that are no longer present
+        //i.e. if we previously had five addresses and now only have three, we need to delete four and five
+        int maxPreviousTelecoms = getMaxNumberOfTelecoms(fullHistory);
+
+        int start = 0;
+        if (currentPatient.hasTelecom()) {
+            start = currentPatient.getTelecom().size();
+        }
+
+        for (int i=start; i<maxPreviousTelecoms; i++) {
+
+            String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+            if (subTableId != null) {
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+
+                writer.writeDelete(subTableId.getSubscriberId());
+            }
+
+        }
+    }
+
+    private static int getMaxNumberOfTelecoms(List<ResourceWrapper> history) throws Exception {
+        int max = 0;
+        for (ResourceWrapper wrapper: history) {
+            if (!wrapper.isDeleted()) {
+                Patient patient = (Patient) wrapper.getResource();
+                if (patient.hasTelecom()) {
+                    max = Math.max(max, patient.getTelecom().size());
+                }
+            }
+        }
+        return max;
     }
 }

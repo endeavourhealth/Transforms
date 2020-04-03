@@ -53,6 +53,7 @@ public class OutputContainer {
         csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAddressMatch("patient_address_match.csv",csvFormat,dateFormat,timeFormat,pseduonymised));
         csvWriters.add(new PatientAddress("patient_address.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new PatientContact("patient_contact.csv", csvFormat, dateFormat, timeFormat));
     }
 
     public byte[] writeToZip() throws Exception {
@@ -220,4 +221,5 @@ public class OutputContainer {
 
     public PatientAddress getPatientAddresses() { return findCsvWriter(PatientAddress.class); }
 
+    public PatientContact getPatientContact() { return findCsvWriter(PatientContact.class); }
 }
