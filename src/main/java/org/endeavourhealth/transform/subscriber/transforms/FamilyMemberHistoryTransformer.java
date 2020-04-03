@@ -145,6 +145,7 @@ public class FamilyMemberHistoryTransformer extends AbstractSubscriberTransforme
 
         dateRecorded = params.includeDateRecorded(fhir);
 
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(subscriberId,
                 organizationId,
                 patientId,

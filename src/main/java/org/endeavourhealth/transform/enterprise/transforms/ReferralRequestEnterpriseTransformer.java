@@ -204,6 +204,7 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
         dateRecorded = params.includeDateRecorded(fhir);
 
         org.endeavourhealth.transform.enterprise.outputModels.ReferralRequest model = (org.endeavourhealth.transform.enterprise.outputModels.ReferralRequest)csvWriter;
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(id,
             organizationId,
             patientId,

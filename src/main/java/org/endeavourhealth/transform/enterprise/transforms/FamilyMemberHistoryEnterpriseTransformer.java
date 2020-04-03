@@ -131,6 +131,7 @@ public class FamilyMemberHistoryEnterpriseTransformer extends AbstractEnterprise
         dateRecorded = params.includeDateRecorded(fhir);
 
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(id,
                 organisationId,
                 patientId,

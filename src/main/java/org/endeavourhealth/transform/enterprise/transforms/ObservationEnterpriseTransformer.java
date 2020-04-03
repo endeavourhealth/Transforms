@@ -168,6 +168,7 @@ public class ObservationEnterpriseTransformer extends AbstractEnterpriseTransfor
         }
 
         org.endeavourhealth.transform.enterprise.outputModels.Observation model = (org.endeavourhealth.transform.enterprise.outputModels.Observation)csvWriter;
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(id,
             organisationId,
             patientId,

@@ -110,7 +110,7 @@ public class PatientAddressMatch extends AbstractEnterpriseCsvWriter {
     public String[] getCsvHeaders() {
         return new String[]{
                 "save_mode",
-                "id", // "patient_address_id"
+                "patient_address_id", // "patient_address_id"
                 "uprn",
                 "status",
                 "classification",

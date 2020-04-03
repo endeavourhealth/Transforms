@@ -157,6 +157,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         dateRecorded = params.includeDateRecorded(fhir);
 
         org.endeavourhealth.transform.enterprise.outputModels.Encounter model = (org.endeavourhealth.transform.enterprise.outputModels.Encounter)csvWriter;
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(id,
             organisationId,
             patientId,

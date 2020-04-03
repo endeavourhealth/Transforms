@@ -133,6 +133,8 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return isPseudonymised;
     }
 
+    public boolean isIncludeDateRecorded() { return includeDateRecorded; }
+
     public Date includeDateRecorded(DomainResource fhir) {
         Date dateRecorded = null;
         if (includeDateRecorded) {

@@ -243,6 +243,7 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
 
         dateRecorded = params.includeDateRecorded(fhir);
 
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(
                 subscriberId,
                 organizationId,

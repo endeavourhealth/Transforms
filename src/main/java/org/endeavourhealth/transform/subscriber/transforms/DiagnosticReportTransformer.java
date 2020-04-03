@@ -134,6 +134,7 @@ public class DiagnosticReportTransformer extends AbstractSubscriberTransformer {
 
         dateRecorded = params.includeDateRecorded(fhir);
 
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(subscriberId,
                 organizationId,
                 patientId,
