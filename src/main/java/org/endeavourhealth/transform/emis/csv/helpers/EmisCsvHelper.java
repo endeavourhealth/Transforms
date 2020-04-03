@@ -1397,19 +1397,19 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public String retrieveEmisOldestExchangeId(List<String> emisMissingCodes) throws Exception{
-        return mappingRepository.retrieveEmisOldestExchangeId(emisMissingCodes);
+        return mappingRepository.retrieveEmisOldestExchangeId(emisMissingCodes, getServiceId().toString());
     }
 
     public List<String> retrieveEmisPatientGuids(List<String> emisMissingCodes) throws Exception {
-        return mappingRepository.retrieveEmisPatientGuids(emisMissingCodes);
+        return mappingRepository.retrieveEmisPatientGuids(emisMissingCodes, getServiceId().toString());
     }
 
     public void updateStatusInEmisErrorTable(List<String> emisCombinedClinicalDrugCodes) throws Exception{
-        mappingRepository.updateStatusInEmisErrorTable(emisCombinedClinicalDrugCodes);
+        mappingRepository.updateStatusInEmisErrorTable(emisCombinedClinicalDrugCodes, getServiceId().toString());
     }
 
     public List<String> retrieveEmisMissingCodeList(EmisCodeType emisCodeType) throws Exception {
-        return mappingRepository.retrieveEmisMissingCodeList(emisCodeType);
+        return mappingRepository.retrieveEmisMissingCodeList(emisCodeType, getServiceId().toString());
     }
     public void setEmisMissingClinicalCodesMatch(List<String> emisMissingClinicalCodesMatch) {
         this.emisMissingClinicalCodesMatch = emisMissingClinicalCodesMatch;
