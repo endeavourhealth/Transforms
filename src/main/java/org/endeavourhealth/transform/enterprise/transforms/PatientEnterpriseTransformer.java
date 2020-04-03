@@ -374,9 +374,9 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             title = NameHelper.findPrefix(fhirPatient);
             firstNames = NameHelper.findForenames(fhirPatient);
             lastNames = NameHelper.findSurname(fhirPatient);
-            currentAddressId = transformAddresses(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
-            transformTelecoms(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
         }
+        currentAddressId = transformAddresses(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
+        transformTelecoms(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
 
         if (patientWriter.isPseduonymised()) {
 
