@@ -30,15 +30,10 @@ public class DrugRecordPreTransformer {
         //to parse any record in this file it a critical error
         try {
             DrugRecord parser = (DrugRecord)parsers.get(DrugRecord.class);
-            String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
             while (parser != null && parser.nextRecord()) {
 
                 try {
-                    if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
-                        if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
-                            processLine(parser, fhirResourceFiler, csvHelper);
-                        }
-                    } else {
+                    if (csvHelper.shouldProcessRecord(parser)) {
                         processLine(parser, fhirResourceFiler, csvHelper);
                     }
 

@@ -52,21 +52,23 @@ public abstract class EmisCsvToFhirTransformer {
 
     public static void transform(Exchange exchange, FhirResourceFiler processor, String version) throws Exception {
 
-        String exchangeBody = exchange.getBody();
-        String emisMissingPatientGuids = null;
-        List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
+        //get service
         UUID serviceId = processor.getServiceId();
         Service service = DalProvider.factoryServiceDal().getById(serviceId);
+
+        //get files to process
+        String exchangeBody = exchange.getBody();
+        List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
         ExchangeHelper.filterFileTypes(files, service, processor.getExchangeId());
-        if (exchange.getHeader(HeaderKeys.EmisPatientGuids) != null) {
-            emisMissingPatientGuids = exchange.getHeader(HeaderKeys.EmisPatientGuids);
-        }
         LOG.info("Invoking EMIS CSV transformer for " + files.size() + " files and service " + service.getName() + " " + service.getId());
 
         if (files.isEmpty()) {
             LOG.info("No files, so returning out");
             return;
         }
+
+        //see if we're filtering on any specific patients
+        Set<String> filteringPatientGuids = findFilteringPatientGuids(exchange);
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
         //so we dynamically work out the version when we load the first set of files
@@ -77,11 +79,21 @@ public abstract class EmisCsvToFhirTransformer {
 
         try {
             createParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, parsers);
-            transformParsers(version, parsers, processor,emisMissingPatientGuids);
+            transformParsers(version, parsers, processor, filteringPatientGuids);
 
         } finally {
             closeParsers(parsers.values());
         }
+    }
+
+    private static Set<String> findFilteringPatientGuids(Exchange exchange) throws Exception {
+
+        List<String> patientGuids = exchange.getHeaderAsStringList(HeaderKeys.EmisPatientGuids);
+        if (patientGuids == null) {
+            return null;
+        }
+
+        return new HashSet<>(patientGuids);
     }
 
     /**
@@ -231,7 +243,8 @@ public abstract class EmisCsvToFhirTransformer {
 
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
-                                         FhirResourceFiler fhirResourceFiler, String emisMissingPatientGuids) throws Exception {
+                                         FhirResourceFiler fhirResourceFiler,
+                                         Set<String> filteringPatientGuids) throws Exception {
 
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
 
@@ -253,7 +266,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         boolean processPatientData = shouldProcessPatientData(csvHelper);
         csvHelper.setProcessPatientData(processPatientData);
-        csvHelper.setEmisMissingPatientGuids(emisMissingPatientGuids);
+        csvHelper.setFilterPatientGuids(filteringPatientGuids);
 
         /*ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
         UUID firstExchangeId = exchangeDal.getFirstExchangeId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());
@@ -271,6 +284,7 @@ public abstract class EmisCsvToFhirTransformer {
         //these transforms don't create resources themselves, but cache data that the subsequent ones rely on
         ClinicalCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         DrugCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        csvHelper.queueExchangesForFoundMissingCodes(); //if we've found some missing codes, re-queue exchanges
 
         boolean processAdminData = true;
 
@@ -350,24 +364,6 @@ public abstract class EmisCsvToFhirTransformer {
 
             //update any MedicationStatements to set the last issue date on them
             csvHelper.processRemainingMedicationIssueDates(fhirResourceFiler);
-
-            //retrieve both the matched Clinical and Drug codes saved in the  Clinical and Drug code transformers.
-            List<String> emisCombinedClinicalDrugCodes = csvHelper.retrieveEmisCombineClinicalDrugCodes();
-
-            //Check if EmisMissing Clinical or Drug codes found, if found, requeue/reproess it into rabbit else skip the entire if condition and process normally.
-            if (emisCombinedClinicalDrugCodes != null && emisCombinedClinicalDrugCodes.size() > 0) {
-                //Pass the EmisCombined Clinical and Drug codeIds and get the emisOldestExchangeId.
-                String emisOldestExchangeId = csvHelper.retrieveEmisOldestExchangeId(emisCombinedClinicalDrugCodes);
-                String emisLatestExchangeId = fhirResourceFiler.getExchangeId().toString();
-                List<String> emisAllExchangeIds = csvHelper.retrieveEmisAllExchangeIds(emisOldestExchangeId, emisLatestExchangeId);
-                List<String> emisPatientGuids = csvHelper.retrieveEmisPatientGuids(emisCombinedClinicalDrugCodes);
-                Response response = csvHelper.reprocessEmisPatientGuids(emisPatientGuids, emisAllExchangeIds);
-                LOG.info("Requeue/Reprocess of EmisMissingPatientGuids Status :: " + response.getStatus());
-                if (response.getStatus() == HttpStatus.SC_OK) {
-                    csvHelper.updateStatusInEmisErrorTable(emisCombinedClinicalDrugCodes);
-                }
-            }
-
         }
 
         //close down the utility thread pool

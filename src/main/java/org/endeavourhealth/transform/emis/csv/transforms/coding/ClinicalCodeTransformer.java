@@ -24,10 +24,7 @@ import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -45,35 +42,30 @@ public abstract class ClinicalCodeTransformer {
 
         try {
 
+
+            Set<Long> missingCodes = csvHelper.retrieveMissingCodes(EmisCodeType.CLINICAL_CODE);
+            Set<Long> foundMissingCodes = new HashSet<>();
+
             List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
-            List<String> emisMissingClinicalCodesMatch = new ArrayList<>();
-            //Retrieve the full code list from the error table where dt_fixed is null
-            List<String> emisMissingClinicalCodeList = csvHelper.retrieveEmisMissingCodeList(EmisCodeType.CLINICAL_CODE);
-            LOG.info("Emis missing Clinical code list size ::" + emisMissingClinicalCodeList.size());
+
             ClinicalCode parser = (ClinicalCode)parsers.get(ClinicalCode.class);
             while (parser != null && parser.nextRecord()) {
-                if (emisMissingClinicalCodeList != null && emisMissingClinicalCodeList.size() > 0) {
-                    //Verify if the list of codeIds matches with the parsed codeId,if matches, add it to list.
-                    if (emisMissingClinicalCodeList.contains(parser.getCodeId().getString())) {
-                        emisMissingClinicalCodesMatch.add(parser.getCodeId().getString());
-                    }
-                }
                 try {
-                    transform(parser, fhirResourceFiler, csvHelper, mappingsToSave);
+                    transform(parser, fhirResourceFiler, csvHelper, mappingsToSave, missingCodes, foundMissingCodes);
                 } catch (Exception ex) {
 
                     //because this file contains key reference data, if there's any errors, just throw up
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
-            if (emisMissingClinicalCodesMatch != null && emisMissingClinicalCodesMatch.size() > 0) {
-                LOG.info("EmisMissing Clinical Code Records count:: " + emisMissingClinicalCodesMatch.size());
-                csvHelper.setEmisMissingClinicalCodesMatch(emisMissingClinicalCodesMatch);
-            }
+
             //and save any still pending
             if (!mappingsToSave.isEmpty()) {
                 csvHelper.submitToThreadPool(new Task(mappingsToSave));
             }
+
+            //log any found missing codes
+            csvHelper.addFoundMissingCodes(foundMissingCodes);
 
         } finally {
             csvHelper.waitUntilThreadPoolIsEmpty();
@@ -83,7 +75,9 @@ public abstract class ClinicalCodeTransformer {
     private static void transform(ClinicalCode parser,
                                   FhirResourceFiler fhirResourceFiler,
                                   EmisCsvHelper csvHelper,
-                                  List<EmisCsvCodeMap> mappingsToSave) throws Exception {
+                                  List<EmisCsvCodeMap> mappingsToSave,
+                                  Set<Long> missingCodes,
+                                  Set<Long> foundMissingCodes) throws Exception {
 
         CsvCell codeIdCell = parser.getCodeId();
         CsvCell emisTermCell = parser.getTerm();
@@ -128,6 +122,12 @@ public abstract class ClinicalCodeTransformer {
             List<EmisCsvCodeMap> copy = new ArrayList<>(mappingsToSave);
             mappingsToSave.clear();
             csvHelper.submitToThreadPool(new Task(copy));
+        }
+
+        //if this code was previously missing, record that it's been found
+        Long codeId = codeIdCell.getLong();
+        if (missingCodes.contains(codeId)) {
+            foundMissingCodes.add(codeId);
         }
     }
 

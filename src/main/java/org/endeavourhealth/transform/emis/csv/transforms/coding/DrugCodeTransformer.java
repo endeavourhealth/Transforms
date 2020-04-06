@@ -17,9 +17,7 @@ import org.endeavourhealth.transform.emis.csv.schema.coding.DrugCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 public class DrugCodeTransformer {
@@ -32,35 +30,32 @@ public class DrugCodeTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         try {
-            List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
-            List<String> emisMissingDrugCodesMatch = new ArrayList<>();
+
             //Retrieve the full code list from the error table where dt_fixed is null
-            List<String> emisMissingDrugCodeList = csvHelper.retrieveEmisMissingCodeList(EmisCodeType.DRUG_CODE);
-            LOG.info("Emis missing Drug code list size " + emisMissingDrugCodeList.size());
+            Set<Long> missingDrugCodes = csvHelper.retrieveMissingCodes(EmisCodeType.DRUG_CODE);
+            Set<Long> foundMissingDrugCodes = new HashSet<>();
+
+            List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
+
             DrugCode parser = (DrugCode)parsers.get(DrugCode.class);
             while (parser != null && parser.nextRecord()) {
-                if (emisMissingDrugCodeList != null && emisMissingDrugCodeList.size() > 0) {
-                    //Verify if the list of codeIds matches with the parsed codeId,if matches add it to list.
-                    if (emisMissingDrugCodeList.contains(parser.getCodeId().getString())) {
-                        emisMissingDrugCodesMatch.add(parser.getCodeId().getString());
-                    }
-                }
                 try {
-                    transform(parser, fhirResourceFiler, csvHelper, mappingsToSave);
+                    transform(parser, fhirResourceFiler, csvHelper, mappingsToSave, missingDrugCodes, foundMissingDrugCodes);
                 } catch (Exception ex) {
 
                     //because this file contains key reference data, if there's any errors, just throw up
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
-            if (emisMissingDrugCodesMatch != null && emisMissingDrugCodesMatch.size() > 0) {
-                LOG.info("Emis Missing Drug Code Records count:: " + emisMissingDrugCodesMatch.size());
-                csvHelper.setEmisMissingDrugCodesMatch(emisMissingDrugCodesMatch);
-            }
+
             //and save any still pending
             if (!mappingsToSave.isEmpty()) {
                 csvHelper.submitToThreadPool(new Task(mappingsToSave));
             }
+
+            //cache any found Drug codes in the helper
+            csvHelper.addFoundMissingCodes(foundMissingDrugCodes);
+
 
         } finally {
             csvHelper.waitUntilThreadPoolIsEmpty();
@@ -70,15 +65,17 @@ public class DrugCodeTransformer {
     private static void transform(DrugCode parser,
                                   FhirResourceFiler fhirResourceFiler,
                                   EmisCsvHelper csvHelper,
-                                  List<EmisCsvCodeMap> mappingsToSave) throws Exception {
+                                  List<EmisCsvCodeMap> mappingsToSave,
+                                  Set<Long> missingDrugCodes,
+                                  Set<Long> foundMissingDrugCodes) throws Exception {
 
-        CsvCell codeId = parser.getCodeId();
+        CsvCell codeIdCell = parser.getCodeId();
         CsvCell term = parser.getTerm();
         CsvCell dmdId = parser.getDmdProductCodeId();
 
         EmisCsvCodeMap mapping = new EmisCsvCodeMap();
         mapping.setMedication(true);
-        mapping.setCodeId(codeId.getLong().longValue());
+        mapping.setCodeId(codeIdCell.getLong().longValue());
         mapping.setSnomedConceptId(dmdId.getLong());
         mapping.setSnomedTerm(term.getString());
         mapping.setDtLastReceived(csvHelper.getDataDate());
@@ -96,6 +93,12 @@ public class DrugCodeTransformer {
             List<EmisCsvCodeMap> copy = new ArrayList<>(mappingsToSave);
             mappingsToSave.clear();
             csvHelper.submitToThreadPool(new Task(copy));
+        }
+
+        //if this drug code was previously missing, log that it's appeared
+        Long codeId = codeIdCell.getLong();
+        if (missingDrugCodes.contains(codeId)) {
+            foundMissingDrugCodes.add(codeId);
         }
     }
 

@@ -37,16 +37,10 @@ public class SlotPreTransformer {
         Map<CsvCell, CsvCell> batch = new HashMap<>();
 
         Slot parser =(Slot)parsers.get(Slot.class);
-        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
 
             try {
-                processRecord((Slot) parser, fhirResourceFiler, csvHelper, batch);
-                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
-                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
-                        processRecord(parser, fhirResourceFiler, csvHelper, batch);
-                    }
-                } else {
+                if (csvHelper.shouldProcessRecord(parser)) {
                     processRecord(parser, fhirResourceFiler, csvHelper, batch);
                 }
             } catch (Exception ex) {

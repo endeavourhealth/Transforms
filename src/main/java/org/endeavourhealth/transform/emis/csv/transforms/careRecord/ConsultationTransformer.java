@@ -32,15 +32,10 @@ public class ConsultationTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         Consultation parser = (Consultation)parsers.get(Consultation.class);
-        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
 
             try {
-                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
-                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
-                        createResource(parser, fhirResourceFiler, csvHelper);
-                    }
-                } else {
+                if (csvHelper.shouldProcessRecord(parser)) {
                     createResource(parser, fhirResourceFiler, csvHelper);
                 }
 

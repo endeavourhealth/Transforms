@@ -22,15 +22,10 @@ public class IssueRecordPreTransformer {
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         IssueRecord parser = (IssueRecord)parsers.get(IssueRecord.class);
-        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
 
             try {
-                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
-                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
-                        processLine(parser, fhirResourceFiler, csvHelper);
-                    }
-                } else {
+                if (csvHelper.shouldProcessRecord(parser)) {
                     processLine(parser, fhirResourceFiler, csvHelper);
                 }
 

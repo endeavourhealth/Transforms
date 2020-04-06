@@ -25,14 +25,10 @@ public class ObservationPreTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         Observation parser = (Observation) parsers.get(Observation.class);
-        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
+
             try {
-                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
-                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
-                        processLine(parser, csvHelper, fhirResourceFiler);
-                    }
-                } else {
+                if (csvHelper.shouldProcessRecord(parser)) {
                     processLine(parser, csvHelper, fhirResourceFiler);
                 }
 

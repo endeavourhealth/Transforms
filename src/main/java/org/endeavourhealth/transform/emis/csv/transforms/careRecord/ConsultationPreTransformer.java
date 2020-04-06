@@ -24,14 +24,10 @@ public class ConsultationPreTransformer {
 
         try {
             Consultation parser = (Consultation)parsers.get(Consultation.class);
-            String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
             while (parser != null && parser.nextRecord()) {
+
                 try {
-                    if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
-                        if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
-                            processRecord(parser, fhirResourceFiler, csvHelper);
-                        }
-                    } else {
+                    if (csvHelper.shouldProcessRecord(parser)) {
                         processRecord(parser, fhirResourceFiler, csvHelper);
                     }
 

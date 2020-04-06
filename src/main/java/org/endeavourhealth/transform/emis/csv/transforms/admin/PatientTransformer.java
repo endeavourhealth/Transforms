@@ -36,15 +36,10 @@ public class PatientTransformer {
                                  EmisCsvHelper csvHelper) throws Exception {
 
         Patient parser = (Patient)parsers.get(Patient.class);
-        String emisMissingPatientGuids = csvHelper.getEmisMissingPatientGuids();
         while (parser != null && parser.nextRecord()) {
 
             try {
-                if (emisMissingPatientGuids != null && emisMissingPatientGuids.length() > 0) {
-                    if (emisMissingPatientGuids.contains(parser.getPatientGuid().getString())) {
-                        createResources(parser, fhirResourceFiler, csvHelper);
-                    }
-                } else {
+                if (csvHelper.shouldProcessRecord(parser)) {
                     createResources(parser, fhirResourceFiler, csvHelper);
                 }
 
