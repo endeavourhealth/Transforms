@@ -209,6 +209,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                 end = period.getEnd();
             }
 
+            /*
             RegistrationStatusHistory history = params.getOutputContainer().getRegistrationStatusHistory();
             history.writeUpsert(id,
                     organisationId,
@@ -218,6 +219,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                     registrationStatusConceptId,
                     start,
                     end);
+             */
 
         }
     }

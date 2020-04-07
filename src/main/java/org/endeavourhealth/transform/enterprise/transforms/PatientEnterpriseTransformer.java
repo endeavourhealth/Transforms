@@ -74,7 +74,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         return true;
     }
 
-    /*
     public void UPRN(Patient fhirPatient, long id, long personId, AbstractEnterpriseCsvWriter csvWriter, String configName)  throws Exception {
         if (!fhirPatient.hasAddress()) {return;}
 
@@ -230,7 +229,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             }
         }
     }
-     */
 
     protected void transformResource(Long enterpriseId,
                                      ResourceWrapper resourceWrapper,
@@ -375,8 +373,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             firstNames = NameHelper.findForenames(fhirPatient);
             lastNames = NameHelper.findSurname(fhirPatient);
         }
-        currentAddressId = transformAddresses(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
-        transformTelecoms(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
+        //currentAddressId = transformAddresses(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
+        //transformTelecoms(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
 
         if (patientWriter.isPseduonymised()) {
 
@@ -456,8 +454,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                     currentAddressId);
         }
 
-        //PatientAddressMatch uprnwriter = params.getOutputContainer().findCsvWriter(PatientAddressMatch.class);
-        //UPRN(fhirPatient, id, personId, uprnwriter, params.getEnterpriseConfigName());
+        PatientAddressMatch uprnwriter = params.getOutputContainer().findCsvWriter(PatientAddressMatch.class);
+        UPRN(fhirPatient, id, personId, uprnwriter, params.getEnterpriseConfigName());
     }
 
 
@@ -930,7 +928,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                 city = address.getCity();
                 postcode = address.getPostalCode();
 
-                UPRN(params,currentPatient,i,resourceWrapper,subTableId,addressLine1,addressLine2,addressLine3,addressLine4,city,postcode,currentAddressId);
+                //UPRN(params,currentPatient,i,resourceWrapper,subTableId,addressLine1,addressLine2,addressLine3,addressLine4,city,postcode,currentAddressId);
             }
         }
 
@@ -987,6 +985,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         return resourceDal.getResourceHistory(serviceId, resourceType, resourceId);
     }
 
+    /*
     private void UPRN(EnterpriseTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper,
                       SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4,
                       String city, String postcode, Long currentAddressId) throws Exception {
@@ -1230,4 +1229,5 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
         return max;
     }
+     */
 }
