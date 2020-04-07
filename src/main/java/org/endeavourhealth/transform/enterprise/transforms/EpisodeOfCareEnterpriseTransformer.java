@@ -140,8 +140,10 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
             dateRegisteredEnd,
             usualGpPractitionerId);
 
+        /*
         List<ResourceWrapper> fullHistory = getFullHistory(resourceWrapper);
         transformRegistrationStatusHistory(organisationId, patientId, personId, id, fullHistory, params);
+         */
     }
 
     private static List<ResourceWrapper> getFullHistory(ResourceWrapper resourceWrapper) throws Exception {
