@@ -289,10 +289,10 @@ public abstract class EmisCsvToFhirTransformer {
         boolean processAdminData = true;
 
         //massive hack to allow the clinical observations to be processed faster - audit skipping it so we can come back later
-        /*if (true) {
+        if (true) {
             auditSkippingAdminData(fhirResourceFiler);
             processAdminData = false;
-        }*/
+        }
 
         if (processAdminData) {
 
