@@ -44,7 +44,7 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                              String title,
                              String firstNames,
                              String lastNames,
-                             long currentAddressId) throws Exception {
+                             Long currentAddressId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                         "" + id,
@@ -87,7 +87,7 @@ public class Patient extends AbstractEnterpriseCsvWriter {
                                         String title,
                                         String firstNames,
                                         String lastNames,
-                                        long currentAddressId) throws Exception {
+                                        Long currentAddressId) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
