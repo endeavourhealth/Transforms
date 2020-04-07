@@ -201,6 +201,7 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                 end = period.getEnd();
             }
 
+            /*
             org.endeavourhealth.transform.enterprise.outputModels.RegistrationStatusHistory history =
                     params.getOutputContainer().getRegistrationStatusHistory();
             history.writeUpsert(id,
@@ -211,6 +212,7 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                     registrationStatusId,
                     start,
                     end);
+             */
 
         }
     }
