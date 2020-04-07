@@ -143,8 +143,10 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                 dateRegisteredEnd,
                 usualGpPractitionerId);
 
+        /*
         List<ResourceWrapper> fullHistory = getFullHistory(resourceWrapper);
         transformRegistrationStatusHistory(organizationId, patientId, personId, id, fullHistory, params);
+         */
     }
 
     @Override
