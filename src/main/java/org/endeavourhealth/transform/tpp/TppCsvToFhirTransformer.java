@@ -9,11 +9,9 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.ExchangeHelper;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
@@ -35,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -488,21 +488,33 @@ public abstract class TppCsvToFhirTransformer {
         TppCsvHelper csvHelper = new TppCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
         boolean processPatientData = shouldProcessPatientData(csvHelper);
 
-        //reference data
-        LOG.trace("Starting reference data transforms");
-        SRCtv3Transformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
-        SRMappingTransformer.transform(parsers, fhirResourceFiler);
-        SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
-        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        boolean processAdminData = true;
 
-        //organisational admin data
-        LOG.trace("Starting admin transforms");
-        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        //massive hack to allow the clinical observations to be processed faster - audit skipping it so we can come back later
+        if (true) {
+            auditSkippingAdminData(fhirResourceFiler);
+            processAdminData = false;
+        }
+
+        //reference data
+        if (processAdminData) {
+
+            LOG.trace("Starting reference data transforms");
+            SRCtv3Transformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
+            SRMappingTransformer.transform(parsers, fhirResourceFiler);
+            SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
+            SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+            //organisational admin data
+            LOG.trace("Starting admin transforms");
+            SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        }
+
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         fhirResourceFiler.waitUntilEverythingIsSaved();
@@ -630,5 +642,32 @@ public abstract class TppCsvToFhirTransformer {
         return false;
     }
 
-    ;
+    private static void auditSkippingAdminData(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
+
+        LOG.info("Skipping admin data for exchange " + fhirFiler.getExchangeId());
+        AuditWriter.writeExchangeEvent(fhirFiler.getExchangeId(), "Skipped admin data");
+
+        //write to audit table so we can find out
+        Connection connection = ConnectionManager.getAuditConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "INSERT INTO skipped_admin_data VALUES (?, ?, ?, ?)";
+            ps = connection.prepareStatement(sql);
+
+            int col = 1;
+            ps.setString(col++, fhirFiler.getServiceId().toString());
+            ps.setString(col++, fhirFiler.getSystemId().toString());
+            ps.setString(col++, fhirFiler.getExchangeId().toString());
+            ps.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));
+
+            ps.executeUpdate();
+            connection.commit();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
 }
