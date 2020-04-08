@@ -1420,8 +1420,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String keyCloakRealm = json.get("keycloak-realm").asText();
         String keyCloakUser = json.get("keycloak-username").asText();
         String keyCloakPass = json.get("keycloak-password").asText();
+        String keyCloakClientId = json.get("keycloak-client-id").asText();
 
-        KeycloakClient kcClient = new KeycloakClient(keyCloakUrl, keyCloakRealm, keyCloakUser, keyCloakPass, "eds-ui");
+        KeycloakClient kcClient = new KeycloakClient(keyCloakUrl, keyCloakRealm, keyCloakUser, keyCloakPass, keyCloakClientId);
 
         WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/postToExchange");
 
