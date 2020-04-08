@@ -513,24 +513,24 @@ public abstract class TppCsvToFhirTransformer {
             SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+            fhirResourceFiler.waitUntilEverythingIsSaved();
+
+            LOG.trace("Starting practitioners transforms");
+            //these pre-transformers all cache data used by SRStaffMemberProfileTransformer
+            SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this must be done before the next two
+            SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+            SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just caches staff member details
+            SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this actually creates Practitioner resources
+            csvHelper.getStaffMemberCache().processRemainingStaffMembers(csvHelper, fhirResourceFiler);
+
+            //make sure all practitioners are saved to the DB before doing anything clinical
+            fhirResourceFiler.waitUntilEverythingIsSaved();
         }
 
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
-        fhirResourceFiler.waitUntilEverythingIsSaved();
-
-        LOG.trace("Starting practitioners transforms");
-        //these pre-transformers all cache data used by SRStaffMemberProfileTransformer
-        SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this must be done before the next two
-        SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
-        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just caches staff member details
-        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this actually creates Practitioner resources
-        csvHelper.getStaffMemberCache().processRemainingStaffMembers(csvHelper, fhirResourceFiler);
-
-        //make sure all practitioners are saved to the DB before doing anything clinical
-        fhirResourceFiler.waitUntilEverythingIsSaved();
 
         if (processPatientData) {
 
