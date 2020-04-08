@@ -66,7 +66,7 @@ public class SRStaffMemberProfilePreTransformer {
 
         InternalIdMap mapping = new InternalIdMap();
         mapping.setServiceId(csvHelper.getServiceId());
-        mapping.setIdType(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID);
+        mapping.setIdType("STAFFPROFILEIDtoSTAFFMEMBERID");
         mapping.setSourceId(staffProfileIdCell.getString());
         mapping.setDestinationId(staffId.getString());
 

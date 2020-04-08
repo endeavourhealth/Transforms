@@ -283,7 +283,7 @@ public class StaffMemberCache {
 //TODO - add cache for the below mappings to TppCsvHelper
 
         //find all the profiles for this staff member
-        List<InternalIdMap> mappings = internalIdDal.getSourceId(csvHelper.getServiceId(), InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, staffMemberIdCell.getString());
+        List<InternalIdMap> mappings = internalIdDal.getSourceId(csvHelper.getServiceId(), "STAFFPROFILEIDtoSTAFFMEMBERID", staffMemberIdCell.getString());
         if (mappings.isEmpty() && !staffMemberIdCell.isEmpty()) {
             //TODO Restore exception when we've finished the initial load for Redbridge group.
             //Initial load missing staff records
@@ -379,7 +379,7 @@ public class StaffMemberCache {
 
                 List<String> profileIdsForStaff = new ArrayList<>();
 
-                List<InternalIdMap> mappings = internalIdDal.getSourceId(fhirResourceFiler.getServiceId(), InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, "" + staffId);
+                List<InternalIdMap> mappings = internalIdDal.getSourceId(fhirResourceFiler.getServiceId(), "STAFFPROFILEIDtoSTAFFMEMBERID", "" + staffId);
                 for (InternalIdMap mapping : mappings) {
                     String profileIdStr = mapping.getSourceId();
 

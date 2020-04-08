@@ -157,7 +157,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         Long profileId = staffMemberToProfileMap.get(cacheKey);
         if (profileId == null) {
 
-            List<InternalIdMap> mappings = internalIdDal.getSourceId(serviceId, InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, staffMemberIdCell.getString());
+            List<InternalIdMap> mappings = internalIdDal.getSourceId(serviceId, "STAFFPROFILEIDtoSTAFFMEMBERID", staffMemberIdCell.getString());
             if (mappings.isEmpty() && !staffMemberIdCell.isEmpty()) {
                 TransformWarnings.log(LOG, this, "Failed to find any staff profile IDs for staff member ID {}", staffMemberIdCell.getString());
                 return null;
