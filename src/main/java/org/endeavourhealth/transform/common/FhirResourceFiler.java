@@ -5,7 +5,10 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
@@ -68,6 +71,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
     //error handling
     private Throwable lastExceptionRecorded;
+
+    //caches
+    private Date cachedDataDate = null;
 
     public FhirResourceFiler(UUID exchangeId, UUID serviceId, UUID systemId, TransformError transformError,
                              List<UUID> batchIdsCreated) throws Exception {
@@ -1018,6 +1024,23 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
             return null;
         }
+    }
+
+
+    /**
+     * returns the original date of the data in the exchange (i.e. when actually sent to DDS)
+     */
+    public Date getDataDate() throws Exception {
+        if (cachedDataDate == null) {
+            ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
+            Exchange x = exchangeDal.getExchange(exchangeId);
+            cachedDataDate = x.getHeaderAsDate(HeaderKeys.DataDate);
+
+            if (cachedDataDate == null) {
+                throw new Exception("Failed to find data date for exchange " + exchangeId);
+            }
+        }
+        return cachedDataDate;
     }
 
 }

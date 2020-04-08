@@ -100,14 +100,14 @@ public abstract class EmisCsvToFhirTransformer {
      * works out if we want to process (i.e. transform and store) the patient data from this extract,
      * which we don't if this extract is from before we received a later re-bulk from emis
      */
-    public static boolean shouldProcessPatientData(EmisCsvHelper csvHelper) throws Exception {
+    public static boolean shouldProcessPatientData(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         ServiceDalI serviceDal = DalProvider.factoryServiceDal();
-        Service service = serviceDal.getById(csvHelper.getServiceId());
+        Service service = serviceDal.getById(fhirResourceFiler.getServiceId());
         String odsCode = service.getLocalId();
         Date startDate = findStartDate(odsCode);
 
-        Date extractDate = csvHelper.getDataDate();
+        Date extractDate = fhirResourceFiler.getDataDate();
 
         if (startDate == null
                 || !extractDate.before(startDate)) {
@@ -264,7 +264,7 @@ public abstract class EmisCsvToFhirTransformer {
         EmisCsvHelper csvHelper = new EmisCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
                 fhirResourceFiler.getExchangeId(), sharingAgreementGuid, parsers);
 
-        boolean processPatientData = shouldProcessPatientData(csvHelper);
+        boolean processPatientData = shouldProcessPatientData(fhirResourceFiler);
         csvHelper.setProcessPatientData(processPatientData);
         csvHelper.setFilterPatientGuids(filteringPatientGuids);
 

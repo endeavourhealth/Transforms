@@ -1386,7 +1386,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         //find the patient GUIDs affected
         Set<String> patientGuids = mappingRepository.retrievePatientGuidsForMissingCodes(this.foundMissingCodes, getServiceId());
-        LOG.debug("Found " + patientGuids.size() + " patients to re=queue");
+        LOG.debug("Found " + patientGuids.size() + " patients to re-queue");
 
         //find the exchange IDs we'll need to re-queue
         UUID firstExchangeId = mappingRepository.retrieveOldestExchangeIdForMissingCodes(this.foundMissingCodes, getServiceId());
@@ -1397,10 +1397,10 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, msg);
 
         //note the below parameters match the expected JSON received in ExchangeAuditEndpoint.postToExchange(..)
-        Long[] arr = this.foundMissingCodes.toArray(new Long[0]);
-        String headerValue = ObjectMapperPool.getInstance().writeValueAsString(arr);
+        String[] patientGuidArr = patientGuids.toArray(new String[0]);
+        String patientGuidHeaderValue = ObjectMapperPool.getInstance().writeValueAsString(patientGuidArr);
         Map<String, Object> headersMap = new HashMap<>();
-        headersMap.put(HeaderKeys.EmisPatientGuids, headerValue);
+        headersMap.put(HeaderKeys.EmisPatientGuids, patientGuidHeaderValue);
 
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("exchangeId", firstExchangeId.toString());
@@ -1423,6 +1423,19 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String keyCloakClientId = json.get("keycloak-client-id").asText();
 
         KeycloakClient kcClient = new KeycloakClient(keyCloakUrl, keyCloakRealm, keyCloakUser, keyCloakPass, keyCloakClientId);
+
+        /*if (true) {
+            WebTarget testTarget = ClientBuilder.newClient().target(ddsUrl).path("api/service/ccgCodes");
+
+            Response response = testTarget
+                    .request()
+                    .header("Authorization", "Bearer " + kcClient.getToken().getToken())
+                    .get();
+            int status = response.getStatus();
+            LOG.debug("Status = " + status);
+            String responseStr = response.readEntity(String.class);
+            LOG.debug("responseStr = " + responseStr);
+        }*/
 
         WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/postToExchange");
 
