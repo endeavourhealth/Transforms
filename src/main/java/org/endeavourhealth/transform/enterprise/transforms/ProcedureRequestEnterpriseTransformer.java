@@ -1,11 +1,13 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.ProcedureRequest;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +87,10 @@ public class ProcedureRequestEnterpriseTransformer extends AbstractEnterpriseTra
             procedureRequestStatusId = new Integer(fhir.getStatus().ordinal());
         }
 
+        Date dateRecorded = params.includeDateRecorded(fhir);
+
         org.endeavourhealth.transform.enterprise.outputModels.ProcedureRequest model = (org.endeavourhealth.transform.enterprise.outputModels.ProcedureRequest)csvWriter;
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(id,
             organisationId,
             patientId,
@@ -97,7 +102,8 @@ public class ProcedureRequestEnterpriseTransformer extends AbstractEnterpriseTra
             snomedConceptId,
             procedureRequestStatusId,
             originalCode,
-            originalTerm);
+            originalTerm,
+            dateRecorded);
     }
 }
 

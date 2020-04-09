@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.enterprise;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -18,11 +16,17 @@ import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.*;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
@@ -273,6 +277,9 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         } else if (resourceType == resourceType.QuestionnaireResponse) {
             //TODO Work out how to store them later
             return null;
+        } else if (resourceType == resourceType.Composition) {
+            //TODO Work out how to store them later if relevant
+            return null;
         } else {
             throw new TransformException("Unhandled resource type " + resourceType);
         }
@@ -328,7 +335,10 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             return null;
         } else if (resourceType == resourceType.QuestionnaireResponse) {
             //TODO Work out how to store them later
-            return null;  
+            return null;
+        } else if (resourceType == resourceType.Composition) {
+            //TODO Work out how to store them later if relevant
+            return null;
         } else {
             throw new TransformException("Unhandled resource type " + resourceType);
         }

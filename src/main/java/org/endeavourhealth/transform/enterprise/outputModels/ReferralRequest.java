@@ -40,6 +40,8 @@ public class ReferralRequest extends AbstractEnterpriseCsvWriter {
                             String originalCode,
                             String originalTerm,
                             boolean isReview,
+                            String speciality,
+                            String ubrn,
                             Date dateRecorded) throws Exception {
 
         if (includeDateRecorded) {
@@ -62,6 +64,8 @@ public class ReferralRequest extends AbstractEnterpriseCsvWriter {
                     originalCode,
                     originalTerm,
                     convertBoolean(isReview),
+                    speciality,
+                    ubrn,
                     convertDateTime(dateRecorded));
         } else {
             super.printRecord(OutputContainer.UPSERT,
@@ -82,7 +86,9 @@ public class ReferralRequest extends AbstractEnterpriseCsvWriter {
                     convertBoolean(outgoing),
                     originalCode,
                     originalTerm,
-                    convertBoolean(isReview));
+                    convertBoolean(isReview),
+                    speciality,
+                    ubrn);
         }
     }
 
@@ -109,6 +115,8 @@ public class ReferralRequest extends AbstractEnterpriseCsvWriter {
                     "original_code",
                     "original_term",
                     "is_review",
+                    "specialty",
+                    "ubrn",
                     "date_recorded"
             };
         } else {
@@ -131,7 +139,9 @@ public class ReferralRequest extends AbstractEnterpriseCsvWriter {
                     "outgoing_referral",
                     "original_code",
                     "original_term",
-                    "is_review"
+                    "is_review",
+                    "specialty",
+                    "ubrn",
             };
         }
     }
@@ -159,6 +169,8 @@ public class ReferralRequest extends AbstractEnterpriseCsvWriter {
                     String.class,
                     String.class,
                     Boolean.TYPE,
+                    String.class,
+                    String.class,
                     Date.class
             };
         } else {
@@ -181,7 +193,9 @@ public class ReferralRequest extends AbstractEnterpriseCsvWriter {
                     Boolean.class,
                     String.class,
                     String.class,
-                    Boolean.TYPE
+                    Boolean.TYPE,
+                    String.class,
+                    String.class
             };
         }
     }

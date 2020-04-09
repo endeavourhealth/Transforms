@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.ReferralPriority;
 import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -17,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 
 public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
@@ -64,6 +63,8 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
         String originalCode = null;
         String originalTerm = null;
         boolean isReview = false;
+        String ubrn = null;
+        String specialty = null;
         Date dateRecorded = null;
 
         id = enterpriseId.longValue();
@@ -121,8 +122,6 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
                     recipientOrganizationId = transformOnDemandAndMapId(recipientReference, params);
                 }
             }
-
-
         }
 
         Reference practitionerReference = null;
@@ -201,6 +200,17 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
             }
         }
 
+        if (fhir.hasSpecialty()) {
+
+            specialty = fhir.getSpecialty().getText();
+        }
+
+        if (fhir.hasIdentifier()) {
+
+            List<Identifier> identifiers = fhir.getIdentifier();
+            ubrn = IdentifierHelper.findIdentifierValue(identifiers, FhirIdentifierUri.IDENTIFIER_SYSTEM_UBRN);
+        }
+
         dateRecorded = params.includeDateRecorded(fhir);
 
         org.endeavourhealth.transform.enterprise.outputModels.ReferralRequest model = (org.endeavourhealth.transform.enterprise.outputModels.ReferralRequest)csvWriter;
@@ -223,6 +233,8 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
             originalCode,
             originalTerm,
             isReview,
+            specialty,
+            ubrn,
             dateRecorded);
     }
 

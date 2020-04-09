@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
@@ -24,13 +23,15 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Enterpri
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.PatientAddress;
+import org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch;
 import org.endeavourhealth.transform.enterprise.outputModels.PatientContact;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+import org.endeavourhealth.transform.subscriber.UPRN;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -39,9 +40,6 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.*;
-
-import org.endeavourhealth.transform.subscriber.UPRN;
-import org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch;
 
 public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientEnterpriseTransformer.class);
@@ -373,8 +371,12 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             firstNames = NameHelper.findForenames(fhirPatient);
             lastNames = NameHelper.findSurname(fhirPatient);
         }
-        //currentAddressId = transformAddresses(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
-        //transformTelecoms(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
+
+        //TODO: remove this check for go live to introduce Compass v1 upgrade tables population
+        if (!TransformConfig.instance().isLive()) {
+            currentAddressId = transformAddresses(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
+            transformTelecoms(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
+        }
 
         if (patientWriter.isPseduonymised()) {
 
@@ -1142,7 +1144,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                 match_flat, // match flat [9]
                 "", // alg version ** TO DO
                 ""); // epoc ** TO DO
-    }
+    }*/
 
     private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient,
                                    List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
@@ -1229,5 +1231,4 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
         return max;
     }
-     */
 }
