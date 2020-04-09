@@ -1,6 +1,9 @@
 package org.endeavourhealth.transform.emis.csv.helpers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.HttpStatus;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
@@ -1399,7 +1402,22 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //note the below parameters match the expected JSON received in ExchangeAuditEndpoint.postToExchange(..)
         String[] patientGuidArr = patientGuids.toArray(new String[0]);
         String patientGuidHeaderValue = ObjectMapperPool.getInstance().writeValueAsString(patientGuidArr);
-        Map<String, Object> headersMap = new HashMap<>();
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode jsonRoot = new ObjectNode(mapper.getNodeFactory());
+
+        jsonRoot.put("exchangeId", firstExchangeId.toString());
+        jsonRoot.put("serviceId", getServiceId().toString());
+        jsonRoot.put("systemId", getSystemId().toString());
+        jsonRoot.put("exchangeName", "EdsInbound"); //want to target the inbound queue
+        jsonRoot.put("postMode", "Onwards"); //want to queue from our first exchange ID and onward
+        jsonRoot.put("reason", "Missing codes found"); //free-text reason for re-queuing
+        ObjectNode subObj = jsonRoot.putObject("additionalHeaders");
+        subObj.put(HeaderKeys.EmisPatientGuids, patientGuidHeaderValue);
+
+        String parameters = mapper.writeValueAsString(jsonRoot);
+
+        /*Map<String, Object> headersMap = new HashMap<>();
         headersMap.put(HeaderKeys.EmisPatientGuids, patientGuidHeaderValue);
 
         Map<String, Object> parameters = new HashMap<>();
@@ -1409,7 +1427,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         parameters.put("exchangeName", "EdsInbound"); //want to target the inbound queue
         parameters.put("postMode", "Onwards"); //want to queue from our first exchange ID and onward
         parameters.put("reason", "Missing codes found"); //free-text reason for re-queuing
-        parameters.put("additionalHeaders", headersMap);
+        parameters.put("additionalHeaders", headersMap);*/
 
         //get the Keycloak details from the EMIS config
         JsonNode json = ConfigManager.getConfigurationAsJson("emis_config", "queuereader");
