@@ -5,7 +5,7 @@
 
   <groupId>org.endeavourhealth.common</groupId>
   <artifactId>transforms</artifactId>
-  <version>1.1986-SNAPSHOT</version>
+  <version>1.1987-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <dependencyManagement>
@@ -95,6 +95,10 @@
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
     </dependency>
     <!-- End Jersey -->
 
