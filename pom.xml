@@ -5,7 +5,7 @@
 
   <groupId>org.endeavourhealth.common</groupId>
   <artifactId>transforms</artifactId>
-  <version>1.1987-SNAPSHOT</version>
+  <version>1.1988-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <dependencyManagement>
@@ -94,7 +94,19 @@
     <!-- http://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-client -->
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.containers</groupId>
+      <artifactId>jersey-container-servlet</artifactId>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.media</groupId>
