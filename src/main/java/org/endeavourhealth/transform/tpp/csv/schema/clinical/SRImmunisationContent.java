@@ -22,18 +22,7 @@ public class SRImmunisationContent extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_91)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)
-                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
-            return new String[]{
-                    "RowIdentifier",
-                    "Name",
-                    "Content",
-                    "DateDeleted"
-            };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_90)
+        if (version.equals(TppCsvToFhirTransformer.VERSION_90)
                 || version.equals(TppCsvToFhirTransformer.VERSION_87)
                 || version.equals(TppCsvToFhirTransformer.VERSION_89)
                 || version.equals(TppCsvToFhirTransformer.VERSION_93)) {
@@ -76,6 +65,7 @@ public class SRImmunisationContent extends AbstractCsvParser {
 
     @Override
     protected boolean isFileAudited() {
-        return true;
+        //this file is just used to populate a lookup table, so don't audit
+        return false;
     }
 }

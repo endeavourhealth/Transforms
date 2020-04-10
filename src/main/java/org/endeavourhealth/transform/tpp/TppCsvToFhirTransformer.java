@@ -24,7 +24,6 @@ import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRVisitTrans
 import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
-import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfilePreTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberProfileTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.staff.SRStaffMemberTransformer;
 import org.slf4j.Logger;
@@ -201,7 +200,7 @@ public abstract class TppCsvToFhirTransformer {
      * the TPP schema changes without notice, so rather than define the version in the SFTP reader,
      * and then need to back pedal when we find it's changed, dynamically work it out from the CSV headers
      */
-    public static Map<String, String> buildParserToVersionsMap(String[] files, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static Map<String, String> buildParserToVersionsMap(String[] files, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
 
         List<String> possibleVersions = new ArrayList<>();
         Map<String, String> parserToVersionsMap = new HashMap<>();
@@ -229,7 +228,7 @@ public abstract class TppCsvToFhirTransformer {
                     LOG.info("PatientRelation versions " + Arrays.toString(noVersions.toArray()));
                 }
                 if (compatibleVersions.isEmpty()) {
-                    ensureFileIsEmpty(filePath, fhirResourceFiler);
+                    ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId);
                     noVersions.add(filePath); //Not dropping straight out as multiple files may have changed.
                     //throw new TransformException("Unable to determine version for TPP CSV file: " + filePath);
                 } else {
@@ -239,7 +238,7 @@ public abstract class TppCsvToFhirTransformer {
                 //we don't have parsers for every file, since there are a lot of secondary-care (etc.) files
                 //that we don't transform, but we also want to make sure that they're EMPTY unless we explicitly
                 //have decided to ignore a non-empty file
-                ensureFileIsEmpty(filePath, fhirResourceFiler);
+                ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId);
             } catch (IOException eio) {
                 if (eio.getMessage().contains("startline 1")) {
                     //
@@ -294,7 +293,7 @@ public abstract class TppCsvToFhirTransformer {
         }
     }
 
-    private static void ensureFileIsEmpty(String filePath, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private static void ensureFileIsEmpty(String filePath, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
 
         //S3 complains if we open a stream and kill it before we get to the end, so avoid this by
         //explicitly reading only the first 5KB of the file and testing that
@@ -308,7 +307,7 @@ public abstract class TppCsvToFhirTransformer {
             if (iterator.hasNext()) {
                 //sick of hitting this exception and having to fix the code, so just log and proceed
                 String baseName = FilenameUtils.getBaseName(filePath);
-                TransformWarnings.log(LOG, fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), null, null, "TPP file {} ignored but not empty", baseName);
+                TransformWarnings.log(LOG, hasServiceSystemAndExchangeId, "TPP file {} ignored but not empty", baseName);
                 //throw new TransformException("" + filePath + " isn't being transformed but isn't empty");
             }
 
@@ -491,10 +490,10 @@ public abstract class TppCsvToFhirTransformer {
         boolean processAdminData = true;
 
         //massive hack to allow the clinical observations to be processed faster - audit skipping it so we can come back later
-        if (true) {
-            auditSkippingAdminData(fhirResourceFiler);
-            processAdminData = false;
-        }
+//        if (true) {
+//            auditSkippingAdminData(fhirResourceFiler);
+//            processAdminData = false;
+//        }
 
         //reference data
         if (processAdminData) {
@@ -517,14 +516,11 @@ public abstract class TppCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             LOG.trace("Starting practitioners transforms");
-            //these pre-transformers all cache data used by SRStaffMemberProfileTransformer
-            SRStaffMemberProfilePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this must be done before the next two
-            SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above
+            SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above two
             SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
-            SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this just caches staff member details
-            SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper); //this actually creates Practitioner resources
-            csvHelper.getStaffMemberCache().processRemainingStaffMembers(csvHelper, fhirResourceFiler);
+            csvHelper.getStaffMemberCache().processChangedStaffMembers(csvHelper, fhirResourceFiler);
 
             //make sure all practitioners are saved to the DB before doing anything clinical
             fhirResourceFiler.waitUntilEverythingIsSaved();
@@ -642,7 +638,7 @@ public abstract class TppCsvToFhirTransformer {
         return false;
     }
 
-    private static void auditSkippingAdminData(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
+    /*private static void auditSkippingAdminData(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
 
         LOG.info("Skipping admin data for exchange " + fhirFiler.getExchangeId());
         AuditWriter.writeExchangeEvent(fhirFiler.getExchangeId(), "Skipped admin data");
@@ -669,5 +665,5 @@ public abstract class TppCsvToFhirTransformer {
             }
             connection.close();
         }
-    }
+    }*/
 }

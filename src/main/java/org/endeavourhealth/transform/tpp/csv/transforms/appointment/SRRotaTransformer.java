@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.appointment;
 
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppConfigListOption;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;

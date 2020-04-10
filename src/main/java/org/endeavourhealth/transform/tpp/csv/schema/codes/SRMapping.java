@@ -43,6 +43,7 @@ public class SRMapping extends AbstractCsvParser {
 
     @Override
     protected boolean isFileAudited() {
-        return true;
+        //this file is just used to populate a lookup table, so don't audit
+        return false;
     }
 }

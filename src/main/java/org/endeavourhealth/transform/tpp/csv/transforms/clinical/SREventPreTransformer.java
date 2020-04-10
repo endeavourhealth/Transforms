@@ -92,13 +92,13 @@ public class SREventPreTransformer {
             try {
                 //we don't transform Practitioners until we need them, and these ensure it happens
                 if (!profileIdRecordedByCell.isEmpty()
-                        && profileIdRecordedByCell.getLong().longValue() > 0) {
-                    csvHelper.getStaffMemberCache().ensurePractitionerIsTransformedForStaffProfileId(profileIdRecordedByCell);
+                        && profileIdRecordedByCell.getInt().intValue() > 0) {
+                    csvHelper.getStaffMemberCache().addRequiredProfileId(profileIdRecordedByCell);
                 }
 
                 if (!staffMemberIdDoneByCell.isEmpty()
-                        && staffMemberIdDoneByCell.getLong().longValue() > 0) {
-                    csvHelper.getStaffMemberCache().ensurePractitionerIsTransformedForStaffMemberId(staffMemberIdDoneByCell, csvHelper);
+                        && staffMemberIdDoneByCell.getInt().intValue() > 0) {
+                    csvHelper.getStaffMemberCache().addRequiredStaffId(staffMemberIdDoneByCell, organisationDoneAtCell);
                 }
 
                 //carry over linked items from any previous instance of this Consultation

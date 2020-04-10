@@ -637,4 +637,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         }
     }*/
 
+    public Integer getFileAuditId() {
+        return fileAuditId;
+    }
 }

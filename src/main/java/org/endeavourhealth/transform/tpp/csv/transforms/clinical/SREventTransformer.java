@@ -6,7 +6,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppConfigListOption;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
@@ -101,24 +101,15 @@ public class SREventTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
+        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getInt().intValue() > -1) {
+            //to find a profile ID for a staff member, we also need to supply the org ID and profile ID who recorded it
+            CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, profileIdRecordedBy, orgDoneAtCell);
             if (staffReference != null) {
                 encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, staffMemberIdDoneBy);
             }
         }
 
-        //TPP consultation authoriser is not useful (in SystmOne for that matter), so not transforming
-        /*CsvCell encounterAuthoriserId = parser.getIDAuthorisedBy();
-        if (!encounterAuthoriserId.isEmpty()) {
-
-            String staffMemberId =
-                    csvHelper.getInternalId(InternalIdMap.TYPE_TPP_STAFF_PROFILE_ID_TO_STAFF_MEMBER_ID, encounterAuthoriserId.getString());
-            if (!Strings.isNullOrEmpty(staffMemberId)) {
-                Reference staffReference = csvHelper.createPractitionerReference(staffMemberId);
-                encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PARTICIPANT);
-            }
-        }*/
 
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 

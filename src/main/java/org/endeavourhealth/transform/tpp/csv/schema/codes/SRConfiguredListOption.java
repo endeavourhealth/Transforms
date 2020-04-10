@@ -45,17 +45,7 @@ public class SRConfiguredListOption extends AbstractCsvParser {
                     "CAMHSCode",
                     "MHSDSCode"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_88)
-                || version.equals(TppCsvToFhirTransformer.VERSION_91)) {
-            return new String[]{
-                    "RowIdentifier",
-                    "ConfiguredList",
-                    "ConfiguredListOption",
-                    "CDSCode",
-                    "CAMHSCode",
-                    "MHSDSCode"
-            };
+
         } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)
                 || version.equals(TppCsvToFhirTransformer.VERSION_90)
                 || version.equals(TppCsvToFhirTransformer.VERSION_93)) {
@@ -115,6 +105,7 @@ public class SRConfiguredListOption extends AbstractCsvParser {
 
     @Override
     protected boolean isFileAudited() {
-        return true;
+        //this file is just used to populate a lookup table, so don't audit
+        return false;
     }
 }

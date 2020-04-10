@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3HierarchyRefDalI;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3HierarchyRef;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
@@ -11,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -18,40 +18,23 @@ import java.util.concurrent.Callable;
 public class SRCtv3HierarchyTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRCtv3HierarchyTransformer.class);
 
-    private static TppCtv3HierarchyRefDalI repository = DalProvider.factoryTppCtv3HierarchyRefDal();
+    //private static TppCtv3HierarchyRefDalI repository = DalProvider.factoryTppCtv3HierarchyRefDal();
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper) throws Exception {
 
-        try {
-            List<TppCtv3HierarchyRef> mappingsToSave = new ArrayList<>();
+        AbstractCsvParser parser = parsers.get(SRCtv3Hierarchy.class);
+        if (parser != null) {
 
-            AbstractCsvParser parser = parsers.get(SRCtv3Hierarchy.class);
-            if (parser != null) {
-                while (parser.nextRecord()) {
-
-                    try {
-                        processRecord((SRCtv3Hierarchy) parser, csvHelper, mappingsToSave);
-                    } catch (Exception ex) {
-                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                    }
-                }
-            }
-
-            //and save any still pending
-            if (!mappingsToSave.isEmpty()) {
-                csvHelper.submitToThreadPool(new Task(mappingsToSave));
-            }
-
-        } finally {
-            csvHelper.waitUntilThreadPoolIsEmpty();
+            //just bulk load the file into the DB
+            String filePath = parser.getFilePath();
+            Date dataDate = fhirResourceFiler.getDataDate();
+            TppCtv3HierarchyRefDalI dal = DalProvider.factoryTppCtv3HierarchyRefDal();
+            dal.updateHierarchyTable(filePath, dataDate);
         }
-
-        fhirResourceFiler.failIfAnyErrors();
     }
 
-
-    public static void processRecord(SRCtv3Hierarchy parser, TppCsvHelper csvHelper, List<TppCtv3HierarchyRef> mappingsToSave) throws Exception {
+    /*public static void processRecord(SRCtv3Hierarchy parser, TppCsvHelper csvHelper, List<TppCtv3HierarchyRef> mappingsToSave) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         if (rowId.isEmpty()) {
@@ -121,5 +104,5 @@ public class SRCtv3HierarchyTransformer {
 
             return null;
         }
-    }
+    }*/
 }

@@ -36,19 +36,7 @@ public class SRStaffMember extends AbstractCsvParser {
                     "IDSmartCard",
                     "Obsolete"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)
-                || version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
-            return new String[]{
-                    "RowIdentifier",
-                    "StaffName",
-                    "StaffUserName",
-                    "NationalIdType",
-                    "IDNational",
-                    "IDSmartCard",
-                    "Obsolete",
-                    "RemovedData"
-            };
+
         } else {
             return new String[]{
                     "RowIdentifier",

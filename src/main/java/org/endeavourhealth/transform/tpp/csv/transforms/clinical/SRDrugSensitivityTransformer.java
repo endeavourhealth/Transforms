@@ -77,7 +77,7 @@ public class SRDrugSensitivityTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, profileIdRecordedBy, parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 allergyIntoleranceBuilder.setClinician(staffReference, staffMemberIdDoneBy);
             }

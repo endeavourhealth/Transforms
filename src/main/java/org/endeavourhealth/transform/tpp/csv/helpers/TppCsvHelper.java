@@ -17,12 +17,9 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.*;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.TppConfigListOptionDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.TppConfigListOption;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
@@ -63,13 +60,12 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     //note the below are static maps so they will apply to all transforms until the app is restarted
-    private static Map<Long, TppMappingRef> hmTppMappingRefs = new ConcurrentHashMap<>();
-    private static Map<Long, TppConfigListOption> hmTppConfigListOptions = new ConcurrentHashMap<>();
-    private static Map<Long, TppImmunisationContent> hmTppImmunisationContents = new ConcurrentHashMap<>();
-    private static Map<Long, TppMultiLexToCtv3Map> hmMultiLexToCTV3Map = new ConcurrentHashMap<>();
-    //TODO potentially revisit for performance benefit of cache. Need to save memory for now.
-    private static Map<StringMemorySaver, StringMemorySaver> hmInternalIdMapCache = new ConcurrentHashMap<>();
+    private static Map<Integer, TppMappingRef> hmTppMappingRefs = new ConcurrentHashMap<>();
+    private static Map<Integer, TppConfigListOption> hmTppConfigListOptions = new ConcurrentHashMap<>();
+    private static Map<Integer, TppImmunisationContent> hmTppImmunisationContents = new ConcurrentHashMap<>();
+    private static Map<Integer, TppMultiLexToCtv3Map> hmMultiLexProductIdToCTV3Map = new ConcurrentHashMap<>();
     private static Map<StringMemorySaver, StringMemorySaver> hmTppCtv3TermLookups = new ConcurrentHashMap<>();
+    private static Map<StringMemorySaver, StringMemorySaver> hmInternalIdMapCache = new ConcurrentHashMap<>();
 
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>();
@@ -84,7 +80,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<Long, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
-    private Map<String, Long> staffMemberToProfileMap = new HashMap<>();
     private ThreadPool utilityThreadPool = null;
     private Map<String, ResourceType> codeToTypes = new HashMap<>();
 
@@ -138,88 +133,15 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Practitioner, staffProfileIdCell.getString());
     }
 
-    public Reference createPractitionerReferenceForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell) throws Exception {
-        Long profileId = findStaffProfileIdForStaffMemberId(staffMemberIdCell, profileIdRecordedBy, organisationDoneAtCell);
+    public Reference createPractitionerReferenceForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileEnteredByCell, CsvCell organisationDoneAtCell) throws Exception {
+        Integer profileId = getStaffMemberCache().findProfileIdForStaffMemberAndOrg(staffMemberIdCell, profileEnteredByCell, organisationDoneAtCell);
         if (profileId == null) {
             return null;
         }
         return ReferenceHelper.createReference(ResourceType.Practitioner, "" + profileId);
     }
 
-    /*public Reference createObservationReference(String observationGuid, String patientGuid) {
-        return ReferenceHelper.createReference(ResourceType.Observation, patientGuid + ":" + observationGuid);
-    }*/
 
-    private Long findStaffProfileIdForStaffMemberId(CsvCell staffMemberIdCell, CsvCell profileIdRecordedBy, CsvCell organisationDoneAtCell) throws Exception {
-
-        //Practitioner resources use the profile ID as the source ID, so need to look up an ID for our staff member
-        String cacheKey = staffMemberIdCell.getString() + "/" + profileIdRecordedBy.getString() + "/" + organisationDoneAtCell.getString();
-        Long profileId = staffMemberToProfileMap.get(cacheKey);
-        if (profileId == null) {
-
-            List<InternalIdMap> mappings = internalIdDal.getSourceId(serviceId, "STAFFPROFILEIDtoSTAFFMEMBERID", staffMemberIdCell.getString());
-            if (mappings.isEmpty() && !staffMemberIdCell.isEmpty()) {
-                TransformWarnings.log(LOG, this, "Failed to find any staff profile IDs for staff member ID {}", staffMemberIdCell.getString());
-                return null;
-                //throw new TransformException("Failed to find any staff profile IDs for staff member ID " + staffMemberIdCell.getString());
-            }
-
-            //our staff member is likely to have multiple role profiles, so we use the profile ID recorded by and organisation
-            //to narrow it down to the correct one, since 99% of the time, the person who recorded the consultation actually did the consultation
-
-            //if one of the profiles for the staff member is the same as recorded the consultation, then that's the one to us
-            if (!profileIdRecordedBy.isEmpty()) {
-                for (InternalIdMap mapping : mappings) {
-                    if (mapping.getSourceId().equals(profileIdRecordedBy.getString())) {
-                        profileId = Long.valueOf(mapping.getSourceId());
-                        break;
-                    }
-                }
-            }
-
-            //if we know the organisation is was done at, we can try to use that to narrow down the profile ID
-            if (profileId == null
-                    && !organisationDoneAtCell.isEmpty()) {
-                for (InternalIdMap mapping : mappings) {
-
-                    String mappingProfileId = mapping.getSourceId();
-
-                    //note that we don't save practitioners to the EHR database until needed, so we have to use the admin cache
-                    //as a source for the UNMAPPED practitioner data
-                    EmisTransformDalI dal = DalProvider.factoryEmisTransformDal();
-                    EmisAdminResourceCache adminResourceObj = dal.getAdminResource(TppCsvHelper.ADMIN_CACHE_KEY, ResourceType.Practitioner, mappingProfileId);
-                    if (adminResourceObj == null) {
-                        continue;
-                    }
-
-                    //note this practitioner is NOT ID mapped
-                    Practitioner practitioner = (Practitioner) FhirSerializationHelper.deserializeResource(adminResourceObj.getResourceData());
-                    if (practitioner.hasPractitionerRole()) {
-
-                        Practitioner.PractitionerPractitionerRoleComponent role = practitioner.getPractitionerRole().get(0);
-                        if (role.hasManagingOrganization()) {
-                            Reference orgReference = role.getManagingOrganization();
-                            String sourceOrgId = ReferenceHelper.getReferenceId(orgReference);
-                            if (sourceOrgId.equalsIgnoreCase(organisationDoneAtCell.getString())) {
-                                profileId = Long.valueOf(mapping.getSourceId());
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            //if we still can't work out which profile it is, fall back on using the first
-            if (profileId == null) {
-                InternalIdMap mapping = mappings.get(0);
-                profileId = Long.valueOf(mapping.getSourceId());
-            }
-
-            staffMemberToProfileMap.put(cacheKey, profileId);
-        }
-
-        return profileId;
-    }
 
     /*public Reference createPractitionerReference(CsvCell practitionerGuid) {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid.getString());
@@ -485,13 +407,12 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return null;
         }
 
-        Long rowId = cell.getLong();
+        Integer rowId = cell.getInt();
 
         //Find the code in the cache
         TppMappingRef ret = hmTppMappingRefs.get(rowId);
         if (ret == null) {
-            ret = tppMappingRefDalI.getMappingFromRowId(rowId);
-
+            ret = tppMappingRefDalI.getMappingFromRowId(rowId.intValue());
             if (ret == null) {
                 TransformWarnings.log(LOG, this, "Failed to find TPP mapping for {}", cell);
                 return null;
@@ -514,10 +435,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         //Find the code in the cache
-        Long rowId = cell.getLong();
+        Integer rowId = cell.getInt();
         TppConfigListOption ret = hmTppConfigListOptions.get(rowId);
         if (ret == null) {
-            ret = tppConfigListOptionDalI.getListOptionFromRowId(rowId, serviceId);
+            ret = tppConfigListOptionDalI.getListOptionFromRowId(rowId.intValue());
 
             //we've done about 100 TPP practices and haven't had any unexplained missing records, so
             //now treat this as a hard fail rather than something to pick up after the fact
@@ -541,12 +462,11 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return null;
         }
 
-        Long rowId = immContentCell.getLong();
+        Integer rowId = immContentCell.getInt();
 
         TppImmunisationContent ret = hmTppImmunisationContents.get(rowId);
         if (ret == null) {
-            ret = tppImmunisationContentDalI.getContentFromRowId(rowId);
-
+            ret = tppImmunisationContentDalI.getContentFromRowId(rowId.intValue());
             if (ret == null) {
                 throw new Exception("Failed to find Immunisation Content record for ID " + rowId);
             }
@@ -594,19 +514,18 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             return null;
         }
 
-        Long productId = multiLexProductIdCell.getLong();
+        Integer productId = multiLexProductIdCell.getInt();
 
-        TppMultiLexToCtv3Map ret = hmMultiLexToCTV3Map.get(productId);
+        TppMultiLexToCtv3Map ret = hmMultiLexProductIdToCTV3Map.get(productId);
         if (ret == null) {
-            ret = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(productId.longValue());
-
+            ret = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(productId.intValue());
             if (ret == null) {
                 TransformWarnings.log(LOG, this, "TPP Multilex lookup failed for product ID {}", multiLexProductIdCell);
                 return null;
             }
 
             // Add to the cache
-            hmMultiLexToCTV3Map.put(productId, ret);
+            hmMultiLexProductIdToCTV3Map.put(productId, ret);
         }
 
         return ret;

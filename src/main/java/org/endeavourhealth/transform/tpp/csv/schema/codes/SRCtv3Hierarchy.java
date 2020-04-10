@@ -35,16 +35,7 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
                     "ChildLevel",
                     "RemovedData"
             };
-        } else if(version.equals(TppCsvToFhirTransformer.VERSION_88)
-                || version.equals(TppCsvToFhirTransformer.VERSION_91)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)) {
-            return new String[]{
-                    "RowIdentifier",
-                    "IDOrganisationVisibleTo",
-                    "Ctv3CodeParent",
-                    "Ctv3CodeChild",
-                    "ChildLevel"
-            };
+
         } else {
             return new String[]{
                     "RowIdentifier",
@@ -55,8 +46,6 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
             };
         }
     }
-
-    // RowIdentifier, IDOrganisationVisibleTo, Ctv3CodeParent, Ctv3CodeChild, ChildLevel, RemovedData
 
     public CsvCell getRowIdentifier() {
         return super.getCell("RowIdentifier");
@@ -82,10 +71,10 @@ public class SRCtv3Hierarchy extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
+
     @Override
     protected boolean isFileAudited() {
-        //data from this file is used to populate a reference table, but it's not actually used
-        //to look up content, so no need to audit it
+        //this file is just used to populate a lookup table, so don't audit
         return false;
     }
 }

@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppConfigListOptionDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppImmunisationContentDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppImmunisationContent;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
@@ -11,37 +12,33 @@ import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRImmunisationConte
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.Map;
 
 public class SRImmunisationContentTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRImmunisationContentTransformer.class);
 
-    private static TppImmunisationContentDalI repository = DalProvider.factoryTppImmunisationContentDal();
+    /*private static TppImmunisationContentDalI repository = DalProvider.factoryTppImmunisationContentDal();
     public static final String ROW_ID = "RowId";
     public static final String NAME = "name";
     public static final String CONTENT = "content";
-    public static final String DATE_DELETED = "dateDeleted";
+    public static final String DATE_DELETED = "dateDeleted";*/
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler) throws Exception {
 
         AbstractCsvParser parser = parsers.get(SRImmunisationContent.class);
         if (parser != null) {
-            while (parser.nextRecord()) {
 
-                try {
-                    createResource((SRImmunisationContent) parser, fhirResourceFiler);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
-                }
-            }
+            //just bulk load the file into the DB
+            String filePath = parser.getFilePath();
+            Date dataDate = fhirResourceFiler.getDataDate();
+            TppImmunisationContentDalI dal = DalProvider.factoryTppImmunisationContentDal();
+            dal.updateLookupTable(filePath, dataDate);
         }
-
-        //call this to abort if we had any errors, during the above processing
-        fhirResourceFiler.failIfAnyErrors();
     }
 
-    public static void createResource(SRImmunisationContent parser, FhirResourceFiler fhirResourceFiler) throws Exception {
+    /*public static void createResource(SRImmunisationContent parser, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
         CsvCell name = parser.getName();
@@ -65,5 +62,5 @@ public class SRImmunisationContentTransformer {
         //save to the DB
         repository.save(mapping);
 
-    }
+    }*/
 }

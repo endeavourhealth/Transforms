@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppConfigListOptionDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppMultiLexToCtv3MapDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -32,38 +34,18 @@ public class SRMedicationReadCodeDetailsTransformer {
 
     public static void transform(Map<Class, AbstractCsvParser> parsers, FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper) throws Exception {
 
-        try {
-            List<TppMultiLexToCtv3Map> mappingsToSave = new ArrayList<>();
+        AbstractCsvParser parser = parsers.get(SRMedicationReadCodeDetails.class);
+        if (parser != null) {
 
-
-            AbstractCsvParser parser = parsers.get(SRMedicationReadCodeDetails.class);
-            if (parser != null) {
-                while (parser.nextRecord()) {
-
-                    try {
-                        createResource((SRMedicationReadCodeDetails) parser, fhirResourceFiler, csvHelper, mappingsToSave);
-
-                    } catch (Exception ex) {
-                        throw new TransformException(parser.getCurrentState().toString(), ex);
-                    }
-                }
-            }
-
-            //and save any still pending
-            if (!mappingsToSave.isEmpty()) {
-                csvHelper.submitToThreadPool(new Task(mappingsToSave));
-            }
-
-            //call this to abort if we had any errors, during the above processing
-            fhirResourceFiler.failIfAnyErrors();
-
-        } finally {
-            csvHelper.waitUntilThreadPoolIsEmpty();
+            //just bulk load the file into the DB
+            String filePath = parser.getFilePath();
+            Date dataDate = fhirResourceFiler.getDataDate();
+            TppMultiLexToCtv3MapDalI dal = DalProvider.factoryTppMultiLexToCtv3MapDal();
+            dal.updateLookupTable(filePath, dataDate);
         }
-
     }
 
-    public static void createResource(SRMedicationReadCodeDetails parser, FhirResourceFiler fhirResourceFiler,
+    /*public static void createResource(SRMedicationReadCodeDetails parser, FhirResourceFiler fhirResourceFiler,
                                       TppCsvHelper csvHelper, List<TppMultiLexToCtv3Map> mappingsToSave) throws Exception {
 
         CsvCell rowId = parser.getRowIdentifier();
@@ -119,5 +101,5 @@ public class SRMedicationReadCodeDetailsTransformer {
 
             return null;
         }
-    }
+    }*/
 }
