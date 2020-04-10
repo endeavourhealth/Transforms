@@ -831,7 +831,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         PatientAddress writer = params.getOutputContainer().getPatientAddresses();
 
-        Long currentAddressId = 0l;
+        Long currentAddressId = null;  //set as null to avoid 0 entries
 
         //update all addresses, delete any extra
         if (currentPatient.hasAddress()) {
