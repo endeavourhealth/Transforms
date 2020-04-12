@@ -379,7 +379,7 @@ public abstract class EmisCsvToFhirTransformer {
         Connection connection = ConnectionManager.getAuditConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "INSERT INTO skipped_admin_data VALUES (?, ?, ?, ?)";
+            String sql = "INSERT INTO skipped_admin_data (service_id, system_id, exchange_id, dt_skipped) VALUES (?, ?, ?, ?)";
             ps = connection.prepareStatement(sql);
 
             int col = 1;
