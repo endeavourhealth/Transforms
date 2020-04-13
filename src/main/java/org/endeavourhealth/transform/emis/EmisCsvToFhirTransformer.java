@@ -9,10 +9,10 @@ import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisAdminCacheDalI;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
@@ -23,10 +23,7 @@ import org.endeavourhealth.transform.emis.csv.transforms.appointment.SlotTransfo
 import org.endeavourhealth.transform.emis.csv.transforms.careRecord.*;
 import org.endeavourhealth.transform.emis.csv.transforms.coding.ClinicalCodeTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.coding.DrugCodeTransformer;
-import org.endeavourhealth.transform.emis.csv.transforms.prescribing.DrugRecordPreTransformer;
-import org.endeavourhealth.transform.emis.csv.transforms.prescribing.DrugRecordTransformer;
-import org.endeavourhealth.transform.emis.csv.transforms.prescribing.IssueRecordPreTransformer;
-import org.endeavourhealth.transform.emis.csv.transforms.prescribing.IssueRecordTransformer;
+import org.endeavourhealth.transform.emis.csv.transforms.prescribing.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.ws.rs.core.Response;
@@ -248,19 +245,6 @@ public abstract class EmisCsvToFhirTransformer {
 
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
 
-        //if this is the first exchange for this organisation, we need to apply all the content of the admin resource cache
-        EmisAdminCacheFiler adminHelper = new EmisAdminCacheFiler(sharingAgreementGuid);
-        if (!adminHelper.wasAdminCacheApplied(fhirResourceFiler)) {
-
-            //apply the cache
-            LOG.trace("Applying admin resource cache for service " + fhirResourceFiler.getServiceId());
-            adminHelper.applyAdminResourceCache(fhirResourceFiler);
-
-            //record that we've done so
-            adminHelper.adminCacheWasApplied(fhirResourceFiler);
-            AuditWriter.writeExchangeEvent(fhirResourceFiler.getExchangeId(), "Applied Emis Admin Resource Cache");
-        }
-
         EmisCsvHelper csvHelper = new EmisCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
                 fhirResourceFiler.getExchangeId(), sharingAgreementGuid, parsers);
 
@@ -289,19 +273,25 @@ public abstract class EmisCsvToFhirTransformer {
         boolean processAdminData = true;
 
         //massive hack to allow the clinical observations to be processed faster - audit skipping it so we can come back later
-        if (true) {
+        /*if (true) {
             auditSkippingAdminData(fhirResourceFiler);
             processAdminData = false;
-        }
+        }*/
 
         if (processAdminData) {
+
+            //create our starting admin resources if required
+            csvHelper.getAdminHelper().applyAdminResourceCacheIfRequired(fhirResourceFiler, csvHelper);
 
             LOG.trace("Starting orgs, locations and user transforms");
             OrganisationLocationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             LocationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             OrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            ObservationPreTransformer2.transform(parsers, fhirResourceFiler, csvHelper); //finds user IDs that are referenced
+            IssueRecordPreTransformer2.transform(parsers, fhirResourceFiler, csvHelper); //finds user IDs that are referenced
             UserInRoleTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            csvHelper.processRemainingOrganisationLocationMappings(fhirResourceFiler); //process any changes to Org-Location links without a change to the Location itself
+
+            csvHelper.getAdminHelper().processAdminChanges(fhirResourceFiler, csvHelper);
 
             //appointments
             LOG.trace("Starting appointments transforms");
@@ -370,7 +360,7 @@ public abstract class EmisCsvToFhirTransformer {
         csvHelper.stopThreadPool();
     }
 
-    private static void auditSkippingAdminData(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
+    /*private static void auditSkippingAdminData(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
 
         LOG.info("Skipping admin data for exchange " + fhirFiler.getExchangeId());
         AuditWriter.writeExchangeEvent(fhirFiler.getExchangeId(), "Skipped admin data");
@@ -397,7 +387,7 @@ public abstract class EmisCsvToFhirTransformer {
             }
             connection.close();
         }
-    }
+    }*/
 
 
 

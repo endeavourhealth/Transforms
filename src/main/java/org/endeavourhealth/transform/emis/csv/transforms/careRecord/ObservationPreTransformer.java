@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -121,7 +121,7 @@ public class ObservationPreTransformer {
             CsvCell effectiveDatePrecision = parser.getEffectiveDatePrecision();
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
-            EmisCsvCodeMap codeMapping = EmisCodeHelper.findClinicalCode(codeId);
+            EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCode(codeId);
             CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
             csvHelper.cacheEthnicity(patientGuid, codeAndDate);
 
@@ -131,7 +131,7 @@ public class ObservationPreTransformer {
             CsvCell effectiveDatePrecision = parser.getEffectiveDatePrecision();
             DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
 
-            EmisCsvCodeMap codeMapping = EmisCodeHelper.findClinicalCode(codeId);
+            EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCode(codeId);
             CodeAndDate codeAndDate = new CodeAndDate(codeMapping, fhirDate, codeId);
             csvHelper.cacheMaritalStatus(patientGuid, codeAndDate);
         }
@@ -139,7 +139,7 @@ public class ObservationPreTransformer {
         //if we've previously found that our observation is a problem (via the problem pre-transformer)
         //then cache the read code of the observation
         if (csvHelper.isProblemObservationGuid(patientGuid, observationGuid)) {
-            EmisCsvCodeMap codeMapping = EmisCodeHelper.findClinicalCode(codeId);
+            EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCode(codeId);
             String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
             csvHelper.cacheProblemObservationGuid(patientGuid, observationGuid, readCode);
         }

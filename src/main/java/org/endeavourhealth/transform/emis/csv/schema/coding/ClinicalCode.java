@@ -50,7 +50,8 @@ public class ClinicalCode extends AbstractCsvParser {
 
     @Override
     protected boolean isFileAudited() {
-        return true;
+        //just used to load a lookup table, so don't audit
+        return false;
     }
 
     public CsvCell getCodeId() {

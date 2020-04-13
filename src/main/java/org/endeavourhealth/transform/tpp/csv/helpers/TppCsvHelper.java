@@ -48,8 +48,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final String ALLERGIC_DISORDER = "Xa1pQ";
     private static final ParserPool PARSER_POOL = new ParserPool();
 
-    public static final String ADMIN_CACHE_KEY = "TPP";
-
     private static TppMappingRefDalI tppMappingRefDalI = DalProvider.factoryTppMappingRefDal();
     private static TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
     private static TppImmunisationContentDalI tppImmunisationContentDalI = DalProvider.factoryTppImmunisationContentDal();

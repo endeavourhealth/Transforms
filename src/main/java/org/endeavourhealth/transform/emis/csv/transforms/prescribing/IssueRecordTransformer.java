@@ -79,18 +79,11 @@ public class IssueRecordTransformer {
         Integer courseDuration = courseDurationCell.getInt();
         medicationOrderBuilder.setDurationDays(courseDuration, courseDurationCell);
 
-        //need to handle mis-spelt column name in EMIS test pack
-        //String clinicianGuid = parser.getClinicianUserInRoleGuid();
-        CsvCell clinicianGuid = null;
-        if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
-            clinicianGuid = parser.getClinicanUserInRoleGuid();
-        } else {
-            clinicianGuid = parser.getClinicianUserInRoleGuid();
+        CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
+        if (!clinicianGuid.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReference(clinicianGuid);
+            medicationOrderBuilder.setPrescriber(practitionerReference, clinicianGuid);
         }
-
-        Reference practitionerReference = csvHelper.createPractitionerReference(clinicianGuid);
-        medicationOrderBuilder.setPrescriber(practitionerReference, clinicianGuid);
 
         CsvCell codeId = parser.getCodeId();
         EmisCodeHelper.createCodeableConcept(medicationOrderBuilder, true, codeId, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code, csvHelper);

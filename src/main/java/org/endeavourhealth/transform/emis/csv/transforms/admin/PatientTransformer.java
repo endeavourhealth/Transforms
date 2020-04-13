@@ -8,7 +8,7 @@ import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -66,7 +66,7 @@ public class PatientTransformer {
         }
 
         //this transform creates two resources
-        PatientBuilder patientBuilder = createPatientResource(parser, csvHelper);
+        PatientBuilder patientBuilder = createPatientResource(parser, csvHelper, fhirResourceFiler);
         EpisodeOfCareBuilder episodeBuilder = createEpisodeResource(parser, csvHelper, fhirResourceFiler);
 
         if (patientBuilder.isIdMapped()) {
@@ -235,19 +235,19 @@ public class PatientTransformer {
         fhirResourceFiler.savePatientResource(null, false, builder);
     }*/
 
-    private static PatientBuilder createPatientResource(Patient parser, EmisCsvHelper csvHelper) throws Exception {
+    private static PatientBuilder createPatientResource(Patient parser, EmisCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         PatientBuilder patientBuilder = getPatientBuilder(parser, csvHelper);
 
         CsvCell nhsNumberCell = parser.getNhsNumber();
-        createIdentifier(patientBuilder, csvHelper, nhsNumberCell, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+        createIdentifier(patientBuilder, fhirResourceFiler, nhsNumberCell, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
         //store the patient GUID and patient number to the patient resource
         CsvCell patientGuidCell = parser.getPatientGuid();
-        createIdentifier(patientBuilder, csvHelper, patientGuidCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID);
+        createIdentifier(patientBuilder, fhirResourceFiler, patientGuidCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_GUID);
 
         CsvCell patientNumberCell = parser.getPatientNumber();
-        createIdentifier(patientBuilder, csvHelper, patientNumberCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
+        createIdentifier(patientBuilder, fhirResourceFiler, patientNumberCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_EMIS_PATIENT_NUMBER);
 
         CsvCell dobCell = parser.getDateOfBirth();
         patientBuilder.setDateOfBirth(dobCell.getDate(), dobCell);
@@ -265,7 +265,7 @@ public class PatientTransformer {
         Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
         patientBuilder.setGender(gender, sex);
 
-        transformName(patientBuilder, parser, csvHelper);
+        transformName(patientBuilder, parser, fhirResourceFiler);
 
         //we need to know the registration type to work out the address use
         CsvCell patientType = parser.getPatientTypeDescription();
@@ -280,18 +280,18 @@ public class PatientTransformer {
         }
 
         RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
-        transformAddress(patientBuilder, parser, csvHelper, registrationType);
+        transformAddress(patientBuilder, parser, fhirResourceFiler, registrationType);
 
         CsvCell homePhone = parser.getHomePhone();
-        createContactPoint(patientBuilder, csvHelper, homePhone, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
+        createContactPoint(patientBuilder, fhirResourceFiler, homePhone, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
 
         CsvCell mobilePhone = parser.getMobilePhone();
-        createContactPoint(patientBuilder, csvHelper, mobilePhone, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
+        createContactPoint(patientBuilder, fhirResourceFiler, mobilePhone, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
 
         CsvCell email = parser.getEmailAddress();
-        createContactPoint(patientBuilder, csvHelper, email, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.EMAIL);
+        createContactPoint(patientBuilder, fhirResourceFiler, email, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.EMAIL);
 
-        transformCarer(patientBuilder, parser, csvHelper);
+        transformCarer(patientBuilder, parser, fhirResourceFiler);
         transformCareProvider(patientBuilder, parser, csvHelper, registrationType);
         transformEthnicityAndMaritalStatus(patientBuilder, patientGuidCell, csvHelper);
 
@@ -343,7 +343,7 @@ public class PatientTransformer {
         return patientBuilder;
     }
 
-    private static void transformName(PatientBuilder patientBuilder, Patient parser, EmisCsvHelper csvHelper) throws Exception {
+    private static void transformName(PatientBuilder patientBuilder, Patient parser, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         CsvCell titleCell = parser.getTitle();
         CsvCell givenNameCell = parser.getGivenName();
@@ -362,16 +362,16 @@ public class PatientTransformer {
             nameBuilder.addFamily(surnameCell.getString(), surnameCell);
 
             //make sure to de-duplicate the name if we've just added a new instance with the same value
-            NameBuilder.deDuplicateLastName(patientBuilder, csvHelper.getDataDate());
+            NameBuilder.deDuplicateLastName(patientBuilder, fhirResourceFiler.getDataDate());
 
         } else {
             //not sure why we'd ever have no name fields, but handle it anyway, and end any existing name record
-            NameBuilder.endNames(patientBuilder, csvHelper.getDataDate(), HumanName.NameUse.OFFICIAL);
+            NameBuilder.endNames(patientBuilder, fhirResourceFiler.getDataDate(), HumanName.NameUse.OFFICIAL);
         }
 
     }
 
-    private static void transformAddress(PatientBuilder patientBuilder, Patient parser, EmisCsvHelper csvHelper, RegistrationType registrationType) throws Exception {
+    private static void transformAddress(PatientBuilder patientBuilder, Patient parser, FhirResourceFiler fhirResourceFiler, RegistrationType registrationType) throws Exception {
         //if the patient is a temp patient, then the address supplied will be the temporary address,
         //rather than home. Emis Web stores the home address for these patients in a table we don't get in the extract
         Address.AddressUse use = null;
@@ -406,15 +406,15 @@ public class PatientTransformer {
             addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
 
             //make sure to de-duplicate the name if we've just added a new instance with the same value
-            AddressBuilder.deDuplicateLastAddress(patientBuilder, csvHelper.getDataDate());
+            AddressBuilder.deDuplicateLastAddress(patientBuilder, fhirResourceFiler.getDataDate());
 
         } else {
-            AddressBuilder.endAddresses(patientBuilder, csvHelper.getDataDate(), use);
+            AddressBuilder.endAddresses(patientBuilder, fhirResourceFiler.getDataDate(), use);
         }
 
     }
 
-    private static void transformCarer(PatientBuilder patientBuilder, Patient parser, EmisCsvHelper csvHelper) throws Exception {
+    private static void transformCarer(PatientBuilder patientBuilder, Patient parser, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         CsvCell carerNameCell = parser.getCarerName();
         CsvCell carerRelationshipCell = parser.getCarerRelation();
@@ -441,11 +441,11 @@ public class PatientTransformer {
             contactBuilder.setRelationship(typeStr, carerRelationshipCell);
 
             //make sure to de-duplicate the name if we've just added a new instance with the same value
-            PatientContactBuilder.deDuplicateLastPatientContact(patientBuilder, csvHelper.getDataDate());
+            PatientContactBuilder.deDuplicateLastPatientContact(patientBuilder, fhirResourceFiler.getDataDate());
 
         } else {
             //if cell is empty, make sure to end any previous records
-            PatientContactBuilder.endPatientContacts(patientBuilder, csvHelper.getDataDate());
+            PatientContactBuilder.endPatientContacts(patientBuilder, fhirResourceFiler.getDataDate());
         }
 
     }
@@ -509,7 +509,7 @@ public class PatientTransformer {
         }
     }
 
-    private static void createContactPoint(PatientBuilder patientBuilder, EmisCsvHelper csvHelper, CsvCell cell,
+    private static void createContactPoint(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell,
                                            ContactPoint.ContactPointUse use, ContactPoint.ContactPointSystem system) throws Exception {
 
         if (!cell.isEmpty()) {
@@ -519,16 +519,16 @@ public class PatientTransformer {
             contactPointBuilder.setValue(cell.getString(), cell);
 
             //make sure to de-duplicate the name if we've just added a new instance with the same value
-            ContactPointBuilder.deDuplicateLastContactPoint(patientBuilder, csvHelper.getDataDate());
+            ContactPointBuilder.deDuplicateLastContactPoint(patientBuilder, fhirResourceFiler.getDataDate());
 
         } else {
             //if cell is empty, make sure to end any previous records
-            ContactPointBuilder.endContactPoints(patientBuilder, csvHelper.getDataDate(), system, use);
+            ContactPointBuilder.endContactPoints(patientBuilder, fhirResourceFiler.getDataDate(), system, use);
         }
 
     }
 
-    private static void createIdentifier(PatientBuilder patientBuilder, EmisCsvHelper csvHelper, CsvCell cell,
+    private static void createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell,
                                          Identifier.IdentifierUse use, String system) throws Exception {
 
         if (!cell.isEmpty()) {
@@ -538,11 +538,11 @@ public class PatientTransformer {
             identifierBuilder.setValue(cell.getString(), cell);
 
             //make sure to de-duplicate the identifier if we've just added a new instance with the same value
-            IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, csvHelper.getDataDate());
+            IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, fhirResourceFiler.getDataDate());
 
         } else {
             //if cell is empty, make sure to end any previous records
-            IdentifierBuilder.endIdentifiers(patientBuilder, csvHelper.getDataDate(), system, use);
+            IdentifierBuilder.endIdentifiers(patientBuilder, fhirResourceFiler.getDataDate(), system, use);
         }
     }
 
@@ -754,13 +754,13 @@ public class PatientTransformer {
         CodeAndDate newMaritalStatus = csvHelper.findMaritalStatus(patientGuid);
 
         if (newEthnicity != null) {
-            EmisCsvCodeMap codeMapping = newEthnicity.getCodeMapping();
+            EmisClinicalCode codeMapping = newEthnicity.getCodeMapping();
             CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
             EmisCodeHelper.applyEthnicity(patientBuilder, codeMapping, additionalSourceCells);
         }
 
         if (newMaritalStatus != null) {
-            EmisCsvCodeMap codeMapping = newMaritalStatus.getCodeMapping();
+            EmisClinicalCode codeMapping = newMaritalStatus.getCodeMapping();
             CsvCell[] additionalSourceCells = newMaritalStatus.getAdditionalSourceCells();
             EmisCodeHelper.applyMaritalStatus(patientBuilder, codeMapping, additionalSourceCells);
         }

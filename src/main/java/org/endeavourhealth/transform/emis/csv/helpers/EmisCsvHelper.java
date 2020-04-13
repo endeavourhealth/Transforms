@@ -25,9 +25,9 @@ import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisMissingCodeDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCodeType;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisMissingCodes;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
@@ -71,7 +71,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Set<String> filterPatientGuids;
 
     //DB access
-    private EmisTransformDalI mappingRepository = DalProvider.factoryEmisTransformDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     //some resources are referred to by others, so we cache them here for when we need them
@@ -87,7 +86,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<StringMemorySaver, IssueRecordIssueDate> drugRecordNewFirstIssueDateMap = new ConcurrentHashMap<>();
     private Map<StringMemorySaver, List<BpComponent>> bpComponentMap = new HashMap<>();
     private Map<StringMemorySaver, SessionPractitioners> sessionPractitionerMap = new HashMap<>();
-    private Map<StringMemorySaver, List<CsvCell>> locationOrganisationMap = new HashMap<>();
+    //private Map<StringMemorySaver, List<CsvCell>> locationOrganisationMap = new HashMap<>();
     private Map<StringMemorySaver, CodeAndDate> ethnicityMap = new HashMap<>();
     private Map<StringMemorySaver, CodeAndDate> maritalStatusMap = new HashMap<>();
     private Map<StringMemorySaver, String> problemReadCodes = new HashMap<>();
@@ -96,7 +95,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<StringMemorySaver, List<List_.ListEntryComponent>> existingRegsitrationStatues = new ConcurrentHashMap<>();
     private ThreadPool utilityThreadPool = null;
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
-    private Date cachedDataDate = null;
+    private EmisAdminHelper adminHelper = new EmisAdminHelper();
 
     //missing codes
     private Set<Long> foundMissingCodes = new HashSet<>();
@@ -706,7 +705,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         sessionPractitionerMap = null;
     }
 
-    public void cacheOrganisationLocationMap(CsvCell locationCell, CsvCell orgCell, boolean mainLocation) {
+    /*public void cacheOrganisationLocationMap(CsvCell locationCell, CsvCell orgCell, boolean mainLocation) {
 
         String locationGuid = locationCell.getString();
         StringMemorySaver key = new StringMemorySaver(locationGuid);
@@ -732,11 +731,11 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         return locationOrganisationMap.remove(key);
     }
 
-    /**
+    *//**
      * called at the end of the transform to handle any changes to location/organisation mappings
      * that weren't handled when we went through the Location file (i.e. changes in the OrganisationLocation file
      * with no corresponding changes in the Location file)
-     */
+     *//*
     public void processRemainingOrganisationLocationMappings(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         for (StringMemorySaver key: locationOrganisationMap.keySet()) {
@@ -766,7 +765,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             fhirResourceFiler.saveAdminResource(null, false, locationBuilder);
         }
-    }
+    }*/
 
     public void cacheEthnicity(CsvCell patientGuid, CodeAndDate codeAndDate) {
         String localUniquePatientId = createUniqueId(patientGuid, null);
@@ -824,13 +823,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
 
             if (newEthnicity != null) {
-                EmisCsvCodeMap codeMapping = newEthnicity.getCodeMapping();
+                EmisClinicalCode codeMapping = newEthnicity.getCodeMapping();
                 CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
                 EmisCodeHelper.applyEthnicity(patientBuilder, codeMapping, additionalSourceCells);
             }
 
             if (newMaritalStatus != null) {
-                EmisCsvCodeMap codeMapping = newMaritalStatus.getCodeMapping();
+                EmisClinicalCode codeMapping = newMaritalStatus.getCodeMapping();
                 CsvCell[] additionalSourceCells = newMaritalStatus.getAdditionalSourceCells();
                 EmisCodeHelper.applyMaritalStatus(patientBuilder, codeMapping, additionalSourceCells);
             }
@@ -1330,21 +1329,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         this.sharingAgreementDisabled = new Boolean(sharingAgreementDisabled);
     }
 
-    /**
-     * returns the original date of the data in the exchange (i.e. when actually sent to DDS)
-     */
-    public Date getDataDate() throws Exception {
-        if (cachedDataDate == null) {
-            ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
-            Exchange x = exchangeDal.getExchange(exchangeId);
-            cachedDataDate = x.getHeaderAsDate(HeaderKeys.DataDate);
-
-            if (cachedDataDate == null) {
-                throw new Exception("Failed to find data date for exchange " + exchangeId);
-            }
-        }
-        return cachedDataDate;
-    }
 
     /**
      * To log the missing Clinical/Drug codeIds into the table.
@@ -1360,12 +1344,14 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         errorCodeObj.setFileType(parser.getClass().getSimpleName());
         errorCodeObj.setCodeType(rex.getCodeType());
 
-        mappingRepository.saveMissingCodeError(errorCodeObj);
+        EmisMissingCodeDalI dal = DalProvider.factoryEmisMissingCodeDal();
+        dal.saveMissingCodeError(errorCodeObj);
     }
 
 
     public Set<Long> retrieveMissingCodes(EmisCodeType emisCodeType) throws Exception {
-        return mappingRepository.retrieveMissingCodes(emisCodeType, getServiceId());
+        EmisMissingCodeDalI dal = DalProvider.factoryEmisMissingCodeDal();
+        return dal.retrieveMissingCodes(emisCodeType, getServiceId());
     }
 
     public void addFoundMissingCodes(Set<Long> codes) {
@@ -1388,11 +1374,12 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         LOG.debug("Found " + this.foundMissingCodes.size() + " missing codes");
 
         //find the patient GUIDs affected
-        Set<String> patientGuids = mappingRepository.retrievePatientGuidsForMissingCodes(this.foundMissingCodes, getServiceId());
+        EmisMissingCodeDalI dal = DalProvider.factoryEmisMissingCodeDal();
+        Set<String> patientGuids = dal.retrievePatientGuidsForMissingCodes(this.foundMissingCodes, getServiceId());
         LOG.debug("Found " + patientGuids.size() + " patients to re-queue");
 
         //find the exchange IDs we'll need to re-queue
-        UUID firstExchangeId = mappingRepository.retrieveOldestExchangeIdForMissingCodes(this.foundMissingCodes, getServiceId());
+        UUID firstExchangeId = dal.retrieveOldestExchangeIdForMissingCodes(this.foundMissingCodes, getServiceId());
 
         Service service = DalProvider.factoryServiceDal().getById(getServiceId());
         String msg = "" + this.foundMissingCodes.size() + " missing codes have been found for " + service.getLocalId() + " " + service.getName() + "\r\n"
@@ -1467,7 +1454,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         //update the audit DB to say we've handled these missing codes
-        mappingRepository.setMissingCodesFixed(this.foundMissingCodes, getServiceId());
+        dal.setMissingCodesFixed(this.foundMissingCodes, getServiceId());
     }
 
     public void setFilterPatientGuids(Set<String> filterPatientGuids) {
@@ -1496,6 +1483,10 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         return false;
+    }
+
+    public EmisAdminHelper getAdminHelper() {
+        return adminHelper;
     }
 
     /*

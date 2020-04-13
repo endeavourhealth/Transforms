@@ -67,14 +67,7 @@ public class DrugRecordTransformer {
 
         //need to handle mis-spelt column name in EMIS test pack
         //String clinicianGuid = parser.getClinicianUserInRoleGuid();
-        CsvCell clinicianGuid = null;
-        if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
-            clinicianGuid = parser.getClinicanUserInRoleGuid();
-        } else {
-            clinicianGuid = parser.getClinicianUserInRoleGuid();
-        }
-
+        CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
         if (!clinicianGuid.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(clinicianGuid);
             medicationStatementBuilder.setInformationSource(practitionerReference, clinicianGuid);

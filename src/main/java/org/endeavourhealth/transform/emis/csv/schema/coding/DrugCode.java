@@ -24,7 +24,8 @@ public class DrugCode extends AbstractCsvParser {
 
     @Override
     protected boolean isFileAudited() {
-        return true;
+        //just used to load a lookup table, so don't audit
+        return false;
     }
 
     public CsvCell getCodeId() {
@@ -36,20 +37,8 @@ public class DrugCode extends AbstractCsvParser {
     public CsvCell getDmdProductCodeId() {
         return super.getCell("DmdProductCodeId");
     }
-    public CsvCell getProcessigId() {
+    public CsvCell getProcessingId() {
         return super.getCell("ProcessingId");
     }
 
-    /*public Long getCodeId() {
-        return super.getLong("CodeId");
-    }
-    public String getTerm() {
-        return super.getString("Term");
-    }
-    public Long getDmdProductCodeId() {
-        return super.getLong("DmdProductCodeId");
-    }
-    public Integer getProcessigId() {
-        return super.getInt("ProcessingId");
-    }*/
 }

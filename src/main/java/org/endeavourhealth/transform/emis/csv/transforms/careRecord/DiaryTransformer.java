@@ -93,14 +93,7 @@ public class DiaryTransformer {
 
         //handle mis-spelt column in EMIS test pack
         //String clinicianGuid = diaryParser.getClinicianUserInRoleGuid();
-        CsvCell clinicianGuid = null;
-        if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_0)
-                || parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_1)) {
-            clinicianGuid = parser.getClinicanUserInRoleGuid();
-        } else {
-            clinicianGuid = parser.getClinicianUserInRoleGuid();
-        }
-
+        CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
         if (!clinicianGuid.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(clinicianGuid);
             procedureRequestBuilder.setPerformer(practitionerReference, clinicianGuid);

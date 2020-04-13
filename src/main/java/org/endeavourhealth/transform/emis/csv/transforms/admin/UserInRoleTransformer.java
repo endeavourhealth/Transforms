@@ -1,6 +1,9 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
 import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisLocationDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisUserInRoleDalI;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -8,8 +11,8 @@ import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuil
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerRoleBuilder;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.schema.admin.Location;
 import org.endeavourhealth.transform.emis.csv.schema.admin.UserInRole;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Reference;
@@ -23,28 +26,30 @@ public class UserInRoleTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid());
+        UserInRole parser = (UserInRole)parsers.get(UserInRole.class);
+        if (parser != null) {
 
-        AbstractCsvParser parser = parsers.get(UserInRole.class);
-        while (parser != null && parser.nextRecord()) {
-
-            try {
-                createResource((UserInRole)parser, fhirResourceFiler, csvHelper, adminCacheFiler);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+            //iterate through the file to make sure it's audited and to log all the changed record IDs
+            while (parser.nextRecord()) {
+                CsvCell userInRoleGuidCell = parser.getUserInRoleGuid();
+                csvHelper.getAdminHelper().addUserInRoleChanged(userInRoleGuidCell);
             }
+
+            //the above will have audited the table, so now we can load the bulk staging table with our file
+            String filePath = parser.getFilePath();
+            Date dataDate = fhirResourceFiler.getDataDate();
+            EmisUserInRoleDalI dal = DalProvider.factoryEmisUserInRoleDal();
+            int fileId = parser.getFileAuditId().intValue();
+            dal.updateStagingTable(filePath, dataDate, fileId);
+
+            //call this to abort if we had any errors, during the above processing
+            fhirResourceFiler.failIfAnyErrors();
         }
-
-        adminCacheFiler.close();
-
-        //call this to abort if we had any errors, during the above processing
-        fhirResourceFiler.failIfAnyErrors();
     }
 
-    private static void createResource(UserInRole parser,
+    /*private static void createResource(UserInRole parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       EmisAdminCacheFiler adminCacheFiler) throws Exception {
+                                       EmisCsvHelper csvHelper) throws Exception {
 
         PractitionerBuilder practitionerBuilder = new PractitionerBuilder();
 
@@ -96,11 +101,7 @@ public class UserInRoleTransformer {
             codeableConceptBuilder.setCodingCode(roleCode.getString(), roleCode);
         }
 
-        //this resource exists in our admin resource cache, so we can populate the
-        //main database when new practices come on, so we need to update that too
-        adminCacheFiler.saveAdminResourceToCache(practitionerBuilder);
-
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), practitionerBuilder);
     }
-
+*/
 }

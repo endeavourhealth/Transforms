@@ -8,9 +8,10 @@ import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.utility.ExpiringCache;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
-import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisCodeDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCodeType;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisDrugCode;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.Read2Code;
@@ -34,93 +35,62 @@ import java.util.concurrent.locks.ReentrantLock;
 public class EmisCodeHelper {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCodeHelper.class);
 
-    public static final String AUDIT_CLINICAL_CODE_SNOMED_CONCEPT_ID = "snomed_concept_id";
-    public static final String AUDIT_CLINICAL_CODE_SNOMED_DESCRIPTION_ID = "snomed_description_id";
-    public static final String AUDIT_CLINICAL_CODE_READ_CODE = "read_code";
-    public static final String AUDIT_CLINICAL_CODE_READ_TERM = "read_term";
-    public static final String AUDIT_DRUG_CODE = "drug_code";
-    public static final String AUDIT_DRUG_TERM = "drug_term";
-
-    private static EmisTransformDalI mappingRepository = DalProvider.factoryEmisTransformDal();
-
     //note that these caches are purposefully static since they apply to ALL emis practices (not all caches do)
     private static final long ONE_HOUR = 60L * 60L * 1000L;
-    private static Map<Long, EmisCsvCodeMap> clinicalCodes = new ExpiringCache<>(ONE_HOUR);
-    private static Map<Long, EmisCsvCodeMap> medication = new ExpiringCache<>(ONE_HOUR);
+    private static Map<Long, EmisClinicalCode> clinicalCodes = new ExpiringCache<>(ONE_HOUR);
+    private static Map<Long, EmisDrugCode> medication = new ExpiringCache<>(ONE_HOUR);
 
     public static CodeableConceptBuilder createCodeableConcept(HasCodeableConceptI resourceBuilder, boolean medication, CsvCell codeIdCell, CodeableConceptBuilder.Tag tag, EmisCsvHelper csvHelper) throws Exception {
         if (codeIdCell.isEmpty()) {
             return null;
         }
 
-        EmisCsvCodeMap codeMap = null;
+
+
         if (medication) {
-            codeMap = findMedication(codeIdCell);
-        } else {
-            codeMap = findClinicalCode(codeIdCell);
-        }
+            EmisDrugCode code = findMedication(codeIdCell);
 
-        return applyCodeMap(resourceBuilder, codeMap, tag, codeIdCell);
-    }
-
-    private static CodeableConceptBuilder applyCodeMap(HasCodeableConceptI resourceBuilder, EmisCsvCodeMap codeMap, CodeableConceptBuilder.Tag tag, CsvCell... additionalSourceCells) throws Exception {
-
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, tag);
-
-        if (codeMap.isMedication()) {
-            applyMedicationCodeMap(codeableConceptBuilder, codeMap, additionalSourceCells);
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, tag);
+            applyMedicationCodeMap(codeableConceptBuilder, code, codeIdCell);
+            return codeableConceptBuilder;
 
         } else {
-            applyClinicalCodeMap(codeableConceptBuilder, codeMap, additionalSourceCells);
-        }
+            EmisClinicalCode code = findClinicalCode(codeIdCell);
 
-        return codeableConceptBuilder;
-    }
-
-
-
-    /*public static String getClinicalCodeSystemForReadCode(EmisCsvCodeMap codeMap) {
-        //without a Read 2 engine, there seems to be no cast-iron way to determine whether the supplied codes
-        //are Read 2 codes or Emis local codes. Looking at the codes from the test data sets, this seems
-        //to be a reliable way to perform the same check.
-
-        String readCode = removeSynonymAndPadRead2Code(codeMap);
-
-        if (readCode.startsWith("EMIS")
-                || readCode.startsWith("ALLERGY")
-                || readCode.startsWith("EGTON")
-                || readCode.length() > 5) {
-
-            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
-
-        } else {
-            //if valid Read2
-            return FhirCodeUri.CODE_SYSTEM_READ2;
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(resourceBuilder, tag);
+            applyClinicalCodeMap(codeableConceptBuilder, code, codeIdCell);
+            return codeableConceptBuilder;
         }
     }
-*/
-    private static void applyClinicalCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) throws Exception {
+
+    private static void applyClinicalCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisClinicalCode codeMap, CsvCell... additionalSourceCells) throws Exception {
 
         //create a coding for the raw Read code, passing in any additional cells to the main code element
         String readCode = codeMap.getAdjustedCode(); //note we use the adjusted code which has been properly padded to five chars
         String readTerm = codeMap.getReadTerm();
-        String readCodeSystem = codeMap.getCodeableConceptSystem();
+        boolean isEmisCode = codeMap.isEmisCode();
 
         //just in case
-        if (Strings.isNullOrEmpty(readCodeSystem)
-                || Strings.isNullOrEmpty(readCode)) {
+        if (Strings.isNullOrEmpty(readCode)) {
             throw new Exception("Null code or system from Emis lookup for code " + codeMap.getReadCode());
         }
 
+        String readCodeSystem = null;
+        if (isEmisCode) {
+            readCodeSystem = FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
+        } else {
+            readCodeSystem = FhirCodeUri.CODE_SYSTEM_READ2;
+        }
+
         codeableConceptBuilder.addCoding(readCodeSystem);
-        codeableConceptBuilder.setCodingCode(readCode, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_CODE, readCode, additionalSourceCells));
-        codeableConceptBuilder.setCodingDisplay(readTerm, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_TERM, readTerm));
+        codeableConceptBuilder.setCodingCode(readCode, additionalSourceCells);
+        codeableConceptBuilder.setCodingDisplay(readTerm, additionalSourceCells);
 
         //create a coding for the Snomed code
         Long snomedConceptId = codeMap.getSnomedConceptId();
         if (snomedConceptId != null) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode("" + snomedConceptId, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_SNOMED_CONCEPT_ID, snomedConceptId));
+            codeableConceptBuilder.setCodingCode("" + snomedConceptId, additionalSourceCells);
 
             //carry over the Snomed Term than we'll have found when processing the clinical code file from the TRUD data
             String snomedTerm = codeMap.getSnomedTerm();
@@ -133,33 +103,30 @@ public class EmisCodeHelper {
         Long snomedDescriptionId = codeMap.getSnomedDescriptionId();
         if (snomedDescriptionId != null) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID);
-            codeableConceptBuilder.setCodingCode("" + snomedDescriptionId, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_SNOMED_DESCRIPTION_ID, snomedDescriptionId));
+            codeableConceptBuilder.setCodingCode("" + snomedDescriptionId, additionalSourceCells);
             //we don't have any term to go with this
         }
 
         //always use the raw read term for the Codeable Concept text
-        codeableConceptBuilder.setText(readTerm, createCsvCell(codeMap, AUDIT_CLINICAL_CODE_READ_TERM, readTerm));
+        codeableConceptBuilder.setText(readTerm, additionalSourceCells);
     }
 
-    private static void applyMedicationCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisCsvCodeMap codeMap, CsvCell... additionalSourceCells) throws Exception {
+    private static void applyMedicationCodeMap(CodeableConceptBuilder codeableConceptBuilder, EmisDrugCode codeMap, CsvCell... additionalSourceCells) throws Exception {
 
-        Long dmdId = codeMap.getSnomedConceptId();
-        String drugName = codeMap.getSnomedTerm();
+        Long dmdId = codeMap.getDmdConceptId();
+        String drugName = codeMap.getDmdTerm();
 
         //if we have a DM+D ID, then build a proper coding in the codeable concept
         if (dmdId != null) {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode("" + dmdId, createCsvCell(codeMap, AUDIT_DRUG_CODE, dmdId, additionalSourceCells));
-            codeableConceptBuilder.setCodingDisplay(drugName, createCsvCell(codeMap, AUDIT_DRUG_TERM, drugName));
-            codeableConceptBuilder.setText(drugName, createCsvCell(codeMap, AUDIT_DRUG_TERM, drugName));
-
-        } else {
-            //if we don't have a DM+D ID, then just pass in the additional source cells (i.e. the codeId cell) along with the drug name
-            codeableConceptBuilder.setText(drugName, createCsvCell(codeMap, AUDIT_DRUG_TERM, drugName, additionalSourceCells));
+            codeableConceptBuilder.setCodingCode("" + dmdId, additionalSourceCells);
+            codeableConceptBuilder.setCodingDisplay(drugName, additionalSourceCells);
         }
+
+        codeableConceptBuilder.setText(drugName, additionalSourceCells);
     }
 
-    private static CsvCell[] createCsvCell(EmisCsvCodeMap codeMap, String fieldName, Object value, CsvCell... additionalSourceCells) throws Exception {
+    /*private static CsvCell[] createCsvCell(EmisCsvCodeMap codeMap, String fieldName, Object value, CsvCell... additionalSourceCells) throws Exception {
 
         List<CsvCell> list = new ArrayList<>(Arrays.asList(additionalSourceCells));
 
@@ -188,15 +155,15 @@ public class EmisCodeHelper {
         }
 
         return list.toArray(new CsvCell[0]);
-    }
+    }*/
 
-    public static void applyEthnicity(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) throws Exception {
+    public static void applyEthnicity(PatientBuilder patientBuilder, EmisClinicalCode codeMap, CsvCell... sourceCells) throws Exception {
         EthnicCategory ethnicCategory = EmisMappingHelper.findEthnicityCode(codeMap);
         //note, the above may return null if it's one of the "unknown" codes, so we simply clear the field on the resource
         patientBuilder.setEthnicity(ethnicCategory, sourceCells);
     }
 
-    public static void applyMaritalStatus(PatientBuilder patientBuilder, EmisCsvCodeMap codeMap, CsvCell... sourceCells) throws Exception {
+    public static void applyMaritalStatus(PatientBuilder patientBuilder, EmisClinicalCode codeMap, CsvCell... sourceCells) throws Exception {
         MaritalStatus maritalStatus = EmisMappingHelper.findMaritalStatus(codeMap);
         //note, the above may return null if it's one of the "unknown" codes, so we simply clear the field on the resource
         patientBuilder.setMaritalStatus(maritalStatus, sourceCells);
@@ -204,15 +171,17 @@ public class EmisCodeHelper {
 
 
 
-    public static EmisCsvCodeMap findClinicalCode(CsvCell codeIdCell) throws Exception {
-        EmisCsvCodeMap ret = clinicalCodes.get(codeIdCell.getLong());
+    public static EmisClinicalCode findClinicalCode(CsvCell codeIdCell) throws Exception {
+        Long codeId = codeIdCell.getLong();
+        EmisClinicalCode ret = clinicalCodes.get(codeId);
         if (ret == null) {
-            ret = mappingRepository.getCodeMapping(false, codeIdCell.getLong());
+            EmisCodeDalI dal = DalProvider.factoryEmisCodeDal();
+            ret = dal.getClinicalCode(codeId.longValue());
             if (ret == null) {
                 LOG.error("Clinical CodeMap value not found " + codeIdCell.getLong() + " for Record Number " + codeIdCell.getRecordNumber());
                 throw new EmisCodeNotFoundException(codeIdCell.getLong().longValue(), EmisCodeType.CLINICAL_CODE, "Clinical code not found");
             }
-            clinicalCodes.put(codeIdCell.getLong(), ret);
+            clinicalCodes.put(codeId, ret);
         }
         return ret;
     }
@@ -220,24 +189,23 @@ public class EmisCodeHelper {
 
     public static ClinicalCodeType findClinicalCodeType(CsvCell codeIdCell) throws Exception {
 
-        EmisCsvCodeMap ret = findClinicalCode(codeIdCell);
+        EmisClinicalCode ret = findClinicalCode(codeIdCell);
         String typeStr = ret.getCodeType();
         return ClinicalCodeType.fromValue(typeStr);
     }
 
-    public static EmisCsvCodeMap findMedication(CsvCell codeIdCell) throws Exception {
+    public static EmisDrugCode findMedication(CsvCell codeIdCell) throws Exception {
 
-        EmisCsvCodeMap ret = medication.get(codeIdCell.getLong());
+        Long codeId = codeIdCell.getLong();
+        EmisDrugCode ret = medication.get(codeId);
         if (ret == null) {
-            ret = mappingRepository.getCodeMapping(true, codeIdCell.getLong());
-            /**if (ret == null) {
-             throw new Exception("Failed to find drug code for codeId " + codeIdCell.getLong());
-             }*/
+            EmisCodeDalI dal = DalProvider.factoryEmisCodeDal();
+            ret = dal.getDrugCode(codeId.longValue());
             if (ret == null) {
                 LOG.info("Drug code Map value not found " + codeIdCell.getLong() + " for Record Number " + codeIdCell.getRecordNumber());
                 throw new EmisCodeNotFoundException(codeIdCell.getLong().longValue(), EmisCodeType.DRUG_CODE, "Drug code not found");
             }
-            medication.put(codeIdCell.getLong(), ret);
+            medication.put(codeId, ret);
         }
         return ret;
     }

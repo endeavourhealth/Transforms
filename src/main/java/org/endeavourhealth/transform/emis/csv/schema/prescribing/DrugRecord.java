@@ -120,7 +120,12 @@ public class DrugRecord extends AbstractCsvParser {
         return super.getCell("EnteredTime");
     }
     public CsvCell getClinicianUserInRoleGuid() {
-        return super.getCell("ClinicianUserInRoleGuid");
+        CsvCell ret = super.getCell("ClinicianUserInRoleGuid");
+        //special handling for mis-spelled column name in emis test dta
+        if (ret == null) {
+            ret = super.getCell("ClinicanUserInRoleGuid");
+        }
+        return ret;
     }
     public CsvCell getEnteredByUserInRoleGuid() {
         return super.getCell("EnteredByUserInRoleGuid");
@@ -165,12 +170,6 @@ public class DrugRecord extends AbstractCsvParser {
         return super.getCell("IsConfidential");
     }
 
-    /**
-     * special function to handle mis-spelt column name in EMIS test pack
-     */
-    public CsvCell getClinicanUserInRoleGuid() {
-        return super.getCell("ClinicanUserInRoleGuid");
-    }
 
     /*public String getDrugRecordGuid() {
         return super.getString("DrugRecordGuid");

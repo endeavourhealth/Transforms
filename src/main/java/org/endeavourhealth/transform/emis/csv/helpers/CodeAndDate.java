@@ -1,22 +1,22 @@
 package org.endeavourhealth.transform.emis.csv.helpers;
 
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.DateTimeType;
 
 public class CodeAndDate {
 
-    private EmisCsvCodeMap codeMapping;
+    private EmisClinicalCode codeMapping;
     private DateTimeType date;
     private CsvCell[] additionalSourceCells;
 
-    public CodeAndDate(EmisCsvCodeMap codeMapping, DateTimeType date, CsvCell... additionalSourceCells) {
+    public CodeAndDate(EmisClinicalCode codeMapping, DateTimeType date, CsvCell... additionalSourceCells) {
         this.codeMapping = codeMapping;
         this.date = date;
         this.additionalSourceCells = additionalSourceCells;
     }
 
-    public EmisCsvCodeMap getCodeMapping() {
+    public EmisClinicalCode getCodeMapping() {
         return codeMapping;
     }
 

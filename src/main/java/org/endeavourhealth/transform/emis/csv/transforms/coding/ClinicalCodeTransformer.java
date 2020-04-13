@@ -1,12 +1,12 @@
 package org.endeavourhealth.transform.emis.csv.transforms.coding;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisCodeDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCodeType;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -15,24 +15,22 @@ import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCode;
-import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class ClinicalCodeTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ClinicalCodeTransformer.class);
 
     private static SnomedDalI snomedDal = DalProvider.factorySnomedDal();
-    private static EmisTransformDalI mappingDal = DalProvider.factoryEmisTransformDal();
     private static Map<String, Read2Code> read2Cache = new HashMap<>(); //null values are added so need to use regular hashmap
     private static ReentrantLock read2CacheLock = new ReentrantLock();
 
@@ -40,18 +38,29 @@ public abstract class ClinicalCodeTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        try {
+        ClinicalCode parser = (ClinicalCode)parsers.get(ClinicalCode.class);
+        if (parser != null) {
 
+            //create the extra file of Snomed terms for all the Code Ids we've got
+            File extraColsFile = createExtraColsFile(parser, csvHelper);
 
+            //bulk load the file into the DB
+            String filePath = parser.getFilePath();
+            Date dataDate = fhirResourceFiler.getDataDate();
+            EmisCodeDalI dal = DalProvider.factoryEmisCodeDal();
+            dal.updateClinicalCodeTable(filePath, extraColsFile.getAbsolutePath(), dataDate);
+
+            //then load up any missing codes we have and see if they've appeared
             Set<Long> missingCodes = csvHelper.retrieveMissingCodes(EmisCodeType.CLINICAL_CODE);
             Set<Long> foundMissingCodes = new HashSet<>();
 
-            List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
-
-            ClinicalCode parser = (ClinicalCode)parsers.get(ClinicalCode.class);
-            while (parser != null && parser.nextRecord()) {
+            while (parser.nextRecord()) {
                 try {
-                    transform(parser, fhirResourceFiler, csvHelper, mappingsToSave, missingCodes, foundMissingCodes);
+                    CsvCell codeIdCell = parser.getCodeId();
+                    Long codeId = codeIdCell.getLong();
+                    if (missingCodes.contains(codeId)) {
+                        foundMissingCodes.add(codeId);
+                    }
                 } catch (Exception ex) {
 
                     //because this file contains key reference data, if there's any errors, just throw up
@@ -59,20 +68,85 @@ public abstract class ClinicalCodeTransformer {
                 }
             }
 
-            //and save any still pending
-            if (!mappingsToSave.isEmpty()) {
-                csvHelper.submitToThreadPool(new Task(mappingsToSave));
-            }
-
             //log any found missing codes
             csvHelper.addFoundMissingCodes(foundMissingCodes);
+
+            //delete the file we created
+            FileHelper.deleteRecursiveIfExists(extraColsFile);
+        }
+    }
+
+    /**
+     * when bulk loading the Clinical Code file into the DB we also have to supply an additional file of
+     * Snomed terms for the codes. This function generates that.
+     */
+    public static File createExtraColsFile(ClinicalCode parser, EmisCsvHelper csvHelper) throws Exception {
+
+        //use the CSV helper thread pool to perform multiple lookups in parallel
+        List<Long> codeIds = new ArrayList<>();
+        Map<Long, String> hmAdjustedCodes = new ConcurrentHashMap<>();
+        Map<Long, Integer> hmIsEmisCodes = new ConcurrentHashMap<>(); //use int rather than boolean so we end up with 1 or 0 not "true" or "false"
+        Map<Long, String> hmSnomedTerms = new ConcurrentHashMap<>();
+
+        try {
+            while (parser.nextRecord()) {
+                CsvCell codeIdCell = parser.getCodeId();
+                CsvCell readCodeCell = parser.getReadTermId();
+                CsvCell snomedConceptIdCell = parser.getSnomedCTConceptId();
+
+                long codeId = codeIdCell.getLong().longValue();
+                String readCode = readCodeCell.getString();
+                Long snomedConceptId = snomedConceptIdCell.getLong();
+
+                codeIds.add(new Long(codeId));
+
+                //perform the lookups in the thread pool
+                Task t = new Task(codeId, readCode, snomedConceptId, hmAdjustedCodes, hmIsEmisCodes, hmSnomedTerms);
+                csvHelper.submitToThreadPool(t);
+            }
 
         } finally {
             csvHelper.waitUntilThreadPoolIsEmpty();
         }
+
+        //then write out the results to file
+        File tempDir = FileHelper.getTempDir();
+        File subTempDir = new File(tempDir, UUID.randomUUID().toString());
+        if (!subTempDir.exists()) {
+            boolean createDir = subTempDir.mkdirs();
+            if (!createDir) {
+                throw new Exception("Failed to create temp dir " + subTempDir);
+            }
+        }
+
+        File dstFile = new File(subTempDir, "EmisCodeExtraCols.csv");
+
+        FileOutputStream fos = new FileOutputStream(dstFile);
+        OutputStreamWriter osw = new OutputStreamWriter(fos);
+        BufferedWriter bufferedWriter = new BufferedWriter(osw);
+
+        //the Emis records use Windows record separators, so we need to match that otherwise
+        //the bulk import routine will fail
+        CSVFormat format = EmisCsvToFhirTransformer.CSV_FORMAT
+                .withHeader("CodeId", "AdjustedCode", "IsEmisCode", "SnomedTerm")
+                .withRecordSeparator("\r\n");
+
+        CSVPrinter printer = new CSVPrinter(bufferedWriter, format);
+
+        for (Long codeId: codeIds) {
+            String adjustedCode = hmAdjustedCodes.get(codeId);
+            Integer isEmisCode = hmIsEmisCodes.get(codeId);
+            String snomedTerm = hmSnomedTerms.get(codeId);
+
+            printer.printRecord(codeId, adjustedCode, isEmisCode, snomedTerm);
+        }
+
+        printer.close();
+
+        return dstFile;
     }
 
-    private static void transform(ClinicalCode parser,
+    /*private static void transform(ClinicalCode parser,
                                   FhirResourceFiler fhirResourceFiler,
                                   EmisCsvHelper csvHelper,
                                   List<EmisCsvCodeMap> mappingsToSave,
@@ -129,6 +203,22 @@ public abstract class ClinicalCodeTransformer {
         if (missingCodes.contains(codeId)) {
             foundMissingCodes.add(codeId);
         }
+    }
+
+
+    public static String getClinicalCodeSystemForReadCode(String code) throws Exception {
+        Read2Code dbCode = lookupRead2CodeUsingCache(code);
+        if (dbCode == null) {
+            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
+        } else {
+            return FhirCodeUri.CODE_SYSTEM_READ2;
+        }
+    }
+*/
+
+    private static boolean isEmisCode(String code) throws Exception {
+        Read2Code dbCode = lookupRead2CodeUsingCache(code);
+        return dbCode == null;
     }
 
     private static String removeSynonymAndPadRead2Code(String code) throws Exception {
@@ -194,15 +284,6 @@ public abstract class ClinicalCodeTransformer {
         return dbCode;
     }
 
-    public static String getClinicalCodeSystemForReadCode(String code) throws Exception {
-        Read2Code dbCode = lookupRead2CodeUsingCache(code);
-        if (dbCode == null) {
-            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
-        } else {
-            return FhirCodeUri.CODE_SYSTEM_READ2;
-        }
-    }
-
 
     private static String padToFive(String code) {
         while (code.length() < 5) {
@@ -211,9 +292,7 @@ public abstract class ClinicalCodeTransformer {
         return code;
     }
 
-
-
-
+/*
     static class Task implements Callable {
 
         private List<EmisCsvCodeMap> mappings = null;
@@ -256,6 +335,57 @@ public abstract class ClinicalCodeTransformer {
                 }
 
                 LOG.error(msg, t);
+                throw new TransformException(msg, t);
+            }
+
+            return null;
+        }
+    }*/
+
+    static class Task implements Callable {
+
+        private long codeId;
+        private String readCode;
+        private Long snomedConceptId;
+        private Map<Long, String> hmAdjustedCodes;
+        private Map<Long, Integer> hmIsEmisCodes;
+        private Map<Long, String> hmSnomedTerms;
+
+        public Task(long codeId, String readCode, Long snomedConceptId, Map<Long, String> hmAdjustedCodes, Map<Long, Integer> hmIsEmisCodes, Map<Long, String> hmSnomedTerms) {
+            this.codeId = codeId;
+            this.readCode = readCode;
+            this.snomedConceptId = snomedConceptId;
+            this.hmAdjustedCodes = hmAdjustedCodes;
+            this.hmIsEmisCodes = hmIsEmisCodes;
+            this.hmSnomedTerms = hmSnomedTerms;
+        }
+
+        @Override
+        public Object call() throws Exception {
+
+            try {
+
+                SnomedLookup snomedLookup = snomedDal.getSnomedLookup("" + snomedConceptId);
+                if (snomedLookup != null) {
+                    String snomedTerm = snomedLookup.getTerm();
+                    hmSnomedTerms.put(new Long(codeId), snomedTerm);
+                }
+
+                //sanitise the code and work out what coding system it should have
+                String adjustedCode = removeSynonymAndPadRead2Code(readCode);
+                hmAdjustedCodes.put(new Long(codeId), adjustedCode);
+
+                //check if it's an Emis code or valid Read2
+                boolean isEmisCode = isEmisCode(adjustedCode);
+                if (isEmisCode) {
+                    hmIsEmisCodes.put(new Long(codeId), new Integer(1));
+                } else {
+                    hmIsEmisCodes.put(new Long(codeId), new Integer(0));
+                }
+
+
+            } catch (Throwable t) {
+                String msg = "Error processing Clinical Code ID " + codeId;
                 throw new TransformException(msg, t);
             }
 

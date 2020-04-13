@@ -2,9 +2,9 @@ package org.endeavourhealth.transform.emis.csv.transforms.coding;
 
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherCommon.EmisTransformDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisCodeDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppMappingRefDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCodeType;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -23,46 +23,38 @@ import java.util.concurrent.Callable;
 public class DrugCodeTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(DrugCodeTransformer.class);
 
-    private static EmisTransformDalI mappingDal = DalProvider.factoryEmisTransformDal();
-
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        try {
+        DrugCode parser = (DrugCode)parsers.get(DrugCode.class);
+        if (parser != null) {
+
+            //bulk load the file into the DB
+            String filePath = parser.getFilePath();
+            Date dataDate = fhirResourceFiler.getDataDate();
+            EmisCodeDalI dal = DalProvider.factoryEmisCodeDal();
+            dal.updateDrugCodeTable(filePath, dataDate);
 
             //Retrieve the full code list from the error table where dt_fixed is null
             Set<Long> missingDrugCodes = csvHelper.retrieveMissingCodes(EmisCodeType.DRUG_CODE);
             Set<Long> foundMissingDrugCodes = new HashSet<>();
 
-            List<EmisCsvCodeMap> mappingsToSave = new ArrayList<>();
-
-            DrugCode parser = (DrugCode)parsers.get(DrugCode.class);
-            while (parser != null && parser.nextRecord()) {
-                try {
-                    transform(parser, fhirResourceFiler, csvHelper, mappingsToSave, missingDrugCodes, foundMissingDrugCodes);
-                } catch (Exception ex) {
-
-                    //because this file contains key reference data, if there's any errors, just throw up
-                    throw new TransformException(parser.getCurrentState().toString(), ex);
+            //iterate through the file to see if any missing codes have appeared
+            while (parser.nextRecord()) {
+                CsvCell codeIdCell = parser.getCodeId();
+                Long codeId = codeIdCell.getLong();
+                if (missingDrugCodes.contains(codeId)) {
+                    foundMissingDrugCodes.add(codeId);
                 }
-            }
-
-            //and save any still pending
-            if (!mappingsToSave.isEmpty()) {
-                csvHelper.submitToThreadPool(new Task(mappingsToSave));
             }
 
             //cache any found Drug codes in the helper
             csvHelper.addFoundMissingCodes(foundMissingDrugCodes);
-
-
-        } finally {
-            csvHelper.waitUntilThreadPoolIsEmpty();
         }
     }
 
-    private static void transform(DrugCode parser,
+    /*private static void transform(DrugCode parser,
                                   FhirResourceFiler fhirResourceFiler,
                                   EmisCsvHelper csvHelper,
                                   List<EmisCsvCodeMap> mappingsToSave,
@@ -142,5 +134,5 @@ public class DrugCodeTransformer {
 
             return null;
         }
-    }
+    }*/
 }

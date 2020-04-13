@@ -115,7 +115,12 @@ public class IssueRecord extends AbstractCsvParser {
         return super.getCell("EnteredTime");
     }
     public CsvCell getClinicianUserInRoleGuid() {
-        return super.getCell("ClinicianUserInRoleGuid");
+        CsvCell ret = super.getCell("ClinicianUserInRoleGuid");
+        //special handling for handling mis-spelt column in EMIS test pack
+        if (ret == null) {
+            ret = super.getCell("ClinicanUserInRoleGuid");
+        }
+        return ret;
     }
     public CsvCell getEnteredByUserInRoleGuid() {
         return super.getCell("EnteredByUserInRoleGuid");
@@ -154,78 +159,5 @@ public class IssueRecord extends AbstractCsvParser {
         return super.getCell("IsConfidential");
     }
 
-    /**
-     * special function for handling mis-spelt column in EMIS test pack
-     */
-    public CsvCell getClinicanUserInRoleGuid() {
-        return super.getCell("ClinicanUserInRoleGuid");
-    }
 
-    /*public String getIssueRecordGuid() {
-        return super.getString("IssueRecordGuid");
-    }
-    public String getPatientGuid() {
-        return super.getString("PatientGuid");
-    }
-    public String getOrganisationGuid() {
-        return super.getString("OrganisationGuid");
-    }
-    public Date getEffectiveDate() throws TransformException {
-        return super.getDate("EffectiveDate");
-    }
-    public String getEffectiveDatePrecision() {
-        return super.getString("EffectiveDatePrecision");
-    }
-    public Date getEnteredDate() throws TransformException {
-        return super.getDate("EnteredDate");
-    }
-    public Date getEnteredDateTime() throws TransformException {
-        return super.getDateTime("EnteredDate", "EnteredTime");
-    }
-    public String getClinicianUserInRoleGuid() {
-        return super.getString("ClinicianUserInRoleGuid");
-    }
-    public String getEnteredByUserInRoleGuid() {
-        return super.getString("EnteredByUserInRoleGuid");
-    }
-    public Long getCodeId() {
-        return super.getLong("CodeId");
-    }
-    public Double getQuantity() {
-        return super.getDouble("Quantity");
-    }
-    public Integer getCourseDurationInDays() {
-        return super.getInt("CourseDurationInDays");
-    }
-    public Double getEstimatedNhsCost() {
-        return super.getDouble("EstimatedNhsCost");
-    }
-    public String getProblemObservationGuid() {
-        return super.getString("ProblemObservationGuid");
-    }
-    public String getDosage() {
-        return super.getString("Dosage");
-    }
-    public String getQuantityUnit() {
-        return super.getString("QuantityUnit");
-    }
-    public String getDrugRecordGuid() {
-        return super.getString("DrugRecordGuid");
-    }
-    public boolean getDeleted() {
-        return super.getBoolean("Deleted");
-    }
-    public Integer getProcessingId() {
-        return super.getInt("ProcessingId");
-    }
-    public boolean getIsConfidential() {
-        return super.getBoolean("IsConfidential");
-    }
-
-    *//**
-     * special function for handling mis-spelt column in EMIS test pack
-     *//*
-    public String getClinicanUserInRoleGuid() {
-        return super.getString("ClinicanUserInRoleGuid");
-    }*/
 }

@@ -1,19 +1,22 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
 import org.endeavourhealth.common.fhir.ContactPointHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisCodeDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisLocationDalI;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisAdminCacheFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.admin.Location;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.Reference;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -23,28 +26,29 @@ public class LocationTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        EmisAdminCacheFiler adminCacheFiler = new EmisAdminCacheFiler(csvHelper.getDataSharingAgreementGuid());
+        Location parser = (Location)parsers.get(Location.class);
+        if (parser != null) {
 
-        AbstractCsvParser parser = parsers.get(Location.class);
-        while (parser != null && parser.nextRecord()) {
-
-            try {
-                createResource((Location)parser, fhirResourceFiler, csvHelper, adminCacheFiler);
-            } catch (Exception ex) {
-                fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+            while (parser.nextRecord()) {
+                CsvCell locationGuid = parser.getLocationGuid();
+                csvHelper.getAdminHelper().addLocationChanged(locationGuid);
             }
+
+            //the above will have audited the table, so now we can load the bulk staging table with our file
+            String filePath = parser.getFilePath();
+            Date dataDate = fhirResourceFiler.getDataDate();
+            EmisLocationDalI dal = DalProvider.factoryEmisLocationDal();
+            int fileId = parser.getFileAuditId().intValue();
+            dal.updateLocationStagingTable(filePath, dataDate, fileId);
+
+            //call this to abort if we had any errors, during the above processing
+            fhirResourceFiler.failIfAnyErrors();
         }
-
-        adminCacheFiler.close();
-
-        //call this to abort if we had any errors, during the above processing
-        fhirResourceFiler.failIfAnyErrors();
     }
 
-    private static void createResource(Location parser,
+    /*private static void createResource(Location parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       EmisCsvHelper csvHelper,
-                                       EmisAdminCacheFiler adminCacheFiler) throws Exception {
+                                       EmisCsvHelper csvHelper) throws Exception {
 
         LocationBuilder locationBuilder = new LocationBuilder();
 
@@ -56,9 +60,6 @@ public class LocationTransformer {
             locationBuilder.setDeletedAudit(deleted);
             fhirResourceFiler.deleteAdminResource(parser.getCurrentState(), locationBuilder);
 
-            //this resource exists in our admin resource cache, so we can populate the
-            //main database when new practices come on, so we need to update that too
-            adminCacheFiler.deleteAdminResourceFromCache(locationBuilder);
             return;
         }
 
@@ -135,11 +136,8 @@ public class LocationTransformer {
             locationBuilder.setManagingOrganisation(organisationReference, organisationCell);
         }
 
-        //this resource exists in our admin resource cache, so we can populate the
-        //main database when new practices come on, so we need to update that too
-        adminCacheFiler.saveAdminResourceToCache(locationBuilder);
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
-    }
+    }*/
 
 }

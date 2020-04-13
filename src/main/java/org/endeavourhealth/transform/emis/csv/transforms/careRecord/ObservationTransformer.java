@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.common.fhir.schema.ImmunizationStatus;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.core.terminology.Read2;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
@@ -351,9 +351,8 @@ public class ObservationTransformer {
 
     private static boolean isDisorder(CsvCell codeIdCell, EmisCsvHelper csvHelper,CsvCell patientGuid, CsvCell observationGuid) throws Exception {
 
-        EmisCsvCodeMap codeMapping = EmisCodeHelper.findClinicalCode(codeIdCell);
-        String system = codeMapping.getCodeableConceptSystem();
-        if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)) {
+        EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCode(codeIdCell);
+        if (!codeMapping.isEmisCode()) {
             String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
             return Read2.isDisorder(readCode);
         }
@@ -395,10 +394,8 @@ public class ObservationTransformer {
     private static boolean isProcedure(CsvCell codeIdCell,
                                        EmisCsvHelper csvHelper, CsvCell patientGuid ,CsvCell observationGuid) throws Exception {
 
-        EmisCsvCodeMap codeMapping = EmisCodeHelper.findClinicalCode(codeIdCell);
-
-        String system = codeMapping.getCodeableConceptSystem();
-        if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)) {
+        EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCode(codeIdCell);
+        if (!codeMapping.isEmisCode()) {
             String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
             return Read2.isProcedure(readCode);
         }

@@ -1,13 +1,17 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisLocationDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.schema.admin.Location;
 import org.endeavourhealth.transform.emis.csv.schema.admin.OrganisationLocation;
 
+import java.util.Date;
 import java.util.Map;
 
 public class OrganisationLocationTransformer {
@@ -16,21 +20,27 @@ public class OrganisationLocationTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
-        //to parse any record in this file it a critical error
-        AbstractCsvParser parser = parsers.get(OrganisationLocation.class);
-        while (parser != null && parser.nextRecord()) {
+        OrganisationLocation parser = (OrganisationLocation)parsers.get(OrganisationLocation.class);
+        if (parser != null) {
 
-            try {
-                createLocationOrganisationMapping((OrganisationLocation)parser, fhirResourceFiler, csvHelper);
-            } catch (Exception ex) {
-                throw new TransformException(parser.getCurrentState().toString(), ex);
+            while (parser.nextRecord()) {
+                //just iterate to make sure all records are audited
             }
+
+            //the above will have audited the table, so now we can load the bulk staging table with our file
+            String filePath = parser.getFilePath();
+            Date dataDate = fhirResourceFiler.getDataDate();
+            EmisLocationDalI dal = DalProvider.factoryEmisLocationDal();
+            int fileId = parser.getFileAuditId().intValue();
+            dal.updateOrganisationLocationStagingTable(filePath, dataDate, fileId);
+
+            //call this to abort if we had any errors, during the above processing
+            fhirResourceFiler.failIfAnyErrors();
         }
     }
 
 
-    private static void createLocationOrganisationMapping(OrganisationLocation parser,
+    /*private static void createLocationOrganisationMapping(OrganisationLocation parser,
                                                           FhirResourceFiler fhirResourceFiler,
                                                           EmisCsvHelper csvHelper) throws Exception {
 
@@ -57,5 +67,5 @@ public class OrganisationLocationTransformer {
         }
 
         csvHelper.cacheOrganisationLocationMap(locationGuid, orgGuid, isMainLocation);
-    }
+    }*/
 }

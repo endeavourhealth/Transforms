@@ -92,7 +92,12 @@ public class Diary extends AbstractCsvParser {
         return super.getCell("EnteredTime");
     }
     public CsvCell getClinicianUserInRoleGuid() {
-        return super.getCell("ClinicianUserInRoleGuid");
+        CsvCell ret = super.getCell("ClinicianUserInRoleGuid");
+        //handling for column name being mis-spelled in test data
+        if (ret == null) {
+            ret = super.getCell("ClinicanUserInRoleGuid");
+        }
+        return ret;
     }
     public CsvCell getEnteredByUserInRoleGuid() {
         return super.getCell("EnteredByUserInRoleGuid");
@@ -131,12 +136,6 @@ public class Diary extends AbstractCsvParser {
         return super.getCell("ProcessingId");
     }
 
-    /**
-     * special function for mis-spelt column name in EMIS test pack
-     */
-    public CsvCell getClinicanUserInRoleGuid() {
-        return super.getCell("ClinicanUserInRoleGuid");
-    }
 
 
 

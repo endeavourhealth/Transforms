@@ -3,7 +3,7 @@ package org.endeavourhealth.transform.emis.csv.helpers;
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.fhir.schema.*;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCsvCodeMap;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.transform.common.ResourceParser;
 
 import java.util.Map;
@@ -21,7 +21,7 @@ public class EmisMappingHelper {
     private static Map<String, String> problemSeverityMap;
     private static Map<String, String> problemRelationshipMap;
 
-    public static MaritalStatus findMaritalStatus(EmisCsvCodeMap codeMapping) throws Exception {
+    public static MaritalStatus findMaritalStatus(EmisClinicalCode codeMapping) throws Exception {
         String read2Code = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
         if (Strings.isNullOrEmpty(read2Code)) {
             return null;
@@ -44,7 +44,7 @@ public class EmisMappingHelper {
     }
 
 
-    public static EthnicCategory findEthnicityCode(EmisCsvCodeMap codeMapping) throws Exception {
+    public static EthnicCategory findEthnicityCode(EmisClinicalCode codeMapping) throws Exception {
         String read2Code = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
         if (Strings.isNullOrEmpty(read2Code)) {
             return null;
