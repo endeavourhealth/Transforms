@@ -1,24 +1,44 @@
 package org.endeavourhealth.transform.fhirhl7v2.transforms;
 
 import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
+import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.hl7.fhir.instance.model.*;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 public class EncounterTransformer {
 
 
 
-    public static Resource updateDwEncounter(Encounter oldEncounter, Encounter newEncounter) throws Exception {
+    public static void updateDwEncounter(Encounter oldEncounter, Encounter newEncounter, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         if (oldEncounter == null) {
-            return newEncounter;
+            fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(newEncounter));
+            return;
         }
 
+        if (true) {
+            throw new Exception("Merging of HL7 and Data Warehouse encounters not supported since change to generate multiple encounters from ADT feed");
+        }
         //since the Encounter has been last updated by the DW feed, we only want to update fields
         //that will tell us something new about the patient (e.g. they've been discharged)
         //updateEncounterIdentifiers(oldEncounter, newEncounter);
@@ -39,43 +59,141 @@ public class EncounterTransformer {
         updateEncounterHospitalisation(oldEncounter, newEncounter);
         updateEncounterLocation(oldEncounter, newEncounter);
         //updateEncounterServiceProvider(oldEncounter, newEncounter);
-        updateEncounterPartOf(oldEncounter, newEncounter);
+        //updateEncounterPartOf(oldEncounter, newEncounter);
         updateExtensions(oldEncounter, newEncounter);
 
-        return oldEncounter;
+        fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(oldEncounter));
     }
 
-    public static Resource updateHl7Encounter(Encounter oldEncounter, Encounter newEncounter) throws Exception {
+    /**
+     * updates TWO FHIR Encounter records for each Encounter passed in:
+     * - creates/updates a top-level/parent Encounter, representing the Encounter's current state
+     * - creates/replaces a child-level Encounter, representing the Encounter's individual events
+     *
+     * The child encounter is linked to the parent using the partOf element
+     * The parent encounter has a link to all children using a Contained List
+     */
+    public static void updateHl7Encounter(Encounter newEncounter, Encounter existingParentEncounter, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        if (oldEncounter == null) {
-            return newEncounter;
+        String originalEncounterId = newEncounter.getId();
+        UUID serviceId = fhirResourceFiler.getServiceId();
+
+        //if the parent already exists, then we merge the content of the new encounter into it, otherwise
+        //just use the new encounter as the parent
+        EncounterBuilder parentEncounterBuilder = null;
+        if (existingParentEncounter == null) {
+            parentEncounterBuilder = new EncounterBuilder(newEncounter.copy()); //COPY the new encounter
+
+        } else {
+            parentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+
+            //copy the contents of the new Encounter into the existing parent
+            //fields got from http://hl7.org/fhir/DSTU2/encounter.html
+            updateEncounterIdentifiers(existingParentEncounter, newEncounter);
+            updateEncounterStatus(existingParentEncounter, newEncounter);
+            updateEncounterStatusHistory(existingParentEncounter, newEncounter);
+            updateEncounterClass(existingParentEncounter, newEncounter);
+            updateEncounterType(existingParentEncounter, newEncounter);
+            updateEncounterPriority(existingParentEncounter, newEncounter);
+            updateEncounterPatient(existingParentEncounter, newEncounter);
+            updateEncounterEpisode(existingParentEncounter, newEncounter);
+            updateEncounterIncomingReferral(existingParentEncounter, newEncounter);
+            updateEncounterParticipant(existingParentEncounter, newEncounter);
+            updateEncounterAppointment(existingParentEncounter, newEncounter);
+            updateEncounterPeriod(existingParentEncounter, newEncounter);
+            updateEncounterLength(existingParentEncounter, newEncounter);
+            updateEncounterReason(existingParentEncounter, newEncounter);
+            updateEncounterIndication(existingParentEncounter, newEncounter);
+            updateEncounterHospitalisation(existingParentEncounter, newEncounter);
+            updateEncounterLocation(existingParentEncounter, newEncounter);
+            updateEncounterServiceProvider(existingParentEncounter, newEncounter);
+            //updateEncounterPartOf(existingParentEncounter, newEncounter); //never used
+            updateExtensions(existingParentEncounter, newEncounter);
+
         }
 
-        //field got from http://hl7.org/fhir/DSTU2/encounter.html
-        updateEncounterIdentifiers(oldEncounter, newEncounter);
-        updateEncounterStatus(oldEncounter, newEncounter);
-        updateEncounterStatusHistory(oldEncounter, newEncounter);
-        updateEncounterClass(oldEncounter, newEncounter);
-        updateEncounterType(oldEncounter, newEncounter);
-        updateEncounterPriority(oldEncounter, newEncounter);
-        updateEncounterPatient(oldEncounter, newEncounter);
-        updateEncounterEpisode(oldEncounter, newEncounter);
-        updateEncounterIncomingReferral(oldEncounter, newEncounter);
-        updateEncounterParticipant(oldEncounter, newEncounter);
-        updateEncounterAppointment(oldEncounter, newEncounter);
-        updateEncounterPeriod(oldEncounter, newEncounter);
-        updateEncounterLength(oldEncounter, newEncounter);
-        updateEncounterReason(oldEncounter, newEncounter);
-        updateEncounterIndication(oldEncounter, newEncounter);
-        updateEncounterHospitalisation(oldEncounter, newEncounter);
-        updateEncounterLocation(oldEncounter, newEncounter);
-        updateEncounterServiceProvider(oldEncounter, newEncounter);
-        updateEncounterPartOf(oldEncounter, newEncounter);
-        updateExtensions(oldEncounter, newEncounter);
+        //the child is always just the new Encounter passed in
+        EncounterBuilder childEncounterBuilder = new EncounterBuilder(newEncounter);
 
-        return oldEncounter;
+        //generate a new unique ID for the child encounter using the data date of the exchange (which is the HL7v2 timestamp)
+        Date newDataDate = fhirResourceFiler.getDataDate();
+        String newChildSourceId = originalEncounterId + ":" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(newDataDate);
+        UUID newChildId = IdHelper.getOrCreateEdsResourceId(serviceId, ResourceType.Encounter, newChildSourceId);
+        childEncounterBuilder.setId(newChildId.toString());
+
+        //link the child to the parent
+        Reference parentRef = ReferenceHelper.createReference(ResourceType.Encounter, originalEncounterId);
+        childEncounterBuilder.setPartOf(parentRef);
+
+        //and link the parent to the child
+        Reference childRef = ReferenceHelper.createReference(ResourceType.Encounter, newChildId.toString());
+        ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
+        listBuilder.addReference(childRef); //this fn ignores duplicates, so we don't need to check if already present
+
+        //A23 messages tell us to delete an "event". Analysing a sample of data has shown that the STATUS A23 encounter
+        //tells us either to delete the entire encounter or just a specific event in the encounter history
+        String adtMessageType = getAdtMessageType(newEncounter);
+        if (adtMessageType.equals("ADT^A23")) {
+            Encounter.EncounterState status = getStatus(newEncounter);
+            if (status == Encounter.EncounterState.CANCELLED) {
+                //if the Encounter is cancelled, then delete all child events for the encounter and the top-level one itself
+                ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+                for (List_.ListEntryComponent item: listBuilder.getContainedListItems()) {
+                    Reference ref = item.getItem();
+                    ReferenceComponents comps = ReferenceHelper.getReferenceComponents(ref);
+                    if (comps.getResourceType() != ResourceType.Encounter) {
+                        throw new Exception("Expecting only Encounter references in parent Encounter");
+                    }
+                    Encounter childEncounter = (Encounter)resourceDal.getCurrentVersionAsResource(serviceId, ResourceType.Encounter, comps.getId());
+                    if (childEncounter != null) {
+                        fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                    }
+                }
+
+                //delete the parent encounter
+                fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
+                return;
+
+            } else if (status == Encounter.EncounterState.INPROGRESS) {
+                //if the Encounter is still in progress, just delete this specific event
+                fhirResourceFiler.deletePatientResource(null, false, childEncounterBuilder);
+                return;
+
+            } else {
+                throw new Exception("Unexpected encounter status " + status + " for A23");
+            }
+        }
+
+        fhirResourceFiler.savePatientResource(null, false, parentEncounterBuilder, childEncounterBuilder);
     }
 
+    private static Encounter.EncounterState getStatus(Encounter encounter) throws Exception {
+        if (!encounter.hasStatus()) {
+            throw new Exception("No status found on Encounter");
+        }
+        return encounter.getStatus();
+    }
+
+    private static String getAdtMessageType(Encounter encounter) throws Exception {
+        CodeableConcept messageTypeConcept = (CodeableConcept)ExtensionConverter.findExtensionValue(encounter, FhirExtensionUri.HL7_MESSAGE_TYPE);
+        if (messageTypeConcept == null
+                || !messageTypeConcept.hasCoding()) {
+            throw new Exception("No ADT message type found in Encounter");
+        }
+
+        Coding coding = messageTypeConcept.getCoding().get(0);
+        return coding.getCode();
+    }
+
+    private static Date getRecordedDate(Encounter encounter) throws Exception {
+        DateTimeType dtRecorded = (DateTimeType)ExtensionConverter.findExtensionValue(encounter, FhirExtensionUri.RECORDED_DATE);
+        if (dtRecorded == null) {
+            //this should never happen
+            throw new Exception("Failed to find recorded date in Encounter");
+        }
+
+        return dtRecorded.getValue();
+    }
 
     private static void updateExtensions(Encounter oldEncounter, Encounter newEncounter) {
         if (!newEncounter.hasExtension()) {
@@ -98,13 +216,13 @@ public class EncounterTransformer {
         }
     }
 
-    private static void updateEncounterPartOf(Encounter oldEncounter, Encounter newEncounter) {
+    /*private static void updateEncounterPartOf(Encounter oldEncounter, Encounter newEncounter) {
         if (newEncounter.hasPartOf()) {
             Reference ref = newEncounter.getPartOf();
             ref = ref.copy();
             oldEncounter.setPartOf(ref);
         }
-    }
+    }*/
 
     private static void updateEncounterServiceProvider(Encounter oldEncounter, Encounter newEncounter) {
         if (newEncounter.hasServiceProvider()) {

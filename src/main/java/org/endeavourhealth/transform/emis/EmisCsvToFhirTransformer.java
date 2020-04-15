@@ -273,10 +273,10 @@ public abstract class EmisCsvToFhirTransformer {
         boolean processAdminData = true;
 
         //massive hack to allow the clinical observations to be processed faster - audit skipping it so we can come back later
-        /*if (true) {
+        if (true) {
             auditSkippingAdminData(fhirResourceFiler);
             processAdminData = false;
-        }*/
+        }
 
         if (processAdminData) {
 
@@ -360,7 +360,7 @@ public abstract class EmisCsvToFhirTransformer {
         csvHelper.stopThreadPool();
     }
 
-    /*private static void auditSkippingAdminData(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
+    private static void auditSkippingAdminData(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
 
         LOG.info("Skipping admin data for exchange " + fhirFiler.getExchangeId());
         AuditWriter.writeExchangeEvent(fhirFiler.getExchangeId(), "Skipped admin data");
@@ -387,7 +387,7 @@ public abstract class EmisCsvToFhirTransformer {
             }
             connection.close();
         }
-    }*/
+    }
 
 
 

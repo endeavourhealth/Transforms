@@ -11,7 +11,10 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
+import org.endeavourhealth.transform.enterprise.outputModels.EncounterEvent;
+import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -40,7 +43,9 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
     @Override
     protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
-        org.endeavourhealth.transform.subscriber.targetTables.Encounter model = params.getOutputContainer().getEncounters();
+        //two tables, Encounter and EncounterEvent, may be written to in this transform
+        org.endeavourhealth.transform.subscriber.targetTables.Encounter targetEncounterTable = params.getOutputContainer().getEncounters();
+        org.endeavourhealth.transform.subscriber.targetTables.EncounterEvent targetEncounterEventTable = params.getOutputContainer().getEncounterEvents();
 
         Encounter fhir = (Encounter)resourceWrapper.getResource(); //returns null if deleted
 
@@ -48,7 +53,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            model.writeDelete(subscriberId);
+            targetEncounterTable.writeDelete(subscriberId);
+            targetEncounterEventTable.writeDelete(subscriberId);
             return;
         }
 
@@ -69,10 +75,9 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         Double ageAtEvent = null;
         String type = null;
         String subtype = null;
-        Boolean isPrimary = null;
         String admissionMethod = null;
         Date endDate = null;
-        String institutionLocationId = null;
+        Long institutionLocationId = null;
         Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
@@ -114,39 +119,6 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
         }
 
-        /*
-        //changing to use our information model to get the concept ID for the consultation type based on the textual term
-        originalTerm = findEncounterTypeTerm(fhir, params);
-        if (!Strings.isNullOrEmpty(originalTerm)) {
-            EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
-            snomedConceptId = ret.getCode();
-        }*/
-
-        /*if (fhir.hasExtension()) {
-
-            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
-            if (extension != null) {
-                CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-
-                snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
-
-                //add the raw original code and term, to assist in data checking and results display
-                originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
-                originalTerm = codeableConcept.getText();
-            }
-        }
-
-        //if we don't have the source extension giving the snomed code, then see if this is a secondary care encounter
-        //and see if we can generate a snomed ID from the encounter fields
-        if (Strings.isNullOrEmpty(originalCode)) {
-
-            EncounterCode code = mapEncounterCode(fhir, params);
-            if (code != null) {
-                snomedConceptId = code.getCode();
-                originalTerm = code.getTerm();
-            }
-        }*/
-
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
             episodeOfCareId = transformOnDemandAndMapId(episodeReference, SubscriberTableId.EPISODE_OF_CARE, params);
@@ -175,40 +147,11 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             subtype = null;
         }
 
-        /*
-        if (fhir.hasExtension()) {
-
-            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
-            if (extension != null) {
-
-                CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-                originalTerm = codeableConcept.getText().toLowerCase();
-
-                //add the raw original code and term, to assist in data checking and results display
-                // String originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
-                // originalTerm = codeableConcept.getText();
-
-                coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-                nonCoreConceptId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-
-                type = null;
-                subtype = null;
-            }
-        }
-        */
 
         if (fhir.getPatient() != null) {
             Reference ref = fhir.getPatient();
             Patient patient = params.getCachedPatient(ref);
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
-        }
-
-        Extension isPrimaryExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.IS_PRIMARY);
-        if (isPrimaryExtension != null) {
-            BooleanType b = (BooleanType)isPrimaryExtension.getValue();
-            if (b.getValue() != null) {
-                isPrimary = b.getValue();
-            }
         }
 
         if (fhir.hasClass_()) {
@@ -239,43 +182,97 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             endDate = dt.getValue();
         }
 
-        Extension locationRefExt = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_LOCATION_REFERENCE);
-        if (locationRefExt != null) {
-            StringType ref = (StringType) locationRefExt.getValue();
-            if (ref.getValue() != null) {
-                institutionLocationId = ref.getValue();
-            }
-        }
+        institutionLocationId = transformLocationId(fhir, params);
 
         dateRecorded = params.includeDateRecorded(fhir);
 
-        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
-        model.writeUpsert(
-                subscriberId,
-                organizationId,
-                patientId,
-                personId,
-                practitionerId,
-                appointmentId,
-                clinicalEffectiveDate,
-                datePrecisionConceptId,
-                episodeOfCareId,
-                serviceProviderOrganisationId,
-                coreConceptId,
-                nonCoreConceptId,
-                ageAtEvent,
-                type,
-                subtype,
-                admissionMethod,
-                endDate,
-                institutionLocationId,
-                dateRecorded);
+        if (!fhir.hasPartOf()) {
+            //if the FHIR Encounter is NOT part of another encounter, then write it to the regular encounter table
 
-        //we also need to populate the two new encounter tables
-        //tranformExtraEncounterTables(resource, params,
-        //        id, organizationId, patientId, personId, practitionerId,
-        //        episodeOfCareId, clinicalEffectiveDate, datePrecisionConceptId, appointmentId,
-        //        serviceProviderOrganisationId);
+            //the location ID column is a String for some reason, so convert the long ID to a String
+            String institutionLocationIdStr = null;
+            if (institutionLocationId != null) {
+                institutionLocationIdStr = "" + institutionLocationId;
+            }
+
+            targetEncounterTable.setIncludeDateRecorded(params.isIncludeDateRecorded());
+            targetEncounterTable.writeUpsert(
+                    subscriberId,
+                    organizationId,
+                    patientId,
+                    personId,
+                    practitionerId,
+                    appointmentId,
+                    clinicalEffectiveDate,
+                    datePrecisionConceptId,
+                    episodeOfCareId,
+                    serviceProviderOrganisationId,
+                    coreConceptId,
+                    nonCoreConceptId,
+                    ageAtEvent,
+                    type,
+                    subtype,
+                    admissionMethod,
+                    endDate,
+                    institutionLocationIdStr,
+                    dateRecorded);
+
+        } else {
+            //if the FHIR Encounter IS part of another encounter, then write it to the encounter event table
+            //but ONLY if we know the target DB has the encounter event table
+            if (params.isHasEncounterEventTable()) {
+
+                Reference partOfReference = fhir.getPartOf();
+                Long parentEncounterId = transformOnDemandAndMapId(partOfReference, SubscriberTableId.ENCOUNTER, params);
+
+                //if the parent encounter has been deleted, don't transform this
+                if (parentEncounterId == null) {
+                    return;
+                }
+
+                boolean isFinished = fhir.hasStatus() && fhir.getStatus() == Encounter.EncounterState.FINISHED;
+
+                targetEncounterEventTable.writeUpsert(
+                        subscriberId,
+                        organizationId,
+                        patientId,
+                        personId,
+                        parentEncounterId.longValue(),
+                        practitionerId,
+                        appointmentId,
+                        clinicalEffectiveDate,
+                        datePrecisionConceptId,
+                        episodeOfCareId,
+                        serviceProviderOrganisationId,
+                        coreConceptId,
+                        nonCoreConceptId,
+                        ageAtEvent,
+                        type,
+                        subtype,
+                        admissionMethod,
+                        endDate,
+                        institutionLocationId,
+                        dateRecorded,
+                        isFinished);
+            }
+        }
+    }
+
+
+    private static Long transformLocationId(Encounter encounter, SubscriberTransformHelper params) throws Exception {
+
+        if (!encounter.hasLocation()) {
+            return null;
+        }
+
+        for (Encounter.EncounterLocationComponent loc: encounter.getLocation()) {
+            if (loc.getStatus() == Encounter.EncounterLocationStatus.ACTIVE) {
+                Reference ref = loc.getLocation();
+                return transformOnDemandAndMapId(ref, SubscriberTableId.LOCATION, params);
+            }
+        }
+
+        return null;
     }
 
 

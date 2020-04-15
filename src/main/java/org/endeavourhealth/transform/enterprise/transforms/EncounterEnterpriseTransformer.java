@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirCodeUri;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -14,11 +11,9 @@ import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
-import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
-import org.endeavourhealth.transform.enterprise.outputModels.EncounterDetail;
-import org.endeavourhealth.transform.enterprise.outputModels.EncounterRaw;
-import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
+import org.endeavourhealth.transform.enterprise.outputModels.*;
 import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Encounter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +45,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
-            writeDelete(enterpriseId, csvWriter, params);
+            writeDelete(enterpriseId, csvWriter, params); //this fn will delete from ALL encounter tables
             return;
         }
 
@@ -116,31 +111,6 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
             snomedConceptId = new Long(ret.getCode());
         }
 
-        /*if (fhir.hasExtension()) {
-
-            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ENCOUNTER_SOURCE);
-            if (extension != null) {
-                CodeableConcept codeableConcept = (CodeableConcept) extension.getValue();
-
-                snomedConceptId = CodeableConceptHelper.findSnomedConceptId(codeableConcept);
-
-                //add the raw original code and term, to assist in data checking and results display
-                originalCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
-                originalTerm = codeableConcept.getText();
-            }
-        }
-
-        //if we don't have the source extension giving the snomed code, then see if this is a secondary care encounter
-        //and see if we can generate a snomed ID from the encounter fields
-        if (Strings.isNullOrEmpty(originalCode)) {
-
-            EncounterCode code = mapEncounterCode(fhir, params);
-            if (code != null) {
-                snomedConceptId = code.getCode();
-                originalTerm = code.getTerm();
-            }
-        }*/
-
         if (fhir.hasEpisodeOfCare()) {
             Reference episodeReference = fhir.getEpisodeOfCare().get(0);
             episodeOfCareId = transformOnDemandAndMapId(episodeReference, params);
@@ -156,28 +126,85 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
 
         dateRecorded = params.includeDateRecorded(fhir);
 
-        org.endeavourhealth.transform.enterprise.outputModels.Encounter model = (org.endeavourhealth.transform.enterprise.outputModels.Encounter)csvWriter;
-        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
-        model.writeUpsert(id,
-            organisationId,
-            patientId,
-            personId,
-            practitionerId,
-            appointmentId,
-            clinicalEffectiveDate,
-            datePrecisionId,
-            snomedConceptId,
-            originalCode,
-            originalTerm,
-            episodeOfCareId,
-            serviceProviderOrganisationId,
-            dateRecorded);
+        if (!fhir.hasPartOf()) {
 
-        //we also need to populate the two new encounter tables
-        tranformExtraEncounterTables(fhir, params,
-                id, organisationId, patientId, personId, practitionerId,
-                episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
-                serviceProviderOrganisationId);
+            //if the FHIR Encounter is NOT part of another encounter, then write it to the regular encounter table
+            org.endeavourhealth.transform.enterprise.outputModels.Encounter model = (org.endeavourhealth.transform.enterprise.outputModels.Encounter)csvWriter;
+            model.setIncludeDateRecorded(params.isIncludeDateRecorded());
+            model.writeUpsert(id,
+                    organisationId,
+                    patientId,
+                    personId,
+                    practitionerId,
+                    appointmentId,
+                    clinicalEffectiveDate,
+                    datePrecisionId,
+                    snomedConceptId,
+                    originalCode,
+                    originalTerm,
+                    episodeOfCareId,
+                    serviceProviderOrganisationId,
+                    dateRecorded);
+
+            //we also need to populate the two new encounter tables
+            tranformExtraEncounterTables(fhir, params,
+                    id, organisationId, patientId, personId, practitionerId,
+                    episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
+                    serviceProviderOrganisationId);
+
+        } else {
+            //if the FHIR Encounter IS part of another encounter, then write it to the encounter event table
+            Reference partOfReference = fhir.getPartOf();
+            Long parentEncounterId = transformOnDemandAndMapId(partOfReference, params);
+
+            //if the parent encounter has been deleted, don't transform this
+            if (parentEncounterId == null) {
+                return;
+            }
+
+            Long locationId = transformLocationId(fhir, params);
+
+            OutputContainer outputContainer = params.getOutputContainer();
+            EncounterEvent model = outputContainer.getEncounterEvent();
+
+            boolean isFinished = fhir.hasStatus() && fhir.getStatus() == Encounter.EncounterState.FINISHED;
+
+            model.writeUpsert(id,
+                    organisationId,
+                    patientId,
+                    personId,
+                    parentEncounterId.longValue(), //link to parent
+                    practitionerId,
+                    appointmentId,
+                    clinicalEffectiveDate,
+                    datePrecisionId,
+                    snomedConceptId,
+                    originalCode,
+                    originalTerm,
+                    episodeOfCareId,
+                    serviceProviderOrganisationId,
+                    dateRecorded,
+                    locationId, //additional field
+                    isFinished); //additional field
+
+        }
+
+    }
+
+    private static Long transformLocationId(Encounter encounter, EnterpriseTransformHelper params) throws Exception {
+
+        if (!encounter.hasLocation()) {
+            return null;
+        }
+
+        for (Encounter.EncounterLocationComponent loc: encounter.getLocation()) {
+            if (loc.getStatus() == Encounter.EncounterLocationStatus.ACTIVE) {
+                Reference ref = loc.getLocation();
+                return transformOnDemandAndMapId(ref, params);
+            }
+        }
+
+        return null;
     }
 
     private void tranformExtraEncounterTables(Resource resource, EnterpriseTransformHelper params,
@@ -737,11 +764,14 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
 
         OutputContainer outputContainer = params.getOutputContainer();
 
+        EncounterEvent encounterEvent = outputContainer.getEncounterEvent();
+        encounterEvent.writeDelete(enterpriseId.longValue());
+
         EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
-        encounterRaw.writeDelete(enterpriseId);
+        encounterRaw.writeDelete(enterpriseId.longValue());
 
         EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
-        encounterDetail.writeDelete(enterpriseId);
+        encounterDetail.writeDelete(enterpriseId.longValue());
 
     }
 

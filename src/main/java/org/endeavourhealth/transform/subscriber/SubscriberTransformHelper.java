@@ -15,12 +15,9 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPerso
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
-import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceParser;
-import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.endeavourhealth.transform.subscriber.transforms.AbstractSubscriberTransformer;
@@ -53,6 +50,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final List<SubscriberId> subscriberIdsUpdated;
     private final boolean isPseudonymised;
     private final boolean includeDateRecorded;
+    private final boolean hasEncounterEventTable;
     private final Map<String, ResourceWrapper> hmAllResourcesByReferenceString;
     private final List<ResourceWrapper> allResources;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
@@ -87,7 +85,12 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
         this.isPseudonymised = config.has("pseudonymised")
                 && config.get("pseudonymised").asBoolean();
-        this.includeDateRecorded = config.has("include_date_recorded") && config.get("include_date_recorded").asBoolean();
+
+        this.includeDateRecorded = config.has("include_date_recorded")
+                && config.get("include_date_recorded").asBoolean();
+
+        this.hasEncounterEventTable = config.has("include_encounter_event")
+                && config.get("include_encounter_event").asBoolean();
 
         if (config.has("transform_batch_size")) {
             this.batchSize = config.get("transform_batch_size").asInt();
@@ -113,7 +116,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
         Map<String, ResourceWrapper> ret = new HashMap<>();
 
-        for (ResourceWrapper resource: l) {
+        for (ResourceWrapper resource : l) {
 
             ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
             String resourceId = resource.getResourceId().toString();
@@ -133,7 +136,13 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return isPseudonymised;
     }
 
-    public boolean isIncludeDateRecorded() { return includeDateRecorded; }
+    public boolean isIncludeDateRecorded() {
+        return includeDateRecorded;
+    }
+
+    public boolean isHasEncounterEventTable() {
+        return hasEncounterEventTable;
+    }
 
     public Date includeDateRecorded(DomainResource fhir) {
         Date dateRecorded = null;
@@ -279,7 +288,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private String findPatientIdFromResources() throws Exception {
 
         //no locking required as this is only called when transform is single-threaded
-        for (ResourceWrapper resourceWrapper: allResources) {
+        for (ResourceWrapper resourceWrapper : allResources) {
 
             ResourceType resourceType = resourceWrapper.getResourceTypeObj();
             if (!FhirResourceFiler.isPatientResource(resourceType)) {
@@ -306,7 +315,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
         ResourceWrapper patientWrapper = findOrRetrieveResourceWrapper(patientRef);
         if (patientWrapper != null) {
-            this.cachedPatient = (Patient)patientWrapper.getResource();
+            this.cachedPatient = (Patient) patientWrapper.getResource();
         }
         this.shouldPatientRecordBeDeleted = new Boolean(!shouldPatientBePresentInSubscriber(cachedPatient));
 
@@ -333,7 +342,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             UUID patientUuid = UUID.fromString(discoveryPatientId);
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
             List<ResourceWrapper> allPatientResources = resourceDal.getResourcesByPatient(serviceId, patientUuid);
-            for (ResourceWrapper wrapper: allPatientResources) {
+            for (ResourceWrapper wrapper : allPatientResources) {
 
                 //add the resource so it gets transformed
                 addResourceToTransform(wrapper);
@@ -447,11 +456,11 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         int countMissedResources = 0;
 
         //no locking required as this is only called when transform is single-threaded
-        for (String referenceStr: hmAllResourcesByReferenceString.keySet()) {
+        for (String referenceStr : hmAllResourcesByReferenceString.keySet()) {
             if (!resourcesTransformedReferences.containsKey(referenceStr)
                     && !resourcesSkippedReferences.containsKey(referenceStr)) {
 
-                countMissedResources ++;
+                countMissedResources++;
                 if (missedResources.size() < 10) {
                     missedResources.add(referenceStr);
                 }
@@ -472,7 +481,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         Map<String, List<ResourceWrapper>> hmByType = new HashMap<>();
 
         //no locking required as this is only called when transform is single-threaded
-        for (ResourceWrapper wrapper: allResources) {
+        for (ResourceWrapper wrapper : allResources) {
             String type = wrapper.getResourceType();
             List<ResourceWrapper> l = hmByType.get(type);
             if (l == null) {
@@ -481,7 +490,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             }
             l.add(wrapper);
         }
-        for (String type: hmByType.keySet()) {
+        for (String type : hmByType.keySet()) {
             List<ResourceWrapper> l = hmByType.get(type);
             LOG.debug("Got " + type + " -> " + l.size());
         }
@@ -599,7 +608,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         //9155. and 184099003 are "patient date of birth" which breaks de-identification
         if (codeableConcept.hasCoding()) {
 
-            for (Coding coding: codeableConcept.getCoding()) {
+            for (Coding coding : codeableConcept.getCoding()) {
                 if (!coding.hasSystem()
                         || !coding.hasCode()) {
                     continue;
@@ -609,8 +618,8 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
                 String code = coding.getCode();
 
                 if ((system.equals(FhirCodeUri.CODE_SYSTEM_READ2) && getProtectedCodesRead2().contains(code))
-                    || (system.equals(FhirCodeUri.CODE_SYSTEM_CTV3) && getProtectedCodesCTV3().contains(code))
-                    || (system.equals(FhirCodeUri.CODE_SYSTEM_SNOMED_CT) && getProtectedCodesSnomed().contains(code))) {
+                        || (system.equals(FhirCodeUri.CODE_SYSTEM_CTV3) && getProtectedCodesCTV3().contains(code))
+                        || (system.equals(FhirCodeUri.CODE_SYSTEM_SNOMED_CT) && getProtectedCodesSnomed().contains(code))) {
 
                     LOG.debug("Will not transform " + code + " in system " + system + " as breaks de-identification");
                     return false;

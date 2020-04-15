@@ -42,6 +42,7 @@ public class OutputContainer {
         csvWriters.add(new EpisodeOfCare(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Appointment(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Encounter(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new EncounterEvent(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Flag(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new ReferralRequest(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new ProcedureRequest(csvFormat, dateFormat, timeFormat));
@@ -176,6 +177,10 @@ public class OutputContainer {
 
     public Encounter getEncounters() {
         return findCsvWriter(Encounter.class);
+    }
+
+    public EncounterEvent getEncounterEvents() {
+        return findCsvWriter(EncounterEvent.class);
     }
 
     public Flag getFlags() {
