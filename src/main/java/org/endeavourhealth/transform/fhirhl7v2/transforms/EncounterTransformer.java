@@ -96,29 +96,36 @@ public class EncounterTransformer {
             parentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
             LOG.debug("Existing encounter is NOT null, so will merge new data into parent Encounter");
 
-            //copy the contents of the new Encounter into the existing parent
-            //fields got from http://hl7.org/fhir/DSTU2/encounter.html
-            updateEncounterIdentifiers(existingParentEncounter, newEncounter);
-            updateEncounterStatus(existingParentEncounter, newEncounter);
-            updateEncounterStatusHistory(existingParentEncounter, newEncounter);
-            updateEncounterClass(existingParentEncounter, newEncounter);
-            updateEncounterType(existingParentEncounter, newEncounter);
-            updateEncounterPriority(existingParentEncounter, newEncounter);
-            updateEncounterPatient(existingParentEncounter, newEncounter);
-            updateEncounterEpisode(existingParentEncounter, newEncounter);
-            updateEncounterIncomingReferral(existingParentEncounter, newEncounter);
-            updateEncounterParticipant(existingParentEncounter, newEncounter);
-            updateEncounterAppointment(existingParentEncounter, newEncounter);
-            updateEncounterPeriod(existingParentEncounter, newEncounter);
-            updateEncounterLength(existingParentEncounter, newEncounter);
-            updateEncounterReason(existingParentEncounter, newEncounter);
-            updateEncounterIndication(existingParentEncounter, newEncounter);
-            updateEncounterHospitalisation(existingParentEncounter, newEncounter);
-            updateEncounterLocation(existingParentEncounter, newEncounter);
-            updateEncounterServiceProvider(existingParentEncounter, newEncounter);
-            //updateEncounterPartOf(existingParentEncounter, newEncounter); //never used
-            updateExtensions(existingParentEncounter, newEncounter);
+            //we sometimes receive ADT messages out of order, so will receive a re-send of the admission
+            //after the discarge, for example. So avoid messing up the parent Encounter by only merging
+            //in the changes if the new one is newer
+            Date dtExistingParent = getRecordedDate(existingParentEncounter);
+            Date dtNewEncounter = getRecordedDate(newEncounter);
+            if (!dtNewEncounter.before(dtExistingParent)) {
 
+                //copy the contents of the new Encounter into the existing parent
+                //fields got from http://hl7.org/fhir/DSTU2/encounter.html
+                updateEncounterIdentifiers(existingParentEncounter, newEncounter);
+                updateEncounterStatus(existingParentEncounter, newEncounter);
+                updateEncounterStatusHistory(existingParentEncounter, newEncounter);
+                updateEncounterClass(existingParentEncounter, newEncounter);
+                updateEncounterType(existingParentEncounter, newEncounter);
+                updateEncounterPriority(existingParentEncounter, newEncounter);
+                updateEncounterPatient(existingParentEncounter, newEncounter);
+                updateEncounterEpisode(existingParentEncounter, newEncounter);
+                updateEncounterIncomingReferral(existingParentEncounter, newEncounter);
+                updateEncounterParticipant(existingParentEncounter, newEncounter);
+                updateEncounterAppointment(existingParentEncounter, newEncounter);
+                updateEncounterPeriod(existingParentEncounter, newEncounter);
+                updateEncounterLength(existingParentEncounter, newEncounter);
+                updateEncounterReason(existingParentEncounter, newEncounter);
+                updateEncounterIndication(existingParentEncounter, newEncounter);
+                updateEncounterHospitalisation(existingParentEncounter, newEncounter);
+                updateEncounterLocation(existingParentEncounter, newEncounter);
+                updateEncounterServiceProvider(existingParentEncounter, newEncounter);
+                //updateEncounterPartOf(existingParentEncounter, newEncounter); //never used
+                updateExtensions(existingParentEncounter, newEncounter);
+            }
         }
 
         //the child is always just the new Encounter passed in
