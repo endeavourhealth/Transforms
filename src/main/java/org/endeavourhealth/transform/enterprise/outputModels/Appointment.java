@@ -29,7 +29,8 @@ public class Appointment extends AbstractEnterpriseCsvWriter {
                             Integer patientWait,
                             Integer patientDelay,
                             Date sentIn,
-                            Date left) throws Exception {
+                            Date left,
+                            Date bookedDate) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
@@ -45,7 +46,8 @@ public class Appointment extends AbstractEnterpriseCsvWriter {
                 convertInt(patientWait),
                 convertInt(patientDelay),
                 convertDateTime(sentIn),
-                convertDateTime(left));
+                convertDateTime(left),
+                convertDateTime(bookedDate));
     }
 
     @Override
@@ -65,7 +67,8 @@ public class Appointment extends AbstractEnterpriseCsvWriter {
                 "patient_wait",
                 "patient_delay",
                 "sent_in",
-                "left"
+                "left",
+                "booked_date"
         };
     }
 
@@ -85,6 +88,7 @@ public class Appointment extends AbstractEnterpriseCsvWriter {
                 Integer.TYPE,
                 Integer.class,
                 Integer.class,
+                Date.class,
                 Date.class,
                 Date.class
         };

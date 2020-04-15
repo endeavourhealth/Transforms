@@ -56,6 +56,7 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
         Integer patientDelay = null;
         Date sentIn = null;
         Date left = null;
+        Date bookedDate = null;
 
         if (fhir.hasParticipant()) {
             for (Appointment.AppointmentParticipantComponent participantComponent: fhir.getParticipant()) {
@@ -141,6 +142,9 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
                     DateTimeType dt = (DateTimeType)extension.getValue();
                     left = dt.getValue();
 
+                } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_BOOKING_DATE)) {
+                    DateTimeType dt = (DateTimeType)extension.getValue();
+                    bookedDate = dt.getValue();
                 }
             }
         }
@@ -159,7 +163,8 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
             patientWait,
             patientDelay,
             sentIn,
-            left);
+            left,
+            bookedDate);
     }
 
 

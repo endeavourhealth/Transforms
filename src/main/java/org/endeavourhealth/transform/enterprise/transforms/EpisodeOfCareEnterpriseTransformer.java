@@ -16,9 +16,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareEnterpriseTransformer.class);
@@ -161,9 +159,6 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                                                            EnterpriseTransformHelper params) throws  Exception {
 
         Extension regStatusExtension = null;
-        Date start = null;
-        Date end = null;
-        Integer registrationStatusId = null;
 
         EpisodeOfCare episodeOfCare = (EpisodeOfCare)resourceWrapper.getResource();
         //all the registration status Id values are in this extension
@@ -177,7 +172,13 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
             for (Resource containedResource: episodeOfCare.getContained()) {
                 if (containedResource != null && containedResource.getId().equals(idReferenceValue)) {
                     List_ list = (List_)containedResource;
-                    //get all the entries in the contained list
+
+                    Map<Integer, Date> hmRegStatusStartDate = new HashMap<>();
+                    Map<Integer, Integer> hmRegStatusNext = new HashMap<>();
+                    Integer prevStatusId = null;
+                    Integer registrationStatusId = null;
+
+                    //get all the status entries in the contained list to build up reference maps
                     List<List_.ListEntryComponent> entries = list.getEntry();
                     for (List_.ListEntryComponent entry : entries) {
 
@@ -190,31 +191,52 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                             RegistrationStatus status = RegistrationStatus.fromCode(code);
                             registrationStatusId = new Integer(status.ordinal());
 
-                            start = entry.getDate();
-                            end = null;   // currently no status end date supplied in the data
+                            //setup the start date link for each status
+                            Date startDate = entry.getDate();
+                            hmRegStatusStartDate.put(registrationStatusId, startDate);
 
-                            //create a unique Id mapping reference for this episode of care registration status using
-                            // code and date. Sometimes duplicates are sent which we will simply overwrite/upsert
-                            String sourceId
-                                    = ReferenceHelper.createReferenceExternal(episodeOfCare).getReference()+":"+code+":"+start;
-                            SubscriberId subTableId
-                                    = findOrCreateSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
-                            params.setSubscriberIdTransformed(resourceWrapper, subTableId);
-                            Long registrationHistoryId = subTableId.getSubscriberId();
-
-                            org.endeavourhealth.transform.enterprise.outputModels.RegistrationStatusHistory history =
-                                    params.getOutputContainer().getRegistrationStatusHistory();
-                            history.writeUpsert(registrationHistoryId,
-                                    organisationId,
-                                    patientId,
-                                    personId,
-                                    episodeOfCareId,
-                                    registrationStatusId,
-                                    start,
-                                    end);
+                            //set the subsequent status link for each status
+                            if (prevStatusId != null) {
+                                hmRegStatusNext.put(prevStatusId, registrationStatusId);
+                            }
+                            prevStatusId = registrationStatusId;
                         }
                     }
 
+                    //loop through registration status hash map to derive start and end date and file them
+                    for (Integer regStatusId: hmRegStatusStartDate.keySet()) {
+
+                        Date startDate = hmRegStatusStartDate.get(regStatusId);
+
+                        //get the subsequent status to derive the end date of this one.
+                        //if there is no subsequent status then this is the most recent status and has no end date
+                        Date endDate = null;
+                        Integer regStatusIdNext = hmRegStatusNext.get(regStatusId);
+                        if (regStatusIdNext != null) {
+
+                            endDate = hmRegStatusStartDate.get(regStatusIdNext);
+                        }
+
+                        //create a unique Id mapping reference for this episode of care registration status using
+                        //code and date. Sometimes duplicates are sent which we will simply overwrite/upsert
+                        String sourceId
+                                = ReferenceHelper.createReferenceExternal(episodeOfCare).getReference()+":"+regStatusId+":"+startDate;
+                        SubscriberId subTableId
+                                = findOrCreateSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
+                        params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                        Long registrationHistoryId = subTableId.getSubscriberId();
+
+                        org.endeavourhealth.transform.enterprise.outputModels.RegistrationStatusHistory history =
+                                params.getOutputContainer().getRegistrationStatusHistory();
+                        history.writeUpsert(registrationHistoryId,
+                                organisationId,
+                                patientId,
+                                personId,
+                                episodeOfCareId,
+                                regStatusId,
+                                startDate,
+                                endDate);
+                    }
                     //break out here as registration status containedResource entries are done
                     break;
                 }
