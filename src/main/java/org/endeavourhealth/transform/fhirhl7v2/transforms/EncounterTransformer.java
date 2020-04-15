@@ -98,10 +98,11 @@ public class EncounterTransformer {
 
             //we sometimes receive ADT messages out of order, so will receive a re-send of the admission
             //after the discarge, for example. So avoid messing up the parent Encounter by only merging
-            //in the changes if the new one is newer
+            //in the changes if the new one is newer (or we have no date of recording)
             Date dtExistingParent = getRecordedDate(existingParentEncounter);
             Date dtNewEncounter = getRecordedDate(newEncounter);
-            if (!dtNewEncounter.before(dtExistingParent)) {
+            if ((dtExistingParent == null && dtNewEncounter == null)
+                    || !dtNewEncounter.before(dtExistingParent)) {
 
                 //copy the contents of the new Encounter into the existing parent
                 //fields got from http://hl7.org/fhir/DSTU2/encounter.html
@@ -231,7 +232,9 @@ public class EncounterTransformer {
         DateTimeType dtRecorded = (DateTimeType)ExtensionConverter.findExtensionValue(encounter, FhirExtensionUri.RECORDED_DATE);
         if (dtRecorded == null) {
             //this should never happen
-            throw new Exception("Failed to find recorded date in Encounter");
+            //apparently is ALWAYS happens with the Homerton feed
+            //throw new Exception("Failed to find recorded date in Encounter");
+            return null;
         }
 
         return dtRecorded.getValue();
