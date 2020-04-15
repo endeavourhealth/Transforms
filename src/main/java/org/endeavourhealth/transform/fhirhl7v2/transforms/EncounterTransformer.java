@@ -141,13 +141,13 @@ public class EncounterTransformer {
         //link the child to the parent
         Reference parentRef = ReferenceHelper.createReference(ResourceType.Encounter, originalEncounterId);
         childEncounterBuilder.setPartOf(parentRef);
-        LOG.debug("PartOf reference set to " + parentRef);
+        //LOG.debug("PartOf reference set to " + parentRef);
 
         //and link the parent to the child
         Reference childRef = ReferenceHelper.createReference(ResourceType.Encounter, newChildId.toString());
         ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
         listBuilder.addReference(childRef); //this fn ignores duplicates, so we don't need to check if already present
-        LOG.debug("Child ref added to parent " + parentRef);
+        //LOG.debug("Child ref added to parent " + parentRef);
 
         //A23 messages tell us to delete an "event". Analysing a sample of data has shown that the STATUS A23 encounter
         //tells us either to delete the entire encounter or just a specific event in the encounter history
