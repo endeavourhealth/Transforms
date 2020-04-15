@@ -74,7 +74,7 @@ public class EncounterTransformer {
      * The child encounter is linked to the parent using the partOf element
      * The parent encounter has a link to all children using a Contained List
      */
-    public static void updateHl7Encounter(Encounter newEncounter, Encounter existingParentEncounter, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static void updateHl7Encounter(Encounter existingParentEncounter, Encounter newEncounter, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         String originalEncounterId = newEncounter.getId();
         UUID serviceId = fhirResourceFiler.getServiceId();
@@ -175,6 +175,23 @@ public class EncounterTransformer {
                 throw new Exception("Unexpected encounter status " + status + " for A23");
             }
         }
+
+        //the child encounter should have the partOf set and no contained list
+        if (!childEncounterBuilder.hasPartOf()) {
+            throw new Exception("Child encounter " + childEncounterBuilder.getResourceId() + " has no partOf element");
+        }
+        if (childEncounterBuilder.getResource().hasContained()) {
+            throw new Exception("Child encounter " + childEncounterBuilder.getResourceId() + " has contained list");
+        }
+
+        //the parent encounter should have a contained list but no partOf element
+        if (parentEncounterBuilder.hasPartOf()) {
+            throw new Exception("Parent encounter " + parentEncounterBuilder.getResourceId() + " has partOf element");
+        }
+        if (!parentEncounterBuilder.getResource().hasContained()) {
+            throw new Exception("Parent encounter " + parentEncounterBuilder.getResourceId() + " has no contained list");
+        }
+
 
         LOG.debug("Saving both encounters " + parentEncounterBuilder.getResourceId() + " and " + childEncounterBuilder.getResourceId());
         fhirResourceFiler.savePatientResource(null, false, parentEncounterBuilder, childEncounterBuilder);

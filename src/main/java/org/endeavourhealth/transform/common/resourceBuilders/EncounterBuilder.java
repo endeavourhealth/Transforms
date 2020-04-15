@@ -137,6 +137,10 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("partOf", sourceCells);
     }
 
+    public boolean hasPartOf() {
+        return this.encounter.hasPartOf();
+    }
+
     public void setIncomplete(boolean isIncomplete, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.encounter, FhirExtensionUri.ENCOUNTER_INCOMPLETE, isIncomplete);
 
