@@ -131,11 +131,11 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("appointment", sourceCells);
     }
 
-    /*public void setPartOf(Reference visitReference, CsvCell... sourceCells) {
-        this.encounter.setPartOf(visitReference);
+    public void setPartOf(Reference parentEncounterReference, CsvCell... sourceCells) {
+        this.encounter.setPartOf(parentEncounterReference);
 
-        auditValue("part Of", sourceCells);
-    }*/
+        auditValue("partOf", sourceCells);
+    }
 
     public void setIncomplete(boolean isIncomplete, CsvCell... sourceCells) {
         Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.encounter, FhirExtensionUri.ENCOUNTER_INCOMPLETE, isIncomplete);
@@ -567,9 +567,5 @@ public class EncounterBuilder extends ResourceBuilderBase
         auditValue("hospitalization.dischargeDisposition.text", sourceCells);
     }
 
-    public void setLocationReference(String locationReference, CsvCell... sourceCells) {
-        Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.encounter, FhirExtensionUri.ENCOUNTER_LOCATION_REFERENCE, locationReference);
 
-        auditIdentifierExtension(extension, sourceCells);
-    }
 }

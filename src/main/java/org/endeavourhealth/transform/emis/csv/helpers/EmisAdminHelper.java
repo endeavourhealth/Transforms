@@ -246,6 +246,9 @@ public class EmisAdminHelper {
     }
 
     public void addRequiredUserInRole(CsvCell userInRoleGuidCell) {
+        if (userInRoleGuidCell.isEmpty()) {
+            return;
+        }
         String id = userInRoleGuidCell.getString();
         this.hsRequiredUserIds.add(id);
     }

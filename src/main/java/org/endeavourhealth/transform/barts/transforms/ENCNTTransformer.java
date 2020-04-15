@@ -254,7 +254,7 @@ public class ENCNTTransformer {
 
         CsvCell locationRefCell = parser.getCurrentInstitutionMillenniumLocationCode();
         if (!locationRefCell.isEmpty()) {
-            encounterBuilder.setLocationReference(locationRefCell.getString(), locationRefCell);
+            //TODO - set location ref in hospitalisation structure
         }
 
         // Maintain EpisodeOfCare
