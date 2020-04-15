@@ -213,8 +213,13 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                         Date endDate = null;
                         Integer regStatusIdNext = hmRegStatusNext.get(regStatusId);
                         if (regStatusIdNext != null) {
-
                             endDate = hmRegStatusStartDate.get(regStatusIdNext);
+                        }
+
+                        //set end date to null for last status entry in list.
+                        //this will be the last registrationStatusId set in previous iteration through the status history
+                        if (regStatusId == registrationStatusId) {
+                            endDate = null;
                         }
 
                         //create a unique Id mapping reference for this episode of care registration status using
