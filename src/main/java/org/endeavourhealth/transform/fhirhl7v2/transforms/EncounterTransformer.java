@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
@@ -84,7 +85,11 @@ public class EncounterTransformer {
         //just use the new encounter as the parent
         EncounterBuilder parentEncounterBuilder = null;
         if (existingParentEncounter == null) {
-            parentEncounterBuilder = new EncounterBuilder(newEncounter.copy()); //COPY the new encounter
+            //don't trust the FHIR copy function, since it skips at least the ID, so serialise and deserialise
+            String json = FhirSerializationHelper.serializeResource(newEncounter);
+            Encounter parentCopy = (Encounter)FhirSerializationHelper.deserializeResource(json);
+            parentEncounterBuilder = new EncounterBuilder(parentCopy); //COPY the new encounter
+            //parentEncounterBuilder = new EncounterBuilder(newEncounter.copy()); //COPY the new encounter
             LOG.debug("Existing encounter is null, so will create new parent Encounter");
 
         } else {
