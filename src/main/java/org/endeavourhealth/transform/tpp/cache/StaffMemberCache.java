@@ -210,12 +210,27 @@ public class StaffMemberCache {
     }
 
 
-    public Integer findProfileIdForStaffMemberAndOrg(CsvCell staffMemberIdCell, CsvCell profileEnteredByCell, CsvCell organisationDoneAtCell) {
+    public Integer findProfileIdForStaffMemberAndOrg(CsvCell staffMemberIdCell, CsvCell profileEnteredByCell, CsvCell organisationDoneAtCell) throws Exception {
 
         CacheKey key = new CacheKey(staffMemberIdCell, organisationDoneAtCell);
         Integer profileId = hmCachedStaffToProfileIds.get(key);
         if (profileId == null) {
-            LOG.warn("NULL profile ID found for staff ID " + staffMemberIdCell.getInt() + " at org " + organisationDoneAtCell.getString());
+            //normally the pre-transformer for SREvent will ensure we know what staff and profile IDs are needed for the rest
+            //of the data, but if we get an amendment to an old data item (e.g. SRImmunisation) then we won't have the SREvent
+            //in the latest files, so won't have cached the required staff details. If that happens, just look up and add to the cache
+            TppStaffDalI dal = DalProvider.factoryTppStaffMemberDal();
+            String orgId = organisationDoneAtCell.getString();
+            Integer staffId = staffMemberIdCell.getInt();
+            Set<Integer> staffIds = new HashSet<>();
+            staffIds.add(staffId);
+            Map<Integer, Integer> map = dal.findProfileIdsForStaffMemberIdsAtOrg(orgId, staffIds);
+            if (map.isEmpty()) {
+                LOG.warn("NULL profile ID found for staff ID " + staffMemberIdCell.getInt() + " at org " + organisationDoneAtCell.getString());
+
+            } else {
+                profileId = map.get(staffId);
+                hmCachedStaffToProfileIds.put(key, profileId);
+            }
         }
         return profileId;
     }

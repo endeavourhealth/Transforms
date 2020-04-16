@@ -31,42 +31,6 @@ import java.util.UUID;
 public class EncounterTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EncounterTransformer.class);
 
-    public static void updateDwEncounter(Encounter oldEncounter, Encounter newEncounter, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        if (oldEncounter == null) {
-            fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(newEncounter));
-            return;
-        }
-
-        if (true) {
-            throw new Exception("Merging of HL7 and Data Warehouse encounters not supported since change to generate multiple encounters from ADT feed");
-        }
-        //since the Encounter has been last updated by the DW feed, we only want to update fields
-        //that will tell us something new about the patient (e.g. they've been discharged)
-        //updateEncounterIdentifiers(oldEncounter, newEncounter);
-        updateEncounterStatus(oldEncounter, newEncounter);
-        updateEncounterStatusHistory(oldEncounter, newEncounter);
-        updateEncounterClass(oldEncounter, newEncounter);
-        updateEncounterType(oldEncounter, newEncounter);
-        updateEncounterPriority(oldEncounter, newEncounter);
-        updateEncounterPatient(oldEncounter, newEncounter);
-        //updateEncounterEpisode(oldEncounter, newEncounter);
-        updateEncounterIncomingReferral(oldEncounter, newEncounter);
-        updateEncounterParticipant(oldEncounter, newEncounter);
-        updateEncounterAppointment(oldEncounter, newEncounter);
-        updateEncounterPeriod(oldEncounter, newEncounter);
-        updateEncounterLength(oldEncounter, newEncounter);
-        updateEncounterReason(oldEncounter, newEncounter);
-        updateEncounterIndication(oldEncounter, newEncounter);
-        updateEncounterHospitalisation(oldEncounter, newEncounter);
-        updateEncounterLocation(oldEncounter, newEncounter);
-        //updateEncounterServiceProvider(oldEncounter, newEncounter);
-        //updateEncounterPartOf(oldEncounter, newEncounter);
-        updateExtensions(oldEncounter, newEncounter);
-
-        fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(oldEncounter));
-    }
-
     /**
      * updates TWO FHIR Encounter records for each Encounter passed in:
      * - creates/updates a top-level/parent Encounter, representing the Encounter's current state
@@ -75,7 +39,7 @@ public class EncounterTransformer {
      * The child encounter is linked to the parent using the partOf element
      * The parent encounter has a link to all children using a Contained List
      */
-    public static void updateHl7Encounter(Encounter existingParentEncounter, Encounter newEncounter, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static void updateEncounter(Encounter existingParentEncounter, Encounter newEncounter, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         String originalEncounterId = newEncounter.getId();
         UUID serviceId = fhirResourceFiler.getServiceId();

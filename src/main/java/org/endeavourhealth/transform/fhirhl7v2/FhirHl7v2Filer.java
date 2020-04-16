@@ -506,7 +506,10 @@ public class FhirHl7v2Filer {
                 if (!hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)) {
                     Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
 
-                    if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                    LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId() + " after merging into DW Encounter");
+                    EncounterTransformer.updateEncounter(oldEncounter, (Encounter)resource, fhirResourceFiler);
+
+                    /*if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
                         //fully merge the new HL7 encounter into the existing HL7 one
                         LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId() + " after merging into HL7 Encounter");
                         EncounterTransformer.updateHl7Encounter(oldEncounter, (Encounter)resource, fhirResourceFiler);
@@ -515,7 +518,7 @@ public class FhirHl7v2Filer {
                         //do a limited merge of the HL7 encounter into the DW one
                         LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId() + " after merging into DW Encounter");
                         EncounterTransformer.updateDwEncounter(oldEncounter, (Encounter)resource, fhirResourceFiler);
-                    }
+                    }*/
 
                 } else {
                     LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as has been deleted by DW feed");
