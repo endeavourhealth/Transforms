@@ -151,7 +151,7 @@ public class IMHelper {
         }
     }
 
-    public static Integer getIMMappedConceptForTypeTerm(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String type, String term) throws Exception {
+    public static Integer getIMMappedConceptForTypeTerm(Resource fhirResource, String type, String term) throws Exception {
 
         if (term == null) {
             return null;
@@ -208,7 +208,7 @@ public class IMHelper {
         }
     }
 
-    public static Integer getIMConceptForTypeTerm(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String type, String term) throws Exception {
+    public static Integer getConceptDbidForTypeTerm(Resource fhirResource, String type, String term) throws Exception {
 
         if (term == null) {
             return null;
@@ -223,7 +223,7 @@ public class IMHelper {
         }
 
         //hit IM API
-        ret = getIMConceptForTypeTermWithRetry(type, term);
+        ret = getConceptDbidForTypeTermWithRetry(type, term);
 
         //add to cache
         if (ret == null) {
@@ -240,7 +240,7 @@ public class IMHelper {
         return ret;
     }
 
-    private static Integer getIMConceptForTypeTermWithRetry(String type, String term) throws Exception {
+    private static Integer getConceptDbidForTypeTermWithRetry(String type, String term) throws Exception {
 
         try {
             lock.lock();

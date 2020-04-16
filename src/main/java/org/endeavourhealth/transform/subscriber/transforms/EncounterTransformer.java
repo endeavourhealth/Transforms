@@ -10,11 +10,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
-import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
-import org.endeavourhealth.transform.enterprise.outputModels.EncounterEvent;
-import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -135,13 +130,13 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         String originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
 
-            // EncounterCode ret =
-            encounterCodeDal.findOrCreateCode(originalTerm);
-            // Long snomedCode = ret.getCode();
             originalTerm = originalTerm.toLowerCase();
 
-            coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
-            nonCoreConceptId = IMHelper.getIMConceptForTypeTerm(params, fhir, IMConstant.DCE_Type_of_encounter, originalTerm);
+            //change to new mapping for encounter types in the IM
+            coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(fhir, IMConstant.ENCOUNTER_LEGACY, originalTerm);
+            nonCoreConceptId = IMHelper.getConceptDbidForTypeTerm(fhir, IMConstant.ENCOUNTER_LEGACY, originalTerm);
+            /*coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(fhir, IMConstant.DCE_type_of_encounter, originalTerm);
+            nonCoreConceptId = IMHelper.getConceptDbidForTypeTerm(fhir, IMConstant.DCE_type_of_encounter, originalTerm);*/
 
             type = null;
             subtype = null;

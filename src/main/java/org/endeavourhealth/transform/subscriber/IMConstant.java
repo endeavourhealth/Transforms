@@ -23,10 +23,10 @@ public class IMConstant {
     public static final String FHIR_TELECOM_SYSTEM = "FHIR_CPS";
     public static final String FHIR_TELECOM_USE = "FHIR_CPU";
     public static final String FHIR_DATETIME_PRECISION = "DS_DATE_PREC";
-    public static final String DCE_Type_of_encounter = "DCE_type_of_encounter";
+    //public static final String DCE_Type_of_encounter = "DCE_type_of_encounter"; //obsolete
     public static final String FHIR_CONDITION_EPISODICITY = "FHIR_CEP";
     public static final String EMIS_LOCAL = "EMIS_LOCAL";
     public static final String TPP_LOCAL = "TPP_LOCAL";
-
+    public static final String ENCOUNTER_LEGACY = "LE_TYPE";
 
 }

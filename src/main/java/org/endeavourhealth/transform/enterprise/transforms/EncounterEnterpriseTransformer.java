@@ -12,6 +12,8 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.*;
+import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Encounter;
 import org.slf4j.Logger;
@@ -107,8 +109,13 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         //changing to use our information model to get the concept ID for the consultation type based on the textual term
         originalTerm = findEncounterTypeTerm(fhir, params);
         if (!Strings.isNullOrEmpty(originalTerm)) {
-            EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
-            snomedConceptId = new Long(ret.getCode());
+
+            //look up our IM-generated "legacy code" for the encounter term
+            originalCode = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(IMConstant.ENCOUNTER_LEGACY, "TYPE", originalTerm);
+
+            //don't bother setting this, since the IM replaces all this locally generated code stuff
+            /*EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
+            snomedConceptId = new Long(ret.getCode());*/
         }
 
         if (fhir.hasEpisodeOfCare()) {
