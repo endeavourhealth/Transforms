@@ -113,6 +113,14 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
             //look up our IM-generated "legacy code" for the encounter term
             originalCode = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(IMConstant.ENCOUNTER_LEGACY, "TYPE", originalTerm);
 
+            //the original code is normally prefixed with the "namespace" short code in the FHIR->enterprise transform
+            //so it should be added here. But the IM was returning the code with the prefix
+            //so check for the presence of it and only add if required
+            if (!Strings.isNullOrEmpty(originalCode)
+                && !originalCode.startsWith("LE_")) {
+                originalCode = "LE_" + originalCode;
+            }
+
             //don't bother setting this, since the IM replaces all this locally generated code stuff
             /*EncounterCode ret = encounterCodeDal.findOrCreateCode(originalTerm);
             snomedConceptId = new Long(ret.getCode());*/

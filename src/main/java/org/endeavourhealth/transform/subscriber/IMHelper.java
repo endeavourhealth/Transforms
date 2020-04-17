@@ -431,7 +431,7 @@ public class IMHelper {
             while (true) {
                 lives--;
                 try {
-                    return IMClient.getCodeForTypeTerm(scheme, context, term, false);
+                    return IMClient.getCodeForTypeTerm(scheme, context, term, true);
                 } catch (Exception ex) {
                     if (lives <= 0) {
                         throw ex;
