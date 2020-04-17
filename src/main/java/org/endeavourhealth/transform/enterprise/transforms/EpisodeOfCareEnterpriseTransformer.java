@@ -203,8 +203,6 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                         }
                     }
 
-                    LOG.debug("Last registrationStatusId value set as: "+registrationStatusId);
-
                     //loop through registration status hash map to derive start and end date and file them
                     for (Integer regStatusId: hmRegStatusStartDate.keySet()) {
 
@@ -222,8 +220,6 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                         //this will be the last registrationStatusId set in previous iteration through the status history
                         if (regStatusId.equals(registrationStatusId)) {
                             endDate = null;
-
-                            LOG.debug("Setting regStatusId: "+regStatusId+" end_date to null");
                         }
 
                         //create a unique Id mapping reference for this episode of care registration status using
