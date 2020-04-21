@@ -139,7 +139,7 @@ public class BulkHelper {
 
     }
 
-    public static String getEnterpriseContainerForPatientAndEpisodeData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
+    public static String getEnterpriseContainerForPatientData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
 
         EnterpriseTransformHelper params
                 = new EnterpriseTransformHelper(serviceUUID, null, protocolUUID, null, batchUUID, subscriberConfigName, resources, null);
@@ -159,6 +159,7 @@ public class BulkHelper {
         List<ResourceWrapper> copy = new ArrayList(resources);
 
         // // create a patient transformer and transform the Patient fhir resources
+        //LOG.info("Transforming "+copy.size()+" resources for patientId: " + patientId);
         AbstractEnterpriseTransformer enterprisePatientTransformer
                 = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(ResourceType.Patient);
         enterprisePatientTransformer.transformResources(copy,
@@ -168,16 +169,45 @@ public class BulkHelper {
         enterprisePatientTransformer.transformResources(copy,
                 params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.PatientContact.class), params);
 
-        // create a episode of care transformer and transform the Patient fhir resources
+        List<String> filesToKeep = new ArrayList<>();
+        filesToKeep.add(SubscriberTableId.PATIENT.getName());
+        filesToKeep.add(SubscriberTableId.PATIENT_ADDRESS.getName());
+        filesToKeep.add(SubscriberTableId.PATIENT_CONTACT.getName());
+
+        params.getOutputContainer().clearDownOutputContainer(filesToKeep);
+
+        byte[] bytes = params.getOutputContainer().writeToZip();
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+
+    public static String getEnterpriseContainerForEpisodeData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
+
+        EnterpriseTransformHelper params
+                = new EnterpriseTransformHelper(serviceUUID, null, protocolUUID, null, batchUUID, subscriberConfigName, resources, null);
+
+        // Check if patient exists in target DB
+        boolean patientFoundInSubscriber = checkIfPatientIsInEnterpriseDB(params, patientId.toString());
+
+        if (!patientFoundInSubscriber) {
+            LOG.info("Skipping patient " + patientId + " as not found in enterprise DB");
+            return null;
+        }
+
+        Long enterpriseOrgId = FhirToEnterpriseCsvTransformer.findEnterpriseOrgId(serviceUUID, params);
+        params.setEnterpriseOrganisationId(enterpriseOrgId);
+
+        // take a copy of resources to avoid ConcurrentModificationException
+        List<ResourceWrapper> copy = new ArrayList(resources);
+
+        //LOG.info("Transforming "+copy.size()+" resources for patientId: " + patientId);
+
+        // create a episode of care transformer and transform the fhir resources
         AbstractEnterpriseTransformer enterpriseEpisodeOfCareTransformer
                 = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(ResourceType.EpisodeOfCare);
         enterpriseEpisodeOfCareTransformer.transformResources(copy,
                 params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.RegistrationStatusHistory.class), params);
 
         List<String> filesToKeep = new ArrayList<>();
-        filesToKeep.add(SubscriberTableId.PATIENT.getName());
-        filesToKeep.add(SubscriberTableId.PATIENT_ADDRESS.getName());
-        filesToKeep.add(SubscriberTableId.PATIENT_CONTACT.getName());
         filesToKeep.add(SubscriberTableId.REGISTRATION_STATUS_HISTORY.getName());
 
         params.getOutputContainer().clearDownOutputContainer(filesToKeep);
