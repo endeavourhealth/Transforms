@@ -76,7 +76,14 @@ public class ConsultationTransformer {
 
         //link the consultation to our episode of care
         Reference episodeReference = csvHelper.createEpisodeReference(patientGuid);
-        encounterBuilder.setEpisodeOfCare(episodeReference, patientGuid);
+        if (episodeReference != null) {
+            //sometimes, if we're re-processing files we can end up trying to create consultations
+            //for patients that have subsequently been deleted, in which case we can't find an episode
+            //for the consultation. If that happens, just let the consultation be created nonetheless
+            //and it will be deleted when we hit the exchange with the delete (again)
+            encounterBuilder.setEpisodeOfCare(episodeReference, patientGuid);
+        }
+
 
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);

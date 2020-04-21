@@ -262,8 +262,37 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //we now use registration start date as part of the source ID for episodes of care, so we use the internal  ID map table to store that start date
         CsvCell regStartCell = getLatestEpisodeStartDate(patientGuid);
         if (regStartCell == null) {
-            throw new Exception("Failed to find latest registration date for patient " + patientGuid);
+
+            //if we fail to find a reg data for a patient it's either because we've messed up and processed files
+            //out of order (bad) or we're re-playing data for a patient record that was subsequently deleted (OK).
+            //Work out which is the reason before choosing the throw an exception
+            boolean logError = true;
+
+            String sourcePatientId = createUniqueId(patientGuid, null);
+            UUID patientUuid = IdHelper.getEdsResourceId(serviceId, ResourceType.Patient, sourcePatientId);
+            List<ResourceWrapper> patientWrappers = resourceRepository.getResourceHistory(serviceId, ResourceType.Patient.toString(), patientUuid);
+            if (patientWrappers.isEmpty()) {
+                LOG.debug("No FHIR Patient history found for UUID " + patientGuid);
+
+            } else {
+                ResourceWrapper mostRecent = patientWrappers.get(0); //most recent is first
+                if (mostRecent.isDeleted()) {
+                    LOG.debug("FHIR Patient is deleted");
+                    logError = false;
+
+                } else {
+                    LOG.debug("FHIR Patient is not deleted");
+                }
+            }
+
+            if (logError) {
+                throw new Exception("Failed to find latest registration date for patient " + patientGuid);
+
+            } else {
+                return null;
+            }
         }
+
         String episodeSourceId = createUniqueId(patientGuid, regStartCell);
         return ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeSourceId);
     }
