@@ -12,6 +12,9 @@ import java.net.URLEncoder;
 import org.json.*;
 
 public class UPRN {
+	private static final Logger LOG = LoggerFactory.getLogger(UPRN.class);
+
+
 	public static String uprnToken = "";
 
 	public static Integer Activated(JsonNode zs, String configName)
@@ -51,7 +54,9 @@ public class UPRN {
 
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			//changed to log via the logging framework, so it's captured in log files
+			LOG.error("Error getting UPRN for IDs [" + ids + "]", e);
+			//e.printStackTrace();
 		}
 		return response;
 	}
@@ -109,7 +114,9 @@ public class UPRN {
 
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			//changed to log via the logging framework, so it's captured in log files
+			LOG.error("Error getting Keycloak token for UPRN call", e);
+			//e.printStackTrace();
 		}
 
 		return token;
