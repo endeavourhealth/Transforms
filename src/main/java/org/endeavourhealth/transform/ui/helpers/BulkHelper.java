@@ -208,7 +208,7 @@ public class BulkHelper {
         AbstractEnterpriseTransformer enterpriseEpisodeOfCareTransformer
                 = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(ResourceType.EpisodeOfCare);
         enterpriseEpisodeOfCareTransformer.transformResources(copy,
-                params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.RegistrationStatusHistory.class), params);
+                params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.EpisodeOfCare.class), params);
 
         List<String> filesToKeep = new ArrayList<>();
         filesToKeep.add(SubscriberTableId.REGISTRATION_STATUS_HISTORY.getName());
