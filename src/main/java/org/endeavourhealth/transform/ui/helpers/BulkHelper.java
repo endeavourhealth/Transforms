@@ -164,10 +164,10 @@ public class BulkHelper {
                 = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(ResourceType.Patient);
         enterprisePatientTransformer.transformResources(copy,
                 params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.Patient.class), params);
-        enterprisePatientTransformer.transformResources(copy,
-                params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.PatientAddress.class), params);
-        enterprisePatientTransformer.transformResources(copy,
-                params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.PatientContact.class), params);
+//        enterprisePatientTransformer.transformResources(copy,
+//                params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.PatientAddress.class), params);
+//        enterprisePatientTransformer.transformResources(copy,
+//                params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.PatientContact.class), params);
 
         List<String> filesToKeep = new ArrayList<>();
         filesToKeep.add(SubscriberTableId.PATIENT.getName());
