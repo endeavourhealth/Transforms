@@ -189,12 +189,15 @@ public class BulkHelper {
         boolean patientFoundInSubscriber = checkIfPatientIsInEnterpriseDB(params, patientId.toString());
 
         if (!patientFoundInSubscriber) {
-            LOG.info("Skipping patient " + patientId + " as not found in enterprise DB");
+            LOG.info("Skipping patient " + patientId + " episode of care as patient not found in enterprise DB");
             return null;
         }
 
         Long enterpriseOrgId = FhirToEnterpriseCsvTransformer.findEnterpriseOrgId(serviceUUID, params);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
+
+        //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
+        params.populatePatientAndPersonIds();
 
         // take a copy of resources to avoid ConcurrentModificationException
         List<ResourceWrapper> copy = new ArrayList(resources);
