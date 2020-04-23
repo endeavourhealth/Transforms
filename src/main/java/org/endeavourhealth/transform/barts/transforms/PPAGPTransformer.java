@@ -65,13 +65,18 @@ public class PPAGPTransformer {
             //if our GP record is non-active or ended, we need to REMOVE the reference from our patient resource
             CsvCell activeCell = parser.getActiveIndicator();
             CsvCell endDateCell = parser.getEndEffectiveDate();
-            boolean delete = !activeCell.getIntAsBoolean()
-                    || !BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell); //note that the Cerner end of time is used for active record end dates
 
-            //Cerner allows multiple GP records for a patient, but in all cases examined we only have one active row
-            //so ignore any ended or non-active records and simply let the active record overwrite the care provider each time
+            //Barts send multiple records per patient, with the end date and active indicator telling us which are active or not
+            boolean isActive = parser.getActiveIndicator().getIntAsBoolean()
+                    && BartsCsvHelper.isEmptyOrIsEndOfTime(endDateCell);
 
-            //remove any existing care providers
+            //if this record isn't active, ignore it. A separate record should also be present to give us the
+            //current details, which will be processed.
+            if (!isActive) {
+                return;
+            }
+
+            //remove any existing care providers, since we only support having one current org and one current practitioner
             patientBuilder.removeAllCareProviders();
 
             //add the GP, if present
