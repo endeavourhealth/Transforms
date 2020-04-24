@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.hl7receiver.Hl7ResourceIdDalI;
 import org.endeavourhealth.core.database.dal.hl7receiver.models.ResourceId;
-import org.endeavourhealth.core.database.dal.publisherTransform.ResourceMergeDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.SnomedCode;
@@ -25,8 +24,6 @@ public class BasisTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(BasisTransformer.class);
 
     private static Hl7ResourceIdDalI hl7ResourceIdDal = DalProvider.factoryHL7ResourceDal();
-
-    private static ResourceMergeDalI mergeDAL = null;
 
     /*
      * Example: ResourceId resourceId = ResourceIdHelper.getResourceId("B", "Condition", uniqueId);

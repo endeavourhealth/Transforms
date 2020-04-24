@@ -266,8 +266,7 @@ public class PatientResourceCache {
         }
 
         //record that we know it's deleted
-        Long personId = personIdCell.getLong();
-        UUID globallyUniqueId = IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, personId.toString());
+        UUID globallyUniqueId = mapPersonIdToUuid(personIdCell);
         patientUuidsJustDeleted.add(globallyUniqueId);
 
         //remove from the cache

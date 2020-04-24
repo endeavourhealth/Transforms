@@ -128,7 +128,12 @@ public class DrugRecordPreTransformer {
 
                         //get medication orders
                         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-                        List<ResourceWrapper> resources = resourceDal.getResourcesByPatient(csvHelper.getServiceId(), patientUuid, ResourceType.MedicationOrder.toString());
+
+                        //use this dedicated function to just get the medication orders for our statement - this prevents
+                        //retrieving thousands of records off the DB
+                        List<ResourceWrapper> resources = resourceDal.getMedicationOrderResourcesForPatientAndMedicationStatement(csvHelper.getServiceId(), patientUuid, medicationStatementUuid);
+                        //List<ResourceWrapper> resources = resourceDal.getResourcesByPatient(csvHelper.getServiceId(), patientUuid, ResourceType.MedicationOrder.toString());
+
                         for (ResourceWrapper wrapper : resources) {
                             if (wrapper.isDeleted()) {
                                 continue;

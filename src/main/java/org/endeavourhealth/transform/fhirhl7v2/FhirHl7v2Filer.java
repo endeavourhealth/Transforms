@@ -90,7 +90,7 @@ public class FhirHl7v2Filer {
 
         LOG.debug("Doing A44 move episode from minor patient " + minorPatientId + " to major patient " + majorPatientId);
 
-        Map<String, String> originalIdMappings = createIdMappings(parameters);
+        Map<String, String> originalIdMappings = findIdMappings(parameters);
 
         //copy the ID mappings map and add the patient to it. Note we keep the original map without the patient as
         //we use that to store in our resource merge map table
@@ -204,7 +204,7 @@ public class FhirHl7v2Filer {
 
         LOG.debug("Doing A34 merge from minor patient " + minorPatientId + " to major patient " + majorPatientId);
 
-        Map<String, String> idMappings = createIdMappings(parameters);
+        Map<String, String> idMappings = findIdMappings(parameters);
 
         //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
         String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId);
@@ -268,7 +268,7 @@ public class FhirHl7v2Filer {
     }
 
     //returns a map of old Ids to new, formatted as FHIR references (e.g. Patient/<guid>)
-    private static Map<String, String> createIdMappings(Parameters parameters) throws Exception {
+    private static Map<String, String> findIdMappings(Parameters parameters) throws Exception {
 
         Map<String, String> referenceIdMap = new HashMap<>();
 
@@ -295,44 +295,6 @@ public class FhirHl7v2Filer {
         return referenceIdMap;
     }
 
-    /*private static Map<String, String> createIdMappings(Parameters parameters, List<ResourceByPatient> patientResources) throws Exception {
-
-        Map<String, String> rawIdMap = new HashMap<>();
-
-        if (parameters.hasParameter()) {
-            for (Parameters.ParametersParameterComponent component: parameters.getParameter()) {
-                if (component.getName().equalsIgnoreCase("ResourceMapping")) {
-                    StringType value = (StringType)component.getValue();
-                    String s = value.getValue();
-
-                    String[] toks = s.split(":");
-                    if (toks.length != 2) {
-                        throw new TransformException("Parameter " + s + " doesn't contain exactly two IDs");
-                    }
-
-                    rawIdMap.put(toks[0], toks[1]);
-                }
-            }
-        }
-
-        Map<String, String> referenceIdMap = new HashMap<>();
-
-        for (ResourceByPatient patientResource: patientResources) {
-            String oldId = patientResource.getResourceId().toString();
-            String newId = rawIdMap.get(oldId);
-            if (!Strings.isNullOrEmpty(newId)) {
-
-                String resourceTypeStr = patientResource.getResourceType();
-                ResourceType resourceType = ResourceType.valueOf(resourceTypeStr);
-
-                String oldReferenceStr = ReferenceHelper.createResourceReference(resourceType, oldId);
-                String newReferenceStr = ReferenceHelper.createResourceReference(resourceType, newId);
-                referenceIdMap.put(oldReferenceStr, newReferenceStr);
-            }
-        }
-
-        return referenceIdMap;
-    }*/
 
     private static String findParameterValue(Parameters parameters, String name) throws Exception {
         if (parameters.hasParameter()) {
