@@ -199,7 +199,8 @@ public class PPALIPreTransformer {
 
                             //update the HL7 Receiver DB to give it the new patient UUID for the MRN so future ADT
                             //messages for the MRN go against the right patient
-                            csvHelper.updateHl7ReceiverWithNewUuid(ResourceType.Patient, hl7ReceiverUniqueId, hl7ReceiverScope, patientUuid);
+                            //No, don't do this. The ADT feed already handles merges etc. through the resource merge map.
+                            //csvHelper.updateHl7ReceiverWithNewUuid(ResourceType.Patient, hl7ReceiverUniqueId, hl7ReceiverScope, patientUuid);
 
                             //the Problem file only contains MRN, so we need to maintain the map of MRN -> PERSON ID, so it can find the patient UUID
                             //but we need to handle that there are some rare cases (about 16 in the first half of 2018) where two PPATI

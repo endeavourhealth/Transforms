@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
@@ -23,9 +24,9 @@ public class OrganizationTransformer {
 
     private static final ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     
-    public static Resource transform(Organization newOrg, FhirResourceFiler filer) throws Exception {
+    public static Resource transform(Organization newOrg, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
         UUID resourceId = UUID.fromString(newOrg.getId());
-        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(filer.getServiceId(), newOrg.getResourceType().toString(), resourceId);
+        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(hasServiceSystemAndExchangeId.getServiceId(), newOrg.getResourceType().toString(), resourceId);
 
         OrganizationBuilder organizationBuilder = null;
 

@@ -11,9 +11,11 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.fhirhl7v2.transforms.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -43,32 +45,33 @@ public class FhirHl7v2Filer {
 
         Date adtDate = findAdtMessageDate(bundle);
 
-        saveAdminResources(fhirResourceFiler, bundle);
-        savePatientResources(fhirResourceFiler, bundle, adtDate);
+        AdtResourceFiler filer = new AdtResourceFiler(fhirResourceFiler);
 
+        saveAdminResources(filer, bundle);
+        savePatientResources(filer, bundle, adtDate);
 
         //ensure everything is saved before we try and do any of the merging stuff
-        fhirResourceFiler.waitUntilEverythingIsSaved();
-
+        filer.waitUntilEverythingIsSaved();
 
         //need to handle the parameters object being null since we're not receiving it yet in AIMES
         try {
+            //this just ensures the parameters exist, before we start changing anything
             Parameters parameters = findParameters(bundle);
 
             //see if there's any special work we need to do for merging/moving
             String adtMessageType = findAdtMessageType(bundle);
-            LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + fhirResourceFiler.getExchangeId());
+            LOG.debug("Received ADT message type " + adtMessageType + " for exchange " + filer.getExchangeId());
             if (adtMessageType.equals(ADT_A34)) {
                 LOG.debug("Processing A34");
-                performA34PatientMerge(bundle, fhirResourceFiler);
+                performA34PatientMerge(bundle, filer);
 
             } else if (adtMessageType.equals(ADT_A35)) {
                 LOG.debug("Processing A35");
-                performA35EpisodeMerge(bundle, fhirResourceFiler);
+                performA35EpisodeMerge(bundle, filer);
 
             } else if (adtMessageType.equals(ADT_A44)) {
                 LOG.debug("Processing A44");
-                performA44EpisodeMove(bundle, fhirResourceFiler);
+                performA44EpisodeMove(bundle, filer);
 
             } else {
                 //nothing special
@@ -82,7 +85,7 @@ public class FhirHl7v2Filer {
     /**
      * A44 messages move an entire episode and all its dependant data from one patient to another
      */
-    private void performA44EpisodeMove(Bundle bundle, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private void performA44EpisodeMove(Bundle bundle, AdtResourceFiler filer) throws Exception {
         Parameters parameters = findParameters(bundle);
 
         String minorPatientId = findParameterValue(parameters, "MinorPatientUuid");
@@ -101,7 +104,7 @@ public class FhirHl7v2Filer {
         String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId.toString());
         idMappings.put(minorPatientReference, majorPatientReference);
 
-        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(fhirResourceFiler.getServiceId(), UUID.fromString(minorPatientId));
+        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(filer.getServiceId(), UUID.fromString(minorPatientId));
 
         for (ResourceWrapper minorPatientResource: minorPatientResources) {
 
@@ -121,19 +124,22 @@ public class FhirHl7v2Filer {
             Resource fhirAmended = ParserPool.getInstance().parse(json);
             IdHelper.applyExternalReferenceMappings(fhirAmended, idMappings, false);
 
-            fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(fhirAmended));
+            filer.savePatientResource(new GenericBuilder(fhirAmended));
 
             LOG.debug("Moved " + resourceType + " " + fhirAmended.getId());
         }
 
+        //always make sure all resources are saved before we commit any resource ID maps to the DB
+        filer.waitUntilEverythingIsSaved();
+
         //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(fhirResourceFiler.getServiceId(), originalIdMappings);
+        ResourceMergeMapHelper.saveResourceMergeMapping(filer.getServiceId(), originalIdMappings);
     }
 
     /**
      * A35 messages merge the contents of one episode (minor) into another one (major) for the same patient
      */
-    private void performA35EpisodeMerge(Bundle bundle, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private void performA35EpisodeMerge(Bundle bundle, AdtResourceFiler filer) throws Exception {
         Parameters parameters = findParameters(bundle);
 
         String patientId = findParameterValue(parameters, "PatientUuid");
@@ -146,7 +152,7 @@ public class FhirHl7v2Filer {
         String majorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, majorEpisodeOfCareId);
         String minorEpisodeReference = ReferenceHelper.createResourceReference(ResourceType.EpisodeOfCare, minorEpisodeOfCareId);
 
-        List<ResourceWrapper> patientResources = resourceRepository.getResourcesByPatient(fhirResourceFiler.getServiceId(), UUID.fromString(patientId));
+        List<ResourceWrapper> patientResources = resourceRepository.getResourcesByPatient(filer.getServiceId(), UUID.fromString(patientId));
 
         for (ResourceWrapper patientResource: patientResources) {
 
@@ -160,7 +166,7 @@ public class FhirHl7v2Filer {
                 //we want to delete the old episode of care
                 EpisodeOfCare episodeOfCare = (EpisodeOfCare)ParserPool.getInstance().parse(json);
                 if (episodeOfCare.getId().equals(minorEpisodeOfCareId)) {
-                    fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(episodeOfCare));
+                    filer.deletePatientResource(new GenericBuilder(episodeOfCare));
                     LOG.debug("Deleting episode " + episodeOfCare.getId());
                 }
 
@@ -179,7 +185,7 @@ public class FhirHl7v2Filer {
                 }
 
                 if (changed) {
-                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(encounter));
+                    filer.savePatientResource(new GenericBuilder(encounter));
                     LOG.debug("Moved Encounter " + encounter.getId() + " to point at " + majorEpisodeReference);
                 }
 
@@ -188,14 +194,17 @@ public class FhirHl7v2Filer {
             }
         }
 
+        //always make sure all resources are saved before we commit any resource ID maps to the DB
+        filer.waitUntilEverythingIsSaved();
+
         //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(fhirResourceFiler.getServiceId(), majorEpisodeReference, minorEpisodeReference);
+        ResourceMergeMapHelper.saveResourceMergeMapping(filer.getServiceId(), majorEpisodeReference, minorEpisodeReference);
     }
 
     /**
      * A34 messages merge all content from one patient (minor patient) to another (the major patient)
      */
-    private void performA34PatientMerge(Bundle bundle, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private void performA34PatientMerge(Bundle bundle, AdtResourceFiler filer) throws Exception {
 
         Parameters parameters = findParameters(bundle);
 
@@ -211,7 +220,7 @@ public class FhirHl7v2Filer {
         String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorPatientId);
         idMappings.put(minorPatientReference, majorPatientReference);
 
-        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(fhirResourceFiler.getServiceId(), UUID.fromString(minorPatientId));
+        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(filer.getServiceId(), UUID.fromString(minorPatientId));
 
         //since we're moving ALL data from the minor to major patients, validate we have a new ID for every resource
         /*for (ResourceWrapper minorPatientResource: minorPatientResources) {
@@ -230,14 +239,14 @@ public class FhirHl7v2Filer {
 
             if (fhirOriginal instanceof Patient) {
                 //we don't want to move patient resources, so just delete it
-                fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(fhirOriginal));
+                filer.deletePatientResource(new GenericBuilder(fhirOriginal));
 
             } else {
                 //for all other resources, re-map the IDs and save to the DB
                 try {
                     //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
                     IdHelper.applyExternalReferenceMappings(fhirOriginal, idMappings, false);
-                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(fhirOriginal));
+                    filer.savePatientResource(new GenericBuilder(fhirOriginal));
 
                     //no delete required - the resource_current table has a unique ID on resource_id and resource_type so simply saving
                     //the resource (above) with the updated reference(s) is enough, and doesn't leave us with a confusing deleted record
@@ -261,10 +270,10 @@ public class FhirHl7v2Filer {
         //mappings (of old patient to new patient) then the mapping gets applied when deleting the old patient (since
         //the delete is in a different thread). End result is that we end up KEEPING the minor patient and DELETING
         //the one we want to keep!
-        fhirResourceFiler.waitUntilEverythingIsSaved();
+        filer.waitUntilEverythingIsSaved();
 
         //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(fhirResourceFiler.getServiceId(), idMappings);
+        ResourceMergeMapHelper.saveResourceMergeMapping(filer.getServiceId(), idMappings);
     }
 
     //returns a map of old Ids to new, formatted as FHIR references (e.g. Patient/<guid>)
@@ -364,7 +373,7 @@ public class FhirHl7v2Filer {
         throw new TransformException("Failed to find MessageHeader resource or valid coding in Bundle");
     }
 
-    private void saveAdminResources(FhirResourceFiler fhirResourceFiler, Bundle bundle) throws Exception {
+    private void saveAdminResources(AdtResourceFiler filer, Bundle bundle) throws Exception {
         List<Resource> adminResources = bundle
                 .getEntry()
                 .stream()
@@ -380,16 +389,16 @@ public class FhirHl7v2Filer {
         for (Resource resource: adminResources) {
 
             if (resource instanceof Practitioner) {
-                resource = PractitionerTransformer.transform((Practitioner)resource, fhirResourceFiler);
-                fhirResourceFiler.saveAdminResource(null, false, new GenericBuilder(resource));
+                resource = PractitionerTransformer.transform((Practitioner)resource, filer);
+                filer.saveAdminResource(new GenericBuilder(resource));
 
             } else if (resource instanceof Organization) {
-                resource = OrganizationTransformer.transform((Organization)resource, fhirResourceFiler);
-                fhirResourceFiler.saveAdminResource(null, false, new GenericBuilder(resource));
+                resource = OrganizationTransformer.transform((Organization)resource, filer);
+                filer.saveAdminResource(new GenericBuilder(resource));
 
             } else if (resource instanceof Location) {
-                resource = LocationTransformer.transform((Location) resource, fhirResourceFiler);
-                fhirResourceFiler.saveAdminResource(null, false, new GenericBuilder(resource));
+                resource = LocationTransformer.transform((Location) resource, filer);
+                filer.saveAdminResource(new GenericBuilder(resource));
 
 
             } else {
@@ -404,7 +413,7 @@ public class FhirHl7v2Filer {
         }
     }
 
-    private void savePatientResources(FhirResourceFiler fhirResourceFiler, Bundle bundle, Date adtDate) throws Exception {
+    private void savePatientResources(AdtResourceFiler filer, Bundle bundle, Date adtDate) throws Exception {
         List<Resource> patientResources = bundle
                 .getEntry()
                 .stream()
@@ -421,36 +430,18 @@ public class FhirHl7v2Filer {
 
                 //updated to merge ADT changes into the existing Patient resource, similar to how we handle Encounter,
                 //so that both the ADT and DW feeds can co-exist
-                resource = PatientTransformer.updatePatient((Patient)resource, fhirResourceFiler, adtDate, bundle);
-                fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
-
-                //Patient resources ARE shared between HL7 and DW feeds, so check to see if the systemId of the
-                //current version matches that of the HL7 feed. If not, it means the DW feed has taken over the patient
-                //in which case don't apply any updates to it. This means that changes to the patient (e.g. new address)
-                //won't be applied to the resource until we get the next DW update through, but merging the changes into the
-                //resource without breaking it seems very difficult.
-                //NOTE: it could be possible to merge the new data into the existing FHIR patient, but
-                //there's a lot of weirdness in the HL7 data (e.g. email addresses showing as proper addresses)
-                //that would need to be investigated and coded for.
-                /*if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
-                    tidyNhsNumbers((Patient)resource);
-
-                    LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId());
-                    fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
-
-                } else {
-                    LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as been taken over by DW feed");
-                }*/
+                resource = PatientTransformer.updatePatient((Patient)resource, filer, adtDate, bundle);
+                filer.savePatientResource(new GenericBuilder(resource));
 
             } else if (resource instanceof EpisodeOfCare) {
                 //EpisodeOfCare resources ARE shared between Hl7 and DW feeds where possible, and the DW feed will delete
                 //non-shared Episodes created by the HL7 feed since it can create better resources from the richer data.
                 //So only save our EpisodeOfCare resource if it's brand new or hasn't been deleted by the DW feed
-                if (!hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)) {
+                if (!hasBeenDeletedByDataWarehouseFeed(resource, filer)) {
 
-                    if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
+                    if (isNewOrCurrentVersionSameSystem(resource, filer)) {
                         LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId());
-                        fhirResourceFiler.savePatientResource(null, false, new GenericBuilder(resource));
+                        filer.savePatientResource(new GenericBuilder(resource));
 
                     } else {
                         LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as has been taken over by DW feed");
@@ -465,11 +456,11 @@ public class FhirHl7v2Filer {
                 //non-shared Encounters created by the HL7 feed since it can create better resources from the richer data.
                 //So we need to NOT re-create deleted Encounters, and to only update certain fields if the DW feed has taken over the Encounter
 
-                if (!hasBeenDeletedByDataWarehouseFeed(resource, fhirResourceFiler)) {
-                    Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(fhirResourceFiler.getServiceId(), resource.getResourceType(), resource.getId());
+                if (!hasBeenDeletedByDataWarehouseFeed(resource, filer)) {
+                    Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(filer.getServiceId(), resource.getResourceType(), resource.getId());
 
                     LOG.debug("Saving " + resource.getResourceType() + " " + resource.getId() + " after merging into DW Encounter");
-                    EncounterTransformer.updateEncounter(oldEncounter, (Encounter)resource, fhirResourceFiler);
+                    EncounterTransformer.updateEncounter(oldEncounter, (Encounter)resource, filer);
 
                     /*if (isNewOrCurrentVersionSameSystem(resource, fhirResourceFiler)) {
                         //fully merge the new HL7 encounter into the existing HL7 one
@@ -493,10 +484,10 @@ public class FhirHl7v2Filer {
     }
 
 
-    private boolean hasBeenDeletedByDataWarehouseFeed(Resource resource, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private boolean hasBeenDeletedByDataWarehouseFeed(Resource resource, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
 
-        UUID serviceId = fhirResourceFiler.getServiceId();
-        UUID systemId = fhirResourceFiler.getSystemId();
+        UUID serviceId = hasServiceSystemAndExchangeId.getServiceId();
+        UUID systemId = hasServiceSystemAndExchangeId.getSystemId();
 
         String resourceType = resource.getResourceType().toString();
         UUID resourceId = UUID.fromString(resource.getId());
@@ -524,10 +515,10 @@ public class FhirHl7v2Filer {
         return true;
     }
 
-    private boolean isNewOrCurrentVersionSameSystem(Resource resource, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private boolean isNewOrCurrentVersionSameSystem(Resource resource, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
 
-        UUID serviceId = fhirResourceFiler.getServiceId();
-        UUID systemId = fhirResourceFiler.getSystemId();
+        UUID serviceId = hasServiceSystemAndExchangeId.getServiceId();
+        UUID systemId = hasServiceSystemAndExchangeId.getSystemId();
 
         String resourceType = resource.getResourceType().toString();
         UUID resourceId = UUID.fromString(resource.getId());
@@ -543,4 +534,97 @@ public class FhirHl7v2Filer {
         return true;
     }
 
+    /**
+     * class to wrap up a fhir resource filer so we can consistently apply the HL7 merge mappings when saving
+     */
+    public static class AdtResourceFiler implements HasServiceSystemAndExchangeIdI {
+        private FhirResourceFiler parent;
+
+        public AdtResourceFiler(FhirResourceFiler parent) {
+            this.parent = parent;
+        }
+
+        public void waitUntilEverythingIsSaved() throws Exception {
+            this.parent.waitUntilEverythingIsSaved();
+        }
+
+        @Override
+        public UUID getServiceId() {
+            return this.parent.getServiceId();
+        }
+
+        @Override
+        public UUID getSystemId() {
+            return this.parent.getSystemId();
+        }
+
+        @Override
+        public UUID getExchangeId() {
+            return this.parent.getExchangeId();
+        }
+
+        public void saveAdminResource(ResourceBuilderBase... resourceBuilders) throws Exception {
+
+            applyMergeMap(resourceBuilders);
+            this.parent.saveAdminResource(null, false, resourceBuilders);
+        }
+
+        public void savePatientResource(ResourceBuilderBase... resourceBuilders) throws Exception {
+
+            applyMergeMap(resourceBuilders);
+            this.parent.savePatientResource(null, false, resourceBuilders);
+        }
+
+        public void deletePatientResource(ResourceBuilderBase... resourceBuilders) throws Exception {
+
+            //if we're trying to delete a resource because of a merge, but we've ALREADY done that, then
+            //the merge map will already be in place and will re-direct the delete to the resource we want
+            //to keep. So if the merge map already exists, ignore the delete.
+            List<ResourceBuilderBase> toSave = new ArrayList<>();
+
+            Map<String, String> mergeMap = ResourceMergeMapHelper.getResourceMergeMappings(getServiceId());
+
+            for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+                Resource resource = resourceBuilder.getResource();
+                String sourceReferenceValue = ReferenceHelper.createResourceReference(resource.getResourceType(), resource.getId());
+                if (!mergeMap.containsKey(sourceReferenceValue)) {
+                    toSave.add(resourceBuilder);
+                }
+            }
+
+            if (toSave.isEmpty()) {
+                return;
+            }
+
+            ResourceBuilderBase[] toSaveArray = toSave.toArray(new ResourceBuilderBase[toSave.size()]);
+            applyMergeMap(toSaveArray);
+            this.parent.deletePatientResource(null, false, toSaveArray);
+        }
+
+        private void applyMergeMap(ResourceBuilderBase... resourceBuilders) throws Exception {
+
+            Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(getServiceId());
+
+            for (ResourceBuilderBase resourceBuilder: resourceBuilders) {
+                Resource resource = resourceBuilder.getResource();
+                try {
+                    String previousId = resource.getId();
+                    IdHelper.applyExternalReferenceMappings(resource, pastMergeReferences, false);
+                    String newId = resource.getId();
+
+                    if (!previousId.equals(newId)) {
+                        LOG.debug("Resource " + resource.getResourceType() + " has ID changed " + previousId + " -> " + newId + " through merge mapping");
+                    }
+                } catch (Exception ex) {
+                    LOG.error("", ex);
+                    throw new Exception("Exception applying ADT merge mappings to " + resource.getResourceType() + " " + resource.getId(), ex);
+                }
+            }
+
+        }
+
+        public Date getDataDate() throws Exception {
+            return this.parent.getDataDate();
+        }
+    }
 }

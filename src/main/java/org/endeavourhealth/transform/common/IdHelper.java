@@ -363,6 +363,9 @@ public class IdHelper {
         return ret;
     }
 
+    /**
+     * applies mappings, in the format ResourceType/ResourceId, to all references and the ID of the resource
+     */
     public static void applyExternalReferenceMappings(Resource resource, Map<String, String> idMappings, boolean failForMissingMappings) throws Exception {
         getIdMapper(resource).applyReferenceMappings(resource, idMappings, failForMissingMappings);
 

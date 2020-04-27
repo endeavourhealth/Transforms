@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
 
@@ -20,10 +21,10 @@ public class PatientTransformer {
 
     private static final ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
-    public static Patient updatePatient(Patient newPatient, FhirResourceFiler filer, Date adtDate, Bundle bundle) throws Exception {
+    public static Patient updatePatient(Patient newPatient, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId, Date adtDate, Bundle bundle) throws Exception {
 
         UUID resourceId = UUID.fromString(newPatient.getId());
-        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(filer.getServiceId(), newPatient.getResourceType().toString(), resourceId);
+        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(hasServiceSystemAndExchangeId.getServiceId(), newPatient.getResourceType().toString(), resourceId);
 
         PatientBuilder patientBuilder = null;
 
@@ -62,7 +63,7 @@ public class PatientTransformer {
         updateIdentifiers(newPatient, patientBuilder, adtDate);
         updateManagingOrganisation(newPatient, patientBuilder);
         updateCommunication(newPatient, patientBuilder);
-        updateCareProviders(newPatient, patientBuilder, bundle, filer.getServiceId());
+        updateCareProviders(newPatient, patientBuilder, bundle, hasServiceSystemAndExchangeId.getServiceId());
         updateContacts(newPatient, patientBuilder);
         updateExtensions(newPatient, patientBuilder, adtDate); //this must be done AFTER the birthDate
 

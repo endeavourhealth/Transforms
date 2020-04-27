@@ -8,6 +8,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
@@ -22,9 +23,9 @@ public class PractitionerTransformer {
 
     private static final ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
-    public static Resource transform(Practitioner newPractitioner, FhirResourceFiler filer) throws Exception {
+    public static Resource transform(Practitioner newPractitioner, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeIdI) throws Exception {
         UUID resourceId = UUID.fromString(newPractitioner.getId());
-        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(filer.getServiceId(), newPractitioner.getResourceType().toString(), resourceId);
+        ResourceWrapper wrapper = resourceRepository.getCurrentVersion(hasServiceSystemAndExchangeIdI.getServiceId(), newPractitioner.getResourceType().toString(), resourceId);
 
         PractitionerBuilder practitionerBuilder = null;
 

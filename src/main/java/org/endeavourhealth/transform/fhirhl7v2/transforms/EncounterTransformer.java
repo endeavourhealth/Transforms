@@ -5,19 +5,13 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.audit.ExchangeBatchDalI;
-import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
-import org.endeavourhealth.core.database.dal.audit.models.Exchange;
-import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
-import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
+import org.endeavourhealth.transform.fhirhl7v2.FhirHl7v2Filer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +33,12 @@ public class EncounterTransformer {
      * The child encounter is linked to the parent using the partOf element
      * The parent encounter has a link to all children using a Contained List
      */
-    public static void updateEncounter(Encounter existingParentEncounter, Encounter newEncounter, FhirResourceFiler fhirResourceFiler) throws Exception {
+    public static void updateEncounter(Encounter existingParentEncounter, Encounter newEncounter,
+                                       FhirHl7v2Filer.AdtResourceFiler filer) throws Exception {
 
         String originalEncounterId = newEncounter.getId();
-        UUID serviceId = fhirResourceFiler.getServiceId();
-        LOG.debug("Received encounter with ID " + originalEncounterId + " for exchange " + fhirResourceFiler.getExchangeId());
+        UUID serviceId = filer.getServiceId();
+        LOG.debug("Received encounter with ID " + originalEncounterId + " for exchange " + filer.getExchangeId());
 
         //if the parent already exists, then we merge the content of the new encounter into it, otherwise
         //just use the new encounter as the parent
@@ -97,7 +92,7 @@ public class EncounterTransformer {
         EncounterBuilder childEncounterBuilder = new EncounterBuilder(newEncounter);
 
         //generate a new unique ID for the child encounter using the data date of the exchange (which is the HL7v2 timestamp)
-        Date newDataDate = fhirResourceFiler.getDataDate();
+        Date newDataDate = filer.getDataDate();
         String newChildSourceId = originalEncounterId + ":" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(newDataDate);
         UUID newChildId = IdHelper.getOrCreateEdsResourceId(serviceId, ResourceType.Encounter, newChildSourceId);
         childEncounterBuilder.setId(newChildId.toString());
@@ -132,20 +127,20 @@ public class EncounterTransformer {
                     Encounter childEncounter = (Encounter)resourceDal.getCurrentVersionAsResource(serviceId, ResourceType.Encounter, comps.getId());
                     if (childEncounter != null) {
                         LOG.debug("Deleting child encounter " + childEncounter.getId());
-                        fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                        filer.deletePatientResource(new EncounterBuilder(childEncounter));
                     }
                 }
 
                 //delete the parent encounter
                 LOG.debug("Deleting parent encounter " + parentEncounterBuilder.getResourceId());
-                fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
+                filer.deletePatientResource(parentEncounterBuilder);
 
                 return;
 
             } else if (status == Encounter.EncounterState.INPROGRESS) {
                 //if the Encounter is still in progress, just delete this specific event
                 LOG.debug("Message is A23, so deleting child encounter " + childEncounterBuilder.getResourceId());
-                fhirResourceFiler.deletePatientResource(null, false, childEncounterBuilder);
+                filer.deletePatientResource(childEncounterBuilder);
                 return;
 
             } else {
@@ -171,7 +166,7 @@ public class EncounterTransformer {
 
 
         LOG.debug("Saving both encounters " + parentEncounterBuilder.getResourceId() + " and " + childEncounterBuilder.getResourceId());
-        fhirResourceFiler.savePatientResource(null, false, parentEncounterBuilder, childEncounterBuilder);
+        filer.savePatientResource(parentEncounterBuilder, childEncounterBuilder);
     }
 
     private static Encounter.EncounterState getStatus(Encounter encounter) throws Exception {

@@ -961,7 +961,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return existingResourceId;
     }
 
-    public void updateHl7ReceiverWithNewUuid(ResourceType resourceType, String hl7ReceiverUniqueId, String hl7ReceiverScope, UUID resourceUuid) throws Exception {
+    /*public void updateHl7ReceiverWithNewUuid(ResourceType resourceType, String hl7ReceiverUniqueId, String hl7ReceiverScope, UUID resourceUuid) throws Exception {
         ResourceId hl7Mapping = new ResourceId();
         hl7Mapping.setScopeId(hl7ReceiverScope);
         hl7Mapping.setResourceType(resourceType.toString());
@@ -974,7 +974,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
             LOG.error("Error updating HL7 resource_uuid, scope_id = " + hl7Mapping.getScopeId() + ", local_id = " + hl7Mapping.getUniqueId() + " resource_type = " + hl7Mapping.getResourceType() + ", resource_id = " + hl7Mapping.getResourceId());
             throw ex;
         }
-    }
+    }*/
 
 
     /**

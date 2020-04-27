@@ -379,14 +379,15 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                         ret = UUID.fromString(edsPatientIdStr);
 
                         //apply any merged resource mapping
-                        String patientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, edsPatientIdStr);
+                        //merge map only applied to HL7 feed, so removed from this generic class
+                        /*String patientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, edsPatientIdStr);
                         Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(serviceId);
                         String mappedPatientReference = pastMergeReferences.get(patientReference);
                         if (mappedPatientReference != null) {
                             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(new Reference().setReference(mappedPatientReference));
                             String newPatientReference = comps.getId();
                             ret = UUID.fromString(newPatientReference);
-                        }
+                        }*/
 
                         sourcePatientIdMap.put(resourcePatientId, ret);
                     }
@@ -943,17 +944,14 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
                     //apply any existing merge mappings to the resource - this is done here because not all resources
                     //go through the ID mapping process, but this needs doing every time
-                    try {
+                    //merge map only applied to HL7 feed, so removed from this generic class
+                    /*try {
                         Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(serviceId);
-                        /*if (!pastMergeReferences.isEmpty()) {
-                            LOG.trace("Applying merge " + pastMergeReferences.size() + " mappings");
-                        }*/
-
                         IdHelper.applyExternalReferenceMappings(resource, pastMergeReferences, false);
                     } catch (Exception ex) {
                         LOG.error("", ex);
                         throw new FilingAndMappingException("Exception applying external reference mappings to " + resource.getResourceType() + " " + resource.getId(), job.getParserState(), ex);
-                    }
+                    }*/
 
                     hmResourcesAndBatches.put(resource, exchangeBatch);
 
