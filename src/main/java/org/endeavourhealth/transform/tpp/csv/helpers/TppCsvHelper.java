@@ -1007,14 +1007,14 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
                 CsvCell dateCell = status.getDateCell();
                 if (!dateCell.isEmpty() && !recordStatusMap.isEmpty()) {
                     List<String> stats = recordStatusMap.get(dateCell.getDate());
-                    LOG.debug("Stats target:" + statusCell.getString());
+                    //LOG.debug("Stats target:" + statusCell.getString());
 
                     if (stats == null || stats.isEmpty() || stats.contains(statusCell.getString())) {
                         continue;
                     }
-                    for (String s : stats) {
+                    /*for (String s : stats) {
                         LOG.debug("Statuses:<" + s + ">");
-                    }
+                    }*/
                 }
                 CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
                 containedListBuilder.addCodeableConcept(codeableConcept, statusCell);

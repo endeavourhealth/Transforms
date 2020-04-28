@@ -167,7 +167,7 @@ public class StaffMemberCache {
 
         for (String orgId: this.hmRequiredOrgAndStaffIds.keySet()) {
             Set<Integer> staffIds = hmRequiredOrgAndStaffIds.get(orgId);
-            LOG.debug("For org " + orgId + " requires staff IDs " + staffIds.size());
+            //LOG.debug("For org " + orgId + " requires staff IDs " + staffIds.size());
             csvHelper.submitToThreadPool(new FindProfileIdsForStaff(orgId, staffIds, hmCachedStaffToProfileIds));
         }
 
@@ -211,6 +211,12 @@ public class StaffMemberCache {
 
 
     public Integer findProfileIdForStaffMemberAndOrg(CsvCell staffMemberIdCell, CsvCell profileEnteredByCell, CsvCell organisationDoneAtCell) throws Exception {
+
+        //if we don't have either of these IDs then we can't find a profile
+        if (organisationDoneAtCell.isEmpty()
+                || staffMemberIdCell.isEmpty()) {
+            return null;
+        }
 
         CacheKey key = new CacheKey(staffMemberIdCell, organisationDoneAtCell);
         Integer profileId = hmCachedStaffToProfileIds.get(key);
