@@ -117,6 +117,15 @@ public class CONSULTATIONTransformer {
             encounterBuilder.setServiceProvider(csvHelper.createOrganisationReference(caseODSCodeCell.getString()), caseODSCodeCell);
         }
 
+        //set the location by creating a unique location code reference to a resource already filed in the Case pre-transformer
+        CsvCell locationNameCell = parser.getLocation();
+        if (!locationNameCell.isEmpty()) {
+            String uniqueLocationCode
+                    = caseODSCodeCell.getString() + ":" + locationNameCell.getString().replaceAll(" ", "");
+
+            encounterBuilder.addLocation(csvHelper.createLocationReference(uniqueLocationCode));
+        }
+
         //collect free text from history, exam, diagnosis and treatment
         StringBuilder encounterTextBuilder = new StringBuilder();
 

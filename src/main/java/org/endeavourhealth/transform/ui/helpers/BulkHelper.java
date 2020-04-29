@@ -159,15 +159,10 @@ public class BulkHelper {
         List<ResourceWrapper> copy = new ArrayList(resources);
 
         // // create a patient transformer and transform the Patient fhir resources
-        //LOG.info("Transforming "+copy.size()+" resources for patientId: " + patientId);
         AbstractEnterpriseTransformer enterprisePatientTransformer
                 = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(ResourceType.Patient);
         enterprisePatientTransformer.transformResources(copy,
                 params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.Patient.class), params);
-//        enterprisePatientTransformer.transformResources(copy,
-//                params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.PatientAddress.class), params);
-//        enterprisePatientTransformer.transformResources(copy,
-//                params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.PatientContact.class), params);
 
         List<String> filesToKeep = new ArrayList<>();
         filesToKeep.add(SubscriberTableId.PATIENT.getName());
@@ -201,8 +196,6 @@ public class BulkHelper {
 
         // take a copy of resources to avoid ConcurrentModificationException
         List<ResourceWrapper> copy = new ArrayList(resources);
-
-        //LOG.info("Transforming "+copy.size()+" resources for patientId: " + patientId);
 
         // create a episode of care transformer and transform the fhir resources
         AbstractEnterpriseTransformer enterpriseEpisodeOfCareTransformer

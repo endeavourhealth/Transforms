@@ -12,6 +12,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
@@ -72,6 +73,23 @@ public class CASEPreTransformer {
                 if (!oohServiceOrgAlreadyFiled) {
 
                     createServiceOOHOrganisation(parser, fhirResourceFiler, csvHelper);
+                }
+            }
+        }
+
+        //create a unique location using the case ODS code and location name
+        CsvCell locationNameCell = parser.getLocationName();
+        if (!locationNameCell.isEmpty() && !odsCode.isEmpty()) {
+
+            String uniqueLocationCode
+                    = odsCode.getString()+":"+locationNameCell.getString().replaceAll(" ","");
+            boolean locationInCache = csvHelper.getLocationCache().locationInCache(uniqueLocationCode);
+            if (!locationInCache) {
+                boolean oohLocationAlreadyFiled
+                        = csvHelper.getLocationCache().locationInDB(uniqueLocationCode, csvHelper, fhirResourceFiler);
+                if (!oohLocationAlreadyFiled) {
+
+                    createOOHLocation(uniqueLocationCode, parser, fhirResourceFiler, csvHelper);
                 }
             }
         }
@@ -190,5 +208,29 @@ public class CASEPreTransformer {
 
         //add to cache
         csvHelper.getOrganisationCache().returnOrganizationBuilder(odsCodeCell.getString(), organizationBuilder);
+    }
+
+    private static void createOOHLocation(String uniqueLocationCode, CASE parser, FhirResourceFiler fhirResourceFiler, AdastraCsvHelper csvHelper) throws Exception {
+
+        LocationBuilder locationBuilder
+                = csvHelper.getLocationCache().getOrCreateLocationBuilder (uniqueLocationCode, csvHelper, fhirResourceFiler, parser);
+        if (locationBuilder == null) {
+            TransformWarnings.log(LOG, parser, "Error creating OOH Location resource for code: {}",
+                    uniqueLocationCode);
+            return;
+        }
+
+        //Location name
+        CsvCell locationNameCell = parser.getLocationName();
+        locationBuilder.setName(locationNameCell.getString(), locationNameCell);
+
+        //parent managing organisation is the ods code reference
+        CsvCell odsCodeCell = parser.getODSCode();
+        locationBuilder.setManagingOrganisation(csvHelper.createOrganisationReference(odsCodeCell.getString()), odsCodeCell);
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
+
+        //add to cache
+        csvHelper.getLocationCache().returnLocationBuilder(uniqueLocationCode, locationBuilder);
     }
 }

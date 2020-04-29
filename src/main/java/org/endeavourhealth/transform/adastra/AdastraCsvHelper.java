@@ -7,10 +7,7 @@ import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.transform.adastra.cache.EpisodeOfCareResourceCache;
-import org.endeavourhealth.transform.adastra.cache.OrganisationResourceCache;
-import org.endeavourhealth.transform.adastra.cache.PatientResourceCache;
-import org.endeavourhealth.transform.adastra.cache.QuestionnaireResponseResourceCache;
+import org.endeavourhealth.transform.adastra.cache.*;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -49,6 +46,7 @@ public class AdastraCsvHelper {
     private PatientResourceCache patientCache = new PatientResourceCache();
     private EpisodeOfCareResourceCache episodeOfCareCache = new EpisodeOfCareResourceCache();
     private OrganisationResourceCache organisationCache = new OrganisationResourceCache();
+    private LocationResourceCache locationCache = new LocationResourceCache();
     private QuestionnaireResponseResourceCache questionnaireResponseCache = new QuestionnaireResponseResourceCache();
 
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
@@ -108,6 +106,8 @@ public class AdastraCsvHelper {
 
     public OrganisationResourceCache getOrganisationCache() { return organisationCache; }
 
+    public LocationResourceCache getLocationCache() { return locationCache; }
+
     public QuestionnaireResponseResourceCache getQuestionnaireResponseCache() { return questionnaireResponseCache; }
 
     public EpisodeOfCareResourceCache getEpisodeOfCareCache() { return episodeOfCareCache; }
@@ -126,6 +126,10 @@ public class AdastraCsvHelper {
 
     public Reference createOrganisationReference(String organizationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
+    }
+
+    public Reference createLocationReference(String locationId) throws Exception {
+        return ReferenceHelper.createReference(ResourceType.Location, locationId);
     }
 
     public Reference createPractitionerReference(String practitionerGuid) throws Exception {
