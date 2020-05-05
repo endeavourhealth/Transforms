@@ -109,22 +109,19 @@ public class CONSULTATION extends AbstractCsvParser {
         return super.getCell("TreatmentPlan");
     }
 
+    //these are not the patient, rather the consultant/doctor details which are derived from UserRef instead
     public CsvCell getPatientName() {
         return super.getCell("PatientName");
     }
-
     public CsvCell getPatientForename() {
         return super.getCell("PatientForename");
     }
-
     public CsvCell getPatientSurname() {
         return super.getCell("PatientSurname");
     }
-
     public CsvCell getProviderType() {
         return super.getCell("ProviderType");
     }
-
     public CsvCell getGMC() {
         return super.getCell("GMC");
     }

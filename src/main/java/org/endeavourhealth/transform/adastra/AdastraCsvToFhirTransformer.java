@@ -41,7 +41,8 @@ public abstract class AdastraCsvToFhirTransformer {
         LOG.info("Invoking Adastra CSV transformer for " + files.length + " files using service " + processor.getServiceId());
 
         //determine the version from the csv file headers
-        version = determineVersion(files);
+        //NOTE: we go live with v2 so no need trying to work out if it's something else, so set as v2
+        version = VERSION_2;   //determineVersion(files);
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
