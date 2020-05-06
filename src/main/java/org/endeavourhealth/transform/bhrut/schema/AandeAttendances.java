@@ -1,10 +1,11 @@
 package org.endeavourhealth.transform.bhrut.schema;
 
+import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.UUID;
 
 public class AandeAttendances extends AbstractCsvParser {
@@ -72,15 +73,15 @@ public class AandeAttendances extends AbstractCsvParser {
             };
 
         }
- public CsvCell getLineStatus() { return super.getCell("LineStatus");}
- public CsvCell getExternalId() { return super.getCell( "EXTERNAL_ID");}
+ public CsvCell getLinestatus() { return super.getCell("LineStatus");}
+ public CsvCell getId() { return super.getCell( "EXTERNAL_ID");}
  public CsvCell getAttendanceNumber() { return super.getCell( "ATTENDANCE_NUMBER");}
- public CsvCell getPasID() { return super.getCell( "PAS_ID");}
+ public CsvCell getPasId() { return super.getCell( "PAS_ID");}
  public CsvCell getHospitalName() { return super.getCell( "HOSPITAL_NAME");}
  public CsvCell getHospitalCode() { return super.getCell( "HOSPITAL_CODE");}
  public CsvCell getHospitalSite() { return super.getCell( "HOSPITAL_SITE");}
  public CsvCell getAttendanceType() { return super.getCell( "ATTENDANCE_TYPE");}
- public CsvCell getFirstLocationST_LOCATION() { return super.getCell( "FIRST_LOCATION");}
+ public CsvCell getFirstLocation() { return super.getCell( "FIRST_LOCATION");}
  public CsvCell getLastLocation() { return super.getCell( "LAST_LOCATION");}
  public CsvCell getArrivalMode() { return super.getCell( "ARRIVAL_MODE");}
  public CsvCell getReferralSource() { return super.getCell( "REFERRAL_SOURCE");}
@@ -88,7 +89,7 @@ public class AandeAttendances extends AbstractCsvParser {
  public CsvCell getRegistrationDttm() { return super.getCell( "REGISTRATION_DTTM");}
  public CsvCell getRatDttm() { return super.getCell( "RAT_DTTM");}
  public CsvCell getTriageDttm() { return super.getCell( "TRIAGE_DTTM");}
- public CsvCell getReferredAeDoctorDttm(){ return super.getCell( "REFERRED_AE_DOCTOR_DTTM");}
+ public CsvCell getReferredAeDoctorDttm() { return super.getCell( "REFERRED_AE_DOCTOR_DTTM");}
  public CsvCell getSeenByAeDoctorDttm() { return super.getCell( "SEEN_BY_AE_DOCTOR_DTTM");}
  public CsvCell getReferredToPathologyDttm() { return super.getCell( "REFERRED_TO_PATHOLOGY_DTTM");}
  public CsvCell getBackFromPathologyDttm() { return super.getCell( "BACK_FROM_PATHOLOGY_DTTM");}
@@ -97,18 +98,18 @@ public class AandeAttendances extends AbstractCsvParser {
  public CsvCell getReferredToTreatmentDttm() { return super.getCell( "REFERRED_TO_TREATMENT_DTTM");}
  public CsvCell getBackFromTreatmentDttm() { return super.getCell( "BACK_FROM_TREATMENT_DTTM");}
  public CsvCell getFirstReferredToSpecialtyDttm() { return super.getCell( "FIRST_REFERRED_TO_SPECIALTY_DTTM");}
- public CsvCell getFirstSeenBySpecialtyDttM() { return super.getCell( "FIRST_SEEN_BY_SPECIALTY_DTTM");}
+ public CsvCell getFirstSeenBySpecialtyDttm() { return super.getCell( "FIRST_SEEN_BY_SPECIALTY_DTTM");}
  public CsvCell getFirstSpecialtyReferred() { return super.getCell( "FIRST_SPECIALTY_REFERRED");}
  public CsvCell getLastReferredToSpecialtyDttm() { return super.getCell( "LAST_REFERRED_TO_SPECIALTY_DTTM");}
  public CsvCell getLastSeenBySpecialtyDttm() { return super.getCell( "LAST_SEEN_BY_SPECIALTY_DTTM");}
  public CsvCell getLastSpecialtyReferred() { return super.getCell( "LAST_SPECIALTY_REFERRED");}
  public CsvCell getBedRequestDttm() { return super.getCell( "BED_REQUEST_DTTM");}
- public CsvCell getBedRequestOutcomeDttM() { return super.getCell( "BED_REQUEST_OUTCOME_DTTM");}
+ public CsvCell getBedRequestOutcomeDttm() { return super.getCell( "BED_REQUEST_OUTCOME_DTTM");}
  public CsvCell getMinutesToBedRequest() { return super.getCell( "MINUTES_TO_BED_REQUEST");}
  public CsvCell getCauBedRequestDttm() { return super.getCell( "CAU_BED_REQUEST_DTTM");}
- public CsvCell getMauBedRequestDttM() { return super.getCell( "MAU_BED_REQUEST_DTTM");}
+ public CsvCell getMauBedRequestDttm() { return super.getCell( "MAU_BED_REQUEST_DTTM");}
  public CsvCell getSauBedRequestDttm() { return super.getCell( "SAU_BED_REQUEST_DTTM");}
- public CsvCell getTransportRequestDttM() { return super.getCell( "TRANSPORT_REQUEST_DTTM");}
+ public CsvCell getTransportRequestDttm() { return super.getCell( "TRANSPORT_REQUEST_DTTM");}
  public CsvCell getTransportOutcomeDttm() { return super.getCell( "TRANSPORT_OUTCOME_DTTM");}
  public CsvCell getDiagnosisRecordDttm() { return super.getCell( "DIAGNOSIS_RECORD_DTTM");}
  public CsvCell getCliniciansName() { return super.getCell( "CLINICIANS_NAME");}

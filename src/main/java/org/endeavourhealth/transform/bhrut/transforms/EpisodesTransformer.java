@@ -2,11 +2,9 @@ package org.endeavourhealth.transform.bhrut.transforms;
 
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.Episodes;
-import org.endeavourhealth.transform.bhrut.schema.PMI;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +43,7 @@ public class EpisodesTransformer {
                                        String version) throws Exception {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        encounterBuilder.setId(parser.getExternalId().toString());
+        //encounterBuilder.setId(parser.get().toString());
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, encounterBuilder);
     }

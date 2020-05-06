@@ -1,13 +1,10 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
-import com.sun.deploy.net.proxy.pac.PACFunctions;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.PMI;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.vision.VisionCsvHelper;
-import org.endeavourhealth.transform.vision.schema.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +43,7 @@ public class PMITransformer {
                                        String version) throws Exception {
 
         PatientBuilder patientBuilder = new PatientBuilder();
+        //TODO correct id below?
         patientBuilder.setId(parser.getID().toString());
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, patientBuilder);
