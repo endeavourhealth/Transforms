@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.bhrut.schema;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.vision.VisionCsvToFhirTransformer;
 
 import java.util.UUID;
 
@@ -15,6 +14,37 @@ public class PMI extends AbstractCsvParser {
                 BhrutCsvToFhirTransformer.DATE_FORMAT,
                 BhrutCsvToFhirTransformer.TIME_FORMAT);
     }
+
+    private static String[] getHeaders(String version) {
+        return new String[]{
+                "LINESTATUS",
+                "FORENAME",
+                "SURNAME",
+                "PATIENT_EXTERNAL_ID",
+                "PAS_ID",
+                "NHS_NUMBER",
+                "GENDER_CODE",
+                "BIRTH_DTTM",
+                "DEATH_DTTM",
+                "ADDRESS_1",
+                "ADDRESS_2",
+                "ADDRESS_3",
+                "ADDRESS_4",
+                "ADDRESS_5",
+                "POSTCODE",
+                "SENSITIVE_PDS_FLAG",
+                "SENSITIVE_LOCAL_FLAG",
+                "HPHONE_NUMBER",
+                "HPHONE_NUMBER_CONSENT",
+                "MPHONE_NUMBER",
+                "MPHONE_NUMBER_CONSENT",
+                "ETHNICITY_CODE",
+                "FOREIGN_LANGUAGE_CODE",
+                "NOK_NAME",
+                "NOKREL_NHSCODE",
+        };
+    }
+
     @Override
     protected boolean isFileAudited() {
         return true;
@@ -25,13 +55,108 @@ public class PMI extends AbstractCsvParser {
         return getHeaders(version);
     }
 
-    private static String[] getHeaders(String version) {
-
-            return new String[]{
-                    "ID",
-                    ""};
-            }
     public CsvCell getID() {
         return super.getCell("ID");
     }
-        }
+
+    public CsvCell getLineStatus() {
+        return super.getCell("LINESTATUS");
+    }
+
+    public CsvCell getForename() {
+        return super.getCell("FORENAME");
+    }
+
+    public CsvCell getSurname() {
+        return super.getCell("SURNAME");
+    }
+
+    public CsvCell getApplicationID() {
+        return super.getCell("PATIENT_EXTERNAL_ID");
+    }
+
+    public CsvCell getHospitalNumber() {
+        return super.getCell("PAS_ID");
+    }
+
+    public CsvCell getNhsNumber() {
+        return super.getCell("NHS_NUMBER");
+    }
+
+    public CsvCell getGenderCode() {
+        return super.getCell("GENDER_CODE");
+    }
+
+    public CsvCell getDateOfBirth() {
+        return super.getCell("BIRTH_DTTM");
+    }
+
+    public CsvCell getDateOfDeath() {
+        return super.getCell("DEATH_DTTM");
+    }
+
+    public CsvCell getAddress1() {
+        return super.getCell("ADDRESS1");
+    }
+
+    public CsvCell getAddress2() {
+        return super.getCell("ADDRESS2");
+    }
+
+    public CsvCell getAddress3() {
+        return super.getCell("ADDRESS3");
+    }
+
+    public CsvCell getAddress4() {
+        return super.getCell("ADDRESS4");
+    }
+
+    public CsvCell getAddress5() {
+        return super.getCell("ADDRESS5");
+    }
+
+    public CsvCell getPostcode() {
+        return super.getCell("POSTCODE");
+    }
+
+    public CsvCell getSensitivePdsFlag() {
+        return super.getCell("SENSITIVE_PDS_FLAG");
+    }
+
+    public CsvCell getSensitiveLocalFlag() {
+        return super.getCell("SENSITIVE_LOCAL_FLAG");
+    }
+
+    public CsvCell getHomePhoneNumber() {
+        return super.getCell("HPHONE_NUMBER");
+    }
+
+    public CsvCell getHomePhoneNumberConsent() {
+        return super.getCell("HPHONE_NUMBER_CONSENT");
+    }
+
+    public CsvCell getMobilePhoneNumber() {
+        return super.getCell("MPHONE_NUMBER");
+    }
+
+    public CsvCell getMobilePhoneNumberConsent() {
+        return super.getCell("MPHONE_NUMBER_CONSENT");
+    }
+
+    public CsvCell getEthnicityCode() {
+        return super.getCell("ETHNICITY_CODE");
+    }
+
+    public CsvCell getForeignLanguageCode() {
+        return super.getCell("FOREIGN_LANGUAGE_CODE");
+    }
+
+    public CsvCell getNextOfKin() {
+        return super.getCell("NOK_NAME");
+    }
+
+    public CsvCell getNextOfKinCode() {
+        return super.getCell("NOKREL_NHSCODE");
+    }
+
+}
