@@ -55,10 +55,6 @@ public class PMI extends AbstractCsvParser {
         return getHeaders(version);
     }
 
-    public CsvCell getID() {
-        return super.getCell("ID");
-    }
-
     public CsvCell getLineStatus() {
         return super.getCell("LINESTATUS");
     }
@@ -71,11 +67,11 @@ public class PMI extends AbstractCsvParser {
         return super.getCell("SURNAME");
     }
 
-    public CsvCell getApplicationID() {
+    public CsvCell getID() {
         return super.getCell("PATIENT_EXTERNAL_ID");
     }
 
-    public CsvCell getHospitalNumber() {
+    public CsvCell getPasId() {
         return super.getCell("PAS_ID");
     }
 
