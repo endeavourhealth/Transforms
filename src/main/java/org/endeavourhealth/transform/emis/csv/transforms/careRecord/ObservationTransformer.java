@@ -1045,6 +1045,10 @@ public class ObservationTransformer {
         assertNumericRangeHighEmpty(procedureBuilder, parser);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
+
+        //due to a past bug we may have previously saved a record as a FHIR Observation, not a FHIR Condition,
+        //so detect if this has happened and delete that resource
+        deleteEmisCodeFhirObservationIfPreviouslySaved(parser, fhirResourceFiler);
     }
 
     private static void createOrDeleteCondition(Observation parser,
@@ -1165,6 +1169,50 @@ public class ObservationTransformer {
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
+
+        //due to a past bug we may have previously saved a record as a FHIR Observation, not a FHIR Condition,
+        //so detect if this has happened and delete that resource
+        deleteEmisCodeFhirObservationIfPreviouslySaved(parser, fhirResourceFiler);
+    }
+
+    /**
+     * due to a past bug we may have previously saved a record as a FHIR Observation, not a FHIR Condition or Procedure
+     * so detect if this has happened and delete that resource so we don't duplicate it now we have got the correct target type
+     */
+    private static void deleteEmisCodeFhirObservationIfPreviouslySaved(Observation parser, FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        CsvCell codeIdCell = parser.getCodeId();
+        if (codeIdCell.isEmpty()) {
+            return;
+        }
+
+        //this only affected records with Emis codes
+        EmisClinicalCode code = EmisCodeHelper.findClinicalCode(codeIdCell);
+        if (!code.isEmisCode()) {
+            return;
+        }
+
+        CsvCell observationGuidCell = parser.getObservationGuid();
+        CsvCell patientGuidCell = parser.getPatientGuid();
+
+        //see if it was saved as an observation
+        String sourceId = EmisCsvHelper.createUniqueId(patientGuidCell, observationGuidCell);
+        Reference ref = ReferenceHelper.createReference(ResourceType.Observation, sourceId);
+        Set<Reference> refs = new HashSet<>();
+        refs.add(ref);
+        Map<Reference, UUID> idMap = IdHelper.getEdsResourceIds(fhirResourceFiler.getServiceId(), refs);
+
+        if (!idMap.containsKey(ref)) {
+            return;
+        }
+
+        ObservationBuilder observationBuilder = new ObservationBuilder();
+        EmisCsvHelper.setUniqueId(observationBuilder, patientGuidCell, observationGuidCell);
+
+        Reference patientReference = EmisCsvHelper.createPatientReference(patientGuidCell);
+        observationBuilder.setPatient(patientReference, patientGuidCell);
+
+        fhirResourceFiler.deletePatientResource(parser.getCurrentState(), observationBuilder);
     }
 
     private static void createOrDeleteObservation(Observation parser,
