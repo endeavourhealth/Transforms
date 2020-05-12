@@ -95,8 +95,10 @@ public class FhirDeltaResourceFilter {
 
     private void filterAdminResourcesForDelta(List<Resource> adminResources, List<Resource> adminUpserts) throws Exception {
 
+        throw new Exception("Cannot retrieve all admin resources for a service and type, so this needs rewriting");
+
         //hash by resource types
-        HashMap<String, List<Resource>> hmResourceTypes = new HashMap<>();
+        /*HashMap<String, List<Resource>> hmResourceTypes = new HashMap<>();
         for (Resource resource: adminResources) {
 
             String resourceType = resource.getResourceType().toString();
@@ -137,7 +139,7 @@ public class FhirDeltaResourceFilter {
                     }
                 }
             }
-        }
+        }*/
     }
 
     private void filterPatientResourcesForDelta(String patientId, List<Resource> patientResources, List<Resource> patientUpserts,

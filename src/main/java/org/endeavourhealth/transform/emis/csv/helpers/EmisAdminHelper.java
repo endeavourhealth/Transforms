@@ -115,7 +115,7 @@ public class EmisAdminHelper {
 
             done ++;
             if (done % 10000 == 0) {
-                LOG.debug("Submitted " + done + " to thread pool");
+                LOG.debug("Submitted " + done + " practitioners to thread pool");
             }
         }
 
@@ -123,12 +123,15 @@ public class EmisAdminHelper {
             csvHelper.submitToThreadPool(new CreatePractitioners(batch, csvHelper, fhirResourceFiler));
             batch.clear();
         }
+        LOG.debug("Submitted " + done + " practitioners to thread pool");
 
         //block until all runnables are done
         csvHelper.waitUntilThreadPoolIsEmpty();
     }
 
     private void createOrganisations(FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper) throws Exception {
+
+        LOG.debug("Creating and saving " + organisationIdsChanged.size() + " location resources");
         Set<String> batch = new HashSet<>();
         int done = 0;
 
@@ -141,7 +144,7 @@ public class EmisAdminHelper {
 
             done ++;
             if (done % 10000 == 0) {
-                LOG.debug("Submitted " + done + " to thread pool");
+                LOG.debug("Submitted " + done + " organisations to thread pool");
             }
         }
 
@@ -149,12 +152,15 @@ public class EmisAdminHelper {
             csvHelper.submitToThreadPool(new CreateOrganisations(batch, csvHelper, fhirResourceFiler));
             batch.clear();
         }
+        LOG.debug("Submitted " + done + " organisations to thread pool");
 
         //block until all runnables are done
         csvHelper.waitUntilThreadPoolIsEmpty();
     }
 
     private void createLocations(FhirResourceFiler fhirResourceFiler, EmisCsvHelper csvHelper) throws Exception {
+
+        LOG.debug("Creating and saving " + locationIdsChanged.size() + " location resources");
         Set<String> batch = new HashSet<>();
         int done = 0;
 
@@ -167,7 +173,7 @@ public class EmisAdminHelper {
 
             done ++;
             if (done % 10000 == 0) {
-                LOG.debug("Submitted " + done + " to thread pool");
+                LOG.debug("Submitted " + done + " locations  to thread pool");
             }
         }
 
@@ -175,6 +181,7 @@ public class EmisAdminHelper {
             csvHelper.submitToThreadPool(new CreateLocations(batch, csvHelper, fhirResourceFiler));
             batch.clear();
         }
+        LOG.debug("Submitted " + done + " locations  to thread pool");
 
         //block until all runnables are done
         csvHelper.waitUntilThreadPoolIsEmpty();

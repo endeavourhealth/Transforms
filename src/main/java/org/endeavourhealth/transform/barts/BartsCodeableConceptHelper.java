@@ -86,16 +86,9 @@ public class BartsCodeableConceptHelper {
                 for (ResourceFieldMappingAudit.ResourceFieldMappingAuditCol colAudit : rowAudit.getCols()) {
                     String field = colAudit.getField();
                     if (field.equals(fieldName)) {
-                        int colIndex = colAudit.getCol();
+                        short colIndex = colAudit.getCol();
                         int publishedFileId = rowAudit.getFileId();
-                        if (publishedFileId > 0) {
-                            return new CsvCell(publishedFileId, rowAudit.getRecord(), colIndex, value.toString(), null);
-                        } else if (rowAudit.getOldStyleAuditId() != null) {
-                            //temproary, until all audits are converted over to new style
-                            return CsvCell.factoryOldStyleAudit(rowAudit.getOldStyleAuditId(), colIndex, value.toString(), null);
-                        } else {
-                            throw new Exception("No published record ID in audit for CernerCodeValueRef " + codeMap.getCodeValueCd());
-                        }
+                        return new CsvCell(publishedFileId, rowAudit.getRecord(), colIndex, value.toString(), null);
                     }
                 }
             }

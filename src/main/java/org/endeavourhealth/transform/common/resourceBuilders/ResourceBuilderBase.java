@@ -152,15 +152,11 @@ public abstract class ResourceBuilderBase {
             //of -1, so ignore them too
             if (csvCell == null
                     || csvCell.isEmpty()
-                    || (csvCell.getPublishedFileId() <= 0 && csvCell.getOldStyleAuditId() == null)) {
+                    || csvCell.getPublishedFileId() <= 0) {
                 continue;
             }
 
-            if (csvCell.getPublishedFileId() > 0) {
-                auditWrapper.auditValue(csvCell.getPublishedFileId(), csvCell.getRecordNumber(), csvCell.getColIndex(), jsonField);
-            } else {
-                auditWrapper.auditValueOldStyle(csvCell.getOldStyleAuditId(), csvCell.getColIndex(), jsonField);
-            }
+            auditWrapper.auditValue(csvCell.getPublishedFileId(), csvCell.getRecordNumber(), csvCell.getColIndex(), jsonField);
         }
     }
 

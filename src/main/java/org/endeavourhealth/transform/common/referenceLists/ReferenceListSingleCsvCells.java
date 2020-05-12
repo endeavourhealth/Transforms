@@ -8,7 +8,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 public class ReferenceListSingleCsvCells extends ReferenceList {
 
     //use an array to use less memory, since there can be a vast number of these objects in bulk transforms
-    private CsvCell[] sourceCells = new CsvCell[0];
+    private CsvCell[] sourceCells = new CsvCell[0]; //array so we have ONE cell per reference in our list
 
     @Override
     public CsvCell[] getSourceCells(int index) {

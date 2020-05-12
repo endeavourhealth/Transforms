@@ -303,9 +303,9 @@ public class ObservationTransformer {
 
         } else if (codeType == ClinicalCodeType.Conditions_Operations_Procedures) {
 
-            if (isProcedure(codeId, csvHelper,patientGuid,observationGuid)) {
+            if (isProcedure(codeId)) {
                 return ResourceType.Procedure;
-            } else if (isDisorder(codeId, csvHelper,patientGuid,observationGuid)) {
+            } else if (isDisorder(codeId)) {
                 return ResourceType.Condition;
             } else {
                 return ResourceType.Observation;
@@ -349,15 +349,16 @@ public class ObservationTransformer {
         }
     }
 
-    private static boolean isDisorder(CsvCell codeIdCell, EmisCsvHelper csvHelper,CsvCell patientGuid, CsvCell observationGuid) throws Exception {
+    private static boolean isDisorder(CsvCell codeIdCell) throws Exception {
 
-        EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCode(codeIdCell);
-        if (!codeMapping.isEmisCode()) {
-            String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
-            return Read2.isDisorder(readCode);
+        EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCodeOrParentRead2Code(codeIdCell);
+        if (codeMapping == null) {
+            //if we can't find a Read2 code in the hierarchy we don't know
+            return false;
         }
 
-        return false;
+        String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
+        return Read2.isDisorder(readCode);
     }
 
 
@@ -379,9 +380,8 @@ public class ObservationTransformer {
 
         //if we pass the above checks, then check what kind of code it is. If one of the below types, then store as a report.
         CsvCell codeIdCell = parser.getCodeId();
-        CsvCell patientGuidCell = parser.getPatientGuid();
-        CsvCell observationGuidCell = parser.getObservationGuid();
         ClinicalCodeType codeType = EmisCodeHelper.findClinicalCodeType(codeIdCell);
+
         return codeType == ClinicalCodeType.Biochemistry
             || codeType == ClinicalCodeType.Cyology_Histology
             || codeType == ClinicalCodeType.Haematology
@@ -391,16 +391,16 @@ public class ObservationTransformer {
             || codeType == ClinicalCodeType.Health_Management;
     }
 
-    private static boolean isProcedure(CsvCell codeIdCell,
-                                       EmisCsvHelper csvHelper, CsvCell patientGuid ,CsvCell observationGuid) throws Exception {
+    private static boolean isProcedure(CsvCell codeIdCell) throws Exception {
 
-        EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCode(codeIdCell);
-        if (!codeMapping.isEmisCode()) {
-            String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
-            return Read2.isProcedure(readCode);
+        EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCodeOrParentRead2Code(codeIdCell);
+        if (codeMapping == null) {
+            //if we can't find a Read2 code in the hierarchy we don't know
+            return false;
         }
 
-        return false;
+        String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
+        return Read2.isProcedure(readCode);
     }
 
     private static void createOrDeleteReferralRequest(Observation parser,

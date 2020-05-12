@@ -400,95 +400,17 @@ public abstract class AbstractFixedParser implements AutoCloseable, ParserI {
         //long rowAuditId = getSourceFileRecordIdForCurrentRow();
         int colIndex = field.getColumnIndex();
 
-        if (fileAuditId != null) {
-            return new CsvCell(fileAuditId.intValue(), currentLineNumber, colIndex, value, this);
-        } else {
-            return new CsvCell(-1, -1, colIndex, value, this);
+        //ensure we're not exceeding our supported max column count
+        if (colIndex > (int)Short.MAX_VALUE) {
+            throw new RuntimeException("Column index greater than " + Short.MAX_VALUE);
         }
-        //return new CsvCell(rowAuditId, colIndex, value, this);
+
+
+        if (fileAuditId != null) {
+            return new CsvCell(fileAuditId.intValue(), currentLineNumber, (short)colIndex, value, this);
+        } else {
+            return new CsvCell(-1, -1, (short)colIndex, value, this);
+        }
     }
 
-    /*public long getSourceFileRecordIdForCurrentRow() {
-        if (fileAuditId != null) {
-            return cellAuditIds[currentLineNumber];
-
-        } else {
-            //if the file isn't audited, return -1, so it's compatible with CsvCell which uses a primative long
-            return -1;
-        }
-    }*/
-
-    /*class AuditRowTask implements Callable {
-
-        private boolean haveProcessedFileBefore = false;
-        private List<SourceFileRecord> records = new ArrayList<>();
-        private boolean full;
-        private boolean empty;
-
-        public AuditRowTask(boolean haveProcessedFileBefore) {
-            this.haveProcessedFileBefore = haveProcessedFileBefore;
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            try {
-
-                //if we've done this file before, re-load the past audit
-                List<SourceFileRecord> recordsToInsert = null;
-
-                if (haveProcessedFileBefore) {
-                    recordsToInsert = new ArrayList<>();
-
-                    for (SourceFileRecord record : records) {
-                        int lineNumber = Integer.parseInt(record.getSourceLocation());
-                        Long existingId = dal.findRecordAuditIdForRow(serviceId, fileAuditId, lineNumber);
-                        if (existingId != null) {
-                            long rowAuditId = existingId.longValue();
-                            setRowAuditId(lineNumber, rowAuditId);
-
-                        } else {
-                            recordsToInsert.add(record);
-                        }
-                    }
-                } else {
-                    recordsToInsert = records;
-                }
-
-                if (!recordsToInsert.isEmpty()) {
-                    dal.auditFileRows(serviceId, recordsToInsert);
-
-                    //the above call will have set the IDs in each of the record objects
-                    for (SourceFileRecord record: recordsToInsert) {
-                        Long rowAuditId = record.getId();
-                        int lineNumber = Integer.parseInt(record.getSourceLocation());
-                        setRowAuditId(lineNumber, rowAuditId);
-                    }
-                }
-
-                return null;
-            } catch (Exception ex) {
-
-                String err = "Exception auditing rows ";
-                for (SourceFileRecord record : records) {
-                    err += record.getSourceLocation();
-                    err += ", ";
-                }
-                LOG.error(err, ex);
-                throw ex;
-            }
-        }
-
-        public void addRecord(SourceFileRecord fileRecord) {
-            this.records.add(fileRecord);
-        }
-
-        public boolean isFull() {
-            return this.records.size() >= TransformConfig.instance().getResourceSaveBatchSize();
-        }
-
-        public boolean isEmpty() {
-            return this.records.isEmpty();
-        }
-    }*/
 }

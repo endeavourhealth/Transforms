@@ -22,17 +22,16 @@ public class CsvCell {
     private byte[] valueBytes;
     //private String value;
 
-    private int colIndex;
-    //private long rowAuditId;
+    private short colIndex; //widest files are CDS with about 600 cols, so changed from int to short to save two bytes
     private int publishedFileId;
     private int recordNumber;
     private ParserI parentParser;
-    private Long oldStyleAuditId; //temporary until all audits are converted over to new-style
 
-    public CsvCell(int publishedFileId, int recordNumber, int colIndex, String value, ParserI parentParser) {
+    public CsvCell(int publishedFileId, int recordNumber, short colIndex, String value, ParserI parentParser) {
+
         this.publishedFileId = publishedFileId;
         this.recordNumber = recordNumber;
-        this.colIndex = colIndex;
+        this.colIndex = (short)colIndex;
         this.parentParser = parentParser;
 
         if (value != null) {
@@ -42,20 +41,14 @@ public class CsvCell {
     }
 
     public static CsvCell factoryDummyWrapper(String value) {
-        return new CsvCell(-1, -1, -1, value, null);
+        return new CsvCell(-1, -1, (short)-1, value, null);
     }
 
     public static CsvCell factoryWithNewValue(CsvCell source, String newValue) {
         return new CsvCell(source.getPublishedFileId(), source.getRecordNumber(), source.getColIndex(), newValue, source.getParentParser());
     }
 
-    public static CsvCell factoryOldStyleAudit(Long oldStyleAuditId, int colIndex, String value, ParserI parentParser) {
-        CsvCell ret = new CsvCell(-1, -1, colIndex, value, parentParser);
-        ret.oldStyleAuditId = oldStyleAuditId;
-        return ret;
-    }
-
-    public int getColIndex() {
+    public short getColIndex() {
         return colIndex;
     }
 
@@ -65,10 +58,6 @@ public class CsvCell {
 
     public int getRecordNumber() {
         return recordNumber;
-    }
-
-    public Long getOldStyleAuditId() {
-        return oldStyleAuditId;
     }
 
     public ParserI getParentParser() {

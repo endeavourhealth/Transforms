@@ -163,7 +163,7 @@ public class SRPatientRegistrationTransformer {
         episodeBuilder.setManagingOrganisation(orgReferenceEpisode, orgIdCell);
 
         //if this registration is an active GMS registration, then it's telling us the current registered GP practice,
-        //so this needs setting in the patient careManager
+        //so this needs setting in the patient careProvider (i.e. current registered practice)
         if (regType != null
                 && regType == RegistrationType.REGULAR_GMS
                 && episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE) {
@@ -179,48 +179,36 @@ public class SRPatientRegistrationTransformer {
             patientBuilder.addCareProvider(orgReferenceCareProvider, orgIdCell);
         }
 
+        //the TPP feed supplies details of registrations elsewhere, which should not be saved within the scope
+        //of the publisher, as it ends up creating a lot of confusion as episodes of care are expected to be ABOUT
+        //the publisher service and not somewhere else
+        if (shouldSaveEpisode(orgIdCell, parser.getIDOrganisationVisibleTo())) {
 
-        /*CsvCell orgIdCell = parser.getIDOrganisation();
-        if (!orgIdCell.isEmpty()) {
-
-            Reference orgReferenceEpisode = csvHelper.createOrganisationReference(orgIdCell);
-            if (episodeBuilder.isIdMapped()) {
-                orgReferenceEpisode = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferenceEpisode, csvHelper);
+            //save a mapping to allow us to find the active episode for the patient
+            if (episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE) {
+                csvHelper.saveInternalId(PATIENT_ID_TO_ACTIVE_EPISODE_ID, patientIdCell.getString(), rowIdCell.getString());
             }
-            episodeBuilder.setManagingOrganisation(orgReferenceEpisode, orgIdCell);
 
-            //and we need to set a couple of fields on the patient record
-            PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
-            if (patientBuilder != null) {
+            //we save the episode immediately, since it's complete now, but the patient isn't done yet
+            boolean mapIds = !episodeBuilder.isIdMapped();
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
 
-                Reference orgReferencePatient = csvHelper.createOrganisationReference(orgIdCell);
-                if (patientBuilder.isIdMapped()) {
-                    orgReferencePatient = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferencePatient, csvHelper);
-                }
-                patientBuilder.setManagingOrganisation(orgReferencePatient, orgIdCell);
-
-                //and if the patient is registered for GMS, then this is their registered practice too
-                if (regType != null
-                        && regType == RegistrationType.REGULAR_GMS) {
-                    Reference orgReferenceCareProvider = csvHelper.createOrganisationReference(orgIdCell);
-                    if (patientBuilder.isIdMapped()) {
-                        orgReferenceCareProvider = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferenceCareProvider, csvHelper);
-                    }
-                    patientBuilder.addCareProvider(orgReferenceCareProvider, orgIdCell);
-                }
-            }
-        }*/
-
-        //save a mapping to allow us to find the active episode for the patient
-        if (episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE) {
-            csvHelper.saveInternalId(PATIENT_ID_TO_ACTIVE_EPISODE_ID, patientIdCell.getString(), rowIdCell.getString());
+        } else {
+            boolean mapIds = !episodeBuilder.isIdMapped();
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
         }
-
-        //we save the episode immediately, since it's complete now, but the patient isn't done yet
-        boolean mapIds = !episodeBuilder.isIdMapped();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
-        //LOG.debug("Added episode of care " + episodeBuilder.getResourceId() + " for patient " + patientIdCell.getString() + " to resource filer");
     }
+
+    /**
+     * determines whether we should save this registration episode. If the episode is about the patient's
+     * registration SOMEWHERE ELSE then we don't want to save the episode.
+     */
+    private static boolean shouldSaveEpisode(CsvCell orgIdCell, CsvCell idOrganisationVisibleToCell) {
+        String episodeAt = orgIdCell.getString();
+        String publisher = idOrganisationVisibleToCell.getString();
+        return episodeAt.equals(publisher);
+    }
+
 
     private static RegistrationType mapToFhirRegistrationType(CsvCell regTypeCell) throws Exception {
 

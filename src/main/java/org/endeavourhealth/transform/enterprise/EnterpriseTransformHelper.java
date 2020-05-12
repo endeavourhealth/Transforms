@@ -491,4 +491,11 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
             lock.unlock();
         }
     }
+
+    /**
+     * finds an Organization FHIR reference that points to the same logical organisation as the service ID
+     */
+    public static Reference findOrganisationReferenceForPublisher(UUID serviceId) throws Exception {
+        return SubscriberTransformHelper.findOrganisationReferenceForPublisher(serviceId);
+    }
 }

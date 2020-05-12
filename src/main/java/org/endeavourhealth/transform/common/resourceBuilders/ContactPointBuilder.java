@@ -166,11 +166,7 @@ public class ContactPointBuilder {
         ResourceFieldMappingAudit audit = this.parentBuilder.getAuditWrapper();
         for (CsvCell csvCell : sourceCells) {
             if (csvCell != null) {
-                if (csvCell.getOldStyleAuditId() != null) {
-                    audit.auditValueOldStyle(csvCell.getOldStyleAuditId(), csvCell.getColIndex(), jsonField);
-                } else {
-                    audit.auditValue(csvCell.getPublishedFileId(), csvCell.getRecordNumber(), csvCell.getColIndex(), jsonField);
-                }
+                audit.auditValue(csvCell.getPublishedFileId(), csvCell.getRecordNumber(), csvCell.getColIndex(), jsonField);
             }
         }
     }

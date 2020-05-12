@@ -170,16 +170,40 @@ public class EmisCodeHelper {
     }
 
 
+    /**
+     * finds the code for the code ID but if it's an Emis code works up the hierarchy until it finds a Read 2 code
+     */
+    public static EmisClinicalCode findClinicalCodeOrParentRead2Code(CsvCell codeIdCell) throws Exception {
+
+        EmisClinicalCode codeMapping = findClinicalCode(codeIdCell);
+
+        //if an Emis code, step up the hierarchy until we find a Read2 code
+        while (codeMapping.isEmisCode()) {
+            Long parentId = codeMapping.getParentCode();
+            if (parentId == null) {
+                //some Emis codes simply don't have parents
+                return null;
+            }
+            codeMapping = EmisCodeHelper.findClinicalCode(parentId);
+        }
+
+        return codeMapping;
+    }
 
     public static EmisClinicalCode findClinicalCode(CsvCell codeIdCell) throws Exception {
         Long codeId = codeIdCell.getLong();
+        return findClinicalCode(codeId);
+    }
+
+    public static EmisClinicalCode findClinicalCode(Long codeId) throws Exception {
+
         EmisClinicalCode ret = clinicalCodes.get(codeId);
         if (ret == null) {
             EmisCodeDalI dal = DalProvider.factoryEmisCodeDal();
             ret = dal.getClinicalCode(codeId.longValue());
             if (ret == null) {
-                LOG.error("Clinical CodeMap value not found " + codeIdCell.getLong() + " for Record Number " + codeIdCell.getRecordNumber());
-                throw new EmisCodeNotFoundException(codeIdCell.getLong().longValue(), EmisCodeType.CLINICAL_CODE, "Clinical code not found");
+                LOG.error("Clinical CodeMap value not found " + codeId);
+                throw new EmisCodeNotFoundException(codeId.longValue(), EmisCodeType.CLINICAL_CODE, "Clinical code not found");
             }
             clinicalCodes.put(codeId, ret);
         }

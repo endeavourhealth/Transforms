@@ -20,9 +20,11 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.pcr.outputModels.AbstractPcrCsvWriter;
 import org.endeavourhealth.transform.pcr.outputModels.OutputContainer;
 import org.endeavourhealth.transform.pcr.transforms.*;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
@@ -133,41 +135,14 @@ public class FhirToPcrCsvTransformer extends FhirToXTransformerBase {
         //that represents our organisation. Unfortunately, the very first batch for an org will
         //not contain enough info to work out which resource is our interesting one, so we need to
         //rely on there being a patient resource that tells us.
-        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
-        ResourceWrapper resourceByService = resourceRepository.getFirstResourceByService(serviceId, ResourceType.Patient);
-        if (resourceByService == null) {
-            //Emis sometimes activate practices before they send up patient data, so we may have a service with all the
-            //non-patient metadata, but no patient data. If this happens, then don't send anything to pcr, as
-            //it'll all be sorted out when they do send patient data.
-            LOG.info("Returning as resourceByService is null");
-            return null;
-            //throw new TransformException("Cannot find a Patient resource for service " + serviceId + " and system " + systemId);
-        }
+        Reference orgReference = SubscriberTransformHelper.findOrganisationReferenceForPublisher(serviceId);
 
-        String json = resourceByService.getResourceData();
-        //LOG.info("First resource for service " + serviceId + " is " + resourceByService.getResourceType() + " " + resourceByService.getResourceId());
-
-        //if the first patient has been deleted, then we need to look at its history to find the JSON from when it wasn't deleted
-        if (Strings.isNullOrEmpty(json)) {
-            List<ResourceWrapper> history = resourceRepository.getResourceHistory(serviceId, resourceByService.getResourceType(), resourceByService.getResourceId());
-            for (ResourceWrapper historyItem : history) {
-                json = historyItem.getResourceData();
-                if (!Strings.isNullOrEmpty(json)) {
-                    break;
-                }
-            }
-        }
-
-        Patient patient = (Patient) FhirResourceHelper.deserialiseResouce(json);
-        if (!patient.hasManagingOrganization()) {
-            throw new TransformException("Patient " + patient.getId() + " doesn't have a managing org for service " + serviceId);
-        }
-
-        Reference orgReference = patient.getManagingOrganization();
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(orgReference);
         ResourceType resourceType = comps.getResourceType();
         UUID resourceId = UUID.fromString(comps.getId());
         //LOG.info("Managing organisation is " + resourceType + " " + resourceId);
+
+        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
         if (params.isUseInstanceMapping()) {
 

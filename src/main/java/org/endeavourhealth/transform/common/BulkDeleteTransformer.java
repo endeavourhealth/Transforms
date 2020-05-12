@@ -26,7 +26,7 @@ public class BulkDeleteTransformer {
         LOG.info("Performing bulk delete for patients at service " + service.toString());
 
         PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
-        List<UUID> patientUuids = patientSearchDal.getPatientIds(serviceId);
+        List<UUID> patientUuids = patientSearchDal.getPatientIds(serviceId, true);
         LOG.info("Found " + patientUuids.size() + " to delete");
 
         int done = 0;

@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.common;
 
 import com.google.common.base.Strings;
+import com.google.common.primitives.Shorts;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -530,15 +531,18 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             value = value.replaceAll("[^\\x00-\\x7F]", "");
         }
 
-        //long rowAuditId = getSourceFileRecordIdForCurrentRow();
-
         Integer colIndexObj = getCsvReaderHeaderMap().get(column);
         int colIndex = colIndexObj.intValue();
 
+        //ensure we're not exceeding our supported max column count
+        if (colIndex > (int)Short.MAX_VALUE) {
+            throw new RuntimeException("Column index greater than " + Short.MAX_VALUE);
+        }
+
         if (fileAuditId == null) {
-            return new CsvCell(-1, -1, colIndex, value, this);
+            return new CsvCell(-1, -1, (short)colIndex, value, this);
         } else {
-            return new CsvCell(fileAuditId.intValue(), getCurrentLineNumber(), colIndex, value, this);
+            return new CsvCell(fileAuditId.intValue(), getCurrentLineNumber(), (short)colIndex, value, this);
         }
     }
 

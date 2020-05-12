@@ -7,6 +7,7 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
+import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
@@ -657,4 +658,66 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         }
         return protectedCodesRead2;
     }
+
+    /**
+     * finds an Organization FHIR reference that points to the same logical organisation as the service ID
+     */
+    public static Reference findOrganisationReferenceForPublisher(UUID serviceId) throws Exception {
+
+        //the Patient Search table can give us a list of patient UUIDs, so just use that to find an ID
+        //then retrieve that from the FHIR DB
+        PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
+        List<UUID> patientIds = patientSearchDal.getPatientIds(serviceId, false, 1); //just get the first non-deleted one
+        if (patientIds.isEmpty()) {
+            //Emis sometimes activate practices before they send up patient data, so we may have a service with all the
+            //non-patient metadata, but no patient data. If this happens, then don't send anything to Enterprise, as
+            //it'll all be sorted out when they do send patient data.
+            return null;
+            //throw new TransformException("Cannot find a Patient resource for service " + serviceId + " and system " + systemId);
+        }
+
+        UUID patientId = patientIds.get(0);
+        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+        Patient patient = (Patient)resourceRepository.getCurrentVersionAsResource(serviceId, ResourceType.Patient, patientId.toString());
+        if (!patient.hasManagingOrganization()) {
+            throw new TransformException("Patient " + patient.getId() + " doesn't have a managing org for service " + serviceId);
+        }
+
+        Reference orgReference = patient.getManagingOrganization();
+        return orgReference;
+    }
+    /*public static Reference findOrganisationReferenceForPublisher(UUID serviceId) throws Exception {
+
+        ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+        ResourceWrapper resourceByService = resourceRepository.getFirstResourceByService(serviceId, ResourceType.Patient);
+        if (resourceByService == null) {
+            //Emis sometimes activate practices before they send up patient data, so we may have a service with all the
+            //non-patient metadata, but no patient data. If this happens, then don't send anything to Enterprise, as
+            //it'll all be sorted out when they do send patient data.
+            return null;
+            //throw new TransformException("Cannot find a Patient resource for service " + serviceId + " and system " + systemId);
+        }
+
+        String json = resourceByService.getResourceData();
+        //LOG.info("First resource for service " + serviceId + " is " + resourceByService.getResourceType() + " " + resourceByService.getResourceId());
+
+        //if the first patient has been deleted, then we need to look at its history to find the JSON from when it wasn't deleted
+        if (Strings.isNullOrEmpty(json)) {
+            List<ResourceWrapper> history = resourceRepository.getResourceHistory(serviceId, resourceByService.getResourceType(), resourceByService.getResourceId());
+            for (ResourceWrapper historyItem: history) {
+                json = historyItem.getResourceData();
+                if (!Strings.isNullOrEmpty(json)) {
+                    break;
+                }
+            }
+        }
+
+        Patient patient = (Patient)FhirResourceHelper.deserialiseResouce(json);
+        if (!patient.hasManagingOrganization()) {
+            throw new TransformException("Patient " + patient.getId() + " doesn't have a managing org for service " + serviceId);
+        }
+
+        Reference orgReference = patient.getManagingOrganization();
+        return orgReference;
+    }*/
 }
