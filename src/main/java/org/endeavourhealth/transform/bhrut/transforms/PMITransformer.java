@@ -15,7 +15,6 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
-import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +171,7 @@ public class PMITransformer {
             ret = new PatientBuilder(existingResource);
         } else {
             ret = new PatientBuilder();
-            VisionCsvHelper.setUniqueId(ret, patientIdCell, null);
+            csvHelper.setUniqueId(ret, patientIdCell, null);
         }
 
         return ret;
@@ -290,7 +289,7 @@ public class PMITransformer {
 
     private static RegistrationType findPreviousRegistrationType(BhrutCsvHelper csvHelper, CsvCell patientIdCell) throws Exception {
 
-        String localId = VisionCsvHelper.createUniqueId(patientIdCell, null);
+        String localId = csvHelper.createUniqueId(patientIdCell, null);
         EpisodeOfCare episodeOfCare = (EpisodeOfCare) csvHelper.retrieveResource(localId, ResourceType.EpisodeOfCare);
 
         //if no previous instance of the episode, we have no idea what the registration type used to be
@@ -322,7 +321,7 @@ public class PMITransformer {
         CsvCell patientIdCell = parser.getPasId();
         CsvCell patientActionCell = parser.getLineStatus();
 
-        String sourceId = VisionCsvHelper.createUniqueId(patientIdCell, null);
+        String sourceId = csvHelper.createUniqueId(patientIdCell, null);
 
 
         List<Resource> resources = csvHelper.retrieveAllResourcesForPatient(sourceId, fhirResourceFiler);
@@ -357,6 +356,4 @@ public class PMITransformer {
 
         return episodeBuilder;
     }
-
-
 }
