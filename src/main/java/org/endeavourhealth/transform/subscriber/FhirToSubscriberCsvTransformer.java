@@ -46,7 +46,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
                                            UUID protocolId,
                                            String exchangeBody) throws Exception {
 
-        LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
+        LOG.info("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
         SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, resources, exchangeBody);
 
@@ -59,16 +59,21 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
 
         try {
+
+            LOG.trace("Going to run transforms");
             runTransforms(params);
 
+            LOG.trace("Transform finished, will write to Base64");
             OutputContainer data = params.getOutputContainer();
             byte[] bytes = data.writeToZip();
             String ret = Base64.getEncoder().encodeToString(bytes);
 
             //update the state table so we know the datetime of each resource we just transformed, so the event log is maintained properly
             //TODO - if the queue reader is killed or fails after this point, we won't accurately know what we previously sent, since we'll think we sent something when we didn't
+            LOG.trace("Updating dt_previously_sent for " + params.getSubscriberIdsUpdated().size() + " resources");
             updateSubscriberStateTable(params);
 
+            LOG.trace("Transform complete, will return Base64 length " + ret.length());
             return ret;
 
         } catch (Exception ex) {
@@ -160,13 +165,13 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         //generate (or find) an enterprise ID for our organization
         String sourceId = orgReference.getReference();
         SubscriberId subscriberId = AbstractSubscriberTransformer.findOrCreateSubscriberId(params, SubscriberTableId.ORGANIZATION, sourceId);
-        enterpriseOrganisationId = subscriberId.getSubscriberId();
+        enterpriseOrganisationId = new Long(subscriberId.getSubscriberId());
         //LOG.info("Created enterprise org ID " + enterpriseOrganisationId);
 
         //we also want to ensure that our organisation is transformed right now, so need to make sure it's in our list of resources
         ResourceWrapper resourceWrapper = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), resourceId);
         if (resourceWrapper == null) {
-            LOG.info("Null resource history returned for : " + resourceType.toString() + ":" + resourceId + ",org:" + enterpriseOrganisationId + ":" + sourceId);
+            LOG.warn("Null resource history returned for : " + resourceType.toString() + ":" + resourceId + ",org:" + enterpriseOrganisationId + ":" + sourceId);
         } else {
             params.addResourceToTransform(resourceWrapper);
         }
