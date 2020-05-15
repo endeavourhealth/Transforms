@@ -437,6 +437,105 @@ public class EncounterBuilder extends ResourceBuilderBase
             extension.setValue(codeableConcept);
             return codeableConcept;
 
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_PATIENT_CLASS_OTHER);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Type) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_TYPE);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Source) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_SOURCE);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Arrival_Mode) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ARRIVAL_MODE);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Method) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_METHOD);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Source) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_SOURCE);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Discharge_Method) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_DISCHARGE_METHOD);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Discharge_Destination) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_DISCHARGE_DESTINATION);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admin_Category) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMIN_CATEGORY);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Appointment_Attended) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_APPOINTMENT_ATTENDED);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Appointment_Outcome) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_APPOINTMENT_OUTCOME);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept)extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
@@ -469,6 +568,61 @@ public class EncounterBuilder extends ResourceBuilderBase
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_PATIENT_CLASS_OTHER);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Type) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_TYPE);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Source) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_SOURCE);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Arrival_Mode) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ARRIVAL_MODE);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Method) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_METHOD);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Source) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_SOURCE);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Discharge_Method) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_DISCHARGE_METHOD);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Discharge_Destination) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_DISCHARGE_DESTINATION);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admin_Category) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMIN_CATEGORY);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Appointment_Attended) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_APPOINTMENT_ATTENDED);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Appointment_Outcome) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_APPOINTMENT_OUTCOME);
+            int index = this.encounter.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
@@ -492,10 +646,42 @@ public class EncounterBuilder extends ResourceBuilderBase
         } else if (tag == CodeableConceptBuilder.Tag.Encounter_Location_Type) {
             ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_LOCATION_TYPE);
 
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_PATIENT_CLASS_OTHER);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Type) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_TYPE);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Source) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_SOURCE);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Arrival_Mode) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ARRIVAL_MODE);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Method) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_METHOD);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Source) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_SOURCE);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Discharge_Method) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_DISCHARGE_METHOD);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Discharge_Destination) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_DISCHARGE_DESTINATION);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admin_Category) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMIN_CATEGORY);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Appointment_Attended) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_APPOINTMENT_ATTENDED);
+
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Appointment_Outcome) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_APPOINTMENT_OUTCOME);
+
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
-
     }
 
     @Override

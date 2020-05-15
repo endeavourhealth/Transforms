@@ -43,7 +43,18 @@ public class CodeableConceptBuilder {
         Medication_Order_Drug_Code,
         Medication_Statement_Drug_Code,
         Location_Type,
-        Composition_Type
+        Composition_Type,
+        Encounter_Patient_Class_Other,
+        Encounter_Attendance_Type,
+        Encounter_Attendance_Source,
+        Encounter_Arrival_Mode,
+        Encounter_Admission_Method,
+        Encounter_Admission_Source,
+        Encounter_Discharge_Method,
+        Encounter_Discharge_Destination,
+        Encounter_Admin_Category,
+        Encounter_Appointment_Attended,
+        Encounter_Appointment_Outcome,
     }
 
 
