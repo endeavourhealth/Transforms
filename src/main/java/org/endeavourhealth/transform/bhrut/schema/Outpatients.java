@@ -143,7 +143,7 @@ public class Outpatients extends AbstractCsvParser {
 
 
 
-protected String getFileTypeDescription() {return "bhrutOutpatients Entry file ";}
+protected String getFileTypeDescription() {return "Bhrut Outpatients Entry file ";}
 
     @Override
 protected boolean isFileAudited() {return true;}

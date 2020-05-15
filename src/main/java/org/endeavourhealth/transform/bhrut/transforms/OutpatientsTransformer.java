@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.bhrut.schema.Outpatients;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -15,6 +16,7 @@ import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.Map;
 
@@ -53,7 +55,7 @@ public class OutpatientsTransformer {
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
         CsvCell patientIdCell = parser.getPasId();
-        encounterBuilder.setId(parser.getId().getString());
+        encounterBuilder.setId(parser.getId().getString(),patientIdCell);
         CsvCell visitId = parser.getId();
         String visitIdUnique = VISIT_ID_PREFIX + visitId.getString();
 
@@ -109,7 +111,17 @@ public class OutpatientsTransformer {
 
         // CsvCell secondaryProcCode  = parser.getSecondaryProcedureCode1();
 
-
+        for ( int i = 1; i <= 11; i++) {
+            Method method = Outpatients.class.getDeclaredMethod("getSecondaryProcedureCode" + i);
+            CsvCell procCode = (CsvCell) method.invoke(parser);
+            if (!procCode.isEmpty()) {
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
+                codeableConceptBuilder.setCodingCode(procCode.getString(), procCode);
+            } else {
+                break;  //No point parsing empty cells.
+            }
+        }
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
         appointmentBuilder.setId(visitIdUnique, visitId);
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
@@ -194,8 +206,7 @@ public class OutpatientsTransformer {
         if (!visitDuration.isEmpty()) {
             appointmentBuilder.setMinutesActualDuration(visitDuration.getInt());
         }
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder,procedureBuilder);
     }
 
 }
