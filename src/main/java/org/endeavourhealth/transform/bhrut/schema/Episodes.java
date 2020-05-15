@@ -144,23 +144,23 @@ public class Episodes extends AbstractCsvParser {
  public CsvCell getAdmissionHospitalName() { return super.getCell( "ADMISSION_HOSPITAL_NAME");}
  public CsvCell getPrimaryDiagnosisCode() { return super.getCell( "PRIMARY_DIAGNOSIS_CODE");}
  public CsvCell getPrimdiagDttm() { return super.getCell( "PRIMDIAG_DTTM");}
- public CsvCell getDiag01() { return super.getCell( "DIAG_01");}
+ public CsvCell getDiag1() { return super.getCell( "DIAG_01");}
  public CsvCell getDiag1Dttm() { return super.getCell( "DIAG1_DTTM");}
- public CsvCell getDiag02() { return super.getCell( "DIAG_02");}
+ public CsvCell getDiag2() { return super.getCell( "DIAG_02");}
  public CsvCell getDiag2Dttm() { return super.getCell( "DIAG2_DTTM");}
- public CsvCell getDiag03() { return super.getCell( "DIAG_03");}
+ public CsvCell getDiag3() { return super.getCell( "DIAG_03");}
  public CsvCell getDiag3Dttm() { return super.getCell( "DIAG3_DTTM");}
- public CsvCell getDiag04() { return super.getCell( "DIAG_04");}
+ public CsvCell getDiag4() { return super.getCell( "DIAG_04");}
  public CsvCell getDiag4Dttm() { return super.getCell( "DIAG4_DTTM");}
- public CsvCell getDiag05() { return super.getCell( "DIAG_05");}
+ public CsvCell getDiag5() { return super.getCell( "DIAG_05");}
  public CsvCell getDiag5Dttm() { return super.getCell( "DIAG5_DTTM");}
- public CsvCell getDiag06() { return super.getCell( "DIAG_06");}
+ public CsvCell getDiag6() { return super.getCell( "DIAG_06");}
  public CsvCell getDiag6Dttm() { return super.getCell( "DIAG6_DTTM");}
- public CsvCell getDiag07() { return super.getCell( "DIAG_07");}
+ public CsvCell getDiag7() { return super.getCell( "DIAG_07");}
  public CsvCell getDiag7Dttm() { return super.getCell( "DIAG7_DTTM");}
- public CsvCell getDiag08() { return super.getCell( "DIAG_08");}
+ public CsvCell getDiag8() { return super.getCell( "DIAG_08");}
  public CsvCell getDiag8Dttm() { return super.getCell( "DIAG8_DTTM");}
- public CsvCell getDiag09() { return super.getCell( "DIAG_09");}
+ public CsvCell getDiag9() { return super.getCell( "DIAG_09");}
  public CsvCell getDiag9Dttm() { return super.getCell( "DIAG9_DTTM");}
  public CsvCell getDiag10() { return super.getCell( "DIAG_10");}
  public CsvCell getDiag10Dttm() { return super.getCell( "DIAG10_DTTM");}
@@ -171,18 +171,18 @@ public class Episodes extends AbstractCsvParser {
  public CsvCell getPrimaryProcedureCode() { return super.getCell( "PRIMARY_PROCEDURE_CODE");}
  public CsvCell getPrimaryProcedureDate() { return super.getCell( "PRIMARY_PROCEDURE_DATE");}
  public CsvCell getPrimaryProcedure() { return super.getCell( "PRIMARY_PROCEDURE");}
- public CsvCell getProc01() { return super.getCell( "PROC_01");}
- public CsvCell getProc01Desc() { return super.getCell( "PROC_01_DESC");}
- public CsvCell getProc02() { return super.getCell( "PROC_02");}
- public CsvCell getProc02Desc() { return super.getCell( "PROC_02_DESC");}
- public CsvCell getProc03() { return super.getCell( "PROC_03");}
- public CsvCell getProc03Desc() { return super.getCell( "PROC_03_DESC");}
- public CsvCell getProc04() { return super.getCell( "PROC_04");}
- public CsvCell getProc05() { return super.getCell( "PROC_05");}
- public CsvCell getProc06() { return super.getCell( "PROC_06");}
- public CsvCell getProc07() { return super.getCell( "PROC_07");}
- public CsvCell getProc08() { return super.getCell( "PROC_08");}
- public CsvCell getProc09() { return super.getCell( "PROC_09");}
+ public CsvCell getProc1() { return super.getCell( "PROC_01");}
+ public CsvCell getProc1Desc() { return super.getCell( "PROC_01_DESC");}
+ public CsvCell getProc2() { return super.getCell( "PROC_02");}
+ public CsvCell getProc2Desc() { return super.getCell( "PROC_02_DESC");}
+ public CsvCell getProc3() { return super.getCell( "PROC_03");}
+ public CsvCell getProc3Desc() { return super.getCell( "PROC_03_DESC");}
+ public CsvCell getProc4() { return super.getCell( "PROC_04");}
+ public CsvCell getProc5() { return super.getCell( "PROC_05");}
+ public CsvCell getProc6() { return super.getCell( "PROC_06");}
+ public CsvCell getProc7() { return super.getCell( "PROC_07");}
+ public CsvCell getProc8() { return super.getCell( "PROC_08");}
+ public CsvCell getProc9() { return super.getCell( "PROC_09");}
  public CsvCell getProc10() { return super.getCell( "PROC_10");}
  public CsvCell getProc11() { return super.getCell( "PROC_11");}
  public CsvCell getProc12() { return super.getCell( "PROC_12");}
