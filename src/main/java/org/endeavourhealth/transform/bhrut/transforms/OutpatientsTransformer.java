@@ -55,7 +55,9 @@ public class OutpatientsTransformer {
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
         CsvCell patientIdCell = parser.getPasId();
-        encounterBuilder.setId(parser.getId().getString(),patientIdCell);
+        CsvCell staffIdCell = parser.getConsultantCode();
+        Reference staffReference = csvHelper.createPractitionerReference(staffIdCell.getString());
+        encounterBuilder.setId(parser.getId().getString(), patientIdCell);
         CsvCell visitId = parser.getId();
         String visitIdUnique = VISIT_ID_PREFIX + visitId.getString();
 
@@ -87,17 +89,16 @@ public class OutpatientsTransformer {
         encounterBuilder.addParticipant(practitioner, EncounterParticipantType.CONSULTANT, admittingConsultant);
 
         //Todo need to verify the Diagnosis code along with 3 Secondary Diagnosis codes.
+        Reference thisEncounter = csvHelper.createEncounterReference(parser.getId().getString(), patientReference.getId());
+        ConditionBuilder condition = new ConditionBuilder();
+        condition.setPatient(patientReference, patientIdCell);
+        condition.setEncounter(thisEncounter, parser.getId());
+        CodeableConceptBuilder code = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
+        code.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
+        code.setCodingCode(parser.getPrimaryDiagnosisCode().getString(), parser.getPrimaryDiagnosisCode());
+        condition.setCode(code.getCodeableConcept(), parser.getPrimaryDiagnosisCode());
+        condition.setClinician(staffReference, staffIdCell);
 
-        if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
-            CsvCell primaryDiagCode = parser.getPrimaryDiagnosisCode();
-            ConditionBuilder condition = new ConditionBuilder();
-            Reference enc = csvHelper.createEncounterReference(encounterBuilder.getResourceId(), patientReference.getId());
-            condition.setEncounter(enc, primaryDiagCode);
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            codeableConceptBuilder.setCodingCode(primaryDiagCode.getString(), primaryDiagCode);
-            condition.setCategory("diagnosis");
-        }
         //Todo need to verify the PrimaryProcedure code along with 11 SecondaryPrimary codes.
 
         if (!parser.getPrimaryProcedureCode().isEmpty()) {
@@ -109,9 +110,7 @@ public class OutpatientsTransformer {
             codeableConceptBuilder.setCodingCode(primaryProcCode.getString(), primaryProcCode);
         }
 
-        // CsvCell secondaryProcCode  = parser.getSecondaryProcedureCode1();
-
-        for ( int i = 1; i <= 11; i++) {
+        for (int i = 1; i <= 11; i++) {
             Method method = Outpatients.class.getDeclaredMethod("getSecondaryProcedureCode" + i);
             CsvCell procCode = (CsvCell) method.invoke(parser);
             if (!procCode.isEmpty()) {
@@ -206,7 +205,7 @@ public class OutpatientsTransformer {
         if (!visitDuration.isEmpty()) {
             appointmentBuilder.setMinutesActualDuration(visitDuration.getInt());
         }
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder,procedureBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder, procedureBuilder);
     }
 
 }

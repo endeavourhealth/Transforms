@@ -1,11 +1,8 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.PMI;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -23,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 public class PMITransformer {
+
 
 
     private static final Logger LOG = LoggerFactory.getLogger(PMITransformer.class);
@@ -93,8 +91,8 @@ public class PMITransformer {
         CsvCell patientIdCell = parser.getPasId();
         createIdentifier(patientBuilder, csvHelper, patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_GUID);
 
-        //CsvCell patientNumber = parser.getPatientExternalId();
-        //createIdentifier(patientBuilder, csvHelper, patientNumber, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_NUMBER);
+        CsvCell patientNumber = parser.getID();
+        createIdentifier(patientBuilder, csvHelper, patientNumber, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_NUMBER);
 
 
         CsvCell dob = parser.getDateOfBirth();
@@ -127,12 +125,17 @@ public class PMITransformer {
 
         //Todo ETHNICITY_CODE in PMI.  It looks like EthnicCategory is from the fhir package, but need that confirmed.
         //try and get Ethnicity
-        CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientIdCell);
+        /*CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientIdCell);
         if (fhirEthnicity != null) {
             String ethnicityCode = CodeableConceptHelper.getFirstCoding(fhirEthnicity).getCode();
             if (!Strings.isNullOrEmpty(ethnicityCode)) {
                 patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
             }
+        }
+        */
+        CsvCell ethnicCode = parser.getEthnicityCode();
+        if (ethnicCode != null) {
+            patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicCode.getString()),ethnicCode);
         }
 
         CsvCell spineSensitive = parser.getSensitivePdsFlag();
@@ -262,30 +265,6 @@ public class PMITransformer {
         }
     }
 
-    private static RegistrationType convertRegistrationType(CsvCell patientTypeCell, BhrutCsvHelper csvHelper, CsvCell patientIdCell) throws Exception {
-
-        String csvRegTypeCode = patientTypeCell.getString();
-
-        switch (csvRegTypeCode) {
-            case "R": //Currently registered for GMS
-                return RegistrationType.REGULAR_GMS;
-            case "T": //Temporary
-                return RegistrationType.TEMPORARY;
-            case "P": //Private patient
-                return RegistrationType.PRIVATE;
-            case "S": //Not registered for GMS but is registered for another service category (e.g. contraception or child health)
-                return RegistrationType.OTHER;
-            case "D": //Deceased.
-                LOG.debug("Registration type is D so will look up previous registration type for patient " + patientIdCell.getString());
-                return findPreviousRegistrationType(csvHelper, patientIdCell);
-            case "L": //Left practice (no longer registered)
-                LOG.debug("Registration type is L so will look up previous registration type for patient " + patientIdCell.getString());
-                return findPreviousRegistrationType(csvHelper, patientIdCell);
-            default:
-                throw new TransformException("Unexpected patient type code: [" + csvRegTypeCode + "]");
-
-        }
-    }
 
     private static RegistrationType findPreviousRegistrationType(BhrutCsvHelper csvHelper, CsvCell patientIdCell) throws Exception {
 
@@ -345,14 +324,6 @@ public class PMITransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         episodeBuilder.setPatient(patientReference, patientIdCell);
-
-
-        //Todo need to confirm PatientTypeId column
-        //the registration type is a property of a patient's stay at an organisation, so add to that resource instead
-        //CsvCell patientTypeCell = parser.getPatientTypeCode();
-        //CsvCell patientTypeCell = parser.getLineStatus();
-        //RegistrationType registrationType = convertRegistrationType(patientTypeCell, csvHelper, patientIdCell);
-        //episodeBuilder.setRegistrationType(registrationType, patientTypeCell);
 
         return episodeBuilder;
     }
