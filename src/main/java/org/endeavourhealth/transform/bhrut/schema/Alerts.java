@@ -25,7 +25,7 @@ public class Alerts extends AbstractCsvParser {
             return new String[]{
                       "LineStatus",
                        "EXTERNAL_ID",
-                       "PATIENT_EXTERNAL_ID",
+                       "PAS_ID",
                        "START_DTTM",
                        "END_DTTM",
                        "CLOSED_DTTM",
@@ -34,14 +34,12 @@ public class Alerts extends AbstractCsvParser {
                        "ALERT_TYPE_DESCRIPTION",
                        "RISK_LEVEL",
                        "ALERT_COMMENTS"
-                    
-
             };
 
         }
  public CsvCell getLinestatus() { return super.getCell("LineStatus");}
  public CsvCell getId() { return super.getCell( "EXTERNAL_ID");}
- public CsvCell getPatientExternalId() { return super.getCell( "PATIENT_EXTERNAL_ID");}
+ public CsvCell getPasId() { return super.getCell( "PAS_ID");}
  public CsvCell getStartDttm() { return super.getCell( "START_DTTM");}
  public CsvCell getEndDttm() { return super.getCell( "END_DTTM");}
  public CsvCell getClosedDttm() { return super.getCell( "CLOSED_DTTM");}

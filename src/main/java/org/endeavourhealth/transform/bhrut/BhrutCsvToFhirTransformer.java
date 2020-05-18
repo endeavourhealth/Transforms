@@ -7,15 +7,16 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public abstract class BhrutCsvToFhirTransformer {
 
@@ -26,12 +27,9 @@ public abstract class BhrutCsvToFhirTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(BhrutCsvToFhirTransformer.class);
 
-    public static final String VERSION_TEST_PACK = "TEST_PACK";
-    public static final String VERSION_0_18 = "0.18";
-
-    public static final String DATE_FORMAT = "yyyyMMdd";
-    public static final String TIME_FORMAT = "hhmm";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;   //Vision files do not contain a header, so set on in each parsers constructor
+    public static final String DATE_FORMAT = "yyyy-MM-dd";
+    public static final String TIME_FORMAT = "HH:mm:ss";
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();   //BHRUT files contain a header
 
     public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
 
@@ -105,12 +103,6 @@ public abstract class BhrutCsvToFhirTransformer {
 //        }
     }
 
-    // these files comes with the Vision extract but we currently do not transform, so ignore them in the unexpected file check
-    private static boolean ignoreKnownFile(String filePath) {
-        String name = FilenameUtils.getName(filePath);
-        return name.contains("active_user_data") || name.contains("patient_check_sum_data");
-    }
-
     public static void findFileAndOpenParser(Class parserCls, UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> ret) throws Exception {
 
         String name = parserCls.getSimpleName();
@@ -171,7 +163,11 @@ public abstract class BhrutCsvToFhirTransformer {
                                          Map<Class, AbstractCsvParser> parsers,
                                          FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        BhrutCsvHelper csvHelper = new BhrutCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
+        BhrutCsvHelper csvHelper
+                = new BhrutCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
+
+        //order will be:  PMI, ALERTS, A&E, SPELLS, EPISODES, Out patients
+        //if there are any reference files or references created as part of a pre-transform, run those first
 
 //        //these transforms do not create resources themselves, but cache data that the subsequent ones rely on
 //        JournalProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
