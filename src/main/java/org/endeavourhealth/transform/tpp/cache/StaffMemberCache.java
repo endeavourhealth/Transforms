@@ -41,7 +41,7 @@ public class StaffMemberCache {
 
     private Set<Integer> hsChangedProfileIds = ConcurrentHashMap.newKeySet();
     private Set<Integer> hsRequiredProfileIds = ConcurrentHashMap.newKeySet();
-    private Map<String, Set<Integer>> hmRequiredOrgAndStaffIds = new ConcurrentHashMap();
+    private Map<String, Set<Integer>> hmRequiredOrgAndStaffIds = new ConcurrentHashMap<>();
     private Map<CacheKey, Integer> hmCachedStaffToProfileIds = null; //start as null so if anything tries to access this cache too early, it'll fail
     private ReentrantLock lock = new ReentrantLock();
 
@@ -66,7 +66,7 @@ public class StaffMemberCache {
             try {
                 lock.lock();
 
-                staffIds = hmRequiredOrgAndStaffIds.get(staffId);
+                staffIds = hmRequiredOrgAndStaffIds.get(orgId);
                 if (staffIds == null) {
                     //if still null, create the set and add, now that we're safely locked
                     staffIds = ConcurrentHashMap.newKeySet();
@@ -210,7 +210,7 @@ public class StaffMemberCache {
     }
 
 
-    public Integer findProfileIdForStaffMemberAndOrg(CsvCell staffMemberIdCell, CsvCell profileEnteredByCell, CsvCell organisationDoneAtCell) throws Exception {
+    public Integer findProfileIdForStaffMemberAndOrg(CsvCell staffMemberIdCell, CsvCell organisationDoneAtCell) throws Exception {
 
         //if we don't have either of these IDs then we can't find a profile
         if (organisationDoneAtCell.isEmpty()
