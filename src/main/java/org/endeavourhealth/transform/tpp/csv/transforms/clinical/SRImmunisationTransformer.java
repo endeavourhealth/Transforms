@@ -98,7 +98,7 @@ public class SRImmunisationTransformer {
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
         if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong().longValue() > -1) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDProfileEnteredBy(), parser.getIDOrganisationDoneAt());
+            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 immunizationBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
             }
