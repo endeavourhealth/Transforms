@@ -22,7 +22,6 @@ import java.util.Map;
 public class PMITransformer {
 
 
-
     private static final Logger LOG = LoggerFactory.getLogger(PMITransformer.class);
 
     public static void transform(String version,
@@ -53,7 +52,6 @@ public class PMITransformer {
                                        String version) throws Exception {
 
 
-
         CsvCell patientActionCell = parser.getLineStatus();
         if (patientActionCell.getString().equalsIgnoreCase("delete")) {
             //we need to manually delete all dependant resources
@@ -63,19 +61,11 @@ public class PMITransformer {
 
 
         PatientBuilder patientBuilder = createPatientResource(parser, csvHelper);
-        EpisodeOfCareBuilder episodeBuilder = createEpisodeResource(parser, csvHelper, fhirResourceFiler);
 
         if (patientBuilder.isIdMapped()) {
             //if patient has previously been saved, we need to save them separately
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, patientBuilder);
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeBuilder);
-
-        } else {
-            //save both resources together, so the patient is definitely saved before the episode
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
         }
-
-
     }
 
     private static PatientBuilder createPatientResource(PMI parser,
@@ -135,7 +125,7 @@ public class PMITransformer {
         */
         CsvCell ethnicCode = parser.getEthnicityCode();
         if (ethnicCode != null) {
-            patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicCode.getString()),ethnicCode);
+            patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicCode.getString()), ethnicCode);
         }
 
         CsvCell spineSensitive = parser.getSensitivePdsFlag();
@@ -317,14 +307,4 @@ public class PMITransformer {
         }
     }
 
-    private static EpisodeOfCareBuilder createEpisodeResource(PMI parser, BhrutCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
-        CsvCell patientIdCell = parser.getPasId();
-
-        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
-        episodeBuilder.setPatient(patientReference, patientIdCell);
-
-        return episodeBuilder;
-    }
 }

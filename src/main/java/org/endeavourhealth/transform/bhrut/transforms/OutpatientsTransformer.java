@@ -54,10 +54,11 @@ public class OutpatientsTransformer {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
+        AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
         CsvCell patientIdCell = parser.getPasId();
         CsvCell staffIdCell = parser.getConsultantCode();
         Reference staffReference = csvHelper.createPractitionerReference(staffIdCell.getString());
-        encounterBuilder.setId(parser.getId().getString(), patientIdCell);
+        encounterBuilder.setId(parser.getId().getString(), parser.getId());
         CsvCell visitId = parser.getId();
         String visitIdUnique = VISIT_ID_PREFIX + visitId.getString();
 
@@ -121,7 +122,7 @@ public class OutpatientsTransformer {
                 break;  //No point parsing empty cells.
             }
         }
-        AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
+
         appointmentBuilder.setId(visitIdUnique, visitId);
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
 
