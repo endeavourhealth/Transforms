@@ -17,20 +17,20 @@ public class PMI extends AbstractCsvParser {
 
     private static String[] getHeaders(String version) {
         return new String[]{
-                "LINESTATUS",
-                "FORENAME",
-                "SURNAME",
+                "LineStatus",
                 "PATIENT_EXTERNAL_ID",
                 "PAS_ID",
+                "FORENAME",
+                "SURNAME",
                 "NHS_NUMBER",
                 "GENDER_CODE",
                 "BIRTH_DTTM",
                 "DEATH_DTTM",
-                "ADDRESS_1",
-                "ADDRESS_2",
-                "ADDRESS_3",
-                "ADDRESS_4",
-                "ADDRESS_5",
+                "ADDRESS1",
+                "ADDRESS2",
+                "ADDRESS3",
+                "ADDRESS4",
+                "ADDRESS5",
                 "POSTCODE",
                 "SENSITIVE_PDS_FLAG",
                 "SENSITIVE_LOCAL_FLAG",
@@ -56,7 +56,7 @@ public class PMI extends AbstractCsvParser {
     }
 
     public CsvCell getLineStatus() {
-        return super.getCell("LINESTATUS");
+        return super.getCell("LineStatus");
     }
 
     public CsvCell getForename() {
