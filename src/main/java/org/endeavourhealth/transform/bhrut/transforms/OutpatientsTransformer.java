@@ -9,10 +9,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.hl7.fhir.instance.model.Appointment;
-import org.hl7.fhir.instance.model.Duration;
-import org.hl7.fhir.instance.model.Encounter;
-import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,12 +50,13 @@ public class OutpatientsTransformer {
                                       String version) throws Exception {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        ProcedureBuilder procedureBuilder = new ProcedureBuilder();
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
+        SlotBuilder slotBuilder = new SlotBuilder();
+        CsvCell idCell = parser.getId();
         CsvCell patientIdCell = parser.getPasId();
         CsvCell staffIdCell = parser.getConsultantCode();
         Reference staffReference = csvHelper.createPractitionerReference(staffIdCell.getString());
-        encounterBuilder.setId(parser.getId().getString(), parser.getId());
+        encounterBuilder.setId(idCell.toString());
         CsvCell visitId = parser.getId();
         String visitIdUnique = VISIT_ID_PREFIX + visitId.getString();
 
@@ -89,9 +87,9 @@ public class OutpatientsTransformer {
         Reference practitioner = csvHelper.createPractitionerReference(admittingConsultant.getString());
         encounterBuilder.addParticipant(practitioner, EncounterParticipantType.CONSULTANT, admittingConsultant);
 
-        //Todo need to verify the Diagnosis code along with 3 Secondary Diagnosis codes.
         Reference thisEncounter = csvHelper.createEncounterReference(parser.getId().getString(), patientReference.getId());
         ConditionBuilder condition = new ConditionBuilder();
+        condition.setId(idCell.getString() + "Condition:0");
         condition.setPatient(patientReference, patientIdCell);
         condition.setEncounter(thisEncounter, parser.getId());
         CodeableConceptBuilder code = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
@@ -100,31 +98,69 @@ public class OutpatientsTransformer {
         condition.setCode(code.getCodeableConcept(), parser.getPrimaryDiagnosisCode());
         condition.setClinician(staffReference, staffIdCell);
 
-        //Todo need to verify the PrimaryProcedure code along with 11 SecondaryPrimary codes.
-
+        //PrimaryProcedureCode
         if (!parser.getPrimaryProcedureCode().isEmpty()) {
-            CsvCell primaryProcCode = parser.getPrimaryProcedureCode();
-            procedureBuilder.setPatient(patientReference, patientIdCell);
-            procedureBuilder.setEncounter(encounterReference);
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+            ProcedureBuilder procedureBuilder = new ProcedureBuilder();
+            procedureBuilder.setIsPrimary(true);
+            procedureBuilder.setId(parser.getId().getString(), parser.getId());
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition,
+                    CodeableConceptBuilder.Tag.Procedure_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            codeableConceptBuilder.setCodingCode(primaryProcCode.getString(), primaryProcCode);
+            codeableConceptBuilder.setCodingCode(parser.getPrimaryProcedureCode().getString(),
+                    parser.getPrimaryProcedureCode());
         }
 
+        //PrimaryDiagnosisCode
+        if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
+            ProcedureBuilder procedureBuilder = new ProcedureBuilder();
+            procedureBuilder.setIsPrimary(true);
+            procedureBuilder.setId(parser.getId().getString(), parser.getId());
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition,
+                    CodeableConceptBuilder.Tag.Procedure_Main_Code);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
+            codeableConceptBuilder.setCodingCode(parser.getPrimaryDiagnosisCode().getString(),
+                    parser.getPrimaryDiagnosisCode());
+        }
+
+        //SecondaryProcedureCode
         for (int i = 1; i <= 11; i++) {
             Method method = Outpatients.class.getDeclaredMethod("getSecondaryProcedureCode" + i);
             CsvCell procCode = (CsvCell) method.invoke(parser);
             if (!procCode.isEmpty()) {
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+                ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
+                cc.setId(idCell.getString() + "Condition:" + i);
+                cc.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
                 codeableConceptBuilder.setCodingCode(procCode.getString(), procCode);
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), cc);
             } else {
                 break;  //No point parsing empty cells.
             }
         }
 
+        //SecondaryDiagnosisCode
+        for (int i = 1; i <= 3; i++) {
+            Method method = Outpatients.class.getDeclaredMethod("getDiag" + i);
+            CsvCell diagCode = (CsvCell) method.invoke(parser);
+            if (!diagCode.isEmpty()) {
+                ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
+                cc.setId(idCell.getString() + "Diag:" + i);
+                cc.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
+                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
+                codeableConceptBuilder.setCodingCode(diagCode.getString(), diagCode);
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), cc);
+            } else {
+                break;  //No point parsing empty cells. Assume non-empty cells are sequential.
+            }
+        }
+
         appointmentBuilder.setId(visitIdUnique, visitId);
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
+
+        //slotBuilder.setId(visitIdUnique, visitId);
+
 
         //CsvCell visitDate = parser.getDateBooked();
         CsvCell visitDate = parser.getAppointmentDttm();
@@ -183,7 +219,6 @@ public class OutpatientsTransformer {
             appointmentBuilder.setPatientWait(fhirDuration, dtArrivedCell, patientSeenDateCell);
         }
 
-
         //CsvCell visitStatus = parser.getCurrentStatus();
         CsvCell visitStatus = parser.getAppointmentStatus();
         if (!visitStatus.isEmpty()) {
@@ -206,7 +241,7 @@ public class OutpatientsTransformer {
         if (!visitDuration.isEmpty()) {
             appointmentBuilder.setMinutesActualDuration(visitDuration.getInt());
         }
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder, procedureBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder, condition);
     }
 
 }
