@@ -90,6 +90,12 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         List<SubscriberId> batch = new ArrayList<>();
         for (SubscriberId id: map) {
 
+            //this field is ONLY ever used for patient resources, so will be moved to a separate table specific
+            //for patient resources. In the meantime, minimise DB updates by only updating for patient resources
+            if (id.getSubscriberTable() != SubscriberTableId.PATIENT.getId()) {
+                continue;
+            }
+
             batch.add(id);
 
             if (batch.size() > params.getBatchSize()) {
