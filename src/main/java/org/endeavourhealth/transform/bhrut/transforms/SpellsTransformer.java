@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
+import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.Spells;
@@ -13,6 +15,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Extension;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +139,31 @@ public class SpellsTransformer {
 
         }
 
-
+        if (!parser.getPatientClassCode().isEmpty()) {
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Admin_Category);
+            cc.setText(parser.getPatientClassCode().getString(), parser.getPatientClassCode());
+        }
+        if (!parser.getAdmissionSourceCode().isEmpty()) {
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Admission_Source);
+            cc.setText(parser.getAdmissionSourceCode().getString(), parser.getAdmissionSourceCode());
+        }
+        if (!parser.getAdmissionMethodCode().isEmpty()) {
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Admission_Method);
+            cc.setText(parser.getAdmissionMethodCode().getString(),parser.getAdmissionMethodCode());
+        }
+        //TODO The start and end wards aren't clear yet.
+//        if (!parser.getAdmissionWardCode().isEmpty()) {
+//            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.EncLocation_Type);
+//            cc.setText(parser.getAdmissionWardCode().getString(),parser.getAdmissionWardCode());
+//        }
+        if (!parser.getDischargeMethodCode().isEmpty()) {
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Discharge_Method);
+            cc.setText(parser.getDischargeMethodCode().getString(),parser.getDischargeMethodCode());
+        }
+        if (!parser.getDischargeDestinationCode().isEmpty()) {
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Discharge_Destination);
+            cc.setText(parser.getDischargeDestinationCode().getString(),parser.getDischargeDestinationCode());
+        }
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
         }
 

@@ -55,8 +55,9 @@ public class EpisodesTransformer {
                                        String version) throws Exception {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        //encounterBuilder.setId(parser.get().toString());
         CsvCell patientIdCell = parser.getPasId();
+        CsvCell idCell  = parser.getId();
+        encounterBuilder.setId(idCell.toString());
         CsvCell staffIdCell  = parser.getEpisodeConsultantCode();
         Reference staffReference = csvHelper.createPractitionerReference(staffIdCell.getString());
         org.hl7.fhir.instance.model.Reference patientReference = csvHelper.createPatientReference(patientIdCell);
@@ -67,11 +68,10 @@ public class EpisodesTransformer {
         CsvCell admittingConsultant = parser.getEpisodeConsultantCode();
         Reference practitioner = csvHelper.createPractitionerReference(admittingConsultant.getString());
         encounterBuilder.addParticipant(practitioner, EncounterParticipantType.CONSULTANT, admittingConsultant);
-
-
-        //
+       //
         Reference thisEncounter = csvHelper.createEncounterReference(parser.getId().getString(), patientReference.getId());
         ConditionBuilder condition = new ConditionBuilder();
+        condition.setId(idCell.getString() + "Condition:0");
         condition.setPatient(patientReference,patientIdCell);
         condition.setEncounter(thisEncounter,parser.getId());
         CodeableConceptBuilder code = new CodeableConceptBuilder(condition,CodeableConceptBuilder.Tag.Condition_Main_Code);
@@ -86,6 +86,7 @@ public class EpisodesTransformer {
             CsvCell diagCode = (CsvCell) method.invoke(parser);
             if (!diagCode.isEmpty()) {
                 ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
+                cc.setId(idCell.getString() + "Condition:" + i);
                 cc.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
@@ -120,13 +121,14 @@ public class EpisodesTransformer {
             Method method = Outpatients.class.getDeclaredMethod("getProc" + i);
             CsvCell procCode = (CsvCell) method.invoke(parser);
             if (!procCode.isEmpty()) {
-                ProcedureBuilder cc = new ProcedureBuilder((Procedure) condition.getResource());
-                cc.removeCodeableConcept(CodeableConceptBuilder.Tag.Procedure_Main_Code, null);
+                ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) condition.getResource());
+                procedureBuilder.setId(idCell.getString() + ":episode:" + i);
+                procedureBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Procedure_Main_Code, null);
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition,
                         CodeableConceptBuilder.Tag.Procedure_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
                 codeableConceptBuilder.setCodingCode(procCode.getString(), procCode);
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), cc);
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
             } else {
                 break;  //No point parsing empty cells. Assume non-empty cells are sequential.
             }
