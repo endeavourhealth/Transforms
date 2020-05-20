@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
@@ -51,14 +52,16 @@ public class OutpatientsTransformer {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
+        CsvCell visitId = parser.getId();
+        String visitIdUnique = VISIT_ID_PREFIX + visitId.getString();
+        appointmentBuilder.setId(visitIdUnique, visitId);
         SlotBuilder slotBuilder = new SlotBuilder();
+        slotBuilder.setId(visitIdUnique, visitId);
         CsvCell idCell = parser.getId();
         CsvCell patientIdCell = parser.getPasId();
         CsvCell staffIdCell = parser.getConsultantCode();
         Reference staffReference = csvHelper.createPractitionerReference(staffIdCell.getString());
         encounterBuilder.setId(idCell.toString());
-        CsvCell visitId = parser.getId();
-        String visitIdUnique = VISIT_ID_PREFIX + visitId.getString();
 
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
@@ -78,6 +81,10 @@ public class OutpatientsTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
         Reference encounterReference = csvHelper.createEncounterReference(parser.getId().getString(), patientIdCell.getString());
+
+        Reference slotRef = csvHelper.createSlotReference(patientIdCell, parser.getId());
+        appointmentBuilder.addSlot(slotRef, parser.getId());
+
 
         CsvCell org = parser.getHospitalCode();
         Reference orgReference = csvHelper.createOrganisationReference(org.getString());
@@ -156,16 +163,22 @@ public class OutpatientsTransformer {
             }
         }
 
-        appointmentBuilder.setId(visitIdUnique, visitId);
+
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
-
-        //slotBuilder.setId(visitIdUnique, visitId);
-
 
         //CsvCell visitDate = parser.getDateBooked();
         CsvCell visitDate = parser.getAppointmentDttm();
         if (!visitDate.isEmpty()) {
+            slotBuilder.setStartDateTime(visitDate.getDate(), visitDate);
             appointmentBuilder.setStartDateTime(visitDate.getDate(), visitDate);
+        }
+
+        CsvCell endDateCell = parser.getApptDepartureDttm();
+        Date endDateTime = null;
+        if (!endDateCell.isEmpty()) {
+            endDateTime = endDateCell.getDateTime();
+            slotBuilder.setEndDateTime(endDateTime, endDateCell);
+            appointmentBuilder.setEndDateTime(endDateTime, endDateCell);
         }
 
         //Todo check Appointment Type
@@ -241,7 +254,37 @@ public class OutpatientsTransformer {
         if (!visitDuration.isEmpty()) {
             appointmentBuilder.setMinutesActualDuration(visitDuration.getInt());
         }
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder, condition);
+
+        if (!parser.getAdminCategoryCode().isEmpty()) {
+            CsvCell adminCategoryCode = parser.getAdminCategoryCode();
+            CsvCell adminCategory = parser.getAdminCategory();
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admin_Category);
+            cc.setText(adminCategory.getString(), adminCategory);
+            cc.addCoding(FhirExtensionUri.ENCOUNTER_ADMIN_CATEGORY);
+            cc.setCodingCode(adminCategoryCode.getString(), adminCategoryCode);
+            cc.setCodingDisplay(adminCategory.getString(), adminCategory);
+        }
+
+        if (!parser.getAppointmentStatusCode().isEmpty()) {
+            CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
+            CsvCell appointmentStatus = parser.getAppointmentStatus();
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Attended);
+            cc.setText(appointmentStatus.getString(), appointmentStatus);
+            cc.addCoding(FhirExtensionUri.ENCOUNTER_APPOINTMENT_ATTENDED);
+            cc.setCodingCode(appointmentStatusCode.getString(), appointmentStatusCode);
+            cc.setCodingDisplay(appointmentStatus.getString(), appointmentStatus);
+        }
+        if (!parser.getAppointmentOutcomeCode().isEmpty()) {
+            CsvCell appointmentOutcomeCode = parser.getAppointmentOutcomeCode();
+            CsvCell appointmentOutcome = parser.getAppointmentOutcome();
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Outcome);
+            cc.setText(appointmentOutcome.getString(), appointmentOutcome);
+            cc.addCoding(FhirExtensionUri.ENCOUNTER_APPOINTMENT_OUTCOME);
+            cc.setCodingCode(appointmentOutcomeCode.getString(), appointmentOutcomeCode);
+            cc.setCodingDisplay(appointmentOutcome.getString(), appointmentOutcome);
+        }
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder, condition, slotBuilder);
     }
 
 }
