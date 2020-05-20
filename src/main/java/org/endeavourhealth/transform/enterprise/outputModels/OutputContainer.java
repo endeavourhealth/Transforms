@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.subscriber.targetTables.AbstractTargetTable;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -61,6 +62,11 @@ public class OutputContainer {
 
     public byte[] writeToZip() throws Exception {
 
+        //if empty, return null
+        if (isEmpty()) {
+            return null;
+        }
+
         //may as well zip the data, since it will compress well
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zos = new ZipOutputStream(baos);
@@ -87,6 +93,18 @@ public class OutputContainer {
 
         //return as base64 encoded string
         return baos.toByteArray();
+    }
+
+    private boolean isEmpty() {
+
+        //if any writer is not empty, return false
+        for (AbstractEnterpriseCsvWriter csvWriter: csvWriters) {
+            if (!csvWriter.isEmpty()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public void clearDownOutputContainer(List<String> filesToKeep) throws Exception {

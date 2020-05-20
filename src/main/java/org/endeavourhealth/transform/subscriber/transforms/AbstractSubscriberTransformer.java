@@ -83,6 +83,7 @@ public abstract class AbstractSubscriberTransformer {
                     continue;
                 }
 
+                //LOG.trace("Transforming FHIR resource " + resourceWrapper.getReferenceString() + " with subscriber ID " + subscriberId + " for " + params.getSubscriberConfigName());
                 transformResource(subscriberId, resourceWrapper, params);
 
             } catch (Exception ex) {
@@ -477,16 +478,17 @@ public abstract class AbstractSubscriberTransformer {
      */
     protected static Long transformOnDemandAndMapId(Reference reference, SubscriberTableId targetTable, SubscriberTransformHelper params) throws Exception {
 
+        LOG.trace("Transforming on demand " + reference.getReference() + " to " + targetTable + " for " + params.getSubscriberConfigName());
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
         ResourceType resourceType = comps.getResourceType();
         UUID resourceId = UUID.fromString(comps.getId());
         String sourceId = reference.getReference();
 
-
         //if we've already generated (now or in the past) an ID for this resource we must have previously transformed it
         //so we don't need to forcibly transform it now
         SubscriberId existingEnterpriseId = findSubscriberId(params, targetTable, sourceId);
         if (existingEnterpriseId != null) {
+            //LOG.trace("ID already exists " + existingEnterpriseId);
             return existingEnterpriseId.getSubscriberId();
         }
 
@@ -512,6 +514,7 @@ public abstract class AbstractSubscriberTransformer {
                         Resource fhirResource = params.findOrRetrieveResource(reference);
                         if (fhirResource == null) {
                             //if it's deleted then just return null since there's no point assigning an ID
+                            //LOG.trace("Resource deleted for reference " + reference.getReference());
                             return null;
                         }
 
@@ -548,6 +551,7 @@ public abstract class AbstractSubscriberTransformer {
             //then have another look for the enterprise ID as it must exist by now
             SubscriberId subscriberIdJustCreated = findSubscriberId(params, targetTable, sourceId);
             if (subscriberIdJustCreated != null) {
+                //LOG.trace("ID created by another thread " + existingEnterpriseId);
                 return subscriberIdJustCreated.getSubscriberId();
             }
 
@@ -566,6 +570,7 @@ public abstract class AbstractSubscriberTransformer {
 
             //generate the new ID
             SubscriberId subscriberId = findOrCreateSubscriberId(params, targetTable, sourceId);
+            //LOG.trace("ID generated " + subscriberId);
 
             //if we've got here, we need to manually transform the referred to resource, so retrieve from the DB
             ResourceWrapper wrapper = params.findOrRetrieveResourceWrapper(reference);
@@ -578,8 +583,10 @@ public abstract class AbstractSubscriberTransformer {
                 params.hasResourceBeenTransformedAddIfNot(wrapper, subscriberId);
 
                 transformer.transformResource(subscriberId, wrapper, params);
+                //LOG.trace("FHIR resource sent through transform");
             }
 
+            //LOG.trace("Returning ID " + subscriberId);
             return subscriberId.getSubscriberId();
 
         } finally {
