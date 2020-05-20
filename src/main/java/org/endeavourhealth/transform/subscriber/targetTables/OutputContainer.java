@@ -60,6 +60,11 @@ public class OutputContainer {
 
     public byte[] writeToZip() throws Exception {
 
+        //if empty, return null
+        if (isEmpty()) {
+            return null;
+        }
+
         //may as well zip the data, since it will compress well
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zos = new ZipOutputStream(baos);
@@ -88,8 +93,19 @@ public class OutputContainer {
         return baos.toByteArray();
     }
 
-    public void clearDownOutputContainer(List<SubscriberTableId> filesToKeep) throws Exception {
+    private boolean isEmpty() {
 
+        //if any writer is not empty, return false
+        for (AbstractTargetTable csvWriter: csvWriters) {
+            if (!csvWriter.isEmpty()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void clearDownOutputContainer(List<SubscriberTableId> filesToKeep) throws Exception {
         this.csvWriters.removeIf(c -> !filesToKeep.contains(c.getTableId()));
     }
 

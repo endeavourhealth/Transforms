@@ -60,7 +60,11 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             runTransforms(params);
 
             byte[] bytes = data.writeToZip();
-            return Base64.getEncoder().encodeToString(bytes);
+            if (bytes != null) {
+                return Base64.getEncoder().encodeToString(bytes);
+            } else {
+                return null;
+            }
 
         } catch (Exception ex) {
             throw new TransformException("Exception transforming batch " + batchId, ex);
