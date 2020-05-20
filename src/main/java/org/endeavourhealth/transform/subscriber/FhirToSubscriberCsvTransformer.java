@@ -42,13 +42,11 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
                                            UUID exchangeId,
                                            UUID batchId,
                                            List<ResourceWrapper> resources,
-                                           String configName,
-                                           UUID protocolId,
-                                           String exchangeBody) throws Exception {
+                                           String configName) throws Exception {
 
         LOG.info("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
-        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, resources, exchangeBody);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, exchangeId, batchId, configName, resources);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setSubscriberOrganisationId(enterpriseOrgId);

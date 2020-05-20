@@ -38,7 +38,6 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
     private final UUID serviceId;
     private final UUID systemId;
-    private final UUID protocolId;
     private final UUID exchangeId;
     private final UUID batchId;
     private final String enterpriseConfigName;
@@ -58,17 +57,14 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private Long enterprisePatientId = null;
     private Long enterprisePersonId = null;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
-    private String exchangeBody = null; //nasty hack to give us a reference back to the original inbound raw exchange
 
-    public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID protocolId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
-                                     List<ResourceWrapper> allResources, String exchangeBody) throws Exception {
+    public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
+                                     List<ResourceWrapper> allResources) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
-        this.protocolId = protocolId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.enterpriseConfigName = enterpriseConfigName;
-        this.exchangeBody = exchangeBody;
         this.subscriberIdsUpdated = new ArrayList<>();
 
         //load our config record for some parameters
@@ -117,10 +113,6 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         }
     }
 
-    public String getExchangeBody() {
-        return exchangeBody;
-    }
-
     @Override
     public UUID getServiceId() {
         return serviceId;
@@ -129,10 +121,6 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     @Override
     public UUID getSystemId() {
         return systemId;
-    }
-
-    public UUID getProtocolId() {
-        return protocolId;
     }
 
     @Override

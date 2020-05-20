@@ -478,7 +478,7 @@ public abstract class AbstractSubscriberTransformer {
      */
     protected static Long transformOnDemandAndMapId(Reference reference, SubscriberTableId targetTable, SubscriberTransformHelper params) throws Exception {
 
-        LOG.trace("Transforming on demand " + reference.getReference() + " to " + targetTable + " for " + params.getSubscriberConfigName());
+        //LOG.trace("Transforming on demand " + reference.getReference() + " to " + targetTable + " for " + params.getSubscriberConfigName());
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
         ResourceType resourceType = comps.getResourceType();
         UUID resourceId = UUID.fromString(comps.getId());
@@ -489,7 +489,7 @@ public abstract class AbstractSubscriberTransformer {
         SubscriberId existingEnterpriseId = findSubscriberId(params, targetTable, sourceId);
         if (existingEnterpriseId != null) {
             //LOG.trace("ID already exists " + existingEnterpriseId);
-            return existingEnterpriseId.getSubscriberId();
+            return new Long(existingEnterpriseId.getSubscriberId());
         }
 
         //we've have multiple threads potentially trying to transform the same dependent resource (e.g. practitioner)
@@ -543,7 +543,7 @@ public abstract class AbstractSubscriberTransformer {
                             throw new TransformException("Failed to find enterprise ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
                         }
                     }
-                    return mappedInstanceEnterpriseId.getSubscriberId();
+                    return new Long(mappedInstanceEnterpriseId.getSubscriberId());
                 }
             }
 
@@ -552,7 +552,7 @@ public abstract class AbstractSubscriberTransformer {
             SubscriberId subscriberIdJustCreated = findSubscriberId(params, targetTable, sourceId);
             if (subscriberIdJustCreated != null) {
                 //LOG.trace("ID created by another thread " + existingEnterpriseId);
-                return subscriberIdJustCreated.getSubscriberId();
+                return new Long(subscriberIdJustCreated.getSubscriberId());
             }
 
             AbstractSubscriberTransformer transformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(resourceType);
@@ -587,7 +587,7 @@ public abstract class AbstractSubscriberTransformer {
             }
 
             //LOG.trace("Returning ID " + subscriberId);
-            return subscriberId.getSubscriberId();
+            return new Long(subscriberId.getSubscriberId());
 
         } finally {
             onDemandLock.unlock();
@@ -616,7 +616,7 @@ public abstract class AbstractSubscriberTransformer {
             if (diff.getYears() == 0 && diff.getMonths() == 0) {
                 diff.plusMonths(1);
             }
-            Double inYears = diff.getYears() + ((double) diff.getMonths()) / 12;
+            Double inYears = new Double(diff.getYears() + ((double) diff.getMonths()) / 12);
             DecimalFormat df = new DecimalFormat("#.##");
             return Double.valueOf(df.format(inYears));
         }

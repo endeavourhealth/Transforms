@@ -38,13 +38,11 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
                                            UUID exchangeId,
                                            UUID batchId,
                                            List<ResourceWrapper> resources,
-                                           String configName,
-                                           UUID protocolId,
-                                           String exchangeBody) throws Exception {
+                                           String configName) throws Exception {
 
         LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
-        EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceId, systemId, protocolId, exchangeId, batchId, configName, resources, exchangeBody);
+        EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceId, systemId, exchangeId, batchId, configName, resources);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params);
         params.setEnterpriseOrganisationId(enterpriseOrgId);
