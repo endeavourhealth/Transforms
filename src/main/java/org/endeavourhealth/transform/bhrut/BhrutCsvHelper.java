@@ -122,6 +122,12 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
     }
 
+    public Reference createSlotReference(CsvCell patientGuid, CsvCell slotGuid) throws Exception {
+        String resourceId = createUniqueId(patientGuid, slotGuid);
+        return ReferenceHelper.createReference(ResourceType.Slot, resourceId);
+    }
+
+
     /**
      * patient-type resources must include the patient GUID are part of the unique ID in the reference
      * because the EMIS GUIDs for things like Obs are only unique within that patient record itself
