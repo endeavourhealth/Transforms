@@ -59,13 +59,18 @@ public class AndEAttendanceTransformer {
                                       FhirResourceFiler fhirResourceFiler,
                                       BhrutCsvHelper csvHelper,
                                       String version) throws Exception {
-        //TODO delete code.
+
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         encounterBuilder.setId(parser.getId().toString());
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
-        fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+        CsvCell actionCell = parser.getLinestatus();
+        if (actionCell.getString().equalsIgnoreCase("Delete")) {
+            encounterBuilder.setDeletedAudit(actionCell);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+            return;
+        }
     }
 
     public static void createResources(AandeAttendances parser,

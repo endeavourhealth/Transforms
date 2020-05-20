@@ -42,7 +42,7 @@ public class SpellsTransformer {
                 try {
                     Spells spellsParser = (Spells) parser;
 
-                    if (spellsParser.getLinestatus().equals("delete")) {
+                    if (spellsParser.getLinestatus().getString().equalsIgnoreCase("delete")) {
                         deleteResource(spellsParser, fhirResourceFiler, csvHelper, version);
                     } else {
                         createResources(spellsParser, fhirResourceFiler, csvHelper, version);
@@ -61,13 +61,17 @@ public class SpellsTransformer {
                                       FhirResourceFiler fhirResourceFiler,
                                       BhrutCsvHelper csvHelper,
                                       String version) throws Exception {
-        //TODO delete code.
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         encounterBuilder.setId(parser.getId().toString());
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
+        CsvCell actionCell = parser.getLinestatus();
+        encounterBuilder.setDeletedAudit(actionCell);
+        //TODO delete diag and proc?
         fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+        return;
+
     }
 
     public static void createResources(Spells parser,
@@ -107,6 +111,7 @@ public class SpellsTransformer {
             CsvCell primaryProcCode = parser.getPrimaryProcedureCode();
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
             procedureBuilder.setPatient(patientReference, patientIdCell);
+            procedureBuilder.setId(parser.getId().getString()+"PROC", parser.getId());
             procedureBuilder.setEncounter(encounterReference);
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
@@ -118,10 +123,10 @@ public class SpellsTransformer {
             }
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
         }
-        //TODO How do we map these to EncounterClass?
-        // Note Bhrut uses NHS Patient classification
+        //
+        // Note Bhrut uses NHS Patient classification. These are coded using an Encounter. The mapping
+        // below to Fhir is suboptimal.
         // https://www.datadictionary.nhs.uk/data_dictionary/attributes/p/pati/patient_classification_de.asp
-        // The patient class code values don't map happily. I've used the same as ENCNTTransformer.
         if (!parser.getPatientClassCode().isEmpty()) {
             switch (parser.getPatientClassCode().getInt()) {
                 case 1:
@@ -151,11 +156,14 @@ public class SpellsTransformer {
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Admission_Method);
             cc.setText(parser.getAdmissionMethodCode().getString(),parser.getAdmissionMethodCode());
         }
-        //TODO The start and end wards aren't clear yet.
-//        if (!parser.getAdmissionWardCode().isEmpty()) {
-//            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.EncLocation_Type);
-//            cc.setText(parser.getAdmissionWardCode().getString(),parser.getAdmissionWardCode());
-//        }
+        if (!parser.getAdmissionWardCode().isEmpty()) {
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Admission_Ward);
+            cc.setText(parser.getAdmissionWardCode().getString(),parser.getAdmissionWardCode());
+        }
+        if (!parser.getDischargeWardCode().isEmpty()) {
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Discharge_Ward);
+            cc.setText(parser.getDischargeWardCode().getString(),parser.getDischargeWardCode());
+        }
         if (!parser.getDischargeMethodCode().isEmpty()) {
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Discharge_Method);
             cc.setText(parser.getDischargeMethodCode().getString(),parser.getDischargeMethodCode());

@@ -58,6 +58,13 @@ public class EpisodesTransformer {
         CsvCell patientIdCell = parser.getPasId();
         CsvCell idCell  = parser.getId();
         encounterBuilder.setId(idCell.toString());
+        CsvCell actionCell = parser.getLinestatus();
+        if (actionCell.getString().equalsIgnoreCase("Delete")) {
+            encounterBuilder.setDeletedAudit(actionCell);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+            //TODO delete Conditions and Procedures?
+            return;
+        }
         CsvCell staffIdCell  = parser.getEpisodeConsultantCode();
         Reference staffReference = csvHelper.createPractitionerReference(staffIdCell.getString());
         org.hl7.fhir.instance.model.Reference patientReference = csvHelper.createPatientReference(patientIdCell);
