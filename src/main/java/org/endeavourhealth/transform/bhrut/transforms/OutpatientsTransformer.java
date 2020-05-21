@@ -260,7 +260,7 @@ public class OutpatientsTransformer {
             CsvCell adminCategory = parser.getAdminCategory();
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admin_Category);
             cc.setText(adminCategory.getString(), adminCategory);
-            cc.addCoding(FhirExtensionUri.ENCOUNTER_ADMIN_CATEGORY);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(adminCategoryCode.getString(), adminCategoryCode);
             cc.setCodingDisplay(adminCategory.getString(), adminCategory);
         }
@@ -270,7 +270,7 @@ public class OutpatientsTransformer {
             CsvCell appointmentStatus = parser.getAppointmentStatus();
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Attended);
             cc.setText(appointmentStatus.getString(), appointmentStatus);
-            cc.addCoding(FhirExtensionUri.ENCOUNTER_APPOINTMENT_ATTENDED);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(appointmentStatusCode.getString(), appointmentStatusCode);
             cc.setCodingDisplay(appointmentStatus.getString(), appointmentStatus);
         }
@@ -279,7 +279,7 @@ public class OutpatientsTransformer {
             CsvCell appointmentOutcome = parser.getAppointmentOutcome();
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Outcome);
             cc.setText(appointmentOutcome.getString(), appointmentOutcome);
-            cc.addCoding(FhirExtensionUri.ENCOUNTER_APPOINTMENT_OUTCOME);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(appointmentOutcomeCode.getString(), appointmentOutcomeCode);
             cc.setCodingDisplay(appointmentOutcome.getString(), appointmentOutcome);
         }
