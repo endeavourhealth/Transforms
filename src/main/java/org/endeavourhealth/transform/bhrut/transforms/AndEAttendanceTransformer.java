@@ -1,19 +1,13 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
-import org.endeavourhealth.common.fhir.FhirCodeUri;
-import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.AandeAttendances;
 import org.endeavourhealth.transform.bhrut.schema.Spells;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
-import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,11 +98,11 @@ public class AndEAttendanceTransformer {
         }
         //TODO Discharge method? Sample spells file nothing whose values match those in spells file.
         if (!parser.getAttendanceType().isEmpty()) {
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Attendance_Type);
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_AE_Attendance_Category);
             cc.setText(parser.getAttendanceType().getString(), parser.getAttendanceType());
         }
         if (!parser.getReferralSource().isEmpty()) {
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Attendance_Source);
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_AE_Attendance_Source);
             cc.setText(parser.getReferralSource().getString(), parser.getReferralSource());
         }
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);

@@ -446,8 +446,8 @@ public class EncounterBuilder extends ResourceBuilderBase
             extension.setValue(codeableConcept);
             return codeableConcept;
 
-        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Type) {
-            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_TYPE);
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_AE_Attendance_Category) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_AE_ATTENDANCE_CATEGORY);
             if (useExisting && extension.hasValue()) {
                 return (CodeableConcept)extension.getValue();
             }
@@ -455,8 +455,8 @@ public class EncounterBuilder extends ResourceBuilderBase
             extension.setValue(codeableConcept);
             return codeableConcept;
 
-        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Source) {
-            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_SOURCE);
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_AE_Attendance_Source) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_AE_ATTENDANCE_SOURCE);
             if (useExisting && extension.hasValue()) {
                 return (CodeableConcept)extension.getValue();
             }
@@ -464,8 +464,8 @@ public class EncounterBuilder extends ResourceBuilderBase
             extension.setValue(codeableConcept);
             return codeableConcept;
 
-        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Arrival_Mode) {
-            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ARRIVAL_MODE);
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_AE_Arrival_Mode) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.encounter, FhirExtensionUri.ENCOUNTER_AE_ARRIVAL_MODE);
             if (useExisting && extension.hasValue()) {
                 return (CodeableConcept)extension.getValue();
             }
@@ -591,18 +591,18 @@ public class EncounterBuilder extends ResourceBuilderBase
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
-        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Type) {
-            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_TYPE);
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_AE_Attendance_Category) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_AE_ATTENDANCE_CATEGORY);
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
-        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Source) {
-            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_SOURCE);
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_AE_Attendance_Source) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_AE_ATTENDANCE_SOURCE);
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
-        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Arrival_Mode) {
-            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ARRIVAL_MODE);
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_AE_Arrival_Mode) {
+            Extension extension = ExtensionConverter.findExtension(this.encounter, FhirExtensionUri.ENCOUNTER_AE_ARRIVAL_MODE);
             int index = this.encounter.getExtension().indexOf(extension);
             return "extension[" + index + "].valueCodeableConcept";
 
@@ -677,14 +677,14 @@ public class EncounterBuilder extends ResourceBuilderBase
         } else if (tag == CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other) {
             ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_PATIENT_CLASS_OTHER);
 
-        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Type) {
-            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_TYPE);
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_AE_Attendance_Category) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_AE_ATTENDANCE_CATEGORY);
 
-        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Attendance_Source) {
-            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ATTENDANCE_SOURCE);
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_AE_Attendance_Source) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_AE_ATTENDANCE_SOURCE);
 
-        } else if (tag == CodeableConceptBuilder.Tag.Encounter_Arrival_Mode) {
-            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ARRIVAL_MODE);
+        } else if (tag == CodeableConceptBuilder.Tag.Encounter_AE_Arrival_Mode) {
+            ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_AE_ARRIVAL_MODE);
 
         } else if (tag == CodeableConceptBuilder.Tag.Encounter_Admission_Method) {
             ExtensionConverter.removeExtension(this.encounter, FhirExtensionUri.ENCOUNTER_ADMISSION_METHOD);
