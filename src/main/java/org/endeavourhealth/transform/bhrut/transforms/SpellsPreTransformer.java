@@ -41,7 +41,7 @@ public class SpellsPreTransformer {
                     Spells spellsParser = (Spells) parser;
 
                     if (!spellsParser.getLinestatus().getString().equalsIgnoreCase("delete")) {
-                         cacheResources(spellsParser, fhirResourceFiler, csvHelper, version);
+                        cacheResources(spellsParser, fhirResourceFiler, csvHelper, version);
                     }
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -54,27 +54,26 @@ public class SpellsPreTransformer {
     }
 
 
-
     public static void cacheResources(Spells parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       BhrutCsvHelper csvHelper,
-                                       String version) throws Exception {
+                                      FhirResourceFiler fhirResourceFiler,
+                                      BhrutCsvHelper csvHelper,
+                                      String version) throws Exception {
 
         if (!parser.getAdmissionConsultantCode().isEmpty()) {
             String name = csvHelper.getStaffCache().getNameForCcode(parser.getAdmissionConsultantCode().getString());
             if (Strings.isNullOrEmpty(name)) {
-                csvHelper.getStaffCache().addConsultantCode(parser.getAdmissionConsultantCode(),parser.getAdmissionConsultant());
+                csvHelper.getStaffCache().addConsultantCode(parser.getAdmissionConsultantCode(), parser.getAdmissionConsultant());
             }
         }
         if (!parser.getDischargeConsultantCode().isEmpty()) {
             String name = csvHelper.getStaffCache().getNameForCcode(parser.getDischargeConsultantCode().getString());
             if (Strings.isNullOrEmpty(name)) {
-                csvHelper.getStaffCache().addConsultantCode(parser.getDischargeConsultantCode(),parser.getDischargeConsultant());
+                csvHelper.getStaffCache().addConsultantCode(parser.getDischargeConsultantCode(), parser.getDischargeConsultant());
             }
         }
 
         if (!parser.getAdmissionHospitalCode().isEmpty()) {
-            String name= csvHelper.getOrgCache().getNameForOrgCode(parser.getAdmissionHospitalCode().getString());
+            String name = csvHelper.getOrgCache().getNameForOrgCode(parser.getAdmissionHospitalCode().getString());
             if (Strings.isNullOrEmpty(name)) {
                 csvHelper.getOrgCache().addOrgCode(parser.getAdmissionHospitalCode(), parser.getAdmissionHospitalName());
             }
@@ -92,6 +91,5 @@ public class SpellsPreTransformer {
             }
         }
     }
-
 
 }
