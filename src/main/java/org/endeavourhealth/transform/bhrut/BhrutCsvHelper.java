@@ -15,6 +15,9 @@ import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.bhrut.cache.OrgCache;
+import org.endeavourhealth.transform.bhrut.cache.PasIdtoGPCache;
+import org.endeavourhealth.transform.bhrut.cache.StaffCache;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
@@ -55,6 +58,10 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
 
 
     //some resources are referred to by others, so we cache them here for when we need them
+    private OrgCache orgCache = new OrgCache();
+    private StaffCache staffCache = new StaffCache();
+    private PasIdtoGPCache pasIdtoGPCache = new PasIdtoGPCache();
+
     private Map<String, List<String>> observationChildMap = new HashMap<>();
     private Map<String, ReferenceList> newProblemChildren = new HashMap<>();
     private Map<String, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
@@ -73,6 +80,16 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
+    }
+
+    public OrgCache getOrgCache() {
+        return orgCache;
+    }
+    public StaffCache getStaffCache() {
+        return staffCache;
+    }
+    public PasIdtoGPCache getPasIdtoGPCache() {
+        return pasIdtoGPCache;
     }
 
     /**

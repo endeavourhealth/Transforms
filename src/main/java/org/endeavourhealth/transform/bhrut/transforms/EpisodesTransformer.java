@@ -76,6 +76,9 @@ public class EpisodesTransformer {
         Reference practitioner = csvHelper.createPractitionerReference(admittingConsultant.getString());
         encounterBuilder.addParticipant(practitioner, EncounterParticipantType.CONSULTANT, admittingConsultant);
        //
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, encounterBuilder);
+
+
         Reference thisEncounter = csvHelper.createEncounterReference(parser.getId().getString(), patientReference.getId());
         ConditionBuilder condition = new ConditionBuilder();
         condition.setId(idCell.getString() + "Condition:0");
@@ -87,6 +90,9 @@ public class EpisodesTransformer {
         condition.setCode(code.getCodeableConcept(),parser.getPrimaryDiagnosisCode());
         condition.setRecordedDate(parser.getPrimdiagDttm().getDate(),parser.getPrimdiagDttm());
         condition.setClinician(staffReference, staffIdCell);
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, condition);
+
         // 0 - 12 potential secondary diagnostic codes.
         for ( int i =1; i<=12; i++){
             Method method = Outpatients.class.getDeclaredMethod("getDiag" + i);
@@ -94,6 +100,8 @@ public class EpisodesTransformer {
             if (!diagCode.isEmpty()) {
                 ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
                 cc.setId(idCell.getString() + "Condition:" + i);
+                cc.setAsProblem(false);
+
                 cc.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
@@ -118,7 +126,7 @@ public class EpisodesTransformer {
 
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition,
                     CodeableConceptBuilder.Tag.Procedure_Main_Code);
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
             codeableConceptBuilder.setCodingCode(parser.getPrimaryProcedureCode().getString(),
                     parser.getPrimaryProcedureCode());
         }
@@ -133,7 +141,7 @@ public class EpisodesTransformer {
                 procedureBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Procedure_Main_Code, null);
                 CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition,
                         CodeableConceptBuilder.Tag.Procedure_Main_Code);
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
                 codeableConceptBuilder.setCodingCode(procCode.getString(), procCode);
                 fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
             } else {
@@ -143,6 +151,6 @@ public class EpisodesTransformer {
 
 
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, condition);
+
     }
 }
