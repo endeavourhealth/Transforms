@@ -122,9 +122,12 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
     }
 
-    public Reference createSlotReference(CsvCell patientGuid, CsvCell slotGuid) throws Exception {
-        String resourceId = createUniqueId(patientGuid, slotGuid);
-        return ReferenceHelper.createReference(ResourceType.Slot, resourceId);
+    public Reference createSlotReference(String slotGuid) throws Exception {
+        return ReferenceHelper.createReference(ResourceType.Slot, slotGuid);
+    }
+
+    public Reference createAppointmentReference(String appointmentGuid) throws Exception {
+        return ReferenceHelper.createReference(ResourceType.Appointment, appointmentGuid);
     }
 
 

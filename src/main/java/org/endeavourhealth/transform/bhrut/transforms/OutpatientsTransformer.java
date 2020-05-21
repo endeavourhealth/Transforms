@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
@@ -21,7 +20,7 @@ import java.util.Map;
 public class OutpatientsTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(OutpatientsTransformer.class);
-    public static final String VISIT_ID_PREFIX = "Visit:";
+    public static final String APPT_ID_SUFFIX = ":Appointment";
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -51,140 +50,168 @@ public class OutpatientsTransformer {
                                       String version) throws Exception {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
-        CsvCell visitId = parser.getId();
-        String visitIdUnique = VISIT_ID_PREFIX + visitId.getString();
-        appointmentBuilder.setId(visitIdUnique, visitId);
-        SlotBuilder slotBuilder = new SlotBuilder();
-        slotBuilder.setId(visitIdUnique, visitId);
         CsvCell idCell = parser.getId();
-        CsvCell patientIdCell = parser.getPasId();
-        CsvCell staffIdCell = parser.getConsultantCode();
-        Reference staffReference = csvHelper.createPractitionerReference(staffIdCell.getString());
-        encounterBuilder.setId(idCell.toString());
+        encounterBuilder.setId(idCell.getString());
 
+        CsvCell patientIdCell = parser.getPasId();
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+        encounterBuilder.setPatient(patientReference, patientIdCell);
+
+        AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
+        String apptUniqueId = idCell.getString()+APPT_ID_SUFFIX;
+        appointmentBuilder.setId(apptUniqueId, idCell);
+        SlotBuilder slotBuilder = new SlotBuilder();
+        slotBuilder.setId(apptUniqueId, idCell);
+        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell actionCell = parser.getLinestatus();
         if (actionCell.getString().equalsIgnoreCase("Delete")) {
             encounterBuilder.setDeletedAudit(actionCell);
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder, slotBuilder, appointmentBuilder);
             return;
         }
 
+        //add the slot reference to the appointment
+        Reference slotRef = csvHelper.createSlotReference(apptUniqueId);
+        appointmentBuilder.addSlot(slotRef);
+
+        //add the appointment ref to the encounter
+        Reference appointmentRef = csvHelper.createAppointmentReference(apptUniqueId);
+        encounterBuilder.setAppointment(appointmentRef);
+
+        //use the appointment date as the clinical date for the linked diagnosis / procedures as this
+        //date and time is always present in the record
+        CsvCell appointmentDateCell = parser.getAppointmentDttm();
+        if (!appointmentDateCell.isEmpty()) {
+            slotBuilder.setStartDateTime(appointmentDateCell.getDate(), appointmentDateCell);
+            appointmentBuilder.setStartDateTime(appointmentDateCell.getDate(), appointmentDateCell);
+        }
+
+        CsvCell consultantCodeCell = parser.getConsultantCode();
+        Reference consultantReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+        encounterBuilder.addParticipant(consultantReference, EncounterParticipantType.CONSULTANT, consultantCodeCell);
+
+        //TODO - work out episode of care creation for BHRUT
         //link the consultation to our episode of care
-        Reference episodeReference = csvHelper.createEpisodeReference(patientIdCell);
-        encounterBuilder.setEpisodeOfCare(episodeReference);
+        //Reference episodeReference = csvHelper.createEpisodeReference(patientIdCell);
+        //encounterBuilder.setEpisodeOfCare(episodeReference);
+
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
-        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
-        encounterBuilder.setPatient(patientReference, patientIdCell);
-        Reference encounterReference = csvHelper.createEncounterReference(parser.getId().getString(), patientIdCell.getString());
-
-        Reference slotRef = csvHelper.createSlotReference(patientIdCell, parser.getId());
-        appointmentBuilder.addSlot(slotRef, parser.getId());
-
-
+        //TODO - needs an organisation pre-transform from these codes + name
         CsvCell org = parser.getHospitalCode();
         Reference orgReference = csvHelper.createOrganisationReference(org.getString());
         encounterBuilder.setServiceProvider(orgReference);
 
-        CsvCell admittingConsultant = parser.getConsultantCode();
-        Reference practitioner = csvHelper.createPractitionerReference(admittingConsultant.getString());
-        encounterBuilder.addParticipant(practitioner, EncounterParticipantType.CONSULTANT, admittingConsultant);
+        //create an Encounter reference for the procedures and conditions to use
+        Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
 
-        Reference thisEncounter = csvHelper.createEncounterReference(parser.getId().getString(), patientReference.getId());
-        ConditionBuilder condition = new ConditionBuilder();
-        condition.setId(idCell.getString() + "Condition:0");
-        condition.setPatient(patientReference, patientIdCell);
-        condition.setEncounter(thisEncounter, parser.getId());
-        CodeableConceptBuilder code = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
-        code.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-        code.setCodingCode(parser.getPrimaryDiagnosisCode().getString(), parser.getPrimaryDiagnosisCode());
-        condition.setCode(code.getCodeableConcept(), parser.getPrimaryDiagnosisCode());
-        condition.setClinician(staffReference, staffIdCell);
+        //Primary Procedure
+        CsvCell primaryProcedureCodeCell = parser.getPrimaryProcedureCode();
+        if (!primaryProcedureCodeCell.isEmpty()) {
 
-        //PrimaryProcedureCode
-        if (!parser.getPrimaryProcedureCode().isEmpty()) {
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
+            procedureBuilder.setId(idCell.getString() + ":Procedure:0");
+            procedureBuilder.setPatient(patientReference, patientIdCell);
+            procedureBuilder.setEncounter(thisEncounter, idCell);
             procedureBuilder.setIsPrimary(true);
-            procedureBuilder.setId(parser.getId().getString(), parser.getId());
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition,
-                    CodeableConceptBuilder.Tag.Procedure_Main_Code);
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            codeableConceptBuilder.setCodingCode(parser.getPrimaryProcedureCode().getString(),
-                    parser.getPrimaryProcedureCode());
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
+            codeableConceptBuilder.setCodingCode(primaryProcedureCodeCell.getString(), primaryProcedureCodeCell);
+            procedureBuilder.addPerformer(consultantReference, consultantCodeCell);
+
+            DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
+            procedureBuilder.setPerformed(dateTimeType, appointmentDateCell);
+
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
         }
 
-        //PrimaryDiagnosisCode
-        if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
-            ProcedureBuilder procedureBuilder = new ProcedureBuilder();
-            procedureBuilder.setIsPrimary(true);
-            procedureBuilder.setId(parser.getId().getString(), parser.getId());
-            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition,
-                    CodeableConceptBuilder.Tag.Procedure_Main_Code);
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            codeableConceptBuilder.setCodingCode(parser.getPrimaryDiagnosisCode().getString(),
-                    parser.getPrimaryDiagnosisCode());
-        }
-
-        //SecondaryProcedureCode
+        //Secondary Procedure(s)
         for (int i = 1; i <= 11; i++) {
             Method method = Outpatients.class.getDeclaredMethod("getSecondaryProcedureCode" + i);
-            CsvCell procCode = (CsvCell) method.invoke(parser);
-            if (!procCode.isEmpty()) {
-                ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
-                cc.setId(idCell.getString() + "Condition:" + i);
-                cc.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                codeableConceptBuilder.setCodingCode(procCode.getString(), procCode);
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), cc);
+            CsvCell secondaryProcedureCodeCell = (CsvCell) method.invoke(parser);
+            if (!secondaryProcedureCodeCell.isEmpty()) {
+
+                ProcedureBuilder procedureBuilder = new ProcedureBuilder();
+                procedureBuilder.setId(idCell.getString() + ":Procedure:"+i);
+                procedureBuilder.setPatient(patientReference, patientIdCell);
+                procedureBuilder.setEncounter(thisEncounter, idCell);
+                procedureBuilder.setIsPrimary(false);
+                CodeableConceptBuilder codeableConceptBuilder
+                        = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
+                codeableConceptBuilder.setCodingCode(secondaryProcedureCodeCell.getString(), secondaryProcedureCodeCell);
+                procedureBuilder.addPerformer(consultantReference, consultantCodeCell);
+
+                DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
+                procedureBuilder.setPerformed(dateTimeType, appointmentDateCell);
+
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
             } else {
-                break;  //No point parsing empty cells.
+                break;  //No point parsing any further empty cells.
             }
         }
 
-        //SecondaryDiagnosisCode
+        //Primary Diagnosis
+        CsvCell primaryDiagnosisCodeCell = parser.getPrimaryDiagnosisCode();
+        if (!primaryDiagnosisCodeCell.isEmpty()) {
+            ConditionBuilder conditionBuilder = new ConditionBuilder();
+            conditionBuilder.setId(idCell.getString() + ":Condition:0");
+            conditionBuilder.setPatient(patientReference, patientIdCell);
+            conditionBuilder.setEncounter(thisEncounter, idCell);
+            conditionBuilder.setAsProblem(false);
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
+            codeableConceptBuilder.setCodingCode(primaryDiagnosisCodeCell.getString(), primaryDiagnosisCodeCell);
+            conditionBuilder.setClinician(consultantReference, consultantCodeCell);
+
+            DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
+            conditionBuilder.setOnset(dateTimeType, appointmentDateCell);
+
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
+        }
+
+        //Secondary Diagnosis(s)
         for (int i = 1; i <= 3; i++) {
             Method method = Outpatients.class.getDeclaredMethod("getDiag" + i);
-            CsvCell diagCode = (CsvCell) method.invoke(parser);
-            if (!diagCode.isEmpty()) {
-                ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
-                cc.setId(idCell.getString() + "Diag:" + i);
-                cc.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
+            CsvCell secondaryDiagnosisCodeCell = (CsvCell) method.invoke(parser);
+            if (!secondaryDiagnosisCodeCell.isEmpty()) {
+
+                ConditionBuilder conditionBuilder = new ConditionBuilder();
+                conditionBuilder.setId(idCell.getString() + ":Condition:"+i);
+                conditionBuilder.setPatient(patientReference, patientIdCell);
+                conditionBuilder.setEncounter(thisEncounter, idCell);
+                conditionBuilder.setAsProblem(false);
+
+                CodeableConceptBuilder codeableConceptBuilder
+                        = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                codeableConceptBuilder.setCodingCode(diagCode.getString(), diagCode);
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), cc);
+                codeableConceptBuilder.setCodingCode(secondaryDiagnosisCodeCell.getString(), secondaryDiagnosisCodeCell);
+                conditionBuilder.setClinician(consultantReference, consultantCodeCell);
+
+                DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
+                conditionBuilder.setOnset(dateTimeType, appointmentDateCell);
+
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
             } else {
                 break;  //No point parsing empty cells. Assume non-empty cells are sequential.
             }
         }
 
-
-        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
-
-        //CsvCell visitDate = parser.getDateBooked();
-        CsvCell visitDate = parser.getAppointmentDttm();
-        if (!visitDate.isEmpty()) {
-            slotBuilder.setStartDateTime(visitDate.getDate(), visitDate);
-            appointmentBuilder.setStartDateTime(visitDate.getDate(), visitDate);
-        }
-
         CsvCell endDateCell = parser.getApptDepartureDttm();
-        Date endDateTime = null;
         if (!endDateCell.isEmpty()) {
-            endDateTime = endDateCell.getDateTime();
+            Date endDateTime = endDateCell.getDateTime();
             slotBuilder.setEndDateTime(endDateTime, endDateCell);
             appointmentBuilder.setEndDateTime(endDateTime, endDateCell);
         }
 
-        //Todo check Appointment Type
         CsvCell telephoneApptCell = parser.getApptType();
         if (telephoneApptCell.getBoolean()) {
-            appointmentBuilder.setType("Telephone Appointment", telephoneApptCell);
+            appointmentBuilder.setType(telephoneApptCell.getString(), telephoneApptCell);
         }
 
         CsvCell bookingDateCell = parser.getBookedDttm();
@@ -206,20 +233,19 @@ public class OutpatientsTransformer {
         }
 
         //calculate the delay as the difference between the scheduled start and actual start
-        if (!visitDate.isEmpty()
+        if (!appointmentDateCell.isEmpty()
                 && !patientSeenDateCell.isEmpty()) {
-            Date dtScheduledStart = visitDate.getDateTime();
+            Date dtScheduledStart = appointmentDateCell.getDateTime();
             Date dtSeen = patientSeenDateCell.getDateTime();
             long msDiff = dtSeen.getTime() - dtScheduledStart.getTime();
             if (msDiff >= 0) { //if patient was seen early, then there's no delay
                 long minDiff = msDiff / (1000L * 60L);
                 Duration fhirDuration = QuantityHelper.createDuration(new Integer((int) minDiff), "minutes");
-                appointmentBuilder.setPatientDelay(fhirDuration, visitDate, patientSeenDateCell);
+                appointmentBuilder.setPatientDelay(fhirDuration, appointmentDateCell, patientSeenDateCell);
             }
         }
 
         //calculate the total patient wait as the difference between the arrival time and when they were seen
-        //CsvCell dtArrivedCell = parser.getDatePatientArrival();
         CsvCell dtArrivedCell = parser.getApptArrivalDttm();
         if (!dtArrivedCell.isEmpty()
                 && !patientSeenDateCell.isEmpty()) {
@@ -232,43 +258,60 @@ public class OutpatientsTransformer {
             appointmentBuilder.setPatientWait(fhirDuration, dtArrivedCell, patientSeenDateCell);
         }
 
-        //CsvCell visitStatus = parser.getCurrentStatus();
-        CsvCell visitStatus = parser.getAppointmentStatus();
-        if (!visitStatus.isEmpty()) {
-            if (visitStatus.getString().equalsIgnoreCase("cancelled")) {
-                appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
-            } else if (visitStatus.getString().equalsIgnoreCase("deferred")) {
-                appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
-            } else {
-                appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+        //calculate the total duration as the difference between the seen time and when they left
+        if (!patientSeenDateCell.isEmpty() && !endDateCell.isEmpty()) {
+
+            Date dtSeen = patientSeenDateCell.getDateTime();
+            Date dtLeft = endDateCell.getDateTime();
+            long msDiff = dtLeft.getTime() - dtSeen.getTime();
+            long minDiff = msDiff / (1000L * 60L);
+
+            appointmentBuilder.setMinutesActualDuration(new Integer((int) minDiff));
+        }
+
+        // from the NHS data dictionary ATTENDED OR DID NOT ATTEND
+//        5	Attended on time or, if late, before the relevant CARE PROFESSIONAL was ready to see the PATIENT
+//        6	Arrived late, after the relevant CARE PROFESSIONAL was ready to see the PATIENT, but was seen
+//        7	PATIENT arrived late and could not be seen
+//        2	APPOINTMENT cancelled by, or on behalf of, the PATIENT
+//        3	Did not attend - no advance warning given
+//        4	APPOINTMENT cancelled or postponed by the Health Care Provider
+//        0   Not applicable - APPOINTMENT occurs in the future
+        CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
+        if (!appointmentStatusCode.isEmpty()) {
+
+            switch (appointmentStatusCode.getString()) {
+                case "2" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
+                case "3" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
+                case "4" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
+                case "5" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+                case "6" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+                case "7" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
+                case "0" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
             }
         }
-        //CsvCell followUpDetails = parser.getFollowUpDetails();
+
+        //this is just free text from the outcome
         CsvCell followUpDetails = parser.getAppointmentOutcome();
         if (!followUpDetails.isEmpty()) {
             appointmentBuilder.setComments(followUpDetails.getString(), followUpDetails);
         }
 
-        //CsvCell visitDuration = parser.getDuration();
-        CsvCell visitDuration = parser.getApptDepartureDttm();
-        if (!visitDuration.isEmpty()) {
-            appointmentBuilder.setMinutesActualDuration(visitDuration.getInt());
-        }
-
+        //add the three Encounter extensions
         if (!parser.getAdminCategoryCode().isEmpty()) {
             CsvCell adminCategoryCode = parser.getAdminCategoryCode();
             CsvCell adminCategory = parser.getAdminCategory();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admin_Category);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admin_Category);
             cc.setText(adminCategory.getString(), adminCategory);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(adminCategoryCode.getString(), adminCategoryCode);
             cc.setCodingDisplay(adminCategory.getString(), adminCategory);
         }
-
-        if (!parser.getAppointmentStatusCode().isEmpty()) {
-            CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
+        if (!appointmentStatusCode.isEmpty()) {
             CsvCell appointmentStatus = parser.getAppointmentStatus();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Attended);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Attended);
             cc.setText(appointmentStatus.getString(), appointmentStatus);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(appointmentStatusCode.getString(), appointmentStatusCode);
@@ -277,14 +320,15 @@ public class OutpatientsTransformer {
         if (!parser.getAppointmentOutcomeCode().isEmpty()) {
             CsvCell appointmentOutcomeCode = parser.getAppointmentOutcomeCode();
             CsvCell appointmentOutcome = parser.getAppointmentOutcome();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Outcome);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Outcome);
             cc.setText(appointmentOutcome.getString(), appointmentOutcome);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(appointmentOutcomeCode.getString(), appointmentOutcomeCode);
             cc.setCodingDisplay(appointmentOutcome.getString(), appointmentOutcome);
         }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder, condition, slotBuilder);
+        //save the Encounter, Appointment and Slot
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, appointmentBuilder, slotBuilder);
     }
-
 }
