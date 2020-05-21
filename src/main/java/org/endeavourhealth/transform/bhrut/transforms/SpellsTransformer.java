@@ -145,32 +145,67 @@ public class SpellsTransformer {
         }
 
         if (!parser.getPatientClassCode().isEmpty()) {
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Admin_Category);
-            cc.setText(parser.getPatientClassCode().getString(), parser.getPatientClassCode());
+            CsvCell patientClassCode= parser.getPatientClassCode();
+            CsvCell patientClass= parser.getPatientClass();
+            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other);
+            cc.setText(patientClass.getString(),patientClass);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
+            cc.setCodingCode(patientClassCode.getString(),patientClassCode);
+            cc.setCodingDisplay(patientClass.getString());
         }
         if (!parser.getAdmissionSourceCode().isEmpty()) {
+            CsvCell adminSourceCode = parser.getAdmissionSourceCode();
+            CsvCell adminSource = parser.getAdmissionSource();
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Admission_Source);
-            cc.setText(parser.getAdmissionSourceCode().getString(), parser.getAdmissionSourceCode());
+            cc.setText(adminSource.getString(), adminSource);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
+            cc.setCodingCode(adminSourceCode.getString(), adminSourceCode);
+            cc.setCodingDisplay(adminSource.getString(),adminSource);
         }
         if (!parser.getAdmissionMethodCode().isEmpty()) {
+            CsvCell admissionMethodCode = parser.getAdmissionMethodCode();
+            CsvCell admissionMethod = parser.getAdmissionMethod();
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Admission_Method);
-            cc.setText(parser.getAdmissionMethodCode().getString(),parser.getAdmissionMethodCode());
+            cc.setText(admissionMethod.getString(),admissionMethod);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
+            cc.setCodingCode(admissionMethodCode.getString(),admissionMethodCode);
+            cc.setCodingDisplay(admissionMethod.getString(),admissionMethod);
         }
         if (!parser.getAdmissionWardCode().isEmpty()) {
+            CsvCell admissionWardCode = parser.getAdmissionWardCode();
+            CsvCell admissionWard = parser.getAdmissionWard();
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Admission_Ward);
-            cc.setText(parser.getAdmissionWardCode().getString(),parser.getAdmissionWardCode());
+            cc.setText(admissionWard.getString(),admissionWard);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
+            cc.setCodingCode(admissionWardCode.getString(),admissionWardCode);
+            cc.setCodingDisplay(admissionWard.getString(),admissionWard);
         }
         if (!parser.getDischargeWardCode().isEmpty()) {
+            CsvCell dischargeWardCode =parser.getDischargeWardCode();
+            CsvCell dischargeWard =parser.getDischargeWard();
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Discharge_Ward);
-            cc.setText(parser.getDischargeWardCode().getString(),parser.getDischargeWardCode());
+            cc.setText(dischargeWard.getString(),dischargeWard);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
+            cc.setCodingCode(dischargeWardCode.getString(),dischargeWardCode);
+            cc.setCodingDisplay(dischargeWard.getString(),dischargeWard);
         }
         if (!parser.getDischargeMethodCode().isEmpty()) {
+            CsvCell dischargeMethodCode = parser.getDischargeMethodCode();
+            CsvCell dischargeMethod = parser.getDischargeMethod();
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Discharge_Method);
-            cc.setText(parser.getDischargeMethodCode().getString(),parser.getDischargeMethodCode());
+            cc.setText(dischargeMethod.getString(),dischargeMethod);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
+            cc.setCodingCode(dischargeMethodCode.getString(),dischargeMethodCode);
+            cc.setCodingDisplay(dischargeMethod.getString(),dischargeMethod);
         }
         if (!parser.getDischargeDestinationCode().isEmpty()) {
+            CsvCell dischargeDestCode =parser.getDischargeDestinationCode();
+            CsvCell dischargeDest  = parser.getDischargeDestination();
             CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder,CodeableConceptBuilder.Tag.Encounter_Discharge_Destination);
-            cc.setText(parser.getDischargeDestinationCode().getString(),parser.getDischargeDestinationCode());
+            cc.setText(dischargeDest.getString(),dischargeDest);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
+            cc.setCodingCode(dischargeDestCode.getString(),dischargeDestCode);
+            cc.setCodingDisplay(dischargeDest.getString(),dischargeDest);
         }
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
         }
