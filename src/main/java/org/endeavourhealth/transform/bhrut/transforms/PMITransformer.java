@@ -5,10 +5,7 @@ import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.PMI;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.CsvCurrentState;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
@@ -66,14 +63,13 @@ public class PMITransformer {
     private static PatientBuilder createPatientResource(PMI parser,
                                                         BhrutCsvHelper csvHelper) throws Exception {
 
-        CsvCell patientIdCell = parser.getPasId();
-        PatientBuilder patientBuilder = new PatientBuilder();
-        patientBuilder.setId(patientIdCell.getString(), patientIdCell);
+        PatientBuilder patientBuilder = getPatientBuilder(parser, csvHelper);
 
         CsvCell nhsNumber = parser.getNhsNumber();
         createIdentifier(patientBuilder, csvHelper, nhsNumber, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
         //store the PAS ID as a secondary identifier
+        CsvCell patientIdCell = parser.getPasId();
         createIdentifier(patientBuilder, csvHelper, patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BHRUT_PAS_ID);
 
         CsvCell dob = parser.getDateOfBirth();
@@ -128,14 +124,37 @@ public class PMITransformer {
         //TODO - patient will need a managing organisation care provider.
         // will need pre-transforming using odscode look similar to Adastra method
         //Reference organisationReference = csvHelper.createOrganisationReference(odsCodeBhrut);
+        //if (patientBuilder.isIdMapped()) {
+        //    organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+        //}
         //patientBuilder.setManagingOrganisation(organisationReference);
 
         //TODO - registered GP coming soon on extract file.
         // will need pre-transforming using odscode look similar to Adastra PROVIDER method
         //Reference gpOrganisationReference = csvHelper.createOrganisationReference(odsCodeGPPractice);
+        //if (patientBuilder.isIdMapped()) {
+        //    gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+        //}
         //patientBuilder.addCareProvider(gpOrganisationReference);
 
         return patientBuilder;
+    }
+
+    private static PatientBuilder getPatientBuilder(PMI parser, BhrutCsvHelper csvHelper) throws Exception {
+
+        PatientBuilder ret = null;
+        CsvCell patientIdCell = parser.getPasId();
+        String uniqueId = csvHelper.createUniqueId(patientIdCell, null);
+        org.hl7.fhir.instance.model.Patient existingResource
+                = (org.hl7.fhir.instance.model.Patient) csvHelper.retrieveResource(uniqueId, ResourceType.Patient);
+        if (existingResource != null) {
+            ret = new PatientBuilder(existingResource);
+        } else {
+            ret = new PatientBuilder();
+            csvHelper.setUniqueId(ret, patientIdCell, null);
+        }
+
+        return ret;
     }
 
     private static EthnicCategory convertEthnicCategory(String aliasNhsCdAlias) {
