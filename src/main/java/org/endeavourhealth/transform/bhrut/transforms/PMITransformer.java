@@ -59,34 +59,27 @@ public class PMITransformer {
             return;
         }
 
-
         PatientBuilder patientBuilder = createPatientResource(parser, csvHelper);
-
-        if (patientBuilder.isIdMapped()) {
-            //if patient has previously been saved, we need to save them separately
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, patientBuilder);
-        }
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder);
     }
 
     private static PatientBuilder createPatientResource(PMI parser,
                                                         BhrutCsvHelper csvHelper) throws Exception {
 
-        //create Patient Resource builder
-        PatientBuilder patientBuilder = getPatientBuilder(parser, csvHelper);
+        CsvCell patientIdCell = parser.getPasId();
+        PatientBuilder patientBuilder = new PatientBuilder();
+        patientBuilder.setId(patientIdCell.getString(), patientIdCell);
 
         CsvCell nhsNumber = parser.getNhsNumber();
         createIdentifier(patientBuilder, csvHelper, nhsNumber, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
-        //store the patient ID and patient number to the patient resource
-        CsvCell patientIdCell = parser.getPasId();
-        createIdentifier(patientBuilder, csvHelper, patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_GUID);
-
-        CsvCell patientNumber = parser.getID();
-        createIdentifier(patientBuilder, csvHelper, patientNumber, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_NUMBER);
-
+        //store the PAS ID as a secondary identifier
+        createIdentifier(patientBuilder, csvHelper, patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BHRUT_PAS_ID);
 
         CsvCell dob = parser.getDateOfBirth();
-        patientBuilder.setDateOfBirth(dob.getDate(), dob);
+        if (!dob.isEmpty()) {
+            patientBuilder.setDateOfBirth(dob.getDate(), dob);
+        }
 
         CsvCell dod = parser.getDateOfDeath();
         if (!dod.isEmpty()) {
@@ -96,9 +89,11 @@ public class PMITransformer {
         }
 
         CsvCell sex = parser.getGenderCode();
-        VocSex sexEnum = VocSex.fromValue(sex.getString());
-        Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
-        patientBuilder.setGender(gender, sex);
+        if (!sex.isEmpty()) {
+            VocSex sexEnum = VocSex.fromValue(sex.getString());
+            Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
+            patientBuilder.setGender(gender, sex);
+        }
 
         createName(patientBuilder, parser, csvHelper);
         createAddress(patientBuilder, parser, csvHelper);
@@ -113,19 +108,11 @@ public class PMITransformer {
             createContact(patientBuilder, csvHelper, mobilePhone, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
         }
 
-        //Todo ETHNICITY_CODE in PMI.  It looks like EthnicCategory is from the fhir package, but need that confirmed.
-        //try and get Ethnicity
-        /*CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientIdCell);
-        if (fhirEthnicity != null) {
-            String ethnicityCode = CodeableConceptHelper.getFirstCoding(fhirEthnicity).getCode();
-            if (!Strings.isNullOrEmpty(ethnicityCode)) {
-                patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
-            }
-        }
-        */
-        CsvCell ethnicCode = parser.getEthnicityCode();
-        if (ethnicCode != null) {
-            patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicCode.getString()), ethnicCode);
+        CsvCell ethnicCodeCell = parser.getEthnicityCode();
+        if (ethnicCodeCell != null) {
+
+            EthnicCategory ethnicCategory = convertEthnicCategory (ethnicCodeCell.getString());
+            patientBuilder.setEthnicity(ethnicCategory, ethnicCodeCell);
         }
 
         CsvCell spineSensitive = parser.getSensitivePdsFlag();
@@ -138,36 +125,29 @@ public class PMITransformer {
         //clear all care provider records, before we start adding more
         patientBuilder.clearCareProvider();
 
-        // Todo need confirmation PatientTypCode column.
-//        CsvCell patientTypeCell = parser.getPatientTypeCode();
-        /*CsvCell patientTypeCell = parser.getLineStatus();
-        RegistrationType registrationType = convertRegistrationType(patientTypeCell, csvHelper, patientIdCell);
-        if (registrationType == RegistrationType.REGULAR_GMS) {
+        //TODO - patient will need a managing organisation care provider.
+        // will need pre-transforming using odscode look similar to Adastra method
+        //Reference organisationReference = csvHelper.createOrganisationReference(odsCodeBhrut);
+        //patientBuilder.setManagingOrganisation(organisationReference);
 
-            Reference registeredPracticeReference = csvHelper.createOrganisationReference(organisationIdCell.getString());
-            if (patientBuilder.isIdMapped()) {
-                registeredPracticeReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(registeredPracticeReference, csvHelper);
-            }
-            patientBuilder.addCareProvider(registeredPracticeReference, organisationIdCell);
-        }*/
+        //TODO - registered GP coming soon on extract file.
+        // will need pre-transforming using odscode look similar to Adastra PROVIDER method
+        //Reference gpOrganisationReference = csvHelper.createOrganisationReference(odsCodeGPPractice);
+        //patientBuilder.addCareProvider(gpOrganisationReference);
 
         return patientBuilder;
     }
 
-    private static PatientBuilder getPatientBuilder(PMI parser, BhrutCsvHelper csvHelper) throws Exception {
+    private static EthnicCategory convertEthnicCategory(String aliasNhsCdAlias) {
 
-        PatientBuilder ret = null;
-        CsvCell patientIdCell = parser.getPasId();
-        String uniqueId = csvHelper.createUniqueId(patientIdCell, null);
-        org.hl7.fhir.instance.model.Patient existingResource = (org.hl7.fhir.instance.model.Patient) csvHelper.retrieveResource(uniqueId, ResourceType.Patient);
-        if (existingResource != null) {
-            ret = new PatientBuilder(existingResource);
+          //except for 99 or Unknown, which means "not stated"
+        if (aliasNhsCdAlias.equalsIgnoreCase("99")
+                || aliasNhsCdAlias.equalsIgnoreCase("Unknown") ) {
+            return EthnicCategory.NOT_STATED;
+
         } else {
-            ret = new PatientBuilder();
-            csvHelper.setUniqueId(ret, patientIdCell, null);
+            return EthnicCategory.fromCode(aliasNhsCdAlias);
         }
-
-        return ret;
     }
 
     private static void createIdentifier(PatientBuilder patientBuilder, BhrutCsvHelper csvHelper, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
@@ -186,7 +166,6 @@ public class PMITransformer {
 
     private static void createName(PatientBuilder patientBuilder, PMI parser, BhrutCsvHelper csvHelper) throws Exception {
 
-        //CsvCell title = parser.getTitle();
         CsvCell givenName = parser.getForename();
         CsvCell surname = parser.getSurname();
 
@@ -195,7 +174,6 @@ public class PMITransformer {
 
             NameBuilder nameBuilder = new NameBuilder(patientBuilder);
             nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
-            //nameBuilder.addPrefix(title.getString(), title);
             nameBuilder.addGiven(givenName.getString(), givenName);
             nameBuilder.addFamily(surname.getString(), surname);
 
