@@ -94,8 +94,8 @@ public class OutpatientsTransformer {
 
         //TODO - work out episode of care creation for BHRUT
         //link the consultation to our episode of care
-        //Reference episodeReference = csvHelper.createEpisodeReference(patientIdCell);
-        //encounterBuilder.setEpisodeOfCare(episodeReference);
+        Reference episodeReference = csvHelper.createEpisodeReference(patientIdCell);
+        encounterBuilder.setEpisodeOfCare(episodeReference);
 
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
