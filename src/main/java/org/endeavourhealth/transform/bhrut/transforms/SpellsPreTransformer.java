@@ -39,7 +39,6 @@ public class SpellsPreTransformer {
 
                 try {
                     Spells spellsParser = (Spells) parser;
-
                     if (!spellsParser.getLinestatus().getString().equalsIgnoreCase("delete")) {
                         cacheResources(spellsParser, fhirResourceFiler, csvHelper, version);
                     }
