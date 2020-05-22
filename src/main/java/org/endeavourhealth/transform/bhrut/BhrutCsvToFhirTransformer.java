@@ -184,6 +184,7 @@ public abstract class BhrutCsvToFhirTransformer {
         //TODO:  Pre-transformers to extract organisation and consultant data out into cache
 
         //then for the patient resources - note the order of these transforms is important, as encounters should be before journal obs etc.
+        OutpatientsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SpellsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         EpisodesPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         PMITransformer.transform(version, parsers, fhirResourceFiler, csvHelper);

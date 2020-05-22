@@ -123,17 +123,19 @@ public class PMITransformer {
 
         //TODO - patient will need a managing organisation care provider.
         // will need pre-transforming using odscode look similar to Adastra method
-        //Reference organisationReference = csvHelper.createOrganisationReference(odsCodeBhrut);
-        //if (patientBuilder.isIdMapped()) {
-        //    organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
-        //}
-        //patientBuilder.setManagingOrganisation(organisationReference);
+        String patientGPCareProvider = csvHelper.getPasIdtoGPCache().getGpCodeforPasId(patientIdCell.getString());
+        Reference organisationReference = csvHelper.createOrganisationReference(patientGPCareProvider);
+        if (patientBuilder.isIdMapped()) {
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+        }
+        patientBuilder.setManagingOrganisation(organisationReference);
 
         //TODO - registered GP coming soon on extract file.
         // will need pre-transforming using odscode look similar to Adastra PROVIDER method
-        //Reference gpOrganisationReference = csvHelper.createOrganisationReference(odsCodeGPPractice);
+        //String odsCodeGPPractice = csvHelper.getPasIdtoGPCache().getGpCodeforPasId(patientIdCell.getString());
+        //Reference gpOrganisationReference = csvHelper.createOrganisationReference(patientGPCareProvider);
         //if (patientBuilder.isIdMapped()) {
-        //    gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+         //   gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
         //}
         //patientBuilder.addCareProvider(gpOrganisationReference);
 
