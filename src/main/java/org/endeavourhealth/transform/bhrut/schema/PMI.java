@@ -18,7 +18,7 @@ public class PMI extends AbstractCsvParser {
     private static String[] getHeaders(String version) {
         return new String[]{
                 "LineStatus",
-                "PATIENT_EXTERNAL_ID",
+                "EXTERNAL_ID",
                 "PAS_ID",
                 "FORENAME",
                 "SURNAME",
@@ -42,6 +42,9 @@ public class PMI extends AbstractCsvParser {
                 "FOREIGN_LANGUAGE_CODE",
                 "NOK_NAME",
                 "NOKREL_NHSCODE",
+                "REGISTERED_GP_CODE",
+                "REGISTERED_GP_PRACTICE",
+                "REGISTERED_GP_PRACTICE_CODE"
         };
     }
 
@@ -68,7 +71,7 @@ public class PMI extends AbstractCsvParser {
     }
 
     public CsvCell getID() {
-        return super.getCell("PATIENT_EXTERNAL_ID");
+        return super.getCell("EXTERNAL_ID");
     }
 
     public CsvCell getPasId() {
@@ -154,5 +157,11 @@ public class PMI extends AbstractCsvParser {
     public CsvCell getNextOfKinCode() {
         return super.getCell("NOKREL_NHSCODE");
     }
+
+    public CsvCell getRegisteredGpCode() {return super.getCell("REGISTERED_GP_CODE");}
+
+    public CsvCell getRegisteredGpPracticeName() {return super.getCell("REGISTERED_GP_PRACTICE");}
+
+    public CsvCell getRegisteredGpPracticeCode() {return super.getCell("REGISTERED_GP_PRACTICE_CODE");}
 
 }
