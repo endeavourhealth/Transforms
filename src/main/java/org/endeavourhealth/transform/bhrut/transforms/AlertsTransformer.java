@@ -86,17 +86,17 @@ public class AlertsTransformer {
         CsvCell alertDescriptionCell = parser.getAlertDescription();
         if (!alertDescriptionCell.isEmpty()) {
 
-            flagTextBuilder.append("Description: "+alertDescriptionCell.getString()+". ");
+            flagTextBuilder.append("Description: ").append(alertDescriptionCell.getString()).append(". ");
         }
         CsvCell alertRiskLevelCell = parser.getRiskLevel();
         if (!alertRiskLevelCell.isEmpty()) {
 
-            flagTextBuilder.append("Risk level: "+alertRiskLevelCell.getString()+". ");
+            flagTextBuilder.append("Risk level: ").append(alertRiskLevelCell.getString()).append(". ");
         }
         CsvCell alertCommentsCell = parser.getAlertComments();
         if (!alertCommentsCell.isEmpty()) {
 
-            flagTextBuilder.append("Comments: "+alertCommentsCell.getString()+". ");
+            flagTextBuilder.append("Comments: ").append(alertCommentsCell.getString()).append(". ");
         }
 
         flagBuilder.setCode(flagTextBuilder.toString().trim(), alertDescriptionCell, alertRiskLevelCell, alertCommentsCell);

@@ -151,10 +151,19 @@ public class AndEAttendanceTransformer {
         }
 
         //TODO - analysis data to see if there are sub-encounters possible to model, i.e. treatments
-        //TODO - the chief complaint needs capturing
 
-        //TODO - Use RECORDED_OUTCOME for a&e to determine this element?
-        //encounterBuilder.setDischargeDisposition(?);
+
+        //the chief complaint needs capturing - it's not coded, so set as the reason for the encounter
+        CsvCell complaintCell = parser.getComplaint();
+        if (!complaintCell.isEmpty()) {
+            encounterBuilder.addReason(complaintCell.getString(), complaintCell);
+        }
+
+        //use RECORDED_OUTCOME to populate the discharge disposition
+        CsvCell dischargeOutcomeCell = parser.getRecordedOutcome();
+        if (!dischargeOutcomeCell.isEmpty()) {
+            encounterBuilder.setDischargeDisposition(dischargeOutcomeCell.getString());
+        }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
