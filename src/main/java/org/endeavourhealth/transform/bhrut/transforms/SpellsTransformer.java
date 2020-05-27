@@ -7,7 +7,6 @@ import org.endeavourhealth.transform.bhrut.schema.Spells;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
@@ -123,26 +122,29 @@ public class SpellsTransformer {
             }
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
         }
-        //TODO - do we need to keep this when we now have the Encounter extensions?
+
+        //the class is Inpatient - no need for that additional code below as extension deals with classification
+        encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
+        //TODO - do we need to keep this when we now have the Encounter extensions? - NO
         // Note Bhrut uses NHS Patient classification. These are coded using an Encounter. The mapping
         // below to Fhir is suboptimal.
         // https://www.datadictionary.nhs.uk/data_dictionary/attributes/p/pati/patient_classification_de.asp
-        if (!parser.getPatientClassCode().isEmpty()) {
-            switch (parser.getPatientClassCode().getInt()) {
-                case 1:
-                case 2:
-                case 3:
-                case 4:
-                    encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT, parser.getPatientClassCode());
-                    break;
-                case 5:
-                    encounterBuilder.setClass(Encounter.EncounterClass.OTHER, parser.getPatientClassCode());
-                    break;
-                default:
-                    TransformWarnings.log(LOG, parser, "Unknown NHS Patient class found:  {} for Spells file {}", parser.getPatientClassCode(), parser.getFilePath());
-            }
-
-        }
+//        if (!parser.getPatientClassCode().isEmpty()) {
+//            switch (parser.getPatientClassCode().getInt()) {
+//                case 1:
+//                case 2:
+//                case 3:
+//                case 4:
+//                    encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT, parser.getPatientClassCode());
+//                    break;
+//                case 5:
+//                    encounterBuilder.setClass(Encounter.EncounterClass.OTHER, parser.getPatientClassCode());
+//                    break;
+//                default:
+//                    TransformWarnings.log(LOG, parser, "Unknown NHS Patient class found:  {} for Spells file {}", parser.getPatientClassCode(), parser.getFilePath());
+//            }
+//        }
 
         if (!parser.getPatientClassCode().isEmpty()) {
             CsvCell patientClassCode = parser.getPatientClassCode();

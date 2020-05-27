@@ -12,10 +12,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuil
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
-import org.hl7.fhir.instance.model.Condition;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.Procedure;
-import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +67,9 @@ public class EpisodesTransformer {
         Reference staffReference = csvHelper.createPractitionerReference(staffIdCell.getString());
         org.hl7.fhir.instance.model.Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
+
+        //the class is Inpatient, i.e. Inpatient Episode
+        encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
         Reference spellEncounter = csvHelper.createEncounterReference(parser.getIpSpellExternalId().getString(), patientReference.getId());
         encounterBuilder.setPartOf(spellEncounter);

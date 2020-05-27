@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +78,9 @@ public class AndEAttendanceTransformer {
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
+
+        //the class is Emergency
+        encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
         encounterBuilder.setPeriodStart(parser.getArrivalDttm().getDateTime(), parser.getArrivalDttm());
         encounterBuilder.setPeriodEnd(parser.getDischargedDttm().getDateTime(), parser.getDischargedDttm());

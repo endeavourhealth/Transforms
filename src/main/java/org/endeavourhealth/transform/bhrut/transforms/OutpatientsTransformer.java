@@ -88,6 +88,9 @@ public class OutpatientsTransformer {
             appointmentBuilder.setStartDateTime(appointmentDateCell.getDate(), appointmentDateCell);
         }
 
+        //the class is Outpatient
+        encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
+
         CsvCell consultantCodeCell = parser.getConsultantCode();
         Reference consultantReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
         encounterBuilder.addParticipant(consultantReference, EncounterParticipantType.CONSULTANT, consultantCodeCell);
