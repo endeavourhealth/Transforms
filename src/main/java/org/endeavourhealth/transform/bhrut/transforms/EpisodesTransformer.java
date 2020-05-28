@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.bhrut.schema.Episodes;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
@@ -74,9 +75,18 @@ public class EpisodesTransformer {
         encounterBuilder.setPeriodStart(parser.getEpisodeStartDttm().getDateTime(), parser.getEpisodeStartDttm());
         encounterBuilder.setPeriodEnd(parser.getEpisodeEndDttm().getDateTime(), parser.getEpisodeEndDttm());
 
-        CsvCell org = parser.getAdmissionHospitalCode();
-        Reference orgReference = csvHelper.createOrganisationReference(org.getString());
-        encounterBuilder.setServiceProvider(orgReference);
+        //CsvCell org = parser.getAdmissionHospitalCode();
+        //Reference orgReference = csvHelper.createOrganisationReference(org.getString());
+        //encounterBuilder.setServiceProvider(orgReference);
+
+        CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
+        if (!admissionHospitalCodeCell.isEmpty()) {
+            Reference organisationReference = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
+            if (encounterBuilder.isIdMapped()) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+            }
+            encounterBuilder.setServiceProvider(organisationReference);
+        }
 
         CsvCell episodeConsultantCell = parser.getEpisodeConsultantCode();
         Reference episodePractitioner = csvHelper.createPractitionerReference(episodeConsultantCell.getString());

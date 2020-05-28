@@ -132,12 +132,13 @@ public class PMITransformer {
 
         // set the patient's registered GP.  This resource is created during PMIPreTransformer
         CsvCell gpPracticeCode = parser.getRegisteredGpPracticeCode();
-        Reference gpOrganisationReference = csvHelper.createOrganisationReference(gpPracticeCode.getString());
-        if (patientBuilder.isIdMapped()) {
-            gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+        if (!gpPracticeCode.isEmpty()) {
+            Reference gpOrganisationReference = csvHelper.createOrganisationReference(gpPracticeCode.getString());
+            if (patientBuilder.isIdMapped()) {
+                gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+            }
+            patientBuilder.addCareProvider(gpOrganisationReference);
         }
-        patientBuilder.addCareProvider(gpOrganisationReference);
-
         return patientBuilder;
     }
 

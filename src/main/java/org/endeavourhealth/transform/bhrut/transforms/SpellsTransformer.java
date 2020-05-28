@@ -9,6 +9,7 @@ import org.endeavourhealth.transform.bhrut.schema.Spells;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
@@ -90,9 +91,18 @@ public class SpellsTransformer {
         encounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
         encounterBuilder.setPeriodEnd(parser.getDischargeDttm().getDateTime(), parser.getDischargeDttm());
 
-        CsvCell org = parser.getAdmissionHospitalCode();
-        Reference orgReference = csvHelper.createOrganisationReference(org.getString());
-        encounterBuilder.setServiceProvider(orgReference);
+        //CsvCell org = parser.getAdmissionHospitalCode();
+        //Reference orgReference = csvHelper.createOrganisationReference(org.getString());
+        //encounterBuilder.setServiceProvider(orgReference);
+
+        CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
+        if (!admissionHospitalCodeCell.isEmpty()) {
+            Reference organisationReference = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
+            if (encounterBuilder.isIdMapped()) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+            }
+            encounterBuilder.setServiceProvider(organisationReference);
+        }
 
         CsvCell admittingConsultant = parser.getAdmissionConsultantCode();
         Reference practitioner = csvHelper.createPractitionerReference(admittingConsultant.getString());
@@ -242,9 +252,9 @@ public class SpellsTransformer {
     }
 
     private static void deleteChildResources(Spells parser,
-                                            FhirResourceFiler fhirResourceFiler,
-                                            BhrutCsvHelper csvHelper,
-                                            String version) throws Exception {
+                                             FhirResourceFiler fhirResourceFiler,
+                                             BhrutCsvHelper csvHelper,
+                                             String version) throws Exception {
 
         CsvCell patientIdCell = parser.getPasId();
         CsvCell idCell = parser.getId();
