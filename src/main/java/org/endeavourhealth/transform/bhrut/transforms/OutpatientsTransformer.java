@@ -1,9 +1,12 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.bhrut.schema.Episodes;
 import org.endeavourhealth.transform.bhrut.schema.Outpatients;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -68,7 +71,11 @@ public class OutpatientsTransformer {
         CsvCell actionCell = parser.getLinestatus();
         if (actionCell.getString().equalsIgnoreCase("Delete")) {
             encounterBuilder.setDeletedAudit(actionCell);
+
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder, slotBuilder, appointmentBuilder);
+
+            //then, delete the linked resources
+            deleteChildResources(parser, fhirResourceFiler, csvHelper, version);
             return;
         }
 
@@ -124,6 +131,11 @@ public class OutpatientsTransformer {
                     = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
             codeableConceptBuilder.setCodingCode(primaryProcedureCodeCell.getString(), primaryProcedureCodeCell);
+            String procTerm = TerminologyService.lookupOpcs4ProcedureName(parser.getPrimaryProcedureCode().getString());
+            if (Strings.isNullOrEmpty(procTerm)) {
+                throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
+            }
+            codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
             procedureBuilder.addPerformer(consultantReference, consultantCodeCell);
 
             DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
@@ -147,6 +159,10 @@ public class OutpatientsTransformer {
                         = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
                 codeableConceptBuilder.setCodingCode(secondaryProcedureCodeCell.getString(), secondaryProcedureCodeCell);
+                String procTerm = TerminologyService.lookupOpcs4ProcedureName(secondaryProcedureCodeCell.getString());
+                if (Strings.isNullOrEmpty(procTerm)) {
+                    throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
+                }
                 procedureBuilder.addPerformer(consultantReference, consultantCodeCell);
 
                 DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
@@ -166,21 +182,29 @@ public class OutpatientsTransformer {
             conditionBuilder.setPatient(patientReference, patientIdCell);
             conditionBuilder.setEncounter(thisEncounter, idCell);
             conditionBuilder.setAsProblem(false);
+            conditionBuilder.setIsPrimary(true);
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
             codeableConceptBuilder.setCodingCode(primaryDiagnosisCodeCell.getString(), primaryDiagnosisCodeCell);
+            String diagTerm = TerminologyService.lookupIcd10CodeDescription(parser.getPrimaryDiagnosisCode().getString());
+            if (Strings.isNullOrEmpty(diagTerm)) {
+                throw new Exception("Failed to find diagnosis term for ICD 10 code " + parser.getPrimaryDiagnosisCode().getString());
+            }
+            codeableConceptBuilder.setCodingDisplay(diagTerm);
+
             conditionBuilder.setClinician(consultantReference, consultantCodeCell);
 
             DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
             conditionBuilder.setOnset(dateTimeType, appointmentDateCell);
+            conditionBuilder.setCategory("diagnosis");
 
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
         }
 
         //Secondary Diagnosis(s)
         for (int i = 1; i <= 3; i++) {
-            Method method = Outpatients.class.getDeclaredMethod("getDiag" + i);
+            Method method = Outpatients.class.getDeclaredMethod("getSecondaryDiagnosisCode" + i);
             CsvCell secondaryDiagnosisCodeCell = (CsvCell) method.invoke(parser);
             if (!secondaryDiagnosisCodeCell.isEmpty()) {
 
@@ -189,15 +213,22 @@ public class OutpatientsTransformer {
                 conditionBuilder.setPatient(patientReference, patientIdCell);
                 conditionBuilder.setEncounter(thisEncounter, idCell);
                 conditionBuilder.setAsProblem(false);
+                conditionBuilder.setIsPrimary(false);
 
                 CodeableConceptBuilder codeableConceptBuilder
                         = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
                 codeableConceptBuilder.setCodingCode(secondaryDiagnosisCodeCell.getString(), secondaryDiagnosisCodeCell);
+                String diagTerm = TerminologyService.lookupIcd10CodeDescription(secondaryDiagnosisCodeCell.getString());
+                if (Strings.isNullOrEmpty(diagTerm)) {
+                    throw new Exception("Failed to find diagnosis term for ICD 10 code " + parser.getPrimaryDiagnosisCode().getString());
+                }
+                codeableConceptBuilder.setCodingDisplay(diagTerm);
                 conditionBuilder.setClinician(consultantReference, consultantCodeCell);
 
                 DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
                 conditionBuilder.setOnset(dateTimeType, appointmentDateCell);
+                conditionBuilder.setCategory("diagnosis");
 
                 fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
             } else {
@@ -333,5 +364,64 @@ public class OutpatientsTransformer {
 
         //save the Encounter, Appointment and Slot
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, appointmentBuilder, slotBuilder);
+    }
+
+    private static void deleteChildResources(Outpatients parser,
+                                             FhirResourceFiler fhirResourceFiler,
+                                             BhrutCsvHelper csvHelper,
+                                             String version) throws Exception {
+        CsvCell idCell = parser.getId();
+        CsvCell actionCell = parser.getLinestatus();
+        CsvCell patientIdCell = parser.getPasId();
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+
+        //delete primary diagnosis and secondaries
+        if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
+            ConditionBuilder condition = new ConditionBuilder();
+            condition.setId(idCell.getString() + "Condition:0");
+            condition.setPatient(patientReference, patientIdCell);
+            condition.setDeletedAudit(actionCell);
+
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), condition);
+
+            for (int i = 1; i <= 12; i++) {
+                Method method = Episodes.class.getDeclaredMethod("getSecondaryDiagnosisCode" + i);
+                CsvCell diagCode = (CsvCell) method.invoke(parser);
+                if (!diagCode.isEmpty()) {
+                    ConditionBuilder conditionBuilder = new ConditionBuilder();
+                    conditionBuilder.setId(idCell.getString() + "Condition:" + i);
+                    conditionBuilder.setPatient(patientReference, patientIdCell);
+                    conditionBuilder.setDeletedAudit(actionCell);
+
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
+                } else {
+                    break;  //No point parsing empty cells. Assume non-empty cells are sequential.
+                }
+            }
+        }
+        //delete primary procedures and secondaries
+        if (!parser.getPrimaryProcedureCode().isEmpty()) {
+            ProcedureBuilder proc = new ProcedureBuilder();
+            proc.setId(idCell.getString() + ":Procedure:0", idCell);
+            proc.setPatient(patientReference, patientIdCell);
+            proc.setDeletedAudit(actionCell);
+
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), proc);
+
+            for (int i = 1; i <= 12; i++) {
+                Method method = Episodes.class.getDeclaredMethod("getSecondaryProcedureCode" + i);
+                CsvCell procCode = (CsvCell) method.invoke(parser);
+                if (!procCode.isEmpty()) {
+                    ProcedureBuilder procedureBuilder = new ProcedureBuilder();
+                    procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
+                    procedureBuilder.setPatient(patientReference, patientIdCell);
+                    procedureBuilder.setDeletedAudit(actionCell);
+
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
+                } else {
+                    break;  //No point parsing empty cells. Assume non-empty cells are sequential.
+                }
+            }
+        }
     }
 }

@@ -71,7 +71,7 @@ public class SpellsTransformer {
         fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
 
         //then, delete the linked resources
-        deleteChildResource(parser, fhirResourceFiler, csvHelper, version);
+        deleteChildResources(parser, fhirResourceFiler, csvHelper, version);
     }
 
     public static void createResources(Spells parser,
@@ -100,7 +100,7 @@ public class SpellsTransformer {
 
         CsvCell dischargeConsultant = parser.getDischargeConsultant();
         Reference discharger = csvHelper.createPractitionerReference(dischargeConsultant.getString());
-        encounterBuilder.addParticipant(discharger, EncounterParticipantType.CONSULTANT, dischargeConsultant);
+        encounterBuilder.addParticipant(discharger, EncounterParticipantType.DISCHARGER, dischargeConsultant);
 
         //create an Encounter reference for the procedures and conditions to use
         Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
@@ -111,7 +111,9 @@ public class SpellsTransformer {
 
             ConditionBuilder conditionBuilder = new ConditionBuilder();
             conditionBuilder.setId(idCell.getString() + ":Condition:0", idCell);
+            conditionBuilder.setPatient(patientReference, patientIdCell);
             conditionBuilder.setEncounter(thisEncounter, idCell);
+            conditionBuilder.setClinician(practitioner, admittingConsultant);
             DateTimeType dtt = new DateTimeType(parser.getAdmissionDttm().getDateTime());
             conditionBuilder.setOnset(dtt, parser.getAdmissionDttm());
 
@@ -123,6 +125,7 @@ public class SpellsTransformer {
             if (Strings.isNullOrEmpty(diagTerm)) {
                 throw new Exception("Failed to find diagnosis term for ICD 10 code " + primaryDiagnosisCodeCell.getString());
             }
+            codeableConceptBuilder.setCodingDisplay(diagTerm);
 
             if (!parser.getPrimaryDiagnosis().isEmpty()) {
                 codeableConceptBuilder.setText(parser.getPrimaryDiagnosis().getString());
@@ -139,6 +142,7 @@ public class SpellsTransformer {
             procedureBuilder.setId(idCell.getString() + ":Procedure:0", idCell);
             procedureBuilder.setIsPrimary(true);
             procedureBuilder.setEncounter(thisEncounter, idCell);
+            procedureBuilder.addPerformer(practitioner, admittingConsultant);
             DateTimeType dateTimeType = new DateTimeType(parser.getAdmissionDttm().getDateTime());
             procedureBuilder.setPerformed(dateTimeType, parser.getAdmissionDttm());
 
@@ -162,10 +166,12 @@ public class SpellsTransformer {
         //the class of Encounter is Inpatient
         encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
+        //set the extensions
         if (!parser.getPatientClassCode().isEmpty()) {
             CsvCell patientClassCode = parser.getPatientClassCode();
             CsvCell patientClass = parser.getPatientClass();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other);
             cc.setText(patientClass.getString(), patientClass);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(patientClassCode.getString(), patientClassCode);
@@ -174,7 +180,8 @@ public class SpellsTransformer {
         if (!parser.getAdmissionSourceCode().isEmpty()) {
             CsvCell adminSourceCode = parser.getAdmissionSourceCode();
             CsvCell adminSource = parser.getAdmissionSource();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Source);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Source);
             cc.setText(adminSource.getString(), adminSource);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(adminSourceCode.getString(), adminSourceCode);
@@ -183,7 +190,8 @@ public class SpellsTransformer {
         if (!parser.getAdmissionMethodCode().isEmpty()) {
             CsvCell admissionMethodCode = parser.getAdmissionMethodCode();
             CsvCell admissionMethod = parser.getAdmissionMethod();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Method);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Method);
             cc.setText(admissionMethod.getString(), admissionMethod);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(admissionMethodCode.getString(), admissionMethodCode);
@@ -192,7 +200,8 @@ public class SpellsTransformer {
         if (!parser.getAdmissionWardCode().isEmpty()) {
             CsvCell admissionWardCode = parser.getAdmissionWardCode();
             CsvCell admissionWard = parser.getAdmissionWard();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Ward);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admission_Ward);
             cc.setText(admissionWard.getString(), admissionWard);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(admissionWardCode.getString(), admissionWardCode);
@@ -201,7 +210,8 @@ public class SpellsTransformer {
         if (!parser.getDischargeWardCode().isEmpty()) {
             CsvCell dischargeWardCode = parser.getDischargeWardCode();
             CsvCell dischargeWard = parser.getDischargeWard();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Discharge_Ward);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Discharge_Ward);
             cc.setText(dischargeWard.getString(), dischargeWard);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(dischargeWardCode.getString(), dischargeWardCode);
@@ -210,7 +220,8 @@ public class SpellsTransformer {
         if (!parser.getDischargeMethodCode().isEmpty()) {
             CsvCell dischargeMethodCode = parser.getDischargeMethodCode();
             CsvCell dischargeMethod = parser.getDischargeMethod();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Discharge_Method);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Discharge_Method);
             cc.setText(dischargeMethod.getString(), dischargeMethod);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(dischargeMethodCode.getString(), dischargeMethodCode);
@@ -219,7 +230,8 @@ public class SpellsTransformer {
         if (!parser.getDischargeDestinationCode().isEmpty()) {
             CsvCell dischargeDestCode = parser.getDischargeDestinationCode();
             CsvCell dischargeDest = parser.getDischargeDestination();
-            CodeableConceptBuilder cc = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Discharge_Destination);
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Discharge_Destination);
             cc.setText(dischargeDest.getString(), dischargeDest);
             cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
             cc.setCodingCode(dischargeDestCode.getString(), dischargeDestCode);
@@ -229,7 +241,7 @@ public class SpellsTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
     }
 
-    private static void deleteChildResource(Spells parser,
+    private static void deleteChildResources(Spells parser,
                                             FhirResourceFiler fhirResourceFiler,
                                             BhrutCsvHelper csvHelper,
                                             String version) throws Exception {
@@ -237,12 +249,13 @@ public class SpellsTransformer {
         CsvCell patientIdCell = parser.getPasId();
         CsvCell idCell = parser.getId();
         CsvCell audit = parser.getLinestatus();
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
         if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
 
             ConditionBuilder conditionBuilder = new ConditionBuilder();
             conditionBuilder.setId(idCell.getString() + ":Condition:0", idCell);
-            Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+
             conditionBuilder.setPatient(patientReference, patientIdCell);
             conditionBuilder.setDeletedAudit(audit);
 
@@ -252,7 +265,6 @@ public class SpellsTransformer {
 
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
             procedureBuilder.setId(idCell.getString() + ":Procedure:0", idCell);
-            Reference patientReference = csvHelper.createPatientReference(patientIdCell);
             procedureBuilder.setPatient(patientReference, patientIdCell);
             procedureBuilder.setDeletedAudit(audit);
 

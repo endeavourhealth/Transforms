@@ -138,7 +138,7 @@ public class Episodes extends AbstractCsvParser {
  public CsvCell getIntendedManagement() { return super.getCell( "INTENDED_MANAGEMENT");}
  public CsvCell getDischargeMethodCode() { return super.getCell( "DISCHARGE_METHOD_CODE");}
  public CsvCell getDischargeMethod() { return super.getCell( "DISCHARGE_METHOD");}
- public CsvCell getDischargeDesinationCode() { return super.getCell( "DISCHARGE_DESINATION_CODE");}
+ public CsvCell getDischargeDestinationCode() { return super.getCell( "DISCHARGE_DESINATION_CODE");}
  public CsvCell getDischargeDestination() { return super.getCell( "DISCHARGE_DESTINATION");}
  public CsvCell getAdmissionHospitalCode() { return super.getCell( "ADMISSION_HOSPITAL_CODE");}
  public CsvCell getAdmissionHospitalName() { return super.getCell( "ADMISSION_HOSPITAL_NAME");}
