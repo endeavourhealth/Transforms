@@ -49,36 +49,39 @@ public class OutpatientsPreTransformer {
                                       String version) throws Exception {
 
 
-        CsvCell odsCode = parser.getHospitalCode();
-        boolean orgInCache = csvHelper.getOrgCache().orgCodeInCache(odsCode.getString());
-        if (!orgInCache) {
-            boolean oohOrgAlreadyFiled
-                    = csvHelper.getOrgCache().organizationInDB(odsCode.getString(), csvHelper);
-            if (!oohOrgAlreadyFiled) {
-                createOrganisation(parser, fhirResourceFiler, csvHelper);
+        //for each unique ods code in the outpatient file, check, file and cache the resource
+        CsvCell odsCodeCell = parser.getHospitalCode();
+        if (!odsCodeCell.isEmpty()) {
+            boolean orgInCache = csvHelper.getOrgCache().organizationInCache(odsCodeCell.getString());
+            if (!orgInCache) {
+                boolean orgResourceAlreadyFiled
+                        = csvHelper.getOrgCache().organizationInDB(odsCodeCell.getString(), csvHelper);
+                if (!orgResourceAlreadyFiled) {
+                    createOrganisation(parser, fhirResourceFiler, csvHelper);
+                }
             }
         }
     }
 
     public static void createOrganisation(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
-        CsvCell odsCode = parser.getHospitalCode();
+        CsvCell odsCodeCell = parser.getHospitalCode();
         OrganizationBuilder organizationBuilder
-                = csvHelper.getOrgCache().getOrCreateOrganizationBuilder(odsCode.getString(), csvHelper);
+                = csvHelper.getOrgCache().getOrCreateOrganizationBuilder(odsCodeCell.getString(), csvHelper);
         if (organizationBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Error creating OOH Organization resource for ODS: {}",
-                    odsCode.getString());
+            TransformWarnings.log(LOG, parser, "Error creating Organization resource for ODS: {}",
+                    odsCodeCell.getString());
             return;
         }
 
-        OdsOrganisation org = OdsWebService.lookupOrganisationViaRest(odsCode.getString());
+        OdsOrganisation org = OdsWebService.lookupOrganisationViaRest(odsCodeCell.getString());
         if (org != null) {
 
             organizationBuilder.setName(org.getOrganisationName());
         } else {
 
             TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {}",
-                    odsCode.getString());
+                    odsCodeCell.getString());
             return;
         }
 
@@ -87,12 +90,11 @@ public class OutpatientsPreTransformer {
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
         identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-        identifierBuilder.setValue(odsCode.getString());
+        identifierBuilder.setValue(odsCodeCell.getString());
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
 
         //add to cache
-        csvHelper.getOrgCache().returnOrganizationBuilder(odsCode.getString(), organizationBuilder);
+        csvHelper.getOrgCache().returnOrganizationBuilder(odsCodeCell.getString(), organizationBuilder);
     }
-
 }

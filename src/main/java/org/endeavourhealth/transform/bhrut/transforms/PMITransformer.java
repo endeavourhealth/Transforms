@@ -122,20 +122,16 @@ public class PMITransformer {
         //clear all care provider records, before we start adding more
         patientBuilder.clearCareProvider();
 
-        //TODO - patient will need a managing organisation care provider.
-        // will need pre-transforming using odscode look similar to Adastra method
-        Reference organisationReference = csvHelper.createOrganisationReference(BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE);
+        //set the managing organisation to Bhrut. This resource is created during PMIPreTransformer
+        Reference organisationReference
+                = csvHelper.createOrganisationReference(BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE);
         if (patientBuilder.isIdMapped()) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
         }
         patientBuilder.setManagingOrganisation(organisationReference);
-        // String patientGPCareProvider = csvHelper.getPasIdtoGPCache().getGpCodeforPasId(patientIdCell.getString());
 
-        //TODO - registered GP coming soon on extract file.
-        // will need pre-transforming using odscode look similar to Adastra PROVIDER method
+        // set the patient's registered GP.  This resource is created during PMIPreTransformer
         CsvCell gpPracticeCode = parser.getRegisteredGpPracticeCode();
-
-        //String odsCodeGPPractice = csvHelper.getPasIdtoGPCache().getGpCodeforPasId(patientIdCell.getString());
         Reference gpOrganisationReference = csvHelper.createOrganisationReference(gpPracticeCode.getString());
         if (patientBuilder.isIdMapped()) {
             gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);

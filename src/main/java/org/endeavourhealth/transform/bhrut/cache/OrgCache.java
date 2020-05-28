@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.bhrut.cache;
 
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ResourceCache;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.hl7.fhir.instance.model.Organization;
@@ -56,6 +54,9 @@ public class OrgCache {
         return orgCodeToName.size();
     }
 
+    public boolean organizationInCache(String orgId) {
+        return organizationBuildersByLocationID.contains(orgId);
+    }
 
     public OrganizationBuilder getOrCreateOrganizationBuilder(String orgId,
                                                               BhrutCsvHelper csvHelper) throws Exception {

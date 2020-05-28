@@ -112,14 +112,9 @@ public class OutpatientsTransformer {
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
-        //TODO - needs an organisation pre-transform from these codes + name
-        /*CsvCell org = parser.getHospitalCode();
-        Reference orgReference = csvHelper.createOrganisationReference(org.getString());
-        encounterBuilder.setServiceProvider(orgReference);*/
-
-        CsvCell odsCode = parser.getHospitalCode();
-
-        Reference organisationReference = csvHelper.createOrganisationReference(odsCode.getString());
+        //set the service provider reference from the hospital ods code
+        CsvCell hospitalOdsCodeCell = parser.getHospitalCode();
+        Reference organisationReference = csvHelper.createOrganisationReference(hospitalOdsCodeCell.getString());
         if (encounterBuilder.isIdMapped()) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
         }
@@ -314,13 +309,13 @@ public class OutpatientsTransformer {
         }
 
         // from the NHS data dictionary ATTENDED OR DID NOT ATTEND
-//        5	Attended on time or, if late, before the relevant CARE PROFESSIONAL was ready to see the PATIENT
-//        6	Arrived late, after the relevant CARE PROFESSIONAL was ready to see the PATIENT, but was seen
-//        7	PATIENT arrived late and could not be seen
-//        2	APPOINTMENT cancelled by, or on behalf of, the PATIENT
-//        3	Did not attend - no advance warning given
-//        4	APPOINTMENT cancelled or postponed by the Health Care Provider
-//        0   Not applicable - APPOINTMENT occurs in the future
+        // 5	Attended on time or, if late, before the relevant CARE PROFESSIONAL was ready to see the PATIENT
+        // 6	Arrived late, after the relevant CARE PROFESSIONAL was ready to see the PATIENT, but was seen
+        // 7	PATIENT arrived late and could not be seen
+        // 2	APPOINTMENT cancelled by, or on behalf of, the PATIENT
+        // 3	Did not attend - no advance warning given
+        // 4	APPOINTMENT cancelled or postponed by the Health Care Provider
+        // 0   Not applicable - APPOINTMENT occurs in the future
         CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
         if (!appointmentStatusCode.isEmpty()) {
 
@@ -451,8 +446,8 @@ public class OutpatientsTransformer {
                 = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(patientIdCell, csvHelper, fhirResourceFiler);
 
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
-        boolean isResourceMapped = csvHelper.isResourceIdMapped(id.getString(), episodeBuilder.getResource());
-        if (isResourceMapped) {
+
+        if (episodeBuilder.isIdMapped()) {
             patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
         }
         episodeBuilder.setPatient(patientReference, patientIdCell);
@@ -469,7 +464,7 @@ public class OutpatientsTransformer {
         if (odsCodeCell != null) {
             Reference organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
             // if episode already ID mapped, get the mapped ID for the org
-            if (isResourceMapped) {
+            if (episodeBuilder.isIdMapped()) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
             episodeBuilder.setManagingOrganisation(organisationReference, odsCodeCell);
@@ -478,7 +473,7 @@ public class OutpatientsTransformer {
             UUID serviceId = parser.getServiceId();
             Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
             // if episode already ID mapped, get the mapped ID for the org
-            if (isResourceMapped) {
+            if (episodeBuilder.isIdMapped()) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
             episodeBuilder.setManagingOrganisation(organisationReference);
@@ -487,7 +482,7 @@ public class OutpatientsTransformer {
         CsvCell consultantCodeCell = parser.getConsultantCode();
         if (consultantCodeCell != null && !consultantCodeCell.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
-            if (isResourceMapped) {
+            if (episodeBuilder.isIdMapped()) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
             }
             episodeBuilder.setCareManager(practitionerReference, consultantCodeCell);

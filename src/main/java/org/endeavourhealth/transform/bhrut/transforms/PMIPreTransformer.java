@@ -30,15 +30,20 @@ public class PMIPreTransformer {
 
         PMI parser = (PMI) parsers.get(PMI.class);
         if (parser != null) {
+
+            //create the top level organisation for BHRUT using the ODS code as a one off
+            createResource(parser, fhirResourceFiler, csvHelper, version, BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE);
+
             while (parser.nextRecord()) {
 
                 try {
-                    if (parser.getRegisteredGpPracticeCode() != null) {
+                    if (!parser.getRegisteredGpPracticeCode().isEmpty()) {
+
                         CsvCell gpPracticeCodeCell = parser.getRegisteredGpPracticeCode();
                         String gpPracticeCode = gpPracticeCodeCell.getString();
                         createResource(parser, fhirResourceFiler, csvHelper, version, gpPracticeCode);
                     }
-                    createResource(parser, fhirResourceFiler, csvHelper, version, BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE);
+
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -50,37 +55,38 @@ public class PMIPreTransformer {
     public static void createResource(PMI parser,
                                       FhirResourceFiler fhirResourceFiler,
                                       BhrutCsvHelper csvHelper,
-                                      String version, String codeType) throws Exception {
+                                      String version, String orgId) throws Exception {
 
 
-        boolean orgInCache = csvHelper.getOrgCache().orgCodeInCache(codeType);
+        boolean orgInCache = csvHelper.getOrgCache().organizationInCache(orgId);
         if (!orgInCache) {
-            boolean oohOrgAlreadyFiled
-                    = csvHelper.getOrgCache().organizationInDB(codeType, csvHelper);
-            if (!oohOrgAlreadyFiled) {
-                createOrganisation(parser, fhirResourceFiler, csvHelper, codeType);
+            boolean orgResourceAlreadyFiled
+                    = csvHelper.getOrgCache().organizationInDB(orgId, csvHelper);
+            if (!orgResourceAlreadyFiled) {
+                createOrganisation(parser, fhirResourceFiler, csvHelper, orgId);
             }
         }
     }
 
-    public static void createOrganisation(PMI parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String codeType) throws Exception {
+    public static void createOrganisation(PMI parser,
+                                          FhirResourceFiler fhirResourceFiler,
+                                          BhrutCsvHelper csvHelper,
+                                          String orgId) throws Exception {
 
         OrganizationBuilder organizationBuilder
-                = csvHelper.getOrgCache().getOrCreateOrganizationBuilder(codeType, csvHelper);
+                = csvHelper.getOrgCache().getOrCreateOrganizationBuilder(orgId, csvHelper);
         if (organizationBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Error creating OOH Organization resource for ODS: {}",
-                    codeType);
+            TransformWarnings.log(LOG, parser, "Error creating Organization resource for ODS: {}", orgId);
             return;
         }
 
-        OdsOrganisation org = OdsWebService.lookupOrganisationViaRest(codeType);
+        OdsOrganisation org = OdsWebService.lookupOrganisationViaRest(orgId);
         if (org != null) {
 
             organizationBuilder.setName(org.getOrganisationName());
         } else {
 
-            TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {}",
-                    codeType);
+            TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {}", orgId);
             return;
         }
 
@@ -89,11 +95,11 @@ public class PMIPreTransformer {
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
         identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-        identifierBuilder.setValue(codeType);
+        identifierBuilder.setValue(orgId);
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
 
         //add to cache
-        csvHelper.getOrgCache().returnOrganizationBuilder(codeType, organizationBuilder);
+        csvHelper.getOrgCache().returnOrganizationBuilder(orgId, organizationBuilder);
     }
 }
