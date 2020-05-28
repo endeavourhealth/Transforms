@@ -9,12 +9,15 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.transform.bhrut.cache.EpisodeOfCareCache;
 import org.endeavourhealth.transform.bhrut.cache.OrgCache;
 import org.endeavourhealth.transform.bhrut.cache.PasIdtoGPCache;
 import org.endeavourhealth.transform.bhrut.cache.StaffCache;
@@ -61,6 +64,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private OrgCache orgCache = new OrgCache();
     private StaffCache staffCache = new StaffCache();
     private PasIdtoGPCache pasIdtoGPCache = new PasIdtoGPCache();
+    private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
 
     private Map<String, List<String>> observationChildMap = new HashMap<>();
     private Map<String, ReferenceList> newProblemChildren = new HashMap<>();
@@ -76,6 +80,8 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
     private Date cachedDataDate = null;
 
+    private EpisodeOfCareCache episodeOfCareCache = new EpisodeOfCareCache();
+
     public BhrutCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
         this.systemId = systemId;
@@ -85,9 +91,11 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     public OrgCache getOrgCache() {
         return orgCache;
     }
+
     public StaffCache getStaffCache() {
         return staffCache;
     }
+
     public PasIdtoGPCache getPasIdtoGPCache() {
         return pasIdtoGPCache;
     }
@@ -103,6 +111,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
             return patientGuid.getString() + ID_DELIMITER + sourceGuid.getString();
         }
     }
+
     public static String createUniqueId(String patientGuid, String sourceGuid) {
         if (sourceGuid == null) {
             return patientGuid;
@@ -132,9 +141,11 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createLocationReference(String locationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Location, locationGuid);
     }
+
     public Reference createOrganisationReference(String organizationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
     }
+
     public Reference createPractitionerReference(String practitionerGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
     }
@@ -169,12 +180,14 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
         return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
     }
+
     public Reference createObservationReference(String observationGuid, String patientGuid) throws Exception {
         if (observationGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing observationGuid");
         }
         return ReferenceHelper.createReference(ResourceType.Observation, createUniqueId(patientGuid, observationGuid));
     }
+
     public Reference createMedicationStatementReference(String medicationStatementGuid, String patientGuid) throws Exception {
         if (medicationStatementGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing MedicationStatement ID");
@@ -233,7 +246,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         List<Resource> ret = new ArrayList<>();
 
-        for (ResourceWrapper resourceWrapper: resourceWrappers) {
+        for (ResourceWrapper resourceWrapper : resourceWrappers) {
             String json = resourceWrapper.getResourceData();
             Resource resource = PARSER_POOL.parse(json);
             ret.add(resource);
@@ -246,7 +259,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                                                             List<String> childResourceRelationships,
                                                             FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        Observation fhirObservation = (Observation)retrieveResource(locallyUniqueObservationId, ResourceType.Observation);
+        Observation fhirObservation = (Observation) retrieveResource(locallyUniqueObservationId, ResourceType.Observation);
         if (fhirObservation == null) {
             //if the resource can't be found, it's because that EMIS observation record was saved as something other
             //than a FHIR Observation (example in the CSV test files is an Allergy that is linked to another Allergy)
@@ -265,7 +278,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             //check if the parent observation doesn't already have our ob linked to it
             boolean alreadyLinked = false;
-            for (Observation.ObservationRelatedComponent related: fhirObservation.getRelated()) {
+            for (Observation.ObservationRelatedComponent related : fhirObservation.getRelated()) {
                 if (related.getType() == Observation.ObservationRelationshipType.HASMEMBER
                         && related.getTarget().equalsShallow(globallyUniqueReference)) {
                     alreadyLinked = true;
@@ -344,9 +357,9 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         List_ list = null;
 
         if (resource.hasContained()) {
-            for (Resource contained: resource.getContained()) {
+            for (Resource contained : resource.getContained()) {
                 if (contained.getId().equals(CONTAINED_LIST_ID)) {
-                    list = (List_)contained;
+                    list = (List_) contained;
                 }
             }
         }
@@ -371,7 +384,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             //check to see if this resource is already linked to the problem
             boolean alreadyLinked = false;
-            for (List_.ListEntryComponent entry: list.getEntry()) {
+            for (List_.ListEntryComponent entry : list.getEntry()) {
                 Reference entryReference = entry.getItem();
                 if (entryReference.getReference().equals(reference.getReference())) {
                     alreadyLinked = true;
@@ -389,12 +402,12 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     private void addRelationshipsToExistingResource(String locallyUniqueResourceId,
-                                                   ResourceType resourceType,
-                                                   List<String> childResourceRelationships,
-                                                   FhirResourceFiler fhirResourceFiler,
-                                                   String extensionUrl) throws Exception {
+                                                    ResourceType resourceType,
+                                                    List<String> childResourceRelationships,
+                                                    FhirResourceFiler fhirResourceFiler,
+                                                    String extensionUrl) throws Exception {
 
-        DomainResource fhirResource = (DomainResource)retrieveResource(locallyUniqueResourceId, resourceType);
+        DomainResource fhirResource = (DomainResource) retrieveResource(locallyUniqueResourceId, resourceType);
         if (fhirResource == null) {
             //it's possible to create medication items that are linked to non-existent problems in Emis Web,
             //so ignore any data
@@ -424,7 +437,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                                                                String locallyUniqueId,
                                                                ResourceType resourceType) throws Exception {
 
-        DomainResource previousVersion = (DomainResource)csvHelper.retrieveResource(locallyUniqueId, resourceType);
+        DomainResource previousVersion = (DomainResource) csvHelper.retrieveResource(locallyUniqueId, resourceType);
         if (previousVersion == null) {
             //if this is the first time, then we'll have a null resource
             return null;
@@ -432,10 +445,10 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         List<Reference> ret = new ArrayList<>();
 
         if (previousVersion.hasContained()) {
-            for (Resource contained: previousVersion.getContained()) {
+            for (Resource contained : previousVersion.getContained()) {
                 if (contained instanceof List_) {
-                    List_ list = (List_)contained;
-                    for (List_.ListEntryComponent entry: list.getEntry()) {
+                    List_ list = (List_) contained;
+                    for (List_.ListEntryComponent entry : list.getEntry()) {
                         Reference previousReference = entry.getItem();
 
                         //the reference we have has already been mapped to an EDS ID, so we need to un-map it
@@ -481,7 +494,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void cacheEthnicity(CsvCell patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory) {
         DateAndCode dc = ethnicityMap.get(createUniqueId(patientGuid, null));
         if (dc == null
-            || dc.isBefore(fhirDate)) {
+                || dc.isBefore(fhirDate)) {
             ethnicityMap.put(createUniqueId(patientGuid, null), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(ethnicCategory)));
         }
     }
@@ -559,7 +572,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return consultationNewChildMap.remove(encounterSourceId);
     }
 
-    public Reference createEpisodeReference(CsvCell patientGuid) throws Exception{
+    public Reference createEpisodeReference(CsvCell patientGuid) throws Exception {
         //we now use registration start date as part of the source ID for episodes of care, so we use the internal  ID map table to store that start date
         CsvCell regStartCell = getLatestEpisodeStartDate(patientGuid);
         if (regStartCell == null) {
@@ -591,7 +604,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
             Date latestDate = null;
 
             List<ResourceWrapper> episodeWrappers = resourceRepository.getResourcesByPatient(serviceId, patientUuid, ResourceType.EpisodeOfCare.toString());
-            for (ResourceWrapper wrapper: episodeWrappers) {
+            for (ResourceWrapper wrapper : episodeWrappers) {
                 EpisodeOfCare episode = (EpisodeOfCare) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
                 if (episode.hasPeriod()) {
                     Date d = episode.getPeriod().getStart();
@@ -644,7 +657,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         //so we'll need to retrieve it from the DB and cache the code
         String readCode = null;
 
-        Condition fhirProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition);
+        Condition fhirProblem = (Condition) retrieveResource(locallyUniqueId, ResourceType.Condition);
 
         //we've had cases of data referring to non-existent problems, so check for null
         if (fhirProblem != null) {
@@ -664,12 +677,12 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void processRemainingMedicationIssueDates(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //both maps (first and last issue dates) will have the same key set
-        for (String medicationStatementLocalId: drugRecordLastIssueDateMap.keySet()) {
+        for (String medicationStatementLocalId : drugRecordLastIssueDateMap.keySet()) {
 
             DateType lastIssueDate = drugRecordLastIssueDateMap.get(medicationStatementLocalId);
             DateType firstIssueDate = drugRecordFirstIssueDateMap.get(medicationStatementLocalId);
 
-            MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement);
+            MedicationStatement fhirMedicationStatement = (MedicationStatement) retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement);
             if (fhirMedicationStatement == null) {
                 //if the medication statement doesn't exist or has been deleted, then just skip it
                 continue;
@@ -685,7 +698,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                 } else {
                     Date newDate = firstIssueDate.getValue();
 
-                    DateType existingValue = (DateType)extension.getValue();
+                    DateType existingValue = (DateType) extension.getValue();
                     Date existingDate = existingValue.getValue();
 
                     if (newDate.before(existingDate)) {
@@ -704,7 +717,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                 } else {
                     Date newDate = lastIssueDate.getValue();
 
-                    DateType existingValue = (DateType)extension.getValue();
+                    DateType existingValue = (DateType) extension.getValue();
                     Date existingDate = existingValue.getValue();
 
                     if (newDate.after(existingDate)) {
@@ -772,12 +785,12 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     public static String cleanUserId(String data) {
         if (!Strings.isNullOrEmpty(data)) {
             if (data.contains(":STAFF:")) {
-                data = data.replace(":","").replace("STAFF","");
+                data = data.replace(":", "").replace("STAFF", "");
                 return data;
             }
             if (data.contains(":EXT_STAFF:")) {
-                data = data.substring(0,data.indexOf(","));
-                data = data.replace(":","").replace("EXT_STAFF","").replace(",", "");
+                data = data.substring(0, data.indexOf(","));
+                data = data.replace(":", "").replace("EXT_STAFF", "").replace(",", "");
                 return data;
             }
         }
@@ -798,5 +811,17 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
         }
         return cachedDataDate;
+    }
+
+    public Service getService(UUID id) throws Exception {
+        return serviceRepository.getById(id);
+    }
+
+    public EpisodeOfCareCache getEpisodeOfCareCache() {
+        return episodeOfCareCache;
+    }
+
+    public boolean isResourceIdMapped (String sourceId, DomainResource resource) {
+        return !resource.getId().equals(sourceId);
     }
 }

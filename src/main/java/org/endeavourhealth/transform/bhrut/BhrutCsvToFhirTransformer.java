@@ -26,6 +26,7 @@ public abstract class BhrutCsvToFhirTransformer {
     public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "HH:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();   //BHRUT files contain a header
+    public static final String BHRUT_ORG_ODS_CODE = "RF4";
 
     public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
 
@@ -184,6 +185,7 @@ public abstract class BhrutCsvToFhirTransformer {
         //TODO:  Pre-transformers to extract organisation and consultant data out into cache
 
         //then for the patient resources - note the order of these transforms is important, as encounters should be before journal obs etc.
+        PMIPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         OutpatientsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SpellsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         EpisodesPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);

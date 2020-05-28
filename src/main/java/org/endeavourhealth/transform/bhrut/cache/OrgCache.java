@@ -1,6 +1,13 @@
 package org.endeavourhealth.transform.bhrut.cache;
 
+import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ResourceCache;
+import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.hl7.fhir.instance.model.Organization;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OrgCache {
     // Basic org code or org name cache
     private static final Logger LOG = LoggerFactory.getLogger(StaffCache.class);
+
+    private ResourceCache<String, OrganizationBuilder> organizationBuildersByLocationID = new ResourceCache<>();
 
     private Map<String, String> orgCodeToName = new ConcurrentHashMap<>();
 
@@ -26,6 +35,12 @@ public class OrgCache {
         return orgCodeToName.containsKey(cCode);
     }
 
+    public boolean organizationInDB(String orgId, BhrutCsvHelper csvHelper) throws Exception  {
+        return (csvHelper.retrieveResource(orgId, ResourceType.Organization) != null);
+    }
+
+
+
     public String getNameForOrgCode(String cCode) {
         if (!orgCodeInCache(cCode)) {
             return null;
@@ -39,5 +54,36 @@ public class OrgCache {
 
     public long size() {
         return orgCodeToName.size();
+    }
+
+
+    public OrganizationBuilder getOrCreateOrganizationBuilder(String orgId,
+                                                              BhrutCsvHelper csvHelper) throws Exception {
+
+        OrganizationBuilder cachedResource
+                = organizationBuildersByLocationID.getAndRemoveFromCache(orgId);
+        if (cachedResource != null) {
+            return cachedResource;
+        }
+
+        OrganizationBuilder organizationBuilder = null;
+
+        Organization organization
+                = (Organization) csvHelper.retrieveResource(orgId, ResourceType.Organization);
+        if (organization == null) {
+
+            //if the Organization resource doesn't exist yet, create a new one using the ServiceId or ODS code (if a provider)
+            organizationBuilder = new OrganizationBuilder();
+            organizationBuilder.setId(orgId);
+
+        } else {
+            organizationBuilder = new OrganizationBuilder(organization);
+        }
+
+        return organizationBuilder;
+    }
+
+    public void returnOrganizationBuilder(String orgId, OrganizationBuilder organizationBuilder) throws Exception {
+        organizationBuildersByLocationID.addToCache(orgId, organizationBuilder);
     }
 }

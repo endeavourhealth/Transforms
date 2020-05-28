@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.bhrut.schema.Outpatients;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 public class OutpatientsTransformer {
 
@@ -60,7 +62,7 @@ public class OutpatientsTransformer {
         encounterBuilder.setPatient(patientReference, patientIdCell);
 
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
-        String apptUniqueId = idCell.getString()+APPT_ID_SUFFIX;
+        String apptUniqueId = idCell.getString() + APPT_ID_SUFFIX;
         appointmentBuilder.setId(apptUniqueId, idCell);
         SlotBuilder slotBuilder = new SlotBuilder();
         slotBuilder.setId(apptUniqueId, idCell);
@@ -103,16 +105,25 @@ public class OutpatientsTransformer {
 
         //TODO - work out episode of care creation for BHRUT
         //link the consultation to our episode of care
-        Reference episodeReference = csvHelper.createEpisodeReference(patientIdCell);
-        encounterBuilder.setEpisodeOfCare(episodeReference);
+        //Reference episodeReference = csvHelper.createEpisodeReference(patientIdCell);
+        //encounterBuilder.setEpisodeOfCare(episodeReference);
+        createEpisodeOfcare(parser, fhirResourceFiler, csvHelper, version);
 
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
         //TODO - needs an organisation pre-transform from these codes + name
-        CsvCell org = parser.getHospitalCode();
+        /*CsvCell org = parser.getHospitalCode();
         Reference orgReference = csvHelper.createOrganisationReference(org.getString());
-        encounterBuilder.setServiceProvider(orgReference);
+        encounterBuilder.setServiceProvider(orgReference);*/
+
+        CsvCell odsCode = parser.getHospitalCode();
+
+        Reference organisationReference = csvHelper.createOrganisationReference(odsCode.getString());
+        if (encounterBuilder.isIdMapped()) {
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+        }
+        encounterBuilder.setServiceProvider(organisationReference);
 
         //create an Encounter reference for the procedures and conditions to use
         Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
@@ -150,7 +161,7 @@ public class OutpatientsTransformer {
             if (!secondaryProcedureCodeCell.isEmpty()) {
 
                 ProcedureBuilder procedureBuilder = new ProcedureBuilder();
-                procedureBuilder.setId(idCell.getString() + ":Procedure:"+i);
+                procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
                 procedureBuilder.setPatient(patientReference, patientIdCell);
                 procedureBuilder.setEncounter(thisEncounter, idCell);
                 procedureBuilder.setIsPrimary(false);
@@ -208,7 +219,7 @@ public class OutpatientsTransformer {
             if (!secondaryDiagnosisCodeCell.isEmpty()) {
 
                 ConditionBuilder conditionBuilder = new ConditionBuilder();
-                conditionBuilder.setId(idCell.getString() + ":Condition:"+i);
+                conditionBuilder.setId(idCell.getString() + ":Condition:" + i);
                 conditionBuilder.setPatient(patientReference, patientIdCell);
                 conditionBuilder.setEncounter(thisEncounter, idCell);
                 conditionBuilder.setAsProblem(false);
@@ -314,13 +325,20 @@ public class OutpatientsTransformer {
         if (!appointmentStatusCode.isEmpty()) {
 
             switch (appointmentStatusCode.getString()) {
-                case "2" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
-                case "3" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
-                case "4" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
-                case "5" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
-                case "6" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
-                case "7" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
-                case "0" : appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
+                case "2":
+                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
+                case "3":
+                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
+                case "4":
+                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
+                case "5":
+                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+                case "6":
+                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+                case "7":
+                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
+                case "0":
+                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
             }
         }
 
@@ -423,4 +441,65 @@ public class OutpatientsTransformer {
             }
         }
     }
+
+    private static void createEpisodeOfcare(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version) throws Exception {
+
+        CsvCell patientIdCell = parser.getPasId();
+        CsvCell id = parser.getId();
+
+        EpisodeOfCareBuilder episodeBuilder
+                = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(patientIdCell, csvHelper, fhirResourceFiler);
+
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+        boolean isResourceMapped = csvHelper.isResourceIdMapped(id.getString(), episodeBuilder.getResource());
+        if (isResourceMapped) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+        }
+        episodeBuilder.setPatient(patientReference, patientIdCell);
+
+        CsvCell startDateTime = parser.getApptSeenDttm();
+        if (!startDateTime.isEmpty()) {
+            episodeBuilder.setRegistrationStartDate(startDateTime.getDateTime(), startDateTime);
+        }
+        CsvCell endDateTime = parser.getApptDepartureDttm();
+        if (!endDateTime.isEmpty()) {
+            episodeBuilder.setRegistrationEndDate(endDateTime.getDateTime(), endDateTime);
+        }
+        CsvCell odsCodeCell = parser.getHospitalCode();
+        if (odsCodeCell != null) {
+            Reference organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
+            // if episode already ID mapped, get the mapped ID for the org
+            if (isResourceMapped) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
+            episodeBuilder.setManagingOrganisation(organisationReference, odsCodeCell);
+        } else {
+            //v1 uses service details
+            UUID serviceId = parser.getServiceId();
+            Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+            // if episode already ID mapped, get the mapped ID for the org
+            if (isResourceMapped) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
+            episodeBuilder.setManagingOrganisation(organisationReference);
+        }
+
+        CsvCell consultantCodeCell = parser.getConsultantCode();
+        if (consultantCodeCell != null && !consultantCodeCell.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+            if (isResourceMapped) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+            }
+            episodeBuilder.setCareManager(practitionerReference, consultantCodeCell);
+        }
+
+        //simple priority text set as an extension
+        CsvCell priority = parser.getAppointmentPriority();
+        if (!priority.isEmpty()) {
+            episodeBuilder.setPriority(priority.getString(), priority);
+        }
+
+        csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(id, episodeBuilder);
+    }
+
 }

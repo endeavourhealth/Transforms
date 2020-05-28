@@ -4,6 +4,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.PMI;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -56,12 +57,12 @@ public class PMITransformer {
             return;
         }
 
-        PatientBuilder patientBuilder = createPatientResource(parser, csvHelper);
+        PatientBuilder patientBuilder = createPatientResource(parser, csvHelper, fhirResourceFiler);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder);
     }
 
     private static PatientBuilder createPatientResource(PMI parser,
-                                                        BhrutCsvHelper csvHelper) throws Exception {
+                                                        BhrutCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         PatientBuilder patientBuilder = getPatientBuilder(parser, csvHelper);
 
@@ -107,7 +108,7 @@ public class PMITransformer {
         CsvCell ethnicCodeCell = parser.getEthnicityCode();
         if (ethnicCodeCell != null) {
 
-            EthnicCategory ethnicCategory = convertEthnicCategory (ethnicCodeCell.getString());
+            EthnicCategory ethnicCategory = convertEthnicCategory(ethnicCodeCell.getString());
             patientBuilder.setEthnicity(ethnicCategory, ethnicCodeCell);
         }
 
@@ -123,21 +124,23 @@ public class PMITransformer {
 
         //TODO - patient will need a managing organisation care provider.
         // will need pre-transforming using odscode look similar to Adastra method
-        String patientGPCareProvider = csvHelper.getPasIdtoGPCache().getGpCodeforPasId(patientIdCell.getString());
-        Reference organisationReference = csvHelper.createOrganisationReference(patientGPCareProvider);
+        Reference organisationReference = csvHelper.createOrganisationReference(BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE);
         if (patientBuilder.isIdMapped()) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
         }
         patientBuilder.setManagingOrganisation(organisationReference);
+        // String patientGPCareProvider = csvHelper.getPasIdtoGPCache().getGpCodeforPasId(patientIdCell.getString());
 
         //TODO - registered GP coming soon on extract file.
         // will need pre-transforming using odscode look similar to Adastra PROVIDER method
+        CsvCell gpPracticeCode = parser.getRegisteredGpPracticeCode();
+
         //String odsCodeGPPractice = csvHelper.getPasIdtoGPCache().getGpCodeforPasId(patientIdCell.getString());
-        //Reference gpOrganisationReference = csvHelper.createOrganisationReference(patientGPCareProvider);
-        //if (patientBuilder.isIdMapped()) {
-         //   gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
-        //}
-        //patientBuilder.addCareProvider(gpOrganisationReference);
+        Reference gpOrganisationReference = csvHelper.createOrganisationReference(gpPracticeCode.getString());
+        if (patientBuilder.isIdMapped()) {
+            gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+        }
+        patientBuilder.addCareProvider(gpOrganisationReference);
 
         return patientBuilder;
     }
@@ -161,9 +164,9 @@ public class PMITransformer {
 
     private static EthnicCategory convertEthnicCategory(String aliasNhsCdAlias) {
 
-          //except for 99 or Unknown, which means "not stated"
+        //except for 99 or Unknown, which means "not stated"
         if (aliasNhsCdAlias.equalsIgnoreCase("99")
-                || aliasNhsCdAlias.equalsIgnoreCase("Unknown") ) {
+                || aliasNhsCdAlias.equalsIgnoreCase("Unknown")) {
             return EthnicCategory.NOT_STATED;
 
         } else {
@@ -305,5 +308,6 @@ public class PMITransformer {
             fhirResourceFiler.deletePatientResource(currentState, false, genericBuilder);
         }
     }
+
 
 }
