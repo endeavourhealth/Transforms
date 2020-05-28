@@ -6,7 +6,6 @@ import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
-import org.endeavourhealth.transform.bhrut.schema.Episodes;
 import org.endeavourhealth.transform.bhrut.schema.Outpatients;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -384,8 +383,8 @@ public class OutpatientsTransformer {
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), condition);
 
-            for (int i = 1; i <= 12; i++) {
-                Method method = Episodes.class.getDeclaredMethod("getSecondaryDiagnosisCode" + i);
+            for (int i = 1; i <= 11; i++) {
+                Method method = Outpatients.class.getDeclaredMethod("getSecondaryDiagnosisCode" + i);
                 CsvCell diagCode = (CsvCell) method.invoke(parser);
                 if (!diagCode.isEmpty()) {
                     ConditionBuilder conditionBuilder = new ConditionBuilder();
@@ -408,8 +407,8 @@ public class OutpatientsTransformer {
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), proc);
 
-            for (int i = 1; i <= 12; i++) {
-                Method method = Episodes.class.getDeclaredMethod("getSecondaryProcedureCode" + i);
+            for (int i = 1; i <= 3; i++) {
+                Method method = Outpatients.class.getDeclaredMethod("getSecondaryProcedureCode" + i);
                 CsvCell procCode = (CsvCell) method.invoke(parser);
                 if (!procCode.isEmpty()) {
                     ProcedureBuilder procedureBuilder = new ProcedureBuilder();
