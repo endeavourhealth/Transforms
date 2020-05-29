@@ -69,9 +69,9 @@ public class OutpatientsTransformer {
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell actionCell = parser.getLinestatus();
-        if (actionCell.getString().equalsIgnoreCase("Delete")) {
-            encounterBuilder.setDeletedAudit(actionCell);
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
+        if (dataUpdateStatusCell.getString().equalsIgnoreCase("Deleted")) {
+            encounterBuilder.setDeletedAudit(dataUpdateStatusCell);
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder, slotBuilder, appointmentBuilder);
 
@@ -383,7 +383,7 @@ public class OutpatientsTransformer {
                                              BhrutCsvHelper csvHelper,
                                              String version) throws Exception {
         CsvCell idCell = parser.getId();
-        CsvCell actionCell = parser.getLinestatus();
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
@@ -392,7 +392,7 @@ public class OutpatientsTransformer {
             ConditionBuilder condition = new ConditionBuilder();
             condition.setId(idCell.getString() + "Condition:0");
             condition.setPatient(patientReference, patientIdCell);
-            condition.setDeletedAudit(actionCell);
+            condition.setDeletedAudit(dataUpdateStatusCell);
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), condition);
 
@@ -403,7 +403,7 @@ public class OutpatientsTransformer {
                     ConditionBuilder conditionBuilder = new ConditionBuilder();
                     conditionBuilder.setId(idCell.getString() + "Condition:" + i);
                     conditionBuilder.setPatient(patientReference, patientIdCell);
-                    conditionBuilder.setDeletedAudit(actionCell);
+                    conditionBuilder.setDeletedAudit(dataUpdateStatusCell);
 
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
                 } else {
@@ -416,7 +416,7 @@ public class OutpatientsTransformer {
             ProcedureBuilder proc = new ProcedureBuilder();
             proc.setId(idCell.getString() + ":Procedure:0", idCell);
             proc.setPatient(patientReference, patientIdCell);
-            proc.setDeletedAudit(actionCell);
+            proc.setDeletedAudit(dataUpdateStatusCell);
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), proc);
 
@@ -427,7 +427,7 @@ public class OutpatientsTransformer {
                     ProcedureBuilder procedureBuilder = new ProcedureBuilder();
                     procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
                     procedureBuilder.setPatient(patientReference, patientIdCell);
-                    procedureBuilder.setDeletedAudit(actionCell);
+                    procedureBuilder.setDeletedAudit(dataUpdateStatusCell);
 
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
                 } else {

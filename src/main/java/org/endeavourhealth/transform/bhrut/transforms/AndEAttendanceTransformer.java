@@ -37,7 +37,7 @@ public class AndEAttendanceTransformer {
                 try {
                     AandeAttendances andeParser = (AandeAttendances) parser;
 
-                    if (andeParser.getLinestatus().equals("delete")) {
+                    if (andeParser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
                         deleteResource(andeParser, fhirResourceFiler, csvHelper, version);
                     } else {
                         createResources(andeParser, fhirResourceFiler, csvHelper, version);
@@ -62,8 +62,8 @@ public class AndEAttendanceTransformer {
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
-        CsvCell actionCell = parser.getLinestatus();
-        encounterBuilder.setDeletedAudit(actionCell);
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
+        encounterBuilder.setDeletedAudit(dataUpdateStatusCell);
 
         fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
     }

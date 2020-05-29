@@ -17,15 +17,19 @@ public class PMI extends AbstractCsvParser {
 
     private static String[] getHeaders(String version) {
         return new String[]{
-                "LineStatus",
                 "EXTERNAL_ID",
                 "PAS_ID",
                 "FORENAME",
                 "SURNAME",
                 "NHS_NUMBER",
-                "GENDER_CODE",
+                "GENDER",
                 "BIRTH_DTTM",
                 "DEATH_DTTM",
+                "CAUSEOFDEATH",
+                "CAUSEOFDEATH_1B",
+                "CAUSEOFDEATH_1c",
+                "CAUSEOFDEATH_2",
+                "INFECTION_STATUS",
                 "ADDRESS1",
                 "ADDRESS2",
                 "ADDRESS3",
@@ -44,7 +48,8 @@ public class PMI extends AbstractCsvParser {
                 "NOKREL_NHSCODE",
                 "REGISTERED_GP_CODE",
                 "REGISTERED_GP_PRACTICE",
-                "REGISTERED_GP_PRACTICE_CODE"
+                "REGISTERED_GP_PRACTICE_CODE",
+                "DataUpdateStatus",
         };
     }
 
@@ -56,10 +61,6 @@ public class PMI extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
         return getHeaders(version);
-    }
-
-    public CsvCell getLineStatus() {
-        return super.getCell("LineStatus");
     }
 
     public CsvCell getForename() {
@@ -82,8 +83,8 @@ public class PMI extends AbstractCsvParser {
         return super.getCell("NHS_NUMBER");
     }
 
-    public CsvCell getGenderCode() {
-        return super.getCell("GENDER_CODE");
+    public CsvCell getGender() {
+        return super.getCell("GENDER");
     }
 
     public CsvCell getDateOfBirth() {
@@ -93,6 +94,27 @@ public class PMI extends AbstractCsvParser {
     public CsvCell getDateOfDeath() {
         return super.getCell("DEATH_DTTM");
     }
+
+    public CsvCell getCauseOfDeath() {
+        return super.getCell("CAUSEOFDEATH");
+    }
+
+    public CsvCell getCauseOfDeath1B() {
+        return super.getCell("CAUSEOFDEATH_1B");
+    }
+
+    public CsvCell getCauseOfDeath1C() {
+        return super.getCell("CAUSEOFDEATH_1c");
+    }
+
+    public CsvCell getCauseOfDeath2() {
+        return super.getCell("CAUSEOFDEATH_2");
+    }
+
+    public CsvCell getInfectionStatus() {
+        return super.getCell("INFECTION_STATUS");
+    }
+
 
     public CsvCell getAddress1() {
         return super.getCell("ADDRESS1");
@@ -158,10 +180,20 @@ public class PMI extends AbstractCsvParser {
         return super.getCell("NOKREL_NHSCODE");
     }
 
-    public CsvCell getRegisteredGpCode() {return super.getCell("REGISTERED_GP_CODE");}
+    public CsvCell getRegisteredGpCode() {
+        return super.getCell("REGISTERED_GP_CODE");
+    }
 
-    public CsvCell getRegisteredGpPracticeName() {return super.getCell("REGISTERED_GP_PRACTICE");}
+    public CsvCell getRegisteredGpPracticeName() {
+        return super.getCell("REGISTERED_GP_PRACTICE");
+    }
 
-    public CsvCell getRegisteredGpPracticeCode() {return super.getCell("REGISTERED_GP_PRACTICE_CODE");}
+    public CsvCell getRegisteredGpPracticeCode() {
+        return super.getCell("REGISTERED_GP_PRACTICE_CODE");
+    }
+
+    public CsvCell getDataUpdateStatus() {
+        return super.getCell("DataUpdateStatus");
+    }
 
 }

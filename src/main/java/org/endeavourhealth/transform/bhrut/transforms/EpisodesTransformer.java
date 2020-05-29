@@ -60,10 +60,10 @@ public class EpisodesTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
 
-        CsvCell actionCell = parser.getLinestatus();
-        if (actionCell.getString().equalsIgnoreCase("Delete")) {
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
+        if (dataUpdateStatusCell.getString().equalsIgnoreCase("Deleted")) {
 
-            encounterBuilder.setDeletedAudit(actionCell);
+            encounterBuilder.setDeletedAudit(dataUpdateStatusCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
 
             deleteChildResources(parser, fhirResourceFiler, csvHelper, version);
@@ -298,7 +298,7 @@ public class EpisodesTransformer {
                                              BhrutCsvHelper csvHelper,
                                              String version) throws Exception {
         CsvCell idCell = parser.getId();
-        CsvCell actionCell = parser.getLinestatus();
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
@@ -307,7 +307,7 @@ public class EpisodesTransformer {
             ConditionBuilder condition = new ConditionBuilder();
             condition.setId(idCell.getString() + "Condition:0");
             condition.setPatient(patientReference, patientIdCell);
-            condition.setDeletedAudit(actionCell);
+            condition.setDeletedAudit(dataUpdateStatusCell);
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), condition);
 
@@ -318,7 +318,7 @@ public class EpisodesTransformer {
                     ConditionBuilder conditionBuilder = new ConditionBuilder();
                     conditionBuilder.setId(idCell.getString() + "Condition:" + i);
                     conditionBuilder.setPatient(patientReference, patientIdCell);
-                    conditionBuilder.setDeletedAudit(actionCell);
+                    conditionBuilder.setDeletedAudit(dataUpdateStatusCell);
 
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
                 } else {
@@ -331,7 +331,7 @@ public class EpisodesTransformer {
             ProcedureBuilder proc = new ProcedureBuilder();
             proc.setId(idCell.getString() + ":Procedure:0", idCell);
             proc.setPatient(patientReference, patientIdCell);
-            proc.setDeletedAudit(actionCell);
+            proc.setDeletedAudit(dataUpdateStatusCell);
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), proc);
 
@@ -342,7 +342,7 @@ public class EpisodesTransformer {
                     ProcedureBuilder procedureBuilder = new ProcedureBuilder();
                     procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
                     procedureBuilder.setPatient(patientReference, patientIdCell);
-                    procedureBuilder.setDeletedAudit(actionCell);
+                    procedureBuilder.setDeletedAudit(dataUpdateStatusCell);
 
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
                 } else {

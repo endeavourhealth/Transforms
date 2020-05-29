@@ -50,8 +50,8 @@ public class PMITransformer {
                                        String version) throws Exception {
 
 
-        CsvCell patientActionCell = parser.getLineStatus();
-        if (patientActionCell.getString().equalsIgnoreCase("delete")) {
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
+        if (dataUpdateStatusCell.getString().equalsIgnoreCase("Deleted")) {
             //we need to manually delete all dependant resources
             deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser.getCurrentState(), parser);
             return;
@@ -85,7 +85,7 @@ public class PMITransformer {
             patientBuilder.clearDateOfDeath();
         }
 
-        CsvCell sex = parser.getGenderCode();
+        CsvCell sex = parser.getGender();
         if (!sex.isEmpty()) {
             VocSex sexEnum = VocSex.fromValue(sex.getString());
             Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
@@ -287,7 +287,7 @@ public class PMITransformer {
                                                   PMI parser) throws Exception {
 
         CsvCell patientIdCell = parser.getPasId();
-        CsvCell patientActionCell = parser.getLineStatus();
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
 
         String sourceId = csvHelper.createUniqueId(patientIdCell, null);
 
@@ -301,10 +301,9 @@ public class PMITransformer {
 
             //wrap the resource in generic builder so we can save it
             GenericBuilder genericBuilder = new GenericBuilder(resource);
-            genericBuilder.setDeletedAudit(patientActionCell);
+            genericBuilder.setDeletedAudit(dataUpdateStatusCell);
             fhirResourceFiler.deletePatientResource(currentState, false, genericBuilder);
         }
     }
-
 
 }

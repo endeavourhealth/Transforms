@@ -39,7 +39,7 @@ public class SpellsTransformer {
                 try {
                     Spells spellsParser = (Spells) parser;
 
-                    if (spellsParser.getLinestatus().getString().equalsIgnoreCase("delete")) {
+                    if (spellsParser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
                         deleteResource(spellsParser, fhirResourceFiler, csvHelper, version);
                     } else {
                         createResources(spellsParser, fhirResourceFiler, csvHelper, version);
@@ -65,8 +65,8 @@ public class SpellsTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
 
-        CsvCell actionCell = parser.getLinestatus();
-        encounterBuilder.setDeletedAudit(actionCell);
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
+        encounterBuilder.setDeletedAudit(dataUpdateStatusCell);
 
         //delete the encounter
         fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
@@ -258,7 +258,7 @@ public class SpellsTransformer {
 
         CsvCell patientIdCell = parser.getPasId();
         CsvCell idCell = parser.getId();
-        CsvCell audit = parser.getLinestatus();
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
         if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
@@ -267,7 +267,7 @@ public class SpellsTransformer {
             conditionBuilder.setId(idCell.getString() + ":Condition:0", idCell);
 
             conditionBuilder.setPatient(patientReference, patientIdCell);
-            conditionBuilder.setDeletedAudit(audit);
+            conditionBuilder.setDeletedAudit(dataUpdateStatusCell);
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
         }
@@ -276,7 +276,7 @@ public class SpellsTransformer {
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
             procedureBuilder.setId(idCell.getString() + ":Procedure:0", idCell);
             procedureBuilder.setPatient(patientReference, patientIdCell);
-            procedureBuilder.setDeletedAudit(audit);
+            procedureBuilder.setDeletedAudit(dataUpdateStatusCell);
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
         }

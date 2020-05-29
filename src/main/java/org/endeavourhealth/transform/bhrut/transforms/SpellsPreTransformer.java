@@ -44,7 +44,7 @@ public class SpellsPreTransformer {
                         createResource(spellsParser, fhirResourceFiler, csvHelper, version, admissionHospitalCode);
                     }
 
-                    if (!spellsParser.getLinestatus().getString().equalsIgnoreCase("delete")) {
+                    if (!spellsParser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
                         cacheResources(spellsParser, fhirResourceFiler, csvHelper, version);
                     }
 

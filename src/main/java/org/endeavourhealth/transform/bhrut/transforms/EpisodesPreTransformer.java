@@ -42,7 +42,7 @@ public class EpisodesPreTransformer {
                         createResource(episodesParser, fhirResourceFiler, csvHelper, version, admissionHospitalCode);
                     }
 
-                    if (!episodesParser.getLinestatus().getString().equalsIgnoreCase("delete")) {
+                    if (!episodesParser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
                         cacheResources(episodesParser, fhirResourceFiler, csvHelper, version);
                     }
                 } catch (Exception ex) {
