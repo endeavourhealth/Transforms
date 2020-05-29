@@ -98,6 +98,10 @@ public class FlagBuilder extends ResourceBuilderBase
         auditValue("author", sourceCells);
     }
 
+    public void setRecordedDate(Date recordedDate, CsvCell... sourceCells) {
+        createOrUpdateRecordedDateExtension(recordedDate, sourceCells);
+    }
+
     @Override
     public DomainResource getResource() {
         return flag;

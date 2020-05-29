@@ -23,31 +23,27 @@ public class Alerts extends AbstractCsvParser {
         @Override
         protected String[] getCsvHeaders(String version) {
             return new String[]{
-                      "LineStatus",
-                       "EXTERNAL_ID",
-                       "PAS_ID",
-                       "START_DTTM",
-                       "END_DTTM",
-                       "CLOSED_DTTM",
-                       "CLOSED_NOTE",
-                       "ALERT_DESCRIPTION",
-                       "ALERT_TYPE_DESCRIPTION",
-                       "RISK_LEVEL",
-                       "ALERT_COMMENTS"
+                    "EXTERNAL_ID",
+                    "PAS_ID",
+                    "ALERT_TYPE_DESCRIPTION",
+                    "APPLIED_DTTM",
+                    "START_DTTM",
+                    "ALERT_COMMENT",
+                    "CLOSED_DTTM",
+                    "CLOSED_NOTE",
+                    "DataUpdateStatus"
             };
 
         }
- public CsvCell getLinestatus() { return super.getCell("LineStatus");}
+ public CsvCell getDataUpdateStatus() { return super.getCell("DataUpdateStatus");}
  public CsvCell getId() { return super.getCell( "EXTERNAL_ID");}
  public CsvCell getPasId() { return super.getCell( "PAS_ID");}
  public CsvCell getStartDttm() { return super.getCell( "START_DTTM");}
- public CsvCell getEndDttm() { return super.getCell( "END_DTTM");}
  public CsvCell getClosedDttm() { return super.getCell( "CLOSED_DTTM");}
  public CsvCell getClosedNote() { return super.getCell( "CLOSED_NOTE");}
- public CsvCell getAlertDescription() { return super.getCell( "ALERT_DESCRIPTION");}
  public CsvCell getAlertTypeDescription() { return super.getCell( "ALERT_TYPE_DESCRIPTION");}
- public CsvCell getRiskLevel() { return super.getCell( "RISK_LEVEL");}
- public CsvCell getAlertComments() { return super.getCell( "ALERT_COMMENTS");}
+ public CsvCell getAlertComment() { return super.getCell( "ALERT_COMMENT");}
+ public CsvCell getAppliedDttm() { return super.getCell( "APPLIED_DTTM");}
 
 
 

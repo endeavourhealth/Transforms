@@ -51,24 +51,41 @@ public class AlertsTransformer {
         flagBuilder.setSubject(csvHelper.createPatientReference(patientIdCell), patientIdCell);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell actionCell = parser.getLinestatus();
-        if (actionCell.getString().equalsIgnoreCase("Delete")) {
-            flagBuilder.setDeletedAudit(actionCell);
+        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
+        if (dataUpdateStatusCell.getString().equalsIgnoreCase("Deleted")) {
+
+            flagBuilder.setDeletedAudit(dataUpdateStatusCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), flagBuilder);
             return;
         }
 
         CsvCell startDateTimeCell = parser.getStartDttm();
         if (!startDateTimeCell.isEmpty()) {
-            flagBuilder.setStartDate(startDateTimeCell.getDate(), startDateTimeCell);
+
+            flagBuilder.setStartDate(startDateTimeCell.getDateTime(), startDateTimeCell);
         }
 
+        CsvCell appliedDateTimeCell = parser.getAppliedDttm();
+        if (!appliedDateTimeCell.isEmpty()) {
+
+            flagBuilder.setRecordedDate(appliedDateTimeCell.getDateTime(), appliedDateTimeCell);
+        }
+
+        //build up the flag text from what text is available in the alert record
+        StringBuilder flagTextBuilder = new StringBuilder();
+
         //also use the end date as the active indicator
-        CsvCell endDateTimeCell = parser.getEndDttm();
+        CsvCell endDateTimeCell = parser.getClosedDttm();
+        CsvCell closedNoteCell = parser.getClosedNote();
         if (!endDateTimeCell.isEmpty()) {
 
-            flagBuilder.setEndDate(endDateTimeCell.getDate(), endDateTimeCell);
+            flagBuilder.setEndDate(endDateTimeCell.getDateTime(), endDateTimeCell);
             flagBuilder.setStatus(Flag.FlagStatus.INACTIVE);
+
+            if (!closedNoteCell.isEmpty()) {
+                flagTextBuilder.append("Closed note: ").append(closedNoteCell.getString()).append(". ");
+            }
+
         } else {
 
             flagBuilder.setStatus(Flag.FlagStatus.ACTIVE);
@@ -80,26 +97,13 @@ public class AlertsTransformer {
             flagBuilder.setCategory(alertTypeDescCell.getString(), alertTypeDescCell);
         }
 
-        //build up the flag text from whats available in the alert
-        StringBuilder flagTextBuilder = new StringBuilder();
-
-        CsvCell alertDescriptionCell = parser.getAlertDescription();
-        if (!alertDescriptionCell.isEmpty()) {
-
-            flagTextBuilder.append("Description: ").append(alertDescriptionCell.getString()).append(". ");
-        }
-        CsvCell alertRiskLevelCell = parser.getRiskLevel();
-        if (!alertRiskLevelCell.isEmpty()) {
-
-            flagTextBuilder.append("Risk level: ").append(alertRiskLevelCell.getString()).append(". ");
-        }
-        CsvCell alertCommentsCell = parser.getAlertComments();
+        CsvCell alertCommentsCell = parser.getAlertComment();
         if (!alertCommentsCell.isEmpty()) {
 
             flagTextBuilder.append("Comments: ").append(alertCommentsCell.getString()).append(". ");
         }
 
-        flagBuilder.setCode(flagTextBuilder.toString().trim(), alertDescriptionCell, alertRiskLevelCell, alertCommentsCell);
+        flagBuilder.setCode(flagTextBuilder.toString().trim(), closedNoteCell, alertCommentsCell);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), flagBuilder);
     }
