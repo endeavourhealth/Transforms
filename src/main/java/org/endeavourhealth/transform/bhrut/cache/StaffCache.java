@@ -57,11 +57,11 @@ public class StaffCache {
         return (csvHelper.retrieveResource(practitionerCodeId, ResourceType.Practitioner) != null);
     }
 
-    public PractitionerBuilder getOrCreatePractitionerBuilder(String consultantCodeId,
+    public PractitionerBuilder getOrCreatePractitionerBuilder(String practitionerCodeId,
                                                               BhrutCsvHelper csvHelper) throws Exception {
 
         PractitionerBuilder cachedResource
-                = practitionerBuilderResourceCache.getAndRemoveFromCache(consultantCodeId);
+                = practitionerBuilderResourceCache.getAndRemoveFromCache(practitionerCodeId);
         if (cachedResource != null) {
             return cachedResource;
         }
@@ -69,11 +69,11 @@ public class StaffCache {
         PractitionerBuilder practitionerBuilder = null;
 
         Practitioner practitioner
-                = (Practitioner) csvHelper.retrieveResource(consultantCodeId, ResourceType.Practitioner);
+                = (Practitioner) csvHelper.retrieveResource(practitionerCodeId, ResourceType.Practitioner);
         if (practitioner == null) {
 
             practitionerBuilder = new PractitionerBuilder();
-            practitionerBuilder.setId(consultantCodeId);
+            practitionerBuilder.setId(practitionerCodeId);
 
         } else {
             practitionerBuilder = new PractitionerBuilder(practitioner);
@@ -82,8 +82,8 @@ public class StaffCache {
         return practitionerBuilder;
     }
 
-    public void returnPractitionerBuilder(String orgId, PractitionerBuilder practitionerBuilder) throws Exception {
-        practitionerBuilderResourceCache.addToCache(orgId, practitionerBuilder);
+    public void returnPractitionerBuilder(String practitionerCodeId, PractitionerBuilder practitionerBuilder) throws Exception {
+        practitionerBuilderResourceCache.addToCache(practitionerCodeId, practitionerBuilder);
     }
 
 }
