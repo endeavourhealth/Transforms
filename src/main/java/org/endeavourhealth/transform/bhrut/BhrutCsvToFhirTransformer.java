@@ -114,25 +114,26 @@ public abstract class BhrutCsvToFhirTransformer {
             /* Files types expected to attempt to match className with:
                     PMI -> PMI
                     PATIENT_ALERTS -> Alerts
-                    outpatient_appointments -> Outpatients
-                    inpatient_spells -> Spells
-                    inpatient_episodes -> Episodes
-                    AE_ATTENDANCE -> AandeAttendances
+                    OUTPATIENT_APPOINTMENTS -> Outpatients
+                    INPATIENT_SPELLS -> Spells
+                    INPATIENT_EPISODES -> Episodes
+                    AE_ATTENDANCES -> AandeAttendances
              */
-            //filename format e.g. dds_PATIENT_ALERTS_20200421103433.csv or dds_PMI_20200421103433.csv
+            //filename format from v1.3 specification
+            // e.g. BHRUT_1_PATIENT_ALERTS_DataWarehouse_20200526221214.csv or BHRUT_1_PMI_DataWarehouse_20200526221214.csv
             String[] toks = fName.split("_");
-            if (toks.length == 3) {
+            if (toks.length == 5) {
 
-                String fileType = toks[1];
+                String fileType = toks[2];
                 if (className.equalsIgnoreCase("PMI")) {
                     if (!fileType.equalsIgnoreCase("PMI")) {
                         continue;
                     }
                 }
 
-            } else if (toks.length == 4) {
+            } else if (toks.length == 6) {
 
-                String fileType = toks[1] + "_" + toks[2];
+                String fileType = toks[2] + "_" + toks[3];
                 if (className.equalsIgnoreCase("Alerts")) {
 
                     if (!fileType.equalsIgnoreCase("PATIENT_ALERTS")) {
@@ -140,22 +141,22 @@ public abstract class BhrutCsvToFhirTransformer {
                     }
                 } else if (className.equalsIgnoreCase("Episodes")) {
 
-                    if (!fileType.equalsIgnoreCase("inpatient_episodes")) {
+                    if (!fileType.equalsIgnoreCase("INPATIENT_EPISODES")) {
                         continue;
                     }
                 } else if (className.equalsIgnoreCase("Spells")) {
 
-                    if (!fileType.equalsIgnoreCase("inpatient_spells")) {
+                    if (!fileType.equalsIgnoreCase("INPATIENT_SPELLS")) {
                         continue;
                     }
                 } else if (className.equalsIgnoreCase("Outpatients")) {
 
-                    if (!fileType.equalsIgnoreCase("outpatient_appointments")) {
+                    if (!fileType.equalsIgnoreCase("OUTPATIENT_APPOINTMENTS")) {
                         continue;
                     }
                 } else if (className.equalsIgnoreCase("AandeAttendances")) {
 
-                    if (!fileType.equalsIgnoreCase("AE_ATTENDANCE")) {
+                    if (!fileType.equalsIgnoreCase("AE_ATTENDANCES")) {
                         continue;
                     }
                 }
@@ -181,19 +182,18 @@ public abstract class BhrutCsvToFhirTransformer {
         BhrutCsvHelper csvHelper
                 = new BhrutCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
 
-        //these transforms do not create resources themselves, but cache data that the subsequent ones rely on
-        //TODO:  Pre-transformers to extract organisation and consultant data out into cache
-
-        //then for the patient resources - note the order of these transforms is important, as encounters should be before journal obs etc.
+        //these pre-transforms create Organization and Practitioner resources which subsequent transforms will reference
         PMIPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         OutpatientsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SpellsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         EpisodesPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+
+        //then the patient resources - note the order of these transforms is important, as Patients should be before Encounters
         PMITransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         AlertsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         OutpatientsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SpellsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         EpisodesTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        //AandeAttendancesTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);  //TODO
+        AndEAttendanceTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
     }
 }
