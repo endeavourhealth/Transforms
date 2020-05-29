@@ -1,37 +1,24 @@
 package org.endeavourhealth.transform.bhrut.cache;
 
-import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.publisherCommon.TppStaffDalI;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppStaffMember;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppStaffMemberProfile;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.TransformConfig;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
-import org.hl7.fhir.instance.model.HumanName;
-import org.hl7.fhir.instance.model.Reference;
+import org.endeavourhealth.transform.common.ResourceCache;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.hl7.fhir.instance.model.Practitioner;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.Callable;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class StaffCache {
     // Basic Consultant Code to consultant name cache
     private static final Logger LOG = LoggerFactory.getLogger(StaffCache.class);
 
     private Map<String, String> consultantCodeToName = new ConcurrentHashMap<>();
+
+    private ResourceCache<String, PractitionerBuilder> practitionerBuilderResourceCache = new ResourceCache<>();
 
     public void addConsultantCode(CsvCell consultantCodeCell, CsvCell consultantName) {
 
@@ -60,4 +47,43 @@ public class StaffCache {
     public long size() {
         return consultantCodeToName.size();
     }
+
+
+    public boolean practitionerCodeInCache(String practitionerCodeId) {
+        return practitionerBuilderResourceCache.contains(practitionerCodeId);
+    }
+
+    public boolean practitionerCodeInDB(String practitionerCodeId, BhrutCsvHelper csvHelper) throws Exception {
+        return (csvHelper.retrieveResource(practitionerCodeId, ResourceType.Practitioner) != null);
+    }
+
+    public PractitionerBuilder getOrCreatePractitionerBuilder(String consultantCodeId,
+                                                              BhrutCsvHelper csvHelper) throws Exception {
+
+        PractitionerBuilder cachedResource
+                = practitionerBuilderResourceCache.getAndRemoveFromCache(consultantCodeId);
+        if (cachedResource != null) {
+            return cachedResource;
+        }
+
+        PractitionerBuilder practitionerBuilder = null;
+
+        Practitioner practitioner
+                = (Practitioner) csvHelper.retrieveResource(consultantCodeId, ResourceType.Practitioner);
+        if (practitioner == null) {
+
+            practitionerBuilder = new PractitionerBuilder();
+            practitionerBuilder.setId(consultantCodeId);
+
+        } else {
+            practitionerBuilder = new PractitionerBuilder(practitioner);
+        }
+
+        return practitionerBuilder;
+    }
+
+    public void returnPractitionerBuilder(String orgId, PractitionerBuilder practitionerBuilder) throws Exception {
+        practitionerBuilderResourceCache.addToCache(orgId, practitionerBuilder);
+    }
+
 }

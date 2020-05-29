@@ -11,7 +11,9 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
 import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +42,12 @@ public class EpisodesPreTransformer {
                         CsvCell admissionHospitalCodeCell = episodesParser.getAdmissionHospitalCode();
                         String admissionHospitalCode = admissionHospitalCodeCell.getString();
                         createResource(episodesParser, fhirResourceFiler, csvHelper, version, admissionHospitalCode);
+                    }
+                    if (!episodesParser.getEpisodeConsultantCode().isEmpty()) {
+                        CsvCell episodeConsultantCodeCell = episodesParser.getEpisodeConsultantCode();
+                        String episodeConsultantCode = episodeConsultantCodeCell.getString();
+                        createEpisodeResource(episodesParser, fhirResourceFiler, csvHelper, version, episodeConsultantCode);
+
                     }
 
                     if (!episodesParser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
@@ -76,6 +84,18 @@ public class EpisodesPreTransformer {
         }
     }
 
+    private static void createEpisodeResource(Episodes episodesParser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version, String episodeConsultantCode) throws Exception {
+        boolean practitionerCodeInCache = csvHelper.getStaffCache().practitionerCodeInCache(episodeConsultantCode);
+        if (!practitionerCodeInCache) {
+            boolean practitionerCodeResourceAlreadyFiled
+                    = csvHelper.getStaffCache().practitionerCodeInDB(episodeConsultantCode, csvHelper);
+            if (!practitionerCodeResourceAlreadyFiled) {
+                createEpisode(episodesParser, fhirResourceFiler, csvHelper, episodeConsultantCode);
+            }
+        }
+
+    }
+
     public static void createResource(Episodes parser,
                                       FhirResourceFiler fhirResourceFiler,
                                       BhrutCsvHelper csvHelper,
@@ -91,6 +111,24 @@ public class EpisodesPreTransformer {
             }
         }
     }
+
+    private static void createEpisode(Episodes episodesParser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String episodeConsultantCode) throws Exception {
+
+        PractitionerBuilder practitionerBuilder
+                = csvHelper.getStaffCache().getOrCreatePractitionerBuilder(episodeConsultantCode, csvHelper);
+
+        //Todo verify the column name to setid to PractionerBuilder
+        CsvCell episdodeNum = episodesParser.getEpiNum();
+        practitionerBuilder.getIdentifiers().clear();
+        //practitionerBuilder.setId(episdodeNum.getString(), episdodeNum);
+
+        NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
+        //Todo verify the names to set to namebuilder
+        //nameBuilder.setText("");
+        fhirResourceFiler.saveAdminResource(episodesParser.getCurrentState(), practitionerBuilder);
+        csvHelper.getStaffCache().returnPractitionerBuilder(episodeConsultantCode, practitionerBuilder);
+    }
+
 
     public static void createOrganisation(Episodes parser,
                                           FhirResourceFiler fhirResourceFiler,
