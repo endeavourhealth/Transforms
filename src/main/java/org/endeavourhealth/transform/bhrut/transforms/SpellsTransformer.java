@@ -104,9 +104,18 @@ public class SpellsTransformer {
             encounterBuilder.setServiceProvider(organisationReference);
         }
 
-        CsvCell admittingConsultant = parser.getAdmissionConsultantCode();
-        Reference practitioner = csvHelper.createPractitionerReference(admittingConsultant.getString());
-        encounterBuilder.addParticipant(practitioner, EncounterParticipantType.CONSULTANT, admittingConsultant);
+        CsvCell admissionConsultantCodeCell = parser.getAdmissionConsultantCode();
+        Reference practitionerReference = null;
+        if (!admissionConsultantCodeCell.isEmpty()) {
+            practitionerReference = csvHelper.createPractitionerReference(admissionConsultantCodeCell.getString());
+            if (encounterBuilder.isIdMapped()) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            }
+            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.CONSULTANT, admissionConsultantCodeCell);
+        }
+        //CsvCell admittingConsultant = parser.getAdmissionConsultantCode();
+        //Reference practitioner = csvHelper.createPractitionerReference(admittingConsultant.getString());
+        //encounterBuilder.addParticipant(practitioner, EncounterParticipantType.CONSULTANT, admittingConsultant);
 
         CsvCell dischargeConsultant = parser.getDischargeConsultant();
         Reference discharger = csvHelper.createPractitionerReference(dischargeConsultant.getString());
@@ -123,7 +132,9 @@ public class SpellsTransformer {
             conditionBuilder.setId(idCell.getString() + ":Condition:0", idCell);
             conditionBuilder.setPatient(patientReference, patientIdCell);
             conditionBuilder.setEncounter(thisEncounter, idCell);
-            conditionBuilder.setClinician(practitioner, admittingConsultant);
+            if (!practitionerReference.isEmpty()) {
+                conditionBuilder.setClinician(practitionerReference, admissionConsultantCodeCell);
+            }
             DateTimeType dtt = new DateTimeType(parser.getAdmissionDttm().getDateTime());
             conditionBuilder.setOnset(dtt, parser.getAdmissionDttm());
 
@@ -152,7 +163,9 @@ public class SpellsTransformer {
             procedureBuilder.setId(idCell.getString() + ":Procedure:0", idCell);
             procedureBuilder.setIsPrimary(true);
             procedureBuilder.setEncounter(thisEncounter, idCell);
-            procedureBuilder.addPerformer(practitioner, admittingConsultant);
+            if (!practitionerReference.isEmpty()) {
+                procedureBuilder.addPerformer(practitionerReference, admissionConsultantCodeCell);
+            }
             DateTimeType dateTimeType = new DateTimeType(parser.getAdmissionDttm().getDateTime());
             procedureBuilder.setPerformed(dateTimeType, parser.getAdmissionDttm());
 

@@ -88,9 +88,19 @@ public class EpisodesTransformer {
             encounterBuilder.setServiceProvider(organisationReference);
         }
 
-        CsvCell episodeConsultantCell = parser.getEpisodeConsultantCode();
-        Reference episodePractitioner = csvHelper.createPractitionerReference(episodeConsultantCell.getString());
-        encounterBuilder.addParticipant(episodePractitioner, EncounterParticipantType.CONSULTANT, episodeConsultantCell);
+        // CsvCell episodeConsultantCell = parser.getEpisodeConsultantCode();
+        // Reference episodePractitioner = csvHelper.createPractitionerReference(episodeConsultantCell.getString());
+        // encounterBuilder.addParticipant(episodePractitioner, EncounterParticipantType.CONSULTANT, episodeConsultantCell);
+
+        CsvCell episodeConsultantCodeCell = parser.getEpisodeConsultantCode();
+        Reference practitionerReference = null;
+        if (!episodeConsultantCodeCell.isEmpty()) {
+            practitionerReference = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
+            if (encounterBuilder.isIdMapped()) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            }
+            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.CONSULTANT, episodeConsultantCodeCell);
+        }
 
         //the parent inpatient spell encounter
         Reference spellEncounter
@@ -188,8 +198,9 @@ public class EpisodesTransformer {
             condition.setIsPrimary(true);
             condition.setAsProblem(false);
             condition.setEncounter(thisEncounter, parser.getId());
-            condition.setClinician(episodePractitioner, episodeConsultantCell);
-
+            if (!practitionerReference.isEmpty()) {
+                condition.setClinician(practitionerReference, episodeConsultantCodeCell);
+            }
             CodeableConceptBuilder code
                     = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
             code.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
@@ -249,8 +260,8 @@ public class EpisodesTransformer {
                 DateTimeType dttp = new DateTimeType(parser.getPrimaryProcedureDate().getDateTime());
                 proc.setPerformed(dttp, parser.getPrimaryProcedureDate());
             }
-            if (!episodeConsultantCell.isEmpty()) {
-                proc.addPerformer(episodePractitioner, episodeConsultantCell);
+            if (!practitionerReference.isEmpty()) {
+                proc.addPerformer(practitionerReference, episodeConsultantCodeCell);
             }
 
             CodeableConceptBuilder code

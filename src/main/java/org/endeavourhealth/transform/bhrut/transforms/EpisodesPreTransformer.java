@@ -90,7 +90,7 @@ public class EpisodesPreTransformer {
             boolean practitionerCodeResourceAlreadyFiled
                     = csvHelper.getStaffCache().practitionerCodeInDB(episodeConsultantCode, csvHelper);
             if (!practitionerCodeResourceAlreadyFiled) {
-                createEpisode(episodesParser, fhirResourceFiler, csvHelper, episodeConsultantCode);
+                createPractitionerResource(episodesParser, fhirResourceFiler, csvHelper, episodeConsultantCode);
             }
         }
 
@@ -112,19 +112,22 @@ public class EpisodesPreTransformer {
         }
     }
 
-    private static void createEpisode(Episodes episodesParser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String episodeConsultantCode) throws Exception {
+    private static void createPractitionerResource(Episodes episodesParser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String episodeConsultantCode) throws Exception {
 
         PractitionerBuilder practitionerBuilder
                 = csvHelper.getStaffCache().getOrCreatePractitionerBuilder(episodeConsultantCode, csvHelper);
 
-        //Todo verify the column name to setid to PractionerBuilder
-        CsvCell episdodeNum = episodesParser.getEpiNum();
-        practitionerBuilder.getIdentifiers().clear();
-        //practitionerBuilder.setId(episdodeNum.getString(), episdodeNum);
+        CsvCell episodeConsultantCodeCell = episodesParser.getEpisodeConsultantCode();
+        if (!episodeConsultantCodeCell.isEmpty()) {
+            IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE);
+            identifierBuilder.setValue(episodeConsultantCodeCell.getString(), episodeConsultantCodeCell);
+        }
 
+        CsvCell episodeConsultant = episodesParser.getEpisodeConsultant();
         NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
-        //Todo verify the names to set to namebuilder
-        //nameBuilder.setText("");
+        nameBuilder.setText(episodeConsultant.getString(), episodeConsultant);
         fhirResourceFiler.saveAdminResource(episodesParser.getCurrentState(), practitionerBuilder);
         csvHelper.getStaffCache().returnPractitionerBuilder(episodeConsultantCode, practitionerBuilder);
     }
