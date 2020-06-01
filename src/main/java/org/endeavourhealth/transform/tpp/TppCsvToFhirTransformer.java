@@ -8,9 +8,13 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.SystemHelper;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.ServiceInterfaceEndpoint;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
@@ -495,6 +499,10 @@ public abstract class TppCsvToFhirTransformer {
 //            processAdminData = false;
 //        }
 
+
+        //hack to skip the SRCode file if it's a re-bulk. Audit in a table so we can come back.
+        boolean processSRCode = !shouldSkipSRCode(fhirResourceFiler);
+
         //reference data
         if (processAdminData) {
 
@@ -528,13 +536,16 @@ public abstract class TppCsvToFhirTransformer {
 
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
+
         if (processPatientData) {
 
             LOG.trace("Starting patient demographics transforms");
             SRPatientAddressHistoryPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPatientContactDetailsPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPatientRelationshipPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            if (processSRCode) {
+                SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            }
             SRRecordStatusTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPatientAddressHistoryTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -587,7 +598,11 @@ public abstract class TppCsvToFhirTransformer {
 
             SRProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+            if (processSRCode) {
+                SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            }
+
             csvHelper.getConditionResourceCache().fileConditionResources(fhirResourceFiler);
 
             SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -605,6 +620,8 @@ public abstract class TppCsvToFhirTransformer {
         //close down the utility thread pool
         csvHelper.stopThreadPool();
     }
+
+
 
     private boolean isFileBulk(String[] infiles) {
         // We try to deduce if this is a bulk file (whole table) or a delta file of updates.
@@ -666,4 +683,75 @@ public abstract class TppCsvToFhirTransformer {
             connection.close();
         }
     }*/
+
+    private static boolean shouldSkipSRCode(FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        UUID serviceId = fhirResourceFiler.getServiceId();
+        UUID systemId = fhirResourceFiler.getSystemId();
+
+        ServiceDalI serviceDal = DalProvider.factoryServiceDal();
+        Service service = serviceDal.getById(serviceId);
+
+        //only if in NORMAL mode do we look at skipping it
+        List<ServiceInterfaceEndpoint> endpoints = service.getEndpointsList();
+        for (ServiceInterfaceEndpoint endpoint: endpoints) {
+            if (endpoint.getSystemUuid().equals(systemId)) {
+                String mode = endpoint.getEndpoint();
+                if (!mode.equals(ServiceInterfaceEndpoint.STATUS_NORMAL)) {
+                    LOG.debug("Not skipping SRCode as service is not in normal mode");
+                    return false;
+                }
+            }
+        }
+
+        UUID exchangeId = fhirResourceFiler.getExchangeId();
+        ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
+        Exchange exchange = exchangeDal.getExchange(exchangeId);
+        String bodyJson = exchange.getBody();
+        List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(bodyJson);
+        for (ExchangePayloadFile file: files) {
+            if (file.getType().equals("Code")) {
+                Long size = file.getSize();
+                if (size == null
+                        || size.longValue() < 50 * 1024 * 1024) {
+                    LOG.debug("Not skipping SRCode as file is only " + size + " bytes");
+                    return false;
+                }
+            }
+        }
+
+        auditSkippingSRCode(fhirResourceFiler);
+        return true;
+    }
+
+    private static void auditSkippingSRCode(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
+
+        LOG.info("Skipping SRCode for exchange " + fhirFiler.getExchangeId());
+        AuditWriter.writeExchangeEvent(fhirFiler.getExchangeId(), "Skipped SRCode");
+
+        //write to audit table so we can find out
+        Connection connection = ConnectionManager.getAuditConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "INSERT INTO tpp_skipped_srcode (service_id, system_id, exchange_id, dt_skipped) VALUES (?, ?, ?, ?)";
+            ps = connection.prepareStatement(sql);
+
+            int col = 1;
+            ps.setString(col++, fhirFiler.getServiceId().toString());
+            ps.setString(col++, fhirFiler.getSystemId().toString());
+            ps.setString(col++, fhirFiler.getExchangeId().toString());
+            ps.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));
+
+            ps.executeUpdate();
+            connection.commit();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+
 }
