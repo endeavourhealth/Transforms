@@ -501,7 +501,7 @@ public abstract class TppCsvToFhirTransformer {
 
 
         //hack to skip the SRCode file if it's a re-bulk. Audit in a table so we can come back.
-        boolean processSRCode = shouldSkipSRCode(fhirResourceFiler);
+        boolean processSRCode = !shouldSkipSRCode(fhirResourceFiler);
 
         //reference data
         if (processAdminData) {
