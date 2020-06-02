@@ -10,10 +10,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
@@ -21,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.UUID;
 
 public class SpellsTransformer {
 
@@ -81,7 +79,8 @@ public class SpellsTransformer {
                                        String version) throws Exception {
 
         CsvCell idCell = parser.getId();
-
+        EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(idCell, csvHelper, fhirResourceFiler);
+        createEpisodeOfcare(parser, fhirResourceFiler, csvHelper, version, episodeOfCareBuilder);
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         encounterBuilder.setId(idCell.getString());
 
@@ -262,6 +261,70 @@ public class SpellsTransformer {
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+    }
+
+    private static void createEpisodeOfcare(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
+
+        CsvCell patientIdCell = parser.getPasId();
+        CsvCell id = parser.getId();
+
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+
+        if (episodeOfCareBuilder.isIdMapped()) {
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+        }
+        episodeOfCareBuilder.setPatient(patientReference, patientIdCell);
+
+        CsvCell startDateTime = parser.getAdmissionDttm();
+        if (!startDateTime.isEmpty()) {
+            episodeOfCareBuilder.setRegistrationStartDate(startDateTime.getDateTime(), startDateTime);
+        }
+
+        CsvCell endDateTime = parser.getDischargeDttm();
+        if (!endDateTime.isEmpty()) {
+            episodeOfCareBuilder.setRegistrationEndDate(endDateTime.getDateTime(), endDateTime);
+        }
+        CsvCell odsCodeCell = parser.getAdmissionHospitalCode();
+        if (odsCodeCell != null) {
+            Reference organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
+            // if episode already ID mapped, get the mapped ID for the org
+            if (episodeOfCareBuilder.isIdMapped()) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
+            episodeOfCareBuilder.setManagingOrganisation(organisationReference, odsCodeCell);
+        } else {
+            //v1 uses service details
+            UUID serviceId = parser.getServiceId();
+            Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+            // if episode already ID mapped, get the mapped ID for the org
+            if (episodeOfCareBuilder.isIdMapped()) {
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+            }
+            episodeOfCareBuilder.setManagingOrganisation(organisationReference);
+        }
+        CsvCell consultantCodeCell = parser.getAdmissionConsultantCode();
+        if (consultantCodeCell != null && !consultantCodeCell.isEmpty()) {
+            Reference practitionerReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+            if (episodeOfCareBuilder.isIdMapped()) {
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+            }
+            episodeOfCareBuilder.setCareManager(practitionerReference, consultantCodeCell);
+        }
+        //Extension
+        if (!parser.getPatientClassCode().isEmpty()) {
+            CsvCell patientClassCode = parser.getPatientClassCode();
+            CsvCell patientClass = parser.getPatientClass();
+            CodeableConceptBuilder cc
+                    = new CodeableConceptBuilder(episodeOfCareBuilder, CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other);
+            cc.setText(patientClass.getString(), patientClass);
+            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
+            cc.setCodingCode(patientClassCode.getString(), patientClassCode);
+            cc.setCodingDisplay(patientClass.getString());
+            episodeOfCareBuilder.setPriority(patientClassCode.getString(), patientClassCode);
+        }
+
+        csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(id, episodeOfCareBuilder);
+
     }
 
     private static void deleteChildResources(Spells parser,
