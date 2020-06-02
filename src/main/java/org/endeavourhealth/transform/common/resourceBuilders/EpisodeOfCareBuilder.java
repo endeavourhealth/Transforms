@@ -9,7 +9,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 import java.util.List;
 
-public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIdentifierI, HasContainedListI {
+public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIdentifierI, HasContainedListI, HasCodeableConceptI {
 
     private EpisodeOfCare episodeOfCare = null;
 
@@ -226,6 +226,44 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
             return episodeOfCare.getStatus();
         } else {
             return null;
+        }
+    }
+
+    @Override
+    public CodeableConcept createNewCodeableConcept(CodeableConceptBuilder.Tag tag, boolean useExisting) {
+        // I used EncounterBuilder as a model so other tags can be copied from there as needed
+        if (tag == CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other) {
+            Extension extension = ExtensionConverter.findOrCreateExtension(this.episodeOfCare, FhirExtensionUri.ENCOUNTER_PATIENT_CLASS_OTHER);
+            if (useExisting && extension.hasValue()) {
+                return (CodeableConcept) extension.getValue();
+            }
+            CodeableConcept codeableConcept = new CodeableConcept();
+            extension.setValue(codeableConcept);
+            return codeableConcept;
+        }  else {
+        throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
+
+    }
+
+    @Override
+    public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other) {
+            Extension extension = ExtensionConverter.findExtension(this.episodeOfCare, FhirExtensionUri.ENCOUNTER_PATIENT_CLASS_OTHER);
+            int index = this.episodeOfCare.getExtension().indexOf(extension);
+            return "extension[" + index + "].valueCodeableConcept";
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
+    }
+
+    @Override
+    public void removeCodeableConcept(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
+        if (tag == CodeableConceptBuilder.Tag.Encounter_Patient_Class_Other) {
+            ExtensionConverter.removeExtension(this.episodeOfCare, FhirExtensionUri.ENCOUNTER_PATIENT_CLASS_OTHER);
+
+        } else {
+            throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
     }
 }
