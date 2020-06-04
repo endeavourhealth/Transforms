@@ -28,6 +28,7 @@ public class Alerts extends AbstractCsvParser {
                     "ALERT_TYPE_DESCRIPTION",
                     "APPLIED_DTTM",
                     "START_DTTM",
+                    "ALERT_DESCRIPTION",
                     "ALERT_COMMENT",
                     "CLOSED_DTTM",
                     "CLOSED_NOTE",
@@ -42,6 +43,7 @@ public class Alerts extends AbstractCsvParser {
  public CsvCell getClosedDttm() { return super.getCell( "CLOSED_DTTM");}
  public CsvCell getClosedNote() { return super.getCell( "CLOSED_NOTE");}
  public CsvCell getAlertTypeDescription() { return super.getCell( "ALERT_TYPE_DESCRIPTION");}
+ public CsvCell getAlertDescription() { return super.getCell("ALERT_DESCRIPTION");}
  public CsvCell getAlertComment() { return super.getCell( "ALERT_COMMENT");}
  public CsvCell getAppliedDttm() { return super.getCell( "APPLIED_DTTM");}
 
