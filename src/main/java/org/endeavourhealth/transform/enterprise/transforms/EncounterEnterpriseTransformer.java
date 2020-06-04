@@ -6,20 +6,18 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
-import org.endeavourhealth.core.database.dal.reference.models.EncounterCode;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.*;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 
 public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransformer {
 
@@ -167,6 +165,9 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                     episodeOfCareId, clinicalEffectiveDate, datePrecisionId, appointmentId,
                     serviceProviderOrganisationId);
 
+            //we also need to populate the encounter_additional table with encounter extension data
+            transformEncounterAdditionals(fhir, params, id);
+
         } else {
             //if the FHIR Encounter IS part of another encounter, then write it to the encounter event table
             Reference partOfReference = fhir.getPartOf();
@@ -202,6 +203,9 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                     locationId, //additional field
                     isFinished); //additional field
 
+
+            //we also need to populate the encounter_additional table with encounter extension data
+            transformEncounterAdditionals(fhir, params, id);
         }
 
     }
@@ -325,6 +329,59 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         return new Integer((int)minDur);
     }
 
+    private void transformEncounterAdditionals(Resource resource, EnterpriseTransformHelper params, long id) throws Exception {
+
+        Encounter fhir = (Encounter)resource;
+
+        //if it has no extension data, then nothing further to do
+        if (!fhir.hasExtension()) {
+            return;
+        }
+
+        //then for each additional extension parameter the additional data
+        Extension additionalExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ADDITIONAL);
+
+        if (additionalExtension != null) {
+
+            Reference idReference = (Reference)additionalExtension.getValue();
+            String idReferenceValue = idReference.getReference();
+            idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
+
+            for (Resource containedResource: fhir.getContained()) {
+                if (containedResource.getId().equals(idReferenceValue)) {
+
+                    OutputContainer outputContainer = params.getOutputContainer();
+                    EncounterAdditional encounterAdditional = outputContainer.getEncounterAdditional();
+
+                    //additional extension data is stored as Parameter resources
+                    Parameters parameters = (Parameters)containedResource;
+
+                    //get all the entries in the parameters list
+                    List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
+                    for (Parameters.ParametersParameterComponent parameter : entries) {
+
+                        //each parameter entry  will have a key value pair of name and StringType value?
+                        if (parameter.hasName() && parameter.hasValue()) {
+
+                            String property = parameter.getName();
+                            StringType parameterValue = (StringType) parameter.getValue();
+                            String value = parameterValue.asStringValue();
+
+                            //TODO - lookup IM values
+                            String propertyId = "";   //using property IMHelper lookup
+                            String valueId = "";      //using value IMHelper lookup
+
+                            //transform the IM values to the encounter_triple table upsert
+                            encounterAdditional.writeUpsert(id, propertyId, valueId );
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
 
     private static CodeableConcept findSourceCodeableConcept(Encounter fhir) {
         if (!fhir.hasExtension()) {
@@ -771,7 +828,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
     }*/
 
     /**
-     * special fn for Encounters as these resources go into three target tables
+     * special fn for Encounters as these resources go into four target tables
      */
     protected void writeDelete(Long enterpriseId, AbstractEnterpriseCsvWriter csvWriter, EnterpriseTransformHelper params) throws Exception {
 
@@ -788,6 +845,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
         encounterDetail.writeDelete(enterpriseId.longValue());
 
+        EncounterAdditional encounterAdditional = outputContainer.getEncounterAdditional();
+        encounterAdditional.writeDelete(enterpriseId.longValue());
     }
-
 }

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.subscriber.targetTables.AbstractTargetTable;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -57,6 +56,7 @@ public class OutputContainer {
         csvWriters.add(new PatientContact("patient_contact.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new RegistrationStatusHistory("registration_status_history.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterEvent("encounter_event.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new EncounterAdditional("encounter_additional.csv", csvFormat, dateFormat, timeFormat));
 
     }
 
@@ -257,4 +257,6 @@ public class OutputContainer {
     public EncounterEvent getEncounterEvent() {
         return findCsvWriter(EncounterEvent.class);
     }
+
+    public EncounterAdditional getEncounterAdditional() {return findCsvWriter(EncounterAdditional.class); }
 }
