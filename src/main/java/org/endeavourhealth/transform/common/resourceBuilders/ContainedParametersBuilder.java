@@ -3,10 +3,7 @@ package org.endeavourhealth.transform.common.resourceBuilders;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.hl7.fhir.instance.model.DomainResource;
-import org.hl7.fhir.instance.model.Parameters;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.Resource;
+import org.hl7.fhir.instance.model.*;
 
 import java.util.List;
 
@@ -20,15 +17,36 @@ public class ContainedParametersBuilder {
         this.parentBuilder = parentBuilder;
     }
 
+    public void addParameter(String name, String value, CsvCell... sourceCells) {
+
+        addParameter(name, new StringType(value), sourceCells);
+    }
+
+    public void addParameter(String name, Type value, CsvCell... sourceCells) {
+
+        DomainResource resource = parentBuilder.getResource();
+        Parameters containedParameters = getOrCreateContainedParameters();
+
+        Parameters.ParametersParameterComponent entry = containedParameters.addParameter();
+
+        entry.setName(name);
+        entry.setValue(value);
+
+        int paramIndex = resource.getContained().indexOf(containedParameters);
+        int entryIndex = containedParameters.getParameter().indexOf(entry);
+        parentBuilder.auditValue("contained[" + paramIndex + "].parameter[" + entryIndex + "]", sourceCells);
+    }
+
     public void removeContainedParameters() {
 
         DomainResource resource = parentBuilder.getResource();
-        Parameters parameters = getOrCreateContainedParameters();
+        Parameters containedParameters = getOrCreateContainedParameters();
 
         //remove any audits we've created for the Contained Parameters
-        parentBuilder.getAuditWrapper().removeAudit("contained");
+        int paramIndex = resource.getContained().indexOf(containedParameters);
+        parentBuilder.getAuditWrapper().removeAudit("contained[" + paramIndex + "]");
 
-        resource.getContained().remove(parameters);
+        resource.getContained().remove(containedParameters);
 
         //also remove the extension that points to the list
         String extensionUrl = parentBuilder.getContainedParametersExtensionUrl();
@@ -69,21 +87,8 @@ public class ContainedParametersBuilder {
         return parameters;
     }
 
-    public void addParameter(Parameters.ParametersParameterComponent parameterComponent, CsvCell... sourceCells) {
-        DomainResource resource = parentBuilder.getResource();
-        Parameters containedParameters = getContainedParameters();
+    public List<Parameters.ParametersParameterComponent> getContainedParametersComponents() {
 
-        Parameters.ParametersParameterComponent entry = containedParameters.addParameter();
-
-        entry.setName(parameterComponent.getName());
-        entry.setValue(parameterComponent.getValue());
-
-        int paramIndex = resource.getContained().indexOf(containedParameters);
-        int entryIndex = containedParameters.getParameter().indexOf(entry);
-        parentBuilder.auditValue("contained[" + paramIndex + "].parameter[" + entryIndex + "]", sourceCells);
-    }
-
-    public List<Parameters.ParametersParameterComponent> getContainedParametersItems() {
         Parameters parameters = getContainedParameters();
 
         if (parameters == null
