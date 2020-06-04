@@ -17,7 +17,7 @@ import java.util.List;
 
 public class EncounterBuilder extends ResourceBuilderBase
                                 implements HasCodeableConceptI,
-                                        HasContainedListI, HasIdentifierI{
+                                        HasContainedListI, HasContainedParametersI, HasIdentifierI{
 
 
     private Encounter encounter = null;
@@ -48,6 +48,11 @@ public class EncounterBuilder extends ResourceBuilderBase
     @Override
     public String getContainedListExtensionUrl() {
         return FhirExtensionUri.ENCOUNTER_COMPONENTS;
+    }
+
+    @Override
+    public String getContainedParametersExtensionUrl() {
+        return FhirExtensionUri.ADDITIONAL;
     }
 
     public void setPatient(Reference referenceValue, CsvCell... sourceCells) {
