@@ -56,6 +56,7 @@ public class OutputContainer {
         csvWriters.add(new DiagnosticOrder(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAddressMatch(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new RegistrationStatusHistory(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new EncounterAdditional(csvFormat, dateFormat, timeFormat));
     }
 
     public byte[] writeToZip() throws Exception {
@@ -248,4 +249,6 @@ public class OutputContainer {
     }
 
     public RegistrationStatusHistory getRegistrationStatusHistory () { return findCsvWriter(RegistrationStatusHistory .class); }
+
+    public EncounterAdditional getEncounterAdditional () { return findCsvWriter(EncounterAdditional .class); }
 }

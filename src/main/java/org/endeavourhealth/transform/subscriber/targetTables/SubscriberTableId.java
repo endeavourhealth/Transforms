@@ -25,7 +25,8 @@ public enum SubscriberTableId {
     PATIENT_ADDRESS_MATCH((byte)22, "patient_address_match"),
     REGISTRATION_STATUS_HISTORY((byte)23, "registration_status_history"),
     ORGANIZATION_METADATA((byte)24, "organization_metadata"),
-    ENCOUNTER_EVENT((byte)25, "encounter_event");
+    ENCOUNTER_EVENT((byte)25, "encounter_event"),
+    ENCOUNTER_ADDITIONAL((byte)26, "encounter_additional");
 
     private byte id;
     private String name;

@@ -10,6 +10,8 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.subscriber.targetTables.EncounterAdditional;
+import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -19,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 
 public class EncounterTransformer extends AbstractSubscriberTransformer {
 
@@ -212,6 +215,9 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                     institutionLocationIdStr,
                     dateRecorded);
 
+            //we also need to populate the encounter_additional table with encounter extension data
+            transformEncounterAdditionals(fhir, params, subscriberId);
+
         } else {
             //if the FHIR Encounter IS part of another encounter, then write it to the encounter event table
             //but ONLY if we know the target DB has the encounter event table
@@ -249,10 +255,68 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                         institutionLocationId,
                         dateRecorded,
                         isFinished);
+
+                //we also need to populate the encounter_additional table with encounter extension data
+                transformEncounterAdditionals(fhir, params, subscriberId);
+
             }
         }
     }
 
+    private void transformEncounterAdditionals(Resource resource, SubscriberTransformHelper params, SubscriberId id) throws Exception {
+
+        Encounter fhir = (Encounter)resource;
+
+        //if it has no extension data, then nothing further to do
+        if (!fhir.hasExtension()) {
+            return;
+        }
+
+        //then for each additional extension parameter the additional data
+        Extension additionalExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ADDITIONAL);
+
+        if (additionalExtension != null) {
+
+            Reference idReference = (Reference)additionalExtension.getValue();
+            String idReferenceValue = idReference.getReference();
+            idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
+
+            for (Resource containedResource: fhir.getContained()) {
+                if (containedResource.getId().equals(idReferenceValue)) {
+
+                    OutputContainer outputContainer = params.getOutputContainer();
+                    EncounterAdditional encounterAdditional = outputContainer.getEncounterAdditional();
+
+                    //additional extension data is stored as Parameter resources
+                    Parameters parameters = (Parameters)containedResource;
+
+                    //get all the entries in the parameters list
+                    List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
+                    for (Parameters.ParametersParameterComponent parameter : entries) {
+
+                        //each parameter entry  will have a key value pair of name and StringType value?
+                        if (parameter.hasName() && parameter.hasValue()) {
+
+                            String property = parameter.getName();
+                            StringType parameterValue = (StringType) parameter.getValue();
+                            String value = parameterValue.asStringValue();
+
+                            Integer propertyId =
+                                    IMHelper.getIMConcept(params, fhir, IMConstant.ENCOUNTER_LEGACY, property, property);
+                            Integer valueId =
+                                    IMHelper.getIMConcept(params, fhir, IMConstant.ENCOUNTER_LEGACY, value, value);
+
+                            //transform the IM values to the encounter_triple table upsert
+                            encounterAdditional.writeUpsert(id, propertyId, valueId );
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
 
     private static Long transformLocationId(Encounter encounter, SubscriberTransformHelper params) throws Exception {
 

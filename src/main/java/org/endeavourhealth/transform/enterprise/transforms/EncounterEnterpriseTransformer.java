@@ -368,9 +368,10 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                             StringType parameterValue = (StringType) parameter.getValue();
                             String value = parameterValue.asStringValue();
 
-                            //TODO - lookup IM values
-                            String propertyId = "";   //using property IMHelper lookup
-                            String valueId = "";      //using value IMHelper lookup
+                            String propertyId = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(
+                                    IMConstant.ENCOUNTER_LEGACY, "TYPE", property);
+                            String valueId = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(
+                                    IMConstant.ENCOUNTER_LEGACY, "TYPE", value);
 
                             //transform the IM values to the encounter_triple table upsert
                             encounterAdditional.writeUpsert(id, propertyId, valueId );
