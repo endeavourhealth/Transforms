@@ -1,8 +1,16 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCriticalCareCdsTarget;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,148 +47,112 @@ public class CriticalCareCdsTargetTransformer {
             String uniqueId = targetCriticalCareCds.getUniqueId();
             boolean isDeleted = targetCriticalCareCds.isDeleted();
 
-            //TODO: file into v2 Core publisher
+            //the unique Id for the critical care encounter based on critical care identifier
+            String criticalCareId = targetCriticalCareCds.getCriticalCareIdentifier()+":CC";
 
-//            if (isDeleted) {
-//
-//                // retrieve the existing Composition resource to perform the deletion on
-//                Composition existingComposition
-//                        = (Composition) csvHelper.retrieveResourceForLocalId(ResourceType.Composition, uniqueId);
-//
-//                if (existingComposition != null) {
-//                    CompositionBuilder compositionBuilder = new CompositionBuilder(existingComposition, targetCriticalCareCds.getAudit());
-//
-//                    //remember to pass in false since this existing composition is already ID mapped
-//                    fhirResourceFiler.deletePatientResource(null, false, compositionBuilder);
-//                } else {
-//                    TransformWarnings.log(LOG, csvHelper, "Cannot find existing Composition: {} for deletion", uniqueId);
-//                }
-//
-//                continue;
-//            }
-//
-//            // create the FHIR Composition resource
-//            CompositionBuilder compositionBuilder
-//                    = new CompositionBuilder(null, targetCriticalCareCds.getAudit());
-//            compositionBuilder.setId(uniqueId);
-//
-//            Integer personId = targetCriticalCareCds.getPersonId();
-//            String patientIdStr
-//                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Patient, Integer.toString(personId));
-//            Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
-//            compositionBuilder.setPatientSubject(patientReference);
-//            compositionBuilder.setTitle("Encounter Composition");
-//            compositionBuilder.setStatus(Composition.CompositionStatus.FINAL);
-//            Identifier identifier = new Identifier();
-//            identifier.setValue(uniqueId);
-//            compositionBuilder.setIdentifier(identifier);
-//
-//            // set single critical care encounter, i.e. no sub encounters.
-//            // These encounters link to inpatient records using the spellNumber and episodeNumber
-//            Encounter encounterCriticalCare = new Encounter();
-//            encounterCriticalCare.setEncounterType("critical care");
-//            String criticalCareId = targetCriticalCareCds.getCriticalCareIdentifier()+":CC";
-//            String criticalCareEncounterIdStr
-//                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, criticalCareId);
-//            encounterCriticalCare.setEncounterId(criticalCareEncounterIdStr);
-//            encounterCriticalCare.setPatientId(patientIdStr);
-//            encounterCriticalCare.setEffectiveDate(targetCriticalCareCds.getCareStartDate());
-//            encounterCriticalCare.setEffectiveEndDate(targetCriticalCareCds.getDischargeDate());
-//            encounterCriticalCare.setEpisodeOfCareId(null);
-//
-//            //the parent encounter Id pointing at the inpatient record linked by spellNumber and EpisodeNumber
-//            String spellId = targetCriticalCareCds.getSpellNumber();
-//            String episodeNumber = targetCriticalCareCds.getEpisodeNumber();
-//            String parentEncounterId = spellId +":"+episodeNumber+":IP";
-//            String parentEncounterIdStr
-//                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, parentEncounterId);
-//            encounterCriticalCare.setParentEncounterId(parentEncounterIdStr);
-//
-//            String performerIdStr = null;
-//            if (targetCriticalCareCds.getPerformerPersonnelId() != null) {
-//                performerIdStr
-//                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Practitioner, targetCriticalCareCds.getPerformerPersonnelId().toString());
-//            }
-//            encounterCriticalCare.setPractitionerId(performerIdStr);
-//
-//            String serviceProviderOrgStr = null;
-//            if (!Strings.isNullOrEmpty(targetCriticalCareCds.getOrganisationCode())) {
-//                serviceProviderOrgStr
-//                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Organization, targetCriticalCareCds.getOrganisationCode());
-//            }
-//            encounterCriticalCare.setServiceProviderOrganisationId(serviceProviderOrgStr);   //originally derived from the linked inpatient record
-//
-//            //add in additional fields data
-//            JsonObject additionalObjs = new JsonObject();
-//            additionalObjs.addProperty("critical_care_type_id", targetCriticalCareCds.getCriticalCareTypeId());
-//            additionalObjs.addProperty("care_unit_function", targetCriticalCareCds.getCareUnitFunction());
-//            additionalObjs.addProperty("admission_source_code", targetCriticalCareCds.getAdmissionSourceCode());
-//            additionalObjs.addProperty("admission_type_code", targetCriticalCareCds.getAdmissionTypeCode());
-//            additionalObjs.addProperty("admission_location", targetCriticalCareCds.getAdmissionTypeCode());
-//            if (!Strings.isNullOrEmpty(targetCriticalCareCds.getGestationLengthAtDelivery())) {
-//                additionalObjs.addProperty("gestation_length_at_delivery", targetCriticalCareCds.getGestationLengthAtDelivery());
-//            }
-//            if (targetCriticalCareCds.getAdvancedRespiratorySupportDays() != null) {
-//                additionalObjs.addProperty("advanced_respiratory_support_days", targetCriticalCareCds.getAdvancedRespiratorySupportDays());
-//            }
-//            if (targetCriticalCareCds.getBasicRespiratorySupportsDays() != null) {
-//                additionalObjs.addProperty("basic_respiratory_support_days", targetCriticalCareCds.getBasicRespiratorySupportsDays());
-//            }
-//            if (targetCriticalCareCds.getAdvancedCardiovascularSupportDays() != null) {
-//                additionalObjs.addProperty("advanced_cardiovascular_support_days", targetCriticalCareCds.getAdvancedCardiovascularSupportDays());
-//            }
-//            if (targetCriticalCareCds.getRenalSupportDays() != null) {
-//                additionalObjs.addProperty("renal_support_days", targetCriticalCareCds.getRenalSupportDays());
-//            }
-//            if (targetCriticalCareCds.getNeurologicalSupportDays() != null) {
-//                additionalObjs.addProperty("neurological_support_days", targetCriticalCareCds.getNeurologicalSupportDays());
-//            }
-//            if (targetCriticalCareCds.getGastroIntestinalSupportDays() != null) {
-//                additionalObjs.addProperty("gastro_intestinal_support_days", targetCriticalCareCds.getGastroIntestinalSupportDays());
-//            }
-//            if (targetCriticalCareCds.getDermatologicalSupportDays() != null) {
-//                additionalObjs.addProperty("dermatological_support_days", targetCriticalCareCds.getDermatologicalSupportDays());
-//            }
-//            if (targetCriticalCareCds.getLiverSupportDays() != null) {
-//                additionalObjs.addProperty("liver_support_days", targetCriticalCareCds.getLiverSupportDays());
-//            }
-//            if (targetCriticalCareCds.getOrganSupportMaximum() != null) {
-//                additionalObjs.addProperty("organ_support_maximum", targetCriticalCareCds.getOrganSupportMaximum());
-//            }
-//            if (targetCriticalCareCds.getCriticalCareLevel2Days() != null) {
-//                additionalObjs.addProperty("critical_care_level2_days", targetCriticalCareCds.getCriticalCareLevel2Days());
-//            }
-//            if (targetCriticalCareCds.getCriticalCareLevel3Days() != null) {
-//                additionalObjs.addProperty("critical_care_level3_days", targetCriticalCareCds.getCriticalCareLevel3Days());
-//            }
-//            if (!Strings.isNullOrEmpty(targetCriticalCareCds.getDischargeStatusCode())) {
-//                additionalObjs.addProperty("discharge_status_code", targetCriticalCareCds.getDischargeStatusCode());
-//            }
-//            if (!Strings.isNullOrEmpty(targetCriticalCareCds.getDischargeDestination())) {
-//                additionalObjs.addProperty("discharge_destination", targetCriticalCareCds.getDischargeDestination());
-//            }
-//            if (!Strings.isNullOrEmpty(targetCriticalCareCds.getDischargeLocation())) {
-//                additionalObjs.addProperty("discharge_location", targetCriticalCareCds.getDischargeLocation());
-//            }
-//            if (!Strings.isNullOrEmpty(targetCriticalCareCds.getCareActivity1())) {
-//                additionalObjs.addProperty("care_activity_1", targetCriticalCareCds.getCareActivity1());
-//            }
-//            if (!Strings.isNullOrEmpty(targetCriticalCareCds.getCareActivity2100())) {
-//                additionalObjs.addProperty("care_activity_2100", targetCriticalCareCds.getCareActivity2100());
-//            }
-//
-//            encounterCriticalCare.setAdditionalFieldsJson(additionalObjs.toString());
-//            String encounterInstanceAsJson = null;
-//            encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterCriticalCare);
-//            compositionBuilder.addSection("encounter-1", encounterCriticalCare.getEncounterId(), encounterInstanceAsJson);
-//
-//
-//            //LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));
-//
-//            //save composition record
-//            fhirResourceFiler.savePatientResource(null, compositionBuilder);
-//
-//            //LOG.debug("Transforming compositionId: "+uniqueId+"  Filed");
+            if (isDeleted) {
+
+                //this is an existing single critical care encounter linked to an episode parent, so only delete this one
+                Encounter existingEncounter
+                        = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, criticalCareId);
+
+                if (existingEncounter != null) {
+
+                    EncounterBuilder encounterBuilder
+                            = new EncounterBuilder(existingEncounter, targetCriticalCareCds.getAudit());
+
+                    //delete the encounter
+                    fhirResourceFiler.deletePatientResource(null, false, encounterBuilder);
+
+                } else {
+                    TransformWarnings.log(LOG, csvHelper, "Cannot find existing Encounter: {} for deletion", criticalCareId);
+                }
+
+                continue;
+            }
+
+            EncounterBuilder encounterBuilder = new EncounterBuilder();
+            encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+            encounterBuilder.setId(criticalCareId);
+
+            Integer personId = targetCriticalCareCds.getPersonId();
+            Reference patientReference
+                    = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
+            encounterBuilder.setPatient(patientReference);
+
+            Integer performerPersonnelId = targetCriticalCareCds.getPerformerPersonnelId();
+            if (performerPersonnelId != null) {
+
+                encounterBuilder.setRecordedBy(ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId)));
+            }
+            String serviceProviderOrgId = targetCriticalCareCds.getOrganisationCode();
+            if (!Strings.isNullOrEmpty(serviceProviderOrgId)) {
+
+                encounterBuilder.setServiceProvider(ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId));
+            }
+
+            encounterBuilder.setPeriodStart(targetCriticalCareCds.getCareStartDate());
+            if (targetCriticalCareCds.getDischargeDate() != null) {
+                encounterBuilder.setPeriodEnd(targetCriticalCareCds.getDischargeDate());
+            }
+
+            //these encounter events are children of the spell episode encounter records already created
+            String spellId = targetCriticalCareCds.getSpellNumber();
+            String episodeNumber = targetCriticalCareCds.getEpisodeNumber();
+            String parentEncounterId = spellId +":"+episodeNumber+":IP";
+            Reference parentEncounter
+                    = ReferenceHelper.createReference(ResourceType.Encounter, parentEncounterId);
+            encounterBuilder.setPartOf(parentEncounter);
+
+            //add in additional extended data as Parameters resource with additional extension
+            //TODO: set name and values using IM map once done - ward start and end?
+            ContainedParametersBuilder containedParametersBuilder
+                    = new ContainedParametersBuilder(encounterBuilder);
+            containedParametersBuilder.removeContainedParameters();
+
+            String criticalCareTypeId = targetCriticalCareCds.getCriticalCareTypeId();
+            containedParametersBuilder.addParameter("", "" + criticalCareTypeId);
+
+            String careUnitFunction = targetCriticalCareCds.getCareUnitFunction();
+            containedParametersBuilder.addParameter("", "" + careUnitFunction);
+
+            String admissionSourceCode = targetCriticalCareCds.getAdmissionSourceCode();
+            containedParametersBuilder.addParameter("", "" + admissionSourceCode);
+
+            String admissionTypeCode = targetCriticalCareCds.getAdmissionTypeCode();
+            containedParametersBuilder.addParameter("", "" + admissionTypeCode);
+
+            String admissionLocationCode = targetCriticalCareCds.getAdmissionLocation();
+            containedParametersBuilder.addParameter("", "" + admissionLocationCode);
+
+            String dischargeStatusCode = targetCriticalCareCds.getDischargeStatusCode();
+            containedParametersBuilder.addParameter("", "" + dischargeStatusCode);
+
+            String dischargeDestinationCode = targetCriticalCareCds.getDischargeDestination();
+            containedParametersBuilder.addParameter("", "" + dischargeDestinationCode);
+
+            String dischargeLocationCode = targetCriticalCareCds.getAdmissionLocation();
+            containedParametersBuilder.addParameter("", "" + dischargeLocationCode);
+
+            //TODO: loads of very specific critical care type info here
+
+            // targetCriticalCareCds.getGestationLengthAtDelivery());
+            // targetCriticalCareCds.getAdvancedRespiratorySupportDays());
+            // targetCriticalCareCds.getBasicRespiratorySupportsDays());
+            // targetCriticalCareCds.getAdvancedCardiovascularSupportDays());
+            // targetCriticalCareCds.getRenalSupportDays());
+            // targetCriticalCareCds.getNeurologicalSupportDays());
+            // targetCriticalCareCds.getGastroIntestinalSupportDays());
+            // targetCriticalCareCds.getDermatologicalSupportDays());
+            // targetCriticalCareCds.getLiverSupportDays());
+            // targetCriticalCareCds.getOrganSupportMaximum());
+            // targetCriticalCareCds.getCriticalCareLevel2Days());
+            // targetCriticalCareCds.getCriticalCareLevel3Days());
+            // targetCriticalCareCds.getCareActivity1());
+            // targetCriticalCareCds.getCareActivity2100());
+
+            //save encounter record
+            fhirResourceFiler.savePatientResource(null, encounterBuilder);
         }
     }
 }
