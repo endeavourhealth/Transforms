@@ -57,6 +57,7 @@ public abstract class AbstractSubscriberTransformer {
 
     public void transformResources(List<ResourceWrapper> resourceWrappers, SubscriberTransformHelper params) throws Exception {
 
+        //validate the resources match the resource type we expect
         validateResources(resourceWrappers);
 
         //find or create subscriber DB IDs for each of our resources
@@ -540,7 +541,7 @@ public abstract class AbstractSubscriberTransformer {
                         Thread.sleep(1000);
                         mappedInstanceEnterpriseId = findSubscriberId(params, targetTable, mappedSourceId);
                         if (mappedInstanceEnterpriseId == null) {
-                            throw new TransformException("Failed to find enterprise ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
+                            throw new TransformException("Failed to find subscriber ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
                         }
                     }
                     return new Long(mappedInstanceEnterpriseId.getSubscriberId());
