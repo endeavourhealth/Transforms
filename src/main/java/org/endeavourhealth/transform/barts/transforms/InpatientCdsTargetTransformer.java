@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
@@ -110,6 +111,7 @@ public class InpatientCdsTargetTransformer {
 
             Integer episodeId = targetInpatientCds.getEpisodeId();
             if (episodeId != null) {
+
                 encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString()));
             }
             Integer performerPersonnelId = targetInpatientCds.getPerformerPersonnelId();
@@ -181,18 +183,32 @@ public class InpatientCdsTargetTransformer {
                     Date spellDischargeDate = targetInpatientCds.getDtDischarge();
                     encounterBuilder.setPeriodEnd(spellDischargeDate);
 
-                    //create new additional Discharge encounter event to link to the top level parent, derived from parent
-                    EncounterBuilder dischargeEncounterBuilder
-                            = new EncounterBuilder((Encounter) encounterBuilder.getResource());
+                    //create new additional Discharge encounter event to link to the top level parent
+                    EncounterBuilder dischargeEncounterBuilder = new EncounterBuilder();
 
                     String dischargeEncounterId = spellId +":01:IP:D";
                     dischargeEncounterBuilder.setId(dischargeEncounterId);
                     dischargeEncounterBuilder.setPeriodStart(spellDischargeDate);
 
                     //this discharge encounter event is a child of the top level inpatient encounter
-                    Reference parentEncounter
+                    Reference parentEncounterReference
                             = ReferenceHelper.createReference(ResourceType.Encounter, topLevelEncounterId);
-                    dischargeEncounterBuilder.setPartOf(parentEncounter);
+                    if (dischargeEncounterBuilder.isIdMapped()) {
+                        parentEncounterReference
+                                = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounterReference, csvHelper);
+                    }
+                    dischargeEncounterBuilder.setPartOf(parentEncounterReference);
+
+                    encounterBuilder.setPatient(patientReference);
+                    if (episodeId != null) {
+                        encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString()));
+                    }
+                    if (performerPersonnelId != null) {
+                        encounterBuilder.setRecordedBy(ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId)));
+                    }
+                    if (!Strings.isNullOrEmpty(serviceProviderOrgId)) {
+                        encounterBuilder.setServiceProvider(ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId));
+                    }
 
                     //add in additional extended data as Parameters resource with additional extension
                     //TODO: set name and values using IM map once done
@@ -227,9 +243,13 @@ public class InpatientCdsTargetTransformer {
                 encounterBuilder.setPeriodEnd(episodeEndDate);
 
                 //these encounter events are children of the top level inpatient encounter
-                Reference parentEncounter
+                Reference parentEncounterReference
                         = ReferenceHelper.createReference(ResourceType.Encounter, topLevelEncounterId);
-                encounterBuilder.setPartOf(parentEncounter);
+                if (encounterBuilder.isIdMapped()) {
+                    parentEncounterReference
+                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounterReference, csvHelper);
+                }
+                encounterBuilder.setPartOf(parentEncounterReference);
 
                 //add in additional extended data as Parameters resource with additional extension
                 //TODO: set name and values using IM map once done - ward start and end?
