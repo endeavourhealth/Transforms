@@ -199,15 +199,15 @@ public class InpatientCdsTargetTransformer {
                     }
                     dischargeEncounterBuilder.setPartOf(parentEncounterReference);
 
-                    encounterBuilder.setPatient(patientReference);
+                    dischargeEncounterBuilder.setPatient(patientReference);
                     if (episodeId != null) {
-                        encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString()));
+                        dischargeEncounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString()));
                     }
                     if (performerPersonnelId != null) {
-                        encounterBuilder.setRecordedBy(ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId)));
+                        dischargeEncounterBuilder.setRecordedBy(ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId)));
                     }
                     if (!Strings.isNullOrEmpty(serviceProviderOrgId)) {
-                        encounterBuilder.setServiceProvider(ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId));
+                        dischargeEncounterBuilder.setServiceProvider(ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId));
                     }
 
                     //add in additional extended data as Parameters resource with additional extension
