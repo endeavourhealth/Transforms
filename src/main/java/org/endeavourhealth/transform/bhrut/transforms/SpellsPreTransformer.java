@@ -32,30 +32,29 @@ public class SpellsPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BhrutCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Spells.class);
+        Spells parser = (Spells) parsers.get(Spells.class);
 
         if (parser != null) {
             while (parser.nextRecord()) {
 
                 try {
-                    Spells spellsParser = (Spells) parser;
 
-                    if (!spellsParser.getAdmissionHospitalCode().isEmpty()) {
-                        CsvCell admissionHospitalCodeCell = spellsParser.getAdmissionHospitalCode();
+                    if (!parser.getAdmissionHospitalCode().isEmpty()) {
+                        CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
                         String admissionHospitalCode = admissionHospitalCodeCell.getString();
-                        createResource(spellsParser, fhirResourceFiler, csvHelper, version, admissionHospitalCode);
+                        createResource(parser, fhirResourceFiler, csvHelper, version, admissionHospitalCode);
                     }
 
-                    if (!spellsParser.getAdmissionConsultantCode().isEmpty()) {
-                        CsvCell admissionConsultantCodeCell = spellsParser.getAdmissionConsultantCode();
+                    if (!parser.getAdmissionConsultantCode().isEmpty()) {
+                        CsvCell admissionConsultantCodeCell = parser.getAdmissionConsultantCode();
                         String admissionConsultantCode = admissionConsultantCodeCell.getString();
-                        createConsultantResource(spellsParser, fhirResourceFiler, csvHelper, version, admissionConsultantCode);
+                        createConsultantResource(parser, fhirResourceFiler, csvHelper, version, admissionConsultantCode);
 
                     }
 
 
-                    if (!spellsParser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
-                        cacheResources(spellsParser, fhirResourceFiler, csvHelper, version);
+                    if (!parser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
+                        cacheResources(parser, fhirResourceFiler, csvHelper, version);
                     }
 
                 } catch (Exception ex) {

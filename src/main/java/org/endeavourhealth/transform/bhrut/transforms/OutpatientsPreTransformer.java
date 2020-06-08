@@ -28,13 +28,13 @@ public class OutpatientsPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BhrutCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Outpatients.class);
+        Outpatients parser = (Outpatients) parsers.get(Outpatients.class);
 
         if (parser != null) {
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((Outpatients) parser, fhirResourceFiler, csvHelper, version);
+                    createResource(parser, fhirResourceFiler, csvHelper, version);
 
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
