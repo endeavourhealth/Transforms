@@ -120,7 +120,15 @@ public abstract class BhrutCsvToFhirTransformer {
                     AE_ATTENDANCES -> AandeAttendances
              */
             //filename format from v1.3 specification
-            // e.g. BHRUT_1_PATIENT_ALERTS_DataWarehouse_20200526221214.csv or BHRUT_1_PMI_DataWarehouse_20200526221214.csv
+            //BHRUT_3_AE_ATTENDANCES_DW_20200601162237.csv
+            // BHRUT_3_INPATIENT_SPELLS_DW_20200601162237.csv
+            // BHRUT_3_PATIENT_ALERTS_DW_20200601162237.csv
+            //BHRUT_3_INPATIENT_EPISODES_DW_20200601162237.csv
+            // BHRUT_3_OUTPATIENT_APPOINTMENTS_DW_20200601162237.csv
+            // BHRUT_3_PMI_DW_20200601162237.csv
+
+
+
             String[] toks = fName.split("_");
             if (toks.length == 5) {
 
@@ -181,7 +189,13 @@ public abstract class BhrutCsvToFhirTransformer {
 
         BhrutCsvHelper csvHelper
                 = new BhrutCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
+        for (Map.Entry entry : parsers.entrySet())
+        {
+            Class cls = (Class) entry.getKey();
+            AbstractCsvParser prs = (AbstractCsvParser) entry.getValue();
 
+            System.out.println("key: " + cls.getName() + "; value: " +  prs.getClass().getName());
+        }
         //these pre-transforms create Organization and Practitioner resources which subsequent transforms will reference
         PMIPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         OutpatientsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
