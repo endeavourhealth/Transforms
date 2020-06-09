@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -13,7 +14,7 @@ import java.util.Date;
 import java.util.List;
 
 public class ObservationBuilder extends ResourceBuilderBase
-                                implements HasCodeableConceptI, HasIdentifierI {
+        implements HasCodeableConceptI, HasIdentifierI, HasContainedParametersI {
 
     private Observation observation = null;
 
@@ -38,6 +39,11 @@ public class ObservationBuilder extends ResourceBuilderBase
     @Override
     public DomainResource getResource() {
         return observation;
+    }
+
+    @Override
+    public String getContainedParametersExtensionUrl() {
+        return FhirExtensionUri.ADDITIONAL;
     }
 
     public void setPatient(Reference patientReference, CsvCell... sourceCells) {
@@ -176,12 +182,12 @@ public class ObservationBuilder extends ResourceBuilderBase
 
     private boolean hasChildObservation(Reference reference) {
         if (this.observation.hasRelated()) {
-            for (Observation.ObservationRelatedComponent related: this.observation.getRelated()) {
+            for (Observation.ObservationRelatedComponent related : this.observation.getRelated()) {
 
                 Reference relatedReference = related.getTarget();
 
                 if (related.getType() == Observation.ObservationRelationshipType.HASMEMBER
-                    && ReferenceHelper.equals(reference, relatedReference)) {
+                        && ReferenceHelper.equals(reference, relatedReference)) {
                     return true;
                 }
             }
@@ -216,7 +222,7 @@ public class ObservationBuilder extends ResourceBuilderBase
         //if (this.observation.hasComponent()) {
         List<Observation.ObservationComponentComponent> components = this.observation.getComponent();
         if (components != null) {
-            return this.observation.getComponent().size()-1;
+            return this.observation.getComponent().size() - 1;
         } else {
             throw new IllegalArgumentException("No components in observation");
         }
@@ -227,13 +233,12 @@ public class ObservationBuilder extends ResourceBuilderBase
         if (!component.hasValue()) {
             component.setValue(new Quantity());
         }
-        return (Quantity)component.getValue();
+        return (Quantity) component.getValue();
     }
 
     public void addComponent() {
         this.observation.addComponent();
     }
-
 
 
     public void setComponentValue(Double value, CsvCell... sourceCells) {

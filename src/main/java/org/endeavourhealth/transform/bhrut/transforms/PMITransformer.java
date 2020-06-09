@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.bhrut.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
-import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.PMI;
@@ -83,6 +82,71 @@ public class PMITransformer {
             patientBuilder.setDateOfDeath(dod.getDate(), dod);
         } else {
             patientBuilder.clearDateOfDeath();
+        }
+
+        Reference mainCauseOfDeathReference = null;
+        CsvCell causeOfDeathCell = parser.getCauseOfDeath();
+        if (!causeOfDeathCell.isEmpty()) {
+            ObservationBuilder observationBuilder = new ObservationBuilder();
+            ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
+            containedParametersBuilder.removeContainedParameters();
+            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
+            DateTimeType dateTimeType = new DateTimeType(parser.getDateOfDeath().getDateTime());
+            observationBuilder.setEffectiveDate(dateTimeType, parser.getDateOfDeath());
+            String obsId = parser.getID() + "CAUSEOFDEATH";
+            containedParametersBuilder.addParameter(obsId, causeOfDeathCell.getString(), causeOfDeathCell);
+            mainCauseOfDeathReference = csvHelper.createObservationReference(obsId, patientIdCell.getString());
+        }
+
+        CsvCell causeOfDeath1BCell = parser.getCauseOfDeath1B();
+        if (!causeOfDeath1BCell.isEmpty()) {
+            ObservationBuilder observationBuilder = new ObservationBuilder();
+            ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
+            containedParametersBuilder.removeContainedParameters();
+            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
+            DateTimeType dateTimeType = new DateTimeType(parser.getDateOfDeath().getDateTime());
+            observationBuilder.setEffectiveDate(dateTimeType, parser.getDateOfDeath());
+            String obsId = parser.getID() + "CAUSEOFDEATH_1B";
+            containedParametersBuilder.addParameter(obsId, causeOfDeath1BCell.getString(), causeOfDeath1BCell);
+            observationBuilder.setParentResource(mainCauseOfDeathReference);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
+        }
+        CsvCell causeOfDeath1CCell = parser.getCauseOfDeath1C();
+        if (!causeOfDeath1CCell.isEmpty()) {
+            ObservationBuilder observationBuilder = new ObservationBuilder();
+            ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
+            containedParametersBuilder.removeContainedParameters();
+            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
+            DateTimeType dateTimeType = new DateTimeType(parser.getDateOfDeath().getDateTime());
+            observationBuilder.setEffectiveDate(dateTimeType, parser.getDateOfDeath());
+            String obsId = parser.getID() + "CAUSEOFDEATH_1c";
+            containedParametersBuilder.addParameter(obsId, causeOfDeath1CCell.getString(), causeOfDeath1CCell);
+            observationBuilder.setParentResource(mainCauseOfDeathReference);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
+        }
+        CsvCell causeOfDeath2CCell = parser.getCauseOfDeath2();
+        if (!causeOfDeath2CCell.isEmpty()) {
+            ObservationBuilder observationBuilder = new ObservationBuilder();
+            ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
+            containedParametersBuilder.removeContainedParameters();
+            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
+            DateTimeType dateTimeType = new DateTimeType(parser.getDateOfDeath().getDateTime());
+            observationBuilder.setEffectiveDate(dateTimeType, parser.getDateOfDeath());
+            String obsId = parser.getID() + "CAUSEOFDEATH_2";
+            containedParametersBuilder.addParameter(obsId, causeOfDeath2CCell.getString(), causeOfDeath2CCell);
+            observationBuilder.setParentResource(mainCauseOfDeathReference);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
+        }
+
+        //Todo Need to verify the InfectionStatus
+        CsvCell infectionStatusCell = parser.getInfectionStatus();
+        if (!infectionStatusCell.isEmpty()) {
+            ObservationBuilder observationBuilder = new ObservationBuilder();
+            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Component_Code);
+            codeableConceptBuilder.setText(infectionStatusCell.getString());
+
         }
 
         CsvCell sex = parser.getGender();
@@ -253,29 +317,6 @@ public class PMITransformer {
             ContactPointBuilder.endContactPoints(patientBuilder, csvHelper.getDataDate(), system, use);
         }
     }
-
-
-    private static RegistrationType findPreviousRegistrationType(BhrutCsvHelper csvHelper, CsvCell patientIdCell) throws Exception {
-
-        String localId = csvHelper.createUniqueId(patientIdCell, null);
-        EpisodeOfCare episodeOfCare = (EpisodeOfCare) csvHelper.retrieveResource(localId, ResourceType.EpisodeOfCare);
-
-        //if no previous instance of the episode, we have no idea what the registration type used to be
-        if (episodeOfCare == null) {
-            return RegistrationType.OTHER;
-        }
-
-        EpisodeOfCareBuilder builder = new EpisodeOfCareBuilder(episodeOfCare);
-        RegistrationType previousType = builder.getRegistrationType();
-
-        //we should never have a previous episode without a type, but just in case
-        if (previousType == null) {
-            return RegistrationType.OTHER;
-        }
-
-        return previousType;
-    }
-
 
     /**
      * Bhrut - do they send us a delete for a patient WITHOUT a corresponding delete for all other data?,
