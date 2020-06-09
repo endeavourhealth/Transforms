@@ -70,6 +70,7 @@ public abstract class BhrutCsvToFhirTransformer {
 
     private static void validateAndOpenParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
+
         findFileAndOpenParser(PMI.class, serviceId, systemId, exchangeId, files, version, parsers);
 
         findFileAndOpenParser(Alerts.class, serviceId, systemId, exchangeId, files, version, parsers);
@@ -88,8 +89,7 @@ public abstract class BhrutCsvToFhirTransformer {
                 .stream()
                 .map(T -> T.getFilePath())
                 .collect(Collectors.toSet());
-
-        for (String filePath: files) {
+        for (String filePath : files) {
             if (!expectedFiles.contains(filePath)
                     && !FilenameUtils.getExtension(filePath).equalsIgnoreCase("csv")) {
 
@@ -101,10 +101,8 @@ public abstract class BhrutCsvToFhirTransformer {
     public static void findFileAndOpenParser(Class parserCls, UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> ret) throws Exception {
 
         String className = parserCls.getSimpleName();
-
-        for (String filePath: files) {
+        for (String filePath : files) {
             String fName = FilenameUtils.getName(filePath);
-
             //we're only interested in CSV files
             String extension = Files.getFileExtension(fName);
             if (!extension.equalsIgnoreCase("csv")) {
@@ -128,42 +126,34 @@ public abstract class BhrutCsvToFhirTransformer {
             // BHRUT_3_PMI_DW_20200601162237.csv
 
 
-
             String[] toks = fName.split("_");
             if (toks.length == 5) {
-
                 String fileType = toks[2];
                 if (className.equalsIgnoreCase("PMI")) {
                     if (!fileType.equalsIgnoreCase("PMI")) {
                         continue;
                     }
                 }
-
+                continue;
             } else if (toks.length == 6) {
-
                 String fileType = toks[2] + "_" + toks[3];
                 if (className.equalsIgnoreCase("Alerts")) {
-
                     if (!fileType.equalsIgnoreCase("PATIENT_ALERTS")) {
                         continue;
                     }
                 } else if (className.equalsIgnoreCase("Episodes")) {
-
                     if (!fileType.equalsIgnoreCase("INPATIENT_EPISODES")) {
                         continue;
                     }
                 } else if (className.equalsIgnoreCase("Spells")) {
-
                     if (!fileType.equalsIgnoreCase("INPATIENT_SPELLS")) {
                         continue;
                     }
                 } else if (className.equalsIgnoreCase("Outpatients")) {
-
                     if (!fileType.equalsIgnoreCase("OUTPATIENT_APPOINTMENTS")) {
                         continue;
                     }
                 } else if (className.equalsIgnoreCase("AandeAttendances")) {
-
                     if (!fileType.equalsIgnoreCase("AE_ATTENDANCES")) {
                         continue;
                     }
@@ -175,7 +165,6 @@ public abstract class BhrutCsvToFhirTransformer {
             //now construct an instance of the parser for the file we've found which matches the className
             Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
             AbstractCsvParser parser = constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
-
             ret.put(parserCls, parser);
             return;
         }
@@ -189,12 +178,10 @@ public abstract class BhrutCsvToFhirTransformer {
 
         BhrutCsvHelper csvHelper
                 = new BhrutCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
-        for (Map.Entry entry : parsers.entrySet())
-        {
+
+        for (Map.Entry entry : parsers.entrySet()) {
             Class cls = (Class) entry.getKey();
             AbstractCsvParser prs = (AbstractCsvParser) entry.getValue();
-
-            System.out.println("key: " + cls.getName() + "; value: " +  prs.getClass().getName());
         }
         //these pre-transforms create Organization and Practitioner resources which subsequent transforms will reference
         PMIPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
