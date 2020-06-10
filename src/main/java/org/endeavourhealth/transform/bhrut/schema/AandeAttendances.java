@@ -54,6 +54,7 @@ public class AandeAttendances extends AbstractCsvParser {
                 "LAST_SPECIALTY_REFERRED",
                 "BED_REQUEST_DTTM",
                 "BED_REQUEST_OUTCOME_DTTM",
+                "MINUTES_TO_BED_REQUEST",
                 "CAU_BED_REQUEST_DTTM",
                 "MAU_BED_REQUEST_DTTM",
                 "SAU_BED_REQUEST_DTTM",
@@ -65,9 +66,9 @@ public class AandeAttendances extends AbstractCsvParser {
                 "COMPLAINT",
                 "DISCHARGED_DTTM",
                 "LEFT_DEPARTMENT_DTTM",
-                "TIME_IN_DEPARTMENT",
                 "DISCHARGE_DESTINATION",
                 "RECORDED_OUTCOME",
+                "TIME_IN_DEPARTMENT",
                 "DataUpdateStatus"
 
 
@@ -199,6 +200,10 @@ public class AandeAttendances extends AbstractCsvParser {
         return super.getCell("BED_REQUEST_OUTCOME_DTTM");
     }
 
+    public CsvCell getMinutesToBedRequest() {
+        return super.getCell("MINUTES_TO_BED_REQUEST");
+    }
+
     public CsvCell getCauBedRequestDttm() {
         return super.getCell("CAU_BED_REQUEST_DTTM");
     }
@@ -243,16 +248,16 @@ public class AandeAttendances extends AbstractCsvParser {
         return super.getCell("LEFT_DEPARTMENT_DTTM");
     }
 
-    public CsvCell getTimeInDepartment() {
-        return super.getCell("TIME_IN_DEPARTMENT");
-    }
-
     public CsvCell getDischargeDestination() {
         return super.getCell("DISCHARGE_DESTINATION");
     }
 
     public CsvCell getRecordedOutcome() {
         return super.getCell("RECORDED_OUTCOME");
+    }
+
+    public CsvCell getTimeInDepartment() {
+        return super.getCell("TIME_IN_DEPARTMENT");
     }
 
     public CsvCell getDataUpdateStatus() {

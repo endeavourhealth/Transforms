@@ -22,7 +22,7 @@ public class PMI extends AbstractCsvParser {
                 "FORENAME",
                 "SURNAME",
                 "NHS_NUMBER",
-                "GENDER",
+                "GENDER_CODE",
                 "BIRTH_DTTM",
                 "DEATH_DTTM",
                 "CAUSEOFDEATH",
@@ -84,7 +84,7 @@ public class PMI extends AbstractCsvParser {
     }
 
     public CsvCell getGender() {
-        return super.getCell("GENDER");
+        return super.getCell("GENDER_CODE");
     }
 
     public CsvCell getDateOfBirth() {
