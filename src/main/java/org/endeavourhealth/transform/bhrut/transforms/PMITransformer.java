@@ -151,9 +151,18 @@ public class PMITransformer {
 
         CsvCell sex = parser.getGender();
         if (!sex.isEmpty()) {
-            VocSex sexEnum = VocSex.fromValue(sex.getString());
-            Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
-            patientBuilder.setGender(gender, sex);
+            int genderCode = sex.getInt();
+            switch (genderCode) {
+                case 0:  patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
+                break;
+                case 1:  patientBuilder.setGender(Enumerations.AdministrativeGender.MALE, sex);
+                    break;
+                case 2:  patientBuilder.setGender(Enumerations.AdministrativeGender.FEMALE, sex);
+                    break;
+                case 9:  patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
+                    break;
+            }
+
         }
 
         createName(patientBuilder, parser, csvHelper);
