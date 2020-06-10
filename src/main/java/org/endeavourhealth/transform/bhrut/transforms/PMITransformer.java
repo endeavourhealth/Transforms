@@ -7,8 +7,6 @@ import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.PMI;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
-import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,12 +72,12 @@ public class PMITransformer {
 
         CsvCell dob = parser.getDateOfBirth();
         if (!dob.isEmpty()) {
-            patientBuilder.setDateOfBirth(dob.getDate(), dob);
+            patientBuilder.setDateOfBirth(csvHelper.getDate(dob), dob);
         }
 
         CsvCell dod = parser.getDateOfDeath();
         if (!dod.isEmpty()) {
-            patientBuilder.setDateOfDeath(dod.getDate(), dod);
+            patientBuilder.setDateOfDeath(csvHelper.getDate(dod), dod);
         } else {
             patientBuilder.clearDateOfDeath();
         }
@@ -91,8 +89,7 @@ public class PMITransformer {
             ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
             containedParametersBuilder.removeContainedParameters();
             observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-            DateTimeType dateTimeType = new DateTimeType(parser.getDateOfDeath().getDateTime());
-            observationBuilder.setEffectiveDate(dateTimeType, parser.getDateOfDeath());
+            observationBuilder.setEffectiveDate(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
             String obsId = parser.getID() + "CAUSEOFDEATH";
             containedParametersBuilder.addParameter(obsId, causeOfDeathCell.getString(), causeOfDeathCell);
             mainCauseOfDeathReference = csvHelper.createObservationReference(obsId, patientIdCell.getString());
@@ -104,8 +101,7 @@ public class PMITransformer {
             ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
             containedParametersBuilder.removeContainedParameters();
             observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-            DateTimeType dateTimeType = new DateTimeType(parser.getDateOfDeath().getDateTime());
-            observationBuilder.setEffectiveDate(dateTimeType, parser.getDateOfDeath());
+            observationBuilder.setEffectiveDate(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
             String obsId = parser.getID() + "CAUSEOFDEATH_1B";
             containedParametersBuilder.addParameter(obsId, causeOfDeath1BCell.getString(), causeOfDeath1BCell);
             observationBuilder.setParentResource(mainCauseOfDeathReference);
@@ -117,8 +113,7 @@ public class PMITransformer {
             ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
             containedParametersBuilder.removeContainedParameters();
             observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-            DateTimeType dateTimeType = new DateTimeType(parser.getDateOfDeath().getDateTime());
-            observationBuilder.setEffectiveDate(dateTimeType, parser.getDateOfDeath());
+            observationBuilder.setEffectiveDate(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
             String obsId = parser.getID() + "CAUSEOFDEATH_1c";
             containedParametersBuilder.addParameter(obsId, causeOfDeath1CCell.getString(), causeOfDeath1CCell);
             observationBuilder.setParentResource(mainCauseOfDeathReference);
@@ -130,8 +125,7 @@ public class PMITransformer {
             ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
             containedParametersBuilder.removeContainedParameters();
             observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-            DateTimeType dateTimeType = new DateTimeType(parser.getDateOfDeath().getDateTime());
-            observationBuilder.setEffectiveDate(dateTimeType, parser.getDateOfDeath());
+            observationBuilder.setEffectiveDate(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
             String obsId = parser.getID() + "CAUSEOFDEATH_2";
             containedParametersBuilder.addParameter(obsId, causeOfDeath2CCell.getString(), causeOfDeath2CCell);
             observationBuilder.setParentResource(mainCauseOfDeathReference);

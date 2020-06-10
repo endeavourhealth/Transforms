@@ -36,12 +36,14 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BhrutCsvHelper.class);
+    public static final SimpleDateFormat DATE_TIME_FORMAT_BHRUT =  new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");;
 
 
     //
@@ -98,6 +100,15 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public PasIdtoGPCache getPasIdtoGPCache() {
         return pasIdtoGPCache;
+    }
+
+    public static DateTimeType getDateTimeType(CsvCell cell) throws ParseException {
+        DateTimeType dtt = new DateTimeType(DATE_TIME_FORMAT_BHRUT.parse(cell.getString()));
+        return dtt;
+    }
+    public static Date getDate(CsvCell cell) throws ParseException {
+        Date d = DATE_TIME_FORMAT_BHRUT.parse(cell.getString());
+        return d;
     }
 
     /**
