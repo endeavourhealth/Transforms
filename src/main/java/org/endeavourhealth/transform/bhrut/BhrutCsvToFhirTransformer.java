@@ -129,72 +129,59 @@ public abstract class BhrutCsvToFhirTransformer {
             String[] toks = fName.split("_");
             if (toks.length == 5) {
                 String fileType = toks[2];
-                if (className.equalsIgnoreCase("PMI")) {
-                    if (!fileType.equalsIgnoreCase("PMI")) {
-                        continue;
-                    }
+                if (className.equalsIgnoreCase("PMI") && fileType.equalsIgnoreCase("PMI")) {
+                    // Class and file match
+                    LOG.debug("Matched class:" + className +":" + fileType);
+                } else {
+                    continue;
                 }
-                continue;
             } else if (toks.length == 6) {
                 String fileType = toks[2] + "_" + toks[3];
-                if (className.equalsIgnoreCase("Alerts")) {
-                    if (!fileType.equalsIgnoreCase("PATIENT_ALERTS")) {
-                        continue;
-                    }
-                } else if (className.equalsIgnoreCase("Episodes")) {
-                    if (!fileType.equalsIgnoreCase("INPATIENT_EPISODES")) {
-                        continue;
-                    }
-                } else if (className.equalsIgnoreCase("Spells")) {
-                    if (!fileType.equalsIgnoreCase("INPATIENT_SPELLS")) {
-                        continue;
-                    }
-                } else if (className.equalsIgnoreCase("Outpatients")) {
-                    if (!fileType.equalsIgnoreCase("OUTPATIENT_APPOINTMENTS")) {
-                        continue;
-                    }
-                } else if (className.equalsIgnoreCase("AandeAttendances")) {
-                    if (!fileType.equalsIgnoreCase("AE_ATTENDANCES")) {
-                        continue;
-                    }
+                if ((className.equalsIgnoreCase("Alerts") && fileType.equalsIgnoreCase("PATIENT_ALERTS"))
+                        || (className.equalsIgnoreCase("Episodes") && fileType.equalsIgnoreCase("INPATIENT_EPISODES"))
+                        || (className.equalsIgnoreCase("Spells") && fileType.equalsIgnoreCase("INPATIENT_SPELLS"))
+                        || (className.equalsIgnoreCase("Outpatients") && fileType.equalsIgnoreCase("OUTPATIENT_APPOINTMENTS"))
+                        || (className.equalsIgnoreCase("AandeAttendances") && fileType.equalsIgnoreCase("AE_ATTENDANCES"))) {
+                    //Class and file match
+                    LOG.debug("Matched class:" + className + ":" + fileType);
+                } else {
+                    continue;
                 }
-            } else {
-                continue;
+
             }
+                //now construct an instance of the parser for the file we've found which matches the className
+                Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
+                AbstractCsvParser parser = constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
+                ret.put(parserCls, parser);
+                return;
 
-            //now construct an instance of the parser for the file we've found which matches the className
-            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
-            AbstractCsvParser parser = constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
-            ret.put(parserCls, parser);
-            return;
+        }
+            throw new FileNotFoundException("Failed to find CSV file match for " + className);
         }
 
-        throw new FileNotFoundException("Failed to find CSV file match for " + className);
-    }
+        private static void transformParsers (String version,
+                Map < Class, AbstractCsvParser > parsers,
+                FhirResourceFiler fhirResourceFiler) throws Exception {
 
-    private static void transformParsers(String version,
-                                         Map<Class, AbstractCsvParser> parsers,
-                                         FhirResourceFiler fhirResourceFiler) throws Exception {
+            BhrutCsvHelper csvHelper
+                    = new BhrutCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
 
-        BhrutCsvHelper csvHelper
-                = new BhrutCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
+            for (Map.Entry entry : parsers.entrySet()) {
+                Class cls = (Class) entry.getKey();
+                AbstractCsvParser prs = (AbstractCsvParser) entry.getValue();
+            }
+            //these pre-transforms create Organization and Practitioner resources which subsequent transforms will reference
+            PMIPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            OutpatientsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            SpellsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            EpisodesPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
-        for (Map.Entry entry : parsers.entrySet()) {
-            Class cls = (Class) entry.getKey();
-            AbstractCsvParser prs = (AbstractCsvParser) entry.getValue();
+            //then the patient resources - note the order of these transforms is important, as Patients should be before Encounters
+            PMITransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            AlertsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            OutpatientsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            SpellsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            EpisodesTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+            AndEAttendanceTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         }
-        //these pre-transforms create Organization and Practitioner resources which subsequent transforms will reference
-        PMIPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        OutpatientsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        SpellsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        EpisodesPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-
-        //then the patient resources - note the order of these transforms is important, as Patients should be before Encounters
-        PMITransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        AlertsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        OutpatientsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        SpellsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        EpisodesTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        AndEAttendanceTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
     }
-}

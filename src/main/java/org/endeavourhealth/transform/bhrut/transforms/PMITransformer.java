@@ -285,6 +285,8 @@ public class PMITransformer {
             addressBuilder.setCity(town.getString(), town);
             addressBuilder.setDistrict(county.getString(), county);
             addressBuilder.setPostcode(postcode.getString(), postcode);
+
+
         }
     }
 
@@ -297,7 +299,8 @@ public class PMITransformer {
             contactPointBuilder.setUse(use);
             contactPointBuilder.setSystem(system);
             contactPointBuilder.setValue(cell.getString(), cell);
-        }
+
+          }
     }
 
     /**
