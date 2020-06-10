@@ -242,10 +242,6 @@ public class PMITransformer {
             identifierBuilder.setSystem(system);
             identifierBuilder.setValue(cell.getString(), cell);
 
-            IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, csvHelper.getDataDate());
-
-        } else {
-            IdentifierBuilder.endIdentifiers(patientBuilder, csvHelper.getDataDate(), system, use);
         }
     }
 
@@ -262,10 +258,6 @@ public class PMITransformer {
             nameBuilder.addGiven(givenName.getString(), givenName);
             nameBuilder.addFamily(surname.getString(), surname);
 
-            NameBuilder.deDuplicateLastName(patientBuilder, csvHelper.getDataDate());
-
-        } else {
-            NameBuilder.endNames(patientBuilder, csvHelper.getDataDate(), HumanName.NameUse.OFFICIAL);
         }
     }
 
@@ -293,11 +285,6 @@ public class PMITransformer {
             addressBuilder.setCity(town.getString(), town);
             addressBuilder.setDistrict(county.getString(), county);
             addressBuilder.setPostcode(postcode.getString(), postcode);
-
-            AddressBuilder.deDuplicateLastAddress(patientBuilder, csvHelper.getDataDate());
-
-        } else {
-            AddressBuilder.endAddresses(patientBuilder, csvHelper.getDataDate(), Address.AddressUse.HOME);
         }
     }
 
@@ -310,11 +297,6 @@ public class PMITransformer {
             contactPointBuilder.setUse(use);
             contactPointBuilder.setSystem(system);
             contactPointBuilder.setValue(cell.getString(), cell);
-
-            ContactPointBuilder.deDuplicateLastContactPoint(patientBuilder, csvHelper.getDataDate());
-
-        } else {
-            ContactPointBuilder.endContactPoints(patientBuilder, csvHelper.getDataDate(), system, use);
         }
     }
 
