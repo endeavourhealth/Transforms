@@ -1,11 +1,26 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.google.common.base.Strings;
+import org.apache.commons.lang3.ObjectUtils;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 
 public class EmergencyCdsTargetTransformer {
@@ -34,246 +49,442 @@ public class EmergencyCdsTargetTransformer {
             return;
         }
 
-        //TransformWarnings.log(LOG, csvHelper, "Target EmergencyCds records to transform to FHIR: {} for exchangeId: {}", targetEmergencyCds.size(), csvHelper.getExchangeId());
-
         for (StagingEmergencyCdsTarget targetEmergencyCds : targetEmergencyCdsRecords) {
 
-            String uniqueId = targetEmergencyCds.getUniqueId();
             boolean isDeleted = targetEmergencyCds.isDeleted();
+            if (isDeleted) {
 
-            //TODO: file into v2 Core publisher
-            //treatmentFunctionCode is a Cerner code which is mapped to an NHS alias
+                deleteEmergencyCdsEncounterAndChildren(targetEmergencyCds, fhirResourceFiler, csvHelper);
+                continue;
+            }
 
-//            if (isDeleted) {
-//
-//                // retrieve the existing Composition resource to perform the deletion on
-//                Composition existingComposition
-//                        = (Composition) csvHelper.retrieveResourceForLocalId(ResourceType.Composition, uniqueId);
-//
-//                if (existingComposition != null) {
-//                    CompositionBuilder compositionBuilder = new CompositionBuilder(existingComposition, targetEmergencyCds.getAudit());
-//
-//                    //remember to pass in false since this existing composition is already ID mapped
-//                    fhirResourceFiler.deletePatientResource(null, false, compositionBuilder);
-//                } else {
-//                    TransformWarnings.log(LOG, csvHelper, "Cannot find existing Composition: {} for deletion", uniqueId);
-//                }
-//
-//                continue;
-//            }
-//
-//            // create the FHIR Composition resource
-//            CompositionBuilder compositionBuilder
-//                    = new CompositionBuilder(null, targetEmergencyCds.getAudit());
-//            compositionBuilder.setId(uniqueId);
-//
-//            Integer personId = targetEmergencyCds.getPersonId();
-//            String patientIdStr
-//                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Patient, Integer.toString(personId));
-//            Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
-//            compositionBuilder.setPatientSubject(patientReference);
-//            compositionBuilder.setTitle("Encounter Composition");
-//            compositionBuilder.setStatus(Composition.CompositionStatus.FINAL);
-//            Identifier identifier = new Identifier();
-//            identifier.setValue(uniqueId);
-//            compositionBuilder.setIdentifier(identifier);
-//
-//            // set top level encounter which encapsulates the other sub-encounters (up to 5 in composition sections)
-//            Encounter encounterEmergencyParent = new Encounter();
-//            encounterEmergencyParent.setEncounterType("emergency");
-//
-//            //the attendanceId associated with the emergency encounter(s), used for top level parent encounter
-//            String attendanceId = targetEmergencyCds.getAttendanceId();
-//            String topLevelEncounterId = attendanceId + ":00:ED";
-//            String topLevelEncounterIdStr
-//                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, topLevelEncounterId);
-//            encounterEmergencyParent.setEncounterId(topLevelEncounterIdStr);
-//            encounterEmergencyParent.setPatientId(patientIdStr);
-//            encounterEmergencyParent.setEffectiveDate(targetEmergencyCds.getDtArrival());
-//            encounterEmergencyParent.setEffectiveEndDate(targetEmergencyCds.getDtDeparture());
-//
-//            String episodeIdStr = null;
-//            if (targetEmergencyCds.getEpisodeId() != null) {
-//                episodeIdStr =
-//                        IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, targetEmergencyCds.getEpisodeId().toString());
-//            }
-//            encounterEmergencyParent.setEpisodeOfCareId(episodeIdStr);
-//
-//            //the top level encounterId which links to ENCTR and other associated records
-//            Integer parentEncounterId = targetEmergencyCds.getEncounterId();
-//            String parentEncounterIdStr = null;
-//            if (parentEncounterId != null) {
-//                parentEncounterIdStr
-//                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, Integer.toString(parentEncounterId));
-//            }
-//            encounterEmergencyParent.setParentEncounterId(parentEncounterIdStr);
-//
-//            String performerIdStr = null;
-//            if (targetEmergencyCds.getPerformerPersonnelId() != null) {
-//                performerIdStr
-//                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Practitioner, targetEmergencyCds.getPerformerPersonnelId().toString());
-//            }
-//            encounterEmergencyParent.setPractitionerId(performerIdStr);
-//
-//            String serviceProviderOrgStr = null;
-//            if (!Strings.isNullOrEmpty(targetEmergencyCds.getOrganisationCode())) {
-//                serviceProviderOrgStr
-//                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Organization, targetEmergencyCds.getOrganisationCode());
-//            }
-//            encounterEmergencyParent.setServiceProviderOrganisationId(serviceProviderOrgStr);
-//
-//            // create a list of additional data to store as Json for this encounter instance
-//            JsonObject additionalObjs = new JsonObject();
-//            additionalObjs.addProperty("attendance_category", targetEmergencyCds.getAttendanceCategory());
-//            additionalObjs.addProperty("attendance_source", targetEmergencyCds.getAttendanceSource());
-//            encounterEmergencyParent.setAdditionalFieldsJson(additionalObjs.toString());
-//
-//            String encounterInstanceAsJson = null;
-//            encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterEmergencyParent);
-//            compositionBuilder.addSection("encounter-1", encounterEmergencyParent.getEncounterId(), encounterInstanceAsJson);
-//
-//
-//            // sub encounter: the A&E attendance  (sequence #1)
-//            Encounter encounterArrival = new Encounter();
-//            encounterArrival.setEncounterType("emergency arrival");
-//            String attendanceIdStr
-//                    = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":01:ED");
-//            encounterArrival.setEncounterId(attendanceIdStr);
-//            encounterArrival.setPatientId(patientIdStr);
-//            encounterArrival.setEffectiveDate(targetEmergencyCds.getDtArrival());
-//            encounterArrival.setEffectiveEndDate(null);
-//            encounterArrival.setEpisodeOfCareId(episodeIdStr);
-//            encounterArrival.setParentEncounterId(topLevelEncounterIdStr);
-//            encounterArrival.setPractitionerId(performerIdStr);
-//            encounterArrival.setServiceProviderOrganisationId(serviceProviderOrgStr);
-//
-//            // create a list of additional data to store as Json for this encounterArrival instance
-//            JsonObject additionalArrivalObjs = new JsonObject();
-//            additionalArrivalObjs.addProperty("department_type", targetEmergencyCds.getDepartmentType());
-//            additionalArrivalObjs.addProperty("ambulance_no", targetEmergencyCds.getAmbulanceNo());
-//            additionalArrivalObjs.addProperty("arrival_mode", targetEmergencyCds.getArrivalMode());
-//            additionalArrivalObjs.addProperty("chief_complaint", targetEmergencyCds.getChiefComplaint());
-//            encounterArrival.setAdditionalFieldsJson(additionalArrivalObjs.toString());
-//
-//            encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterArrival);
-//            compositionBuilder.addSection("encounter-1-01", encounterArrival.getEncounterId(), encounterInstanceAsJson);
-//
-//            // sub encounter: the initial assessment  (sequence #2)
-//            Date initialAssessmentDate = targetEmergencyCds.getDtInitialAssessment();
-//            if (initialAssessmentDate != null) {
-//
-//                Encounter encounterAssessment = new Encounter();
-//                encounterAssessment.setEncounterType("emergency initial assessment");
-//                attendanceIdStr
-//                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":02:ED");
-//                encounterAssessment.setEncounterId(attendanceIdStr);
-//                encounterAssessment.setPatientId(patientIdStr);
-//                encounterAssessment.setEffectiveDate(initialAssessmentDate);
-//                encounterAssessment.setEffectiveEndDate(null);
-//                encounterAssessment.setEpisodeOfCareId(episodeIdStr);
-//                encounterAssessment.setParentEncounterId(topLevelEncounterIdStr);
-//                encounterAssessment.setPractitionerId(performerIdStr);
-//                encounterAssessment.setServiceProviderOrganisationId(serviceProviderOrgStr);
-//
-//                //create a list of additional data to store as Json for this encounterAssessment instance
-//                JsonObject additionalAssessmentObjs = new JsonObject();
-//                if (!Strings.isNullOrEmpty(targetEmergencyCds.getSafeguardingConcerns())){
-//                    additionalAssessmentObjs.addProperty("safeguarding_concerns", targetEmergencyCds.getSafeguardingConcerns());
-//                }
-//                encounterAssessment.setAdditionalFieldsJson(additionalAssessmentObjs.toString());
-//
-//                encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterAssessment);
-//                compositionBuilder.addSection("encounter-1-02", encounterAssessment.getEncounterId(), encounterInstanceAsJson);
-//            }
-//
-//            // sub encounter: the diagnosis, investigation and treatments  (sequence #3)
-//            Date invTreatDiagDate = targetEmergencyCds.getDtSeenForTreatment();
-//            if (invTreatDiagDate !=null) {
-//
-//                Encounter encounterInvTreat = new Encounter();
-//                encounterInvTreat.setEncounterType("emergency investigations and treatments");
-//                attendanceIdStr
-//                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId + ":03:ED");
-//                encounterInvTreat.setEncounterId(attendanceIdStr);
-//                encounterInvTreat.setPatientId(patientIdStr);
-//                encounterInvTreat.setEffectiveDate(targetEmergencyCds.getDtSeenForTreatment());
-//                encounterInvTreat.setEffectiveEndDate(null);
-//                encounterInvTreat.setEpisodeOfCareId(episodeIdStr);
-//                encounterInvTreat.setParentEncounterId(topLevelEncounterIdStr);
-//                encounterInvTreat.setPractitionerId(performerIdStr);
-//                encounterInvTreat.setServiceProviderOrganisationId(serviceProviderOrgStr);
-//
-//                // create a list of additional data to store as Json for this encounterInvTreat instance
-//                JsonObject additionalInvTreatObjs = new JsonObject();
-//                additionalInvTreatObjs.addProperty("treatment_function_code", targetEmergencyCds.getTreatmentFunctionCode());
-//                additionalInvTreatObjs.addProperty("diagnosis", targetEmergencyCds.getDiagnosis());
-//                additionalInvTreatObjs.addProperty("investigations", targetEmergencyCds.getInvestigations());
-//                additionalInvTreatObjs.addProperty("treatments", targetEmergencyCds.getTreatments());
-//                additionalInvTreatObjs.addProperty("referred_to_services", targetEmergencyCds.getReferredToServices());
-//                encounterInvTreat.setAdditionalFieldsJson(additionalInvTreatObjs.toString());
-//
-//                encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterInvTreat);
-//                compositionBuilder.addSection("encounter-1-03", encounterInvTreat.getEncounterId(), encounterInstanceAsJson);
-//            }
-//
-//            // sub encounter: the inpatient admission  (sequence #4) - this ultimately links up with the
-//            // inpatient_cds record with the same encounter_id
-//            Date admissionDate = targetEmergencyCds.getDtDecidedToAdmit();
-//            if (admissionDate != null) {
-//
-//                Encounter encounterAdmission = new Encounter();
-//                encounterAdmission.setEncounterType("inpatient admission");
-//                attendanceIdStr
-//                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":04:ED");
-//                encounterAdmission.setEncounterId(attendanceIdStr);
-//                encounterAdmission.setPatientId(patientIdStr);
-//                encounterAdmission.setEffectiveDate(admissionDate);
-//                encounterAdmission.setEffectiveEndDate(null);
-//                encounterAdmission.setEpisodeOfCareId(episodeIdStr);
-//                encounterAdmission.setParentEncounterId(topLevelEncounterIdStr);
-//                encounterAdmission.setPractitionerId(performerIdStr);
-//                encounterAdmission.setServiceProviderOrganisationId(serviceProviderOrgStr);
-//
-//                // no additional data to store as Json for this encounterAdmission instance
-//                encounterAdmission.setAdditionalFieldsJson(null);
-//
-//                encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterAdmission);
-//                compositionBuilder.addSection("encounter-1-04", encounterAdmission.getEncounterId(), encounterInstanceAsJson);
-//            }
-//
-//            // sub encounter: the discharge/departure from emergency  (sequence #5)
-//            Date departureDate = targetEmergencyCds.getDtDeparture();
-//            if (departureDate != null) {
-//
-//                Encounter encounterDischarge = new Encounter();
-//                encounterDischarge.setEncounterType("emergency discharge");
-//                attendanceIdStr
-//                        = IdHelper.getOrCreateEdsResourceIdString(csvHelper.getServiceId(), ResourceType.Encounter, attendanceId+":05:ED");
-//                encounterDischarge.setEncounterId(attendanceIdStr);
-//                encounterDischarge.setPatientId(patientIdStr);
-//                encounterDischarge.setEffectiveDate(departureDate);
-//                encounterDischarge.setEffectiveEndDate(null);
-//                encounterDischarge.setEpisodeOfCareId(episodeIdStr);
-//                encounterDischarge.setParentEncounterId(topLevelEncounterIdStr);
-//                encounterDischarge.setPractitionerId(performerIdStr);
-//                encounterDischarge.setServiceProviderOrganisationId(serviceProviderOrgStr);
-//
-//                // additional data to store as Json for this encounterAdmission instance
-//                JsonObject additionalDischargeObjs = new JsonObject();
-//                additionalDischargeObjs.addProperty("discharge_status", targetEmergencyCds.getDischargeStatus());
-//                additionalDischargeObjs.addProperty("discharge_destination", targetEmergencyCds.getDischargeDestination());
-//                encounterDischarge.setAdditionalFieldsJson(additionalDischargeObjs.toString());
-//
-//                encounterInstanceAsJson = ObjectMapperPool.getInstance().writeValueAsString(encounterDischarge);
-//                compositionBuilder.addSection("encounter-1-05", encounterDischarge.getEncounterId(), encounterInstanceAsJson);
-//            }
-//
-//            //LOG.debug("Saving CompositionId: "+uniqueId+", with resourceData: "+ FhirSerializationHelper.serializeResource(compositionBuilder.getResource()));
-//
-//            //save composition record
-//            fhirResourceFiler.savePatientResource(null, compositionBuilder);
-//
-//            //LOG.debug("Transforming compositionId: "+uniqueId+"  Filed");
+            //process top level encounter - the existing parent encounter set during ADT feed -
+            Integer encounterId = targetEmergencyCds.getEncounterId();  //this is used to identify the top level parent episode
+
+            if (encounterId != null) {
+
+                Encounter existingParentEncounter
+                        = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(encounterId));
+                if (existingParentEncounter != null) {
+
+                    //update the existing top level encounter
+                    updateExistingParentEncounter(existingParentEncounter, targetEmergencyCds, fhirResourceFiler, csvHelper);
+
+                    //create the linked child encounters
+                    createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
+
+                } else {
+
+                    //create top level parent with minimum data
+                    createInpatientCdsEncounterParentMinimum(targetEmergencyCds, fhirResourceFiler, csvHelper);
+
+                    //then create child level encounters linked to this new parent
+                    createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
+                }
+            } else {
+
+                String uniqueId = targetEmergencyCds.getUniqueId();
+                throw new Exception("encounter_id missing for Inpatient CDS record: " + uniqueId);
+            }
         }
+    }
+
+    private static void createEmergencyCdsEncounters(StagingEmergencyCdsTarget targetEmergencyCds,
+                                                     FhirResourceFiler fhirResourceFiler,
+                                                     BartsCsvHelper csvHelper) throws Exception {
+
+
+        //unique to the emergency dept. attendance
+        String attendanceId = targetEmergencyCds.getAttendanceId();
+
+        ////start with the A&E arrival encounter///////////////////////////////////////////////////////////////////////
+        EncounterBuilder arrivalEncounterBuilder = new EncounterBuilder();
+        arrivalEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
+
+        String arrivalEncounterId = attendanceId + ":01:EM";
+        arrivalEncounterBuilder.setId(arrivalEncounterId);
+        Date arrivalDate = targetEmergencyCds.getDtArrival();
+        arrivalEncounterBuilder.setPeriodStart(arrivalDate);
+        arrivalEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+
+        CodeableConceptBuilder codeableConceptBuilderAdmission
+                = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+        codeableConceptBuilderAdmission.setText("Emergency Arrival");
+
+        setCommonEncounterAttributes(arrivalEncounterBuilder, targetEmergencyCds, csvHelper);
+
+        //add in additional extended data as Parameters resource with additional extension
+        //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
+        ContainedParametersBuilder containedParametersBuilderMain
+                = new ContainedParametersBuilder(arrivalEncounterBuilder);
+        containedParametersBuilderMain.removeContainedParameters();
+
+        String aeAttendanceCategoryCode = targetEmergencyCds.getAttendanceCategory();
+        if (!Strings.isNullOrEmpty(aeAttendanceCategoryCode)) {
+            containedParametersBuilderMain.addParameter("ae_attendance_category", "" + aeAttendanceCategoryCode);
+        }
+        String aeAttendanceSource = targetEmergencyCds.getAttendanceSource();
+        if (!Strings.isNullOrEmpty(aeAttendanceSource)) {
+            containedParametersBuilderMain.addParameter("ae_attendance_source", "" + aeAttendanceSource);
+        }
+        String aeDepartmentType = targetEmergencyCds.getDepartmentType();
+        if (!Strings.isNullOrEmpty(aeDepartmentType)) {
+            containedParametersBuilderMain.addParameter("ae_department_type", "" + aeDepartmentType);
+        }
+        String aeArrivalMode = targetEmergencyCds.getArrivalMode();
+        if (!Strings.isNullOrEmpty(aeArrivalMode)) {
+            containedParametersBuilderMain.addParameter("ae_arrival_mode", "" + aeArrivalMode);
+        }
+        String chiefComplaint = targetEmergencyCds.getChiefComplaint();
+        if (!Strings.isNullOrEmpty(chiefComplaint)) {
+            containedParametersBuilderMain.addParameter("ae_chief_complaint", "" + chiefComplaint);
+        }
+        //this is a Cerner code which is mapped to an NHS DD alias
+        String treatmentFunctionCode = targetEmergencyCds.getTreatmentFunctionCode();
+        if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
+            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
+            if (codeRef != null) {
+
+                String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
+                containedParametersBuilderMain.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
+            }
+        }
+
+        //check for other dates to determine if the arrival has ended
+        Date assessmentDate = targetEmergencyCds.getDtInitialAssessment();
+        Date invAndTreatmentsDate = targetEmergencyCds.getDtSeenForTreatment();
+        Date admitDate = targetEmergencyCds.getDtDecidedToAdmit();
+        Date conclusionDate = targetEmergencyCds.getDtConclusion();
+        Date dischargeDate = targetEmergencyCds.getDtDeparture();
+        Date aeEndDate
+                = ObjectUtils.firstNonNull(assessmentDate, invAndTreatmentsDate, admitDate, conclusionDate, dischargeDate);
+        if (aeEndDate != null) {
+
+            arrivalEncounterBuilder.setPeriodEnd(aeEndDate);
+            arrivalEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        }
+        //save the A&E arrival encounter
+        fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
+
+
+        ////Is there an initial assessment encounter?///////////////////////////////////////////////////////////////////
+        if (assessmentDate != null) {
+
+            EncounterBuilder assessmentEncounterBuilder = new EncounterBuilder();
+            assessmentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
+
+            String assessmentEncounterId = attendanceId + ":02:EM";
+            assessmentEncounterBuilder.setId(assessmentEncounterId);
+            assessmentEncounterBuilder.setPeriodStart(assessmentDate);
+            assessmentEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+
+            CodeableConceptBuilder codeableConceptBuilderAssessment
+                    = new CodeableConceptBuilder(assessmentEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+            codeableConceptBuilderAssessment.setText("Emergency Initial Assessment");
+
+            setCommonEncounterAttributes(assessmentEncounterBuilder, targetEmergencyCds, csvHelper);
+
+            //add in additional extended data as Parameters resource with additional extension
+            //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
+            ContainedParametersBuilder containedParametersBuilderAss
+                    = new ContainedParametersBuilder(assessmentEncounterBuilder);
+            containedParametersBuilderAss.removeContainedParameters();
+
+            String safeGuardingConcerns = targetEmergencyCds.getSafeguardingConcerns();
+            if (!Strings.isNullOrEmpty(safeGuardingConcerns)) {
+                containedParametersBuilderMain.addParameter("safe_guarding_concerns", "" + safeGuardingConcerns);
+            }
+
+            Date aeAssessmentEndDate
+                    = ObjectUtils.firstNonNull(invAndTreatmentsDate, admitDate, conclusionDate, dischargeDate);
+            if (aeAssessmentEndDate != null) {
+
+                assessmentEncounterBuilder.setPeriodEnd(aeAssessmentEndDate);
+                assessmentEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            }
+            //save the A&E assessment encounter
+            fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
+
+        }
+
+        ////Is there a treatments encounter?////////////////////////////////////////////////////////////////////////////
+        if (invAndTreatmentsDate != null) {
+
+            EncounterBuilder treatmentsEncounterBuilder = new EncounterBuilder();
+            treatmentsEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
+
+            String treatmentsEncounterId = attendanceId + ":03:EM";
+            treatmentsEncounterBuilder.setId(treatmentsEncounterId);
+            treatmentsEncounterBuilder.setPeriodStart(invAndTreatmentsDate);
+            treatmentsEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+
+            CodeableConceptBuilder codeableConceptBuilderTreatments
+                    = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+            codeableConceptBuilderTreatments.setText("Emergency Investigations and Treatments");
+
+            setCommonEncounterAttributes(treatmentsEncounterBuilder, targetEmergencyCds, csvHelper);
+
+            //TODO - do we save the linked clinical data here?
+            //targetEmergencyCds.getDiagnosis();
+            //targetEmergencyCds.getInvestigations();
+            //targetEmergencyCds.getTreatments();
+
+            String referredToServices = targetEmergencyCds.getReferredToServices();
+            if (!Strings.isNullOrEmpty(referredToServices)) {
+
+                //TODO:  create referrals(s) linked to main encounter_id or ParametersList?
+            }
+
+            Date aeTreatmentsEndDate
+                    = ObjectUtils.firstNonNull(admitDate, conclusionDate, dischargeDate);
+            if (aeTreatmentsEndDate != null) {
+
+                treatmentsEncounterBuilder.setPeriodEnd(aeTreatmentsEndDate);
+                treatmentsEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            }
+            //save the A&E treatments encounter
+            fhirResourceFiler.savePatientResource(null, treatmentsEncounterBuilder);
+        }
+
+
+        ////Is there a discharge encounter?/////////////////////////////////////////////////////////////////////////////
+        if (dischargeDate != null) {
+
+            EncounterBuilder dischargeEncounterBuilder = new EncounterBuilder();
+            dischargeEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
+
+            String dischargeEncounterId = attendanceId + ":04:EM";
+            dischargeEncounterBuilder.setId(dischargeEncounterId);
+            dischargeEncounterBuilder.setPeriodStart(dischargeDate);
+            dischargeEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+
+            CodeableConceptBuilder codeableConceptBuilderDischarge
+                    = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+            codeableConceptBuilderDischarge.setText("Emergency Discharge");
+
+            setCommonEncounterAttributes(dischargeEncounterBuilder, targetEmergencyCds, csvHelper);
+
+            //add in additional extended data as Parameters resource with additional extension
+            //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
+            ContainedParametersBuilder containedParametersBuilderDischarge
+                    = new ContainedParametersBuilder(dischargeEncounterBuilder);
+            containedParametersBuilderDischarge.removeContainedParameters();
+
+            String dischargeStatusCode = targetEmergencyCds.getDischargeStatus();
+            if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
+                containedParametersBuilderDischarge.addParameter("em_discharge_status", "" + dischargeStatusCode);
+            }
+            String dischargeDestinationCode = targetEmergencyCds.getDischargeDestination();
+            if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
+                containedParametersBuilderDischarge.addParameter("em_discharge_destination", "" + dischargeDestinationCode);
+            }
+
+            Date aeDischargeEndDate
+                    = ObjectUtils.firstNonNull(conclusionDate, dischargeDate);
+            if (aeDischargeEndDate != null) {
+
+                dischargeEncounterBuilder.setPeriodEnd(aeDischargeEndDate);
+                dischargeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            }
+
+            //save the A&E discharge encounter
+            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+        }
+    }
+
+    private static void createInpatientCdsEncounterParentMinimum(StagingEmergencyCdsTarget targetEmergencyCds,
+                                                                 FhirResourceFiler fhirResourceFiler,
+                                                                 BartsCsvHelper csvHelper) throws Exception {
+
+        EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
+        parentTopEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
+        Date arrivalDate = targetEmergencyCds.getDtArrival();
+        parentTopEncounterBuilder.setPeriodStart(arrivalDate);
+
+        Date departureDate = targetEmergencyCds.getDtDeparture();
+        if (departureDate != null) {
+
+            parentTopEncounterBuilder.setPeriodEnd(departureDate);
+            parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        } else {
+
+            parentTopEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+        }
+
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+        codeableConceptBuilder.setText("Emergency");
+
+        setCommonEncounterAttributes(parentTopEncounterBuilder, targetEmergencyCds, csvHelper);
+
+        //save encounterBuilder record
+        fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+    }
+
+    private static void setCommonEncounterAttributes(EncounterBuilder builder,
+                                                     StagingEmergencyCdsTarget targetEmergencyCds,
+                                                     BartsCsvHelper csvHelper) throws Exception  {
+
+        //every encounter has the following common attributes
+        Integer personId = targetEmergencyCds.getPersonId();
+        if (personId !=null) {
+            Reference patientReference
+                    = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
+            if (builder.isIdMapped()) {
+
+                patientReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
+            }
+            builder.setPatient(patientReference);
+        }
+
+        Integer episodeId = targetEmergencyCds.getEpisodeId();
+        if (episodeId != null) {
+
+            Reference episodeReference
+                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString());
+            if (builder.isIdMapped()) {
+
+                episodeReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
+            }
+            builder.setEpisodeOfCare(episodeReference);
+        }
+        Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
+        if (performerPersonnelId != null) {
+
+            Reference practitionerReference
+                    = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));
+            if (builder.isIdMapped()) {
+
+                practitionerReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            }
+            builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
+        }
+        String serviceProviderOrgId = targetEmergencyCds.getOrganisationCode();
+        if (!Strings.isNullOrEmpty(serviceProviderOrgId)) {
+
+            Reference organizationReference
+                    = ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId);
+            if (builder.isIdMapped()) {
+
+                organizationReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
+            }
+            builder.setServiceProvider(organizationReference);
+        }
+        //get the existing parent encounter set during ADT feed, to link to this top level encounter
+        Integer encounterId = targetEmergencyCds.getEncounterId();
+        Reference parentEncounter
+                = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
+        if (builder.isIdMapped()) {
+
+            parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+        }
+        builder.setPartOf(parentEncounter);
+
+        //set the CDS identifier against the Encounter
+        String cdsUniqueId = targetEmergencyCds.getUniqueId();
+        if (!cdsUniqueId.isEmpty()) {
+
+            cdsUniqueId = cdsUniqueId.replaceFirst("ECDS-","");
+            IdentifierBuilder.removeExistingIdentifiersForSystem(builder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(builder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            identifierBuilder.setValue(cdsUniqueId);
+        }
+    }
+
+    private static void deleteEmergencyCdsEncounterAndChildren(StagingEmergencyCdsTarget targetEmergencyCds,
+                                                               FhirResourceFiler fhirResourceFiler,
+                                                               BartsCsvHelper csvHelper) throws Exception {
+
+        Integer encounterId = targetEmergencyCds.getEncounterId();  //this is used to identify the top level parent episode
+
+        //retrieve the existing Top level parent Encounter resource to perform a deletion plus any child encounters
+        Encounter existingParentEncounter
+                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(encounterId));
+
+        if (existingParentEncounter != null) {
+
+            EncounterBuilder parentEncounterBuilder
+                    = new EncounterBuilder(existingParentEncounter, targetEmergencyCds.getAudit());
+
+            //has this encounter got child encounters?
+            if (existingParentEncounter.hasContained()) {
+
+                ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
+                ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+
+                for (List_.ListEntryComponent item: listBuilder.getContainedListItems()) {
+                    Reference ref = item.getItem();
+                    ReferenceComponents comps = ReferenceHelper.getReferenceComponents(ref);
+                    if (comps.getResourceType() != ResourceType.Encounter) {
+                        continue;
+                    }
+                    Encounter childEncounter
+                            = (Encounter)resourceDal.getCurrentVersionAsResource(csvHelper.getServiceId(), ResourceType.Encounter, comps.getId());
+                    if (childEncounter != null) {
+                        LOG.debug("Deleting child encounter " + childEncounter.getId());
+
+                        fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                    } else {
+
+                        TransformWarnings.log(LOG, csvHelper, "Cannot find existing child Encounter: {} for deletion", childEncounter.getId());
+                    }
+                }
+            }
+
+            //finally, delete the top level parent
+            fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
+
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Cannot find existing Encounter: {} for deletion", encounterId);
+        }
+    }
+
+    private static void updateExistingParentEncounter(Encounter existingEncounter,
+                                                      StagingEmergencyCdsTarget targetEmergencyCds,
+                                                      FhirResourceFiler fhirResourceFiler,
+                                                      BartsCsvHelper csvHelper) throws Exception {
+
+        EncounterBuilder existingEncounterBuilder
+                = new EncounterBuilder(existingEncounter, targetEmergencyCds.getAudit());
+
+        //todo - decide on how much to update the top level with
+        Date departureDate = targetEmergencyCds.getDtDeparture();
+        if (departureDate != null) {
+
+            existingEncounterBuilder.setPeriodEnd(departureDate);
+            existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        } else {
+
+            //may not have been discharged, i.e. passed away
+            Date conclusionDate = targetEmergencyCds.getDtConclusion();
+            if (conclusionDate != null) {
+
+                existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+
+            } else {
+
+                existingEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+            }
+        }
+
+        String cdsUniqueId = targetEmergencyCds.getUniqueId();
+        if (!cdsUniqueId.isEmpty()) {
+
+            cdsUniqueId = cdsUniqueId.replaceFirst("ECDS-","");
+            IdentifierBuilder.removeExistingIdentifiersForSystem(existingEncounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(existingEncounterBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            identifierBuilder.setValue(cdsUniqueId);
+        }
+
+        fhirResourceFiler.savePatientResource(null, existingEncounterBuilder);
     }
 }

@@ -1,14 +1,19 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCriticalCareCdsTarget;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.hl7.fhir.instance.model.Encounter;
+import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -75,6 +80,10 @@ public class CriticalCareCdsTargetTransformer {
             encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
             encounterBuilder.setId(criticalCareId);
 
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+            codeableConceptBuilder.setText("Inpatient Critical Care");
+
             Integer personId = targetCriticalCareCds.getPersonId();
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
@@ -83,7 +92,9 @@ public class CriticalCareCdsTargetTransformer {
             Integer performerPersonnelId = targetCriticalCareCds.getPerformerPersonnelId();
             if (performerPersonnelId != null) {
 
-                encounterBuilder.setRecordedBy(ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId)));
+                Reference practitionerReference
+                        = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));
+                encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
             }
             String serviceProviderOrgId = targetCriticalCareCds.getOrganisationCode();
             if (!Strings.isNullOrEmpty(serviceProviderOrgId)) {
@@ -92,47 +103,71 @@ public class CriticalCareCdsTargetTransformer {
             }
 
             encounterBuilder.setPeriodStart(targetCriticalCareCds.getCareStartDate());
+
             if (targetCriticalCareCds.getDischargeDate() != null) {
+
                 encounterBuilder.setPeriodEnd(targetCriticalCareCds.getDischargeDate());
+                encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            } else {
+                encounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
             }
 
             //these encounter events are children of the spell episode encounter records already created
             String spellId = targetCriticalCareCds.getSpellNumber();
             String episodeNumber = targetCriticalCareCds.getEpisodeNumber();
-            String parentEncounterId = spellId +":"+episodeNumber+":IP";
+            String parentEncounterId = spellId +":"+episodeNumber+":IP:Episode";
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, parentEncounterId);
             encounterBuilder.setPartOf(parentEncounter);
 
             //add in additional extended data as Parameters resource with additional extension
-            //TODO: set name and values using IM map once done - ward start and end?
+            //TODO: set name and values using IM map once done, i.e. replace critical_care_type etc.
             ContainedParametersBuilder containedParametersBuilder
                     = new ContainedParametersBuilder(encounterBuilder);
             containedParametersBuilder.removeContainedParameters();
 
             String criticalCareTypeId = targetCriticalCareCds.getCriticalCareTypeId();
-            containedParametersBuilder.addParameter("", "" + criticalCareTypeId);
-
+            if (!Strings.isNullOrEmpty(criticalCareTypeId)) {
+                containedParametersBuilder.addParameter("critical_care_type", "" + criticalCareTypeId);
+            }
             String careUnitFunction = targetCriticalCareCds.getCareUnitFunction();
-            containedParametersBuilder.addParameter("", "" + careUnitFunction);
-
+            if (!Strings.isNullOrEmpty(careUnitFunction)) {
+                containedParametersBuilder.addParameter("cc_unit_function", "" + careUnitFunction);
+            }
             String admissionSourceCode = targetCriticalCareCds.getAdmissionSourceCode();
-            containedParametersBuilder.addParameter("", "" + admissionSourceCode);
-
+            if (!Strings.isNullOrEmpty(admissionSourceCode)) {
+                containedParametersBuilder.addParameter("cc_admission_source", "" + admissionSourceCode);
+            }
             String admissionTypeCode = targetCriticalCareCds.getAdmissionTypeCode();
-            containedParametersBuilder.addParameter("", "" + admissionTypeCode);
-
+            if (!Strings.isNullOrEmpty(admissionTypeCode)) {
+                containedParametersBuilder.addParameter("cc_admission_type", "" + admissionTypeCode);
+            }
             String admissionLocationCode = targetCriticalCareCds.getAdmissionLocation();
-            containedParametersBuilder.addParameter("", "" + admissionLocationCode);
-
+            if (!Strings.isNullOrEmpty(admissionLocationCode)) {
+                containedParametersBuilder.addParameter("cc_admission_location", "" + admissionLocationCode);
+            }
             String dischargeStatusCode = targetCriticalCareCds.getDischargeStatusCode();
-            containedParametersBuilder.addParameter("", "" + dischargeStatusCode);
-
+            if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
+                containedParametersBuilder.addParameter("cc_discharge_status", "" + dischargeStatusCode);
+            }
             String dischargeDestinationCode = targetCriticalCareCds.getDischargeDestination();
-            containedParametersBuilder.addParameter("", "" + dischargeDestinationCode);
+            if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
+                containedParametersBuilder.addParameter("cc_discharge_destination", "" + dischargeDestinationCode);
+            }
+            String dischargeLocationCode = targetCriticalCareCds.getDischargeLocation();
+            if (!Strings.isNullOrEmpty(dischargeLocationCode)) {
+                containedParametersBuilder.addParameter("cc_discharge_location", "" + dischargeLocationCode);
+            }
+            String cdsUniqueId = targetCriticalCareCds.getUniqueId();
+            if (!cdsUniqueId.isEmpty()) {
 
-            String dischargeLocationCode = targetCriticalCareCds.getAdmissionLocation();
-            containedParametersBuilder.addParameter("", "" + dischargeLocationCode);
+                cdsUniqueId = cdsUniqueId.replaceFirst("CCCDS-","");
+                IdentifierBuilder.removeExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
+                identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+                identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+                identifierBuilder.setValue(cdsUniqueId);
+            }
 
             //TODO: loads of very specific critical care type info here
 
