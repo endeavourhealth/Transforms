@@ -66,9 +66,11 @@ public class SRPatientRegistrationTransformer {
         //if episode is deleted
         CsvCell removeDataCell = parser.getRemovedData();
         if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
-            boolean mapIds = !episodeBuilder.isIdMapped();
-            episodeBuilder.setDeletedAudit(removeDataCell);
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
+            //only bother trying to delete if it's already been ID mapped (i.e. already saved), otherwise just discard it
+            if (episodeBuilder.isIdMapped()) {
+                episodeBuilder.setDeletedAudit(removeDataCell);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, episodeBuilder);
+            }
             return;
         }
 
@@ -77,14 +79,15 @@ public class SRPatientRegistrationTransformer {
         //the publisher service and not somewhere else
         CsvCell orgIdCell = parser.getIDOrganisationVisibleTo();
         if (!shouldSaveEpisode(parser.getIDOrganisation(), orgIdCell)) {
-            boolean mapIds = !episodeBuilder.isIdMapped();
-            //delete rather than just skip, because we PREVIOUSLY let these through, so make sure to delete to tidy up
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
+            //only bother trying to delete if it's already been ID mapped (i.e. already saved), otherwise just discard it
+            //delete rather than always just skip, because we PREVIOUSLY let these through, so make sure to delete to tidy up
+            if (episodeBuilder.isIdMapped()) {
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, episodeBuilder);
+            }
             return;
         }
 
         CsvCell patientIdCell = parser.getIDPatient();
-
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         if (episodeBuilder.isIdMapped()) {
             patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
