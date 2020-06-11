@@ -715,7 +715,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         //and we aren't able to match to the new version. In that case, we should return an empty FHIR Patient
         //which will trigger the thing to send all the data again.
         LOG.warn("Failed to find previous version of " + currentWrapper.getReferenceString() + " for dtLastSent " + dtLastSent + ", will send all data again");
-        return new Patient();
+        Patient p = new Patient();
+        p.setId(currentWrapper.getResourceId().toString());
+        return p;
         //throw new Exception("Failed to find previous version of " + currentWrapper.getReferenceString() + " for dtLastSent " + dtLastSent);
     }
 
