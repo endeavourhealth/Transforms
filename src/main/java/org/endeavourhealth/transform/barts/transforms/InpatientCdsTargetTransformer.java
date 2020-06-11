@@ -90,7 +90,8 @@ public class InpatientCdsTargetTransformer {
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      StagingInpatientCdsTarget targetInpatientCds,
-                                                     BartsCsvHelper csvHelper) throws Exception {
+                                                     BartsCsvHelper csvHelper,
+                                                     boolean isChildEncounter) throws Exception {
 
         //every encounter has the following common attributes
         Integer personId = targetInpatientCds.getPersonId();
@@ -141,16 +142,17 @@ public class InpatientCdsTargetTransformer {
             }
             builder.setServiceProvider(organizationReference);
         }
-        //get the existing parent encounter set during ADT feed, to link to this top level encounter
-        Integer encounterId = targetInpatientCds.getEncounterId();
-        Reference parentEncounter
-                = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
-        if (builder.isIdMapped()) {
+        //get the existing parent encounter set during ADT feed, to link to this top level encounter if this is a child
+        if (isChildEncounter) {
+            Integer encounterId = targetInpatientCds.getEncounterId();
+            Reference parentEncounter
+                    = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
+            if (builder.isIdMapped()) {
 
-            parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+                parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            }
+            builder.setPartOf(parentEncounter);
         }
-        builder.setPartOf(parentEncounter);
-
         //set the CDS identifier against the Encounter
         String cdsUniqueId = targetInpatientCds.getUniqueId();
         if (!cdsUniqueId.isEmpty()) {
@@ -190,7 +192,7 @@ public class InpatientCdsTargetTransformer {
                     = new CodeableConceptBuilder(admissionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderAdmission.setText("Inpatient Admission");
 
-            setCommonEncounterAttributes(admissionEncounterBuilder, targetInpatientCds, csvHelper);
+            setCommonEncounterAttributes(admissionEncounterBuilder, targetInpatientCds, csvHelper, true);
 
             //add in additional extended data as Parameters resource with additional extension
             //TODO: set name and values using IM map once done, i.e. replace ip_admission_source etc.
@@ -254,7 +256,7 @@ public class InpatientCdsTargetTransformer {
                         = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
                 codeableConceptBuilderDischarge.setText("Inpatient Discharge");
 
-                setCommonEncounterAttributes(dischargeEncounterBuilder, targetInpatientCds, csvHelper);
+                setCommonEncounterAttributes(dischargeEncounterBuilder, targetInpatientCds, csvHelper, true);
 
                 //add in additional extended data as Parameters resource with additional extension
                 //TODO: set name and values using IM map once done, i.e. replace ip_discharge_method etc.
@@ -301,7 +303,7 @@ public class InpatientCdsTargetTransformer {
                 = new CodeableConceptBuilder(episodeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Inpatient Episode");
 
-        setCommonEncounterAttributes(episodeEncounterBuilder, targetInpatientCds, csvHelper);
+        setCommonEncounterAttributes(episodeEncounterBuilder, targetInpatientCds, csvHelper, true);
 
         //add in additional extended data as Parameters resource with additional extension
         //TODO: set name and values using IM map once done - ward start and end?
@@ -392,6 +394,9 @@ public class InpatientCdsTargetTransformer {
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
+        Integer encounterId = targetInpatientCds.getEncounterId();
+        parentTopEncounterBuilder.setId(Integer.toString(encounterId));
+
         Date spellStartDate = targetInpatientCds.getDtSpellStart();
         parentTopEncounterBuilder.setPeriodStart(spellStartDate);
 
@@ -409,7 +414,7 @@ public class InpatientCdsTargetTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Inpatient");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, targetInpatientCds, csvHelper);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, targetInpatientCds, csvHelper, false);
 
         //save encounterBuilder record
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
