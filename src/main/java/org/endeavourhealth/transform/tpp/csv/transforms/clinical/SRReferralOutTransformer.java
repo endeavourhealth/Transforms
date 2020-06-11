@@ -71,9 +71,10 @@ public class SRReferralOutTransformer {
 
 
         if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
-            boolean mapIds = !referralRequestBuilder.isIdMapped();
-            referralRequestBuilder.setDeletedAudit(removeDataCell);
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, referralRequestBuilder);
+            if (referralRequestBuilder.isIdMapped()) { //only delete if ID mapped (i.e. previously saved)
+                referralRequestBuilder.setDeletedAudit(removeDataCell);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, referralRequestBuilder);
+            }
             return;
         }
 
