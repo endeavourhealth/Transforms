@@ -219,7 +219,7 @@ public class EmergencyCdsTargetTransformer {
             treatmentsEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderTreatments
-                    = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+                    = new CodeableConceptBuilder(treatmentsEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderTreatments.setText("Emergency Investigations and Treatments");
 
             setCommonEncounterAttributes(treatmentsEncounterBuilder, targetEmergencyCds, csvHelper, true);
@@ -259,7 +259,7 @@ public class EmergencyCdsTargetTransformer {
             dischargeEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderDischarge
-                    = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+                    = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderDischarge.setText("Emergency Discharge");
 
             setCommonEncounterAttributes(dischargeEncounterBuilder, targetEmergencyCds, csvHelper, true);
