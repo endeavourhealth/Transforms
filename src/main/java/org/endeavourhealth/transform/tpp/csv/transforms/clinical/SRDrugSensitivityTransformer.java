@@ -1,12 +1,14 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultilexProductToCtv3Map;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.AllergyIntoleranceBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppCodingHelper;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRDrugSensitivity;
 import org.hl7.fhir.instance.model.AllergyIntolerance;
@@ -76,7 +78,7 @@ public class SRDrugSensitivityTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
+        if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneBy)) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 allergyIntoleranceBuilder.setClinician(staffReference, staffMemberIdDoneBy);
@@ -106,25 +108,35 @@ public class SRDrugSensitivityTransformer {
         // these are drug allergies
         allergyIntoleranceBuilder.setCategory(AllergyIntolerance.AllergyIntoleranceCategory.MEDICATION);
 
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
+
         // map multi-lex drug product code to CTV3 read for coded allergy substance
         CsvCell drugCodeIdCell = parser.getIDDrugCode();
-        if (!drugCodeIdCell.isEmpty()) {
+        if (!TppCsvHelper.isEmptyOrNegative(drugCodeIdCell)) {
 
-            TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map = csvHelper.lookUpMultiLexToCTV3Map(drugCodeIdCell);
+            TppMultilexProductToCtv3Map lookUpMultiLexToCTV3Map = csvHelper.lookUpMultilexToCTV3Map(drugCodeIdCell);
             if (lookUpMultiLexToCTV3Map != null) {
-                // add Ctv3 coding
-                CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-                codeableConceptBuilder.setCodingCode(lookUpMultiLexToCTV3Map.getCtv3ReadCode());
-                codeableConceptBuilder.setCodingDisplay(lookUpMultiLexToCTV3Map.getCtv3ReadTerm());
-                codeableConceptBuilder.setText(lookUpMultiLexToCTV3Map.getCtv3ReadTerm());
+
+                //copy the CSV cell but with the CTV3 code so that the auditing from the original cell is carried over
+                String ctv3Code = lookUpMultiLexToCTV3Map.getCtv3ReadCode();
+                CsvCell ctv3CodeCell = CsvCell.factoryWithNewValue(drugCodeIdCell, ctv3Code);
+                TppCodingHelper.addCodes(codeableConceptBuilder, null, null, ctv3CodeCell, null);
             }
         }
 
         // get multi-lex action group / thereputic category
-        CsvCell drugMultiLexActionId = parser.getIDMultiLexAction();
-        if (!drugMultiLexActionId.isEmpty()) {
-            //TODO: implement lookup
+        CsvCell drugMultilexActionIdCell = parser.getIDMultiLexAction();
+        if (!TppCsvHelper.isEmptyOrNegative(drugMultilexActionIdCell)) {
+
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP);
+            codeableConceptBuilder.setCodingCode(drugMultilexActionIdCell.getString());
+
+            String name = csvHelper.lookUpMultilexActionGroupNameForId(drugMultilexActionIdCell);
+            if (!Strings.isNullOrEmpty(name)) {
+
+                codeableConceptBuilder.setCodingDisplay(name);
+                codeableConceptBuilder.setText(name);
+            }
         }
 
         // set consultation/encounter reference

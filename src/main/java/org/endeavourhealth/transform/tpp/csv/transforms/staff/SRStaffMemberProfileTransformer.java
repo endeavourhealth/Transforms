@@ -1,28 +1,15 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.staff;
 
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppStaffDalI;
 import org.endeavourhealth.transform.common.*;
-import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PractitionerRoleBuilder;
-import org.endeavourhealth.transform.tpp.cache.StaffMemberCache;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.staff.SRStaffMemberProfile;
-import org.hl7.fhir.instance.model.Practitioner;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 public class SRStaffMemberProfileTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRStaffMemberProfile.class);

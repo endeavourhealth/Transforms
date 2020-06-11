@@ -22,6 +22,7 @@ public class CodeableConceptBuilder {
         Observation_Component_Code,
         Observation_Range_Meaning,
         Referral_Request_Service,
+        Referral_Request_Priority,
         Patient_Language,
         //Patient_Religion,
         Encounter_Specialty,

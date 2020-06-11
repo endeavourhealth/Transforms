@@ -9,6 +9,10 @@ import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
+import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
+import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
+import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
@@ -74,6 +78,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
     //caches
     private Date cachedDataDate = null;
+    private Map<UUID, Boolean> deletedPatientStateCache = new ConcurrentHashMap<>();
 
     public FhirResourceFiler(UUID exchangeId, UUID serviceId, UUID systemId, TransformError transformError,
                              List<UUID> batchIdsCreated) throws Exception {
@@ -144,12 +149,26 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             return;
         }
 
-        for (ResourceBuilderBase resourceBuilder : resourceBuilders) {
+        for (int i=0; i<resourceBuilders.length; i++) {
+            ResourceBuilderBase resourceBuilder = resourceBuilders[i];
 
             //validate we're treating the resource properly as admin / patient
             Resource resource = resourceBuilder.getResource();
-            if (isPatientResource(resource) != expectingPatientResource) {
+            boolean isPatientRelatedResource = isPatientResource(resource);
+            if (isPatientRelatedResource != expectingPatientResource) {
                 throw new PatientResourceException(resource, expectingPatientResource);
+            }
+
+            //if we're saving or deleting a patient resource, cache it's state
+            if (resource.getResourceType() == ResourceType.Patient) {
+                cachePatientDeleteState(exchangeBatch.getEdsPatientId(), isDelete);
+
+            } else if (isPatientRelatedResource) {
+                //if we're saving a patient-related resource, then validate it's for a non-deleted patient and skip if not
+                if (!validatePatientDeleteState(exchangeBatch.getEdsPatientId(), isDelete, resourceBuilder)) {
+                    resourceBuilders[i] = null; //set to null so it's skipped
+                    continue;
+                }
             }
 
             //increment our counters for auditing
@@ -169,6 +188,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         }
     }
 
+
+
     private void addToIdMappingQueue(CsvCurrentState parserState, boolean isDelete,
                                      ExchangeBatch exchangeBatch, ResourceBuilderBase[] resourceBuilders) throws Exception {
 
@@ -177,8 +198,10 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             mapIdTaskLock.lock();
 
             for (ResourceBuilderBase builder : resourceBuilders) {
-                ResourceJob job = new ResourceJob(parserState, isDelete, exchangeBatch, builder);
-                nextMapIdTask.addJob(job);
+                if (builder != null) {
+                    ResourceJob job = new ResourceJob(parserState, isDelete, exchangeBatch, builder);
+                    nextMapIdTask.addJob(job);
+                }
             }
 
             //if the task is full, then execute it
@@ -211,9 +234,11 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                                   ExchangeBatch exchangeBatch, ResourceBuilderBase[] resourceBuilders) throws Exception {
 
         for (ResourceBuilderBase builder : resourceBuilders) {
-            ResourceJob job = new ResourceJob(parserState, isDelete, exchangeBatch, builder);
-            //LOG.trace("Adding filing job for " + builder.getResource().getResourceType() + " " + builder.getResource().getId() + " isDelete = " + isDelete);
-            addToFilingQueue(job);
+            if (builder != null) {
+                ResourceJob job = new ResourceJob(parserState, isDelete, exchangeBatch, builder);
+                //LOG.trace("Adding filing job for " + builder.getResource().getResourceType() + " " + builder.getResource().getId() + " isDelete = " + isDelete);
+                addToFilingQueue(job);
+            }
         }
     }
 
@@ -369,28 +394,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                 if (mapIds) {
                     //if we need to ID map, then the patient ID on the resource is the RAW patient ID (e.g. Emis GUID),
                     //so we need to translate that to an EDS ID
-
-                    //check our local lookup cache first
-                    ret = sourcePatientIdMap.get(resourcePatientId);
-                    if (ret == null) {
-
-                        //if not in our local lookup, then use the ID mapper layer to lookup and then add to our local cache
-                        String edsPatientIdStr = IdHelper.getOrCreateEdsResourceIdString(serviceId, ResourceType.Patient, resourcePatientId);
-                        ret = UUID.fromString(edsPatientIdStr);
-
-                        //apply any merged resource mapping
-                        //merge map only applied to HL7 feed, so removed from this generic class
-                        /*String patientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, edsPatientIdStr);
-                        Map<String, String> pastMergeReferences = ResourceMergeMapHelper.getResourceMergeMappings(serviceId);
-                        String mappedPatientReference = pastMergeReferences.get(patientReference);
-                        if (mappedPatientReference != null) {
-                            ReferenceComponents comps = ReferenceHelper.getReferenceComponents(new Reference().setReference(mappedPatientReference));
-                            String newPatientReference = comps.getId();
-                            ret = UUID.fromString(newPatientReference);
-                        }*/
-
-                        sourcePatientIdMap.put(resourcePatientId, ret);
-                    }
+                    ret = mapLocalIdToUuid(resourcePatientId);
 
                 } else {
                     //if we're not ID mapping, then the patient ID on the resource IS the EDS patient ID
@@ -411,6 +415,19 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             LOG.error("" + FhirSerializationHelper.serializeResource(resource));
         }
         throw new TransformException("Failed to find or create EDS patient ID");
+    }
+
+    private UUID mapLocalIdToUuid(String localId) throws Exception {
+        //check our local lookup cache first
+        UUID ret = sourcePatientIdMap.get(localId);
+        if (ret == null) {
+
+            //if not in our local lookup, then use the ID mapper layer to lookup and then add to our local cache
+            String edsPatientIdStr = IdHelper.getOrCreateEdsResourceIdString(serviceId, ResourceType.Patient, localId);
+            ret = UUID.fromString(edsPatientIdStr);
+            sourcePatientIdMap.put(localId, ret);
+        }
+        return ret;
     }
 
 
@@ -691,6 +708,44 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         if (this.lastExceptionRecorded != null) {
             throw new TransformException("Had at least one errors during the last file so aborting the transform", lastExceptionRecorded);
+        }
+    }
+
+    private void cachePatientDeleteState(UUID patientId, boolean isDeleted) {
+        deletedPatientStateCache.put(patientId, Boolean.valueOf(isDeleted));
+    }
+
+    public boolean isPatientDeleted(String patientLocalId) throws Exception {
+        UUID patientUuid = mapLocalIdToUuid(patientLocalId);
+        return isPatientDeleted(patientUuid);
+    }
+
+    public boolean isPatientDeleted(UUID patientId) throws Exception {
+        Boolean isDeleted = deletedPatientStateCache.get(patientId);
+        if (isDeleted == null) {
+            //if we've not cached it, then we'll need to hit the DB
+            ResourceDalI dal = DalProvider.factoryResourceDal();
+            //checksum will be null if the resource is deleted
+            Long checksum = dal.getResourceChecksum(serviceId, ResourceType.Patient.toString(), patientId);
+            isDeleted = Boolean.valueOf(checksum == null);
+            deletedPatientStateCache.put(patientId, isDeleted);
+        }
+        return isDeleted.booleanValue();
+    }
+
+    /**
+     * validates if a resource can be saved - we don't want to save resources for patients that have been deleted
+     */
+    private boolean validatePatientDeleteState(UUID patientId, boolean isDelete, ResourceBuilderBase resourceBuilder) throws Exception {
+
+        if (isDelete //always let things be deleted
+                || !isPatientDeleted(patientId)) {
+            return true;
+
+        } else {
+            //LOG.warn("Ignoring save of " + resourceBuilder.getResource().getResourceType() + " " + resourceBuilder.getResourceId() + " because patient resource is deleted");
+            TransformWarnings.log(LOG, this, "Ignoring save of {} {} because patient resource is deleted", resourceBuilder.getResource().getResourceType(), resourceBuilder.getResourceId());
+            return false;
         }
     }
 

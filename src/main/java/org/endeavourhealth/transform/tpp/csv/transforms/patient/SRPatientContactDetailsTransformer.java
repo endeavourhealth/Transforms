@@ -1,19 +1,23 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.patient;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientContactDetails;
 import org.hl7.fhir.instance.model.ContactPoint;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 public class SRPatientContactDetailsTransformer {
@@ -56,9 +60,10 @@ public class SRPatientContactDetailsTransformer {
             if (!Strings.isNullOrEmpty(patientId)) {
                 CsvCell dummyPatientCell = CsvCell.factoryDummyWrapper(patientId);
 
-                PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(dummyPatientCell, csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().borrowPatientBuilder(dummyPatientCell, csvHelper, fhirResourceFiler);
                 if (patientBuilder != null) {
                     ContactPointBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
+                    csvHelper.getPatientResourceCache().returnPatientBuilder(dummyPatientCell, patientBuilder);
                 }
             }
 
@@ -72,76 +77,88 @@ public class SRPatientContactDetailsTransformer {
         }
 
         CsvCell patientIdCell = parser.getIDPatient();
-        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().borrowPatientBuilder(patientIdCell, csvHelper, fhirResourceFiler);
         if (patientBuilder == null) {
             return;
         }
 
-        //attempt to re-use any existing number with the same ID so we're not constantly changing the order by removing and re-adding
-        ContactPointBuilder contactPointBuilder = ContactPointBuilder.findOrCreateForId(patientBuilder, rowIdCell);
-        contactPointBuilder.reset();
+        try {
+            //attempt to re-use any existing number with the same ID so we're not constantly changing the order by removing and re-adding
+            ContactPointBuilder contactPointBuilder = ContactPointBuilder.findOrCreateForId(patientBuilder, rowIdCell);
+            contactPointBuilder.reset();
 
-        /*
-        //remove any existing instance of this phone number from the patient
-        ContactPointBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
+            /*
+            //remove any existing instance of this phone number from the patient
+            ContactPointBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
 
-        ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
-        contactPointBuilder.setId(rowIdCell.getString(), contactNumberCell);*/
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setId(rowIdCell.getString(), contactNumberCell);*/
 
-        ContactPoint.ContactPointUse use = null;
-        ContactPoint.ContactPointSystem system = null;
 
-        CsvCell contactTypeCell = parser.getContactType();
-        if (!contactTypeCell.isEmpty() && contactTypeCell.getLong() > 0) {
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(contactTypeCell);
-            if (mapping != null) {
-                String term = mapping.getMappedTerm();
-                if (term.equalsIgnoreCase("Home")) {
-                    use = ContactPoint.ContactPointUse.HOME;
-                    system = ContactPoint.ContactPointSystem.PHONE;
-                } else if (term.equalsIgnoreCase("Work")) {
-                    use = ContactPoint.ContactPointUse.WORK;
-                    system = ContactPoint.ContactPointSystem.PHONE;
-                } else if (term.equalsIgnoreCase("Emergency Contact")) {
-                    use = ContactPoint.ContactPointUse.OLD;
-                    system = ContactPoint.ContactPointSystem.OTHER;
-                } else if (term.equalsIgnoreCase("Answering Machine")) {
-                    use = ContactPoint.ContactPointUse.OLD;
-                    system = ContactPoint.ContactPointSystem.OTHER;
-                } else if (term.equalsIgnoreCase("Pager")) {
-                    use = ContactPoint.ContactPointUse.WORK;
-                    system = ContactPoint.ContactPointSystem.PAGER;
-                } else if (term.equalsIgnoreCase("Mobile")) {
-                    use = ContactPoint.ContactPointUse.MOBILE;
-                    system = ContactPoint.ContactPointSystem.PHONE;
-                } else if (term.equalsIgnoreCase("Alternate")) {
-                    use = ContactPoint.ContactPointUse.OLD;
-                    system = ContactPoint.ContactPointSystem.PHONE;
-                } else if (term.equalsIgnoreCase("Temporary")) {
-                    use = ContactPoint.ContactPointUse.TEMP;
-                    system = ContactPoint.ContactPointSystem.PHONE;
-                } else if (term.equalsIgnoreCase("Skype")) {
-                    use = ContactPoint.ContactPointUse.HOME;
-                    system = ContactPoint.ContactPointSystem.EMAIL;
-                } else {
-                    //not had any warnings in months, so will assume the above is now 100% and can replace with an exception
-                    throw new Exception("Unexpected ContactDetails type [" + term + "]");
-                    //TransformWarnings.log(LOG, parser, "Unable to convert contact type {} to ContactPointUse", term);
+
+            CsvCell contactTypeCell = parser.getContactType();
+            if (!TppCsvHelper.isEmptyOrNegative(contactTypeCell)) {
+                TppMappingRef mapping = csvHelper.lookUpTppMappingRef(contactTypeCell);
+                if (mapping != null) {
+
+                    ContactPoint.ContactPointUse use = null;
+                    ContactPoint.ContactPointSystem system = null;
+
+                    String term = mapping.getMappedTerm();
+                    if (term.equalsIgnoreCase("Home")) {
+                        use = ContactPoint.ContactPointUse.HOME;
+                        system = ContactPoint.ContactPointSystem.PHONE;
+                    } else if (term.equalsIgnoreCase("Work")) {
+                        use = ContactPoint.ContactPointUse.WORK;
+                        system = ContactPoint.ContactPointSystem.PHONE;
+                    } else if (term.equalsIgnoreCase("Emergency Contact")) {
+                        use = ContactPoint.ContactPointUse.OLD;
+                        system = ContactPoint.ContactPointSystem.OTHER;
+                    } else if (term.equalsIgnoreCase("Answering Machine")) {
+                        use = ContactPoint.ContactPointUse.OLD;
+                        system = ContactPoint.ContactPointSystem.OTHER;
+                    } else if (term.equalsIgnoreCase("Pager")) {
+                        use = ContactPoint.ContactPointUse.WORK;
+                        system = ContactPoint.ContactPointSystem.PAGER;
+                    } else if (term.equalsIgnoreCase("Mobile")) {
+                        use = ContactPoint.ContactPointUse.MOBILE;
+                        system = ContactPoint.ContactPointSystem.PHONE;
+                    } else if (term.equalsIgnoreCase("Alternate")) {
+                        use = ContactPoint.ContactPointUse.OLD;
+                        system = ContactPoint.ContactPointSystem.PHONE;
+                    } else if (term.equalsIgnoreCase("Temporary")) {
+                        use = ContactPoint.ContactPointUse.TEMP;
+                        system = ContactPoint.ContactPointSystem.PHONE;
+                    } else if (term.equalsIgnoreCase("Skype")) {
+                        use = ContactPoint.ContactPointUse.HOME;
+                        system = ContactPoint.ContactPointSystem.EMAIL;
+                    } else {
+                        //not had any warnings in months, so will assume the above is now 100% and can replace with an exception
+                        throw new Exception("Unexpected ContactDetails type [" + term + "]");
+                        //TransformWarnings.log(LOG, parser, "Unable to convert contact type {} to ContactPointUse", term);
+                    }
+
+
+                    if (use != null) {
+                        contactPointBuilder.setUse(use, contactNumberCell);
+                    }
+                    if (system != null) {
+                        contactPointBuilder.setSystem(system, contactNumberCell);
+                    }
                 }
             }
-        }
 
-        contactPointBuilder.setValue(contactNumberCell.getString(), contactNumberCell);
+            contactPointBuilder.setValue(contactNumberCell.getString(), contactNumberCell);
 
-        if (use != null) {
-            contactPointBuilder.setUse(use, contactNumberCell);
-        }
-        if (system != null) {
-            contactPointBuilder.setSystem(system, contactNumberCell);
-        }
+            CsvCell dateFromCell = parser.getDateEvent();
+            if (!dateFromCell.isEmpty()) {
+                contactPointBuilder.setStartDate(dateFromCell.getDateTime(), dateFromCell);
+            }
 
-        // boolean mapids = !patientBuilder.isIdMapped();
-        // fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapids, patientBuilder);
-        // Filing done by cache
+        } finally {
+            csvHelper.getPatientResourceCache().returnPatientBuilder(patientIdCell, patientBuilder);
+        }
     }
+
+
 }

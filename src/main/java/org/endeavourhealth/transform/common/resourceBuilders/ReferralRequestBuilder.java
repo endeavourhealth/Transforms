@@ -16,7 +16,7 @@ import java.util.Date;
 import java.util.List;
 
 public class ReferralRequestBuilder extends ResourceBuilderBase
-        implements HasCodeableConceptI, HasIdentifierI {
+        implements HasCodeableConceptI, HasIdentifierI, HasContainedListI {
 
     private ReferralRequest referralRequest = null;
 
@@ -41,6 +41,11 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     @Override
     public DomainResource getResource() {
         return referralRequest;
+    }
+
+    @Override
+    public String getContainedListExtensionUrl() {
+        return FhirExtensionUri.REFERRAL_REQUEST_STATUS_HISTORY;
     }
 
     public void setPatient(Reference patientReference, CsvCell... sourceCells) {
@@ -126,7 +131,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         auditValue("identifier[" + index + "].value", sourceCells);
     }*/
 
-    public void setPriority(ReferralPriority fhirPriority, CsvCell... sourceCells) {
+    /*public void setPriority(ReferralPriority fhirPriority, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirPriority);
         this.referralRequest.setPriority(codeableConcept);
 
@@ -138,7 +143,7 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         this.referralRequest.setPriority(codeableConcept);
 
         auditValue("priority.text", sourceCells);
-    }
+    }*/
 
     public void setType(ReferralType type, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(type);
@@ -182,6 +187,17 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
             }
             return this.referralRequest.addServiceRequested();
 
+        } else if (tag == CodeableConceptBuilder.Tag.Referral_Request_Priority) {
+            if (this.referralRequest.hasPriority()) {
+                if (useExisting) {
+                    return referralRequest.getPriority();
+                } else {
+                    throw new IllegalArgumentException("Trying to add new priority to Referral that already has one");
+                }
+            }
+            this.referralRequest.setPriority(new CodeableConcept());
+            return this.referralRequest.getPriority();
+
         } else {
             throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
         }
@@ -191,6 +207,9 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     public String getCodeableConceptJsonPath(CodeableConceptBuilder.Tag tag, CodeableConcept codeableConcept) {
         if (tag == CodeableConceptBuilder.Tag.Referral_Request_Service) {
             return "serviceRequested[0]";
+
+        } else if (tag == CodeableConceptBuilder.Tag.Referral_Request_Priority) {
+            return "priority";
 
         } else {
             throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
@@ -204,6 +223,9 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         if (tag == CodeableConceptBuilder.Tag.Referral_Request_Service) {
             this.referralRequest.getServiceRequested().clear();
 
+        } else if (tag == CodeableConceptBuilder.Tag.Referral_Request_Priority) {
+            this.referralRequest.setPriority(null);
+
         } else {
             throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
         }
@@ -212,6 +234,9 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
     public boolean hasCodeableConcept(CodeableConceptBuilder.Tag tag) {
         if (tag == CodeableConceptBuilder.Tag.Referral_Request_Service) {
             return this.referralRequest.hasServiceRequested();
+
+        } else if (tag == CodeableConceptBuilder.Tag.Referral_Request_Priority) {
+            return this.referralRequest.hasPriority();
 
         } else {
             throw new IllegalArgumentException("CodeableConcept tag " + tag + " not recognized.");
@@ -250,6 +275,16 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         } else {
             Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.referralRequest, FhirExtensionUri.REFERRAL_REQUEST_RECIPIENT_SERVICE_TYPE, recipientServiceType);
 
+            super.auditStringExtension(extension, sourceCells);
+        }
+    }
+
+    public void setRecipientFreeText(String recipientFreeText, CsvCell... sourceCells) {
+        if (Strings.isNullOrEmpty(recipientFreeText)) {
+            ExtensionConverter.removeExtension(this.referralRequest, FhirExtensionUri.REFERRAL_REQUEST_RECIPIENT_FREE_TEXT);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.referralRequest, FhirExtensionUri.REFERRAL_REQUEST_RECIPIENT_FREE_TEXT, recipientFreeText);
             super.auditStringExtension(extension, sourceCells);
         }
     }

@@ -42,8 +42,8 @@ public class SRProblemTransformer {
     }
 
     public static void createResource(SRProblem parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       TppCsvHelper csvHelper) throws Exception {
+                                      FhirResourceFiler fhirResourceFiler,
+                                      TppCsvHelper csvHelper) throws Exception {
 
         CsvCell problemId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
@@ -114,14 +114,8 @@ public class SRProblemTransformer {
         }
         conditionBuilder.setPatient(patientReference, patientId);
 
-        //the linked SRCode entry - cache the reference for the SRCode transformer to check that it is a problem
-        CsvCell readV3Code = parser.getCTV3Code();
-        if (!linkedObsCodeId.isEmpty() && ! readV3Code.isEmpty()) {
-            csvHelper.cacheProblemObservationGuid(linkedObsCodeId, readV3Code.getString());
-        }
-
         CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
+        if (!TppCsvHelper.isEmptyOrNegative(profileIdRecordedBy)) {
             Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
             if (conditionBuilder.isIdMapped()) {
                 staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
@@ -130,7 +124,7 @@ public class SRProblemTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
+        if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneBy)) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 if (conditionBuilder.isIdMapped()) {
@@ -159,27 +153,29 @@ public class SRProblemTransformer {
         conditionBuilder.setCategory("complaint", problemId);
         conditionBuilder.setAsProblem(true);
 
-        CsvCell endDate = parser.getDateEnd();
-        if (endDate != null) {
+        CsvCell endDateCell = parser.getDateEnd();
+        if (endDateCell.isEmpty()) { //possible to re-activate problems, so support changing TO it being empty
+            conditionBuilder.setEndDateOrBoolean(null);
 
-            DateType dateType = new DateType(effectiveDate.getDate());
-            conditionBuilder.setEndDateOrBoolean(dateType, endDate);
+        } else {
+            DateType dateType = new DateType(endDateCell.getDate());
+            conditionBuilder.setEndDateOrBoolean(dateType, endDateCell);
         }
 
-        CsvCell severity = parser.getSeverity();
-        if (severity != null) {
+        CsvCell severityCell = parser.getSeverity();
+        if (severityCell.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severity);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severityCell);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
-                if (!mappedTerm.isEmpty()) {
-                    if (mappedTerm.equalsIgnoreCase("minor")) {
-                        conditionBuilder.setProblemSignificance(ProblemSignificance.NOT_SIGNIFICANT);
-                    } else if (mappedTerm.equalsIgnoreCase("major")) {
-                        conditionBuilder.setProblemSignificance(ProblemSignificance.SIGNIFICANT);
-                    }
+                if (mappedTerm.equalsIgnoreCase("minor")) {
+                    conditionBuilder.setProblemSignificance(ProblemSignificance.NOT_SIGNIFICANT);
+
+                } else if (mappedTerm.equalsIgnoreCase("major")) {
+                    conditionBuilder.setProblemSignificance(ProblemSignificance.SIGNIFICANT);
+
                 } else {
-                    conditionBuilder.setProblemSignificance(ProblemSignificance.UNSPECIIED);
+                    throw new Exception("Unexpected SRProblem severity [" + mappedTerm + "]");
                 }
             } else {
                 conditionBuilder.setProblemSignificance(ProblemSignificance.UNSPECIIED);

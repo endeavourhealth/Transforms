@@ -421,6 +421,16 @@ public class FhirHl7v2Filer {
                 .filter(t -> FhirResourceFiler.isPatientResource(t))
                 .collect(Collectors.toList());
 
+        //FhirResourceFiler requires Patient resources to be saved before anything else, so make sure it's at the front of the list
+        for (int i=1; i<patientResources.size(); i++) {
+            Resource resource = patientResources.get(i);
+            if (resource instanceof Patient) {
+                patientResources.remove(i);
+                patientResources.add(0, resource);
+            }
+        }
+
+
         //we get three types of patient resources from the HL7 feed. Only the Patient resource is shared between
         //the HL7 feed and Data Warehouse feed, whereas EpisodeOfCare and Encounter are not. We need to handle
         //each type differently so these two feeds can co-exist.
@@ -456,6 +466,27 @@ public class FhirHl7v2Filer {
                 //non-shared Encounters created by the HL7 feed since it can create better resources from the richer data.
                 //So we need to NOT re-create deleted Encounters, and to only update certain fields if the DW feed has taken over the Encounter
 
+                /**
+                 * HL7v2 Transform
+                 * 0. TRY to align IDs with HL7v2
+                 * 1. find existing sub-encounter
+                 * 2. create sub-encounter if not exists
+                 * DO NOT 3. overwrite sub-encounter if exists
+                 * 4. find existing parent-encounter
+                 * 5. create parent-encounter if not exists
+                 * 6. update parent-encounter if exists
+                 */
+
+                /**
+                 * DW Transform
+                 * 0. TRY to align IDs with HL7v2
+                 * 1. overwrite sub-encounter if exists
+                 * 2. find existing parent-encounter
+                 * 3. create parent-encounter if not exists
+                 * 4. update parent-encounter if exists
+                 */
+
+
                 if (!hasBeenDeletedByDataWarehouseFeed(resource, filer)) {
                     Encounter oldEncounter = (Encounter)resourceRepository.getCurrentVersionAsResource(filer.getServiceId(), resource.getResourceType(), resource.getId());
 
@@ -474,7 +505,7 @@ public class FhirHl7v2Filer {
                     }*/
 
                 } else {
-                    LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as has been deleted by DW feed");
+                    //LOG.debug("Not saving " + resource.getResourceType() + " " + resource.getId() + " as has been deleted by DW feed");
                 }
 
             } else {

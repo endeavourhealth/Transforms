@@ -257,9 +257,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
         List<String> ret = new ArrayList<>();
 
-        String firstChars = FileHelper.readFirstCharactersFromSharedStorage(filePath, 1000); //assuming we never have headers longer than 1000 bytes
-        //LOG.trace("Read first 1000 chars from " + filePath);
-        //LOG.trace(firstChars);
+        String firstChars = FileHelper.readFirstCharactersFromSharedStorage(filePath, 5 * 1024); //assuming we never have headers longer than 5KB
 
         StringReader stringReader = new StringReader(firstChars);
         CSVParser csvReader = new CSVParser(stringReader, csvFormat); //not assigning to class variable as this reader is just for this validation

@@ -60,14 +60,16 @@ public class PatientTransformer {
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell patientActionCell = parser.getPatientAction();
-        if (patientActionCell.getString().equalsIgnoreCase("D")) {
+
+        boolean isDeleted = patientActionCell.getString().equalsIgnoreCase("D");
+        if (isDeleted) {
             //we need to manually delete all dependant resources
             deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser.getCurrentState(), parser);
             return;
         }
 
         //this transform creates two resources
-        PatientBuilder patientBuilder = createPatientResource(parser, csvHelper);
+        PatientBuilder patientBuilder = createPatientResource(parser, csvHelper, fhirResourceFiler);
         EpisodeOfCareBuilder episodeBuilder = createEpisodeResource(parser, csvHelper, fhirResourceFiler);
 
         if (patientBuilder.isIdMapped()) {
@@ -132,21 +134,20 @@ public class PatientTransformer {
     }
 
 
-    private static PatientBuilder createPatientResource(Patient parser,
-                                              VisionCsvHelper csvHelper) throws Exception {
+    private static PatientBuilder createPatientResource(Patient parser, VisionCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //create Patient Resource builder
         PatientBuilder patientBuilder = getPatientBuilder(parser, csvHelper);
 
         CsvCell nhsNumber = parser.getNhsNumber();
-        createIdentifier(patientBuilder, csvHelper, nhsNumber, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+        createIdentifier(patientBuilder, fhirResourceFiler, nhsNumber, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
         //store the patient ID and patient number to the patient resource
         CsvCell patientIdCell = parser.getPatientID();
-        createIdentifier(patientBuilder, csvHelper, patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_GUID);
+        createIdentifier(patientBuilder, fhirResourceFiler, patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_GUID);
 
         CsvCell patientNumber = parser.getPatientNumber();
-        createIdentifier(patientBuilder, csvHelper, patientNumber, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_NUMBER);
+        createIdentifier(patientBuilder, fhirResourceFiler, patientNumber, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_PATIENT_NUMBER);
 
         CsvCell dob = parser.getDateOfBirth();
         patientBuilder.setDateOfBirth(dob.getDate(), dob);
@@ -163,22 +164,22 @@ public class PatientTransformer {
         Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
         patientBuilder.setGender(gender, sex);
 
-        createName(patientBuilder, parser, csvHelper);
-        createAddress(patientBuilder, parser, csvHelper);
+        createName(patientBuilder, parser, fhirResourceFiler);
+        createAddress(patientBuilder, parser, fhirResourceFiler);
 
         CsvCell homePhone = parser.getHomePhone();
         if (homePhone != null) { //null check because the cell doesn't exist in the test data
-            createContact(patientBuilder, csvHelper, homePhone, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
+            createContact(patientBuilder, fhirResourceFiler, homePhone, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
         }
 
         CsvCell mobilePhone = parser.getMobilePhone();
         if (mobilePhone != null) { //null check because the cell doesn't exist in the test data
-            createContact(patientBuilder, csvHelper, mobilePhone, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
+            createContact(patientBuilder, fhirResourceFiler, mobilePhone, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
         }
 
         CsvCell email = parser.getEmail();
         if (email != null) { //null check because the cell doesn't exist in the test data
-            createContact(patientBuilder, csvHelper, email, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.EMAIL);
+            createContact(patientBuilder, fhirResourceFiler, email, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.EMAIL);
         }
 
         CsvCell organisationIdCell = parser.getOrganisationID();
@@ -249,7 +250,7 @@ public class PatientTransformer {
         return patientBuilder;
     }
 
-    private static void createContact(PatientBuilder patientBuilder, VisionCsvHelper csvHelper, CsvCell cell,
+    private static void createContact(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell,
                                       ContactPoint.ContactPointUse use, ContactPoint.ContactPointSystem system) throws Exception {
 
         if (!cell.isEmpty()) {
@@ -259,14 +260,14 @@ public class PatientTransformer {
             contactPointBuilder.setSystem(system);
             contactPointBuilder.setValue(cell.getString(), cell);
 
-            ContactPointBuilder.deDuplicateLastContactPoint(patientBuilder, csvHelper.getDataDate());
+            ContactPointBuilder.deDuplicateLastContactPoint(patientBuilder, fhirResourceFiler.getDataDate());
 
         } else {
-            ContactPointBuilder.endContactPoints(patientBuilder, csvHelper.getDataDate(), system, use);
+            ContactPointBuilder.endContactPoints(patientBuilder, fhirResourceFiler.getDataDate(), system, use);
         }
     }
 
-    private static void createAddress(PatientBuilder patientBuilder, Patient parser, VisionCsvHelper csvHelper) throws Exception {
+    private static void createAddress(PatientBuilder patientBuilder, Patient parser, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         CsvCell houseNameFlat = parser.getHouseNameFlatNumber();
         CsvCell numberAndStreet = parser.getNumberAndStreet();
@@ -291,14 +292,14 @@ public class PatientTransformer {
             addressBuilder.setDistrict(county.getString(), county);
             addressBuilder.setPostcode(postcode.getString(), postcode);
 
-            AddressBuilder.deDuplicateLastAddress(patientBuilder, csvHelper.getDataDate());
+            AddressBuilder.deDuplicateLastAddress(patientBuilder, fhirResourceFiler.getDataDate());
 
         } else {
-            AddressBuilder.endAddresses(patientBuilder, csvHelper.getDataDate(), Address.AddressUse.HOME);
+            AddressBuilder.endAddresses(patientBuilder, fhirResourceFiler.getDataDate(), Address.AddressUse.HOME);
         }
     }
 
-    private static void createName(PatientBuilder patientBuilder, Patient parser, VisionCsvHelper csvHelper) throws Exception {
+    private static void createName(PatientBuilder patientBuilder, Patient parser, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         CsvCell title = parser.getTitle();
         CsvCell givenName = parser.getGivenName();
@@ -314,24 +315,24 @@ public class PatientTransformer {
             nameBuilder.addGiven(givenName.getString(), givenName);
             nameBuilder.addFamily(surname.getString(), surname);
 
-            NameBuilder.deDuplicateLastName(patientBuilder, csvHelper.getDataDate());
+            NameBuilder.deDuplicateLastName(patientBuilder, fhirResourceFiler.getDataDate());
 
         } else {
-            NameBuilder.endNames(patientBuilder, csvHelper.getDataDate(), HumanName.NameUse.OFFICIAL);
+            NameBuilder.endNames(patientBuilder, fhirResourceFiler.getDataDate(), HumanName.NameUse.OFFICIAL);
         }
     }
 
-    private static void createIdentifier(PatientBuilder patientBuilder, VisionCsvHelper csvHelper, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
+    private static void createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
         if (!cell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(use);
             identifierBuilder.setSystem(system);
             identifierBuilder.setValue(cell.getString(), cell);
 
-            IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, csvHelper.getDataDate());
+            IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, fhirResourceFiler.getDataDate());
 
         } else {
-            IdentifierBuilder.endIdentifiers(patientBuilder, csvHelper.getDataDate(), system, use);
+            IdentifierBuilder.endIdentifiers(patientBuilder, fhirResourceFiler.getDataDate(), system, use);
         }
     }
 

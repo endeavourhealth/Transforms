@@ -1,7 +1,5 @@
 package org.endeavourhealth.transform.common;
 
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.audit.QueuedMessageDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
@@ -20,8 +18,9 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * cache for FHIR Resources, that keeps as many in possible in memory
- * but will start offloading to the DB if it gets too large
+ * cache for FHIR ResourceBuilders the uses compression to minimise memory footprint
+ * NOTE: due to how the cache works, there is no GET-only method. To use this cache,
+ * you getAndRemove(..) and then addToCache(..) when you want to return it.
  */
 public class ResourceCache<T, S extends ResourceBuilderBase> {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceCache.class);
@@ -50,7 +49,7 @@ public class ResourceCache<T, S extends ResourceBuilderBase> {
             }
 
             //add the new resource to the map
-            CacheEntryProxy entry = new CacheEntryProxy(key, resourceBuilder);
+            CacheEntryProxy entry = new CacheEntryProxy(resourceBuilder);
             cache.put(key, entry);
 
         } finally {
@@ -102,7 +101,7 @@ public class ResourceCache<T, S extends ResourceBuilderBase> {
                 return null;
 
             } else {
-                return existingEntry.getResource();
+                return existingEntry.getResourceBuilder();
             }
 
         } finally {
@@ -179,104 +178,23 @@ public class ResourceCache<T, S extends ResourceBuilderBase> {
      * proxy class to hold the reference to a Resource or the UUID used to store it in the DB
      */
     class CacheEntryProxy {
-        private T key = null;
         private byte[] compressedBytes = null;
         private int originalLen = -1;
         private byte[] compressedAuditBytes = null;
         private int originalAuditLen = -1;
 
-        //private UUID tempStorageUuid = null;
-
-        public CacheEntryProxy(T key, S resource) throws Exception {
-            this.key = key;
-            compressBytes(resource);
-
-            /*this.resourceJson = FhirSerializationHelper.serializeResource(resource);
-            this.resourceType = resource.getResourceType();
-            this.resourceId = resource.getId();*/
-            //this.resource = encounterBuilder;
+        public CacheEntryProxy(S resourceBuilder) throws Exception {
+            compressBytes(resourceBuilder);
         }
 
         /**
-         * offloads the Resource to the audit.queued_message table for safe keeping, to reduce memory load
+         * decompresses and returns the resource builder
+         * note: annotation required because Java reckons it's not a safe cast
          */
-        /*public void offloadFromMemory() throws Exception {
-            //if (resource == null) {
-            //if (resourceJson == null) {
-            if (compressedBytes == null) {
-                return;
-            }
-
-
-            if (tempStorageUuid == null) {
-                tempStorageUuid = UUID.randomUUID();
-            }
-
-            String tempFileName = getTempFileName();
-            if (tempFileName == null) {
-                String writeStr = Base64.getEncoder().encodeToString(compressedBytes);
-                dal.save(tempStorageUuid, writeStr, QueuedMessageType.ResourceTempStore);
-                //dal.save(tempStorageUuid, resourceJson, QueuedMessageType.ResourceTempStore);
-                //LOG.debug("Offloaded " + resourceType + " " + resourceId + " to DB cache ID: " + this.tempStorageUuid);
-
-            } else {
-                FileUtils.writeByteArrayToFile(new File(tempFileName), compressedBytes);
-                //FileUtils.writeStringToFile(new File(tempFileName), resourceJson, "UTF-8");
-                //LOG.debug("Offloaded " + resourceType + " " + resourceId + " to " + tempFileName + " cache ID: " + this.tempStorageUuid);
-            }
-
-            this.compressedBytes = null;
-            keysInMemory.remove(this.key);
-            //LOG.debug("Removing key in memory " + key);
+        @SuppressWarnings (value="unchecked")
+        public S getResourceBuilder() throws Exception {
+            return (S)decompressBytes();
         }
-
-        private String getTempFileName() {
-
-            String offloadToDiskPath = TransformConfig.instance().getResourceCacheTempPath();
-            if (offloadToDiskPath == null) {
-                return null;
-            } else {
-                return FilenameUtils.concat(offloadToDiskPath, tempStorageUuid.toString() + ".tmp");
-            }
-        }*/
-
-        /**
-         * gets the Encounter, either from the variable or from the audit.queued_message table if it was offloaded
-         * NOTE, this is a one-time function as these objects can only be used once
-         */
-        public S getResource() throws Exception {
-            return decompressBytes();
-        }
-        /*public S getResource() throws Exception {
-
-            if (this.compressedBytes == null && this.tempStorageUuid == null) {
-                throw new Exception("Cannot get Resource after removing or cleaning up");
-            }
-
-            S ret = decompressBytes();
-            if (ret != null) {
-                release(); //make sure to release, so our owner knows we're no longer counted
-                return ret;
-            }
-
-            String tempFileName = getTempFileName();
-            if (tempFileName == null) {
-                String readStr = dal.getById(tempStorageUuid);
-                compressedBytes = Base64.getDecoder().decode(readStr);
-                //resourceJson = dal.getById(tempStorageUuid);
-
-            } else {
-                compressedBytes = FileUtils.readFileToByteArray(new File(tempFileName));
-                //resourceJson = FileUtils.readFileToString(new File(tempFileName), "UTF-8");
-            }
-
-            ret = decompressBytes();
-
-            release();
-
-            //LOG.debug("Restored " + resourceType + " " + resourceId + " from cache ID: " + this.tempStorageUuid);
-            return ret;
-        }*/
 
         private void compressBytes(ResourceBuilderBase resourceBuilder) throws Exception {
 
@@ -303,12 +221,9 @@ public class ResourceCache<T, S extends ResourceBuilderBase> {
 
             this.originalAuditLen = bytes.length;
             this.compressedAuditBytes = out.toByteArray();
-
-            //keysInMemory.add(this.key);
-            //LOG.debug("Adding key in memory " + key);
         }
 
-        private S decompressBytes() throws Exception {
+        private ResourceBuilderBase decompressBytes() throws Exception {
             //create local reference in case another thread nulls the class reference
             byte[] bytes = this.compressedBytes;
             if (bytes == null) {
@@ -351,34 +266,13 @@ public class ResourceCache<T, S extends ResourceBuilderBase> {
             String auditJson = new String(bytesOut, "UTF-8");
             ResourceFieldMappingAudit audit = ResourceFieldMappingAudit.readFromJson(auditJson);
 
-            return (S)ResourceBuilderBase.factory(resource, audit);
+            return ResourceBuilderBase.factory(resource, audit);
         }
 
         public void release() throws Exception {
             this.compressedBytes = null;
             this.compressedAuditBytes = null;
         }
-        /*public void release() throws Exception {
-            if (this.tempStorageUuid != null) {
-
-                String tempFileName = getTempFileName();
-                if (tempFileName == null) {
-                    dal.delete(tempStorageUuid);
-
-                } else {
-                    new File(tempFileName).delete();
-                }
-
-                this.tempStorageUuid = null;
-            }
-
-            if (this.compressedBytes != null) {
-                keysInMemory.remove(this.key);
-                //LOG.debug("Removing key in memory " + key);
-                this.compressedBytes = null;
-            }
-
-        }*/
     }
 
 }

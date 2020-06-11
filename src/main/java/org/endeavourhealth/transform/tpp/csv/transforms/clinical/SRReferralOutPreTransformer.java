@@ -41,25 +41,25 @@ public class SRReferralOutPreTransformer {
             return;
         }
 
+
+        //we don't transform Practitioners until we need them, and these ensure it happens
+        CsvCell profileIdEnteredByCell = parser.getIDProfileEnteredBy();
+        csvHelper.getStaffMemberCache().addRequiredProfileId(profileIdEnteredByCell);
+
+        //ReferralOut file is unique in that it has a second profile ID column
+        CsvCell profileReferredByCell = parser.getIDProfileReferrer();
+        csvHelper.getStaffMemberCache().addRequiredProfileId(profileReferredByCell);
+
+        CsvCell staffIdDoneByCell = parser.getIDDoneBy();
+        CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
+        csvHelper.getStaffMemberCache().addRequiredStaffId(staffIdDoneByCell, orgDoneAtCell);
+
+
         CsvCell id = parser.getRowIdentifier();
 
         CsvCell eventLinkId = parser.getIDEvent();
         if (!eventLinkId.isEmpty()) {
             csvHelper.cacheNewConsultationChildRelationship(eventLinkId, id.getString(), ResourceType.ReferralRequest);
-        }
-
-        //referral out has a unique field, where the recipient may be a practitioner at another service,
-        //in which case we need to ensure that we've transformed that practitioner, since we onlt do practitioners
-        //that we need, rather than the full 3M+ records.
-        CsvCell referralRecipientType = parser.getRecipientIDType();
-        CsvCell referralRecipientId = parser.getRecipientID();
-        if (!referralRecipientType.isEmpty()
-                && !referralRecipientId.isEmpty()) {
-
-            //TODO - restore this after understanding what the field actually contains
-            /*if (SRReferralOutTransformer.recipientIsPerson(referralRecipientType, csvHelper, parser)) {
-                csvHelper.getStaffMemberCache().ensurePractitionerIsTransformedForStaffProfileId(referralRecipientId, csvHelper);
-            }*/
         }
     }
 }

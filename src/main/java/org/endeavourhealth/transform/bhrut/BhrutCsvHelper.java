@@ -80,7 +80,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Set<String> drugRecords = new HashSet<>();
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
-    private Date cachedDataDate = null;
 
     private EpisodeOfCareCache episodeOfCareCache = new EpisodeOfCareCache();
 
@@ -808,21 +807,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return data;
     }
 
-    /**
-     * returns the original date of the data in the exchange (i.e. when actually sent to DDS)
-     */
-    public Date getDataDate() throws Exception {
-        if (cachedDataDate == null) {
-            ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
-            Exchange x = exchangeDal.getExchange(exchangeId);
-            cachedDataDate = x.getHeaderAsDate(HeaderKeys.DataDate);
 
-            if (cachedDataDate == null) {
-                throw new Exception("Failed to find data date for exchange " + exchangeId);
-            }
-        }
-        return cachedDataDate;
-    }
 
     public Service getService(UUID id) throws Exception {
         return serviceRepository.getById(id);

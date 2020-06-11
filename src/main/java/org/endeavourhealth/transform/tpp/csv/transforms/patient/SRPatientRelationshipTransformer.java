@@ -55,146 +55,153 @@ public class SRPatientRelationshipTransformer {
             if (!Strings.isNullOrEmpty(patientId)) {
                 CsvCell dummyPatientCell = CsvCell.factoryDummyWrapper(patientId);
 
-                PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(dummyPatientCell, csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().borrowPatientBuilder(dummyPatientCell, csvHelper, fhirResourceFiler);
                 if (patientBuilder != null) {
                     PatientContactBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
+                    csvHelper.getPatientResourceCache().returnPatientBuilder(dummyPatientCell, patientBuilder);
                 }
             }
             return;
         }
 
         CsvCell patientIdCell = parser.getIDPatient();
-        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().borrowPatientBuilder(patientIdCell, csvHelper, fhirResourceFiler);
         if (patientBuilder == null) {
             return;
         }
 
-        //make sure to remove any existing instance from the patient first
-        PatientContactBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
+        try {
 
-        PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
-        contactBuilder.setId(rowIdCell.getString(), rowIdCell);
+            //make sure to remove any existing instance from the patient first
+            PatientContactBuilder.removeExistingContactPointById(patientBuilder, rowIdCell.getString());
 
-        CsvCell relationshipTypeCell = parser.getRelationshipType();
-        if (!relationshipTypeCell.isEmpty()) {
-            String rel = csvHelper.tppRelationtoFhir(relationshipTypeCell.getString());
-            contactBuilder.setRelationship(rel, relationshipTypeCell);
-        }
+            PatientContactBuilder contactBuilder = new PatientContactBuilder(patientBuilder);
+            contactBuilder.setId(rowIdCell.getString(), rowIdCell);
 
-        CsvCell relationshipWithPatient = parser.getIDRelationshipWithPatient();
-        PatientBuilder relationPatient = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(relationshipWithPatient,csvHelper);
-        if (relationPatient == null || relationPatient.getNames().isEmpty()) {            // Try to use complete name
-            CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
-            if (!relationshipWithNameCell.isEmpty()) {
-                HumanName humanName = nameConverter(relationshipWithNameCell.getString());
-                if (humanName != null) {
-                    contactBuilder.addContactName(humanName, relationshipWithNameCell);
-                }
+            CsvCell relationshipTypeCell = parser.getRelationshipType();
+            if (!relationshipTypeCell.isEmpty()) {
+                String rel = csvHelper.tppRelationtoFhir(relationshipTypeCell.getString());
+                contactBuilder.setRelationship(rel, relationshipTypeCell);
             }
-        } else {
-            contactBuilder.addContactName(relationPatient.getNames().get(0));  //Use first name
-        }
 
-        AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
-        CsvCell nameOfBuildingCell = parser.getRelationshipWithHouseName();
-        if (!nameOfBuildingCell.isEmpty()) {
-            addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
-        }
-        CsvCell numberOfBuildingCell = parser.getRelationshipWithHouseNumber();
-        CsvCell nameOfRoadCell = parser.getRelationshipWithRoad();
-        addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
+            CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
+            HumanName humanName = nameConverter(relationshipWithNameCell);
+            if (humanName != null) {
+                contactBuilder.addContactName(humanName, relationshipWithNameCell);
+            }
 
-        CsvCell nameOfLocalityCell = parser.getRelationshipWithLocality();
-        if (!nameOfLocalityCell.isEmpty()) {
-            addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
-        }
-        CsvCell nameOfTownCell = parser.getRelationshipWithPostTown();
-        if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.setCity(nameOfTownCell.getString(), nameOfTownCell);
-        }
-        CsvCell nameOfCountyCell = parser.getRelationshipWithCounty();
-        if (!nameOfCountyCell.isEmpty()) {
-            addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
-        }
-        CsvCell fullPostCodeCell = parser.getRelationshipWithPostCode();
-        if (!fullPostCodeCell.isEmpty()) {
-            addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
-        }
+            AddressBuilder addressBuilder = new AddressBuilder(contactBuilder);
+            CsvCell nameOfBuildingCell = parser.getRelationshipWithHouseName();
+            if (!nameOfBuildingCell.isEmpty()) {
+                addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
+            }
+            CsvCell numberOfBuildingCell = parser.getRelationshipWithHouseNumber();
+            CsvCell nameOfRoadCell = parser.getRelationshipWithRoad();
+            addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
 
-        CsvCell relWithTelephone = parser.getRelationshipWithTelephone();
-        if (!(relWithTelephone).isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
-            contactPointBuilder.setValue(relWithTelephone.getString(), relWithTelephone);
-        }
-        CsvCell relWithWorkTelephone = parser.getRelationshipWithWorkTelephone();
-        if (!(relWithWorkTelephone).isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
-            contactPointBuilder.setValue(relWithWorkTelephone.getString(), relWithWorkTelephone);
-        }
-        CsvCell relWithMobileTelephone = parser.getRelationshipWithMobileTelephone();
-        if (!(relWithWorkTelephone).isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
-            contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
-            contactPointBuilder.setValue(relWithMobileTelephone.getString(), relWithMobileTelephone);
-        }
-        CsvCell relationshipWithFax = parser.getRelationshipWithFax();
-        if (!(relationshipWithFax).isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.FAX);
-            contactPointBuilder.setValue(relationshipWithFax.getString(), relationshipWithFax);
-        }
-        CsvCell relationshipWithEmail = parser.getRelationshipWithEmailAddress();
-        if (!(relationshipWithEmail).isEmpty()) {
-            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
-            contactPointBuilder.setValue(relationshipWithEmail.getString(), relationshipWithEmail);
-        }
+            CsvCell nameOfLocalityCell = parser.getRelationshipWithLocality();
+            if (!nameOfLocalityCell.isEmpty()) {
+                addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
+            }
+            CsvCell nameOfTownCell = parser.getRelationshipWithPostTown();
+            if (!nameOfTownCell.isEmpty()) {
+                addressBuilder.setCity(nameOfTownCell.getString(), nameOfTownCell);
+            }
+            CsvCell nameOfCountyCell = parser.getRelationshipWithCounty();
+            if (!nameOfCountyCell.isEmpty()) {
+                addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
+            }
+            CsvCell fullPostCodeCell = parser.getRelationshipWithPostCode();
+            if (!fullPostCodeCell.isEmpty()) {
+                addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
+            }
 
-        CsvCell startDateCell = parser.getDateEvent();
-        if (!startDateCell.isEmpty()) {
-            contactBuilder.setStartDate(startDateCell.getDateTime(), startDateCell);
-        }
+            CsvCell relWithTelephone = parser.getRelationshipWithTelephone();
+            if (!(relWithTelephone).isEmpty()) {
+                ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+                contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+                contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
+                contactPointBuilder.setValue(relWithTelephone.getString(), relWithTelephone);
+            }
+            CsvCell relWithWorkTelephone = parser.getRelationshipWithWorkTelephone();
+            if (!(relWithWorkTelephone).isEmpty()) {
+                ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+                contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+                contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+                contactPointBuilder.setValue(relWithWorkTelephone.getString(), relWithWorkTelephone);
+            }
+            CsvCell relWithMobileTelephone = parser.getRelationshipWithMobileTelephone();
+            if (!(relWithWorkTelephone).isEmpty()) {
+                ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+                contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+                contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
+                contactPointBuilder.setValue(relWithMobileTelephone.getString(), relWithMobileTelephone);
+            }
+            CsvCell relationshipWithFax = parser.getRelationshipWithFax();
+            if (!(relationshipWithFax).isEmpty()) {
+                ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+                contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.FAX);
+                contactPointBuilder.setValue(relationshipWithFax.getString(), relationshipWithFax);
+            }
+            CsvCell relationshipWithEmail = parser.getRelationshipWithEmailAddress();
+            if (!(relationshipWithEmail).isEmpty()) {
+                ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
+                contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
+                contactPointBuilder.setValue(relationshipWithEmail.getString(), relationshipWithEmail);
+            }
 
-        CsvCell endDateCell = parser.getDateEnded();
-        if (!endDateCell.isEmpty()) {
-            contactBuilder.setEndDate(endDateCell.getDate(), endDateCell);
+            CsvCell startDateCell = parser.getDateEvent();
+            if (!startDateCell.isEmpty()) {
+                contactBuilder.setStartDate(startDateCell.getDateTime(), startDateCell);
+            }
+
+            CsvCell endDateCell = parser.getDateEnded();
+            if (!endDateCell.isEmpty()) {
+                contactBuilder.setEndDate(endDateCell.getDate(), endDateCell);
+            }
+
+        } finally {
+            csvHelper.getPatientResourceCache().returnPatientBuilder(patientIdCell, patientBuilder);
         }
     }
 
-    private static HumanName nameConverter(String fullname) {
-        // NameConverter method assumes split by commas. These names are split by space.
-        String name = StringUtils.trimToNull(fullname);
+    /**
+     * NameConverter method assumes split by commas. These names are split by space.
+     */
+    private static HumanName nameConverter(CsvCell nameCell) {
+
+        if (nameCell.isEmpty()) {
+            return null;
+        }
+
+        String name = nameCell.getString();
         if (Strings.isNullOrEmpty(name)) {
             return null;
-        } else {
-            HumanName fhirName = new HumanName();
-            fhirName.setUse(HumanName.NameUse.USUAL);
-            fhirName.setText(name);
-            String[] tokens = name.split(" ");
-            ArrayList<String> list = new ArrayList(Arrays.asList(tokens));
-            list.removeAll(Arrays.asList("", null));
-            tokens = new String[list.size()];
-            tokens = list.toArray(tokens);
-            // Take last part as surname.  Assume original TPP data has proper HumanNames
-            String surname = tokens[tokens.length - 1];
-            fhirName.addFamily(surname);
-            if (isTitle(tokens[0])) {
-                fhirName.addPrefix(tokens[0]);
-                for (int count=1; count < tokens.length-1; count++) {
-                    fhirName.addGiven(tokens[count]);
-                }
-            } else {
-                for (int count = 0; count < tokens.length - 1; count++) {
-                    fhirName.addGiven(tokens[count]);
-                }
-            }
-            return fhirName;
+
         }
+
+        HumanName fhirName = new HumanName();
+        fhirName.setUse(HumanName.NameUse.USUAL);
+        fhirName.setText(name);
+        String[] tokens = name.split(" ");
+        ArrayList<String> list = new ArrayList(Arrays.asList(tokens));
+        list.removeAll(Arrays.asList("", null));
+        tokens = new String[list.size()];
+        tokens = list.toArray(tokens);
+        // Take last part as surname.  Assume original TPP data has proper HumanNames
+        String surname = tokens[tokens.length - 1];
+        fhirName.addFamily(surname);
+        if (isTitle(tokens[0])) {
+            fhirName.addPrefix(tokens[0]);
+            for (int count=1; count < tokens.length-1; count++) {
+                fhirName.addGiven(tokens[count]);
+            }
+        } else {
+            for (int count = 0; count < tokens.length - 1; count++) {
+                fhirName.addGiven(tokens[count]);
+            }
+        }
+        return fhirName;
     }
 
     private static boolean isTitle(String t) {
