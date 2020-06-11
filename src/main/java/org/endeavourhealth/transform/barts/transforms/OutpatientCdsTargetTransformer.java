@@ -206,8 +206,18 @@ public class OutpatientCdsTargetTransformer {
 //                additionalArrivalObjs.addProperty("other_procedures", targetOutpatientCds.getOtherProceduresOPCS());
 //            }
 
-        //save encounterBuilder record
-        fhirResourceFiler.savePatientResource(null, encounterBuilder);
+        ///retrieve and update the parent to point to this new child encounter
+        Integer parentEncounterId = targetOutpatientCds.getEncounterId();
+        Encounter existingParentEncounter
+                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
+        EncounterBuilder existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+        //and link the parent to this new child encounter
+        Reference childCriticalRef = ReferenceHelper.createReference(ResourceType.Encounter, attendanceId);
+        ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
+        listBuilder.addReference(childCriticalRef);
+
+        //save encounterBuilder records
+        fhirResourceFiler.savePatientResource(null, encounterBuilder, existingParentEncounterBuilder);
     }
 
     private static void createOutpatientCdsEncounterParentMinimum(StagingOutpatientCdsTarget targetOutpatientCds,
@@ -313,9 +323,9 @@ public class OutpatientCdsTargetTransformer {
         }
         //get the existing parent encounter set during ADT feed, to link to this top level encounter if this is a child
         if (isChildEncounter) {
-            Integer encounterId = targetOutpatientCds.getEncounterId();
+            Integer parentEncounterId = targetOutpatientCds.getEncounterId();
             Reference parentEncounter
-                    = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
+                    = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(parentEncounterId));
             if (builder.isIdMapped()) {
 
                 parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
