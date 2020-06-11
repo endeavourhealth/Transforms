@@ -332,8 +332,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     public TppMappingRef lookUpTppMappingRef(CsvCell cell) throws Exception {
 
-        if (cell.isEmpty()
-                || cell.getLong().longValue() < 0) {
+        if (isEmptyOrNegative(cell)) {
             return null;
         }
 
@@ -876,29 +875,28 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public ResourceType getResourceType(String code) throws Exception {
         if (codeToTypes.containsKey(code)) {
             return codeToTypes.get(code);
-        } else {
-            if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, OPERATIONS_PROCEDURES)) {
-                cacheCTV3CodeToResourceType(code, ResourceType.Procedure);
-                if (isBPCode(code)) {
-                    cacheCTV3CodeToResourceType(code, ResourceType.Observation);
-                    return ResourceType.Observation;
-                }
-                return ResourceType.Procedure;
-            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, ALLERGIC_DISORDER)) {
-                cacheCTV3CodeToResourceType(code, ResourceType.AllergyIntolerance);
-                return ResourceType.AllergyIntolerance;
-            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, FAMILY_HISTORY_DISORDERS)) {
-                cacheCTV3CodeToResourceType(code, ResourceType.FamilyMemberHistory);
-                return ResourceType.FamilyMemberHistory;
-            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, DISORDERS)) {
-                cacheCTV3CodeToResourceType(code, ResourceType.Condition);
-                return ResourceType.Condition;
-            } else {
-                cacheCTV3CodeToResourceType(code, ResourceType.Observation);
-            }
         }
-        cacheCTV3CodeToResourceType(code, ResourceType.Observation);
-        return ResourceType.Observation;
+
+        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, OPERATIONS_PROCEDURES)) {
+            cacheCTV3CodeToResourceType(code, ResourceType.Procedure);
+            if (isBPCode(code)) {
+                cacheCTV3CodeToResourceType(code, ResourceType.Observation);
+                return ResourceType.Observation;
+            }
+            return ResourceType.Procedure;
+        } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, ALLERGIC_DISORDER)) {
+            cacheCTV3CodeToResourceType(code, ResourceType.AllergyIntolerance);
+            return ResourceType.AllergyIntolerance;
+        } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, FAMILY_HISTORY_DISORDERS)) {
+            cacheCTV3CodeToResourceType(code, ResourceType.FamilyMemberHistory);
+            return ResourceType.FamilyMemberHistory;
+        } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, DISORDERS)) {
+            cacheCTV3CodeToResourceType(code, ResourceType.Condition);
+            return ResourceType.Condition;
+        } else {
+            cacheCTV3CodeToResourceType(code, ResourceType.Observation);
+            return ResourceType.Observation;
+        }
     }
 
     public void cacheCTV3CodeToResourceType(String code, ResourceType type) {

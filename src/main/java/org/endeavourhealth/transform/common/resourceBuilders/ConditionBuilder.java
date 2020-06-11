@@ -56,6 +56,19 @@ public class ConditionBuilder extends ResourceBuilderBase
             this.condition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PROBLEM));
         } else {
             this.condition.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_CONDITION));
+
+            //clear down all the problem-specific condition fields
+            setEndDateOrBoolean(null);
+            setExpectedDuration(null);
+            setProblemLastReviewDate(null);
+            setProblemLastReviewedBy(null);
+            setProblemSignificance(null);
+            setParentProblem(null);
+            setParentProblemRelationship(null);
+
+            ContainedListBuilder containedListBuilder = new ContainedListBuilder(this);
+            containedListBuilder.removeContainedList();
+
         }
     }
 
@@ -505,5 +518,9 @@ public class ConditionBuilder extends ResourceBuilderBase
     @Override
     public void removeIdentifier(Identifier identifier) {
         this.condition.getIdentifier().remove(identifier);
+    }
+
+    public boolean hasPatient() {
+        return this.condition.hasPatient();
     }
 }

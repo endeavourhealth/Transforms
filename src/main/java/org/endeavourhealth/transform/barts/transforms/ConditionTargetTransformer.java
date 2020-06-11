@@ -96,12 +96,12 @@ public class ConditionTargetTransformer {
             Integer encounterId = targetCondition.getEncounterId();
             if (encounterId != null) {
 
-                Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
+                Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, "" + encounterId);
                 conditionBuilder.setEncounter(encounterReference);
             }
 
             //is it a Problem - use problem status to determine
-            Boolean isProblem = !Strings.isNullOrEmpty(problemStatus);
+            boolean isProblem = !Strings.isNullOrEmpty(problemStatus);
             conditionBuilder.setAsProblem(isProblem);
 
             String confirmation = targetCondition.getConfirmation();
@@ -213,7 +213,7 @@ public class ConditionTargetTransformer {
                     Integer.parseInt(conditionType);
 
                     // these are specific diagnosis category coded types, code set 17, Principal, Working etc.
-                    CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(17L, conditionType);
+                    CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(new Long(17), conditionType);
                     if (cernerCodeValueRef != null) {
 
                         String category = cernerCodeValueRef.getCodeDispTxt();
@@ -239,8 +239,8 @@ public class ConditionTargetTransformer {
             Integer sequenceNumber = targetCondition.getSequenceNumber();
             if (sequenceNumber != null) {
 
-                conditionBuilder.setSequenceNumber(sequenceNumber);
-                if (sequenceNumber == 1) {
+                conditionBuilder.setSequenceNumber(sequenceNumber.intValue());
+                if (sequenceNumber.intValue() == 1) {
                     conditionBuilder.setIsPrimary(true);
 
                 } else {
@@ -303,9 +303,9 @@ public class ConditionTargetTransformer {
     }
 
     //if date = 1900-01-01
-    private static Boolean isUnknownConditionDate(Date date) throws Exception {
+    /*private static Boolean isUnknownConditionDate(Date date) throws Exception {
 
         Date unknownDate = new SimpleDateFormat("yyyy-MM-dd").parse("1900-01-01");
         return date.equals(unknownDate);
-    }
+    }*/
 }

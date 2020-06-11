@@ -603,12 +603,12 @@ public abstract class TppCsvToFhirTransformer {
             csvHelper.getReferralStatusCache().processRemainingReferralStatuses(fhirResourceFiler); //handle any record statuses without registrations
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            SRProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //saves some mappings using multiple threads
-            SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper); //
             if (processSRCode) {
+                SRProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //saves some mappings using multiple threads
+                SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper); //
                 SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             }
-            csvHelper.getConditionResourceCache().fileConditionResources(fhirResourceFiler);
+            csvHelper.getConditionResourceCache().processRemainingProblems(fhirResourceFiler);
 
             SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 

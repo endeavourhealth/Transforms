@@ -1024,19 +1024,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //change its profile URL to say it's not a problem
         conditionBuilder.setAsProblem(false);
 
-        //clear down all the problem-specific condition fields
-        conditionBuilder.setEndDateOrBoolean(null);
-        conditionBuilder.setExpectedDuration(null);
-        conditionBuilder.setProblemLastReviewDate(null);
-        conditionBuilder.setProblemLastReviewedBy(null);
-        conditionBuilder.setProblemSignificance(null);
-        conditionBuilder.setParentProblem(null);
-        conditionBuilder.setParentProblemRelationship(null);
-        //conditionBuilder.setAdditionalNotes(null);
-
-        ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
-        containedListBuilder.removeContainedList();
-
         fhirResourceFiler.savePatientResource(null, false, conditionBuilder);
     }
     /*private void removeAllProblemSpecificFields(ConditionBuilder conditionBuilder) {
