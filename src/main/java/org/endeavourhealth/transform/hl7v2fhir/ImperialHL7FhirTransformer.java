@@ -45,7 +45,7 @@ public abstract class ImperialHL7FhirTransformer {
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
         String HL7Message = null;
         //get HL7 message from the table based on id
-        Connection connection = ConnectionManager.getHL7v2InboundConnection();
+        /*Connection connection = ConnectionManager.getHL7v2InboundConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT * from imperial where id=?";
@@ -63,7 +63,10 @@ public abstract class ImperialHL7FhirTransformer {
                 ps.close();
             }
             connection.close();
-        }
+        }*/
+
+        /*FileInputStream iS = new FileInputStream("C:\\Users\\USER\\Desktop\\Examples\\A01");
+        HL7Message = IOUtils.toString(iS);*/
         //get HL7 message from the table based on id
 
         Message hapiMsg = parseHL7Message(HL7Message);
