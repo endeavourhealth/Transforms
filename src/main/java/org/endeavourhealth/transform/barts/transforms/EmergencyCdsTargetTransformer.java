@@ -75,11 +75,8 @@ public class EmergencyCdsTargetTransformer {
 
                 } else {
 
-                    //create top level parent with minimum data
-                    createEmergencyCdsEncounterParentMinimum(targetEmergencyCds, fhirResourceFiler, csvHelper);
-
-                    //then create child level encounters linked to this new parent
-                    createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
+                    //create top level parent with minimum data and the sub encounters
+                    createEmergencyCdsEncounterParentAndSubs(targetEmergencyCds, fhirResourceFiler, csvHelper);
                 }
             } else {
 
@@ -317,7 +314,7 @@ public class EmergencyCdsTargetTransformer {
         fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
     }
 
-    private static void createEmergencyCdsEncounterParentMinimum(StagingEmergencyCdsTarget targetEmergencyCds,
+    private static void createEmergencyCdsEncounterParentAndSubs(StagingEmergencyCdsTarget targetEmergencyCds,
                                                                  FhirResourceFiler fhirResourceFiler,
                                                                  BartsCsvHelper csvHelper) throws Exception {
 
@@ -348,6 +345,9 @@ public class EmergencyCdsTargetTransformer {
 
         //save encounterBuilder record
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+
+        //then create child level encounters linked to this new parent
+        createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
     }
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,

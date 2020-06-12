@@ -74,11 +74,9 @@ public class InpatientCdsTargetTransformer {
 
                 } else {
 
-                    //create top level parent with minimum data
-                    createInpatientCdsEncounterParentMinimum(targetInpatientCds, fhirResourceFiler, csvHelper);
+                    //create top level parent with minimum data including the sub encounters
+                    createInpatientCdsEncounterParentAndSubs(targetInpatientCds, fhirResourceFiler, csvHelper);
 
-                    //then create child level encounters linked to this new parent
-                    createInpatientCdsEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
                 }
             } else {
 
@@ -409,7 +407,7 @@ public class InpatientCdsTargetTransformer {
         }
     }
 
-    private static void createInpatientCdsEncounterParentMinimum(StagingInpatientCdsTarget targetInpatientCds,
+    private static void createInpatientCdsEncounterParentAndSubs(StagingInpatientCdsTarget targetInpatientCds,
                                                                     FhirResourceFiler fhirResourceFiler,
                                                                     BartsCsvHelper csvHelper) throws Exception {
 
@@ -440,6 +438,9 @@ public class InpatientCdsTargetTransformer {
 
         //save encounterBuilder record
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+
+        //once the parent is created, then create the sub encounters
+        createInpatientCdsEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
     }
 
     private static void updateExistingParentEncounter(Encounter existingEncounter,
