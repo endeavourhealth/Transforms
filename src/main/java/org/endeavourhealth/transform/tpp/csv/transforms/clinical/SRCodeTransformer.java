@@ -63,14 +63,14 @@ public class SRCodeTransformer {
         CsvCell codeIdCell = parser.getRowIdentifier();
         //note, an SRCode may end up saved as TWO resources, so this uses a loop
         Set<ResourceType> resourceTypes = findOriginalTargetResourceTypes(fhirResourceFiler, codeIdCell);
-        LOG.trace("Deleting SRCode " + parser.getRowIdentifier().getString() + " which was previously saved as [" + resourceTypes + "]");
+        //LOG.trace("Deleting SRCode " + parser.getRowIdentifier().getString() + " which was previously saved as [" + resourceTypes + "]");
         for (ResourceType resourceType: resourceTypes) {
             switch (resourceType) {
                 case Observation:
                     createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
                     break;
                 case Condition:
-                    LOG.trace("Going to delete condition for " + parser.getRowIdentifier().getString());
+                    //LOG.trace("Going to delete condition for " + parser.getRowIdentifier().getString());
                     createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
                     break;
                 case Procedure:
@@ -99,7 +99,7 @@ public class SRCodeTransformer {
                 createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
                 break;
             case Condition:
-                LOG.trace("Going to create condition for " + parser.getRowIdentifier().getString());
+                //LOG.trace("Going to create condition for " + parser.getRowIdentifier().getString());
                 createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
                 break;
             case Procedure:
@@ -121,7 +121,7 @@ public class SRCodeTransformer {
         if (resourceType != ResourceType.Condition
                 && csvHelper.getConditionResourceCache().containsCondition(codeIdCell)) {
 
-            LOG.trace("Going to create EXTRA condition for " + parser.getRowIdentifier().getString());
+            //LOG.trace("Going to create EXTRA condition for " + parser.getRowIdentifier().getString());
             createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
         }
     }
@@ -279,7 +279,7 @@ public class SRCodeTransformer {
 
         CsvCell conditionId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
-        LOG.trace("Creating/deleting condition " + conditionId.getString());
+        //LOG.trace("Creating/deleting condition " + conditionId.getString());
 
         //The condition resource may already exist as part of the Problem Transformer or will create one, set using the ID value of the code
         ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(conditionId, csvHelper, true);
@@ -287,13 +287,15 @@ public class SRCodeTransformer {
         CsvCell deleteData = parser.getRemovedData();
         if (deleteData != null && deleteData.getIntAsBoolean()) {
 
-            UUID previousUuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Condition, conditionId.getString());
-            LOG.trace("Deleting Condition previously saved with UUID " + previousUuid + " and Condition has ID [" + conditionBuilder.getResourceId() + "]");
+            //UUID previousUuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Condition, conditionId.getString());
+            //LOG.trace("Deleting Condition previously saved with UUID " + previousUuid + " and Condition has ID [" + conditionBuilder.getResourceId() + "]");
 
-            conditionBuilder.setDeletedAudit(deleteData);
-
-            boolean mapIds = !conditionBuilder.isIdMapped();
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, conditionBuilder);
+            //SRProblemTransformer may have already deleted our Condition, so only try the delete if our ConditionBuilder
+            //has already been saved (i.e. hasn't been deleted by SRProblem)
+            if (conditionBuilder.isIdMapped()) {
+                conditionBuilder.setDeletedAudit(deleteData);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, conditionBuilder);
+            }
             return;
         }
 

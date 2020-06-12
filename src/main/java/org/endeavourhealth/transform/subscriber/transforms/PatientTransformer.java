@@ -93,7 +93,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
         //check if the patient is deleted, is confidential, has no NHS number etc.
-        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)) {
+        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)
+                || params.isBulkDeleteFromSubscriber()) {
 
             //delete the patient
             patientWriter.writeDelete(subscriberId);

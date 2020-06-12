@@ -57,6 +57,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final int batchSize;
     private final String excludeNhsNumberRegex;
+    private final boolean isBulkDeleteFromSubscriber;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
     private Patient cachedPatient = null;
     private Map<String, String> snomedToBnfChapter = new HashMap<>();
@@ -68,7 +69,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private Long subscriberPersonId = null;
 
     public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, String subscriberConfigName,
-                                     List<ResourceWrapper> allResources) throws Exception {
+                                     List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
@@ -76,6 +77,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         this.subscriberConfigName = subscriberConfigName;
         this.outputContainer = new OutputContainer();
         this.subscriberIdsUpdated = new ArrayList<>();
+        this.isBulkDeleteFromSubscriber = isBulkDeleteFromSubscriber;
 
         //load our config record for some parameters
         JsonNode config = ConfigManager.getConfigurationAsJson(subscriberConfigName, "db_subscriber");
@@ -139,6 +141,10 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public boolean isHasEncounterEventTable() {
         return hasEncounterEventTable;
+    }
+
+    public boolean isBulkDeleteFromSubscriber() {
+        return isBulkDeleteFromSubscriber;
     }
 
     public Date includeDateRecorded(DomainResource fhir) {
@@ -315,7 +321,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             //if we've got some cases where we've got a deleted patient but non-deleted patient-related resources
             //all in the same batch, because Emis sent it like that. In that case we won't have a person ID, so
             //return out without processing any of the remaining resources, since they're for a deleted patient.
-            this.shouldPatientRecordBeDeleted = new Boolean(true);
+            this.shouldPatientRecordBeDeleted = Boolean.TRUE;
         } else {
             SubscriberPersonMappingDalI personMappingDal = DalProvider.factorySubscriberPersonMappingDal(getSubscriberConfigName());
             this.subscriberPersonId = personMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
@@ -351,11 +357,16 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             subscriberId = AbstractSubscriberTransformer.findSubscriberId(this, SubscriberTableId.PATIENT, sourceId);
             if (subscriberId == null) {
                 LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so will delete everything");
-                this.shouldPatientRecordBeDeleted = new Boolean(true);
+                this.shouldPatientRecordBeDeleted = Boolean.TRUE;
             }
         }
         if (subscriberId != null) {
             this.subscriberPatientId = new Long(subscriberId.getSubscriberId());
+        }
+
+        //if doing a bulk delete, overwrite whatever we've calculated above
+        if (isBulkDeleteFromSubscriber) {
+            this.shouldPatientRecordBeDeleted = Boolean.TRUE;
         }
     }
 

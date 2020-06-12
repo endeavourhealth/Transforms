@@ -90,7 +90,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         //check if the patient is deleted, is confidential, has no NHS number etc.
-        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)) {
+        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)
+                || params.isBulkDeleteFromSubscriber()) {
             csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
