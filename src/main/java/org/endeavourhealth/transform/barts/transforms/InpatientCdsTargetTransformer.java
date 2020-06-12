@@ -70,7 +70,7 @@ public class InpatientCdsTargetTransformer {
                     updateExistingParentEncounter(existingParentEncounter, targetInpatientCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounters
-                    createInpatientCdsEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
+                    createInpatientCdsSubEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
 
                 } else {
 
@@ -164,9 +164,9 @@ public class InpatientCdsTargetTransformer {
         }
     }
 
-    private static void createInpatientCdsEncounters(StagingInpatientCdsTarget targetInpatientCds,
-                                                     FhirResourceFiler fhirResourceFiler,
-                                                     BartsCsvHelper csvHelper) throws Exception {
+    private static void createInpatientCdsSubEncounters(StagingInpatientCdsTarget targetInpatientCds,
+                                                        FhirResourceFiler fhirResourceFiler,
+                                                        BartsCsvHelper csvHelper) throws Exception {
 
         //unique to the inpatient hospital spell
         String spellId = targetInpatientCds.getSpellNumber();
@@ -355,7 +355,7 @@ public class InpatientCdsTargetTransformer {
         //save only the episode encounter builder here
         fhirResourceFiler.savePatientResource(null, episodeEncounterBuilder);
 
-        //save the existing parent encounter here with the updated child refs added during this method
+        //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
     }
 
@@ -439,8 +439,11 @@ public class InpatientCdsTargetTransformer {
         //save encounterBuilder record
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
 
+        //wait until parent resources are filed
+        csvHelper.waitUntilThreadPoolIsEmpty();
+
         //once the parent is created, then create the sub encounters
-        createInpatientCdsEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
+        createInpatientCdsSubEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
     }
 
     private static void updateExistingParentEncounter(Encounter existingEncounter,

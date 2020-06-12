@@ -346,6 +346,9 @@ public class EmergencyCdsTargetTransformer {
         //save encounterBuilder record
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
 
+        //wait until parent resources are filed
+        csvHelper.waitUntilThreadPoolIsEmpty();
+
         //then create child level encounters linked to this new parent
         createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
     }
