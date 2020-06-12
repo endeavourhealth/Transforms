@@ -523,7 +523,7 @@ public abstract class TppCsvToFhirTransformer {
         //reference data
         if (processAdminData) {
 
-            LOG.trace("Starting reference data transforms");
+            LOG.info("Starting reference data transforms");
             SRCtv3Transformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
@@ -532,7 +532,7 @@ public abstract class TppCsvToFhirTransformer {
             SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             //organisational admin data
-            LOG.trace("Starting admin transforms");
+            LOG.info("Starting admin transforms");
             SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -540,7 +540,7 @@ public abstract class TppCsvToFhirTransformer {
 
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            LOG.trace("Starting practitioners transforms");
+            LOG.info("Starting practitioners transforms");
             SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above
             SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above two
@@ -559,7 +559,7 @@ public abstract class TppCsvToFhirTransformer {
 
         if (processPatientData) {
 
-            LOG.trace("Starting patient demographics transforms");
+            LOG.info("Starting patient demographics transforms");
             SRPatientAddressHistoryPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPatientContactDetailsPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPatientRelationshipPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -587,7 +587,7 @@ public abstract class TppCsvToFhirTransformer {
             SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            LOG.trace("Starting clinical transforms");
+            LOG.info("Starting clinical transforms");
             SREventLinkTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRRecallPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -701,7 +701,7 @@ public abstract class TppCsvToFhirTransformer {
 
     private static void auditSkippingSRCode(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
 
-        LOG.info("Skipping SRCode for exchange " + fhirFiler.getExchangeId());
+        LOG.warn("Skipping SRCode for exchange " + fhirFiler.getExchangeId());
         AuditWriter.writeExchangeEvent(fhirFiler.getExchangeId(), "Skipped SRCode");
 
         //write to audit table so we can find out
