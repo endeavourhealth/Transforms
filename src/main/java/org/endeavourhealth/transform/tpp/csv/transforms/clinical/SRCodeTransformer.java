@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.FamilyMember;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRef;
 import org.endeavourhealth.core.terminology.SnomedCode;
@@ -8,24 +9,25 @@ import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.schema.careRecord.*;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppCodingHelper;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRCode;
 import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Observation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 
 public class SRCodeTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SRCodeTransformer.class);
 
-    private static final String SYSTOLIC = "2469.";
-    public static final String DIASTOLIC = "246A.";
+    /*private static final String SYSTOLIC = "2469.";
+    public static final String DIASTOLIC = "246A.";*/
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -59,18 +61,18 @@ public class SRCodeTransformer {
                                        TppCsvHelper csvHelper) throws Exception {
 
         CsvCell codeIdCell = parser.getRowIdentifier();
-
-        ResourceType resourceType = wasOriginallySavedAsOtherThanCondition(fhirResourceFiler, codeIdCell);
-
-        if (resourceType != null) {
+        //note, an SRCode may end up saved as TWO resources, so this uses a loop
+        Set<ResourceType> resourceTypes = findOriginalTargetResourceTypes(fhirResourceFiler, codeIdCell);
+        //LOG.trace("Deleting SRCode " + parser.getRowIdentifier().getString() + " which was previously saved as [" + resourceTypes + "]");
+        for (ResourceType resourceType: resourceTypes) {
             switch (resourceType) {
                 case Observation:
                     createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
                     break;
-                //conditions are checked at the bottom of this fn
-                /*case Condition:
+                case Condition:
+                    //LOG.trace("Going to delete condition for " + parser.getRowIdentifier().getString());
                     createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
-                    break;*/
+                    break;
                 case Procedure:
                     createOrDeleteProcedure(parser, fhirResourceFiler, csvHelper);
                     break;
@@ -83,13 +85,6 @@ public class SRCodeTransformer {
                 default:
                     throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
             }
-        }
-
-        //if we originally saved our record as a Condition, either because the record code indicated it should be
-        //condition or because we had a SRProblem record linked to us (in which case it will have been saved as
-        //a condition AS WELL as the other resource type), then we'll need to delete that condition now
-        if (wasOriginallySavedAsCondition(fhirResourceFiler, codeIdCell)) {
-            createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
         }
     }
 
@@ -104,6 +99,7 @@ public class SRCodeTransformer {
                 createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
                 break;
             case Condition:
+                //LOG.trace("Going to create condition for " + parser.getRowIdentifier().getString());
                 createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
                 break;
             case Procedure:
@@ -125,6 +121,7 @@ public class SRCodeTransformer {
         if (resourceType != ResourceType.Condition
                 && csvHelper.getConditionResourceCache().containsCondition(codeIdCell)) {
 
+            //LOG.trace("Going to create EXTRA condition for " + parser.getRowIdentifier().getString());
             createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
         }
     }
@@ -161,7 +158,7 @@ public class SRCodeTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
+        if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneBy)) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 allergyIntoleranceBuilder.setClinician(staffReference, staffMemberIdDoneBy);
@@ -185,12 +182,12 @@ public class SRCodeTransformer {
         // these are non drug allergies
         allergyIntoleranceBuilder.setCategory(AllergyIntolerance.AllergyIntoleranceCategory.OTHER);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
         CsvCell snomedCodeCell = parser.getSNOMEDCode();
         CsvCell snomedDescCell = parser.getSNOMEDText();
         CsvCell ctv3CodeCell = parser.getCTV3Code();
         CsvCell ctv3DescCell = parser.getCTV3Text();
-        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
+        TppCodingHelper.addCodes(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
@@ -202,62 +199,6 @@ public class SRCodeTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
     }
 
-    private static void addCodeableConcept(CodeableConceptBuilder codeableConceptBuilder, CsvCell snomedCodeCell, CsvCell snomedDescCell, CsvCell ctv3CodeCell, CsvCell ctv3DescCell) throws Exception {
-
-        boolean addedSnomed = false;
-
-        if (snomedCodeCell != null //might be null in older versions
-                && !snomedCodeCell.isEmpty()
-                && snomedCodeCell.getLong() != -1) {
-
-            SnomedCode snomedCode = TerminologyService.lookupSnomedFromConceptId(snomedCodeCell.getString());
-            if (snomedCode != null) {
-                addSnomedToCodeableConcept(codeableConceptBuilder, snomedCode);
-                addedSnomed = true;
-            }
-        }
-
-        if (!ctv3CodeCell.isEmpty()) {
-            String code = ctv3CodeCell.getString();
-            if (!code.startsWith("Y")) {
-
-                //only add the snomed translation if not already added snomed
-                if (!addedSnomed) {
-                    SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(code);
-                    if (snomedCode != null) {
-                        addSnomedToCodeableConcept(codeableConceptBuilder, snomedCode);
-                    }
-                }
-
-                // add Ctv3 coding
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-
-            } else {
-                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_TPP_CTV3);
-            }
-
-            codeableConceptBuilder.setCodingCode(code, ctv3CodeCell);
-            codeableConceptBuilder.setCodingDisplay(ctv3DescCell.getString(), ctv3DescCell);
-        }
-
-        //set the text from one of the text cells, preferring Snomed if present
-        if (snomedDescCell != null
-                && !snomedDescCell.isEmpty()
-                && snomedCodeCell.getLong() != -1) {
-
-            codeableConceptBuilder.setText(snomedDescCell.getString(), snomedDescCell);
-
-        } else {
-            codeableConceptBuilder.setText(ctv3DescCell.getString(), ctv3DescCell);
-        }
-    }
-
-
-    private static void addSnomedToCodeableConcept(CodeableConceptBuilder codeableConceptBuilder, SnomedCode snomedCode) {
-        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-        codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
-        codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-    }
 
     private static void createOrDeleteProcedure(SRCode parser,
                                                 FhirResourceFiler fhirResourceFiler,
@@ -290,7 +231,7 @@ public class SRCodeTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
+        if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneBy)) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 procedureBuilder.addPerformer(staffReference, staffMemberIdDoneBy);
@@ -311,12 +252,12 @@ public class SRCodeTransformer {
             procedureBuilder.setPerformed(dateTimeType, effectiveDate);
         }
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
         CsvCell snomedCodeCell = parser.getSNOMEDCode();
         CsvCell snomedDescCell = parser.getSNOMEDText();
         CsvCell ctv3CodeCell = parser.getCTV3Code();
         CsvCell ctv3DescCell = parser.getCTV3Text();
-        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+        TppCodingHelper.addCodes(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
@@ -338,27 +279,23 @@ public class SRCodeTransformer {
 
         CsvCell conditionId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
-        CsvCell deleteData = parser.getRemovedData();
+        //LOG.trace("Creating/deleting condition " + conditionId.getString());
 
         //The condition resource may already exist as part of the Problem Transformer or will create one, set using the ID value of the code
-        ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(conditionId, csvHelper);
+        ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(conditionId, csvHelper, true);
 
+        CsvCell deleteData = parser.getRemovedData();
         if (deleteData != null && deleteData.getIntAsBoolean()) {
 
-            //check if already Id mapped and if not, needs Id mapping, i.e. not filed yet which is an erroneous for a delete
-            boolean mapIds = !conditionBuilder.isIdMapped();
-            if (mapIds) {
+            //UUID previousUuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Condition, conditionId.getString());
+            //LOG.trace("Deleting Condition previously saved with UUID " + previousUuid + " and Condition has ID [" + conditionBuilder.getResourceId() + "]");
 
-                //the condition is being deleted here and needs Id mapping, So it has NOT been previously saved,
-                //so cannot be deleted. Therefore, Log, and return gracefully
-                TransformWarnings.log(LOG, csvHelper, "Cannot find existing Condition: {} for deletion", conditionId);
-                return;
+            //SRProblemTransformer may have already deleted our Condition, so only try the delete if our ConditionBuilder
+            //has already been saved (i.e. hasn't been deleted by SRProblem)
+            if (conditionBuilder.isIdMapped()) {
+                conditionBuilder.setDeletedAudit(deleteData);
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, conditionBuilder);
             }
-
-            conditionBuilder.setDeletedAudit(deleteData);
-            //deletions should always be on valid mapIds = False.  The check above will prevent this being passed as True
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, conditionBuilder);
-
             return;
         }
 
@@ -369,7 +306,7 @@ public class SRCodeTransformer {
         conditionBuilder.setPatient(patientReference, patientId);
 
         CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
+        if (!TppCsvHelper.isEmptyOrNegative(profileIdRecordedBy)) {
             Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
             if (conditionBuilder.isIdMapped()) {
                 staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
@@ -378,7 +315,7 @@ public class SRCodeTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
+        if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneBy)) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 if (conditionBuilder.isIdMapped()) {
@@ -405,12 +342,12 @@ public class SRCodeTransformer {
         // remove any existing coded concept already created, i.e. it may have already been set from the SRProblem transform which is now superseeded
         CodeableConceptBuilder.removeExistingCodeableConcept(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code, null);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
         CsvCell snomedCodeCell = parser.getSNOMEDCode();
         CsvCell snomedDescCell = parser.getSNOMEDText();
         CsvCell ctv3CodeCell = parser.getCTV3Code();
         CsvCell ctv3DescCell = parser.getCTV3Text();
-        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
+        TppCodingHelper.addCodes(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
         CsvCell episodeType = parser.getEpisodeType();
         if (!episodeType.isEmpty()) {
@@ -470,7 +407,7 @@ public class SRCodeTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
+        if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneBy)) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 observationBuilder.setClinician(staffReference, staffMemberIdDoneBy);
@@ -482,24 +419,21 @@ public class SRCodeTransformer {
 
         CsvCell dateRecored = parser.getDateEventRecorded();
         if (!dateRecored.isEmpty()) {
-
             observationBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
         }
 
         CsvCell effectiveDate = parser.getDateEvent();
         if (!effectiveDate.isEmpty()) {
-
             DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
             observationBuilder.setEffectiveDate(dateTimeType, effectiveDate);
         }
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
         CsvCell snomedCodeCell = parser.getSNOMEDCode();
         CsvCell snomedDescCell = parser.getSNOMEDText();
         CsvCell ctv3CodeCell = parser.getCTV3Code();
         CsvCell ctv3DescCell = parser.getCTV3Text();
-        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+        TppCodingHelper.addCodes(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
         //ObservationBuilder systolicObservationBuilder = null;
         //ObservationBuilder diastolicObservationBuilder = null;
@@ -687,7 +621,7 @@ public class SRCodeTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
+        if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneBy)) {
             Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
             if (staffReference != null) {
                 familyMemberHistoryBuilder.setClinician(staffReference, staffMemberIdDoneBy);
@@ -714,12 +648,12 @@ public class SRCodeTransformer {
         //so just use the generic family member term
         familyMemberHistoryBuilder.setRelationship(FamilyMember.FAMILY_MEMBER);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);
         CsvCell snomedCodeCell = parser.getSNOMEDCode();
         CsvCell snomedDescCell = parser.getSNOMEDText();
         CsvCell ctv3CodeCell = parser.getCTV3Code();
         CsvCell ctv3DescCell = parser.getCTV3Text();
-        addCodeableConcept(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);
+        TppCodingHelper.addCodes(codeableConceptBuilder, snomedCodeCell, snomedDescCell, ctv3CodeCell, ctv3DescCell);
 
         // set consultation/encounter reference
         CsvCell eventId = parser.getIDEvent();
@@ -738,8 +672,8 @@ public class SRCodeTransformer {
     private static void assertValueEmpty(ResourceBuilderBase resourceBuilder, SRCode parser) throws Exception {
         CsvCell valueCell = parser.getNumericValue();
         if (!valueCell.isEmpty()) {  //Handle multiple stand-ins for empty/null value. Some with decimal place.
-            if (valueCell.getDouble() == 0D
-                    || valueCell.getDouble() == -1D) {
+            if (valueCell.getDouble().doubleValue() == 0D
+                    || valueCell.getDouble().doubleValue() == -1D) {
                 return;
             }
             throw new FieldNotEmptyException("Value", resourceBuilder.getResource());
@@ -748,14 +682,12 @@ public class SRCodeTransformer {
 
     //the FHIR resource type is roughly derived from the code subset and ReadCode
     public static ResourceType getTargetResourceType(SRCode parser, TppCsvHelper csvHelper) throws Exception {
+
         String readV3Code = parser.getCTV3Code().getString();
-        if (csvHelper.isProblemObservationGuid(parser.getRowIdentifier())) {
-            return ResourceType.Condition;
-        }
         if (!readV3Code.isEmpty()) {
             ResourceType type = csvHelper.getResourceType(readV3Code);
             if (!parser.getNumericValue().isEmpty()
-                    && !csvHelper.isTppPlaceholder(parser.getNumericValue())
+                    && !isNumericPlaceholder(parser.getNumericValue())
                     && (type.equals(ResourceType.Procedure))) {
                 return ResourceType.Observation;
             }
@@ -763,6 +695,18 @@ public class SRCodeTransformer {
         }
         return ResourceType.Observation;
     }
+
+    private static boolean isNumericPlaceholder(CsvCell cell) {
+        //Test for one of the TPP placeholders 0, 0.0, -1, -1.0
+        double zero = 0.0D;
+        double negOne = -1.0D;
+        if (cell.getDouble().doubleValue() == zero
+                || cell.getDouble().doubleValue() == negOne) {
+            return true;
+        }
+        return false;
+    }
+
 
 
     private static Quantity.QuantityComparator convertComparator(String str) {
@@ -783,16 +727,11 @@ public class SRCodeTransformer {
         }
     }
 
-    /**
-     * finds out what resource type an EMIS observation was previously saved as
-     */
-    public static boolean wasOriginallySavedAsCondition(FhirResourceFiler fhirResourceFiler, CsvCell codeId) throws
-            Exception {
+    /*public static boolean wasOriginallySavedAsCondition(FhirResourceFiler fhirResourceFiler, CsvCell codeId) throws Exception {
         return checkIfWasSavedAsResourceType(fhirResourceFiler, codeId, ResourceType.Condition);
     }
 
-    public static ResourceType wasOriginallySavedAsOtherThanCondition(FhirResourceFiler fhirResourceFiler, CsvCell
-            codeId) throws Exception {
+    public static ResourceType wasOriginallySavedAsOtherThanCondition(FhirResourceFiler fhirResourceFiler, CsvCell codeId) throws Exception {
 
         List<ResourceType> potentialResourceTypes = new ArrayList<>();
         potentialResourceTypes.add(ResourceType.Observation);
@@ -814,11 +753,46 @@ public class SRCodeTransformer {
         return null;
     }
 
-    private static boolean checkIfWasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, CsvCell
-            codeId, ResourceType resourceType) throws Exception {
+    private static boolean checkIfWasSavedAsResourceType(FhirResourceFiler fhirResourceFiler, CsvCell codeId, ResourceType resourceType) throws Exception {
         String sourceId = codeId.getString();
         UUID uuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), resourceType, sourceId);
         return uuid != null;
+    }*/
+
+    /**
+     * finds out what resource type our SRCode record was previously saved as
+     */
+    public static Set<ResourceType> findOriginalTargetResourceTypes(HasServiceSystemAndExchangeIdI hasServiceId, CsvCell codeId) throws Exception {
+
+        //these are the resource types that SRCode can be transformed to
+        List<ResourceType> potentialResourceTypes = new ArrayList<>();
+        potentialResourceTypes.add(ResourceType.Procedure);
+        potentialResourceTypes.add(ResourceType.AllergyIntolerance);
+        potentialResourceTypes.add(ResourceType.FamilyMemberHistory);
+        potentialResourceTypes.add(ResourceType.Condition);
+        potentialResourceTypes.add(ResourceType.Observation);
+
+        String sourceId = codeId.getString();
+
+        Set<Reference> sourceReferences = new HashSet<>();
+        for (ResourceType resourceType: potentialResourceTypes) {
+            Reference ref = ReferenceHelper.createReference(resourceType, sourceId);
+            sourceReferences.add(ref);
+        }
+
+        Map<Reference, UUID> idMap = IdHelper.getEdsResourceIds(hasServiceId.getServiceId(), sourceReferences);
+
+        Set<ResourceType> ret = new HashSet<>();
+
+        for (Reference ref: sourceReferences) {
+            UUID id = idMap.get(ref);
+            if (id != null) {
+                ResourceType resourceType = ReferenceHelper.getResourceType(ref);
+                ret.add(resourceType);
+            }
+        }
+
+        return ret;
     }
 
 }

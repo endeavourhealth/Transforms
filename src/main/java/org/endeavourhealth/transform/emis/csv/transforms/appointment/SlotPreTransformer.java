@@ -21,7 +21,7 @@ import java.util.concurrent.Callable;
 
 /**
  * detects if any previously received Slot records have had their appointments cancelled
- * and updates the FHIR Appoitment accordingly
+ * and updates the FHIR Appointment accordingly
  */
 public class SlotPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SlotPreTransformer.class);
@@ -36,7 +36,7 @@ public class SlotPreTransformer {
 
         Map<CsvCell, CsvCell> batch = new HashMap<>();
 
-        Slot parser =(Slot)parsers.get(Slot.class);
+        Slot parser = (Slot)parsers.get(Slot.class);
         while (parser != null && parser.nextRecord()) {
 
             try {
@@ -48,8 +48,9 @@ public class SlotPreTransformer {
             }
         }
 
-        //call this to abort if we had any errors, during the above processing
         saveBatch(batch, true, csvHelper, fhirResourceFiler);
+
+        //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
     }
 

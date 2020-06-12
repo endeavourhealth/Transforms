@@ -93,7 +93,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
         //check if the patient is deleted, is confidential, has no NHS number etc.
-        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)) {
+        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)
+                || params.isBulkDeleteFromSubscriber()) {
 
             //delete the patient
             patientWriter.writeDelete(subscriberId);
@@ -711,7 +712,14 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        throw new Exception("Failed to find previous version of " + currentWrapper.getReferenceString() + " for dtLastSent " + dtLastSent);
+        //in cases where we've deleted and re-bulked everything then the past audit of which version we sent is useless
+        //and we aren't able to match to the new version. In that case, we should return an empty FHIR Patient
+        //which will trigger the thing to send all the data again.
+        LOG.warn("Failed to find previous version of " + currentWrapper.getReferenceString() + " for dtLastSent " + dtLastSent + ", will send all data again");
+        Patient p = new Patient();
+        p.setId(currentWrapper.getResourceId().toString());
+        return p;
+        //throw new Exception("Failed to find previous version of " + currentWrapper.getReferenceString() + " for dtLastSent " + dtLastSent);
     }
 
 

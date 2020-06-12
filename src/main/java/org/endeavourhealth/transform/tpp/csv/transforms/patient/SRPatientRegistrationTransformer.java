@@ -10,9 +10,9 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.tpp.cache.MedicalRecordStatusCacheObject;
+import org.endeavourhealth.transform.tpp.csv.helpers.cache.MedicalRecordStatusCacheObject;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.helpers.cache.TppRecordStatusCache;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatientRegistration;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -63,20 +63,31 @@ public class SRPatientRegistrationTransformer {
             episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
         }
 
+        //if episode is deleted
         CsvCell removeDataCell = parser.getRemovedData();
         if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
-
-            //check that this is an existing resource, i.e. retrieved with a mapped Id
+            //only bother trying to delete if it's already been ID mapped (i.e. already saved), otherwise just discard it
             if (episodeBuilder.isIdMapped()) {
-
                 episodeBuilder.setDeletedAudit(removeDataCell);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, episodeBuilder);
             }
             return;
         }
 
-        CsvCell patientIdCell = parser.getIDPatient();
+        //the TPP feed supplies details of registrations elsewhere, which should not be saved within the scope
+        //of the publisher, as it ends up creating a lot of confusion as episodes of care are expected to be ABOUT
+        //the publisher service and not somewhere else
+        CsvCell orgIdCell = parser.getIDOrganisationVisibleTo();
+        if (!shouldSaveEpisode(parser.getIDOrganisation(), orgIdCell)) {
+            //only bother trying to delete if it's already been ID mapped (i.e. already saved), otherwise just discard it
+            //delete rather than always just skip, because we PREVIOUSLY let these through, so make sure to delete to tidy up
+            if (episodeBuilder.isIdMapped()) {
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, episodeBuilder);
+            }
+            return;
+        }
 
+        CsvCell patientIdCell = parser.getIDPatient();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         if (episodeBuilder.isIdMapped()) {
             patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
@@ -100,37 +111,18 @@ public class SRPatientRegistrationTransformer {
             episodeBuilder.setRegistrationType(regType, regEndDateCell);
         }
 
-        ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
-
-
-
         //for GMS registrations we also may have
         if (regType != null
                 && regType == RegistrationType.REGULAR_GMS) {
-            //TODO - only want to apply these to the right episode, not all of them!
-            List<MedicalRecordStatusCacheObject> statuses = csvHelper.getAndRemoveMedicalRecordStatus(patientIdCell);
-            if (statuses != null) {
-                csvHelper.addRecordStatuses(statuses, containedListBuilder, patientIdCell.getLong(), episodeOfCare);
-//                for (MedicalRecordStatusCacheObject status : statuses) {
-//                    CsvCell statusCell = status.getStatusCell();
-//                    RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
-//
-//                    CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
-//                    containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
-//
-//                    CsvCell dateCell = status.getDateCell();
-//                    if (!dateCell.isEmpty()) {
-//                        containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
-//                    }
-//                }
-            }
 
-
+            List<MedicalRecordStatusCacheObject> statusesForEpisode = csvHelper.getRecordStatusHelper().getMedicalRecordStatusesForEpisode(patientIdCell, episodeBuilder);
+            TppRecordStatusCache.addRecordStatuses(statusesForEpisode, episodeBuilder);
         }
 
         //if we have a temporary registration type, we can also work out the registration status from the reg type String too
         if (regType != null
                 && regType == RegistrationType.TEMPORARY) {
+
             RegistrationStatus regStatus = null;
 
             String regTypeDesc = regTypeCell.getString();
@@ -143,18 +135,13 @@ public class SRPatientRegistrationTransformer {
 
             if (regStatus != null) {
                 CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(regStatus);
+
+                ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
+                containedListBuilder.removeContainedList(); //remove any existing flags
                 containedListBuilder.addCodeableConcept(codeableConcept, regTypeCell);
             }
         }
 
-        //the IDOrganisation field shows the organisation the registration was at, so should be carried through
-        //to the managing organisation of the episode
-        CsvCell orgIdCell = parser.getIDOrganisation();
-        if (orgIdCell.isEmpty()) {
-            //there are a tiny number of these records with an empty IDOrganisation - for these, just carry over
-            //the IDOrganisationVisibleTo and assume the episodes were done "here"
-            orgIdCell = parser.getIDOrganisationVisibleTo();
-        }
 
         Reference orgReferenceEpisode = csvHelper.createOrganisationReference(orgIdCell);
         if (episodeBuilder.isIdMapped()) {
@@ -162,55 +149,30 @@ public class SRPatientRegistrationTransformer {
         }
         episodeBuilder.setManagingOrganisation(orgReferenceEpisode, orgIdCell);
 
-        //if this registration is an active GMS registration, then it's telling us the current registered GP practice,
-        //so this needs setting in the patient careProvider (i.e. current registered practice)
-        if (regType != null
-                && regType == RegistrationType.REGULAR_GMS
-                && episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE) {
-
-            PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
-
-            Reference orgReferenceCareProvider = csvHelper.createOrganisationReference(orgIdCell);
-            if (patientBuilder.isIdMapped()) {
-                orgReferenceCareProvider = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferenceCareProvider, csvHelper);
-            }
-
-            patientBuilder.clearCareProvider();
-            patientBuilder.addCareProvider(orgReferenceCareProvider, orgIdCell);
-        }
-
-        //the TPP feed supplies details of registrations elsewhere, which should not be saved within the scope
-        //of the publisher, as it ends up creating a lot of confusion as episodes of care are expected to be ABOUT
-        //the publisher service and not somewhere else
-        if (shouldSaveEpisode(orgIdCell, parser.getIDOrganisationVisibleTo())) {
-
-            //save a mapping to allow us to find the active episode for the patient
-            if (episodeBuilder.getStatus() == EpisodeOfCare.EpisodeOfCareStatus.ACTIVE) {
-                csvHelper.saveInternalId(PATIENT_ID_TO_ACTIVE_EPISODE_ID, patientIdCell.getString(), rowIdCell.getString());
-            }
-
-            //we save the episode immediately, since it's complete now, but the patient isn't done yet
-            boolean mapIds = !episodeBuilder.isIdMapped();
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
-
-        } else {
-            boolean mapIds = !episodeBuilder.isIdMapped();
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
-        }
+        //save
+        boolean mapIds = !episodeBuilder.isIdMapped();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), mapIds, episodeBuilder);
     }
 
     /**
      * determines whether we should save this registration episode. If the episode is about the patient's
      * registration SOMEWHERE ELSE then we don't want to save the episode.
      */
-    private static boolean shouldSaveEpisode(CsvCell orgIdCell, CsvCell idOrganisationVisibleToCell) {
+    public static boolean shouldSaveEpisode(CsvCell orgIdCell, CsvCell idOrganisationVisibleToCell) {
+
+        //there are a small number of records with a blank org ID, so treat them as though they were done "here"
+        if (orgIdCell.isEmpty()) {
+            return true;
+        }
+
+        //otherwise, if we have both IDs, make sure that the episode was done here
         String episodeAt = orgIdCell.getString();
         String publisher = idOrganisationVisibleToCell.getString();
         return episodeAt.equals(publisher);
     }
 
 
-    private static RegistrationType mapToFhirRegistrationType(CsvCell regTypeCell) throws Exception {
+    public static RegistrationType mapToFhirRegistrationType(CsvCell regTypeCell) throws Exception {
 
         //there is some SystmOne legacy data where patients have multiple reg types, generally GMS + the old
         //IOS registrations (e.g. GMS,Contraception). In these cases, carry over GMS.

@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCod
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
@@ -72,7 +73,7 @@ public class OutpatientCdsTargetTransformer {
                 } else {
 
                     //create top level parent with minimum data
-                    createOutpatientCdsEncounterTopLevelMinimum(targetOutpatientCds, fhirResourceFiler, csvHelper);
+                    createOutpatientCdsEncounterParentMinimum(targetOutpatientCds, fhirResourceFiler, csvHelper);
 
                     //then create child level encounter linked to this new parent
                     createOutpatientCdsEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper);
@@ -150,34 +151,7 @@ public class OutpatientCdsTargetTransformer {
         Date appDate = targetOutpatientCds.getApptDate();
         encounterBuilder.setPeriodStart(appDate);
 
-        Integer personId = targetOutpatientCds.getPersonId();
-        Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
-        encounterBuilder.setPatient(patientReference);
-
-        Integer episodeId = targetOutpatientCds.getEpisodeId();
-        if (episodeId != null) {
-            encounterBuilder.setEpisodeOfCare(ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString()));
-        }
-
-        Integer performerPersonnelId = targetOutpatientCds.getPerformerPersonnelId();
-        if (performerPersonnelId != null) {
-
-            Reference practitionerReference
-                    = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));
-            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
-        }
-
-        String serviceProviderOrgId = targetOutpatientCds.getApptSiteCode();
-        if (!Strings.isNullOrEmpty(serviceProviderOrgId)) {
-
-            encounterBuilder.setServiceProvider(ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId));
-        }
-
-        //this is used to identify the top level parent episode
-        Integer encounterId = targetOutpatientCds.getEncounterId();
-        Reference parentEncounter
-                = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
-        encounterBuilder.setPartOf(parentEncounter);
+        setCommonEncounterAttributes(encounterBuilder, targetOutpatientCds, csvHelper, true);
 
         //add in additional extended data as Parameters resource with additional extension
         //TODO: set name and values using IM map once done, i.e. replace referral_source etc.
@@ -211,28 +185,6 @@ public class OutpatientCdsTargetTransformer {
             }
         }
 
-        //extract the CDS unique Id, i.e  OPCDS-BR1H00519739586 -> BR1H00519739586
-        String cdsUniqueId = targetOutpatientCds.getUniqueId();
-        if (!cdsUniqueId.isEmpty()) {
-
-            cdsUniqueId = cdsUniqueId.replaceFirst("OPCDS-","");
-            IdentifierBuilder.removeExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
-            identifierBuilder.setValue(cdsUniqueId);
-        }
-
-        String pathwayIdentifier = targetOutpatientCds.getPatientPathwayIdentifier();
-        if (!pathwayIdentifier.isEmpty()) {
-
-            IdentifierBuilder.removeExistingIdentifiersForSystem(encounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PATHWAY_ID);
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(encounterBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PATHWAY_ID);
-            identifierBuilder.setValue(pathwayIdentifier);
-        }
-
         //add in diagnosis or procedure data match the encounter date? - already processed via proc and diag CDS transforms
 
 //            if (!Strings.isNullOrEmpty(targetOutpatientCds.getPrimaryDiagnosisICD())) {
@@ -254,16 +206,29 @@ public class OutpatientCdsTargetTransformer {
 //                additionalArrivalObjs.addProperty("other_procedures", targetOutpatientCds.getOtherProceduresOPCS());
 //            }
 
-        //save encounterBuilder record
-        fhirResourceFiler.savePatientResource(null, encounterBuilder);
+        ///retrieve and update the parent to point to this new child encounter
+        Integer parentEncounterId = targetOutpatientCds.getEncounterId();
+        Encounter existingParentEncounter
+                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
+        EncounterBuilder existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+        //and link the parent to this new child encounter
+        Reference childCriticalRef = ReferenceHelper.createReference(ResourceType.Encounter, attendanceId);
+        ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
+        listBuilder.addReference(childCriticalRef);
+
+        //save encounterBuilder records
+        fhirResourceFiler.savePatientResource(null, encounterBuilder, existingParentEncounterBuilder);
     }
 
-    private static void createOutpatientCdsEncounterTopLevelMinimum(StagingOutpatientCdsTarget targetOutpatientCds,
+    private static void createOutpatientCdsEncounterParentMinimum(StagingOutpatientCdsTarget targetOutpatientCds,
                                                                     FhirResourceFiler fhirResourceFiler,
                                                                     BartsCsvHelper csvHelper) throws Exception {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
+        Integer encounterId = targetOutpatientCds.getEncounterId();
+        parentTopEncounterBuilder.setId(Integer.toString(encounterId));
+
         parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
         Date appDate = targetOutpatientCds.getApptDate();
@@ -273,25 +238,7 @@ public class OutpatientCdsTargetTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Outpatient");
 
-        Integer encounterId = targetOutpatientCds.getEncounterId();  //this is used to identify the top level parent episode
-        parentTopEncounterBuilder.setId(Integer.toString(encounterId));
-
-        Integer personId = targetOutpatientCds.getPersonId();
-        Reference patientReference
-                = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
-        parentTopEncounterBuilder.setPatient(patientReference);
-
-        //extract the CDS unique Id, i.e  OPCDS-BR1H00519739586 -> BR1H00519739586
-        String cdsUniqueId = targetOutpatientCds.getUniqueId();
-        if (!cdsUniqueId.isEmpty()) {
-
-            cdsUniqueId = cdsUniqueId.replaceFirst("OPCDS-","");
-            IdentifierBuilder.removeExistingIdentifiersForSystem(parentTopEncounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(parentTopEncounterBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
-            identifierBuilder.setValue(cdsUniqueId);
-        }
+        setCommonEncounterAttributes(parentTopEncounterBuilder, targetOutpatientCds, csvHelper, false);
 
         //save encounterBuilder record
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
@@ -319,5 +266,91 @@ public class OutpatientCdsTargetTransformer {
         }
 
         fhirResourceFiler.savePatientResource(null, existingEncounterBuilder);
+    }
+
+    private static void setCommonEncounterAttributes(EncounterBuilder builder,
+                                                     StagingOutpatientCdsTarget targetOutpatientCds,
+                                                     BartsCsvHelper csvHelper,
+                                                     boolean isChildEncounter) throws Exception  {
+
+        //every encounter has the following common attributes
+        Integer personId = targetOutpatientCds.getPersonId();
+        if (personId != null) {
+            Reference patientReference
+                    = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
+            if (builder.isIdMapped()) {
+
+                patientReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
+            }
+            builder.setPatient(patientReference);
+        }
+        Integer episodeId = targetOutpatientCds.getEpisodeId();
+        if (episodeId != null) {
+
+            Reference episodeReference
+                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString());
+            if (builder.isIdMapped()) {
+
+                episodeReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
+            }
+            builder.setEpisodeOfCare(episodeReference);
+        }
+        Integer performerPersonnelId = targetOutpatientCds.getPerformerPersonnelId();
+        if (performerPersonnelId != null) {
+
+            Reference practitionerReference
+                    = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));
+            if (builder.isIdMapped()) {
+
+                practitionerReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            }
+            builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
+        }
+        String serviceProviderOrgId = targetOutpatientCds.getApptSiteCode();
+        if (!Strings.isNullOrEmpty(serviceProviderOrgId)) {
+
+            Reference organizationReference
+                    = ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId);
+            if (builder.isIdMapped()) {
+
+                organizationReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
+            }
+            builder.setServiceProvider(organizationReference);
+        }
+        //get the existing parent encounter set during ADT feed, to link to this top level encounter if this is a child
+        if (isChildEncounter) {
+            Integer parentEncounterId = targetOutpatientCds.getEncounterId();
+            Reference parentEncounter
+                    = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(parentEncounterId));
+            if (builder.isIdMapped()) {
+
+                parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            }
+            builder.setPartOf(parentEncounter);
+        }
+        //set the CDS identifier against the Encounter
+        String cdsUniqueId = targetOutpatientCds.getUniqueId();
+        if (!cdsUniqueId.isEmpty()) {
+
+            cdsUniqueId = cdsUniqueId.replaceFirst("OPCDS-","");
+            IdentifierBuilder.removeExistingIdentifiersForSystem(builder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(builder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            identifierBuilder.setValue(cdsUniqueId);
+        }
+        String pathwayIdentifier = targetOutpatientCds.getPatientPathwayIdentifier();
+        if (!pathwayIdentifier.isEmpty()) {
+
+            IdentifierBuilder.removeExistingIdentifiersForSystem(builder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PATHWAY_ID);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(builder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PATHWAY_ID);
+            identifierBuilder.setValue(pathwayIdentifier);
+        }
     }
 }

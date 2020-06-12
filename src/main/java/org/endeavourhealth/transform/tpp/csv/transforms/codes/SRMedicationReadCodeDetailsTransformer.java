@@ -2,8 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppConfigListOptionDalI;
-import org.endeavourhealth.core.database.dal.publisherCommon.TppMultiLexToCtv3MapDalI;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultiLexToCtv3Map;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppMultilexLookupDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -25,11 +24,10 @@ import java.util.concurrent.Callable;
 public class SRMedicationReadCodeDetailsTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRMedicationReadCodeDetailsTransformer.class);
 
-    private static TppMultiLexToCtv3MapDalI repository = DalProvider.factoryTppMultiLexToCtv3MapDal();
-    public static final String ROW_ID = "RowId";
+    /*public static final String ROW_ID = "RowId";
     public static final String MULTILEX_PRODUCT_ID = "multiLexProductId";
     public static final String CTV3_READ_CODE = "ctv3ReadCode";
-    public static final String CTV3_READ_TERM = "ctv3ReadTerm";
+    public static final String CTV3_READ_TERM = "ctv3ReadTerm";*/
 
     public static void transform(Map<Class, AbstractCsvParser> parsers, FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper) throws Exception {
 
@@ -39,8 +37,8 @@ public class SRMedicationReadCodeDetailsTransformer {
             //just bulk load the file into the DB
             String filePath = parser.getFilePath();
             Date dataDate = fhirResourceFiler.getDataDate();
-            TppMultiLexToCtv3MapDalI dal = DalProvider.factoryTppMultiLexToCtv3MapDal();
-            dal.updateLookupTable(filePath, dataDate);
+            TppMultilexLookupDalI dal = DalProvider.factoryTppMultiLexDal();
+            dal.updateProductIdToCtv3LookupTable(filePath, dataDate);
         }
     }
 

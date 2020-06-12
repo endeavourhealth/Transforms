@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.tpp.cache;
+package org.endeavourhealth.transform.tpp.csv.helpers.cache;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
@@ -8,16 +8,12 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppStaffDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppStaffMember;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppStaffMemberProfile;
-import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.hl7.fhir.instance.model.HumanName;
-import org.hl7.fhir.instance.model.Practitioner;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -57,6 +53,12 @@ public class StaffMemberCache {
      */
     public void addRequiredStaffId(CsvCell staffMemberIdCell, CsvCell organisationDoneAtCell) {
 
+        //if either is empty, ignore
+        if (TppCsvHelper.isEmptyOrNegative(staffMemberIdCell)
+                || organisationDoneAtCell.isEmpty()) {
+            return;
+        }
+
         Integer staffId = staffMemberIdCell.getInt();
         String orgId = organisationDoneAtCell.getString();
 
@@ -85,6 +87,10 @@ public class StaffMemberCache {
      * if a clinical (e.g. SREvent) record references a profile ID, we call this fn to log that we definitely want to transform that record
      */
     public void addRequiredProfileId(CsvCell profileIdCell) {
+
+        if (TppCsvHelper.isEmptyOrNegative(profileIdCell)) {
+            return;
+        }
 
         Integer profileId = profileIdCell.getInt();
         hsRequiredProfileIds.add(profileId);

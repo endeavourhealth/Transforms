@@ -63,9 +63,13 @@ public class AllergyIntoleranceBuilder extends ResourceBuilderBase
     }
 
     public void setEndDate(Date d, CsvCell... sourceCells) {
-        this.allergyIntolerance.setLastOccurence(d);
+        if (d == null) {
+            this.allergyIntolerance.setLastOccurence(null);
 
-        auditValue("lastOccurence", sourceCells);
+        } else {
+            this.allergyIntolerance.setLastOccurence(d);
+            auditValue("lastOccurence", sourceCells);
+        }
     }
 
     public void setSeverity(AllergyIntolerance.AllergyIntoleranceSeverity allergyIntoleranceSeverity, CsvCell... sourceCells) {

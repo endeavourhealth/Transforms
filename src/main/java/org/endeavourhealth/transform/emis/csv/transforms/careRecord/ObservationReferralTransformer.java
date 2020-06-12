@@ -7,6 +7,8 @@ import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
@@ -54,7 +56,7 @@ public class ObservationReferralTransformer {
 
         EmisCsvHelper.setUniqueId(referralRequestBuilder, patientGuid, observationGuid);
 
-        Reference patientReference = csvHelper.createPatientReference(patientGuid);
+        Reference patientReference = EmisCsvHelper.createPatientReference(patientGuid);
         referralRequestBuilder.setPatient(patientReference, patientGuid);
 
         CsvCell ubrn = parser.getReferralUBRN();
@@ -65,15 +67,24 @@ public class ObservationReferralTransformer {
             identifierBuilder.setValue(ubrn.getString(), ubrn);
         }
 
-        CsvCell urgency = parser.getReferralUrgency();
-        if (!urgency.isEmpty()) {
-            ReferralPriority fhirPriority = EmisMappingHelper.findReferralPriority(urgency.getString());
-            if (fhirPriority != null) {
-                referralRequestBuilder.setPriority(fhirPriority, urgency);
+        CsvCell urgencyCell = parser.getReferralUrgency();
+        if (!urgencyCell.isEmpty()) {
+
+            CodeableConceptBuilder ccb = new CodeableConceptBuilder(referralRequestBuilder, CodeableConceptBuilder.Tag.Referral_Request_Priority);
+
+            //always carry over the text
+            String urgencyDesc = urgencyCell.getString();
+            ccb.setText(urgencyDesc, urgencyCell);
+
+            //see if we've mapped it to a valueset value
+            ReferralPriority mappedPriority = EmisMappingHelper.findReferralPriority(urgencyDesc);
+            if (mappedPriority != null) {
+                ccb.addCoding(mappedPriority.getSystem()); //the URL for the priority system
+                ccb.setCodingCode(mappedPriority.getCode());
+                ccb.setCodingDisplay(mappedPriority.getDescription());
 
             } else {
-                //if the urgency hasn't been mapped to a proper type, carry over as text
-                referralRequestBuilder.setPriorityFreeText(urgency.getString(), urgency);
+                TransformWarnings.log(LOG, csvHelper, "Unmapped EMIS referral priority {}", urgencyDesc);
             }
         }
 
@@ -120,7 +131,7 @@ public class ObservationReferralTransformer {
         }
 
         if (!sendingOrgGuid.isEmpty()) {
-            Reference orgReference = csvHelper.createOrganisationReference(sendingOrgGuid);
+            Reference orgReference = EmisCsvHelper.createOrganisationReference(sendingOrgGuid);
             referralRequestBuilder.setRequester(orgReference, sendingOrgGuid);
         }
 

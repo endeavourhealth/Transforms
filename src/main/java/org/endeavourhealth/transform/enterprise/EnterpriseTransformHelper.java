@@ -3,7 +3,10 @@ package org.endeavourhealth.transform.enterprise;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.config.ConfigManager;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
@@ -12,12 +15,9 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchEx
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
-import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.AbstractEnterpriseTransformer;
@@ -51,6 +51,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private final boolean isPseudonymised;
     private final boolean includeDateRecorded;
     private final String excludeNhsNumberRegex;
+    private final boolean isBulkDeleteFromSubscriber;
 
     private int batchSize;
     private Long enterpriseOrganisationId = null;
@@ -59,13 +60,14 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
 
     public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
-                                     List<ResourceWrapper> allResources) throws Exception {
+                                     List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.enterpriseConfigName = enterpriseConfigName;
         this.subscriberIdsUpdated = new ArrayList<>();
+        this.isBulkDeleteFromSubscriber = isBulkDeleteFromSubscriber;
 
         //load our config record for some parameters
         JsonNode config = ConfigManager.getConfigurationAsJson(enterpriseConfigName, "db_subscriber");
@@ -98,7 +100,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         Map<String, List<ResourceWrapper>> hmByType = new HashMap<>();
 
         //no lock required because this only happens when the multi-threaded work is complete
-        for (ResourceWrapper wrapper: allResources) {
+        for (ResourceWrapper wrapper : allResources) {
             String type = wrapper.getResourceType();
             List<ResourceWrapper> l = hmByType.get(type);
             if (l == null) {
@@ -107,7 +109,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
             }
             l.add(wrapper);
         }
-        for (String type: hmByType.keySet()) {
+        for (String type : hmByType.keySet()) {
             List<ResourceWrapper> l = hmByType.get(type);
             LOG.debug("Got " + type + " -> " + l.size());
         }
@@ -148,7 +150,13 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         return isPseudonymised;
     }
 
-    public boolean isIncludeDateRecorded() { return includeDateRecorded; }
+    public boolean isBulkDeleteFromSubscriber() {
+        return isBulkDeleteFromSubscriber;
+    }
+
+    public boolean isIncludeDateRecorded() {
+        return includeDateRecorded;
+    }
 
     public Date includeDateRecorded(DomainResource fhir) {
         Date dateRecorded = null;
@@ -194,7 +202,6 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
 
-
     public boolean getShouldPatientRecordBeDeleted() {
         if (shouldPatientRecordBeDeleted == null) {
             throw new RuntimeException("Null shouldPatientRecordBeDeleted variable - this should always have been set");
@@ -226,7 +233,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
         Map<String, ResourceWrapper> ret = new HashMap<>();
 
-        for (ResourceWrapper resource: resourceWrappers) {
+        for (ResourceWrapper resource : resourceWrappers) {
 
             ResourceType resourceType = ResourceType.valueOf(resource.getResourceType());
             String resourceId = resource.getResourceId().toString();
@@ -290,7 +297,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private String findPatientIdFromResources() throws Exception {
 
         //no locking required as this is only called from a single-threaded bit of the transform
-        for (ResourceWrapper resourceWrapper: allResources) {
+        for (ResourceWrapper resourceWrapper : allResources) {
 
             ResourceType resourceType = resourceWrapper.getResourceTypeObj();
             if (!FhirResourceFiler.isPatientResource(resourceType)) {
@@ -325,7 +332,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         if (patientWrapper != null) {
             patient = (Patient) FhirSerializationHelper.deserializeResource(patientWrapper.getResourceData());
         }
-        this.shouldPatientRecordBeDeleted = !shouldPatientBePresentInSubscriber(patient);
+        this.shouldPatientRecordBeDeleted = new Boolean(!shouldPatientBePresentInSubscriber(patient));
 
 
         PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
@@ -334,7 +341,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
             //if we've got some cases where we've got a deleted patient but non-deleted patient-related resources
             //all in the same batch, because Emis sent it like that. In that case we won't have a person ID, so
             //return out without processing any of the remaining resources, since they're for a deleted patient.
-            this.shouldPatientRecordBeDeleted = new Boolean(true);
+            this.shouldPatientRecordBeDeleted = Boolean.TRUE;
         } else {
             SubscriberPersonMappingDalI personMappingDal = DalProvider.factorySubscriberPersonMappingDal(getEnterpriseConfigName());
             this.enterprisePersonId = personMappingDal.findOrCreateEnterprisePersonId(discoveryPersonId);
@@ -349,7 +356,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
             UUID patientUuid = UUID.fromString(discoveryPatientId);
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
             List<ResourceWrapper> allPatientResources = resourceDal.getResourcesByPatient(serviceId, patientUuid);
-            for (ResourceWrapper wrapper: allPatientResources) {
+            for (ResourceWrapper wrapper : allPatientResources) {
 
                 //add the resource so it gets transformed
                 addResourceToTransform(wrapper);
@@ -370,8 +377,13 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
             this.enterprisePatientId = AbstractEnterpriseTransformer.findEnterpriseId(this, ResourceType.Patient.toString(), discoveryPatientId);
             if (enterprisePatientId == null) {
                 LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so will delete everything");
-                this.shouldPatientRecordBeDeleted = new Boolean(true);
+                this.shouldPatientRecordBeDeleted = Boolean.TRUE;
             }
+        }
+
+        //if we're doing a bulk delete, then overwrite whatever we've calculated
+        if (isBulkDeleteFromSubscriber) {
+            this.shouldPatientRecordBeDeleted = Boolean.TRUE;
         }
     }
 
@@ -387,11 +399,11 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         int countMissedResources = 0;
 
         //no locking required as this is only called from a single-threaded bit of the transform
-        for (String referenceStr: hmAllResourcesByReferenceString.keySet()) {
+        for (String referenceStr : hmAllResourcesByReferenceString.keySet()) {
             if (!resourcesTransformedReferences.containsKey(referenceStr)
                     && !resourcesSkippedReferences.containsKey(referenceStr)) {
 
-                countMissedResources ++;
+                countMissedResources++;
                 if (missedResources.size() < 10) {
                     missedResources.add(referenceStr);
                 }

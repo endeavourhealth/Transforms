@@ -90,7 +90,8 @@ public class InpatientCdsTargetTransformer {
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      StagingInpatientCdsTarget targetInpatientCds,
-                                                     BartsCsvHelper csvHelper) throws Exception {
+                                                     BartsCsvHelper csvHelper,
+                                                     boolean isChildEncounter) throws Exception {
 
         //every encounter has the following common attributes
         Integer personId = targetInpatientCds.getPersonId();
@@ -141,16 +142,17 @@ public class InpatientCdsTargetTransformer {
             }
             builder.setServiceProvider(organizationReference);
         }
-        //get the existing parent encounter set during ADT feed, to link to this top level encounter
-        Integer encounterId = targetInpatientCds.getEncounterId();
-        Reference parentEncounter
-                = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
-        if (builder.isIdMapped()) {
+        //get the existing parent encounter set during ADT feed, to link to this top level encounter if this is a child
+        if (isChildEncounter) {
+            Integer encounterId = targetInpatientCds.getEncounterId();
+            Reference parentEncounter
+                    = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
+            if (builder.isIdMapped()) {
 
-            parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+                parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            }
+            builder.setPartOf(parentEncounter);
         }
-        builder.setPartOf(parentEncounter);
-
         //set the CDS identifier against the Encounter
         String cdsUniqueId = targetInpatientCds.getUniqueId();
         if (!cdsUniqueId.isEmpty()) {
@@ -174,6 +176,13 @@ public class InpatientCdsTargetTransformer {
         //the episode number ranges from 01 (Admission plus episode start / finish), 02, 03 till discharge
         String episodeNumber = targetInpatientCds.getEpisodeNumber();
 
+        ///retrieve the parent encounter to point to any new child encounters created during this method
+        Integer parentEncounterId = targetInpatientCds.getEncounterId();
+        Encounter existingParentEncounter
+                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
+        EncounterBuilder existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
+        ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
+
         //episodeNumber = 01 then create the inpatient admission and the discharge encounters (if date set)
         if (episodeNumber.equalsIgnoreCase("01")) {
 
@@ -190,29 +199,29 @@ public class InpatientCdsTargetTransformer {
                     = new CodeableConceptBuilder(admissionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderAdmission.setText("Inpatient Admission");
 
-            setCommonEncounterAttributes(admissionEncounterBuilder, targetInpatientCds, csvHelper);
+            setCommonEncounterAttributes(admissionEncounterBuilder, targetInpatientCds, csvHelper, true);
 
             //add in additional extended data as Parameters resource with additional extension
             //TODO: set name and values using IM map once done, i.e. replace ip_admission_source etc.
-            ContainedParametersBuilder containedParametersBuilderMain
+            ContainedParametersBuilder containedParametersBuilderAdmission
                     = new ContainedParametersBuilder(admissionEncounterBuilder);
-            containedParametersBuilderMain.removeContainedParameters();
+            containedParametersBuilderAdmission.removeContainedParameters();
 
             String adminCategoryCode = targetInpatientCds.getAdministrativeCategoryCode();
             if (!Strings.isNullOrEmpty(adminCategoryCode)) {
-                containedParametersBuilderMain.addParameter("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCode);
+                containedParametersBuilderAdmission.addParameter("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCode);
             }
             String admissionMethodCode = targetInpatientCds.getAdmissionMethodCode();
             if (!Strings.isNullOrEmpty(admissionMethodCode)) {
-                containedParametersBuilderMain.addParameter("ip_admission_method", "" + admissionMethodCode);
+                containedParametersBuilderAdmission.addParameter("ip_admission_method", "" + admissionMethodCode);
             }
             String admissionSourceCode = targetInpatientCds.getAdmissionSourceCode();
             if (!Strings.isNullOrEmpty(admissionSourceCode)) {
-                containedParametersBuilderMain.addParameter("ip_admission_source", "" + admissionSourceCode);
+                containedParametersBuilderAdmission.addParameter("ip_admission_source", "" + admissionSourceCode);
             }
             String patientClassification = targetInpatientCds.getPatientClassification();
             if (!Strings.isNullOrEmpty(patientClassification)) {
-                containedParametersBuilderMain.addParameter("patient_classification", "" + patientClassification);
+                containedParametersBuilderAdmission.addParameter("patient_classification", "" + patientClassification);
             }
             //this is a Cerner code which is mapped to an NHS DD alias
             String treatmentFunctionCode = targetInpatientCds.getTreatmentFunctionCode();
@@ -221,7 +230,7 @@ public class InpatientCdsTargetTransformer {
                 if (codeRef != null) {
 
                     String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
-                    containedParametersBuilderMain.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
+                    containedParametersBuilderAdmission.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
                 }
             }
 
@@ -233,7 +242,11 @@ public class InpatientCdsTargetTransformer {
                 admissionEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
             }
 
-            //save the admission encounter
+            //and link the parent to this new child encounter
+            Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
+            existingEncounterList.addReference(childAdmissionRef);
+
+            //save the admission encounter and updated parent
             fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
 
             //the main encounter has a discharge date so set the end date and create a linked Discharge encounter
@@ -254,7 +267,7 @@ public class InpatientCdsTargetTransformer {
                         = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
                 codeableConceptBuilderDischarge.setText("Inpatient Discharge");
 
-                setCommonEncounterAttributes(dischargeEncounterBuilder, targetInpatientCds, csvHelper);
+                setCommonEncounterAttributes(dischargeEncounterBuilder, targetInpatientCds, csvHelper, true);
 
                 //add in additional extended data as Parameters resource with additional extension
                 //TODO: set name and values using IM map once done, i.e. replace ip_discharge_method etc.
@@ -264,12 +277,16 @@ public class InpatientCdsTargetTransformer {
 
                 String dischargeMethodCode = targetInpatientCds.getDischargeMethod();
                 if (!Strings.isNullOrEmpty(dischargeMethodCode)) {
-                    containedParametersBuilderMain.addParameter("ip_discharge_method", "" + dischargeMethodCode);
+                    containedParametersBuilderDischarge.addParameter("ip_discharge_method", "" + dischargeMethodCode);
                 }
                 String dischargeDestinationCode = targetInpatientCds.getDischargeDestinationCode();
                 if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
-                    containedParametersBuilderMain.addParameter("ip_discharge_destination", "" + dischargeDestinationCode);
+                    containedParametersBuilderDischarge.addParameter("ip_discharge_destination", "" + dischargeDestinationCode);
                 }
+
+                //and link the parent to this new child encounter
+                Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
+                existingEncounterList.addReference(childDischargeRef);
 
                 //save the discharge encounter builder
                 fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
@@ -301,7 +318,11 @@ public class InpatientCdsTargetTransformer {
                 = new CodeableConceptBuilder(episodeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Inpatient Episode");
 
-        setCommonEncounterAttributes(episodeEncounterBuilder, targetInpatientCds, csvHelper);
+        setCommonEncounterAttributes(episodeEncounterBuilder, targetInpatientCds, csvHelper, true);
+
+        //and link the parent to this new child encounter
+        Reference childEpisodeRef = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
+        existingEncounterList.addReference(childEpisodeRef);
 
         //add in additional extended data as Parameters resource with additional extension
         //TODO: set name and values using IM map once done - ward start and end?
@@ -335,6 +356,9 @@ public class InpatientCdsTargetTransformer {
 
         //save only the episode encounter builder here
         fhirResourceFiler.savePatientResource(null, episodeEncounterBuilder);
+
+        //save the existing parent encounter here with the updated child refs added during this method
+        fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
     }
 
     private static void deleteInpatientCdsEncounterAndChildren(StagingInpatientCdsTarget targetInpatientCds,
@@ -392,6 +416,9 @@ public class InpatientCdsTargetTransformer {
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
+        Integer encounterId = targetInpatientCds.getEncounterId();
+        parentTopEncounterBuilder.setId(Integer.toString(encounterId));
+
         Date spellStartDate = targetInpatientCds.getDtSpellStart();
         parentTopEncounterBuilder.setPeriodStart(spellStartDate);
 
@@ -409,7 +436,7 @@ public class InpatientCdsTargetTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Inpatient");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, targetInpatientCds, csvHelper);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, targetInpatientCds, csvHelper, false);
 
         //save encounterBuilder record
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);

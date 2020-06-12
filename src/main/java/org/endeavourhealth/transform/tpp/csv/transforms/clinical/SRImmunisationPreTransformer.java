@@ -41,6 +41,16 @@ public class SRImmunisationPreTransformer {
             return;
         }
 
+
+        //we don't transform Practitioners until we need them, and these ensure it happens
+        CsvCell profileIdEnteredByCell = parser.getIDProfileEnteredBy();
+        csvHelper.getStaffMemberCache().addRequiredProfileId(profileIdEnteredByCell);
+
+        CsvCell staffIdDoneByCell = parser.getIDDoneBy();
+        CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
+        csvHelper.getStaffMemberCache().addRequiredStaffId(staffIdDoneByCell, orgDoneAtCell);
+
+
         CsvCell id = parser.getRowIdentifier();
 
         CsvCell eventIdCell = parser.getIDEvent();

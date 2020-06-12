@@ -8,7 +8,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
-import org.endeavourhealth.core.database.dal.admin.SystemHelper;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.database.dal.audit.models.Exchange;
@@ -62,7 +61,7 @@ public abstract class TppCsvToFhirTransformer {
     public static final String VERSION_92 = "92"; //Basically 91 plus 1 new column in SRRota (DateStart), no RemovedData
     public static final String VERSION_93 = "93"; //Basically 92 plus RemovedData
 
-    //private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but are deliberately ignoring
+    private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but will not be processing
 
 
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
@@ -81,11 +80,11 @@ public abstract class TppCsvToFhirTransformer {
 
         //work out the version of the files by checking the headers (ignoring what was passed in)
         //version = determineVersion(files);
-        Map<String, String> parserToVersionsMap = buildParserToVersionsMap(files, fhirResourceFiler);
+        Map<String, String> fileVersionMap = calculateVersionForFiles(files, fhirResourceFiler);
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            createParsers(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), files, parserToVersionsMap, parsers);
+            createParsers(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), files, fileVersionMap, parsers);
 
             LOG.trace("Transforming TPP CSV content in " + orgDirectory);
             transformParsers(parsers, fhirResourceFiler);
@@ -100,12 +99,12 @@ public abstract class TppCsvToFhirTransformer {
      * works out if we want to process (i.e. transform and store) the patient data from this extract,
      * which we don't if this extract is from before we received a later re-bulk from emis
      */
-    public static boolean shouldProcessPatientData(TppCsvHelper csvHelper) throws Exception {
+    public static boolean shouldProcessPatientData(FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        Date extractDate = csvHelper.getDataDate();
+        Date extractDate = fhirResourceFiler.getDataDate();
 
         ServiceDalI serviceDal = DalProvider.factoryServiceDal();
-        Service service = serviceDal.getById(csvHelper.getServiceId());
+        Service service = serviceDal.getById(fhirResourceFiler.getServiceId());
         String odsCode = service.getLocalId();
         Date startDate = findStartDate(odsCode);
 
@@ -204,10 +203,12 @@ public abstract class TppCsvToFhirTransformer {
      * the TPP schema changes without notice, so rather than define the version in the SFTP reader,
      * and then need to back pedal when we find it's changed, dynamically work it out from the CSV headers
      */
-    public static Map<String, String> buildParserToVersionsMap(String[] files, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
+    public static Map<String, String> calculateVersionForFiles(String[] files,
+                                                               HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
+
+        Map<String, String> ret = new HashMap<>();
 
         List<String> possibleVersions = new ArrayList<>();
-        Map<String, String> parserToVersionsMap = new HashMap<>();
         possibleVersions.add(VERSION_93);
         possibleVersions.add(VERSION_92);
         possibleVersions.add(VERSION_91);
@@ -219,31 +220,38 @@ public abstract class TppCsvToFhirTransformer {
         possibleVersions.add(VERSION_87);
         possibleVersions.add(VERSION_TEST_PACK);
 
-        List<String> noVersions = new ArrayList<>();
+        List<String> versionFailures = new ArrayList<>();
 
         for (String filePath : files) {
+            LOG.trace("Calculating version for file " + filePath);
+
+            //see if we have a suitable parser for the file
+            AbstractCsvParser parser = null;
             try {
-                List<String> compatibleVersions = new ArrayList<>();
                 //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
-                AbstractCsvParser parser = createParserForFile(null, null, null, null, filePath);
-                //calling this will return the possible versions that apply to this parser
-                compatibleVersions = parser.testForValidVersions(possibleVersions);
-                if (filePath.contains("PatientRelation")) {
-                    LOG.info("PatientRelation versions " + Arrays.toString(noVersions.toArray()));
-                }
-                if (compatibleVersions.isEmpty()) {
-                    ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId);
-                    noVersions.add(filePath); //Not dropping straight out as multiple files may have changed.
-                    //throw new TransformException("Unable to determine version for TPP CSV file: " + filePath);
-                } else {
-                    parserToVersionsMap.put(filePath, compatibleVersions.get(0));
-                }
+                parser = createParserForFile(null, null, null, null, filePath);
+
             } catch (ClassNotFoundException ex) {
                 //we don't have parsers for every file, since there are a lot of secondary-care (etc.) files
                 //that we don't transform, but we also want to make sure that they're EMPTY unless we explicitly
                 //have decided to ignore a non-empty file
                 ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId);
-            } catch (IOException eio) {
+                continue;
+            }
+            LOG.trace("Parser created");
+
+            //if we have a parser, then detect what version it is
+            List<String> compatibleVersions = parser.testForValidVersions(possibleVersions);
+            LOG.trace("Found " + compatibleVersions.size() + " possible versions");
+
+            if (compatibleVersions.isEmpty()) {
+                ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId);
+                versionFailures.add(filePath); //Not dropping straight out as multiple files may have changed.
+            }
+
+            ret.put(filePath, compatibleVersions.get(0));
+
+/*            } catch (IOException eio) {
                 if (eio.getMessage().contains("startline 1")) {
                     //
                     LOG.info("Missing newline in file. Skipping : " + filePath);
@@ -251,41 +259,34 @@ public abstract class TppCsvToFhirTransformer {
                 } else {
                     LOG.error("", eio);
                 }
-            }
-        }
-        if (noVersions.size() > 0) {
-            System.out.println(Arrays.toString(noVersions.toArray()));
-            throw new TransformException("Unable to determine TPP CSV version for above file(s).");
+            }*/
         }
 
-        /*for (Map.Entry<String, String> entry : parserToVersionsMap.entrySet()) {
-            LOG.info("ParserMap" + entry.getKey() + "/" + entry.getValue());
-        }*/
-        return parserToVersionsMap;
+        if (versionFailures.size() > 0) {
+            String msg = "Failed to calculate verion for files [" + String.join(", ", versionFailures) + "]";
+            throw new TransformException(msg);
+        }
 
+        return ret;
     }
 
 
     public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, Map<String, String> versions, Map<Class, AbstractCsvParser> parsers) throws Exception {
 
         for (String filePath : files) {
-            //LOG.info("Files: " + Arrays.toString(files));
+
+            //why would we have nulls in this array?
             if (filePath == null) {
                 continue;
             }
+
             try {
                 String version = versions.get(filePath);
                 if (version == null) {
-                    //LOG.info("Null version for " + filePath);
-                    continue;
-//                    for (Map.Entry<String, String> entry : versions.entrySet()) {
-//                        LOG.info("ParserMap" + entry.getKey() + "/" + entry.getValue());
-//                    }
-                }
-                if (version == ("0")) {
-                    LOG.info("Skipping file with just headers, no data: " + filePath);
+                    //if this is a file we don't process, this may be null
                     continue;
                 }
+
                 AbstractCsvParser parser = createParserForFile(serviceId, systemId, exchangeId, version, filePath);
                 Class cls = parser.getClass();
                 parsers.put(cls, parser);
@@ -298,6 +299,12 @@ public abstract class TppCsvToFhirTransformer {
     }
 
     private static void ensureFileIsEmpty(String filePath, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
+
+        //if we're sure we are OK to ignore this file, then don't check if it's empty
+        String name = FilenameUtils.getBaseName(filePath);
+        if (getFilesToIgnore().contains(name)) {
+            return;
+        }
 
         //S3 complains if we open a stream and kill it before we get to the end, so avoid this by
         //explicitly reading only the first 5KB of the file and testing that
@@ -320,13 +327,23 @@ public abstract class TppCsvToFhirTransformer {
         }
     }
 
-    /*private static Set<String> getFilesToIgnore() {
+    private static Set<String> getFilesToIgnore() {
         if (cachedFileNamesToIgnore == null) {
 
             Set<String> set = new HashSet<>();
 
             //add any non-empty files we want to ignore here
             set.add("SRAddressBookEntry");
+            set.add("SRManifest");
+            set.add("SRMappingGroup");
+            set.add("SRStaff"); //obsolete file, replaced with SRStaffMember, which is processed
+            set.add("SRStaffMemberProfileRole"); //not to be confused with SRStaffMemberProfile, which we DO process
+
+/**
+ 29 May 14:56:25.670 [RabbitMQ-pool-2-thread-3] WARN  o.e.t.c.TransformWarnings:120 - [from o.e.t.t.TppCsvToFhirTransformer:112] - TPP file SRGPPracticeHistory ignored but not empty
+ 29 May 14:56:25.766 [RabbitMQ-pool-2-thread-3] WARN  o.e.t.c.TransformWarnings:120 - [from o.e.t.t.TppCsvToFhirTransformer:112] - TPP file SRPatientInformation ignored but not empty
+ 29 May 14:56:25.784 [RabbitMQ-pool-2-thread-3] WARN  o.e.t.c.TransformWarnings:120 - [from o.e.t.t.TppCsvToFhirTransformer:112] - TPP file SRQuestionnaire ignored but not empty
+ */
 
             //TODO - confirm that these files ARE OK to be ignored
 
@@ -391,7 +408,7 @@ public abstract class TppCsvToFhirTransformer {
             cachedFileNamesToIgnore = set;
         }
         return cachedFileNamesToIgnore;
-    }*/
+    }
 
     private static void closeParsers(Collection<AbstractCsvParser> parsers) {
         for (AbstractCsvParser parser : parsers) {
@@ -489,7 +506,7 @@ public abstract class TppCsvToFhirTransformer {
                                          FhirResourceFiler fhirResourceFiler) throws Exception {
 
         TppCsvHelper csvHelper = new TppCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
-        boolean processPatientData = shouldProcessPatientData(csvHelper);
+        boolean processPatientData = shouldProcessPatientData(fhirResourceFiler);
 
         boolean processAdminData = true;
 
@@ -499,14 +516,14 @@ public abstract class TppCsvToFhirTransformer {
 //            processAdminData = false;
 //        }
 
-
         //hack to skip the SRCode file if it's a re-bulk. Audit in a table so we can come back.
         boolean processSRCode = !shouldSkipSRCode(fhirResourceFiler);
+
 
         //reference data
         if (processAdminData) {
 
-            LOG.trace("Starting reference data transforms");
+            LOG.info("Starting reference data transforms");
             SRCtv3Transformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
@@ -515,7 +532,7 @@ public abstract class TppCsvToFhirTransformer {
             SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             //organisational admin data
-            LOG.trace("Starting admin transforms");
+            LOG.info("Starting admin transforms");
             SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -523,10 +540,14 @@ public abstract class TppCsvToFhirTransformer {
 
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            LOG.trace("Starting practitioners transforms");
+            LOG.info("Starting practitioners transforms");
             SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above
             SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above two
+            if (processSRCode) {
+                SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //needs to be before the staffMemberCache stuff
+            }
+            SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //needs to be before the staffMemberCache stuff
             SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             csvHelper.getStaffMemberCache().processChangedStaffMembers(csvHelper, fhirResourceFiler);
 
@@ -536,49 +557,39 @@ public abstract class TppCsvToFhirTransformer {
 
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-
         if (processPatientData) {
 
-            LOG.trace("Starting patient demographics transforms");
+            LOG.info("Starting patient demographics transforms");
             SRPatientAddressHistoryPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPatientContactDetailsPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPatientRelationshipPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            if (processSRCode) {
-                SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            }
-            SRRecordStatusTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            csvHelper.waitUntilThreadPoolIsEmpty();
+
             SRPatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRPatientAddressHistoryTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRPatientContactDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRPatientRelationshipTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            LOG.debug("Going to do registration transform");
-            SRPatientRegistrationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            LOG.debug("Done registration transform");
-            fhirResourceFiler.waitUntilEverythingIsSaved();
-
+            SRPatientRegistrationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //set care provider
+            SRPatientAddressHistoryTransformer.transform(parsers, fhirResourceFiler, csvHelper); //add addresses
+            SRPatientContactDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper); //add phone numbers
+            SRPatientRelationshipTransformer.transform(parsers, fhirResourceFiler, csvHelper); //add relationships
             csvHelper.getPatientResourceCache().fileResources(fhirResourceFiler);
-
-            //content from SRRecordStatus is cached by the pre-transformer and processed in SRPatientRegistrationTransformer
-            //but if there's no SRPatientRegistration update, then we need to call this to make sure the data is processed
-            csvHelper.processRemainingRegistrationStatuses(fhirResourceFiler);
-
-            //content from SRCode is cached by the pre-transformer and processed in SRPatientTransformer
-            //but if there's no SRPatient update, then we need to call this to make sure the data is processed
+            fhirResourceFiler.waitUntilEverythingIsSaved(); //just to make sure that all the above is done before we continue
             csvHelper.processRemainingEthnicitiesAndMartialStatuses(fhirResourceFiler);
 
+            //create episodes of care
+            SRRecordStatusTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches statuses
+            SRPatientRegistrationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            csvHelper.getRecordStatusHelper().processRemainingRegistrationStatuses(fhirResourceFiler); //handle any record statuses without registrations
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
+            //appointments and visits
             SRAppointmentFlagsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRAppointmentTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             csvHelper.getAppointmentFlagCache().processRemainingFlags(csvHelper, fhirResourceFiler);
             SRVisitTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            LOG.trace("Starting clinical transforms");
+            LOG.info("Starting clinical transforms");
             SREventLinkTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRRecallPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRRepeatTemplatePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPrimaryCareMedicationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -590,20 +601,18 @@ public abstract class TppCsvToFhirTransformer {
             SRRepeatTemplateTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRPrimaryCareMedicationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
+            //referrals
+            SRReferralOutStatusDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches status records
             SRReferralOutTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRReferralOutStatusDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            csvHelper.getReferralRequestResourceCache().fileReferralRequestResources(fhirResourceFiler);
-
+            csvHelper.getReferralStatusCache().processRemainingReferralStatuses(fhirResourceFiler); //handle any record statuses without registrations
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            SRProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
             if (processSRCode) {
+                SRProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //saves some mappings using multiple threads
+                SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper); //
                 SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             }
-
-            csvHelper.getConditionResourceCache().fileConditionResources(fhirResourceFiler);
+            csvHelper.getConditionResourceCache().processRemainingProblems(fhirResourceFiler);
 
             SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
@@ -621,39 +630,6 @@ public abstract class TppCsvToFhirTransformer {
         csvHelper.stopThreadPool();
     }
 
-
-
-    private boolean isFileBulk(String[] infiles) {
-        // We try to deduce if this is a bulk file (whole table) or a delta file of updates.
-        // We look at the first 3 rows and if they're very low values then probably old stable
-        // values so this is probably a bulk file.
-        int probabilityBulk = 0;
-        int probabilityThreshold = 3;
-        int lowValue = 150;
-        int count = 0;
-        int max = 3;
-
-        for (String filename : infiles) {
-            try {
-                CSVParser csvFileParser = CSVFormat.DEFAULT.parse(new FileReader(new File(filename)));
-                for (CSVRecord csvRecord : csvFileParser) {
-                    count++;
-                    // Accessing Values by Column Index - 0 based.
-                    if (Integer.parseInt(csvRecord.get(count)) < lowValue) {
-                        probabilityBulk++;
-                    }
-                    if (count > max && probabilityBulk >= probabilityThreshold) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-            } catch (Exception ex) {
-                LOG.error("Check for bulk file exception. " + ex.getMessage());
-            }
-        }
-        return false;
-    }
 
     /*private static void auditSkippingAdminData(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
 
@@ -684,6 +660,7 @@ public abstract class TppCsvToFhirTransformer {
         }
     }*/
 
+
     private static boolean shouldSkipSRCode(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         UUID serviceId = fhirResourceFiler.getServiceId();
@@ -698,7 +675,6 @@ public abstract class TppCsvToFhirTransformer {
             if (endpoint.getSystemUuid().equals(systemId)) {
                 String mode = endpoint.getEndpoint();
                 if (!mode.equals(ServiceInterfaceEndpoint.STATUS_NORMAL)) {
-                    LOG.debug("Not skipping SRCode as service is not in normal mode");
                     return false;
                 }
             }
@@ -712,21 +688,20 @@ public abstract class TppCsvToFhirTransformer {
         for (ExchangePayloadFile file: files) {
             if (file.getType().equals("Code")) {
                 Long size = file.getSize();
-                if (size == null
-                        || size.longValue() < 50 * 1024 * 1024) {
-                    LOG.debug("Not skipping SRCode as file is only " + size + " bytes");
-                    return false;
+                if (size != null
+                        && size.longValue() > 50 * 1024 * 1024) {
+                    auditSkippingSRCode(fhirResourceFiler);
+                    return true;
                 }
             }
         }
 
-        auditSkippingSRCode(fhirResourceFiler);
-        return true;
+        return false;
     }
 
     private static void auditSkippingSRCode(HasServiceSystemAndExchangeIdI fhirFiler) throws Exception {
 
-        LOG.info("Skipping SRCode for exchange " + fhirFiler.getExchangeId());
+        LOG.warn("Skipping SRCode for exchange " + fhirFiler.getExchangeId());
         AuditWriter.writeExchangeEvent(fhirFiler.getExchangeId(), "Skipped SRCode");
 
         //write to audit table so we can find out
@@ -752,6 +727,5 @@ public abstract class TppCsvToFhirTransformer {
             connection.close();
         }
     }
-
 
 }

@@ -8,10 +8,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCrit
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Reference;
@@ -116,9 +113,19 @@ public class CriticalCareCdsTargetTransformer {
             String spellId = targetCriticalCareCds.getSpellNumber();
             String episodeNumber = targetCriticalCareCds.getEpisodeNumber();
             String parentEncounterId = spellId +":"+episodeNumber+":IP:Episode";
+
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, parentEncounterId);
             encounterBuilder.setPartOf(parentEncounter);
+
+            ///retrieve and update the parent to point to this new child
+            Encounter existingParentEncounter
+                    = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, parentEncounterId);
+            EncounterBuilder existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+            //and link the parent to the child
+            Reference childCriticalRef = ReferenceHelper.createReference(ResourceType.Encounter, criticalCareId);
+            ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
+            listBuilder.addReference(childCriticalRef);
 
             //add in additional extended data as Parameters resource with additional extension
             //TODO: set name and values using IM map once done, i.e. replace critical_care_type etc.
@@ -186,8 +193,8 @@ public class CriticalCareCdsTargetTransformer {
             // targetCriticalCareCds.getCareActivity1());
             // targetCriticalCareCds.getCareActivity2100());
 
-            //save encounter record
-            fhirResourceFiler.savePatientResource(null, encounterBuilder);
+            //save critical care encounter record and the parent (with updated references)
+            fhirResourceFiler.savePatientResource(null, encounterBuilder, existingParentEncounterBuilder);
         }
     }
 }

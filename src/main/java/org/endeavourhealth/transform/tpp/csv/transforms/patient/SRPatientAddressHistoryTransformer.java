@@ -54,123 +54,130 @@ public class SRPatientAddressHistoryTransformer {
             if (!Strings.isNullOrEmpty(patientId)) {
 
                 CsvCell dummyPatientCell = CsvCell.factoryDummyWrapper(patientId);
-                PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(dummyPatientCell, csvHelper);
+                PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().borrowPatientBuilder(dummyPatientCell, csvHelper, fhirResourceFiler);
                 if (patientBuilder != null) {
                     //remove any existing instance of this address
                     AddressBuilder.removeExistingAddressById(patientBuilder, rowIdCell.getString());
+                    //then return to the cache
+                    csvHelper.getPatientResourceCache().returnPatientBuilder(dummyPatientCell, patientBuilder);
                 }
             }
             return;
         }
 
         CsvCell patientIdCell = parser.getIDPatient();
-        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().getOrCreatePatientBuilder(patientIdCell, csvHelper);
+        PatientBuilder patientBuilder = csvHelper.getPatientResourceCache().borrowPatientBuilder(patientIdCell, csvHelper, fhirResourceFiler);
         if (patientBuilder == null) {
             return;
         }
 
-        //attempt to re-use any existing number with the same ID so we're not constantly changing the order by removing and re-adding
-        AddressBuilder addressBuilder = AddressBuilder.findOrCreateForId(patientBuilder, rowIdCell);
-        addressBuilder.reset();
+        try {
+            //attempt to re-use any existing number with the same ID so we're not constantly changing the order by removing and re-adding
+            AddressBuilder addressBuilder = AddressBuilder.findOrCreateForId(patientBuilder, rowIdCell);
+            addressBuilder.reset();
 
-        /*//remove any existing instance of this address
-        AddressBuilder.removeExistingAddressById(patientBuilder, rowIdCell.getString());
+            /*//remove any existing instance of this address
+            AddressBuilder.removeExistingAddressById(patientBuilder, rowIdCell.getString());
 
-        AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-        addressBuilder.setId(rowIdCell.getString(), rowIdCell);*/
+            AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
+            addressBuilder.setId(rowIdCell.getString(), rowIdCell);*/
 
-        CsvCell dateFromCell = parser.getDateEvent();
-        if (!dateFromCell.isEmpty()) {
-            addressBuilder.setStartDate(dateFromCell.getDateTime(), dateFromCell);
-        }
+            CsvCell dateFromCell = parser.getDateEvent();
+            if (!dateFromCell.isEmpty()) {
+                addressBuilder.setStartDate(dateFromCell.getDateTime(), dateFromCell);
+            }
 
-        CsvCell dateToCell = parser.getDateTo();
-        if (!dateToCell.isEmpty()) {
-            addressBuilder.setEndDate(dateToCell.getDate(), dateToCell);
-        }
+            CsvCell dateToCell = parser.getDateTo();
+            if (!dateToCell.isEmpty()) {
+                addressBuilder.setEndDate(dateToCell.getDate(), dateToCell);
+            }
 
-        Address.AddressUse addressUse = null;
+            Address.AddressUse addressUse = null;
 
-        CsvCell addressTypeCell = parser.getAddressType();
-        if (!addressTypeCell.isEmpty()) {
+            CsvCell addressTypeCell = parser.getAddressType();
+            if (!addressTypeCell.isEmpty()) {
 
-            TppMappingRef mapping = csvHelper.lookUpTppMappingRef(addressTypeCell);
-            if (mapping != null) {
-                String term = mapping.getMappedTerm();
-                if (term.equalsIgnoreCase("Home")) {
-                    addressUse = Address.AddressUse.HOME;
-                } else if (term.equalsIgnoreCase("Temporary")) {
-                    addressUse = Address.AddressUse.TEMP;
-                } else if (term.equalsIgnoreCase("Official")) {
-                    addressUse = Address.AddressUse.TEMP;
-                } else if (term.equalsIgnoreCase("Correspondence only")) {
-                    addressUse = Address.AddressUse.TEMP;
-                } else {
-                    //not happy with silently logging this and just continuing, as it's setting ourselves up
-                    //for a big task of finding and fixing data, rather than just a tiny code fix if this ever happens
-                    throw new Exception("Unexpected TPP address term [" + term + "]");
-                    //TransformWarnings.log(LOG, parser, "Unable to convert address type {} to AddressUse", term);
+                TppMappingRef mapping = csvHelper.lookUpTppMappingRef(addressTypeCell);
+                if (mapping != null) {
+                    String term = mapping.getMappedTerm();
+                    if (term.equalsIgnoreCase("Home")) {
+                        addressUse = Address.AddressUse.HOME;
+                    } else if (term.equalsIgnoreCase("Temporary")) {
+                        addressUse = Address.AddressUse.TEMP;
+                    } else if (term.equalsIgnoreCase("Official")) {
+                        addressUse = Address.AddressUse.TEMP;
+                    } else if (term.equalsIgnoreCase("Correspondence only")) {
+                        addressUse = Address.AddressUse.TEMP;
+                    } else {
+                        //not happy with silently logging this and just continuing, as it's setting ourselves up
+                        //for a big task of finding and fixing data, rather than just a tiny code fix if this ever happens
+                        throw new Exception("Unexpected TPP address term [" + term + "]");
+                        //TransformWarnings.log(LOG, parser, "Unable to convert address type {} to AddressUse", term);
+                    }
                 }
             }
-        }
 
-        //fall back to this in case the above fails
-        if (addressUse == null) {
-            addressUse = Address.AddressUse.HOME;
-        }
-
-        //FHIR states that the "old" use should be used for ended addresses
-        if (addressBuilder.getAddressCreated().hasPeriod()
-                && !PeriodHelper.isActive(addressBuilder.getAddressCreated().getPeriod())) {
-            addressUse = Address.AddressUse.OLD;
-        }
-
-        addressBuilder.setUse(addressUse, addressTypeCell);
-
-        CsvCell nameOfBuildingCell = parser.getNameOfBuilding();
-        if (!nameOfBuildingCell.isEmpty()) {
-            addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
-        }
-        CsvCell numberOfBuildingCell = parser.getNumberOfBuilding();
-        CsvCell nameOfRoadCell = parser.getNameOfRoad();
-        addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
-
-        CsvCell nameOfLocalityCell = parser.getNameOfLocality();
-        if (!nameOfLocalityCell.isEmpty()) {
-            addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
-        }
-        CsvCell nameOfTownCell = parser.getNameOfTown();
-        if (!nameOfTownCell.isEmpty()) {
-            addressBuilder.setCity(nameOfTownCell.getString(), nameOfTownCell);
-        }
-        CsvCell nameOfCountyCell = parser.getNameOfCounty();
-        if (!nameOfCountyCell.isEmpty()) {
-            addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
-        }
-        CsvCell fullPostCodeCell = parser.getFullPostCode();
-        if (!fullPostCodeCell.isEmpty()) {
-            addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
-        }
-
-        //duplicated from above
-        /*CsvCell dateEventCell = parser.getDateEvent();
-        if (!dateEventCell.isEmpty()) {
-            addressBuilder.setStartDate(dateEventCell.getDateTime(), dateEventCell);
-        }*/
-
-        //note, the managing organisation is set from the SRPatientRegistrationTransformer too, except
-        //this means that if a patient doesn't have a record in that file, the mananging org won't get set.
-        //So set it here too, on the assumption that a patient will always have an address.
-
-        //IDOrgVisible to is "here" (the service being transformed), so carry that over to the managing organisation
-        CsvCell idOrgVisibleToCell = parser.getIDOrganisationVisibleTo();
-        //CsvCell orgIdCell = parser.getIDOrganisation();
-        if (!idOrgVisibleToCell.isEmpty()) {
-            Reference orgReferencePatient = csvHelper.createOrganisationReference(idOrgVisibleToCell);
-            if (patientBuilder.isIdMapped()) {
-                orgReferencePatient = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferencePatient, csvHelper);
+            //fall back to this in case the above fails
+            if (addressUse == null) {
+                addressUse = Address.AddressUse.HOME;
             }
-            patientBuilder.setManagingOrganisation(orgReferencePatient, idOrgVisibleToCell);
+
+            //FHIR states that the "old" use should be used for ended addresses
+            if (addressBuilder.getAddressCreated().hasPeriod()
+                    && !PeriodHelper.isActive(addressBuilder.getAddressCreated().getPeriod())) {
+                addressUse = Address.AddressUse.OLD;
+            }
+
+            addressBuilder.setUse(addressUse, addressTypeCell);
+
+            CsvCell nameOfBuildingCell = parser.getNameOfBuilding();
+            if (!nameOfBuildingCell.isEmpty()) {
+                addressBuilder.addLine(nameOfBuildingCell.getString(), nameOfBuildingCell);
+            }
+            CsvCell numberOfBuildingCell = parser.getNumberOfBuilding();
+            CsvCell nameOfRoadCell = parser.getNameOfRoad();
+            addressBuilder.addLineFromHouseNumberAndRoad(numberOfBuildingCell, nameOfRoadCell);
+
+            CsvCell nameOfLocalityCell = parser.getNameOfLocality();
+            if (!nameOfLocalityCell.isEmpty()) {
+                addressBuilder.addLine(nameOfLocalityCell.getString(), nameOfLocalityCell);
+            }
+            CsvCell nameOfTownCell = parser.getNameOfTown();
+            if (!nameOfTownCell.isEmpty()) {
+                addressBuilder.setCity(nameOfTownCell.getString(), nameOfTownCell);
+            }
+            CsvCell nameOfCountyCell = parser.getNameOfCounty();
+            if (!nameOfCountyCell.isEmpty()) {
+                addressBuilder.setDistrict(nameOfCountyCell.getString(), nameOfCountyCell);
+            }
+            CsvCell fullPostCodeCell = parser.getFullPostCode();
+            if (!fullPostCodeCell.isEmpty()) {
+                addressBuilder.setPostcode(fullPostCodeCell.getString(), fullPostCodeCell);
+            }
+
+            //duplicated from above
+            /*CsvCell dateEventCell = parser.getDateEvent();
+            if (!dateEventCell.isEmpty()) {
+                addressBuilder.setStartDate(dateEventCell.getDateTime(), dateEventCell);
+            }*/
+
+            //note, the managing organisation is set from the SRPatientRegistrationTransformer too, except
+            //this means that if a patient doesn't have a record in that file, the mananging org won't get set.
+            //So set it here too, on the assumption that a patient will always have an address.
+
+            //IDOrgVisible to is "here" (the service being transformed), so carry that over to the managing organisation
+            CsvCell idOrgVisibleToCell = parser.getIDOrganisationVisibleTo();
+            //CsvCell orgIdCell = parser.getIDOrganisation();
+            if (!idOrgVisibleToCell.isEmpty()) {
+                Reference orgReferencePatient = csvHelper.createOrganisationReference(idOrgVisibleToCell);
+                if (patientBuilder.isIdMapped()) {
+                    orgReferencePatient = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReferencePatient, csvHelper);
+                }
+                patientBuilder.setManagingOrganisation(orgReferencePatient, idOrgVisibleToCell);
+            }
+
+        } finally {
+            csvHelper.getPatientResourceCache().returnPatientBuilder(patientIdCell, patientBuilder);
         }
     }
 }

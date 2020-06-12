@@ -24,7 +24,9 @@ public class MessageFormat {
     public static final String PCR_CSV = "PCR_CSV";
     public static final String SUBSCRIBER_CSV = "SUBSCRIBER_CSV";
     public static final String BHRUT_CSV = "BHRUTCSV";
+    public static final String IMPERIAL_HL7_V2 = "IMPERIALHL7V2";
 
     public static final String DUMMY_SENDER_SOFTWARE_FOR_BULK_TRANSFORM = "BULK_TRANSFORM_TO_SUBSCRIBER";
     public static final String DUMMY_SENDER_SOFTWARE_FOR_BULK_DELETE = "BULK_DELETE_DATA";
+    public static final String DUMMY_SENDER_SOFTWARE_FOR_BULK_DELETE_FROM_SUBSCRIBER = "BULK_DELETE_FROM_SUBSCRIBER";
 }

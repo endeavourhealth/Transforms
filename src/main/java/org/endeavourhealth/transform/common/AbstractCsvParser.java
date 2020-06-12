@@ -257,9 +257,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
         List<String> ret = new ArrayList<>();
 
-        String firstChars = FileHelper.readFirstCharactersFromSharedStorage(filePath, 1000); //assuming we never have headers longer than 1000 bytes
-        //LOG.trace("Read first 1000 chars from " + filePath);
-        //LOG.trace(firstChars);
+        String firstChars = FileHelper.readFirstCharactersFromSharedStorage(filePath, 5 * 1024); //assuming we never have headers longer than 5KB
 
         StringReader stringReader = new StringReader(firstChars);
         CSVParser csvReader = new CSVParser(stringReader, csvFormat); //not assigning to class variable as this reader is just for this validation
@@ -286,12 +284,8 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         }
 
         if (ret.isEmpty()) {
-            LOG.error("Ruled out all possible versions because of file " + filePath);
+            LOG.error("Ruled out all possible versions for file " + filePath);
             LOG.error("Headers in file are " + String.join(", ", csvReader.getHeaderMap().keySet()));
-            if (filePath.toUpperCase().contains("TPP")) {
-                LOG.error("Retrying in case it's a TPP file with or without RemovedData ");
-                ret = reTestForValidVersionsForTpp(possibleVersions);
-            }
         }
 
         return ret;

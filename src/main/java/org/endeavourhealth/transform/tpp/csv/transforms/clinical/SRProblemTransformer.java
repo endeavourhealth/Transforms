@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Set;
 
 
 public class SRProblemTransformer {
@@ -42,8 +43,8 @@ public class SRProblemTransformer {
     }
 
     public static void createResource(SRProblem parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       TppCsvHelper csvHelper) throws Exception {
+                                      FhirResourceFiler fhirResourceFiler,
+                                      TppCsvHelper csvHelper) throws Exception {
 
         CsvCell problemId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
@@ -54,139 +55,115 @@ public class SRProblemTransformer {
             String codeId = csvHelper.getInternalId(PROBLEM_ID_TO_CODE_ID, problemId.getString());
             if (!Strings.isNullOrEmpty(codeId)) {
                 CsvCell dummyCodeIdCell = CsvCell.factoryDummyWrapper(codeId);
-                ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(dummyCodeIdCell, csvHelper);
+                ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(dummyCodeIdCell, csvHelper, false);
+                if (conditionBuilder != null) {
 
-                ResourceType trueResourceType = SRCodeTransformer.wasOriginallySavedAsOtherThanCondition(fhirResourceFiler, dummyCodeIdCell);
-                if (trueResourceType != null) {
                     //if the SRCode wouldn't normally have been a Condition, then we'll have doubled up and created a
                     //Condition as well as the other resource, in which case we need to DELETE the condition resource
+                    Set<ResourceType> resourceTypes = SRCodeTransformer.findOriginalTargetResourceTypes(fhirResourceFiler, dummyCodeIdCell);
+                    if (resourceTypes.size() > 1) { //saved as a Condition and something else
 
-                    //first, check if already Id mapped and if not, needs Id mapping, i.e. not filed yet which is an erroneous for a delete
-                    boolean mapIds = !conditionBuilder.isIdMapped();
-                    if (mapIds) {
+                        conditionBuilder.setDeletedAudit(deleteData);
+                        fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, conditionBuilder);
 
-                        //the condition is being deleted here and needs Id mapping, So it has NOT been previously saved,
-                        //so cannot be deleted. Therefore, Log, and return gracefully
-                        TransformWarnings.log(LOG, csvHelper, "Cannot find existing Condition: {} for deletion", codeId);
-                        return;
+                    } else {
+                        //if a SRProblem refers to an SRCode that should be a Condition, they both SHARE the same FHIR resource
+                        //and we need to just down-grade the existing resource to a non-problem.
+                        //Note the SRCode record itself may be deleted too, in which case the SRCode transformer will
+                        //delete the resource.
+                        conditionBuilder.setAsProblem(false);
+
+                        //don't forget to return to the cache
+                        csvHelper.getConditionResourceCache().returnToCache(dummyCodeIdCell, conditionBuilder);
                     }
-
-                    conditionBuilder.setDeletedAudit(deleteData);
-                    csvHelper.getConditionResourceCache().returnToCacheForDelete(dummyCodeIdCell, conditionBuilder);
-
-                } else {
-                    //if a SRProblem refers to an SRCode that should be a Condition, they both SHARE the same FHIR resource
-                    //and we need to just down-grade the existing resource to a non-problem.
-                    conditionBuilder.setAsProblem(false);
-
-                    //clear down all the problem-specific condition fields
-                    conditionBuilder.setEndDateOrBoolean(null);
-                    conditionBuilder.setExpectedDuration(null);
-                    conditionBuilder.setProblemLastReviewDate(null);
-                    conditionBuilder.setProblemLastReviewedBy(null);
-                    conditionBuilder.setProblemSignificance(null);
-                    conditionBuilder.setParentProblem(null);
-                    conditionBuilder.setParentProblemRelationship(null);
-                    //conditionBuilder.setAdditionalNotes(null);
-
-                    ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
-                    containedListBuilder.removeContainedList();
-
-                    //don't forget to return to the cache
-                    csvHelper.getConditionResourceCache().returnToCache(dummyCodeIdCell, conditionBuilder);
                 }
             }
-
             return;
         }
 
         //for problems, use the linked observationId as the ID to build up the resource to then add to in SRCode Transformer
         CsvCell linkedObsCodeId = parser.getIDCode();
 
-        ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(linkedObsCodeId, csvHelper);
+        ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(linkedObsCodeId, csvHelper, true);
 
-        //we may need to "upgrade" the existing condition to being a problem
-        conditionBuilder.setAsProblem(true);
+        try {
+            //we may need to "upgrade" the existing condition to being a problem
+            //NOTE: the text of "complaint" is wrong in that it's not the same as a "problem", but this is the String that was used
+            conditionBuilder.setCategory("complaint", problemId);
+            conditionBuilder.setAsProblem(true);
 
-        Reference patientReference = csvHelper.createPatientReference(patientId);
-        if (conditionBuilder.isIdMapped()) {
-            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,fhirResourceFiler);
-        }
-        conditionBuilder.setPatient(patientReference, patientId);
-
-        //the linked SRCode entry - cache the reference for the SRCode transformer to check that it is a problem
-        CsvCell readV3Code = parser.getCTV3Code();
-        if (!linkedObsCodeId.isEmpty() && ! readV3Code.isEmpty()) {
-            csvHelper.cacheProblemObservationGuid(linkedObsCodeId, readV3Code.getString());
-        }
-
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
+            //do not set the Patient reference here. The SRProblem record should always have a correspondiong SRCode record
+            //so leave it up to SRCodeTransformer to set this. This also means we can detect SRProblem records that haven't
+            //got a SRCode record, in which case we skip them
+            /*Reference patientReference = csvHelper.createPatientReference(patientId);
             if (conditionBuilder.isIdMapped()) {
-                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference,fhirResourceFiler);
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
             }
-            conditionBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
-        }
+            conditionBuilder.setPatient(patientReference, patientId);*/
 
-        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-            if (staffReference != null) {
+            CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
+            if (!TppCsvHelper.isEmptyOrNegative(profileIdRecordedBy)) {
+                Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
                 if (conditionBuilder.isIdMapped()) {
                     staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
                 }
-                conditionBuilder.setClinician(staffReference, staffMemberIdDoneBy);
+                conditionBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
             }
-        }
 
-        //status is mandatory, so set the only value we can
-        conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
+            CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
+            if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneBy)) {
+                Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
+                if (staffReference != null) {
+                    if (conditionBuilder.isIdMapped()) {
+                        staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
+                    }
+                    conditionBuilder.setClinician(staffReference, staffMemberIdDoneBy);
+                }
+            }
 
-        CsvCell dateRecored = parser.getDateEventRecorded();
-        if (!dateRecored.isEmpty()) {
-            conditionBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
-        }
+            //status is mandatory, so set the only value we can
+            conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
-        CsvCell effectiveDate = parser.getDateEvent();
-        if (!effectiveDate.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
-            conditionBuilder.setOnset(dateTimeType, effectiveDate);
-        }
+            CsvCell dateRecored = parser.getDateEventRecorded();
+            if (!dateRecored.isEmpty()) {
+                conditionBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
+            }
 
-        //set the category on the condition, so we know it's a problem
-        //NOTE: the text of "complaint" is wrong in that it's not the same as a "problem", but this is the String that was used
-        conditionBuilder.setCategory("complaint", problemId);
-        conditionBuilder.setAsProblem(true);
+            CsvCell effectiveDate = parser.getDateEvent();
+            if (!effectiveDate.isEmpty()) {
+                DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
+                conditionBuilder.setOnset(dateTimeType, effectiveDate);
+            }
 
-        CsvCell endDate = parser.getDateEnd();
-        if (endDate != null) {
+            CsvCell endDateCell = parser.getDateEnd();
+            if (endDateCell.isEmpty()) { //possible to re-activate problems, so support changing TO it being empty
+                conditionBuilder.setEndDateOrBoolean(null);
 
-            DateType dateType = new DateType(effectiveDate.getDate());
-            conditionBuilder.setEndDateOrBoolean(dateType, endDate);
-        }
+            } else {
+                DateType dateType = new DateType(endDateCell.getDate());
+                conditionBuilder.setEndDateOrBoolean(dateType, endDateCell);
+            }
 
-        CsvCell severity = parser.getSeverity();
-        if (severity != null) {
-
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severity);
+            CsvCell severityCell = parser.getSeverity();
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(severityCell);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
-                if (!mappedTerm.isEmpty()) {
-                    if (mappedTerm.equalsIgnoreCase("minor")) {
-                        conditionBuilder.setProblemSignificance(ProblemSignificance.NOT_SIGNIFICANT);
-                    } else if (mappedTerm.equalsIgnoreCase("major")) {
-                        conditionBuilder.setProblemSignificance(ProblemSignificance.SIGNIFICANT);
-                    }
+                if (mappedTerm.equalsIgnoreCase("minor")) {
+                    conditionBuilder.setProblemSignificance(ProblemSignificance.NOT_SIGNIFICANT);
+
+                } else if (mappedTerm.equalsIgnoreCase("major")) {
+                    conditionBuilder.setProblemSignificance(ProblemSignificance.SIGNIFICANT);
+
                 } else {
-                    conditionBuilder.setProblemSignificance(ProblemSignificance.UNSPECIIED);
+                    throw new Exception("Unexpected SRProblem severity [" + mappedTerm + "]");
                 }
             } else {
                 conditionBuilder.setProblemSignificance(ProblemSignificance.UNSPECIIED);
             }
-        }
 
-        //don't forget to return to the cache
-        csvHelper.getConditionResourceCache().returnToCache(linkedObsCodeId, conditionBuilder);
+        } finally {
+            //don't forget to return to the cache
+            csvHelper.getConditionResourceCache().returnToCache(linkedObsCodeId, conditionBuilder);
+        }
     }
 }

@@ -12,6 +12,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ImmunizationBuilder;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppCodingHelper;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRImmunisation;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -138,77 +139,16 @@ public class SRImmunisationTransformer {
             immunizationBuilder.setExpirationDate(expiryDate.getDate(), expiryDate);
         }
 
-        CsvCell immsSNOMEDCodeCell = parser.getImmsSNOMEDCode();
-        CsvCell readV3CodeCell = parser.getImmsReadCode();
+        CsvCell snomedCodeCell = parser.getImmsSNOMEDCode();
+        CsvCell ctv3CodeCell = parser.getImmsReadCode();
 
         //only add a codeable concept if either a Snomed code or Ctv3 code is present
-        if (!readV3CodeCell.isEmpty() ||
-                (immsSNOMEDCodeCell != null
-                        && !immsSNOMEDCodeCell.isEmpty()
-                        && immsSNOMEDCodeCell.getLong().longValue() != -1)) {
+        if (!ctv3CodeCell.isEmpty() ||
+                (snomedCodeCell != null //Snomed column not present in all versions
+                        && !TppCsvHelper.isEmptyOrNegative(snomedCodeCell))) {
 
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
-
-            boolean addedSnomed = false;
-            String snomedCodeDisplayText = "";
-
-            if (immsSNOMEDCodeCell != null //might be null in older versions
-                    && !immsSNOMEDCodeCell.isEmpty()
-                    && immsSNOMEDCodeCell.getLong().longValue() != -1) {
-
-                SnomedCode snomedCode = TerminologyService.lookupSnomedFromConceptId(immsSNOMEDCodeCell.getString());
-                if (snomedCode != null) {
-
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                    codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
-                    codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-                    snomedCodeDisplayText = snomedCode.getTerm();   //use to set display text later
-                    addedSnomed = true;
-                }
-            }
-
-            if (!readV3CodeCell.isEmpty()) {
-
-                String code = readV3CodeCell.getString();
-                if (!code.startsWith("Y")) {
-
-                    //only add the Snomed translation if not already added Snomed
-                    if (!addedSnomed) {
-                        SnomedCode snomedCode = TerminologyService.translateCtv3ToSnomed(code);
-                        if (snomedCode != null) {
-
-                            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                            codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
-                            codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-                            snomedCodeDisplayText = snomedCode.getTerm();   //use to set display text later
-                        }
-                    }
-
-                    // add Ctv3 coding
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_CTV3);
-
-                } else {
-
-                    //this is a TPP Ctv3 local code
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_TPP_CTV3);
-                }
-
-                //set the code from the received code cell
-                codeableConceptBuilder.setCodingCode(code, readV3CodeCell);
-
-                //perform a ctv3 lookup to get the code term details as this is not supplied in the extract
-                String readV3Term = csvHelper.lookUpTppCtv3Term(readV3CodeCell);
-                if (readV3Term != null) {
-                    codeableConceptBuilder.setCodingDisplay(readV3Term);
-                    codeableConceptBuilder.setText(readV3Term);   //display text set here in-case no Snomed term derived
-                }
-            }
-
-            // if Snomed code display text is set then use it for the display text (preferred over Ctv3 as no term supplied)
-            if (!snomedCodeDisplayText.isEmpty()) {
-                codeableConceptBuilder.setText(snomedCodeDisplayText);
-            }
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
+            TppCodingHelper.addCodes(codeableConceptBuilder, snomedCodeCell, null, ctv3CodeCell, null);
         }
 
         CsvCell vaccPart = parser.getVaccPart();

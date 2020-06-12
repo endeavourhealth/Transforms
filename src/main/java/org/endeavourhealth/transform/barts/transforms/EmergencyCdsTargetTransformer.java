@@ -76,7 +76,7 @@ public class EmergencyCdsTargetTransformer {
                 } else {
 
                     //create top level parent with minimum data
-                    createInpatientCdsEncounterParentMinimum(targetEmergencyCds, fhirResourceFiler, csvHelper);
+                    createEmergencyCdsEncounterParentMinimum(targetEmergencyCds, fhirResourceFiler, csvHelper);
 
                     //then create child level encounters linked to this new parent
                     createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
@@ -93,6 +93,13 @@ public class EmergencyCdsTargetTransformer {
                                                      FhirResourceFiler fhirResourceFiler,
                                                      BartsCsvHelper csvHelper) throws Exception {
 
+
+        ///retrieve the parent encounter to point to any new child encounters created during this method
+        Integer parentEncounterId = targetEmergencyCds.getEncounterId();
+        Encounter existingParentEncounter
+                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
+        EncounterBuilder existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
+        ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
 
         //unique to the emergency dept. attendance
         String attendanceId = targetEmergencyCds.getAttendanceId();
@@ -111,33 +118,37 @@ public class EmergencyCdsTargetTransformer {
                 = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilderAdmission.setText("Emergency Arrival");
 
-        setCommonEncounterAttributes(arrivalEncounterBuilder, targetEmergencyCds, csvHelper);
+        setCommonEncounterAttributes(arrivalEncounterBuilder, targetEmergencyCds, csvHelper, true);
+
+        //and link the parent to this new child encounter
+        Reference childArrivalRef = ReferenceHelper.createReference(ResourceType.Encounter, arrivalEncounterId);
+        existingEncounterList.addReference(childArrivalRef);
 
         //add in additional extended data as Parameters resource with additional extension
         //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
-        ContainedParametersBuilder containedParametersBuilderMain
+        ContainedParametersBuilder containedParametersBuilderArrival
                 = new ContainedParametersBuilder(arrivalEncounterBuilder);
-        containedParametersBuilderMain.removeContainedParameters();
+        containedParametersBuilderArrival.removeContainedParameters();
 
         String aeAttendanceCategoryCode = targetEmergencyCds.getAttendanceCategory();
         if (!Strings.isNullOrEmpty(aeAttendanceCategoryCode)) {
-            containedParametersBuilderMain.addParameter("ae_attendance_category", "" + aeAttendanceCategoryCode);
+            containedParametersBuilderArrival.addParameter("ae_attendance_category", "" + aeAttendanceCategoryCode);
         }
         String aeAttendanceSource = targetEmergencyCds.getAttendanceSource();
         if (!Strings.isNullOrEmpty(aeAttendanceSource)) {
-            containedParametersBuilderMain.addParameter("ae_attendance_source", "" + aeAttendanceSource);
+            containedParametersBuilderArrival.addParameter("ae_attendance_source", "" + aeAttendanceSource);
         }
         String aeDepartmentType = targetEmergencyCds.getDepartmentType();
         if (!Strings.isNullOrEmpty(aeDepartmentType)) {
-            containedParametersBuilderMain.addParameter("ae_department_type", "" + aeDepartmentType);
+            containedParametersBuilderArrival.addParameter("ae_department_type", "" + aeDepartmentType);
         }
         String aeArrivalMode = targetEmergencyCds.getArrivalMode();
         if (!Strings.isNullOrEmpty(aeArrivalMode)) {
-            containedParametersBuilderMain.addParameter("ae_arrival_mode", "" + aeArrivalMode);
+            containedParametersBuilderArrival.addParameter("ae_arrival_mode", "" + aeArrivalMode);
         }
         String chiefComplaint = targetEmergencyCds.getChiefComplaint();
         if (!Strings.isNullOrEmpty(chiefComplaint)) {
-            containedParametersBuilderMain.addParameter("ae_chief_complaint", "" + chiefComplaint);
+            containedParametersBuilderArrival.addParameter("ae_chief_complaint", "" + chiefComplaint);
         }
         //this is a Cerner code which is mapped to an NHS DD alias
         String treatmentFunctionCode = targetEmergencyCds.getTreatmentFunctionCode();
@@ -146,7 +157,7 @@ public class EmergencyCdsTargetTransformer {
             if (codeRef != null) {
 
                 String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
-                containedParametersBuilderMain.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
+                containedParametersBuilderArrival.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
             }
         }
 
@@ -182,7 +193,11 @@ public class EmergencyCdsTargetTransformer {
                     = new CodeableConceptBuilder(assessmentEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderAssessment.setText("Emergency Initial Assessment");
 
-            setCommonEncounterAttributes(assessmentEncounterBuilder, targetEmergencyCds, csvHelper);
+            setCommonEncounterAttributes(assessmentEncounterBuilder, targetEmergencyCds, csvHelper, true);
+
+            //and link the parent to this new child encounter
+            Reference childAssessmentRef = ReferenceHelper.createReference(ResourceType.Encounter, assessmentEncounterId);
+            existingEncounterList.addReference(childAssessmentRef);
 
             //add in additional extended data as Parameters resource with additional extension
             //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
@@ -192,7 +207,7 @@ public class EmergencyCdsTargetTransformer {
 
             String safeGuardingConcerns = targetEmergencyCds.getSafeguardingConcerns();
             if (!Strings.isNullOrEmpty(safeGuardingConcerns)) {
-                containedParametersBuilderMain.addParameter("safe_guarding_concerns", "" + safeGuardingConcerns);
+                containedParametersBuilderAss.addParameter("safe_guarding_concerns", "" + safeGuardingConcerns);
             }
 
             Date aeAssessmentEndDate
@@ -204,7 +219,6 @@ public class EmergencyCdsTargetTransformer {
             }
             //save the A&E assessment encounter
             fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
-
         }
 
         ////Is there a treatments encounter?////////////////////////////////////////////////////////////////////////////
@@ -219,10 +233,14 @@ public class EmergencyCdsTargetTransformer {
             treatmentsEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderTreatments
-                    = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+                    = new CodeableConceptBuilder(treatmentsEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderTreatments.setText("Emergency Investigations and Treatments");
 
-            setCommonEncounterAttributes(treatmentsEncounterBuilder, targetEmergencyCds, csvHelper);
+            setCommonEncounterAttributes(treatmentsEncounterBuilder, targetEmergencyCds, csvHelper, true);
+
+            //and link the parent to this new child encounter
+            Reference childTreatmentsRef = ReferenceHelper.createReference(ResourceType.Encounter, treatmentsEncounterId);
+            existingEncounterList.addReference(childTreatmentsRef);
 
             //TODO - do we save the linked clinical data here?
             //targetEmergencyCds.getDiagnosis();
@@ -259,10 +277,14 @@ public class EmergencyCdsTargetTransformer {
             dischargeEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderDischarge
-                    = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+                    = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderDischarge.setText("Emergency Discharge");
 
-            setCommonEncounterAttributes(dischargeEncounterBuilder, targetEmergencyCds, csvHelper);
+            setCommonEncounterAttributes(dischargeEncounterBuilder, targetEmergencyCds, csvHelper, true);
+
+            //and link the parent to this new child encounter
+            Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
+            existingEncounterList.addReference(childDischargeRef);
 
             //add in additional extended data as Parameters resource with additional extension
             //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
@@ -272,11 +294,11 @@ public class EmergencyCdsTargetTransformer {
 
             String dischargeStatusCode = targetEmergencyCds.getDischargeStatus();
             if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
-                containedParametersBuilderDischarge.addParameter("em_discharge_status", "" + dischargeStatusCode);
+                containedParametersBuilderDischarge.addParameter("ae_discharge_status", "" + dischargeStatusCode);
             }
             String dischargeDestinationCode = targetEmergencyCds.getDischargeDestination();
             if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
-                containedParametersBuilderDischarge.addParameter("em_discharge_destination", "" + dischargeDestinationCode);
+                containedParametersBuilderDischarge.addParameter("ae_discharge_destination", "" + dischargeDestinationCode);
             }
 
             Date aeDischargeEndDate
@@ -290,14 +312,20 @@ public class EmergencyCdsTargetTransformer {
             //save the A&E discharge encounter
             fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
         }
+
+        //save the existing parent encounter here with the updated child refs added during this method
+        fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
     }
 
-    private static void createInpatientCdsEncounterParentMinimum(StagingEmergencyCdsTarget targetEmergencyCds,
+    private static void createEmergencyCdsEncounterParentMinimum(StagingEmergencyCdsTarget targetEmergencyCds,
                                                                  FhirResourceFiler fhirResourceFiler,
                                                                  BartsCsvHelper csvHelper) throws Exception {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
-        parentTopEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+        parentTopEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
+
+        Integer encounterId = targetEmergencyCds.getEncounterId();
+        parentTopEncounterBuilder.setId(Integer.toString(encounterId));
 
         Date arrivalDate = targetEmergencyCds.getDtArrival();
         parentTopEncounterBuilder.setPeriodStart(arrivalDate);
@@ -316,7 +344,7 @@ public class EmergencyCdsTargetTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Emergency");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, targetEmergencyCds, csvHelper);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, targetEmergencyCds, csvHelper, false);
 
         //save encounterBuilder record
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
@@ -324,7 +352,8 @@ public class EmergencyCdsTargetTransformer {
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      StagingEmergencyCdsTarget targetEmergencyCds,
-                                                     BartsCsvHelper csvHelper) throws Exception  {
+                                                     BartsCsvHelper csvHelper,
+                                                     boolean isChildEncounter) throws Exception  {
 
         //every encounter has the following common attributes
         Integer personId = targetEmergencyCds.getPersonId();
@@ -338,7 +367,6 @@ public class EmergencyCdsTargetTransformer {
             }
             builder.setPatient(patientReference);
         }
-
         Integer episodeId = targetEmergencyCds.getEpisodeId();
         if (episodeId != null) {
 
@@ -375,16 +403,17 @@ public class EmergencyCdsTargetTransformer {
             }
             builder.setServiceProvider(organizationReference);
         }
-        //get the existing parent encounter set during ADT feed, to link to this top level encounter
-        Integer encounterId = targetEmergencyCds.getEncounterId();
-        Reference parentEncounter
-                = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
-        if (builder.isIdMapped()) {
+        //get the existing parent encounter set during ADT feed, to link to this top level encounter if this is a child
+        if (isChildEncounter) {
+            Integer encounterId = targetEmergencyCds.getEncounterId();
+            Reference parentEncounter
+                    = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
+            if (builder.isIdMapped()) {
 
-            parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+                parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            }
+            builder.setPartOf(parentEncounter);
         }
-        builder.setPartOf(parentEncounter);
-
         //set the CDS identifier against the Encounter
         String cdsUniqueId = targetEmergencyCds.getUniqueId();
         if (!cdsUniqueId.isEmpty()) {

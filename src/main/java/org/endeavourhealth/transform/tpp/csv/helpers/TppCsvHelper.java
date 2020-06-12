@@ -1,17 +1,12 @@
 package org.endeavourhealth.transform.tpp.csv.helpers;
 
 import org.endeavourhealth.common.cache.ParserPool;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
-import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
-import org.endeavourhealth.core.database.dal.audit.models.Exchange;
-import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.*;
@@ -19,16 +14,13 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
-import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
-import org.endeavourhealth.transform.tpp.cache.*;
+import org.endeavourhealth.transform.tpp.csv.helpers.cache.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +44,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
     private static TppImmunisationContentDalI tppImmunisationContentDalI = DalProvider.factoryTppImmunisationContentDal();
     private static InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
-    private static TppMultiLexToCtv3MapDalI multiLexToCTV3MapDalI = DalProvider.factoryTppMultiLexToCtv3MapDal();
-    private static TppCtv3LookupDalI tppCtv3LookupRefDal = DalProvider.factoryTppCtv3LookupDal();
+    private static TppMultilexLookupDalI multiLexToCTV3MapDalI = DalProvider.factoryTppMultiLexDal();
     private static TppCtv3HierarchyRefDalI ctv3HierarchyRefDalI = DalProvider.factoryTppCtv3HierarchyRefDal();
     private static ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
@@ -61,20 +52,19 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static Map<Integer, TppMappingRef> hmTppMappingRefs = new ConcurrentHashMap<>();
     private static Map<Integer, TppConfigListOption> hmTppConfigListOptions = new ConcurrentHashMap<>();
     private static Map<Integer, TppImmunisationContent> hmTppImmunisationContents = new ConcurrentHashMap<>();
-    private static Map<Integer, TppMultiLexToCtv3Map> hmMultiLexProductIdToCTV3Map = new ConcurrentHashMap<>();
-    private static Map<StringMemorySaver, StringMemorySaver> hmTppCtv3TermLookups = new ConcurrentHashMap<>();
+    private static Map<Integer, TppMultilexProductToCtv3Map> hmMultiLexProductIdToCTV3Map = new ConcurrentHashMap<>();
+    private static Map<Integer, String> hmMultilexActionGroupNames = new ConcurrentHashMap<>();
     private static Map<StringMemorySaver, StringMemorySaver> hmInternalIdMapCache = new ConcurrentHashMap<>();
 
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> encounterAppointmentOrVisitMap = new ConcurrentHashMap<>();
-    private Map<Long, List<MedicalRecordStatusCacheObject>> medicalRecordStatusMap = new ConcurrentHashMap<>();
+    private TppRecordStatusCache recordStatusHelper = new TppRecordStatusCache();
+    private TppReferralStatusCache referralStatusCache = new TppReferralStatusCache();
     private StaffMemberCache staffMemberCache = new StaffMemberCache();
     private AppointmentFlagCache appointmentFlagCache = new AppointmentFlagCache();
     private PatientResourceCache patientResourceCache = new PatientResourceCache();
     private ConditionResourceCache conditionResourceCache = new ConditionResourceCache();
-    private ReferralRequestResourceCache referralRequestResourceCache = new ReferralRequestResourceCache();
-    private Map<Long, String> problemReadCodes = new HashMap<>();
     private Map<Long, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
@@ -84,7 +74,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private final UUID serviceId;
     private final UUID systemId;
     private final UUID exchangeId;
-    private Date cachedDataDate = null;
 
     public TppCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
@@ -127,8 +116,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Patient, patientGuid.getString());
     }
 
-    public Reference createPractitionerReferenceForProfileId(CsvCell staffProfileIdCell) {
-        return ReferenceHelper.createReference(ResourceType.Practitioner, staffProfileIdCell.getString());
+    public Reference createPractitionerReferenceForProfileId(CsvCell profileIdCell) {
+        return ReferenceHelper.createReference(ResourceType.Practitioner, profileIdCell.getString());
     }
 
     public Reference createPractitionerReferenceForStaffMemberId(CsvCell staffMemberIdCell, CsvCell organisationDoneAtCell) throws Exception {
@@ -272,72 +261,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return consultationExistingChildMap.remove(consultationIdCell.getLong());
     }
 
-    public void cacheProblemObservationGuid(CsvCell problemGuid, String readCode) {
-        problemReadCodes.put(problemGuid.getLong(), readCode);
-    }
 
-    public boolean isProblemObservationGuid(CsvCell problemGuid) {
-        return problemReadCodes.containsKey(problemGuid.getLong());
-
-        //TODO - what if we're processing an UPDATED SRCode record without an updated SRPRoblem record in the same extract?
-        //This code needs to check the DB to see if the existing observation is already saved as a problem
-    }
-
-    public void cacheMedicalRecordStatus(CsvCell patientGuid, CsvCell dateCell, CsvCell medicalRecordStatusCell) throws Exception {
-
-        Long key = patientGuid.getLong();
-        List<MedicalRecordStatusCacheObject> list = medicalRecordStatusMap.get(key);
-        if (list == null) {
-            list = new ArrayList<>();
-            medicalRecordStatusMap.put(key, list);
-        }
-        try {
-            for (MedicalRecordStatusCacheObject status : list) {
-                if (status.getStatusCell().getString().equals(medicalRecordStatusCell.getString())
-                        && status.getDateCell().getDateTime().equals(dateCell.getDateTime()))
-                    return; // dupe
-            }
-            list.add(new MedicalRecordStatusCacheObject(dateCell, medicalRecordStatusCell));
-            medicalRecordStatusMap.put(key, list);
-        } catch (Exception e) {
-            TransformWarnings.log(LOG, this, "Error processing cached record status: possible dateformat error:");
-        }
-    }
-
-    public List<MedicalRecordStatusCacheObject> getAndRemoveMedicalRecordStatus(CsvCell patientGuid) {
-        Long key = patientGuid.getLong();
-        return medicalRecordStatusMap.remove(key);
-    }
-
-    public void processRemainingRegistrationStatuses(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        for (Long patientId : medicalRecordStatusMap.keySet()) {
-            List<MedicalRecordStatusCacheObject> statusForPatient = medicalRecordStatusMap.get(patientId);
-
-            EpisodeOfCare episodeOfCare = (EpisodeOfCare) retrieveResource("" + patientId, ResourceType.EpisodeOfCare);
-            if (episodeOfCare == null) {
-                continue;
-            }
-
-            EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder(episodeOfCare);
-            ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
-            addRecordStatuses(statusForPatient, containedListBuilder, patientId, episodeOfCare);
-//            for (MedicalRecordStatusCacheObject status : statusForPatient) {
-//
-//                CsvCell statusCell = status.getStatusCell();
-//                RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
-//                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
-//                containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
-//
-//                CsvCell dateCell = status.getDateCell();
-//                if (!dateCell.isEmpty()) {
-//                    containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
-//                }
-//            }
-
-            fhirResourceFiler.savePatientResource(null, false, episodeBuilder);
-        }
-    }
 
 //    public void cacheAllergyCode(String readCode, String readTerm) {
 //        allergyReadCodes.put(readCode, readTerm);
@@ -363,6 +287,14 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 //        return false;
 //    }
 
+
+    public TppRecordStatusCache getRecordStatusHelper() {
+        return recordStatusHelper;
+    }
+
+    public TppReferralStatusCache getReferralStatusCache() {
+        return referralStatusCache;
+    }
 
     public EthnicCategory getKnownEthnicCategory(String readcode) {
         if (knownEthnicCodes.containsKey(readcode)) {
@@ -400,8 +332,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     public TppMappingRef lookUpTppMappingRef(CsvCell cell) throws Exception {
 
-        if (cell.isEmpty()
-                || cell.getLong().longValue() < 0) {
+        if (isEmptyOrNegative(cell)) {
             return null;
         }
 
@@ -425,10 +356,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     /**
      * Lookup code reference from SRConfigureListOption generated db
      */
-    public TppConfigListOption lookUpTppConfigListOption(CsvCell cell) throws Exception {
+    public static TppConfigListOption lookUpTppConfigListOption(CsvCell cell) throws Exception {
 
-        if (cell.isEmpty()
-                || cell.getLong().longValue() < 0) {
+        if (isEmptyOrNegative(cell)) {
             return null;
         }
 
@@ -453,7 +383,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     /**
      * Lookup code reference from SRImmunisationContent generated db
      */
-    public TppImmunisationContent lookUpTppImmunisationContent(CsvCell immContentCell) throws Exception {
+    public static TppImmunisationContent lookUpTppImmunisationContent(CsvCell immContentCell) throws Exception {
 
         if (immContentCell.isEmpty()
                 || immContentCell.getLong().longValue() < 0) {
@@ -475,48 +405,21 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ret;
     }
 
-    /**
-     * Lookup code reference from SRCtv3Transformer generated db
-     */
-    public String lookUpTppCtv3Term(CsvCell ctv3CodeCell) throws Exception {
-
-        if (ctv3CodeCell.isEmpty()) {
-            return null;
-        }
-
-        StringMemorySaver cacheKey = new StringMemorySaver(ctv3CodeCell.getString());
-        StringMemorySaver cached = hmTppCtv3TermLookups.get(cacheKey);
-        if (cached != null) {
-            return cached.toString();
-        }
-
-        TppCtv3Lookup lookup = tppCtv3LookupRefDal.getContentFromCtv3Code(ctv3CodeCell.getString());
-        if (lookup == null) {
-            throw new TransformException("Failed to look up CTV3 term for code [" + ctv3CodeCell.getString() + "]");
-        }
-
-        // Add to the cache
-        String term = lookup.getCtv3Text();
-        hmTppCtv3TermLookups.put(cacheKey, new StringMemorySaver(term));
-
-        return term;
-    }
 
     /**
      * Lookup multilex read code map
      */
-    public TppMultiLexToCtv3Map lookUpMultiLexToCTV3Map(CsvCell multiLexProductIdCell) throws Exception {
+    public TppMultilexProductToCtv3Map lookUpMultilexToCTV3Map(CsvCell multiLexProductIdCell) throws Exception {
 
-        if (multiLexProductIdCell.isEmpty()
-                || multiLexProductIdCell.getLong().longValue() < 0) {
+        if (isEmptyOrNegative(multiLexProductIdCell)) {
             return null;
         }
 
         Integer productId = multiLexProductIdCell.getInt();
 
-        TppMultiLexToCtv3Map ret = hmMultiLexProductIdToCTV3Map.get(productId);
+        TppMultilexProductToCtv3Map ret = hmMultiLexProductIdToCTV3Map.get(productId);
         if (ret == null) {
-            ret = multiLexToCTV3MapDalI.getMultiLexToCTV3Map(productId.intValue());
+            ret = multiLexToCTV3MapDalI.getMultilexToCtv3MapForProductId(productId.intValue());
             if (ret == null) {
                 TransformWarnings.log(LOG, this, "TPP Multilex lookup failed for product ID {}", multiLexProductIdCell);
                 return null;
@@ -524,6 +427,30 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             // Add to the cache
             hmMultiLexProductIdToCTV3Map.put(productId, ret);
+        }
+
+        return ret;
+    }
+
+    /**
+     * looks up a Multilex Action Group name for its ID
+     */
+    public String lookUpMultilexActionGroupNameForId(CsvCell multilexActionIdCell) throws Exception {
+
+        if (isEmptyOrNegative(multilexActionIdCell)) {
+            return null;
+        }
+
+        Integer id = multilexActionIdCell.getInt();
+        String ret = hmMultilexActionGroupNames.get(id);
+        if (ret == null) {
+            ret = multiLexToCTV3MapDalI.getMultilexActionGroupNameForId(id.intValue());
+            if (ret == null) {
+                TransformWarnings.log(LOG, this, "TPP Action Group lookup failed for ID {}", multilexActionIdCell);
+                return null;
+            }
+
+            hmMultilexActionGroupNames.put(id, ret);
         }
 
         return ret;
@@ -883,10 +810,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return patientResourceCache;
     }
 
-    public ReferralRequestResourceCache getReferralRequestResourceCache() {
-        return referralRequestResourceCache;
-    }
-
     public ConditionResourceCache getConditionResourceCache() {
         return conditionResourceCache;
     }
@@ -952,127 +875,34 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     public ResourceType getResourceType(String code) throws Exception {
         if (codeToTypes.containsKey(code)) {
             return codeToTypes.get(code);
-        } else {
-            if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, OPERATIONS_PROCEDURES)) {
-                cacheCTV3CodeToResourceType(code, ResourceType.Procedure);
-                if (isBPCode(code)) {
-                    cacheCTV3CodeToResourceType(code, ResourceType.Observation);
-                    return ResourceType.Observation;
-                }
-                return ResourceType.Procedure;
-            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, ALLERGIC_DISORDER)) {
-                cacheCTV3CodeToResourceType(code, ResourceType.AllergyIntolerance);
-                return ResourceType.AllergyIntolerance;
-            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, FAMILY_HISTORY_DISORDERS)) {
-                cacheCTV3CodeToResourceType(code, ResourceType.FamilyMemberHistory);
-                return ResourceType.FamilyMemberHistory;
-            } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, DISORDERS)) {
-                cacheCTV3CodeToResourceType(code, ResourceType.Condition);
-                return ResourceType.Condition;
-            } else {
-                cacheCTV3CodeToResourceType(code, ResourceType.Observation);
-            }
         }
-        cacheCTV3CodeToResourceType(code, ResourceType.Observation);
-        return ResourceType.Observation;
+
+        if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, OPERATIONS_PROCEDURES)) {
+            cacheCTV3CodeToResourceType(code, ResourceType.Procedure);
+            if (isBPCode(code)) {
+                cacheCTV3CodeToResourceType(code, ResourceType.Observation);
+                return ResourceType.Observation;
+            }
+            return ResourceType.Procedure;
+        } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, ALLERGIC_DISORDER)) {
+            cacheCTV3CodeToResourceType(code, ResourceType.AllergyIntolerance);
+            return ResourceType.AllergyIntolerance;
+        } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, FAMILY_HISTORY_DISORDERS)) {
+            cacheCTV3CodeToResourceType(code, ResourceType.FamilyMemberHistory);
+            return ResourceType.FamilyMemberHistory;
+        } else if (ctv3HierarchyRefDalI.isChildCodeUnderParentCode(code, DISORDERS)) {
+            cacheCTV3CodeToResourceType(code, ResourceType.Condition);
+            return ResourceType.Condition;
+        } else {
+            cacheCTV3CodeToResourceType(code, ResourceType.Observation);
+            return ResourceType.Observation;
+        }
     }
 
     public void cacheCTV3CodeToResourceType(String code, ResourceType type) {
         codeToTypes.put(code, type);
     }
 
-    public static boolean isTppPlaceholder(CsvCell cell) {
-        //Test for one of the TPP placeholders 0, 0.0, -1, -1.0
-        Double zero = 0.0;
-        Double negOne = -1.0;
-        if (cell.getDouble() == zero || cell.getDouble() == negOne) {
-            return true;
-        }
-        return false;
-    }
-
-    public static void addRecordStatuses(List<MedicalRecordStatusCacheObject> statuses, ContainedListBuilder containedListBuilder,
-                                         Long patientId, EpisodeOfCare episodeOfCare) throws Exception {
-        if (statuses != null) {
-            Map<Date, List<String>> recordStatusMap = buildRecordStatusMap(episodeOfCare);
-            if (recordStatusMap == null) {
-                return;
-            }
-            for (MedicalRecordStatusCacheObject status : statuses) {
-                CsvCell statusCell = status.getStatusCell();
-                if (statusCell.isEmpty()) {
-                    continue;
-                }
-                RegistrationStatus medicalRecordStatus = convertMedicalRecordStatus(statusCell);
-                CsvCell dateCell = status.getDateCell();
-                if (!dateCell.isEmpty() && !recordStatusMap.isEmpty()) {
-                    List<String> stats = recordStatusMap.get(dateCell.getDate());
-                    //LOG.debug("Stats target:" + statusCell.getString());
-
-                    if (stats == null || stats.isEmpty() || stats.contains(statusCell.getString())) {
-                        continue;
-                    }
-                    /*for (String s : stats) {
-                        LOG.debug("Statuses:<" + s + ">");
-                    }*/
-                }
-                CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(medicalRecordStatus);
-                containedListBuilder.addCodeableConcept(codeableConcept, statusCell);
-                if (!dateCell.isEmpty()) {
-                    containedListBuilder.addDateToLastItem(dateCell.getDateTime(), dateCell);
-                }
-            }
-        }
-    }
-
-    private static Map<Date, List<String>> buildRecordStatusMap(EpisodeOfCare episodeOfCare) {
-        Map<Date, List<String>> episodeStatuses = new HashMap<>();
-
-        if (episodeOfCare == null || episodeOfCare.getContained() == null) {
-            return null;
-        }
-        for (Resource resource : episodeOfCare.getContained()) {
-            List_ list = (List_) resource;
-            List<List_.ListEntryComponent> entries = list.getEntry();
-            for (List_.ListEntryComponent entry : entries) {
-                Date entryDate = entry.getDate();
-                CodeableConcept codeableConcept = entry.getFlag();
-                List<Coding> codings = codeableConcept.getCoding();
-                for (Coding coding : codings) {
-                    if (episodeStatuses.containsKey(entryDate)) {
-                        if (episodeStatuses.get(entryDate).contains(coding.getCode())) {
-                            continue;
-                        } else {
-                            episodeStatuses.get(entryDate).add(coding.getCode());
-                        }
-                    } else {
-                        List<String> newList = new ArrayList<>();
-                        newList.add(coding.getCode());
-                        episodeStatuses.put(entryDate, newList);
-                    }
-                }
-            }
-        }
-        return episodeStatuses;
-    }
-
-    public static RegistrationStatus convertMedicalRecordStatus(CsvCell statusCell) throws Exception {
-        int medicalRecordStatus = statusCell.getInt().intValue();
-        switch (medicalRecordStatus) {
-            case 0:
-                return RegistrationStatus.DEDUCTED_RECORDS_SENT_BACK_TO_FHSA;
-            case 1:
-                return RegistrationStatus.REGISTERED_RECORD_SENT_FROM_FHSA;
-            case 2:
-                return RegistrationStatus.REGISTERED_RECORD_RECEIVED_FROM_FHSA;
-            case 3:
-                return RegistrationStatus.DEDUCTED_RECORDS_RECEIVED_BY_FHSA;
-            case 4:
-                return RegistrationStatus.DEDUCTED_RECORD_REQUESTED_BY_FHSA;
-            default:
-                throw new TransformException("Unmapped medical record status " + medicalRecordStatus);
-        }
-    }
 
     /**
      * when the transform is complete, if there's any values left in the ethnicity and marital status maps,
@@ -1113,20 +943,30 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    /**
-     * returns the original date of the data in the exchange (i.e. when actually sent to DDS)
-     */
-    public Date getDataDate() throws Exception {
-        if (cachedDataDate == null) {
-            ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
-            Exchange x = exchangeDal.getExchange(exchangeId);
-            cachedDataDate = x.getHeaderAsDate(HeaderKeys.DataDate);
+    public List<Resource> retrieveAllResourcesForPatient(CsvCell patientIdCell, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-            if (cachedDataDate == null) {
-                throw new Exception("Failed to find data date for exchange " + exchangeId);
-            }
+        UUID edsPatientId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Patient, patientIdCell.getString());
+        if (edsPatientId == null) {
+            return new ArrayList<>();
         }
-        return cachedDataDate;
+
+        List<Resource> ret = new ArrayList<>();
+
+        List<ResourceWrapper> resourceWrappers = resourceRepository.getResourcesByPatient(getServiceId(), edsPatientId);
+        for (ResourceWrapper resourceWrapper: resourceWrappers) {
+            ret.add(resourceWrapper.getResource());
+        }
+
+        return ret;
+    }
+
+    /**
+     * the TPP extract often contains -1 or 0 as a "null" value rather than being empty, so this fn
+     * tests for both
+     */
+    public static boolean isEmptyOrNegative(CsvCell csvCell) {
+        return csvCell.isEmpty()
+                || csvCell.getLong().longValue() <= 0L;
     }
 
 

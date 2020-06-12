@@ -40,23 +40,21 @@ public class SRRecordStatusTransformer {
                                       FhirResourceFiler fhirResourceFiler,
                                       TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell rowIdCell = parser.getRowIdentifier();
-        if ((rowIdCell.isEmpty()) || (!StringUtils.isNumeric(rowIdCell.getString()))) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}", rowIdCell.getString(), parser.getFilePath());
-            return;
-        }
-
         CsvCell removeDataCell = parser.getRemovedData();
         if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
             return;
         }
 
-        CsvCell dateEvent = parser.getDateEvent();
-        CsvCell medicalRecordStatusCell = parser.getMedicalRecordStatus();
-        CsvCell patientId = parser.getIDPatient();
-
-        if (!medicalRecordStatusCell.isEmpty() && !dateEvent.isEmpty()) {
-            csvHelper.cacheMedicalRecordStatus(patientId, dateEvent, medicalRecordStatusCell);
+        //we want to ignore any record status records for other organisations. For other files, we want to include
+        //data from elsewhere, but these records are specific to the patients registration at other organisations,
+        //so are irrelevant and confusing
+        if (!SRPatientRegistrationTransformer.shouldSaveEpisode(parser.getIDOrganisation(), parser.getIDOrganisationVisibleTo())) {
+            return;
         }
+
+        CsvCell dateEventCell = parser.getDateEvent();
+        CsvCell medicalRecordStatusCell = parser.getMedicalRecordStatus();
+        CsvCell patientIdCell = parser.getIDPatient();
+        csvHelper.getRecordStatusHelper().cacheMedicalRecordStatus(patientIdCell, dateEventCell, medicalRecordStatusCell);
     }
 }

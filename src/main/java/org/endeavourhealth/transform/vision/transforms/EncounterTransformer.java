@@ -6,6 +6,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
@@ -13,11 +14,14 @@ import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
 
 public class EncounterTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(EncounterTransformer.class);
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -60,6 +64,14 @@ public class EncounterTransformer {
         if (actionCell.getString().equalsIgnoreCase("D")) {
             encounterBuilder.setDeletedAudit(actionCell);
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+            return;
+        }
+
+        //we can receive data for already-deleted patients, in which case ignore
+        //this is normally done automatically by FhirResourceFiler, but the createEpisodeReference(..)
+        //function fails if we call it for a deleted patient (see SD-65)
+        if (fhirResourceFiler.isPatientDeleted(patientIdCell.getString())) {
+            TransformWarnings.log(LOG, fhirResourceFiler, "Ignoring save of Vision Encounter {} because patient resource is deleted", consultationIdCell);
             return;
         }
 

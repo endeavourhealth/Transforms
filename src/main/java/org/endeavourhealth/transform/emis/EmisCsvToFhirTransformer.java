@@ -299,34 +299,27 @@ public abstract class EmisCsvToFhirTransformer {
             SessionTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         }
 
-        if (processPatientData) {
-            //the Slot transformer requires Discovery UUIDs to be generated for all patients, so we must call this Pre-transformer before it
-            PatientPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SlotPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SlotTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        }
-        
-        //if we have any changes to the staff in pre-existing sessions, we need to update the existing FHIR Schedules
-        //Confirmed on Live data - we NEVER get an update to a session_user WITHOUT also an update to the session
-        //csvHelper.processRemainingSessionPractitioners(fhirResourceFiler);
-        csvHelper.clearCachedSessionPractitioners(); //clear this down as it's a huge memory sink
-
         //if this extract is one of the ones from BEFORE we got a subsequent re-bulk, we don't want to process
         //the patient data in the extract, as we know we'll be getting a later extract saying to delete it and then
         //another extract to replace it
         if (processPatientData) {
 
             LOG.trace("Starting patient pre-transforms");
+            PatientPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //generate patient UUIDs and cache reg status data
             ProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             ObservationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             IssueRecordPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be done before DrugRecord pre-transformer
             DrugRecordPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             DiaryPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             ConsultationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SlotPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             //note the order of these transforms is important, as consultations should be before obs etc.
             LOG.trace("Starting patient transforms");
             PatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SlotTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            csvHelper.clearCachedSessionPractitioners(); //clear this down as it's a huge memory sink
+
             ConsultationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             IssueRecordTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be before DrugRecord
             DrugRecordTransformer.transform(parsers, fhirResourceFiler, csvHelper);

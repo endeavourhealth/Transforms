@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public class SRReferralOutStatusDetailsTransformer {
-
     private static final Logger LOG = LoggerFactory.getLogger(SRReferralOutStatusDetailsTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
@@ -27,7 +26,7 @@ public class SRReferralOutStatusDetailsTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((SRReferralOutStatusDetails) parser, fhirResourceFiler, csvHelper);
+                    processRecord((SRReferralOutStatusDetails) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -38,7 +37,24 @@ public class SRReferralOutStatusDetailsTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    private static void createResource(SRReferralOutStatusDetails parser,
+    private static void processRecord(SRReferralOutStatusDetails parser, FhirResourceFiler fhirResourceFiler, TppCsvHelper csvHelper) {
+
+        //if a status record is deleted, it will be replaced with a new status, and will
+        //overwrite the current status. So we don't need to worry about the old status.
+        CsvCell deleteData = parser.getRemovedData();
+        if (deleteData != null && deleteData.getIntAsBoolean()) {
+            return;
+        }
+
+        CsvCell referralIdCell = parser.getIDReferralOut();
+        CsvCell patientIdCell = parser.getIDPatient();
+        CsvCell referralStatusCell = parser.getStatusOfReferralOut();
+        CsvCell dateCell = parser.getDateEvent();
+
+        csvHelper.getReferralStatusCache().cacheReferralStatus(referralIdCell, dateCell, referralStatusCell);
+    }
+
+    /*private static void createResource(SRReferralOutStatusDetails parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        TppCsvHelper csvHelper) throws Exception {
 
@@ -46,24 +62,12 @@ public class SRReferralOutStatusDetailsTransformer {
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
+        //if a status record is deleted, it will be replaced with a new status, and will
+        //overwrite the current status. So we don't need to worry about the old status.
         if (deleteData != null && deleteData.getIntAsBoolean()) {
-            if (referralOutId.isEmpty()) {
-                TransformWarnings.log(LOG, parser, "No Referral id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
-                return;
-            } else {
-                ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
-                referralRequestBuilder.setDeletedAudit(deleteData);
-                csvHelper.getReferralRequestResourceCache().addToDeletes(referralOutId, referralRequestBuilder);
-            }
-        }
-
-        if (patientId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "No Patient id in record for row: {},  file: {}",
-                        parser.getRowIdentifier().getString(), parser.getFilePath());
             return;
-
         }
+
 
         ReferralRequestBuilder referralRequestBuilder = csvHelper.getReferralRequestResourceCache().getReferralBuilder(referralOutId, csvHelper);
         if (referralRequestBuilder == null) {
@@ -77,7 +81,7 @@ public class SRReferralOutStatusDetailsTransformer {
         referralRequestBuilder.setPatient(patientReference, patientId);
 
         CsvCell referralStatus = parser.getStatusOfReferralOut();
-        if (!referralStatus.isEmpty() && referralStatus.getLong() > 0) {
+        if (!TppCsvHelper.isEmptyOrNegative(referralStatus)) {
 
             TppConfigListOption tppConfigListOption = csvHelper.lookUpTppConfigListOption(referralStatus);
             if (tppConfigListOption != null) {
@@ -95,17 +99,16 @@ public class SRReferralOutStatusDetailsTransformer {
                     }
                     CsvCell referralStatusDate = parser.getDateEvent();
                     DateTimeType dateTimeType = new DateTimeType(referralStatusDate.getDateTime());
-                    if (dateTimeType != null) {
-                        String displayDateTime = dateTimeType.toHumanDisplay();
-                        String currentDescription = referralRequestBuilder.getDescription();
-                        if (!Strings.isNullOrEmpty(currentDescription)) {
-                            currentDescription = currentDescription.concat(". Status: " + displayDateTime + " - " + referralStatusDisplay);
-                        } else {
-                            currentDescription = "Status: " + displayDateTime + " - " + referralStatusDisplay;
-                        }
-
-                        referralRequestBuilder.setDescription(currentDescription, referralStatus);
+                    String displayDateTime = dateTimeType.toHumanDisplay();
+                    String currentDescription = referralRequestBuilder.getDescription();
+                    if (!Strings.isNullOrEmpty(currentDescription)) {
+                        currentDescription = currentDescription.concat(". Status: " + displayDateTime + " - " + referralStatusDisplay);
+                    } else {
+                        currentDescription = "Status: " + displayDateTime + " - " + referralStatusDisplay;
                     }
+
+                    referralRequestBuilder.setDescription(currentDescription, referralStatus);
+
                 } else {
 
                     referralRequestBuilder.setStatus(ReferralRequest.ReferralStatus.DRAFT, referralStatus);
@@ -128,5 +131,5 @@ public class SRReferralOutStatusDetailsTransformer {
             return ReferralRequest.ReferralStatus.COMPLETED;
         }
             return ReferralRequest.ReferralStatus.DRAFT;
-    }
+    }*/
 }
