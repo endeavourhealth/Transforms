@@ -44,7 +44,6 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private final OutputContainer outputContainer;
     private final Map<String, ResourceWrapper> hmAllResourcesByReferenceString;
     private final List<ResourceWrapper> allResources;
-    private final List<SubscriberId> subscriberIdsUpdated;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final ReentrantLock lock = new ReentrantLock();
@@ -66,7 +65,6 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.enterpriseConfigName = enterpriseConfigName;
-        this.subscriberIdsUpdated = new ArrayList<>();
         this.isBulkDeleteFromSubscriber = isBulkDeleteFromSubscriber;
 
         //load our config record for some parameters
@@ -476,26 +474,19 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         return !SubscriberTransformHelper.isCodeableConceptSafe(codeableConcept);
     }
 
-    public void setSubscriberIdTransformed(ResourceWrapper resourceWrapper, SubscriberId subscriberId) {
-
-        //we need to copy the subscriber ID object otherwise when we set setDtUpdatedPreviouslySent on it, it'll
-        //look like we've already sent over the current version when getting the previous version in the PatientTransformer
-        Date dtCurrentVersion = resourceWrapper.getCreatedAt(); //note: this may be null if we've deleted the resource
-        SubscriberId copy = new SubscriberId(subscriberId.getSubscriberTable(), subscriberId.getSubscriberId(), subscriberId.getSourceId(), dtCurrentVersion);
-
-        try {
-            //called from multiple threads, so need to lock
-            lock.lock();
-            subscriberIdsUpdated.add(copy);
-        } finally {
-            lock.unlock();
-        }
-    }
 
     /**
      * finds an Organization FHIR reference that points to the same logical organisation as the service ID
      */
     public static Reference findOrganisationReferenceForPublisher(UUID serviceId) throws Exception {
         return SubscriberTransformHelper.findOrganisationReferenceForPublisher(serviceId);
+    }
+
+    public static List<ResourceWrapper> getFullHistory(ResourceWrapper resourceWrapper) throws Exception {
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        UUID serviceId = resourceWrapper.getServiceId();
+        String resourceType = resourceWrapper.getResourceType();
+        UUID resourceId = resourceWrapper.getResourceId();
+        return resourceDal.getResourceHistory(serviceId, resourceType, resourceId);
     }
 }

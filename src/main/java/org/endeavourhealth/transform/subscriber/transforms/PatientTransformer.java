@@ -665,7 +665,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         return resourceDal.getResourceHistory(serviceId, resourceType, resourceId);
     }
 
-    private static int getMaxNumberOfTelecoms(List<ResourceWrapper> history) throws Exception {
+    public static int getMaxNumberOfTelecoms(List<ResourceWrapper> history) throws Exception {
         int max = 0;
         for (ResourceWrapper wrapper: history) {
             if (!wrapper.isDeleted()) {
@@ -678,7 +678,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         return max;
     }
 
-    private static int getMaxNumberOfAddresses(List<ResourceWrapper> history) throws Exception {
+    public static int getMaxNumberOfAddresses(List<ResourceWrapper> history) throws Exception {
         int max = 0;
         for (ResourceWrapper wrapper: history) {
             if (!wrapper.isDeleted()) {

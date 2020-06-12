@@ -53,7 +53,17 @@ public class TppRecordStatusCache {
 
         //sort
         List<RecordStatusWrapper> fullList = new ArrayList<>(fullSet);
-        fullList.sort(((o1, o2) -> o1.getDate().compareTo(o2.getDate())));
+        fullList.sort(((o1, o2) -> {
+            if (o1.getDate() == null && o2.getDate() == null) {
+                return 0;
+            } else if (o1.getDate() == null) {
+                return -1;
+            } else if (o2.getDate() == null) {
+                return 1;
+            } else {
+                return o1.getDate().compareTo(o2.getDate());
+            }
+        }));
 
         //remove and add
         containedListBuilder.removeContainedList();
@@ -62,7 +72,9 @@ public class TppRecordStatusCache {
 
             CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(wrapper.getRegistrationStatus());
             containedListBuilder.addCodeableConcept(codeableConcept, wrapper.getRegistrationStatusCell());
-            containedListBuilder.addDateToLastItem(wrapper.getDate(), wrapper.getDateCell());
+            if (wrapper.getDate() != null) {
+                containedListBuilder.addDateToLastItem(wrapper.getDate(), wrapper.getDateCell());
+            }
         }
 
         return true;
@@ -215,19 +227,17 @@ public class TppRecordStatusCache {
 
             RecordStatusWrapper that = (RecordStatusWrapper) o;
 
-            if (!date.equals(that.date)) return false;
+            if (date != null ? !date.equals(that.date) : that.date != null) return false;
             return registrationStatus == that.registrationStatus;
 
         }
 
         @Override
         public int hashCode() {
-            int result = date.hashCode();
+            int result = date != null ? date.hashCode() : 0;
             result = 31 * result + registrationStatus.hashCode();
             return result;
         }
-
-
     }
 }
 

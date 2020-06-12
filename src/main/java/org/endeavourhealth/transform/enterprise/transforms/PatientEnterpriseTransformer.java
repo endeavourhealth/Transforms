@@ -34,6 +34,7 @@ import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.UPRN;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
+import org.endeavourhealth.transform.subscriber.transforms.PatientTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +82,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         Patient fhirPatient = (Patient)resourceWrapper.getResource();
 
-        List<ResourceWrapper> fullHistory = getFullHistory(resourceWrapper);
+        List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
 
         //work out if something has changed that means we'll need to process the full patient record
         Patient previousVersion = findPreviousVersion(resourceWrapper, params);
@@ -93,6 +94,13 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         if (!params.shouldPatientBePresentInSubscriber(fhirPatient)
                 || params.isBulkDeleteFromSubscriber()) {
             csvWriter.writeDelete(enterpriseId.longValue());
+
+            //TODO - remove live check when table is rolled out everywhere
+            if (!TransformConfig.instance().isLive()) {
+                deleteAddresses(fhirPatient, fullHistory, params);
+                deleteTelecoms(fhirPatient, fullHistory, params);
+            }
+
             return;
         }
 
@@ -219,9 +227,10 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         //TODO: remove this check for go live to introduce Compass v1 upgrade tables population
+        //TODO - don't forget to remove similar check at the top of this fn for deleting these entities
         if (!TransformConfig.instance().isLive()) {
-            currentAddressId = transformAddresses(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
-            transformTelecoms(enterpriseId, personId, fhirPatient, fullHistory, resourceWrapper, params);
+            currentAddressId = transformAddresses(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
+            transformTelecoms(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
         }
 
         if (patientWriter.isPseduonymised()) {
@@ -304,6 +313,40 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         PatientAddressMatch uprnwriter = params.getOutputContainer().findCsvWriter(PatientAddressMatch.class);
         UPRN(fhirPatient, id, personId, uprnwriter, params.getEnterpriseConfigName());
+    }
+
+    /**
+     * deletes all telecoms for the patient
+     */
+    private void deleteTelecoms(Patient currentPatient, List<ResourceWrapper> fullHistory, EnterpriseTransformHelper params) throws Exception {
+        PatientContact writer = params.getOutputContainer().getPatientContact();
+        int maxTelecoms = PatientTransformer.getMaxNumberOfTelecoms(fullHistory);
+
+        for (int i=0; i<maxTelecoms; i++) {
+
+            String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+            if (subTableId != null) {
+                writer.writeDelete(subTableId.getSubscriberId());
+            }
+        }
+    }
+
+    /**
+     * deletes all addresses for the patient
+     */
+    private void deleteAddresses(Patient currentPatient, List<ResourceWrapper> fullHistory, EnterpriseTransformHelper params) throws Exception {
+        PatientAddress writer = params.getOutputContainer().getPatientAddresses();
+        int maxAddresses = PatientTransformer.getMaxNumberOfAddresses(fullHistory);
+
+        for (int i=0; i<maxAddresses; i++) {
+
+            String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
+            if (subTableId != null) {
+                writer.writeDelete(subTableId.getSubscriberId());
+            }
+        }
     }
 
 
@@ -689,7 +732,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
                 String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
                 SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
                 //if this address is our current home one, then assign the ID
                 if (address == currentAddress) {
@@ -782,20 +824,18 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         //and make sure to delete any that we previously sent over that are no longer present
         //i.e. if we previously had five addresses and now only have three, we need to delete four and five
-        int maxsAddresses = getMaxNumberOfAddresses(fullHistory);
+        int maxAddresses = PatientTransformer.getMaxNumberOfAddresses(fullHistory);
 
         int start = 0;
         if (currentPatient.hasAddress()) {
             start = currentPatient.getAddress().size();
         }
 
-        for (int i=start; i<maxsAddresses; i++) {
+        for (int i=start; i<maxAddresses; i++) {
 
             String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
             if (subTableId != null) {
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
-
                 writer.writeDelete(subTableId.getSubscriberId());
             }
         }
@@ -812,26 +852,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
     }
 
-    private static int getMaxNumberOfAddresses(List<ResourceWrapper> history) throws Exception {
-        int max = 0;
-        for (ResourceWrapper wrapper: history) {
-            if (!wrapper.isDeleted()) {
-                Patient patient = (Patient) wrapper.getResource();
-                if (patient.hasAddress()) {
-                    max = Math.max(max, patient.getAddress().size());
-                }
-            }
-        }
-        return max;
-    }
-
-    private static List<ResourceWrapper> getFullHistory(ResourceWrapper resourceWrapper) throws Exception {
-        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        UUID serviceId = resourceWrapper.getServiceId();
-        String resourceType = resourceWrapper.getResourceType();
-        UUID resourceId = resourceWrapper.getResourceId();
-        return resourceDal.getResourceHistory(serviceId, resourceType, resourceId);
-    }
 
     /*
     private void UPRN(EnterpriseTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper,
@@ -1004,7 +1024,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
                 String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
                 SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
                 long organisationId = params.getEnterpriseOrganisationId();
                 Integer useConceptId = null;
@@ -1045,7 +1064,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         //and make sure to delete any that we previously sent over that are no longer present
         //i.e. if we previously had five addresses and now only have three, we need to delete four and five
-        int maxPreviousTelecoms = getMaxNumberOfTelecoms(fullHistory);
+        int maxPreviousTelecoms = PatientTransformer.getMaxNumberOfTelecoms(fullHistory);
 
         int start = 0;
         if (currentPatient.hasTelecom()) {
@@ -1057,25 +1076,9 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
             if (subTableId != null) {
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
-
                 writer.writeDelete(subTableId.getSubscriberId());
             }
-
         }
-    }
-
-    private static int getMaxNumberOfTelecoms(List<ResourceWrapper> history) throws Exception {
-        int max = 0;
-        for (ResourceWrapper wrapper: history) {
-            if (!wrapper.isDeleted()) {
-                Patient patient = (Patient) wrapper.getResource();
-                if (patient.hasTelecom()) {
-                    max = Math.max(max, patient.getTelecom().size());
-                }
-            }
-        }
-        return max;
     }
 
 
