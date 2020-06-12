@@ -63,6 +63,7 @@ public class SRCodeTransformer {
         CsvCell codeIdCell = parser.getRowIdentifier();
         //note, an SRCode may end up saved as TWO resources, so this uses a loop
         Set<ResourceType> resourceTypes = findOriginalTargetResourceTypes(fhirResourceFiler, codeIdCell);
+        LOG.trace("Deleting SRCode " + parser.getRowIdentifier().getString() + " which was previously saved as [" + resourceTypes + "]");
         for (ResourceType resourceType: resourceTypes) {
             switch (resourceType) {
                 case Observation:
@@ -281,6 +282,9 @@ public class SRCodeTransformer {
 
         CsvCell deleteData = parser.getRemovedData();
         if (deleteData != null && deleteData.getIntAsBoolean()) {
+
+            UUID previousUuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Condition, conditionId.getString());
+            LOG.trace("Deleting Condition previously saved with UUID " + previousUuid + " and Condition has ID [" + conditionBuilder.getResourceId() + "]");
 
             conditionBuilder.setDeletedAudit(deleteData);
 

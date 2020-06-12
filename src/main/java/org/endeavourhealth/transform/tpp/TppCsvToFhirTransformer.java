@@ -222,6 +222,7 @@ public abstract class TppCsvToFhirTransformer {
         List<String> versionFailures = new ArrayList<>();
 
         for (String filePath : files) {
+            LOG.trace("Calculating version for file " + filePath);
 
             //see if we have a suitable parser for the file
             AbstractCsvParser parser = null;
@@ -236,9 +237,11 @@ public abstract class TppCsvToFhirTransformer {
                 ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId);
                 continue;
             }
+            LOG.trace("Parser created");
 
             //if we have a parser, then detect what version it is
             List<String> compatibleVersions = parser.testForValidVersions(possibleVersions);
+            LOG.trace("Found " + compatibleVersions.size() + " possible versions");
 
             if (compatibleVersions.isEmpty()) {
                 ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId);
