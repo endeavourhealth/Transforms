@@ -591,9 +591,10 @@ public class PatientTransformer {
 
             ResourceType resourceType = resource.getResourceType();
             if (resourceType == ResourceType.Appointment) {
-                //do not delete Appointment resources either. If Emis delete and subsequently un-delete a patient
-                //they do not re-send the Appointments, so we shouldn't delete them in the first place.
-                continue;
+                ///if we're re-processing a limited file set, then only delete this kind of resource if we're doing those files
+                if (!csvHelper.getParsers().containsKey(org.endeavourhealth.transform.emis.csv.schema.appointment.Slot.class)) {
+                    continue;
+                }
 
             } else if (resourceType == ResourceType.Encounter) {
                 //if we're re-processing a limited file set, then only delete this kind of resource if we're doing those files
