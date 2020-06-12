@@ -2,21 +2,21 @@ package org.endeavourhealth.transform.bhrut.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.Spells;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.Encounter;
-import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,6 +39,7 @@ public class SpellsTransformer {
 
                     if (spellsParser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
                         deleteResource(spellsParser, fhirResourceFiler, csvHelper, version);
+                        deleteInpatientCdsEncounterAndChildren(spellsParser, fhirResourceFiler, csvHelper);
                     } else {
                         createResources(spellsParser, fhirResourceFiler, csvHelper, version);
                     }
@@ -83,16 +84,13 @@ public class SpellsTransformer {
         createEpisodeOfcare(parser, fhirResourceFiler, csvHelper, version, episodeOfCareBuilder);
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         encounterBuilder.setId(idCell.getString());
-
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+        createInpatientCdsEncounterParentMinimum(parser, fhirResourceFiler, csvHelper);
+        createInpatientCdsEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
         encounterBuilder.setPatient(patientReference, patientIdCell);
         encounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
         encounterBuilder.setPeriodEnd(parser.getDischargeDttm().getDateTime(), parser.getDischargeDttm());
-
-        //CsvCell org = parser.getAdmissionHospitalCode();
-        //Reference orgReference = csvHelper.createOrganisationReference(org.getString());
-        //encounterBuilder.setServiceProvider(orgReference);
 
         CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
         if (!admissionHospitalCodeCell.isEmpty()) {
@@ -357,4 +355,230 @@ public class SpellsTransformer {
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
         }
     }
+
+    private static void createInpatientCdsEncounterParentMinimum(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+
+        EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
+        parentTopEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
+        parentTopEncounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
+        parentTopEncounterBuilder.setPeriodEnd(parser.getDischargeDttm().getDateTime(), parser.getDischargeDttm());
+        Date dischargeDate = parser.getDischargeDttm().getDateTime();
+
+        if (dischargeDate != null) {
+            parentTopEncounterBuilder.setPeriodEnd(dischargeDate);
+            parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        } else {
+            parentTopEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+        }
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+        codeableConceptBuilder.setText("Inpatient Admission");
+
+        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper);
+        fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+
+    }
+
+    private static void createInpatientCdsEncounters(Spells parser, EncounterBuilder encounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+
+        EncounterBuilder admissionEncounterBuilder = new EncounterBuilder();
+        admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
+        String admissionEncounterId = parser.getId() + ":01:IP:Admission";
+        admissionEncounterBuilder.setId(admissionEncounterId);
+
+        admissionEncounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
+        admissionEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+        CodeableConceptBuilder codeableConceptBuilderAdmission
+                = new CodeableConceptBuilder(admissionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+        codeableConceptBuilderAdmission.setText("Inpatient Admission");
+        setCommonEncounterAttributes(admissionEncounterBuilder, parser, csvHelper);
+
+        //add in additional extended data as Parameters resource with additional extension
+        ContainedParametersBuilder containedParametersBuilderMain
+                = new ContainedParametersBuilder(admissionEncounterBuilder);
+        containedParametersBuilderMain.removeContainedParameters();
+
+        CsvCell admissionMethodCodeCell = parser.getAdmissionMethodCode();
+        if (!admissionMethodCodeCell.isEmpty()) {
+            containedParametersBuilderMain.addParameter("ip_admission_method", "" + admissionMethodCodeCell.getString());
+        }
+        CsvCell admissionSourceCodeCell = parser.getAdmissionSourceCode();
+        if (!admissionSourceCodeCell.isEmpty()) {
+            containedParametersBuilderMain.addParameter("ip_admission_source", "" + admissionSourceCodeCell.getString());
+        }
+
+        CsvCell patientClassCodeCell = parser.getPatientClassCode();
+        if (!patientClassCodeCell.isEmpty()) {
+            containedParametersBuilderMain.addParameter("patient_classification", "" + patientClassCodeCell.getString());
+        }
+       /* Date dischargeDate = parser.getDischargeDttm().getDateTime();
+
+        if (dischargeDate != null) {
+            admissionEncounterBuilder.setPeriodEnd(dischargeDate);
+            admissionEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        }*/
+        //save the admission encounter
+        fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
+
+        CsvCell spellDischargeDateCell = parser.getDischargeDttm();
+        if (!spellDischargeDateCell.isEmpty()) {
+
+            //create new additional Discharge encounter event to link to the top level parent
+            EncounterBuilder dischargeEncounterBuilder = new EncounterBuilder();
+            dischargeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
+            String dischargeEncounterId = parser.getId() + ":01:IP:Discharge";
+            dischargeEncounterBuilder.setId(dischargeEncounterId);
+            dischargeEncounterBuilder.setPeriodStart(spellDischargeDateCell.getDate());
+            dischargeEncounterBuilder.setPeriodEnd(spellDischargeDateCell.getDate());
+            dischargeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+
+            CodeableConceptBuilder codeableConceptBuilderDischarge
+                    = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+            codeableConceptBuilderDischarge.setText("Inpatient Discharge");
+
+            setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper);
+            ContainedParametersBuilder containedParametersBuilderDischarge
+                    = new ContainedParametersBuilder(dischargeEncounterBuilder);
+            containedParametersBuilderDischarge.removeContainedParameters();
+
+
+            if (!parser.getDischargeMethodCode().isEmpty()) {
+                containedParametersBuilderMain.addParameter("ip_discharge_method", "" + parser.getDischargeMethodCode().getString());
+            }
+
+            if (!parser.getDischargeDestinationCode().isEmpty()) {
+                CsvCell dischargeDestCode = parser.getDischargeDestinationCode();
+                containedParametersBuilderMain.addParameter("ip_discharge_destination", "" + dischargeDestCode.getString());
+            }
+
+            //save the discharge encounter builder
+            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+
+        }
+    }
+
+    private static void setCommonEncounterAttributes(EncounterBuilder builder,
+                                                     Spells parser,
+                                                     BhrutCsvHelper csvHelper) throws Exception {
+
+        //every encounter has the following common attributes
+        CsvCell patientIdCell = parser.getId();
+
+        if (!patientIdCell.isEmpty()) {
+            Reference patientReference
+                    = ReferenceHelper.createReference(ResourceType.Patient, patientIdCell.toString());
+            if (builder.isIdMapped()) {
+
+                patientReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
+            }
+            builder.setPatient(patientReference);
+        }
+
+        //TODO Need to verify the EpisodeId, mapped with PatientId
+        if (patientIdCell != null) {
+
+            Reference episodeReference
+                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientIdCell.toString());
+            if (builder.isIdMapped()) {
+
+                episodeReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
+            }
+            builder.setEpisodeOfCare(episodeReference);
+        }
+
+        CsvCell admissionConsultantCode = parser.getAdmissionConsultantCode();
+        if (!admissionConsultantCode.isEmpty()) {
+
+            Reference practitionerReference
+                    = ReferenceHelper.createReference(ResourceType.Practitioner, admissionConsultantCode.getString());
+            if (builder.isIdMapped()) {
+
+                practitionerReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            }
+            builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
+        }
+        CsvCell admissionHospitalCode = parser.getAdmissionHospitalCode();
+        if (!admissionHospitalCode.isEmpty()) {
+            Reference organizationReference
+                    = ReferenceHelper.createReference(ResourceType.Organization, admissionHospitalCode.getString());
+            if (builder.isIdMapped()) {
+
+                organizationReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
+            }
+            builder.setServiceProvider(organizationReference);
+        }
+
+        //TODO Need to verify the EncounterId, mapped with PatientId
+        if (!patientIdCell.isEmpty()) {
+            Reference parentEncounter
+                    = ReferenceHelper.createReference(ResourceType.Encounter, patientIdCell.toString());
+            if (builder.isIdMapped()) {
+
+                parentEncounter
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            }
+            builder.setPartOf(parentEncounter);
+        }
+
+        //set the CDS identifier against the Encounter
+       /* String cdsUniqueId = targetInpatientCds.getUniqueId();
+        if (!cdsUniqueId.isEmpty()) {
+
+            cdsUniqueId = cdsUniqueId.replaceFirst("IPCDS-","");
+            IdentifierBuilder.removeExistingIdentifiersForSystem(builder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(builder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
+            identifierBuilder.setValue(cdsUniqueId);
+        }*/
+    }
+
+    private static void deleteInpatientCdsEncounterAndChildren(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+
+        //retrieve the existing Top level parent Encounter resource to perform a deletion plus any child encounters
+        Encounter existingParentEncounter
+                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, parser.getId().getString());
+
+        EncounterBuilder parentEncounterBuilder
+                = new EncounterBuilder(existingParentEncounter);
+
+
+        if (existingParentEncounter.hasContained()) {
+            ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+
+            for (List_.ListEntryComponent item : listBuilder.getContainedListItems()) {
+                Reference ref = item.getItem();
+                ReferenceComponents comps = ReferenceHelper.getReferenceComponents(ref);
+                if (comps.getResourceType() != ResourceType.Encounter) {
+                    continue;
+                }
+                Encounter childEncounter
+                        = (Encounter) resourceDal.getCurrentVersionAsResource(csvHelper.getServiceId(), ResourceType.Encounter, comps.getId());
+                if (childEncounter != null) {
+                    LOG.debug("Deleting child encounter " + childEncounter.getId());
+
+                    fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                } else {
+
+                    TransformWarnings.log(LOG, csvHelper, "Cannot find existing child Encounter: {} for deletion", childEncounter.getId());
+                }
+            }
+
+            //finally, delete the top level parent
+            fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
+
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Cannot find existing Encounter: {} for deletion", parser.getId().getString());
+        }
+
+    }
+
 }
