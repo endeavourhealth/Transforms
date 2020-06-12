@@ -644,6 +644,9 @@ public abstract class AbstractSubscriberTransformer {
             str = IMConstant.EMIS_LOCAL;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_CTV3)) {
             str = IMConstant.TPP_LOCAL;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP)) {
+            //no support in IM for Action Groups
+            str = null;
 
         } else {
             //confirmed that the IM does not support throwing raw URLs at it, so if we don't match

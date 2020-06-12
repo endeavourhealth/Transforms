@@ -152,6 +152,9 @@ public class ObservationCodeHelper {
             return "BC_" + originalCoding.getCode();
             //return "CERNER_" + originalCoding.getCode();
 
+        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP)) {
+            return "TPPAG_" + originalCoding.getCode();
+
         } else {
             throw new TransformException("Unsupported original code system [" + system + "]");
         }
