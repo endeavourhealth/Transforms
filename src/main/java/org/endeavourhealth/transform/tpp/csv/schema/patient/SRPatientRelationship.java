@@ -23,10 +23,65 @@ public class SRPatientRelationship extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_89)
+
+        if (version.equals(TppCsvToFhirTransformer.VERSION_88)
+                || version.equals(TppCsvToFhirTransformer.VERSION_91)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)
+                || version.equals(TppCsvToFhirTransformer.VERSION_92)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "DateEnded",
+                    "RelationshipType",
+                    "PersonalGuardianOrProxy",
+                    "NextOfKin",
+                    "CaresForPatient",
+                    "PrincipalCarerForPatient",
+                    "KeyHolder",
+                    "HasParentalResponsibility",
+                    "FinancialRepresentative",
+                    "CallCentreCallBackConsent",
+                    "CopyCorrespondence",
+                    "ContactOrder",
+                    "ContactMethod",
+                    "CommunicationFormat",
+                    "InterpreterRequired",
+                    "IDRelationshipWithPatient",
+                    "IDPatientRelationshipWith",
+                    "CodeRelationshipWithUser",
+                    "RelationshipWithName",
+                    "RelationshipWithDateOfBirth",
+                    "RelationshipWithHouseName",
+                    "RelationshipWithHouseNumber",
+                    "RelationshipWithRoad",
+                    "RelationshipWithLocality",
+                    "RelationshipWithPostTown",
+                    "RelationshipWithCounty",
+                    "RelationshipWithPostCode",
+                    "RelationshipWithTelephone",
+                    "RelationshipWithWorkTelephone",
+                    "RelationshipWithMobileTelephone",
+                    "RelationshipWithFax",
+                    "RelationshipWithEmailAddress",
+                    "RelationshipWithSex",
+                    "RelationshipWithSpokenLanguage",
+                    "RelationshipWithOrganisation",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_89)
                 || version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_93)) {
+                || version.equals(TppCsvToFhirTransformer.VERSION_87)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -77,57 +132,6 @@ public class SRPatientRelationship extends AbstractCsvParser {
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_88)
-                || version.equals(TppCsvToFhirTransformer.VERSION_91)) {
-            return new String[]{
-                    "RowIdentifier",
-                    "IDOrganisationVisibleTo",
-                    "DateEventRecorded",
-                    "DateEvent",
-                    "IDProfileEnteredBy",
-                    "IDDoneBy",
-                    "TextualEventDoneBy",
-                    "IDOrganisationDoneAt",
-                    "DateEnded",
-                    "RelationshipType",
-                    "PersonalGuardianOrProxy",
-                    "NextOfKin",
-                    "CaresForPatient",
-                    "PrincipalCarerForPatient",
-                    "KeyHolder",
-                    "HasParentalResponsibility",
-                    "FinancialRepresentative",
-                    "CallCentreCallBackConsent",
-                    "CopyCorrespondence",
-                    "ContactOrder",
-                    "ContactMethod",
-                    "CommunicationFormat",
-                    "InterpreterRequired",
-                    "IDRelationshipWithPatient",
-                    "IDPatientRelationshipWith",
-                    "CodeRelationshipWithUser",
-                    "RelationshipWithName",
-                    "RelationshipWithDateOfBirth",
-                    "RelationshipWithHouseName",
-                    "RelationshipWithHouseNumber",
-                    "RelationshipWithRoad",
-                    "RelationshipWithLocality",
-                    "RelationshipWithPostTown",
-                    "RelationshipWithCounty",
-                    "RelationshipWithPostCode",
-                    "RelationshipWithTelephone",
-                    "RelationshipWithWorkTelephone",
-                    "RelationshipWithMobileTelephone",
-                    "RelationshipWithFax",
-                    "RelationshipWithEmailAddress",
-                    "RelationshipWithSex",
-                    "RelationshipWithSpokenLanguage",
-                    "RelationshipWithOrganisation",
-                    "IDEvent",
-                    "IDPatient",
-                    "IDOrganisation",
-                    "IDOrganisationRegisteredAt"
-            };
         } else {
             return new String[]{
                     "RowIdentifier",
@@ -147,6 +151,8 @@ public class SRPatientRelationship extends AbstractCsvParser {
                     "KeyHolder",
                     "HasParentalResponsibility",
                     "FinancialRepresentative",
+                    "Advocate",
+                    "MainVisitor",
                     "CallCentreCallBackConsent",
                     "CopyCorrespondence",
                     "ContactOrder",
@@ -176,7 +182,8 @@ public class SRPatientRelationship extends AbstractCsvParser {
                     "IDEvent",
                     "IDPatient",
                     "IDOrganisation",
-                    "IDOrganisationRegisteredAt"
+                    "IDOrganisationRegisteredAt",
+                    "RemovedData"
             };
         }
     }
@@ -247,6 +254,14 @@ public class SRPatientRelationship extends AbstractCsvParser {
 
     public CsvCell getFinancialRepresentative() {
         return super.getCell("FinancialRepresentative");
+    }
+
+    public CsvCell getAdvocate() {
+        return super.getCell("Advocate");
+    }
+
+    public CsvCell getMainVisitor() {
+        return super.getCell("MainVisitor");
     }
 
     public CsvCell getCallCentreCallBackConsent() {

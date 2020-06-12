@@ -70,6 +70,7 @@ public class SRCodeTransformer {
                     createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
                     break;
                 case Condition:
+                    LOG.trace("Going to delete condition for " + parser.getRowIdentifier().getString());
                     createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
                     break;
                 case Procedure:
@@ -98,6 +99,7 @@ public class SRCodeTransformer {
                 createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
                 break;
             case Condition:
+                LOG.trace("Going to create condition for " + parser.getRowIdentifier().getString());
                 createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
                 break;
             case Procedure:
@@ -119,6 +121,7 @@ public class SRCodeTransformer {
         if (resourceType != ResourceType.Condition
                 && csvHelper.getConditionResourceCache().containsCondition(codeIdCell)) {
 
+            LOG.trace("Going to create EXTRA condition for " + parser.getRowIdentifier().getString());
             createOrDeleteCondition(parser, fhirResourceFiler, csvHelper);
         }
     }
@@ -276,6 +279,7 @@ public class SRCodeTransformer {
 
         CsvCell conditionId = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
+        LOG.trace("Creating/deleting condition " + conditionId.getString());
 
         //The condition resource may already exist as part of the Problem Transformer or will create one, set using the ID value of the code
         ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(conditionId, csvHelper, true);

@@ -284,12 +284,8 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         }
 
         if (ret.isEmpty()) {
-            LOG.error("Ruled out all possible versions because of file " + filePath);
+            LOG.error("Ruled out all possible versions for file " + filePath);
             LOG.error("Headers in file are " + String.join(", ", csvReader.getHeaderMap().keySet()));
-            if (filePath.toUpperCase().contains("TPP")) {
-                LOG.error("Retrying in case it's a TPP file with or without RemovedData ");
-                ret = reTestForValidVersionsForTpp(possibleVersions);
-            }
         }
 
         return ret;

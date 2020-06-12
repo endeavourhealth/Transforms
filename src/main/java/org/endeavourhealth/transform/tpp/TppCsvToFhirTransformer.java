@@ -206,8 +206,9 @@ public abstract class TppCsvToFhirTransformer {
     public static Map<String, String> calculateVersionForFiles(String[] files,
                                                                HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
 
-        List<String> possibleVersions = new ArrayList<>();
         Map<String, String> ret = new HashMap<>();
+
+        List<String> possibleVersions = new ArrayList<>();
         possibleVersions.add(VERSION_93);
         possibleVersions.add(VERSION_92);
         possibleVersions.add(VERSION_91);
