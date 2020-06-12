@@ -38,7 +38,8 @@ public class IMHelper {
 
     public static Integer getIMMappedConcept(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String scheme, String code) throws Exception {
 
-        if (code == null) {
+        if (code == null
+                || scheme == null) {
             return null;
         }
 
@@ -96,7 +97,8 @@ public class IMHelper {
 
     public static Integer getIMConcept(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String scheme, String code, String term) throws Exception {
 
-        if (code == null) {
+        if (code == null
+                || scheme == null) {
             return null;
         }
 

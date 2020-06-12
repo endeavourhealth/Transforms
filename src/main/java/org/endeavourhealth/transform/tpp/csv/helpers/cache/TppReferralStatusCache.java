@@ -98,7 +98,17 @@ public class TppReferralStatusCache {
 
         //sort
         List<ReferralStatusWrapper> fullList = new ArrayList<>(fullSet);
-        fullList.sort(((o1, o2) -> o1.getDate().compareTo(o2.getDate())));
+        fullList.sort(((o1, o2) -> {
+            if (o1.getDate() == null && o2.getDate() == null) {
+                return 0;
+            } else if (o1.getDate() == null) {
+                return -1;
+            } else if (o2.getDate() == null) {
+                return 1;
+            } else {
+                return o1.getDate().compareTo(o2.getDate());
+            }
+        }));
 
         //remove and add
         containedListBuilder.removeContainedList();
@@ -107,7 +117,9 @@ public class TppReferralStatusCache {
 
             CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(wrapper.getStatusDesc());
             containedListBuilder.addCodeableConcept(codeableConcept, wrapper.getStatusCell());
-            containedListBuilder.addDateToLastItem(wrapper.getDate(), wrapper.getDateCell());
+            if (wrapper.getDate() != null) {
+                containedListBuilder.addDateToLastItem(wrapper.getDate(), wrapper.getDateCell());
+            }
         }
 
         return true;
@@ -121,7 +133,7 @@ public class TppReferralStatusCache {
 
     static class ReferralStatusWrapper {
         private ReferralStatusRecord cacheObject;
-        private Date date;
+        private Date date; //may be null
         private String statusDesc;
 
         public ReferralStatusWrapper(ReferralStatusRecord cacheObject) throws Exception {
@@ -166,15 +178,15 @@ public class TppReferralStatusCache {
 
             ReferralStatusWrapper that = (ReferralStatusWrapper) o;
 
-            if (!date.equals(that.date)) return false;
-            return statusDesc.equals(that.statusDesc);
+            if (date != null ? !date.equals(that.date) : that.date != null) return false;
+            return statusDesc != null ? statusDesc.equals(that.statusDesc) : that.statusDesc == null;
 
         }
 
         @Override
         public int hashCode() {
-            int result = date.hashCode();
-            result = 31 * result + statusDesc.hashCode();
+            int result = date != null ? date.hashCode() : 0;
+            result = 31 * result + (statusDesc != null ? statusDesc.hashCode() : 0);
             return result;
         }
     }

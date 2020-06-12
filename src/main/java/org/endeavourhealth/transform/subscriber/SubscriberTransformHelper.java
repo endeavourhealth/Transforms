@@ -302,7 +302,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
         String discoveryPatientId = findPatientIdFromResources();
         if (Strings.isNullOrEmpty(discoveryPatientId)) {
-            //if no patient ID the remaining resources are patient ones
+            //if no patient ID there are no patient-related resources to do
             return;
         }
 

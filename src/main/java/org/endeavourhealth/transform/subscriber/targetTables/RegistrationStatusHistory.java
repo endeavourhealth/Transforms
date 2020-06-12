@@ -11,12 +11,19 @@ public class RegistrationStatusHistory extends AbstractTargetTable  {
         super(csvFormat, dateFormat, timeFormat);
     }
 
+    public void writeDelete(SubscriberId subscriberId) throws Exception {
+        super.printRecord(
+                convertBoolean(true),
+                "" + subscriberId.getSubscriberId()
+        );
+    }
+
     public void writeUpsert(SubscriberId subscriberId,
                             long organisationId,
                             long patientId,
                             long personId,
                             long episodeOfCareId,
-                            Integer registrationStatusId,
+                            Integer registrationStatusConceptId,
                             Date start,
                             Date end) throws Exception {
 
@@ -26,7 +33,7 @@ public class RegistrationStatusHistory extends AbstractTargetTable  {
                 "" + patientId,
                 "" + personId,
                 "" + episodeOfCareId,
-                convertInt(registrationStatusId),
+                convertInt(registrationStatusConceptId),
                 convertDateTime(start),
                 convertDateTime(end));
     }

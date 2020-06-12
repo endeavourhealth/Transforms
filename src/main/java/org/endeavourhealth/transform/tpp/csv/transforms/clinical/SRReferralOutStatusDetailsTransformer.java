@@ -47,7 +47,6 @@ public class SRReferralOutStatusDetailsTransformer {
         }
 
         CsvCell referralIdCell = parser.getIDReferralOut();
-        CsvCell patientIdCell = parser.getIDPatient();
         CsvCell referralStatusCell = parser.getStatusOfReferralOut();
         CsvCell dateCell = parser.getDateEvent();
 

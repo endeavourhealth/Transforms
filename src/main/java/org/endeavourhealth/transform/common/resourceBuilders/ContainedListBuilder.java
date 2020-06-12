@@ -1,7 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.hl7.fhir.instance.model.*;
@@ -160,5 +160,32 @@ public class ContainedListBuilder {
             return null;
         }
         return list.getEntry();
+    }
+
+    /**
+     * finds and returns the contained list indicated by the given extension, null otherwise
+     */
+    public static List_ findContainedList(DomainResource resource, String extensionUrl) {
+
+        if (!resource.hasContained()) {
+            return null;
+        }
+
+        Extension extension = ExtensionConverter.findExtension(resource, extensionUrl);
+        if (extension == null) {
+            return null;
+        }
+
+        Reference idReference = (Reference)extension.getValue();
+        String idReferenceValue = idReference.getReference();
+        idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char which is used for internal references
+
+        for (Resource containedResource: resource.getContained()) {
+            if (containedResource.getId().equals(idReferenceValue)) {
+                return (List_)containedResource;
+            }
+        }
+
+        return null;
     }
 }

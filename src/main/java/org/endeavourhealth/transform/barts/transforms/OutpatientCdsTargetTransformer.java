@@ -68,15 +68,13 @@ public class OutpatientCdsTargetTransformer {
                     updateExistingEncounter(existingParentEncounter, targetOutpatientCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounter
-                    createOutpatientCdsEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper);
+                    createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper);
 
                 } else {
 
                     //create top level parent with minimum data
-                    createOutpatientCdsEncounterParentMinimum(targetOutpatientCds, fhirResourceFiler, csvHelper);
+                    createOutpatientCdsEncounterParentAndSub(targetOutpatientCds, fhirResourceFiler, csvHelper);
 
-                    //then create child level encounter linked to this new parent
-                    createOutpatientCdsEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper);
                 }
             } else {
 
@@ -131,7 +129,7 @@ public class OutpatientCdsTargetTransformer {
         }
     }
 
-    private static void createOutpatientCdsEncounter(StagingOutpatientCdsTarget targetOutpatientCds,
+    private static void createOutpatientCdsSubEncounter(StagingOutpatientCdsTarget targetOutpatientCds,
                                                      FhirResourceFiler fhirResourceFiler,
                                                      BartsCsvHelper csvHelper) throws Exception {
 
@@ -220,7 +218,7 @@ public class OutpatientCdsTargetTransformer {
         fhirResourceFiler.savePatientResource(null, encounterBuilder, existingParentEncounterBuilder);
     }
 
-    private static void createOutpatientCdsEncounterParentMinimum(StagingOutpatientCdsTarget targetOutpatientCds,
+    private static void createOutpatientCdsEncounterParentAndSub(StagingOutpatientCdsTarget targetOutpatientCds,
                                                                     FhirResourceFiler fhirResourceFiler,
                                                                     BartsCsvHelper csvHelper) throws Exception {
 
@@ -242,6 +240,12 @@ public class OutpatientCdsTargetTransformer {
 
         //save encounterBuilder record
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+
+        //wait until parent resources are filed
+        csvHelper.waitUntilThreadPoolIsEmpty();
+
+        //then create child level encounter linked to this new parent
+        createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper);
     }
 
     private static void updateExistingEncounter(Encounter existingEncounter,

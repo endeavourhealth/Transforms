@@ -1,9 +1,6 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -11,6 +8,9 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.common.TransformConfig;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -20,9 +20,8 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EpisodeOfCareTransformer.class);
@@ -47,6 +46,13 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
+
+            //TODO - remove this check one table is rolled out
+            if (!TransformConfig.instance().isLive()) {
+                List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
+                deleteRegistrationStatusHistory(fullHistory, resourceWrapper, params);
+            }
+
             model.writeDelete(subscriberId);
             return;
         }
@@ -91,39 +97,13 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         }
 
         //reg status is stored in a contained list with an extension giving the internal reference to it
-        Extension regStatusExtension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_STATUS);
-        if (regStatusExtension != null) {
-            Reference idReference = (Reference)regStatusExtension.getValue();
-            String idReferenceValue = idReference.getReference();
-            idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
-
-            for (Resource containedResource: fhir.getContained()) {
-                if (containedResource.getId().equals(idReferenceValue)) {
-                    List_ list = (List_)containedResource;
-
-                    //status is on the most recent entry
-                    List<List_.ListEntryComponent> entries = list.getEntry();
-                    List_.ListEntryComponent entry = entries.get(entries.size()-1);
-                    if (entry.hasFlag()) {
-                        CodeableConcept codeableConcept = entry.getFlag();
-                        String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
-                        RegistrationStatus status = RegistrationStatus.fromCode(code);
-                        registrationStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REGISTRATION_STATUS,
-                                status.getCode(), status.getDescription());
-                    }
-
-                    break;
-                }
-            }
+        List<RegStatus> regStatuses = getRegStatusList(fhir);
+        if (!regStatuses.isEmpty()) {
+            RegStatus latest = regStatuses.get(regStatuses.size()-1);
+            RegistrationStatus status = latest.getStatus();
+            registrationStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REGISTRATION_STATUS, status.getCode(), status.getDescription());
         }
 
-        /*if (fhirEpisode.hasManagingOrganization()) {
-            Reference orgReference = fhirEpisode.getManagingOrganization();
-            managingOrganisationId = findEnterpriseId(data.getOrganisations(), orgReference);
-            if (managingOrganisationId == null) {
-                managingOrganisationId = transformOnDemand(orgReference, data, otherResources, enterpriseOrganisationId, enterprisePatientId, enterprisePersonId, configName);
-            }
-        }*/
 
         Period period = fhir.getPeriod();
         if (period.hasStart()) {
@@ -143,10 +123,11 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                 dateRegisteredEnd,
                 usualGpPractitionerId);
 
-        /*
-        List<ResourceWrapper> fullHistory = getFullHistory(resourceWrapper);
-        transformRegistrationStatusHistory(organizationId, patientId, personId, id, fullHistory, params);
-         */
+        //TODO: remove this check for go live to introduce Compass v1 upgrade tables population
+        //TODO - don't forget to remove similar check at the top of this fn for deleting these entities
+        if (!TransformConfig.instance().isLive()) {
+            transformRegistrationStatusHistory(organizationId, patientId, personId, id, fhir, resourceWrapper, params);
+        }
     }
 
     @Override
@@ -154,75 +135,168 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         return SubscriberTableId.EPISODE_OF_CARE;
     }
 
-    private static List<ResourceWrapper> getFullHistory(ResourceWrapper resourceWrapper) throws Exception {
-        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        UUID serviceId = resourceWrapper.getServiceId();
-        String resourceType = resourceWrapper.getResourceType();
-        UUID resourceId = resourceWrapper.getResourceId();
-        return resourceDal.getResourceHistory(serviceId, resourceType, resourceId);
+
+
+    private void deleteRegistrationStatusHistory(List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
+
+        RegistrationStatusHistory writer = params.getOutputContainer().getRegistrationStatusHistory();
+        Set<EpisodeOfCareTransformer.RegStatus> regStatuses = EpisodeOfCareTransformer.getAllRegStatuses(fullHistory);
+
+        for (EpisodeOfCareTransformer.RegStatus regStatus: regStatuses) {
+
+            String sourceId = regStatus.generateUniqueId();
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
+            if (subTableId != null) {
+                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                writer.writeDelete(subTableId);
+            }
+        }
     }
 
-    private static void transformRegistrationStatusHistory(Long organisationId, Long patientId, Long personId,
-                                                           Long episodeOfCareId, List<ResourceWrapper> fullHistory,
-                                                           SubscriberTransformHelper params) throws Exception {
+    private static void transformRegistrationStatusHistory(long organisationId, long patientId, long personId,
+                                                           long episodeOfCareId, EpisodeOfCare episodeOfCare,
+                                                           ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws  Exception {
 
-        Extension regStatusExtension = null;
-        SubscriberId id = null;
-        Period period = null;
-        Date start = null;
-        Date end = null;
-        Integer registrationStatusConceptId = null;
+        RegistrationStatusHistory writer = params.getOutputContainer().getRegistrationStatusHistory();
+        List<EpisodeOfCareTransformer.RegStatus> regStatuses = EpisodeOfCareTransformer.getRegStatusList(episodeOfCare);
 
-        for (ResourceWrapper wrapper : fullHistory) {
-            EpisodeOfCare episodeOfCare = (EpisodeOfCare) wrapper.getResource();
-            id = AbstractSubscriberTransformer.findOrCreateSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, episodeOfCare.getId());
+        for (int i=0; i<regStatuses.size(); i++) {
+            EpisodeOfCareTransformer.RegStatus regStatus = regStatuses.get(i);
 
-            regStatusExtension = ExtensionConverter.findExtension(episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_STATUS);
-            if (regStatusExtension != null) {
-                Reference idReference = (Reference)regStatusExtension.getValue();
-                String idReferenceValue = idReference.getReference();
-                idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
+            Date startDate = regStatus.getStart();
 
-                for (Resource containedResource: episodeOfCare.getContained()) {
-                    if (containedResource.getId().equals(idReferenceValue)) {
-                        List_ list = (List_)containedResource;
+            RegistrationStatus status = regStatus.getStatus();
+            Integer registrationStatusConceptId = IMHelper.getIMConcept(params, episodeOfCare, IMConstant.FHIR_REGISTRATION_STATUS, status.getCode(), status.getDescription());
 
-                        //status is on the most recent entry
-                        List<List_.ListEntryComponent> entries = list.getEntry();
-                        List_.ListEntryComponent entry = entries.get(entries.size()-1);
-                        if (entry.hasFlag()) {
-                            CodeableConcept codeableConcept = entry.getFlag();
-                            String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
-                            RegistrationStatus status = RegistrationStatus.fromCode(code);
-                            registrationStatusConceptId = IMHelper.getIMConcept(params, episodeOfCare, IMConstant.FHIR_REGISTRATION_STATUS,
-                                    status.getCode(), status.getDescription());
-                        }
-
-                        break;
-                    }
-                }
+            //get the subsequent status to derive the end date of this one.
+            //if there is no subsequent status then this is the most recent status and has no end date
+            Date endDate = null;
+            if (i+1 < regStatuses.size()) {
+                EpisodeOfCareTransformer.RegStatus nextRegStatus = regStatuses.get(i+1);
+                endDate = nextRegStatus.getStart();
             }
 
-            period = episodeOfCare.getPeriod();
-            if (period.hasStart()) {
-                start = period.getStart();
-            }
-            if (period.hasEnd()) {
-                end = period.getEnd();
-            }
+            //create a unique Id mapping reference for this episode of care registration status using
+            //code and date. Sometimes duplicates are sent which we will simply overwrite/upsert
+            String sourceId = regStatus.generateUniqueId();
+            SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
+            params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
-            /*
-            RegistrationStatusHistory history = params.getOutputContainer().getRegistrationStatusHistory();
-            history.writeUpsert(id,
+            writer.writeUpsert(subTableId,
                     organisationId,
                     patientId,
                     personId,
                     episodeOfCareId,
                     registrationStatusConceptId,
-                    start,
-                    end);
-             */
+                    startDate,
+                    endDate);
+        }
+    }    
+    
+    /**
+     * returns the list of reg statuses, in date order (earliest to latest)
+     */
+    public static List<RegStatus> getRegStatusList(EpisodeOfCare episodeOfCare) throws Exception {
 
+        List<RegStatus> ret = new ArrayList<>();
+
+        List_ list = ContainedListBuilder.findContainedList(episodeOfCare, FhirExtensionUri.EPISODE_OF_CARE_REGISTRATION_STATUS);
+        if (list == null) {
+            return ret;
+        }
+
+        List<List_.ListEntryComponent> entries = list.getEntry();
+        for (List_.ListEntryComponent entry: entries) {
+            if (entry.hasFlag()) {
+                CodeableConcept codeableConcept = entry.getFlag();
+                String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
+                RegistrationStatus status = RegistrationStatus.fromCode(code);
+                Date d = entry.getDate();
+
+                ret.add(new RegStatus(episodeOfCare, status, d));
+            }
+        }
+
+        return ret;
+    }
+
+    /**
+     * returns all the distinct reg statuses for all instances of the episode. Note they are NOT in any order.
+     */
+    public static Set<RegStatus> getAllRegStatuses(List<ResourceWrapper> fullHistory) throws Exception {
+
+        Set<RegStatus> ret = new HashSet<>();
+
+        for (ResourceWrapper wrapper: fullHistory) {
+
+            //all the registration status Id values are in this extension
+            if (!wrapper.isDeleted()) {
+                EpisodeOfCare episodeOfCare = (EpisodeOfCare) wrapper.getResource();
+                List<RegStatus> statuses = getRegStatusList(episodeOfCare);
+                for (RegStatus status : statuses) {
+                    ret.add(status);
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public static class RegStatus {
+
+        private String owningEpisodeReferenceStr;
+        private RegistrationStatus status;
+        private Date start;
+
+        public RegStatus(EpisodeOfCare episodeOfCare, RegistrationStatus status, Date start) {
+            this.owningEpisodeReferenceStr = ReferenceHelper.createReferenceExternal(episodeOfCare).getReference();
+            this.status = status;
+            this.start = start;
+        }
+
+        public RegistrationStatus getStatus() {
+            return status;
+        }
+
+        public Date getStart() {
+            return start;
+        }
+
+        /**
+         * generates a unique ID for mapping to a subscriber ID, based on reg status and date
+         */
+        public String generateUniqueId() {
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(owningEpisodeReferenceStr);
+            sb.append("-REGSTATUS-");
+            sb.append(status.getCode());
+            if (start != null) {
+                sb.append("-");
+                sb.append(new SimpleDateFormat("yyyyMMddHHmmss").format(start));
+            }
+            return sb.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            RegStatus regStatus = (RegStatus) o;
+
+            if (!owningEpisodeReferenceStr.equals(regStatus.owningEpisodeReferenceStr)) return false;
+            if (status != regStatus.status) return false;
+            return start != null ? start.equals(regStatus.start) : regStatus.start == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = owningEpisodeReferenceStr.hashCode();
+            result = 31 * result + status.hashCode();
+            result = 31 * result + (start != null ? start.hashCode() : 0);
+            return result;
         }
     }
 }

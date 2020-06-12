@@ -139,6 +139,7 @@ public class SRPatientRegistrationTransformer {
                 ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
                 containedListBuilder.removeContainedList(); //remove any existing flags
                 containedListBuilder.addCodeableConcept(codeableConcept, regTypeCell);
+                containedListBuilder.addDateToLastItem(regStartDateCell.getDate(), regStartDateCell);
             }
         }
 
