@@ -94,10 +94,10 @@ public class SpellsTransformer {
         //if existingParentEncounter is null a new Parent would be created.
         EncounterBuilder encounterBuilder = new EncounterBuilder(existingParentEncounter);
         createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
+        encounterBuilder.setPatient(patientReference, patientIdCell);
 
         //EncounterBuilder encounterBuilder = new EncounterBuilder();
         //encounterBuilder.setId(idCell.getString());
-        //encounterBuilder.setPatient(patientReference, patientIdCell);
         //encounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
         //encounterBuilder.setPeriodEnd(parser.getDischargeDttm().getDateTime(), parser.getDischargeDttm());
 
@@ -495,7 +495,7 @@ public class SpellsTransformer {
         }
 
 
-        if (patientIdCell != null) {
+        if (!idCell.isEmpty()) {
 
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, idCell.getString());
@@ -531,7 +531,7 @@ public class SpellsTransformer {
             builder.setServiceProvider(organizationReference);
         }
 
-        if (!patientIdCell.isEmpty()) {
+        if (!idCell.isEmpty()) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
             if (builder.isIdMapped()) {
