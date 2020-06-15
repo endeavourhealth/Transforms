@@ -247,9 +247,6 @@ public class InpatientCdsTargetTransformer {
             Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
             existingEncounterList.addReference(childAdmissionRef);
 
-            //save the admission encounter and updated parent
-            fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
-
             //the main encounter has a discharge date so set the end date and create a linked Discharge encounter
             Date spellDischargeDate = targetInpatientCds.getDtDischarge();
             if (spellDischargeDate != null) {
@@ -288,9 +285,6 @@ public class InpatientCdsTargetTransformer {
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
                 existingEncounterList.addReference(childDischargeRef);
-
-                //save the discharge encounter builder
-                fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
             }
         }
 
@@ -365,6 +359,7 @@ public class InpatientCdsTargetTransformer {
         if (dischargeEncounterBuilder != null) {
             fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
         }
+        //finally, save the episode encounter which always exists
         fhirResourceFiler.savePatientResource(null, episodeEncounterBuilder);
     }
 
