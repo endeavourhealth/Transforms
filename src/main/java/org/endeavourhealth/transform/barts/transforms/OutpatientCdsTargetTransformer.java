@@ -210,9 +210,9 @@ public class OutpatientCdsTargetTransformer {
                 = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
         EncounterBuilder existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
         //and link the parent to this new child encounter
-        Reference childCriticalRef = ReferenceHelper.createReference(ResourceType.Encounter, attendanceId);
+        Reference childOutpatientRef = ReferenceHelper.createReference(ResourceType.Encounter, attendanceId);
         ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
-        listBuilder.addReference(childCriticalRef);
+        listBuilder.addReference(childOutpatientRef);
 
         //save encounterBuilder records
         fhirResourceFiler.savePatientResource(null, encounterBuilder, existingParentEncounterBuilder);
@@ -330,10 +330,10 @@ public class OutpatientCdsTargetTransformer {
             Integer parentEncounterId = targetOutpatientCds.getEncounterId();
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(parentEncounterId));
-            if (builder.isIdMapped()) {
+            //if (builder.isIdMapped()) {
 
                 parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            }
+            //}
             builder.setPartOf(parentEncounter);
         }
         //set the CDS identifier against the Encounter

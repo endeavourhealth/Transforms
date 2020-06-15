@@ -7,6 +7,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCriticalCareCdsTarget;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.Encounter;
@@ -116,6 +117,7 @@ public class CriticalCareCdsTargetTransformer {
 
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, parentEncounterId);
+            parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
             encounterBuilder.setPartOf(parentEncounter);
 
             ///retrieve and update the parent to point to this new child

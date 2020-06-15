@@ -145,10 +145,10 @@ public class InpatientCdsTargetTransformer {
             Integer encounterId = targetInpatientCds.getEncounterId();
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
-            if (builder.isIdMapped()) {
+            //if (builder.isIdMapped()) {
 
                 parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            }
+            //}
             builder.setPartOf(parentEncounter);
         }
         //set the CDS identifier against the Encounter
