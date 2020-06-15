@@ -181,10 +181,13 @@ public class InpatientCdsTargetTransformer {
         EncounterBuilder existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
         ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
 
+        EncounterBuilder admissionEncounterBuilder = null;
+        EncounterBuilder dischargeEncounterBuilder = null;
+
         //episodeNumber = 01 then create the inpatient admission and the discharge encounters (if date set)
         if (episodeNumber.equalsIgnoreCase("01")) {
 
-            EncounterBuilder admissionEncounterBuilder = new EncounterBuilder();
+            admissionEncounterBuilder = new EncounterBuilder();
             admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
             String admissionEncounterId = spellId + ":01:IP:Admission";
@@ -252,7 +255,7 @@ public class InpatientCdsTargetTransformer {
             if (spellDischargeDate != null) {
 
                 //create new additional Discharge encounter event to link to the top level parent
-                EncounterBuilder dischargeEncounterBuilder = new EncounterBuilder();
+                dischargeEncounterBuilder = new EncounterBuilder();
                 dischargeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
                 String dischargeEncounterId = spellId + ":01:IP:Discharge";
@@ -352,11 +355,17 @@ public class InpatientCdsTargetTransformer {
 
         //TODO: mothers NHS number linking from birth records
 
-        //save only the episode encounter builder here
-        fhirResourceFiler.savePatientResource(null, episodeEncounterBuilder);
-
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
+
+        //then save the child encounter builders if they are set
+        if (admissionEncounterBuilder != null) {
+            fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
+        }
+        if (dischargeEncounterBuilder != null) {
+            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+        }
+        fhirResourceFiler.savePatientResource(null, episodeEncounterBuilder);
     }
 
     private static void deleteInpatientCdsEncounterAndChildren(StagingInpatientCdsTarget targetInpatientCds,
@@ -436,7 +445,7 @@ public class InpatientCdsTargetTransformer {
 
         setCommonEncounterAttributes(parentTopEncounterBuilder, targetInpatientCds, csvHelper, false);
 
-        //save encounterBuilder record
+        //save parent encounter record first
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
 
         //wait until parent resources are filed

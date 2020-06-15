@@ -171,14 +171,12 @@ public class EmergencyCdsTargetTransformer {
             arrivalEncounterBuilder.setPeriodEnd(aeEndDate);
             arrivalEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         }
-        //save the A&E arrival encounter
-        fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
-
 
         ////Is there an initial assessment encounter?///////////////////////////////////////////////////////////////////
+        EncounterBuilder assessmentEncounterBuilder = null;
         if (assessmentDate != null) {
 
-            EncounterBuilder assessmentEncounterBuilder = new EncounterBuilder();
+            assessmentEncounterBuilder = new EncounterBuilder();
             assessmentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String assessmentEncounterId = attendanceId + ":02:EM";
@@ -214,14 +212,13 @@ public class EmergencyCdsTargetTransformer {
                 assessmentEncounterBuilder.setPeriodEnd(aeAssessmentEndDate);
                 assessmentEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
             }
-            //save the A&E assessment encounter
-            fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
         }
 
         ////Is there a treatments encounter?////////////////////////////////////////////////////////////////////////////
+        EncounterBuilder treatmentsEncounterBuilder = null;
         if (invAndTreatmentsDate != null) {
 
-            EncounterBuilder treatmentsEncounterBuilder = new EncounterBuilder();
+            treatmentsEncounterBuilder = new EncounterBuilder();
             treatmentsEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String treatmentsEncounterId = attendanceId + ":03:EM";
@@ -257,15 +254,14 @@ public class EmergencyCdsTargetTransformer {
                 treatmentsEncounterBuilder.setPeriodEnd(aeTreatmentsEndDate);
                 treatmentsEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
             }
-            //save the A&E treatments encounter
-            fhirResourceFiler.savePatientResource(null, treatmentsEncounterBuilder);
         }
 
 
         ////Is there a discharge encounter?/////////////////////////////////////////////////////////////////////////////
+        EncounterBuilder dischargeEncounterBuilder = null;
         if (dischargeDate != null) {
 
-            EncounterBuilder dischargeEncounterBuilder = new EncounterBuilder();
+            dischargeEncounterBuilder = new EncounterBuilder();
             dischargeEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String dischargeEncounterId = attendanceId + ":04:EM";
@@ -305,13 +301,28 @@ public class EmergencyCdsTargetTransformer {
                 dischargeEncounterBuilder.setPeriodEnd(aeDischargeEndDate);
                 dischargeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
             }
-
-            //save the A&E discharge encounter
-            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
         }
 
-        //save the existing parent encounter here with the updated child refs added during this method
+        //save the existing parent encounter here with the updated child refs added during this method,
+        //then the child sub encounter afterwards
         fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
+
+        //save the A&E arrival encounter
+        if (arrivalEncounterBuilder != null) {
+            fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
+        }
+        //save the A&E assessment encounter
+        if (assessmentEncounterBuilder != null) {
+            fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
+        }
+        //save the A&E treatments encounter
+        if (treatmentsEncounterBuilder != null) {
+            fhirResourceFiler.savePatientResource(null, treatmentsEncounterBuilder);
+        }
+        //save the A&E discharge encounter
+        if (dischargeEncounterBuilder != null) {
+            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+        }
     }
 
     private static void createEmergencyCdsEncounterParentAndSubs(StagingEmergencyCdsTarget targetEmergencyCds,

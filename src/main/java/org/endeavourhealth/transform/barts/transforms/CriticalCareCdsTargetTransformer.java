@@ -195,7 +195,7 @@ public class CriticalCareCdsTargetTransformer {
             // targetCriticalCareCds.getCareActivity1());
             // targetCriticalCareCds.getCareActivity2100());
 
-            //save critical care encounter record and the parent (with updated references)
+            //save critical care encounter record and the parent (with updated references). Parent is filed first.
             fhirResourceFiler.savePatientResource(null, existingParentEncounterBuilder, encounterBuilder);
         }
     }

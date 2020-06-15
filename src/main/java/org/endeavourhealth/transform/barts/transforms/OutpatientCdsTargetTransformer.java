@@ -215,7 +215,7 @@ public class OutpatientCdsTargetTransformer {
         listBuilder.addReference(childOutpatientRef);
 
         //save encounterBuilder records
-        fhirResourceFiler.savePatientResource(null, encounterBuilder, existingParentEncounterBuilder);
+        fhirResourceFiler.savePatientResource(null, existingParentEncounterBuilder, encounterBuilder);
     }
 
     private static void createOutpatientCdsEncounterParentAndSub(StagingOutpatientCdsTarget targetOutpatientCds,
