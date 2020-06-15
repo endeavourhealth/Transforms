@@ -440,7 +440,7 @@ public class InpatientCdsTargetTransformer {
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
 
         //wait until parent resources are filed
-        csvHelper.waitUntilThreadPoolIsEmpty();
+        fhirResourceFiler.waitUntilEverythingIsSaved();
 
         //once the parent is created, then create the sub encounters
         createInpatientCdsSubEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);

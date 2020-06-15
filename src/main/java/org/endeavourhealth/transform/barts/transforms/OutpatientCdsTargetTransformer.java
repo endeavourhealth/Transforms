@@ -242,7 +242,7 @@ public class OutpatientCdsTargetTransformer {
         fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
 
         //wait until parent resources are filed
-        csvHelper.waitUntilThreadPoolIsEmpty();
+        fhirResourceFiler.waitUntilEverythingIsSaved();
 
         //then create child level encounter linked to this new parent
         createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper);
