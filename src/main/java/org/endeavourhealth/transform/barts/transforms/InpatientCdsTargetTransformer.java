@@ -97,11 +97,11 @@ public class InpatientCdsTargetTransformer {
         if (personId !=null) {
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
-            if (builder.isIdMapped()) {
+            //if (builder.isIdMapped()) {
 
                 patientReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
-            }
+            //}
             builder.setPatient(patientReference);
         }
 
@@ -110,11 +110,11 @@ public class InpatientCdsTargetTransformer {
 
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString());
-            if (builder.isIdMapped()) {
+            //if (builder.isIdMapped()) {
 
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
-            }
+            //}
             builder.setEpisodeOfCare(episodeReference);
         }
         Integer performerPersonnelId = targetInpatientCds.getPerformerPersonnelId();
@@ -122,11 +122,11 @@ public class InpatientCdsTargetTransformer {
 
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));
-            if (builder.isIdMapped()) {
+            //if (builder.isIdMapped()) {
 
                 practitionerReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
-            }
+            //}
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
         String serviceProviderOrgId = targetInpatientCds.getEpisodeStartSiteCode();
@@ -134,11 +134,11 @@ public class InpatientCdsTargetTransformer {
 
             Reference organizationReference
                     = ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId);
-            if (builder.isIdMapped()) {
+            //if (builder.isIdMapped()) {
 
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
-            }
+            //}
             builder.setServiceProvider(organizationReference);
         }
         //get the existing parent encounter set during ADT feed, to link to this top level encounter if this is a child
