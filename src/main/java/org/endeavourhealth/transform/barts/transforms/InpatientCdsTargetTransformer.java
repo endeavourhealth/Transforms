@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingInpatientCdsTarget;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -179,7 +180,7 @@ public class InpatientCdsTargetTransformer {
         Encounter existingParentEncounter
                 = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
         EncounterBuilder existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
-        ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
+        ContainedListBuilder existingParentEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
 
         EncounterBuilder admissionEncounterBuilder = null;
         EncounterBuilder dischargeEncounterBuilder = null;
@@ -245,7 +246,7 @@ public class InpatientCdsTargetTransformer {
 
             //and link the parent to this new child encounter
             Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
-            existingEncounterList.addReference(childAdmissionRef);
+            existingParentEncounterList.addReference(childAdmissionRef);
 
             //the main encounter has a discharge date so set the end date and create a linked Discharge encounter
             Date spellDischargeDate = targetInpatientCds.getDtDischarge();
@@ -284,7 +285,7 @@ public class InpatientCdsTargetTransformer {
 
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
-                existingEncounterList.addReference(childDischargeRef);
+                existingParentEncounterList.addReference(childDischargeRef);
             }
         }
 
@@ -317,7 +318,7 @@ public class InpatientCdsTargetTransformer {
 
         //and link the parent to this new child encounter
         Reference childEpisodeRef = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
-        existingEncounterList.addReference(childEpisodeRef);
+        existingParentEncounterList.addReference(childEpisodeRef);
 
         //add in additional extended data as Parameters resource with additional extension
         //TODO: set name and values using IM map once done - ward start and end?
@@ -350,16 +351,22 @@ public class InpatientCdsTargetTransformer {
         //TODO: mothers NHS number linking from birth records
 
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
+        LOG.debug("Saving existing IP parent encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
 
         //then save the child encounter builders if they are set
         if (admissionEncounterBuilder != null) {
+
+            LOG.debug("Saving child IP admission encounter: "+ FhirSerializationHelper.serializeResource(admissionEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
         }
         if (dischargeEncounterBuilder != null) {
+
+            LOG.debug("Saving child IP discharge encounter: "+ FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
         }
         //finally, save the episode encounter which always exists
+        LOG.debug("Saving child IP episode encounter: "+ FhirSerializationHelper.serializeResource(episodeEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, episodeEncounterBuilder);
     }
 

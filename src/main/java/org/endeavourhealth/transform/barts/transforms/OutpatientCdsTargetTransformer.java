@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingOutpatientCdsTarget;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -215,7 +216,11 @@ public class OutpatientCdsTargetTransformer {
         listBuilder.addReference(childOutpatientRef);
 
         //save encounterBuilder records
-        fhirResourceFiler.savePatientResource(null, existingParentEncounterBuilder, encounterBuilder);
+        LOG.debug("Saving existing OP parent encounter: "+FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
+        fhirResourceFiler.savePatientResource(null, existingParentEncounterBuilder);
+
+        LOG.debug("Saving child OP encounter: "+FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        fhirResourceFiler.savePatientResource(null, encounterBuilder);
     }
 
     private static void createOutpatientCdsEncounterParentAndSub(StagingOutpatientCdsTarget targetOutpatientCds,
