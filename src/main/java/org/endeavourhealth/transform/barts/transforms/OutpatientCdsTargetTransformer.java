@@ -69,13 +69,13 @@ public class OutpatientCdsTargetTransformer {
                     updateExistingEncounter(existingParentEncounter, targetOutpatientCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounter
-                    createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper);
+                    EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+                    createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
 
                     //create top level parent with minimum data
                     createOutpatientCdsEncounterParentAndSub(targetOutpatientCds, fhirResourceFiler, csvHelper);
-
                 }
             } else {
 
@@ -131,8 +131,9 @@ public class OutpatientCdsTargetTransformer {
     }
 
     private static void createOutpatientCdsSubEncounter(StagingOutpatientCdsTarget targetOutpatientCds,
-                                                     FhirResourceFiler fhirResourceFiler,
-                                                     BartsCsvHelper csvHelper) throws Exception {
+                                                        FhirResourceFiler fhirResourceFiler,
+                                                        BartsCsvHelper csvHelper,
+                                                        EncounterBuilder existingParentEncounterBuilder) throws Exception {
 
         //set outpatient encounter
         EncounterBuilder encounterBuilder = new EncounterBuilder();
@@ -205,11 +206,14 @@ public class OutpatientCdsTargetTransformer {
 //                additionalArrivalObjs.addProperty("other_procedures", targetOutpatientCds.getOtherProceduresOPCS());
 //            }
 
-        ///retrieve and update the parent to point to this new child encounter
-        Integer parentEncounterId = targetOutpatientCds.getEncounterId();
-        Encounter existingParentEncounter
-                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
-        EncounterBuilder existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+        ///retrieve (if not passed in) and update the parent to point to this new child encounter
+        if (existingParentEncounterBuilder == null) {
+            Integer parentEncounterId = targetOutpatientCds.getEncounterId();
+            Encounter existingParentEncounter
+                    = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
+            existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+        }
+
         //and link the parent to this new child encounter
         Reference childOutpatientRef = ReferenceHelper.createReference(ResourceType.Encounter, attendanceId);
         ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
@@ -244,13 +248,13 @@ public class OutpatientCdsTargetTransformer {
         setCommonEncounterAttributes(parentTopEncounterBuilder, targetOutpatientCds, csvHelper, false);
 
         //save encounterBuilder record
-        fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+        //fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
 
         //wait until parent resources are filed
-        fhirResourceFiler.waitUntilEverythingIsSaved();
+        //fhirResourceFiler.waitUntilEverythingIsSaved();
 
         //then create child level encounter linked to this new parent
-        createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper);
+        createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper, parentTopEncounterBuilder);
     }
 
     private static void updateExistingEncounter(Encounter existingEncounter,

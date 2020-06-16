@@ -71,7 +71,8 @@ public class EmergencyCdsTargetTransformer {
                     updateExistingParentEncounter(existingParentEncounter, targetEmergencyCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounters
-                    createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
+                    EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+                    createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
 
@@ -88,14 +89,17 @@ public class EmergencyCdsTargetTransformer {
 
     private static void createEmergencyCdsEncounters(StagingEmergencyCdsTarget targetEmergencyCds,
                                                      FhirResourceFiler fhirResourceFiler,
-                                                     BartsCsvHelper csvHelper) throws Exception {
+                                                     BartsCsvHelper csvHelper,
+                                                     EncounterBuilder existingParentEpisodeBuilder) throws Exception {
 
 
-        ///retrieve the parent encounter to point to any new child encounters created during this method
-        Integer parentEncounterId = targetEmergencyCds.getEncounterId();
-        Encounter existingParentEncounter
-                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
-        EncounterBuilder existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
+        ///retrieve the parent encounter (if not passed in) to point to any new child encounters created during this method
+        if (existingParentEpisodeBuilder == null) {
+            Integer parentEncounterId = targetEmergencyCds.getEncounterId();
+            Encounter existingParentEncounter
+                    = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
+            existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
+        }
         ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
 
         //unique to the emergency dept. attendance
@@ -355,13 +359,13 @@ public class EmergencyCdsTargetTransformer {
         setCommonEncounterAttributes(parentTopEncounterBuilder, targetEmergencyCds, csvHelper, false);
 
         //save encounterBuilder record
-        fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+        //fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
 
         //wait until parent resources are filed
-        fhirResourceFiler.waitUntilEverythingIsSaved();
+        //fhirResourceFiler.waitUntilEverythingIsSaved();
 
         //then create child level encounters linked to this new parent
-        createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
+        createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper, parentTopEncounterBuilder);
     }
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
