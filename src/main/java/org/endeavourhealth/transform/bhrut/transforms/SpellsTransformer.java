@@ -16,7 +16,6 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
@@ -369,18 +368,23 @@ public class SpellsTransformer {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+        CsvCell dischargeDateCell = parser.getDischargeDttm();
+        CsvCell admissionDateCell = parser.getAdmissionDttm();
 
         parentTopEncounterBuilder.setId(parser.getId().toString());
-        parentTopEncounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
-        parentTopEncounterBuilder.setPeriodEnd(parser.getDischargeDttm().getDateTime(), parser.getDischargeDttm());
-        Date dischargeDate = parser.getDischargeDttm().getDateTime();
-
-        if (dischargeDate != null) {
-            parentTopEncounterBuilder.setPeriodEnd(dischargeDate);
+        if (!admissionDateCell.isEmpty()) {
+            parentTopEncounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
+        }
+        if (!dischargeDateCell.isEmpty()) {
+            parentTopEncounterBuilder.setPeriodEnd(parser.getDischargeDttm().getDateTime(), parser.getDischargeDttm());
+        }
+        if (!dischargeDateCell.isEmpty()) {
+            parentTopEncounterBuilder.setPeriodEnd(dischargeDateCell.getDateTime());
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         } else {
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
         }
+
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Inpatient Admission");
@@ -390,9 +394,9 @@ public class SpellsTransformer {
 
     }
 
-    private static void createSubEncounters(Spells parser, EncounterBuilder parentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static void createSubEncounters(Spells parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
-        ContainedListBuilder existingEncounterList = new ContainedListBuilder(parentEncounterBuilder);
+        ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
 
         EncounterBuilder admissionEncounterBuilder = new EncounterBuilder();
         admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
@@ -428,6 +432,11 @@ public class SpellsTransformer {
 
         //and link the parent to this new child encounter
         Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
+        if (existingParentEncounterBuilder.isIdMapped()) {
+
+            childAdmissionRef
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+        }
         existingEncounterList.addReference(childAdmissionRef);
 
         //save the admission encounter
@@ -455,7 +464,6 @@ public class SpellsTransformer {
                     = new ContainedParametersBuilder(dischargeEncounterBuilder);
             containedParametersBuilderDischarge.removeContainedParameters();
 
-
             if (!parser.getDischargeMethodCode().isEmpty()) {
                 containedParametersBuilderMain.addParameter("ip_discharge_method", "" + parser.getDischargeMethodCode().getString());
             }
@@ -467,11 +475,26 @@ public class SpellsTransformer {
 
             //and link the parent to this new child encounter
             Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
+            if (existingParentEncounterBuilder.isIdMapped()) {
+
+                childDischargeRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+            }
             existingEncounterList.addReference(childDischargeRef);
 
             //save the discharge encounter builder
             fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
 
+            //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
+            fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+
+            //then save the child encounter builders if they are set
+            if (admissionEncounterBuilder != null) {
+                fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
+            }
+            if (dischargeEncounterBuilder != null) {
+                fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+            }
         }
     }
 

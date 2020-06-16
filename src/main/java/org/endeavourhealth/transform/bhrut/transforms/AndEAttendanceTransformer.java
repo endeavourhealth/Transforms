@@ -8,6 +8,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.AandeAttendances;
 import org.endeavourhealth.transform.bhrut.schema.Spells;
@@ -378,9 +379,9 @@ public class AndEAttendanceTransformer {
 
     }
 
-    private static void createEmergencyEncounters(AandeAttendances parser, EncounterBuilder parentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static void createEmergencyEncounters(AandeAttendances parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
-        ContainedListBuilder existingEncounterList = new ContainedListBuilder(parentEncounterBuilder);
+        ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
 
         EncounterBuilder arrivalEncounterBuilder = new EncounterBuilder();
         arrivalEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
@@ -399,7 +400,9 @@ public class AndEAttendanceTransformer {
 
         //and link the parent to this new child encounter
         Reference childArrivalRef = ReferenceHelper.createReference(ResourceType.Encounter, arrivalEncounterId);
-        existingEncounterList.addReference(childArrivalRef);
+        if (existingParentEncounterBuilder.isIdMapped()) {
+            existingEncounterList.addReference(childArrivalRef);
+        }
 
         ContainedParametersBuilder containedParametersBuilderArrival
                 = new ContainedParametersBuilder(arrivalEncounterBuilder);
@@ -441,11 +444,11 @@ public class AndEAttendanceTransformer {
         }
         //save the A&E arrival encounter
         fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
-
         //Is there an initial assessment encounter?
+        EncounterBuilder assessmentEncounterBuilder = null;
         if (!assessmentDateCell.isEmpty()) {
 
-            EncounterBuilder assessmentEncounterBuilder = new EncounterBuilder();
+            assessmentEncounterBuilder = new EncounterBuilder();
             assessmentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String assessmentEncounterId = parser.getId() + ":02:EM";
@@ -461,6 +464,11 @@ public class AndEAttendanceTransformer {
 
             //and link the parent to this new child encounter
             Reference childAssessmentRef = ReferenceHelper.createReference(ResourceType.Encounter, assessmentEncounterId);
+
+            if (existingParentEncounterBuilder.isIdMapped()) {
+                childAssessmentRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAssessmentRef, csvHelper);
+            }
             existingEncounterList.addReference(childAssessmentRef);
 
             //add in additional extended data as Parameters resource with additional extension
@@ -481,9 +489,10 @@ public class AndEAttendanceTransformer {
         }
 
         //Is there a treatments encounter?
+        EncounterBuilder treatmentsEncounterBuilder = null;
         if (!invAndTreatmentsDateCell.isEmpty()) {
 
-            EncounterBuilder treatmentsEncounterBuilder = new EncounterBuilder();
+            treatmentsEncounterBuilder = new EncounterBuilder();
             treatmentsEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String treatmentsEncounterId = parser.getId() + ":03:EM";
@@ -499,6 +508,11 @@ public class AndEAttendanceTransformer {
 
             //and link the parent to this new child encounter
             Reference childTreatmentsRef = ReferenceHelper.createReference(ResourceType.Encounter, treatmentsEncounterId);
+            if (existingParentEncounterBuilder.isIdMapped()) {
+
+                childTreatmentsRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childTreatmentsRef, csvHelper);
+            }
             existingEncounterList.addReference(childTreatmentsRef);
 
             Date aeTreatmentsEndDate
@@ -515,9 +529,10 @@ public class AndEAttendanceTransformer {
         }
 
         //Is there a dischargeEncounter ?
+        EncounterBuilder dischargeEncounterBuilder = null;
         if (!dischargeDateCell.isEmpty()) {
 
-            EncounterBuilder dischargeEncounterBuilder = new EncounterBuilder();
+            dischargeEncounterBuilder = new EncounterBuilder();
             dischargeEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String dischargeEncounterId = parser.getId() + ":04:EM";
@@ -533,6 +548,10 @@ public class AndEAttendanceTransformer {
 
             //and link the parent to this new child encounter
             Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
+            if (existingParentEncounterBuilder.isIdMapped()) {
+                childDischargeRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
+            }
             existingEncounterList.addReference(childDischargeRef);
 
 
@@ -554,6 +573,32 @@ public class AndEAttendanceTransformer {
 
         }
 
+        //save the existing parent encounter here with the updated child refs added during this method,
+        //then the child sub encounter afterwards
+        LOG.debug("Saving parent EM encounter: " + FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
+        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+
+        //save the A&E arrival encounter
+        if (arrivalEncounterBuilder != null) {
+            LOG.debug("Saving child arrival EM encounter: " + FhirSerializationHelper.serializeResource(arrivalEncounterBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
+        }
+
+        //save the A&E assessment encounter
+        if (assessmentEncounterBuilder != null) {
+            LOG.debug("Saving child assessment EM encounter: " + FhirSerializationHelper.serializeResource(assessmentEncounterBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
+        }
+        //save the A&E treatments encounter
+        if (treatmentsEncounterBuilder != null) {
+            LOG.debug("Saving child treatments EM encounter: " + FhirSerializationHelper.serializeResource(treatmentsEncounterBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(null, treatmentsEncounterBuilder);
+        }
+        //save the A&E discharge encounter
+        if (dischargeEncounterBuilder != null) {
+            LOG.debug("Saving child discharge EM encounter: " + FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+        }
     }
 
 
