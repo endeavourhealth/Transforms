@@ -100,15 +100,15 @@ public class PMI extends AbstractCsvParser {
     }
 
     public CsvCell getCauseOfDeath1B() {
-        return super.getCell("CAUSEOFDEATH_1B");
+        return super.getCell("CAUSEOFDEATH 1B");
     }
 
     public CsvCell getCauseOfDeath1C() {
-        return super.getCell("CAUSEOFDEATH_1c");
+        return super.getCell("CAUSEOFDEATH 1c");
     }
 
     public CsvCell getCauseOfDeath2() {
-        return super.getCell("CAUSEOFDEATH_2");
+        return super.getCell("CAUSEOFDEATH 2");
     }
 
     public CsvCell getInfectionStatus() {
