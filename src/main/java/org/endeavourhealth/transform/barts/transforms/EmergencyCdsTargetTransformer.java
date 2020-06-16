@@ -501,7 +501,7 @@ public class EmergencyCdsTargetTransformer {
                         fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
                     } else {
 
-                        TransformWarnings.log(LOG, csvHelper, "Cannot find existing child Encounter: {} for deletion", childEncounter.getId());
+                        TransformWarnings.log(LOG, csvHelper, "Cannot find existing child Encounter ref: {} for deletion", comps.getId());
                     }
                 }
             }
