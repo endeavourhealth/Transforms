@@ -71,13 +71,13 @@ public class InpatientCdsTargetTransformer {
                     updateExistingParentEncounter(existingParentEncounter, targetInpatientCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounters
-                    createInpatientCdsSubEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
+                    EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+                    createInpatientCdsSubEncounters(targetInpatientCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
 
                     //create top level parent with minimum data including the sub encounters
                     createInpatientCdsEncounterParentAndSubs(targetInpatientCds, fhirResourceFiler, csvHelper);
-
                 }
             } else {
 
@@ -94,7 +94,7 @@ public class InpatientCdsTargetTransformer {
 
         //every encounter has the following common attributes
         Integer personId = targetInpatientCds.getPersonId();
-        if (personId !=null) {
+        if (personId != null) {
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
             //if (builder.isIdMapped()) {
@@ -167,7 +167,8 @@ public class InpatientCdsTargetTransformer {
 
     private static void createInpatientCdsSubEncounters(StagingInpatientCdsTarget targetInpatientCds,
                                                         FhirResourceFiler fhirResourceFiler,
-                                                        BartsCsvHelper csvHelper) throws Exception {
+                                                        BartsCsvHelper csvHelper,
+                                                        EncounterBuilder existingParentEpisodeBuilder) throws Exception {
 
         //unique to the inpatient hospital spell
         String spellId = targetInpatientCds.getSpellNumber();
@@ -175,12 +176,16 @@ public class InpatientCdsTargetTransformer {
         //the episode number ranges from 01 (Admission plus episode start / finish), 02, 03 till discharge
         String episodeNumber = targetInpatientCds.getEpisodeNumber();
 
-        ///retrieve the parent encounter to point to any new child encounters created during this method
-        Integer parentEncounterId = targetInpatientCds.getEncounterId();
-        Encounter existingParentEncounter
-                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
-        EncounterBuilder existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
-        ContainedListBuilder existingParentEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
+        //retrieve the parent encounter (if not passed in) to point to any new child encounters created during this method
+        ContainedListBuilder existingParentEncounterList;
+        if (existingParentEpisodeBuilder == null) {
+
+            Integer parentEncounterId = targetInpatientCds.getEncounterId();
+            Encounter existingParentEncounter
+                    = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
+            existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
+        }
+        existingParentEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
 
         EncounterBuilder admissionEncounterBuilder = null;
         EncounterBuilder dischargeEncounterBuilder = null;
@@ -351,7 +356,7 @@ public class InpatientCdsTargetTransformer {
         //TODO: mothers NHS number linking from birth records
 
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
-        LOG.debug("Saving existing IP parent encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
+        LOG.debug("Saving IP parent encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
 
         //then save the child encounter builders if they are set
@@ -448,13 +453,13 @@ public class InpatientCdsTargetTransformer {
         setCommonEncounterAttributes(parentTopEncounterBuilder, targetInpatientCds, csvHelper, false);
 
         //save parent encounter record first
-        fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+        //fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
 
         //wait until parent resources are filed
-        fhirResourceFiler.waitUntilEverythingIsSaved();
+        //fhirResourceFiler.waitUntilEverythingIsSaved();
 
-        //once the parent is created, then create the sub encounters
-        createInpatientCdsSubEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
+        //once the parent is populated, then create the sub encounters, passing through the parent for linking
+        createInpatientCdsSubEncounters(targetInpatientCds, fhirResourceFiler, csvHelper, parentTopEncounterBuilder);
     }
 
     private static void updateExistingParentEncounter(Encounter existingEncounter,
