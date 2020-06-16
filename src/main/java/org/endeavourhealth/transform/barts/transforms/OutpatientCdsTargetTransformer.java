@@ -247,12 +247,6 @@ public class OutpatientCdsTargetTransformer {
 
         setCommonEncounterAttributes(parentTopEncounterBuilder, targetOutpatientCds, csvHelper, false);
 
-        //save encounterBuilder record
-        //fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
-
-        //wait until parent resources are filed
-        //fhirResourceFiler.waitUntilEverythingIsSaved();
-
         //then create child level encounter linked to this new parent
         createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper, parentTopEncounterBuilder);
     }
@@ -291,11 +285,11 @@ public class OutpatientCdsTargetTransformer {
         if (personId != null) {
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
-            //if (builder.isIdMapped()) {
+            if (builder.isIdMapped()) {
 
                 patientReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
-            //}
+            }
             builder.setPatient(patientReference);
         }
         Integer episodeId = targetOutpatientCds.getEpisodeId();
@@ -303,11 +297,11 @@ public class OutpatientCdsTargetTransformer {
 
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString());
-            //if (builder.isIdMapped()) {
+            if (builder.isIdMapped()) {
 
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
-            //}
+            }
             builder.setEpisodeOfCare(episodeReference);
         }
         Integer performerPersonnelId = targetOutpatientCds.getPerformerPersonnelId();
@@ -315,11 +309,11 @@ public class OutpatientCdsTargetTransformer {
 
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));
-            //if (builder.isIdMapped()) {
+            if (builder.isIdMapped()) {
 
                 practitionerReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
-            //}
+            }
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
         String serviceProviderOrgId = targetOutpatientCds.getApptSiteCode();
@@ -327,11 +321,11 @@ public class OutpatientCdsTargetTransformer {
 
             Reference organizationReference
                     = ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId);
-            //if (builder.isIdMapped()) {
+            if (builder.isIdMapped()) {
 
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
-            //}
+            }
             builder.setServiceProvider(organizationReference);
         }
         //get the existing parent encounter set during ADT feed, to link to this top level encounter if this is a child
