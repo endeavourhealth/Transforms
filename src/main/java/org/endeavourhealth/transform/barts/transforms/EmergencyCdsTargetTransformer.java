@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -309,22 +310,27 @@ public class EmergencyCdsTargetTransformer {
 
         //save the existing parent encounter here with the updated child refs added during this method,
         //then the child sub encounter afterwards
+        LOG.debug("Saving parent EM encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
 
         //save the A&E arrival encounter
         if (arrivalEncounterBuilder != null) {
+            LOG.debug("Saving child arrival EM encounter: "+ FhirSerializationHelper.serializeResource(arrivalEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
         }
         //save the A&E assessment encounter
         if (assessmentEncounterBuilder != null) {
+            LOG.debug("Saving child assessment EM encounter: "+ FhirSerializationHelper.serializeResource(assessmentEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
         }
         //save the A&E treatments encounter
         if (treatmentsEncounterBuilder != null) {
+            LOG.debug("Saving child treatments EM encounter: "+ FhirSerializationHelper.serializeResource(treatmentsEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, treatmentsEncounterBuilder);
         }
         //save the A&E discharge encounter
         if (dischargeEncounterBuilder != null) {
+            LOG.debug("Saving child discharge EM encounter: "+ FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
         }
     }
