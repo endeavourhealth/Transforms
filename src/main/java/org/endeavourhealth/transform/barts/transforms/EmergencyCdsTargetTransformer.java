@@ -124,6 +124,11 @@ public class EmergencyCdsTargetTransformer {
 
         //and link the parent to this new child encounter
         Reference childArrivalRef = ReferenceHelper.createReference(ResourceType.Encounter, arrivalEncounterId);
+        if (existingParentEncounterBuilder.isIdMapped()) {
+
+            childArrivalRef
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childArrivalRef, csvHelper);
+        }
         existingEncounterList.addReference(childArrivalRef);
 
         //add in additional extended data as Parameters resource with additional extension
@@ -197,6 +202,11 @@ public class EmergencyCdsTargetTransformer {
 
             //and link the parent to this new child encounter
             Reference childAssessmentRef = ReferenceHelper.createReference(ResourceType.Encounter, assessmentEncounterId);
+            if (existingParentEncounterBuilder.isIdMapped()) {
+
+                childAssessmentRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAssessmentRef, csvHelper);
+            }
             existingEncounterList.addReference(childAssessmentRef);
 
             //add in additional extended data as Parameters resource with additional extension
@@ -239,6 +249,11 @@ public class EmergencyCdsTargetTransformer {
 
             //and link the parent to this new child encounter
             Reference childTreatmentsRef = ReferenceHelper.createReference(ResourceType.Encounter, treatmentsEncounterId);
+            if (existingParentEncounterBuilder.isIdMapped()) {
+
+                childTreatmentsRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childTreatmentsRef, csvHelper);
+            }
             existingEncounterList.addReference(childTreatmentsRef);
 
             //TODO - do we save the linked clinical data here?
@@ -282,6 +297,11 @@ public class EmergencyCdsTargetTransformer {
 
             //and link the parent to this new child encounter
             Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
+            if (existingParentEncounterBuilder.isIdMapped()) {
+
+                childDischargeRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
+            }
             existingEncounterList.addReference(childDischargeRef);
 
             //add in additional extended data as Parameters resource with additional extension

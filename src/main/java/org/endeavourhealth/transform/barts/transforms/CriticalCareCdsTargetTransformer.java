@@ -128,6 +128,11 @@ public class CriticalCareCdsTargetTransformer {
             //and link the parent to the child
             Reference childCriticalRef = ReferenceHelper.createReference(ResourceType.Encounter, criticalCareId);
             ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
+            if (existingParentEncounterBuilder.isIdMapped()) {
+
+                childCriticalRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childCriticalRef, csvHelper);
+            }
             listBuilder.addReference(childCriticalRef);
 
             //add in additional extended data as Parameters resource with additional extension

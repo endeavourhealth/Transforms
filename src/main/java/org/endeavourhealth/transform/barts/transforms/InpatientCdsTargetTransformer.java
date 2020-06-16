@@ -250,6 +250,11 @@ public class InpatientCdsTargetTransformer {
 
             //and link the parent to this new child encounter
             Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
+            if (existingParentEncounterBuilder.isIdMapped()) {
+
+                childAdmissionRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+            }
             existingParentEncounterList.addReference(childAdmissionRef);
 
             //the main encounter has a discharge date so set the end date and create a linked Discharge encounter
@@ -289,6 +294,12 @@ public class InpatientCdsTargetTransformer {
 
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
+                if (existingParentEncounterBuilder.isIdMapped()) {
+
+                    childDischargeRef
+                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+                }
+
                 existingParentEncounterList.addReference(childDischargeRef);
             }
         }
@@ -322,6 +333,11 @@ public class InpatientCdsTargetTransformer {
 
         //and link the parent to this new child encounter
         Reference childEpisodeRef = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
+        if (existingParentEncounterBuilder.isIdMapped()) {
+
+            childEpisodeRef
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childEpisodeRef, csvHelper);
+        }
         existingParentEncounterList.addReference(childEpisodeRef);
 
         //add in additional extended data as Parameters resource with additional extension
