@@ -214,8 +214,14 @@ public class OutpatientCdsTargetTransformer {
         }
 
         //and link the parent to this new child encounter
+
         Reference childOutpatientRef = ReferenceHelper.createReference(ResourceType.Encounter, attendanceId);
         ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
+        if (existingParentEncounterBuilder.isIdMapped()) {
+
+            childOutpatientRef
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childOutpatientRef, csvHelper);
+        }
         listBuilder.addReference(childOutpatientRef);
 
         //save encounterBuilder records
