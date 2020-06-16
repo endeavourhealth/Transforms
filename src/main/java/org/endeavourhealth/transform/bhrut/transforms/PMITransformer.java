@@ -10,7 +10,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
 
@@ -25,14 +24,18 @@ public class PMITransformer {
                                  BhrutCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(PMI.class);
-
+        long count = 0;
+        long checkpoint = 5000;
         if (parser != null) {
             while (parser.nextRecord()) {
-
+                count++;
                 try {
                     createResources((PMI) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                }
+                if(count%checkpoint == 0){
+                    LOG.info("PMI processed " + count + " records.");
                 }
             }
         }
@@ -64,7 +67,10 @@ public class PMITransformer {
         PatientBuilder patientBuilder = getPatientBuilder(parser, csvHelper);
 
         CsvCell nhsNumber = parser.getNhsNumber();
-        createIdentifier(patientBuilder, csvHelper, nhsNumber, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+        //NHS number contains spaces.
+        String nhs = nhsNumber.getString().replace(" ", "");
+        CsvCell formattedNHS = new CsvCell(nhsNumber.getPublishedFileId(), nhsNumber.getRecordNumber(),nhsNumber.getColIndex(),nhs, nhsNumber.getParentParser());
+        createIdentifier(patientBuilder, csvHelper, formattedNHS, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
         //store the PAS ID as a secondary identifier
         CsvCell patientIdCell = parser.getPasId();
@@ -81,56 +87,10 @@ public class PMITransformer {
         } else {
             patientBuilder.clearDateOfDeath();
         }
-
-        Reference mainCauseOfDeathReference = null;
-        CsvCell causeOfDeathCell = parser.getCauseOfDeath();
-        if (!causeOfDeathCell.isEmpty()) {
-            ObservationBuilder observationBuilder = new ObservationBuilder();
-            ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
-            containedParametersBuilder.removeContainedParameters();
-            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-            observationBuilder.setEffectiveDate(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
-            String obsId = parser.getID() + "CAUSEOFDEATH";
-            containedParametersBuilder.addParameter(obsId, causeOfDeathCell.getString(), causeOfDeathCell);
-            mainCauseOfDeathReference = csvHelper.createObservationReference(obsId, patientIdCell.getString());
-        }
-
-        CsvCell causeOfDeath1BCell = parser.getCauseOfDeath1B();
-        if (!causeOfDeath1BCell.isEmpty()) {
-            ObservationBuilder observationBuilder = new ObservationBuilder();
-            ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
-            containedParametersBuilder.removeContainedParameters();
-            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-            observationBuilder.setEffectiveDate(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
-            String obsId = parser.getID() + "CAUSEOFDEATH_1B";
-            containedParametersBuilder.addParameter(obsId, causeOfDeath1BCell.getString(), causeOfDeath1BCell);
-            observationBuilder.setParentResource(mainCauseOfDeathReference);
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
-        }
-        CsvCell causeOfDeath1CCell = parser.getCauseOfDeath1C();
-        if (!causeOfDeath1CCell.isEmpty()) {
-            ObservationBuilder observationBuilder = new ObservationBuilder();
-            ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
-            containedParametersBuilder.removeContainedParameters();
-            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-            observationBuilder.setEffectiveDate(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
-            String obsId = parser.getID() + "CAUSEOFDEATH_1c";
-            containedParametersBuilder.addParameter(obsId, causeOfDeath1CCell.getString(), causeOfDeath1CCell);
-            observationBuilder.setParentResource(mainCauseOfDeathReference);
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
-        }
-        CsvCell causeOfDeath2CCell = parser.getCauseOfDeath2();
-        if (!causeOfDeath2CCell.isEmpty()) {
-            ObservationBuilder observationBuilder = new ObservationBuilder();
-            ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(observationBuilder);
-            containedParametersBuilder.removeContainedParameters();
-            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-            observationBuilder.setEffectiveDate(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
-            String obsId = parser.getID() + "CAUSEOFDEATH_2";
-            containedParametersBuilder.addParameter(obsId, causeOfDeath2CCell.getString(), causeOfDeath2CCell);
-            observationBuilder.setParentResource(mainCauseOfDeathReference);
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), observationBuilder);
-        }
+        //TODO  hidden for now as we don't know how to code it
+//        if (!parser.getCauseOfDeath().isEmpty()) {
+//            processCauseOfDeath(parser, csvHelper, fhirResourceFiler);
+//        }
 
         //Todo Need to verify the InfectionStatus
         CsvCell infectionStatusCell = parser.getInfectionStatus();
@@ -163,18 +123,17 @@ public class PMITransformer {
         createAddress(patientBuilder, parser, csvHelper);
 
         CsvCell homePhone = parser.getHomePhoneNumber();
-        if (homePhone != null) {
+        if (!homePhone.isEmpty()) {
             createContact(patientBuilder, csvHelper, homePhone, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
         }
 
         CsvCell mobilePhone = parser.getMobilePhoneNumber();
-        if (mobilePhone != null) {
+        if (!mobilePhone.isEmpty()) {
             createContact(patientBuilder, csvHelper, mobilePhone, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
         }
 
         CsvCell ethnicCodeCell = parser.getEthnicityCode();
-        if (ethnicCodeCell != null) {
-
+        if (!ethnicCodeCell.isEmpty()) {
             EthnicCategory ethnicCategory = convertEthnicCategory(ethnicCodeCell.getString());
             patientBuilder.setEthnicity(ethnicCategory, ethnicCodeCell);
         }
@@ -207,6 +166,46 @@ public class PMITransformer {
             patientBuilder.addCareProvider(gpOrganisationReference);
         }
         return patientBuilder;
+    }
+
+    private static  void processCauseOfDeath(PMI parser, BhrutCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+        //TODO call to this method is commented out.
+        Reference mainCauseOfDeathReference = null;
+        CsvCell causeOfDeathCell = parser.getCauseOfDeath();
+        if (!causeOfDeathCell.isEmpty()) {
+            // ObservationBuilder observationBuilder = new ObservationBuilder();
+            ConditionBuilder conditionBuilder = createSkeletonCondition(parser, csvHelper);
+            String conditionId = parser.getID() + "CAUSEOFDEATH";
+            conditionBuilder.setId(conditionId);
+            //TODO containedParametersBuilder are wrong. Rewrite once we know how this works.
+            // IM dependency
+//            ContainedParametersBuilder containedParametersBuilder
+//                    = new ContainedParametersBuilder(conditionBuilder);
+//            containedParametersBuilder.removeContainedParameters();
+//            containedParametersBuilder.addParameter(conditionId, causeOfDeathCell.getString(), causeOfDeathCell);
+            mainCauseOfDeathReference = csvHelper.createObservationReference(conditionId, parser.getPasId().getString());
+            CsvCell causeOfDeath1BCell = parser.getCauseOfDeath1B();
+            if (!causeOfDeath1BCell.isEmpty()) {
+               // containedParametersBuilder.addParameter(conditionId,causeOfDeath1BCell.getString(),causeOfDeath1BCell);
+            }
+            CsvCell causeOfDeath1CCell = parser.getCauseOfDeath1C();
+            if (!causeOfDeath1CCell.isEmpty()) {
+               // containedParametersBuilder.addParameter(conditionId,causeOfDeath1CCell.getString(),causeOfDeath1CCell);
+        }
+            CsvCell causeOfDeath2CCell = parser.getCauseOfDeath2();
+            if (!causeOfDeath2CCell.isEmpty()) {
+               // containedParametersBuilder.addParameter(conditionId,causeOfDeath2CCell.getString(),causeOfDeath2CCell);
+            }
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
+        }
+    }
+
+
+    private static ConditionBuilder createSkeletonCondition(PMI parser, BhrutCsvHelper csvHelper) throws Exception {
+        ConditionBuilder conditionBuilder = new ConditionBuilder();
+        conditionBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
+        conditionBuilder.setOnset(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
+        return conditionBuilder;
     }
 
     private static PatientBuilder getPatientBuilder(PMI parser, BhrutCsvHelper csvHelper) throws Exception {
@@ -266,12 +265,12 @@ public class PMITransformer {
 
     private static void createAddress(PatientBuilder patientBuilder, PMI parser, BhrutCsvHelper csvHelper) throws Exception {
 
-        CsvCell houseNameFlat = parser.getAddress1();
-        CsvCell numberAndStreet = parser.getAddress2();
-        CsvCell village = parser.getAddress3();
-        CsvCell town = parser.getAddress4();
-        CsvCell county = parser.getAddress5();
-        CsvCell postcode = parser.getPostcode();
+        CsvCell houseNameFlat = csvHelper.handleQuote(parser.getAddress1());
+        CsvCell numberAndStreet = csvHelper.handleQuote(parser.getAddress2());
+        CsvCell village = csvHelper.handleQuote(parser.getAddress3());
+        CsvCell town = csvHelper.handleQuote(parser.getAddress4());
+        CsvCell county = csvHelper.handleQuote(parser.getAddress5());
+        CsvCell postcode = csvHelper.handleQuote(parser.getPostcode());
 
         if (!houseNameFlat.isEmpty()
                 || !numberAndStreet.isEmpty()

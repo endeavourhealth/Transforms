@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.common.ods.OdsWebService;
@@ -22,6 +23,7 @@ import java.util.Map;
 public class PMIPreTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(PMIPreTransformer.class);
+    private static final String[] V_CODES = {"V81997", "V81998", "V81999"};
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -33,9 +35,10 @@ public class PMIPreTransformer {
 
             //create the top level organisation for BHRUT using the ODS code as a one off
             createResource(parser, fhirResourceFiler, csvHelper, version, BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE);
-
+            long count = 0;
+            long checkpoint = 5000;
             while (parser.nextRecord()) {
-
+                count++;
                 try {
                     if (!parser.getRegisteredGpPracticeCode().isEmpty()) {
 
@@ -46,6 +49,9 @@ public class PMIPreTransformer {
 
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
+                }
+                if (count % checkpoint == 0) {
+                    LOG.info("PMI processed " + count + " records.");
                 }
             }
         }
@@ -79,15 +85,21 @@ public class PMIPreTransformer {
             TransformWarnings.log(LOG, parser, "Error creating Organization resource for ODS: {}", orgId);
             return;
         }
-
-        OdsOrganisation org = OdsWebService.lookupOrganisationViaRest(orgId);
+        OdsOrganisation org = new OdsOrganisation();
+        try {
+            org = OdsWebService.lookupOrganisationViaRest(orgId);
+        } catch (Exception e) {
+            TransformWarnings.log(LOG, parser, "Exception looking up Organization for ODS: {} Exception : {} Line {}", orgId, e.getMessage());
+            return;
+        }
         if (org != null) {
-
             organizationBuilder.setName(org.getOrganisationName());
         } else {
-
-            TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {}", orgId);
+            if (!ArrayUtils.contains(V_CODES, orgId)) {
+                TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {} ID  {}", orgId, parser.getID().getString());
+            }
             return;
+
         }
 
         //set the ods identifier

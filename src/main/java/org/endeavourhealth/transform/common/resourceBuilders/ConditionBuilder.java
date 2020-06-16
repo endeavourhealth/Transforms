@@ -14,7 +14,7 @@ import java.util.Date;
 import java.util.List;
 
 public class ConditionBuilder extends ResourceBuilderBase
-                              implements HasCodeableConceptI,
+                              implements HasCodeableConceptI, HasContainedParametersI,
                                         HasContainedListI, HasIdentifierI {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConditionBuilder.class);
@@ -44,6 +44,11 @@ public class ConditionBuilder extends ResourceBuilderBase
     @Override
     public DomainResource getResource() {
         return condition;
+    }
+
+    @Override
+    public String getContainedParametersExtensionUrl() {
+        return null;
     }
 
     @Override

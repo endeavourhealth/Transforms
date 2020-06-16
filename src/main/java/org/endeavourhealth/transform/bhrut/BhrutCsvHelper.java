@@ -43,7 +43,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BhrutCsvHelper.class);
-    public static final SimpleDateFormat DATE_TIME_FORMAT_BHRUT =  new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");;
+    public static final SimpleDateFormat DATE_TIME_FORMAT_BHRUT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    ;
 
 
     //
@@ -101,10 +102,22 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return pasIdtoGPCache;
     }
 
+    // A lot of especially address cells contain extraneous double quotes.
+    public static CsvCell handleQuote(CsvCell in) {
+        if (in.getString().contains("\"")) {
+            CsvCell ret = new CsvCell(in.getPublishedFileId(), in.getRecordNumber(), in.getColIndex(),
+                    in.getString().replace("\""," ").trim(), in.getParentParser());
+            return ret;
+        } else {
+            return in;
+        }
+    }
+
     public static DateTimeType getDateTimeType(CsvCell cell) throws ParseException {
         DateTimeType dtt = new DateTimeType(DATE_TIME_FORMAT_BHRUT.parse(cell.getString()));
         return dtt;
     }
+
     public static Date getDate(CsvCell cell) throws ParseException {
         Date d = DATE_TIME_FORMAT_BHRUT.parse(cell.getString());
         return d;
@@ -808,7 +821,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-
     public Service getService(UUID id) throws Exception {
         return serviceRepository.getById(id);
     }
@@ -817,7 +829,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return episodeOfCareCache;
     }
 
-    public boolean isResourceIdMapped (String sourceId, DomainResource resource) {
+    public boolean isResourceIdMapped(String sourceId, DomainResource resource) {
         return !resource.getId().equals(sourceId);
     }
 
