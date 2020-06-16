@@ -292,7 +292,7 @@ public class SpellsTransformer {
             episodeOfCareBuilder.setRegistrationEndDate(endDateTime.getDateTime(), endDateTime);
         }
         CsvCell odsCodeCell = parser.getAdmissionHospitalCode();
-        if (odsCodeCell != null) {
+        if (!odsCodeCell.isEmpty()) {
             Reference organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
             // if episode already ID mapped, get the mapped ID for the org
             if (episodeOfCareBuilder.isIdMapped()) {
@@ -310,7 +310,7 @@ public class SpellsTransformer {
             episodeOfCareBuilder.setManagingOrganisation(organisationReference);
         }
         CsvCell consultantCodeCell = parser.getAdmissionConsultantCode();
-        if (consultantCodeCell != null && !consultantCodeCell.isEmpty()) {
+        if (!consultantCodeCell.isEmpty() && !consultantCodeCell.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
             if (episodeOfCareBuilder.isIdMapped()) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);

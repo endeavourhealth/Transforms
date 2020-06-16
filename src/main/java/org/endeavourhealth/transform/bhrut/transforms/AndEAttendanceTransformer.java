@@ -296,7 +296,7 @@ public class AndEAttendanceTransformer {
         parentTopEncounterBuilder.setPeriodStart(parser.getArrivalDttm().getDateTime(), parser.getArrivalDttm());
 
         CsvCell dischargeDateCell = parser.getDischargedDttm();
-        if (dischargeDateCell != null) {
+        if (!dischargeDateCell.isEmpty()) {
 
             parentTopEncounterBuilder.setPeriodEnd(dischargeDateCell.getDateTime());
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
@@ -331,7 +331,7 @@ public class AndEAttendanceTransformer {
             builder.setPatient(patientReference);
         }
 
-        if (idCell != null) {
+        if (!idCell.isEmpty()) {
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, idCell.getString());
             if (builder.isIdMapped()) {
@@ -443,7 +443,7 @@ public class AndEAttendanceTransformer {
         fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
 
         //Is there an initial assessment encounter?
-        if (assessmentDateCell != null) {
+        if (!assessmentDateCell.isEmpty()) {
 
             EncounterBuilder assessmentEncounterBuilder = new EncounterBuilder();
             assessmentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
@@ -481,7 +481,7 @@ public class AndEAttendanceTransformer {
         }
 
         //Is there a treatments encounter?
-        if (invAndTreatmentsDateCell != null) {
+        if (!invAndTreatmentsDateCell.isEmpty()) {
 
             EncounterBuilder treatmentsEncounterBuilder = new EncounterBuilder();
             treatmentsEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
