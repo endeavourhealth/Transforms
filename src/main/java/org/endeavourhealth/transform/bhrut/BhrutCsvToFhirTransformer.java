@@ -25,7 +25,8 @@ public abstract class BhrutCsvToFhirTransformer {
 
     public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "HH:mm:ss";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"').withQuote(' ');
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
+    //CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"').withQuote(' ');
             //CSVFormat.DEFAULT.withHeader();   //BHRUT files contain a header
     public static final String BHRUT_ORG_ODS_CODE = "RF4";
 
