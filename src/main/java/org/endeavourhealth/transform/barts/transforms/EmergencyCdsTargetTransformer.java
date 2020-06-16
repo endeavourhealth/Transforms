@@ -72,7 +72,7 @@ public class EmergencyCdsTargetTransformer {
                     updateExistingParentEncounter(existingParentEncounter, targetEmergencyCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounters
-                    EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+                    EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetEmergencyCds.getAudit());
                     createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
@@ -83,7 +83,8 @@ public class EmergencyCdsTargetTransformer {
             } else {
 
                 String uniqueId = targetEmergencyCds.getUniqueId();
-                throw new Exception("encounter_id missing for Inpatient CDS record: " + uniqueId);
+                //throw new Exception("encounter_id missing for Inpatient CDS record: " + uniqueId);
+                LOG.warn("encounter_id missing for Emergency CDS record: " + uniqueId);
             }
         }
     }
@@ -552,6 +553,6 @@ public class EmergencyCdsTargetTransformer {
             identifierBuilder.setValue(cdsUniqueId);
         }
 
-        fhirResourceFiler.savePatientResource(null, existingEncounterBuilder);
+        fhirResourceFiler.savePatientResource(null, !existingEncounterBuilder.isIdMapped(), existingEncounterBuilder);
     }
 }

@@ -68,7 +68,7 @@ public class OutpatientCdsTargetTransformer {
                     updateExistingEncounter(existingParentEncounter, targetOutpatientCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounter
-                    EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+                    EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetOutpatientCds.getAudit());
                     createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
@@ -79,7 +79,8 @@ public class OutpatientCdsTargetTransformer {
             } else {
 
                 String uniqueId = targetOutpatientCds.getUniqueId();
-                throw new Exception("encounter_id missing for Outpatient CDS record: "+uniqueId);
+                LOG.warn("encounter_id missing for Outpatient CDS record: " + uniqueId);
+                //throw new Exception("encounter_id missing for Outpatient CDS record: "+uniqueId);
             }
         }
     }
@@ -277,7 +278,7 @@ public class OutpatientCdsTargetTransformer {
             identifierBuilder.setValue(cdsUniqueId);
         }
 
-        fhirResourceFiler.savePatientResource(null, existingEncounterBuilder);
+        fhirResourceFiler.savePatientResource(null, !existingEncounterBuilder.isIdMapped(), existingEncounterBuilder);
     }
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
