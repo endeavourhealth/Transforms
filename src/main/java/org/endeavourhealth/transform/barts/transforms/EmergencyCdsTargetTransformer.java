@@ -91,17 +91,17 @@ public class EmergencyCdsTargetTransformer {
     private static void createEmergencyCdsEncounters(StagingEmergencyCdsTarget targetEmergencyCds,
                                                      FhirResourceFiler fhirResourceFiler,
                                                      BartsCsvHelper csvHelper,
-                                                     EncounterBuilder existingParentEpisodeBuilder) throws Exception {
+                                                     EncounterBuilder existingParentEncounterBuilder) throws Exception {
 
 
         ///retrieve the parent encounter (if not passed in) to point to any new child encounters created during this method
-        if (existingParentEpisodeBuilder == null) {
+        if (existingParentEncounterBuilder == null) {
             Integer parentEncounterId = targetEmergencyCds.getEncounterId();
             Encounter existingParentEncounter
                     = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
-            existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
+            existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
         }
-        ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
+        ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
 
         //unique to the emergency dept. attendance
         String attendanceId = targetEmergencyCds.getAttendanceId();
@@ -310,8 +310,8 @@ public class EmergencyCdsTargetTransformer {
 
         //save the existing parent encounter here with the updated child refs added during this method,
         //then the child sub encounter afterwards
-        LOG.debug("Saving parent EM encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
-        fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
+        LOG.debug("Saving parent EM encounter: "+ FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
+        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
         //save the A&E arrival encounter
         if (arrivalEncounterBuilder != null) {

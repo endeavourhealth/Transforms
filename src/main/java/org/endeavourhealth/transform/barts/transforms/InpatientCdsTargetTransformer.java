@@ -167,7 +167,7 @@ public class InpatientCdsTargetTransformer {
     private static void createInpatientCdsSubEncounters(StagingInpatientCdsTarget targetInpatientCds,
                                                         FhirResourceFiler fhirResourceFiler,
                                                         BartsCsvHelper csvHelper,
-                                                        EncounterBuilder existingParentEpisodeBuilder) throws Exception {
+                                                        EncounterBuilder existingParentEncounterBuilder) throws Exception {
 
         //unique to the inpatient hospital spell
         String spellId = targetInpatientCds.getSpellNumber();
@@ -177,14 +177,14 @@ public class InpatientCdsTargetTransformer {
 
         //retrieve the parent encounter (if not passed in) to point to any new child encounters created during this method
         ContainedListBuilder existingParentEncounterList;
-        if (existingParentEpisodeBuilder == null) {
+        if (existingParentEncounterBuilder == null) {
 
             Integer parentEncounterId = targetInpatientCds.getEncounterId();
             Encounter existingParentEncounter
                     = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
-            existingParentEpisodeBuilder = new EncounterBuilder(existingParentEncounter);
+            existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
         }
-        existingParentEncounterList = new ContainedListBuilder(existingParentEpisodeBuilder);
+        existingParentEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
 
         EncounterBuilder admissionEncounterBuilder = null;
         EncounterBuilder dischargeEncounterBuilder = null;
@@ -356,7 +356,7 @@ public class InpatientCdsTargetTransformer {
 
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         //LOG.debug("Saving IP parent encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
-        fhirResourceFiler.savePatientResource(null, existingParentEpisodeBuilder);
+        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
         //then save the child encounter builders if they are set
         if (admissionEncounterBuilder != null) {

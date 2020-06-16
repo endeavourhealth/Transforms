@@ -220,7 +220,7 @@ public class OutpatientCdsTargetTransformer {
 
         //save encounterBuilder records
         //LOG.debug("Saving existing OP parent encounter: "+FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
-        fhirResourceFiler.savePatientResource(null, existingParentEncounterBuilder);
+        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
         //LOG.debug("Saving child OP encounter: "+FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, encounterBuilder);
