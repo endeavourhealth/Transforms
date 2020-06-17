@@ -128,7 +128,8 @@ public class CriticalCareCdsTargetTransformer {
             if (existingParentEncounter != null) {
 
                 existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
-                //and link the parent to the child
+
+                //link the parent to the child
                 Reference childCriticalRef = ReferenceHelper.createReference(ResourceType.Encounter, criticalCareId);
                 ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
                 if (existingParentEncounterBuilder.isIdMapped()) {
@@ -139,8 +140,9 @@ public class CriticalCareCdsTargetTransformer {
                 listBuilder.addReference(childCriticalRef);
             } else {
 
-                //if this happens, then we cannot locate the parent Inpatient Episode encounter which needs investigation
-                throw new Exception("Unable to get parent encounter_id: "+parentEncounterId+" for Critical Care CDS record: " + uniqueId);
+                //if this happens, then we cannot locate the parent Inpatient Episode which must have been deleted
+                TransformWarnings.log(LOG, csvHelper, "Cannot find existing parent EncounterId: {} for Critical Care CDS record: "+uniqueId, parentEncounterId);
+                continue;
             }
 
             //set the new encounter as a child of it's parent
