@@ -92,41 +92,44 @@ public class OutpatientCdsTargetTransformer {
         Integer encounterId = targetOutpatientCds.getEncounterId();  //this is used to identify the top level parent episode
 
         //retrieve the existing Top level parent Encounter resource to perform a deletion plus any child encounters
-        Encounter existingParentEncounter
-                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(encounterId));
+        if (encounterId != null) {
 
-        if (existingParentEncounter != null) {
+            Encounter existingParentEncounter
+                    = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(encounterId));
 
-            EncounterBuilder parentEncounterBuilder
-                    = new EncounterBuilder(existingParentEncounter, targetOutpatientCds.getAudit());
+            if (existingParentEncounter != null) {
 
-            //has this encounter got child encounters?
-            if (existingParentEncounter.hasContained()) {
+                EncounterBuilder parentEncounterBuilder
+                        = new EncounterBuilder(existingParentEncounter, targetOutpatientCds.getAudit());
 
-                ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
-                ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+                //has this encounter got child encounters?
+                if (existingParentEncounter.hasContained()) {
 
-                for (List_.ListEntryComponent item: listBuilder.getContainedListItems()) {
-                    Reference ref = item.getItem();
-                    ReferenceComponents comps = ReferenceHelper.getReferenceComponents(ref);
-                    if (comps.getResourceType() != ResourceType.Encounter) {
-                        continue;
-                    }
-                    Encounter childEncounter
-                            = (Encounter)resourceDal.getCurrentVersionAsResource(csvHelper.getServiceId(), ResourceType.Encounter, comps.getId());
-                    if (childEncounter != null) {
-                        LOG.debug("Deleting child encounter " + childEncounter.getId());
+                    ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
+                    ResourceDalI resourceDal = DalProvider.factoryResourceDal();
 
-                        fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                    for (List_.ListEntryComponent item : listBuilder.getContainedListItems()) {
+                        Reference ref = item.getItem();
+                        ReferenceComponents comps = ReferenceHelper.getReferenceComponents(ref);
+                        if (comps.getResourceType() != ResourceType.Encounter) {
+                            continue;
+                        }
+                        Encounter childEncounter
+                                = (Encounter) resourceDal.getCurrentVersionAsResource(csvHelper.getServiceId(), ResourceType.Encounter, comps.getId());
+                        if (childEncounter != null) {
+                            LOG.debug("Deleting child encounter " + childEncounter.getId());
+
+                            fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                        }
                     }
                 }
+
+                //finally, delete the top level parent
+                fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
+
+            } else {
+                TransformWarnings.log(LOG, csvHelper, "Cannot find existing Encounter: {} for deletion", encounterId);
             }
-
-            //finally, delete the top level parent
-            fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
-
-        } else {
-            TransformWarnings.log(LOG, csvHelper, "Cannot find existing Encounter: {} for deletion", encounterId);
         }
     }
 
