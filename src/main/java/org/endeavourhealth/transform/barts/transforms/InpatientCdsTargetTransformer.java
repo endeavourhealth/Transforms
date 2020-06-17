@@ -50,6 +50,12 @@ public class InpatientCdsTargetTransformer {
 
         for (StagingInpatientCdsTarget targetInpatientCds : targetInpatientCdsRecords) {
 
+            //check if any patient filtering applied
+            String personId = Integer.toString(targetInpatientCds.getPersonId());
+            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                continue;
+            }
+
             boolean isDeleted = targetInpatientCds.isDeleted();
             if (isDeleted) {
 

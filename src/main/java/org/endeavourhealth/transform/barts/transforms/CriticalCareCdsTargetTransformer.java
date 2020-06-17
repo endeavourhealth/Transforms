@@ -48,6 +48,11 @@ public class CriticalCareCdsTargetTransformer {
 
         for (StagingCriticalCareCdsTarget targetCriticalCareCds : targetCriticalCareCdsRecords) {
 
+            //check if any patient filtering applied
+            if (!csvHelper.processRecordFilteringOnPatientId(Integer.toString(targetCriticalCareCds.getPersonId()))) {
+                continue;
+            }
+
             String uniqueId = targetCriticalCareCds.getUniqueId();
             boolean isDeleted = targetCriticalCareCds.isDeleted();
 

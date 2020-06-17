@@ -52,6 +52,12 @@ public class EmergencyCdsTargetTransformer {
 
         for (StagingEmergencyCdsTarget targetEmergencyCds : targetEmergencyCdsRecords) {
 
+            //check if any patient filtering applied
+            String personId = Integer.toString(targetEmergencyCds.getPersonId());
+            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                continue;
+            }
+
             boolean isDeleted = targetEmergencyCds.isDeleted();
             if (isDeleted) {
 

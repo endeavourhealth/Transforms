@@ -49,6 +49,12 @@ public class OutpatientCdsTargetTransformer {
 
         for (StagingOutpatientCdsTarget targetOutpatientCds : targetOutpatientCdsRecords) {
 
+            //check if any patient filtering applied
+            String personId = Integer.toString(targetOutpatientCds.getPersonId());
+            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                continue;
+            }
+
             boolean isDeleted = targetOutpatientCds.isDeleted();
             if (isDeleted) {
 
