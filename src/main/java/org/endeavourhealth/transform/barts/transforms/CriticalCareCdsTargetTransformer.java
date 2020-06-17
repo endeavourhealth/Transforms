@@ -121,24 +121,33 @@ public class CriticalCareCdsTargetTransformer {
             String episodeNumber = targetCriticalCareCds.getEpisodeNumber();
             String parentEncounterId = spellId +":"+episodeNumber+":IP:Episode";
 
+            //retrieve and update the parent to point to this new child encounter
+            EncounterBuilder existingParentEncounterBuilder = null;
+            Encounter existingParentEncounter
+                    = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, parentEncounterId);
+            if (existingParentEncounter != null) {
+
+                existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+                //and link the parent to the child
+                Reference childCriticalRef = ReferenceHelper.createReference(ResourceType.Encounter, criticalCareId);
+                ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
+                if (existingParentEncounterBuilder.isIdMapped()) {
+
+                    childCriticalRef
+                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(childCriticalRef, csvHelper);
+                }
+                listBuilder.addReference(childCriticalRef);
+            } else {
+
+                //if this happens, then we cannot locate the parent Inpatient Episode encounter which needs investigation
+                throw new Exception("Unable to get parent encounter_id: "+parentEncounterId+" for Critical Care CDS record: " + uniqueId);
+            }
+
+            //set the new encounter as a child of it's parent
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, parentEncounterId);
             parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
             encounterBuilder.setPartOf(parentEncounter);
-
-            ///retrieve and update the parent to point to this new child
-            Encounter existingParentEncounter
-                    = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, parentEncounterId);
-            EncounterBuilder existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
-            //and link the parent to the child
-            Reference childCriticalRef = ReferenceHelper.createReference(ResourceType.Encounter, criticalCareId);
-            ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
-            if (existingParentEncounterBuilder.isIdMapped()) {
-
-                childCriticalRef
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childCriticalRef, csvHelper);
-            }
-            listBuilder.addReference(childCriticalRef);
 
             //add in additional extended data as Parameters resource with additional extension
             //TODO: set name and values using IM map once done, i.e. replace critical_care_type etc.
