@@ -19,6 +19,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -44,6 +45,8 @@ public abstract class ImperialHL7FhirTransformer {
      */
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
         String HL7Message = null;
+        /*FileInputStream iS = new FileInputStream("C:\\Users\\USER\\Desktop\\Examples\\A01");
+        HL7Message = IOUtils.toString(iS);*/
         //get HL7 message from the table based on id
         /*Connection connection = ConnectionManager.getHL7v2InboundConnection();
         PreparedStatement ps = null;
@@ -64,9 +67,6 @@ public abstract class ImperialHL7FhirTransformer {
             }
             connection.close();
         }*/
-
-        /*FileInputStream iS = new FileInputStream("C:\\Users\\USER\\Desktop\\Examples\\A01");
-        HL7Message = IOUtils.toString(iS);*/
         //get HL7 message from the table based on id
 
         Message hapiMsg = parseHL7Message(HL7Message);
@@ -111,7 +111,7 @@ public abstract class ImperialHL7FhirTransformer {
             //LocationPatientAssLoc
             Location fhirLocationPatientAssLoc = null;
             fhirLocationPatientAssLoc = new Location();
-            fhirLocationPatientAssLoc = transformPV1ToOrgLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
+            fhirLocationPatientAssLoc = transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
             fhirLocationPatientAssLoc.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
 
             LocationBuilder locationBuilderPatientAssLoc = new LocationBuilder(fhirLocationPatientAssLoc);
@@ -133,12 +133,25 @@ public abstract class ImperialHL7FhirTransformer {
             fhirPatient = (Patient) imperialHL7Helper.retrieveResource(patientGuid, ResourceType.Patient);
             if(fhirPatient == null) {
                 fhirPatient = new Patient();
+                fhirPatient.setId(patientGuid);
                 newPatient = true;
             }
             fhirPatient = transformPIDToPatient(adtMsg.getPID(), fhirPatient);
-            fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+
+            if (newPatient) {
+                fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirPatient.setManagingOrganization(organizationReference);
+                fhirPatient.addCareProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirPatient.addCareProvider(practitionerReference);
+            }
 
             PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
             if(newPatient) {
@@ -151,16 +164,34 @@ public abstract class ImperialHL7FhirTransformer {
             //EpisodeOfCare
             boolean newEpisodeOfCare = false;
             EpisodeOfCare fhirEpisodeOfCare = null;
-            String sourceEpisodeId = "1";
+
+            TS admitDtTime = adtMsg.getPV1().getAdmitDateTime();
+            String startDt = String.valueOf(admitDtTime.getTime());
+            String sourceEpisodeId = ImperialHL7Helper.createUniqueId(patientGuid, startDt.substring(0,8));
             fhirEpisodeOfCare = (EpisodeOfCare)imperialHL7Helper.retrieveResource(sourceEpisodeId, ResourceType.EpisodeOfCare);
             if(fhirEpisodeOfCare == null) {
                 fhirEpisodeOfCare = new EpisodeOfCare();
+                fhirEpisodeOfCare.setId(sourceEpisodeId);
                 newEpisodeOfCare = true;
             }
             fhirEpisodeOfCare = transformPV1ToEpisodeOfCare(adtMsg.getPV1(), fhirEpisodeOfCare);
-            fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            if (newPatient) {
+                fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setCareManager(practitionerReference);
+            }
 
             EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(fhirEpisodeOfCare);
             if(newEpisodeOfCare) {
@@ -172,20 +203,51 @@ public abstract class ImperialHL7FhirTransformer {
 
             //Encounter
             boolean newEncounter = false;
-            String locallyUniqueResourceEncounterId = String.valueOf(adtMsg.getPV1().getAlternateVisitID());
             Encounter fhirEncounter = null;
-            Encounter existingEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
-            if (existingEncounter == null) {
+            String encounterId = null;
+            XCN[] consultingDoctor = adtMsg.getPV1().getConsultingDoctor();
+            if(consultingDoctor != null && consultingDoctor.length > 0) {
+                ST idNumCd = consultingDoctor[0].getIDNumber();
+                encounterId = String.valueOf(idNumCd);
+            }
+
+            String locallyUniqueResourceEncounterId = ImperialHL7Helper.createUniqueId(patientGuid, encounterId);
+            fhirEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
+            if (fhirEncounter == null) {
                 fhirEncounter = new Encounter();
+                fhirEncounter.setId(encounterId);
                 newEncounter = true;
             }
             fhirEncounter = transformPV1ToEncounter(adtMsg.getPV1(), fhirEncounter);
-            fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
-            fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
-            fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            if (newPatient) {
+                fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
+                fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
+                fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEncounter.setPatient(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEncounter.setServiceProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEncounter.addExtension().setValue(practitionerReference);
+                fhirEncounter.addParticipant().setIndividual(practitionerReference);
+
+                Reference episodeOfCareReference = imperialHL7Helper.createEpisodeOfCareReference(fhirEpisodeOfCare.getId());
+                episodeOfCareReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeOfCareReference, fhirResourceFiler);
+                fhirEncounter.addEpisodeOfCare(episodeOfCareReference);
+
+                Reference locationReference = imperialHL7Helper.createLocationReference(fhirLocationPatientAssLoc.getId());
+                locationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(locationReference, fhirResourceFiler);
+                fhirEncounter.addLocation().setLocation(locationReference);
+            }
 
             EncounterBuilder encounterBuilder = new EncounterBuilder(fhirEncounter);
             if(newEncounter) {
@@ -232,7 +294,7 @@ public abstract class ImperialHL7FhirTransformer {
             //LocationPatientAssLoc
             Location fhirLocationPatientAssLoc = null;
             fhirLocationPatientAssLoc = new Location();
-            fhirLocationPatientAssLoc = transformPV1ToOrgLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
+            fhirLocationPatientAssLoc = transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
             fhirLocationPatientAssLoc.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
 
             LocationBuilder locationBuilderPatientAssLoc = new LocationBuilder(fhirLocationPatientAssLoc);
@@ -254,12 +316,25 @@ public abstract class ImperialHL7FhirTransformer {
             fhirPatient = (Patient) imperialHL7Helper.retrieveResource(patientGuid, ResourceType.Patient);
             if(fhirPatient == null) {
                 fhirPatient = new Patient();
+                fhirPatient.setId(patientGuid);
                 newPatient = true;
             }
             fhirPatient = transformPIDToPatient(adtMsg.getPID(), fhirPatient);
-            fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+
+            if (newPatient) {
+                fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirPatient.setManagingOrganization(organizationReference);
+                fhirPatient.addCareProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirPatient.addCareProvider(practitionerReference);
+            }
 
             PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
             if(newPatient) {
@@ -272,16 +347,34 @@ public abstract class ImperialHL7FhirTransformer {
             //EpisodeOfCare
             boolean newEpisodeOfCare = false;
             EpisodeOfCare fhirEpisodeOfCare = null;
-            String sourceEpisodeId = "1";
+
+            TS admitDtTime = adtMsg.getPV1().getAdmitDateTime();
+            String startDt = String.valueOf(admitDtTime.getTime());
+            String sourceEpisodeId = ImperialHL7Helper.createUniqueId(patientGuid, startDt.substring(0,8));
             fhirEpisodeOfCare = (EpisodeOfCare)imperialHL7Helper.retrieveResource(sourceEpisodeId, ResourceType.EpisodeOfCare);
             if(fhirEpisodeOfCare == null) {
                 fhirEpisodeOfCare = new EpisodeOfCare();
+                fhirEpisodeOfCare.setId(sourceEpisodeId);
                 newEpisodeOfCare = true;
             }
             fhirEpisodeOfCare = transformPV1ToEpisodeOfCare(adtMsg.getPV1(), fhirEpisodeOfCare);
-            fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            if (newPatient) {
+                fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setCareManager(practitionerReference);
+            }
 
             EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(fhirEpisodeOfCare);
             if(newEpisodeOfCare) {
@@ -293,20 +386,51 @@ public abstract class ImperialHL7FhirTransformer {
 
             //Encounter
             boolean newEncounter = false;
-            String locallyUniqueResourceEncounterId = String.valueOf(adtMsg.getPV1().getAlternateVisitID());
             Encounter fhirEncounter = null;
-            Encounter existingEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
-            if (existingEncounter == null) {
+            String encounterId = null;
+            XCN[] consultingDoctor = adtMsg.getPV1().getConsultingDoctor();
+            if(consultingDoctor != null && consultingDoctor.length > 0) {
+                ST idNumCd = consultingDoctor[0].getIDNumber();
+                encounterId = String.valueOf(idNumCd);
+            }
+
+            String locallyUniqueResourceEncounterId = ImperialHL7Helper.createUniqueId(patientGuid, encounterId);
+            fhirEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
+            if (fhirEncounter == null) {
                 fhirEncounter = new Encounter();
+                fhirEncounter.setId(encounterId);
                 newEncounter = true;
             }
             fhirEncounter = transformPV1ToEncounter(adtMsg.getPV1(), fhirEncounter);
-            fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
-            fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
-            fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            if (newPatient) {
+                fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
+                fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
+                fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEncounter.setPatient(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEncounter.setServiceProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEncounter.addExtension().setValue(practitionerReference);
+                fhirEncounter.addParticipant().setIndividual(practitionerReference);
+
+                Reference episodeOfCareReference = imperialHL7Helper.createEpisodeOfCareReference(fhirEpisodeOfCare.getId());
+                episodeOfCareReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeOfCareReference, fhirResourceFiler);
+                fhirEncounter.addEpisodeOfCare(episodeOfCareReference);
+
+                Reference locationReference = imperialHL7Helper.createLocationReference(fhirLocationPatientAssLoc.getId());
+                locationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(locationReference, fhirResourceFiler);
+                fhirEncounter.addLocation().setLocation(locationReference);
+            }
 
             EncounterBuilder encounterBuilder = new EncounterBuilder(fhirEncounter);
             if(newEncounter) {
@@ -337,6 +461,7 @@ public abstract class ImperialHL7FhirTransformer {
             fhirPractitioner.addPractitionerRole().setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
 
             PractitionerBuilder practitionerBuilder = new PractitionerBuilder(fhirPractitioner);
+            fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
             //Practitioner
 
             //LocationOrg
@@ -346,21 +471,24 @@ public abstract class ImperialHL7FhirTransformer {
             fhirLocationOrg.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
 
             LocationBuilder locationBuilderOrg = new LocationBuilder(fhirLocationOrg);
+            fhirResourceFiler.saveAdminResource(null, locationBuilderOrg);
             //LocationOrg
 
             //LocationPatientAssLoc
             Location fhirLocationPatientAssLoc = null;
             fhirLocationPatientAssLoc = new Location();
-            fhirLocationPatientAssLoc = transformPV1ToOrgLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
+            fhirLocationPatientAssLoc = transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
             fhirLocationPatientAssLoc.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
 
             LocationBuilder locationBuilderPatientAssLoc = new LocationBuilder(fhirLocationPatientAssLoc);
+            fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
             //LocationPatientAssLoc
 
             //Organization
             fhirOrganization.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationOrg.getId()));
 
             OrganizationBuilder organizationBuilder = new OrganizationBuilder(fhirOrganization);
+            fhirResourceFiler.saveAdminResource(null, organizationBuilder);
             //Organization
 
             //Patient
@@ -371,12 +499,25 @@ public abstract class ImperialHL7FhirTransformer {
             fhirPatient = (Patient) imperialHL7Helper.retrieveResource(patientGuid, ResourceType.Patient);
             if(fhirPatient == null) {
                 fhirPatient = new Patient();
+                fhirPatient.setId(patientGuid);
                 newPatient = true;
             }
             fhirPatient = transformPIDToPatient(adtMsg.getPID(), fhirPatient);
-            fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+
+            if (newPatient) {
+                fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirPatient.setManagingOrganization(organizationReference);
+                fhirPatient.addCareProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirPatient.addCareProvider(practitionerReference);
+            }
 
             PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
             if(newPatient) {
@@ -389,16 +530,34 @@ public abstract class ImperialHL7FhirTransformer {
             //EpisodeOfCare
             boolean newEpisodeOfCare = false;
             EpisodeOfCare fhirEpisodeOfCare = null;
-            String sourceEpisodeId = "1";
+
+            TS admitDtTime = adtMsg.getPV1().getAdmitDateTime();
+            String startDt = String.valueOf(admitDtTime.getTime());
+            String sourceEpisodeId = ImperialHL7Helper.createUniqueId(patientGuid, startDt.substring(0,8));
             fhirEpisodeOfCare = (EpisodeOfCare)imperialHL7Helper.retrieveResource(sourceEpisodeId, ResourceType.EpisodeOfCare);
             if(fhirEpisodeOfCare == null) {
                 fhirEpisodeOfCare = new EpisodeOfCare();
+                fhirEpisodeOfCare.setId(sourceEpisodeId);
                 newEpisodeOfCare = true;
             }
             fhirEpisodeOfCare = transformPV1ToEpisodeOfCare(adtMsg.getPV1(), fhirEpisodeOfCare);
-            fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            if (newPatient) {
+                fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setCareManager(practitionerReference);
+            }
 
             EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(fhirEpisodeOfCare);
             if(newEpisodeOfCare) {
@@ -410,20 +569,51 @@ public abstract class ImperialHL7FhirTransformer {
 
             //Encounter
             boolean newEncounter = false;
-            String locallyUniqueResourceEncounterId = String.valueOf(adtMsg.getPV1().getAlternateVisitID());
             Encounter fhirEncounter = null;
-            Encounter existingEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
-            if (existingEncounter == null) {
+            String encounterId = null;
+            XCN[] consultingDoctor = adtMsg.getPV1().getConsultingDoctor();
+            if(consultingDoctor != null && consultingDoctor.length > 0) {
+                ST idNumCd = consultingDoctor[0].getIDNumber();
+                encounterId = String.valueOf(idNumCd);
+            }
+
+            String locallyUniqueResourceEncounterId = ImperialHL7Helper.createUniqueId(patientGuid, encounterId);
+            fhirEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
+            if (fhirEncounter == null) {
                 fhirEncounter = new Encounter();
+                fhirEncounter.setId(encounterId);
                 newEncounter = true;
             }
             fhirEncounter = transformPV1ToEncounter(adtMsg.getPV1(), fhirEncounter);
-            fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
-            fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
-            fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            if (newPatient) {
+                fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
+                fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
+                fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEncounter.setPatient(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEncounter.setServiceProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEncounter.addExtension().setValue(practitionerReference);
+                fhirEncounter.addParticipant().setIndividual(practitionerReference);
+
+                Reference episodeOfCareReference = imperialHL7Helper.createEpisodeOfCareReference(fhirEpisodeOfCare.getId());
+                episodeOfCareReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeOfCareReference, fhirResourceFiler);
+                fhirEncounter.addEpisodeOfCare(episodeOfCareReference);
+
+                Reference locationReference = imperialHL7Helper.createLocationReference(fhirLocationPatientAssLoc.getId());
+                locationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(locationReference, fhirResourceFiler);
+                fhirEncounter.addLocation().setLocation(locationReference);
+            }
 
             EncounterBuilder encounterBuilder = new EncounterBuilder(fhirEncounter);
             if(newEncounter) {
@@ -470,7 +660,7 @@ public abstract class ImperialHL7FhirTransformer {
             //LocationPatientAssLoc
             Location fhirLocationPatientAssLoc = null;
             fhirLocationPatientAssLoc = new Location();
-            fhirLocationPatientAssLoc = transformPV1ToOrgLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
+            fhirLocationPatientAssLoc = transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
             fhirLocationPatientAssLoc.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
 
             LocationBuilder locationBuilderPatientAssLoc = new LocationBuilder(fhirLocationPatientAssLoc);
@@ -492,12 +682,25 @@ public abstract class ImperialHL7FhirTransformer {
             fhirPatient = (Patient) imperialHL7Helper.retrieveResource(patientGuid, ResourceType.Patient);
             if(fhirPatient == null) {
                 fhirPatient = new Patient();
+                fhirPatient.setId(patientGuid);
                 newPatient = true;
             }
             fhirPatient = transformPIDToPatient(adtMsg.getPID(), fhirPatient);
-            fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+
+            if (newPatient) {
+                fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirPatient.setManagingOrganization(organizationReference);
+                fhirPatient.addCareProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirPatient.addCareProvider(practitionerReference);
+            }
 
             PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
             if(newPatient) {
@@ -510,16 +713,34 @@ public abstract class ImperialHL7FhirTransformer {
             //EpisodeOfCare
             boolean newEpisodeOfCare = false;
             EpisodeOfCare fhirEpisodeOfCare = null;
-            String sourceEpisodeId = "1";
+
+            TS admitDtTime = adtMsg.getPV1().getAdmitDateTime();
+            String startDt = String.valueOf(admitDtTime.getTime());
+            String sourceEpisodeId = ImperialHL7Helper.createUniqueId(patientGuid, startDt.substring(0,8));
             fhirEpisodeOfCare = (EpisodeOfCare)imperialHL7Helper.retrieveResource(sourceEpisodeId, ResourceType.EpisodeOfCare);
             if(fhirEpisodeOfCare == null) {
                 fhirEpisodeOfCare = new EpisodeOfCare();
+                fhirEpisodeOfCare.setId(sourceEpisodeId);
                 newEpisodeOfCare = true;
             }
             fhirEpisodeOfCare = transformPV1ToEpisodeOfCare(adtMsg.getPV1(), fhirEpisodeOfCare);
-            fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            if (newPatient) {
+                fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setCareManager(practitionerReference);
+            }
 
             EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(fhirEpisodeOfCare);
             if(newEpisodeOfCare) {
@@ -531,20 +752,51 @@ public abstract class ImperialHL7FhirTransformer {
 
             //Encounter
             boolean newEncounter = false;
-            String locallyUniqueResourceEncounterId = String.valueOf(adtMsg.getPV1().getAlternateVisitID());
             Encounter fhirEncounter = null;
-            Encounter existingEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
-            if (existingEncounter == null) {
+            String encounterId = null;
+            XCN[] consultingDoctor = adtMsg.getPV1().getConsultingDoctor();
+            if(consultingDoctor != null && consultingDoctor.length > 0) {
+                ST idNumCd = consultingDoctor[0].getIDNumber();
+                encounterId = String.valueOf(idNumCd);
+            }
+
+            String locallyUniqueResourceEncounterId = ImperialHL7Helper.createUniqueId(patientGuid, encounterId);
+            fhirEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
+            if (fhirEncounter == null) {
                 fhirEncounter = new Encounter();
+                fhirEncounter.setId(encounterId);
                 newEncounter = true;
             }
             fhirEncounter = transformPV1ToEncounter(adtMsg.getPV1(), fhirEncounter);
-            fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
-            fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
-            fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            if (newPatient) {
+                fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
+                fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
+                fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEncounter.setPatient(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEncounter.setServiceProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEncounter.addExtension().setValue(practitionerReference);
+                fhirEncounter.addParticipant().setIndividual(practitionerReference);
+
+                Reference episodeOfCareReference = imperialHL7Helper.createEpisodeOfCareReference(fhirEpisodeOfCare.getId());
+                episodeOfCareReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeOfCareReference, fhirResourceFiler);
+                fhirEncounter.addEpisodeOfCare(episodeOfCareReference);
+
+                Reference locationReference = imperialHL7Helper.createLocationReference(fhirLocationPatientAssLoc.getId());
+                locationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(locationReference, fhirResourceFiler);
+                fhirEncounter.addLocation().setLocation(locationReference);
+            }
 
             EncounterBuilder encounterBuilder = new EncounterBuilder(fhirEncounter);
             if(newEncounter) {
@@ -591,7 +843,7 @@ public abstract class ImperialHL7FhirTransformer {
             //LocationPatientAssLoc
             Location fhirLocationPatientAssLoc = null;
             fhirLocationPatientAssLoc = new Location();
-            fhirLocationPatientAssLoc = transformPV1ToOrgLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
+            fhirLocationPatientAssLoc = transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), fhirLocationPatientAssLoc);
             fhirLocationPatientAssLoc.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
 
             LocationBuilder locationBuilderPatientAssLoc = new LocationBuilder(fhirLocationPatientAssLoc);
@@ -613,12 +865,25 @@ public abstract class ImperialHL7FhirTransformer {
             fhirPatient = (Patient) imperialHL7Helper.retrieveResource(patientGuid, ResourceType.Patient);
             if(fhirPatient == null) {
                 fhirPatient = new Patient();
+                fhirPatient.setId(patientGuid);
                 newPatient = true;
             }
             fhirPatient = transformPIDToPatient(adtMsg.getPID(), fhirPatient);
-            fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+
+            if (newPatient) {
+                fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirPatient.setManagingOrganization(organizationReference);
+                fhirPatient.addCareProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirPatient.addCareProvider(practitionerReference);
+            }
 
             PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
             if(newPatient) {
@@ -631,16 +896,34 @@ public abstract class ImperialHL7FhirTransformer {
             //EpisodeOfCare
             boolean newEpisodeOfCare = false;
             EpisodeOfCare fhirEpisodeOfCare = null;
-            String sourceEpisodeId = "1";
+
+            TS admitDtTime = adtMsg.getPV1().getAdmitDateTime();
+            String startDt = String.valueOf(admitDtTime.getTime());
+            String sourceEpisodeId = ImperialHL7Helper.createUniqueId(patientGuid, startDt.substring(0,8));
             fhirEpisodeOfCare = (EpisodeOfCare)imperialHL7Helper.retrieveResource(sourceEpisodeId, ResourceType.EpisodeOfCare);
             if(fhirEpisodeOfCare == null) {
                 fhirEpisodeOfCare = new EpisodeOfCare();
+                fhirEpisodeOfCare.setId(sourceEpisodeId);
                 newEpisodeOfCare = true;
             }
             fhirEpisodeOfCare = transformPV1ToEpisodeOfCare(adtMsg.getPV1(), fhirEpisodeOfCare);
-            fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
-            fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            if (newPatient) {
+                fhirEpisodeOfCare.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEpisodeOfCare.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirEpisodeOfCare.setCareManager(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setManagingOrganization(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEpisodeOfCare.setCareManager(practitionerReference);
+            }
 
             EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(fhirEpisodeOfCare);
             if(newEpisodeOfCare) {
@@ -652,20 +935,51 @@ public abstract class ImperialHL7FhirTransformer {
 
             //Encounter
             boolean newEncounter = false;
-            String locallyUniqueResourceEncounterId = String.valueOf(adtMsg.getPV1().getAlternateVisitID());
             Encounter fhirEncounter = null;
-            Encounter existingEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
-            if (existingEncounter == null) {
+            String encounterId = null;
+            XCN[] consultingDoctor = adtMsg.getPV1().getConsultingDoctor();
+            if(consultingDoctor != null && consultingDoctor.length > 0) {
+                ST idNumCd = consultingDoctor[0].getIDNumber();
+                encounterId = String.valueOf(idNumCd);
+            }
+
+            String locallyUniqueResourceEncounterId = ImperialHL7Helper.createUniqueId(patientGuid, encounterId);
+            fhirEncounter = (Encounter) imperialHL7Helper.retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
+            if (fhirEncounter == null) {
                 fhirEncounter = new Encounter();
+                fhirEncounter.setId(encounterId);
                 newEncounter = true;
             }
             fhirEncounter = transformPV1ToEncounter(adtMsg.getPV1(), fhirEncounter);
-            fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
-            fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
-            fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
-            fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
-            fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            if (newPatient) {
+                fhirEncounter.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, fhirPatient.getId()));
+                fhirEncounter.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addEpisodeOfCare(ImperialHL7Helper.createReference(ResourceType.EpisodeOfCare, fhirEpisodeOfCare.getId()));
+                fhirEncounter.addParticipant().setIndividual(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));
+                fhirEncounter.addLocation().setLocation(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationPatientAssLoc.getId()));
+                fhirEncounter.setServiceProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            } else {
+                Reference patientReference = imperialHL7Helper.createPatientReference(fhirPatient.getId());
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                fhirEncounter.setPatient(patientReference);
+
+                Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirEncounter.setServiceProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirEncounter.addExtension().setValue(practitionerReference);
+                fhirEncounter.addParticipant().setIndividual(practitionerReference);
+
+                Reference episodeOfCareReference = imperialHL7Helper.createEpisodeOfCareReference(fhirEpisodeOfCare.getId());
+                episodeOfCareReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeOfCareReference, fhirResourceFiler);
+                fhirEncounter.addEpisodeOfCare(episodeOfCareReference);
+
+                Reference locationReference = imperialHL7Helper.createLocationReference(fhirLocationPatientAssLoc.getId());
+                locationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(locationReference, fhirResourceFiler);
+                fhirEncounter.addLocation().setLocation(locationReference);
+            }
 
             EncounterBuilder encounterBuilder = new EncounterBuilder(fhirEncounter);
             if(newEncounter) {
@@ -674,7 +988,6 @@ public abstract class ImperialHL7FhirTransformer {
                 fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
             }
             //Encounter
-
         }
     }
 
@@ -744,7 +1057,6 @@ public abstract class ImperialHL7FhirTransformer {
      * @throws Exception
      */
     public static Patient transformPIDToPatient(PID pid, Patient patient) throws Exception {
-        patient.setId(UUID.randomUUID().toString());
         patient.getMeta().addProfile("http://endeavourhealth.org/fhir/StructureDefinition/primarycare-patient");
 
         CX[] patientIdList = pid.getPatientIdentifierList();
@@ -832,7 +1144,6 @@ public abstract class ImperialHL7FhirTransformer {
         IS patientType = pv1.getPatientType();
         IS servicingFacility = pv1.getServicingFacility();
 
-        encounter.setId(UUID.randomUUID().toString());
         encounter.getMeta().addProfile("http://endeavourhealth.org/fhir/StructureDefinition/primarycare-encounter");
 
         /*if (String.valueOf(accStatus).equalsIgnoreCase("active")) {*/
@@ -853,7 +1164,6 @@ public abstract class ImperialHL7FhirTransformer {
      * @throws Exception
      */
     public static Practitioner transformPV1ToPractitioner(PV1 pv1, Practitioner practitioner) throws Exception {
-        practitioner.setId(UUID.randomUUID().toString());
         practitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
         practitioner.setActive(true);
 
@@ -899,6 +1209,7 @@ public abstract class ImperialHL7FhirTransformer {
             identifierCd.setValue(String.valueOf(idNumCd));
             identifierCd.setSystem("http://endeavourhealth.org/fhir/Identifier/gmc-number");
             practitioner.addIdentifier(identifierCd);
+            practitioner.setId(String.valueOf(idNumCd));
         }
 
         return practitioner;
@@ -912,7 +1223,6 @@ public abstract class ImperialHL7FhirTransformer {
      * @throws Exception
      */
     public static EpisodeOfCare transformPV1ToEpisodeOfCare(PV1 pv1, EpisodeOfCare episodeOfCare) throws Exception {
-        episodeOfCare.setId(UUID.randomUUID().toString());
         episodeOfCare.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_EPISODE_OF_CARE));
         episodeOfCare.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
 
@@ -941,7 +1251,7 @@ public abstract class ImperialHL7FhirTransformer {
      * @throws Exception
      */
     public static Location transformPV1ToOrgLocation(PV1 pv1, Location location) throws Exception {
-        location.setId(UUID.randomUUID().toString());
+        location.setId("Imperial College Healthcare NHS Trust");
         location.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
         location.setStatus(Location.LocationStatus.ACTIVE);
         location.setName("Imperial College Healthcare NHS Trust");
@@ -963,7 +1273,7 @@ public abstract class ImperialHL7FhirTransformer {
      * @throws Exception
      */
     public static Location transformPV1ToPatientAssignedLocation(PV1 pv1, Location location) throws Exception {
-        location.setId(UUID.randomUUID().toString());
+        location.setId(String.valueOf(pv1.getAssignedPatientLocation().getLocationDescription()));
         location.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
         location.setStatus(Location.LocationStatus.ACTIVE);
         location.setName(String.valueOf(pv1.getAssignedPatientLocation().getLocationDescription()));

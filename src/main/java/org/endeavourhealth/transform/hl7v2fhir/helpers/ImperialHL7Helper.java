@@ -25,6 +25,7 @@ public class ImperialHL7Helper implements HasServiceSystemAndExchangeIdI {
 
     //DB access
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+    private static final String ID_DELIMITER = ":";
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -129,8 +130,66 @@ public class ImperialHL7Helper implements HasServiceSystemAndExchangeIdI {
         return (new Reference()).setReference(referenceValue);
     }
 
-    public static Reference createOrganisationReference(String organizationGuid) throws Exception {
+    /**
+     *
+     * @param patientGuid
+     * @return
+     * @throws Exception
+     */
+    public static Reference createPatientReference(String patientGuid) throws Exception {
+        return createReference(ResourceType.Patient, patientGuid);
+    }
+
+    /**
+     *
+     * @param organizationGuid
+     * @return
+     * @throws Exception
+     */
+    public static Reference createOrganizationReference(String organizationGuid) throws Exception {
         return createReference(ResourceType.Organization, organizationGuid);
+    }
+
+    /**
+     *
+     * @param practitionerGuid
+     * @return
+     * @throws Exception
+     */
+    public static Reference createPractitionerReference(String practitionerGuid) throws Exception {
+        return createReference(ResourceType.Practitioner, practitionerGuid);
+    }
+
+    /**
+     *
+     * @param episodeOfCareGuid
+     * @return
+     * @throws Exception
+     */
+    public static Reference createEpisodeOfCareReference(String episodeOfCareGuid) throws Exception {
+        return createReference(ResourceType.EpisodeOfCare, episodeOfCareGuid);
+    }
+
+    /**
+     *
+     * @param locationGuid
+     * @return
+     * @throws Exception
+     */
+    public static Reference createLocationReference(String locationGuid) throws Exception {
+        return createReference(ResourceType.Location, locationGuid);
+    }
+
+    /**
+     * to ensure globally unique IDs for all resources, a new ID is created
+     * from the patientGuid and sourceGuid (e.g. observationGuid)
+     */
+    public static String createUniqueId(String patientGuid, String sourceGuid) {
+        if (sourceGuid == null) {
+            return patientGuid;
+        } else {
+            return patientGuid + ID_DELIMITER + sourceGuid;
+        }
     }
 
 }
