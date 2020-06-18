@@ -35,6 +35,9 @@ public class TppReferralStatusCache {
 
             //map to patient UUID
             UUID referralUuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.ReferralRequest, "" + referralId);
+            if (referralUuid == null) {
+                throw new Exception("Failed to find UUID for referral ID " + referralId);
+            }
 
             //find all episodes of care for the patient
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();

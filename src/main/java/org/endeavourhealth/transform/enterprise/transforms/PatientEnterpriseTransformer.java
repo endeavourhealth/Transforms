@@ -1141,7 +1141,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             }
             address = (Address) var2.next();
             adrec = AddressHelper.generateDisplayText(address);
-            LOG.debug(adrec);
+            //LOG.debug(adrec);
 
             boolean isActive = PeriodHelper.isActive(address.getPeriod());
             stati=0;
