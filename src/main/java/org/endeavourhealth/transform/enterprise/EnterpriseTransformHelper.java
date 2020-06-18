@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPatientDateDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -57,6 +58,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private Long enterprisePatientId = null;
     private Long enterprisePersonId = null;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
+    private ResourceWrapper patientTransformedWrapper = null;
 
     public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
                                      List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber) throws Exception {
@@ -488,5 +490,32 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         String resourceType = resourceWrapper.getResourceType();
         UUID resourceId = resourceWrapper.getResourceId();
         return resourceDal.getResourceHistory(serviceId, resourceType, resourceId);
+    }
+
+    public Date getDtLastTransformedPatient(UUID patientId) throws Exception {
+        SubscriberPatientDateDalI dal = DalProvider.factorySubscriberDateDal();
+        return dal.getDateLastTransformedPatient(getEnterpriseConfigName(), patientId);
+    }
+
+    public void saveDtLastTransformedPatient() throws Exception {
+        //if we didn't transform any patient, there's nothing to do
+        if (this.patientTransformedWrapper == null) {
+            return;
+        }
+
+        SubscriberPatientDateDalI dal = DalProvider.factorySubscriberDateDal();
+        UUID patientUuid = patientTransformedWrapper.getResourceId();
+        long patientId = getEnterprisePatientId().longValue();
+
+        Date dtVersion = null;
+        if (!patientTransformedWrapper.isDeleted()) {
+            dtVersion = patientTransformedWrapper.getCreatedAt();
+        }
+
+        dal.saveDateLastTransformedPatient(getEnterpriseConfigName(), patientUuid, patientId, dtVersion);
+    }
+
+    public void setDtLastTransformedPatient(ResourceWrapper resourceWrapper) {
+        this.patientTransformedWrapper = resourceWrapper;
     }
 }

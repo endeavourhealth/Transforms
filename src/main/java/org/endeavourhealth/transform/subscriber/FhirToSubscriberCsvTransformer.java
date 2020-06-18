@@ -47,6 +47,8 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
 
         LOG.info("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
+        validateResources(resources);
+
         SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, exchangeId, batchId, configName, resources, isBulkDeleteFromSubscriber);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
@@ -67,9 +69,8 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             byte[] bytes = data.writeToZip();
 
             //update the state table so we know the datetime of each resource we just transformed, so the event log is maintained properly
-            //TODO - if the queue reader is killed or fails after this point, we won't accurately know what we previously sent, since we'll think we sent something when we didn't
-            //LOG.trace("Updating dt_previously_sent for " + params.getSubscriberIdsUpdated().size() + " resources");
-            updateSubscriberStateTable(params);
+            params.saveDtLastTransformedPatient();
+            //updateSubscriberStateTable(params);
 
             LOG.trace("Transform complete, generating " + (bytes != null ? "" + bytes.length : null) + " bytes");
             if (bytes != null) {
@@ -83,7 +84,30 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
-    private static void updateSubscriberStateTable(SubscriberTransformHelper params) throws Exception {
+
+    /**
+     * performs validation on the resources to make sure everything is as expected
+     */
+    public static void validateResources(List<ResourceWrapper> resources) throws Exception {
+
+        //validate all resources are for the same patient
+        UUID patientId = null;
+        for (ResourceWrapper w: resources) {
+            UUID wPatientId = w.getPatientId();
+            if (wPatientId != null) { //don't care about admin resources being mixed in with patient ones
+                if (patientId == null) {
+                    patientId = wPatientId;
+                } else if (!patientId.equals(wPatientId)) {
+                    throw new Exception("Resources for different patients found in batch");
+                }
+            }
+        }
+
+        //add any other required validation here
+    }
+
+
+    /*private static void updateSubscriberStateTable(SubscriberTransformHelper params) throws Exception {
 
         SubscriberResourceMappingDalI resourceMappingDal = DalProvider.factorySubscriberResourceMappingDal(params.getSubscriberConfigName());
 
@@ -110,21 +134,6 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         if (!batch.isEmpty()) {
             resourceMappingDal.updateDtUpdatedForSubscriber(batch);
         }
-    }
-
-    /*private static int findTransformBatchSize(String configName) throws Exception {
-        Integer i = transformBatchSizeCache.get(configName);
-        if (i == null) {
-            JsonNode json = ConfigManager.getConfigurationAsJson(configName, "subscriber");
-            JsonNode batchSize = json.get("TransformBatchSize");
-            if (batchSize == null) {
-                i = new Integer(DEFAULT_TRANSFORM_BATCH_SIZE);
-            } else {
-                i = new Integer(batchSize.asInt());
-            }
-            transformBatchSizeCache.put(configName, i);
-        }
-        return i.intValue();
     }*/
 
     /**

@@ -339,8 +339,7 @@ public class JournalTransformer {
         DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision);
         medicationOrderBuilder.setDateWritten(dateTime, effectiveDate);
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(medicationOrderBuilder, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationOrderBuilder, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code);
 
         CsvCell dmdId = parser.getDrugDMDCode();
         CsvCell readCodeCell = parser.getReadCode();

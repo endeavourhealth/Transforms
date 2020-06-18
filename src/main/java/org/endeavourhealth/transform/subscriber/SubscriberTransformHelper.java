@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.SnomedToBnfChapterDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.ExchangeBatchExtraResourceDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPatientDateDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -47,7 +48,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final UUID batchId;
     private final String subscriberConfigName;
     private final OutputContainer outputContainer;
-    private final List<SubscriberId> subscriberIdsUpdated;
+    //private final List<SubscriberId> subscriberIdsUpdated;
     private final boolean isPseudonymised;
     private final boolean includeDateRecorded;
     private final boolean hasEncounterEventTable;
@@ -62,7 +63,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private Patient cachedPatient = null;
     private Map<String, String> snomedToBnfChapter = new HashMap<>();
     private final ReentrantLock lock = new ReentrantLock();
-
+    private ResourceWrapper patientTransformedWrapper = null;
 
     private Long subscriberOrganisationId = null;
     private Long subscriberPatientId = null;
@@ -76,7 +77,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         this.batchId = batchId;
         this.subscriberConfigName = subscriberConfigName;
         this.outputContainer = new OutputContainer();
-        this.subscriberIdsUpdated = new ArrayList<>();
+        //this.subscriberIdsUpdated = new ArrayList<>();
         this.isBulkDeleteFromSubscriber = isBulkDeleteFromSubscriber;
 
         //load our config record for some parameters
@@ -244,12 +245,14 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         }
 
         //and update the subscriber ID with the date of the version we're transforming
-        setSubscriberIdTransformed(resourceWrapper, subscriberId);
+        //setSubscriberIdTransformed(resourceWrapper, subscriberId);
 
         return done;
     }
 
-    public void setSubscriberIdTransformed(ResourceWrapper resourceWrapper, SubscriberId subscriberId) {
+
+
+    /*public void setSubscriberIdTransformed(ResourceWrapper resourceWrapper, SubscriberId subscriberId) {
 
         //we need to copy the subscriber ID object otherwise when we set setDtUpdatedPreviouslySent on it, it'll
         //look like we've already sent over the current version when getting the previous version in the PatientTransformer
@@ -263,12 +266,11 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         } finally {
             lock.unlock();
         }
-
     }
 
     public List<SubscriberId> getSubscriberIdsUpdated() {
         return subscriberIdsUpdated;
-    }
+    }*/
 
     public int getResourceCount() {
         //no locking required as this is only called when transform is single-threaded
@@ -356,7 +358,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             //so set the boolean to delete everything from our subscriber DB
             subscriberId = AbstractSubscriberTransformer.findSubscriberId(this, SubscriberTableId.PATIENT, sourceId);
             if (subscriberId == null) {
-                LOG.warn("No enterprise patient ID for patient " + discoveryPatientId + " so will delete everything");
+                LOG.warn("No subscriber patient ID for patient " + discoveryPatientId + " so will delete everything");
                 this.shouldPatientRecordBeDeleted = Boolean.TRUE;
             }
         }
@@ -685,6 +687,34 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         Reference orgReference = patient.getManagingOrganization();
         return orgReference;
     }
+
+    public Date getDtLastTransformedPatient(UUID patientId) throws Exception {
+        SubscriberPatientDateDalI dal = DalProvider.factorySubscriberDateDal();
+        return dal.getDateLastTransformedPatient(getSubscriberConfigName(), patientId);
+    }
+
+    public void saveDtLastTransformedPatient() throws Exception {
+        //if we didn't transform any patient, there's nothing to do
+        if (this.patientTransformedWrapper == null) {
+            return;
+        }
+
+        SubscriberPatientDateDalI dal = DalProvider.factorySubscriberDateDal();
+        UUID patientUuid = patientTransformedWrapper.getResourceId();
+        long patientId = getSubscriberPatientId().longValue();
+
+        Date dtVersion = null;
+        if (!patientTransformedWrapper.isDeleted()) {
+            dtVersion = patientTransformedWrapper.getCreatedAt();
+        }
+
+        dal.saveDateLastTransformedPatient(getSubscriberConfigName(), patientUuid, patientId, dtVersion);
+    }
+
+    public void setDtLastTransformedPatient(ResourceWrapper resourceWrapper) {
+        this.patientTransformedWrapper = resourceWrapper;
+    }
+
     /*public static Reference findOrganisationReferenceForPublisher(UUID serviceId) throws Exception {
 
         ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
@@ -719,4 +749,5 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         Reference orgReference = patient.getManagingOrganization();
         return orgReference;
     }*/
+
 }

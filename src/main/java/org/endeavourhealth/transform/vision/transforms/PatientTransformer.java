@@ -64,7 +64,7 @@ public class PatientTransformer {
         boolean isDeleted = patientActionCell.getString().equalsIgnoreCase("D");
         if (isDeleted) {
             //we need to manually delete all dependant resources
-            deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser.getCurrentState(), parser);
+            deleteEntirePatientRecord(fhirResourceFiler, parser);
             return;
         }
 
@@ -358,27 +358,14 @@ public class PatientTransformer {
      * if so we need to manually delete all dependant resources
      */
     private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler,
-                                                  VisionCsvHelper csvHelper,
-                                                  CsvCurrentState currentState,
                                                   Patient parser) throws Exception {
 
+        CsvCurrentState currentState = parser.getCurrentState();
         CsvCell patientIdCell = parser.getPatientID();
         CsvCell patientActionCell = parser.getPatientAction();
         String sourceId = VisionCsvHelper.createUniqueId(patientIdCell, null);
 
-
-        List<Resource> resources = csvHelper.retrieveAllResourcesForPatient(sourceId, fhirResourceFiler);
-        if (resources == null) {
-            return;
-        }
-
-        for (Resource resource : resources) {
-
-            //wrap the resource in generic builder so we can save it
-            GenericBuilder genericBuilder = new GenericBuilder(resource);
-            genericBuilder.setDeletedAudit(patientActionCell);
-            fhirResourceFiler.deletePatientResource(currentState, false, genericBuilder);
-        }
+        PatientDeleteHelper.deleteAllResourcesForPatient(sourceId, fhirResourceFiler, currentState, patientActionCell);
     }
 
     private static RegistrationType convertRegistrationType(CsvCell patientTypeCell, VisionCsvHelper csvHelper, CsvCell patientIdCell) throws Exception {

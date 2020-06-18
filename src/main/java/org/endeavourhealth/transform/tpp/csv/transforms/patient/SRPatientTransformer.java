@@ -51,7 +51,7 @@ public class SRPatientTransformer {
         //if deleted, delete all data for this patient
         CsvCell removeDataCell = parser.getRemovedData();
         if (removeDataCell != null && removeDataCell.getIntAsBoolean()) {
-            deleteEntirePatientRecord(fhirResourceFiler, csvHelper, parser);
+            deleteEntirePatientRecord(fhirResourceFiler, parser);
             return;
         }
 
@@ -265,21 +265,15 @@ public class SRPatientTransformer {
      * deletes all FHIR resources associated with this patient record
      */
     private static void deleteEntirePatientRecord(FhirResourceFiler fhirResourceFiler,
-                                                  TppCsvHelper csvHelper,
                                                   SRPatient parser) throws Exception {
 
         CsvCell patientIdCell = parser.getRowIdentifier();
         CsvCell deletedCell = parser.getRemovedData();
         CsvCurrentState currentState = parser.getCurrentState();
 
-        List<Resource> resources = csvHelper.retrieveAllResourcesForPatient(patientIdCell, fhirResourceFiler);
-        for (Resource resource: resources) {
+        String sourceId = patientIdCell.getString();
 
-            //wrap the resource in generic builder so we can save it
-            GenericBuilder genericBuilder = new GenericBuilder(resource);
-            genericBuilder.setDeletedAudit(deletedCell);
-            fhirResourceFiler.deletePatientResource(currentState, false, genericBuilder);
-        }
+        PatientDeleteHelper.deleteAllResourcesForPatient(sourceId, fhirResourceFiler, currentState, deletedCell);
     }
 
 }

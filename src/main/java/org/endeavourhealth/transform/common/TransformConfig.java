@@ -19,7 +19,7 @@ public class TransformConfig {
     private Set<String> emisDisabledOdsCodesAllowed;
     private boolean emisAllowMissingCodes;
     private boolean emisAllowUnmappedRegistrationTypes;
-    private boolean emisSkipAdminData;
+    //private boolean emisSkipAdminData;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private String cernerPatientIdFile;
     private int maxTransformErrorsBeforeAbort;
@@ -59,7 +59,7 @@ public class TransformConfig {
         this.emisDisabledOdsCodesAllowed = new HashSet<>();
         this.emisAllowMissingCodes = false;
         this.emisAllowUnmappedRegistrationTypes = false;
-        this.emisSkipAdminData = false;
+        //this.emisSkipAdminData = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.cernerPatientIdFile = null;
         this.maxTransformErrorsBeforeAbort = 50;
@@ -257,10 +257,10 @@ public class TransformConfig {
             this.emisAllowUnmappedRegistrationTypes = subNode.asBoolean();
         }
 
-        subNode = json.get("skip_admin_data");
+        /*subNode = json.get("skip_admin_data");
         if (subNode != null) {
             this.emisSkipAdminData = subNode.asBoolean();
-        }
+        }*/
 
         subNode = json.get("start_dates");
         if (subNode != null) {
@@ -364,7 +364,7 @@ public class TransformConfig {
         return adminBatchMaxSize;
     }
 
-    public boolean isEmisSkipAdminData() {
+    /*public boolean isEmisSkipAdminData() {
         return emisSkipAdminData;
-    }
+    }*/
 }

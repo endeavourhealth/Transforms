@@ -85,9 +85,12 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         Patient fhirPatient = (Patient)resourceWrapper.getResource(); //returns null if deleted
 
+        //call this so we can audit which version of the patient we transformed last - must be done whether deleted or not
+        params.setDtLastTransformedPatient(resourceWrapper);
+
         //work out if something has changed that means we'll need to process the full patient record
         List<ResourceWrapper> fullHistory = getFullHistory(resourceWrapper);
-        Patient previousVersion = findPreviousVersionSent(resourceWrapper, fullHistory, subscriberId);
+        Patient previousVersion = findPreviousVersionSent(resourceWrapper, fullHistory, params);
         if (previousVersion != null) {
             processChangesFromPreviousVersion(params.getServiceId(), fhirPatient, previousVersion, params);
         }
@@ -269,7 +272,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
                 SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
                 long organisationId = params.getSubscriberOrganisationId();
                 Integer useConceptId = null;
@@ -322,7 +325,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
             if (subTableId != null) {
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
                 writer.writeDelete(subTableId);
             }
@@ -340,7 +343,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             String sourceId = resourceWrapper.getReferenceString() + PREFIX_TELECOM_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
             if (subTableId != null) {
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
                 writer.writeDelete(subTableId);
             }
         }
@@ -356,7 +359,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             String sourceId = resourceWrapper.getReferenceString() + PREFIX_ADDRESS_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
             if (subTableId != null) {
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
                 writer.writeDelete(subTableId);
             }
         }
@@ -375,7 +378,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         String uprn_sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_MATCH_ID + i;
         SubscriberId uprn_subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS_MATCH, uprn_sourceId); // was sourceId
 
-        params.setSubscriberIdTransformed(resourceWrapper, uprn_subTableId);
+        //params.setSubscriberIdTransformed(resourceWrapper, uprn_subTableId);
 
         // call the UPRN API
         JsonNode token_endpoint=config.get("token_endpoint");
@@ -387,7 +390,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         JsonNode zs = config.get("subscribers");
         Integer ok = UPRN.Activated(zs, configName);
         if (ok.equals(0)) {
-            LOG.debug("subscriber "+configName+" not activated, exiting");
+            LOG.debug("subscriber "+configName+" not activated for UPRN, exiting");
             return;
         }
 
@@ -534,7 +537,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
                 SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
                 //if this address is our current home one, then assign the ID
                 if (address == currentAddress) {
@@ -639,7 +642,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
             if (subTableId != null) {
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
                 writer.writeDelete(subTableId);
             }
@@ -691,11 +694,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         return max;
     }
 
-    private Patient findPreviousVersionSent(ResourceWrapper currentWrapper, List<ResourceWrapper> history, SubscriberId subscriberId) throws Exception {
+    private Patient findPreviousVersionSent(ResourceWrapper currentWrapper, List<ResourceWrapper> history, SubscriberTransformHelper helper) throws Exception {
 
         //if we've a null datetime, it means we've never sent for this patient
-        Date dtLastSent = subscriberId.getDtUpdatedPreviouslySent();
-        //LOG.debug("Transforming " + currentWrapper.getReferenceString() + " dt_last_sent = " + dtLastSent + " and dt current version = " + currentWrapper.getCreatedAt());
+        Date dtLastSent = helper.getDtLastTransformedPatient(currentWrapper.getResourceId());
+        //Date dtLastSent = subscriberId.getDtUpdatedPreviouslySent();
 
         if (dtLastSent == null) {
             //LOG.debug("" + currentWrapper.getReferenceString() + " has dt_last_sent of null, so this must be first time it is being transformed (or was previously deleted)");
@@ -736,7 +739,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             String sourceId = referenceStr + PREFIX_PSEUDO_ID + saltKeyName;
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
             if (subTableId != null) {
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
                 pseudoIdWriter.writeDelete(subTableId);
             }
         }
@@ -759,7 +762,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             //create a unique source ID from the patient UUID plus the salt key name
             String sourceId = ReferenceHelper.createReferenceExternal(fhirPatient).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
             SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
-            params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+            //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
             if (!Strings.isNullOrEmpty(pseudoId)) {
 

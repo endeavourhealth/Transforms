@@ -16,6 +16,7 @@ import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.*;
+import org.endeavourhealth.transform.subscriber.FhirToSubscriberCsvTransformer;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
@@ -43,6 +44,9 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
         LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
 
+        //use the common validation from the other transform
+        FhirToSubscriberCsvTransformer.validateResources(resources);
+
         EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceId, systemId, exchangeId, batchId, configName, resources, isBulkDeleteFromSubscriber);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params);
@@ -59,31 +63,22 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
             runTransforms(params);
 
             byte[] bytes = data.writeToZip();
+            String ret = null;
             if (bytes != null) {
-                return Base64.getEncoder().encodeToString(bytes);
-            } else {
-                return null;
+                ret = Base64.getEncoder().encodeToString(bytes);
             }
+
+            //call to save the audit of which specific Patient resource version we transformed
+            params.saveDtLastTransformedPatient();
+
+            return ret;
 
         } catch (Exception ex) {
             throw new TransformException("Exception transforming batch " + batchId, ex);
         }
     }
 
-    /*private static int findTransformBatchSize(String configName) throws Exception {
-        Integer i = transformBatchSizeCache.get(configName);
-        if (i == null) {
-            JsonNode json = ConfigManager.getConfigurationAsJson(configName, "subscriber");
-            JsonNode batchSize = json.get("TransformBatchSize");
-            if (batchSize == null) {
-                i = new Integer(DEFAULT_TRANSFORM_BATCH_SIZE);
-            } else {
-                i = new Integer(batchSize.asInt());
-            }
-            transformBatchSizeCache.put(configName, i);
-        }
-        return i.intValue();
-    }*/
+
 
     public static Long findEnterpriseOrgId(UUID serviceId, EnterpriseTransformHelper params) throws Exception {
 

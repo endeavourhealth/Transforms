@@ -147,7 +147,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
             String sourceId = regStatus.generateUniqueId();
             SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
             if (subTableId != null) {
-                params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
                 writer.writeDelete(subTableId);
             }
         }
@@ -180,7 +180,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
             //code and date. Sometimes duplicates are sent which we will simply overwrite/upsert
             String sourceId = regStatus.generateUniqueId();
             SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
-            params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+            //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
             writer.writeUpsert(subTableId,
                     organisationId,
