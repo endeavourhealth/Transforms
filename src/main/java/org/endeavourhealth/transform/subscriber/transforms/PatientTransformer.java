@@ -351,6 +351,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     private void deleteAddresses(ResourceWrapper resourceWrapper, List<ResourceWrapper> fullHistory, SubscriberTransformHelper params) throws Exception {
 
+        PatientAddressMatch uprnwriter = params.getOutputContainer().getPatientAddressMatch();
+
         PatientAddress writer = params.getOutputContainer().getPatientAddresses();
         int maxAddresses = getMaxNumberOfAddresses(fullHistory);
 
@@ -361,6 +363,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             if (subTableId != null) {
                 //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
                 writer.writeDelete(subTableId);
+
+                // uprnwriter.writeDelete(subTableId);
+
             }
         }
     }
