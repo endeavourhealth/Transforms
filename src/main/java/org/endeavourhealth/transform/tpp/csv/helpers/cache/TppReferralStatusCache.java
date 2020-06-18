@@ -36,7 +36,10 @@ public class TppReferralStatusCache {
             //map to patient UUID
             UUID referralUuid = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.ReferralRequest, "" + referralId);
             if (referralUuid == null) {
-                throw new Exception("Failed to find UUID for referral ID " + referralId);
+                //we have cases where we've received a referral status record without ever having received the referral
+                //itself, in which case we can't do anything but ignore the status record
+                //throw new Exception("Failed to find UUID for referral ID " + referralId);
+                continue;
             }
 
             //find all episodes of care for the patient
