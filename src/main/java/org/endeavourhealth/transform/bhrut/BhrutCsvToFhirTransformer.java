@@ -23,6 +23,7 @@ public abstract class BhrutCsvToFhirTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(BhrutCsvToFhirTransformer.class);
 
+    public static final String OUTPATIENT_DATE_FORMAT = "dd/MM/yyyy";
     public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "HH:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
