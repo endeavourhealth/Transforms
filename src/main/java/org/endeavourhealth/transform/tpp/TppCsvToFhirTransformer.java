@@ -6,6 +6,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
@@ -703,6 +704,9 @@ public abstract class TppCsvToFhirTransformer {
 
         LOG.warn("Skipping SRCode for exchange " + fhirFiler.getExchangeId());
         AuditWriter.writeExchangeEvent(fhirFiler.getExchangeId(), "Skipped SRCode");
+
+        String msg = "Skipped large SRCode file for service " + fhirFiler.getServiceId();
+        SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, msg);
 
         //write to audit table so we can find out
         Connection connection = ConnectionManager.getAuditConnection();

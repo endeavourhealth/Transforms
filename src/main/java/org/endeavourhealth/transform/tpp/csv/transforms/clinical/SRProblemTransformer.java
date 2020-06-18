@@ -54,27 +54,33 @@ public class SRProblemTransformer {
             //we use the code ID as the unique ID, which isn't present when deleting, so we need to look up what it was
             String codeId = csvHelper.getInternalId(PROBLEM_ID_TO_CODE_ID, problemId.getString());
             if (!Strings.isNullOrEmpty(codeId)) {
+
+                //if our Condition is already in the cache, it means we have TWO SRProblem records for the same SRCode (see SD-72)
+                //which means the earlier record should be observed and this one ignored
                 CsvCell dummyCodeIdCell = CsvCell.factoryDummyWrapper(codeId);
-                ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(dummyCodeIdCell, csvHelper, false);
-                if (conditionBuilder != null) {
+                if (!csvHelper.getConditionResourceCache().containsCondition(dummyCodeIdCell)) {
 
-                    //if the SRCode wouldn't normally have been a Condition, then we'll have doubled up and created a
-                    //Condition as well as the other resource, in which case we need to DELETE the condition resource
-                    Set<ResourceType> resourceTypes = SRCodeTransformer.findOriginalTargetResourceTypes(fhirResourceFiler, dummyCodeIdCell);
-                    if (resourceTypes.size() > 1) { //saved as a Condition and something else
+                    ConditionBuilder conditionBuilder = csvHelper.getConditionResourceCache().getConditionBuilderAndRemoveFromCache(dummyCodeIdCell, csvHelper, false);
+                    if (conditionBuilder != null) {
 
-                        conditionBuilder.setDeletedAudit(deleteData);
-                        fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, conditionBuilder);
+                        //if the SRCode wouldn't normally have been a Condition, then we'll have doubled up and created a
+                        //Condition as well as the other resource, in which case we need to DELETE the condition resource
+                        Set<ResourceType> resourceTypes = SRCodeTransformer.findOriginalTargetResourceTypes(fhirResourceFiler, dummyCodeIdCell);
+                        if (resourceTypes.size() > 1) { //saved as a Condition and something else
 
-                    } else {
-                        //if a SRProblem refers to an SRCode that should be a Condition, they both SHARE the same FHIR resource
-                        //and we need to just down-grade the existing resource to a non-problem.
-                        //Note the SRCode record itself may be deleted too, in which case the SRCode transformer will
-                        //delete the resource.
-                        conditionBuilder.setAsProblem(false);
+                            conditionBuilder.setDeletedAudit(deleteData);
+                            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, conditionBuilder);
 
-                        //don't forget to return to the cache
-                        csvHelper.getConditionResourceCache().returnToCache(dummyCodeIdCell, conditionBuilder);
+                        } else {
+                            //if a SRProblem refers to an SRCode that should be a Condition, they both SHARE the same FHIR resource
+                            //and we need to just down-grade the existing resource to a non-problem.
+                            //Note the SRCode record itself may be deleted too, in which case the SRCode transformer will
+                            //delete the resource.
+                            conditionBuilder.setAsProblem(false);
+
+                            //don't forget to return to the cache
+                            csvHelper.getConditionResourceCache().returnToCache(dummyCodeIdCell, conditionBuilder);
+                        }
                     }
                 }
             }
@@ -92,14 +98,14 @@ public class SRProblemTransformer {
             conditionBuilder.setCategory("complaint", problemId);
             conditionBuilder.setAsProblem(true);
 
-            //do not set the Patient reference here. The SRProblem record should always have a correspondiong SRCode record
-            //so leave it up to SRCodeTransformer to set this. This also means we can detect SRProblem records that haven't
-            //got a SRCode record, in which case we skip them
+            //don't set any of the atient or date fields (except end date). These are all duplicated from the SRCode
+            //record and although it's possible for them to differ (e.g. diagnosis date different from date turned into
+            //a problem) we should always rely on the SRCode values
             /*Reference patientReference = csvHelper.createPatientReference(patientId);
             if (conditionBuilder.isIdMapped()) {
                 patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
             }
-            conditionBuilder.setPatient(patientReference, patientId);*/
+            conditionBuilder.setPatient(patientReference, patientId);
 
             CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
             if (!TppCsvHelper.isEmptyOrNegative(profileIdRecordedBy)) {
@@ -121,9 +127,6 @@ public class SRProblemTransformer {
                 }
             }
 
-            //status is mandatory, so set the only value we can
-            conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
-
             CsvCell dateRecored = parser.getDateEventRecorded();
             if (!dateRecored.isEmpty()) {
                 conditionBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
@@ -134,6 +137,11 @@ public class SRProblemTransformer {
                 DateTimeType dateTimeType = new DateTimeType(effectiveDate.getDateTime());
                 conditionBuilder.setOnset(dateTimeType, effectiveDate);
             }
+
+            //status is mandatory, so set the only value we can
+            conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
+
+            */
 
             CsvCell endDateCell = parser.getDateEnd();
             if (endDateCell.isEmpty()) { //possible to re-activate problems, so support changing TO it being empty

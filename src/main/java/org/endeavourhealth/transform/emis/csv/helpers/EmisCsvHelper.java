@@ -428,27 +428,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     }
 
-    public List<Resource> retrieveAllResourcesForPatient(String patientGuid, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        UUID edsPatientId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Patient, patientGuid);
-        if (edsPatientId == null) {
-            return null;
-        }
-
-        UUID serviceId = fhirResourceFiler.getServiceId();
-        List<ResourceWrapper> resourceWrappers = resourceRepository.getResourcesByPatient(serviceId, edsPatientId);
-
-        List<Resource> ret = new ArrayList<>();
-
-        for (ResourceWrapper resourceWrapper: resourceWrappers) {
-            String json = resourceWrapper.getResourceData();
-            Resource resource = FhirSerializationHelper.deserializeResource(json);
-            ret.add(resource);
-        }
-
-        return ret;
-    }
-
     /**
      * as the end of processing all CSV files, there may be some new observations that link
      * to past parent observations. These linkages are saved against the parent observation,
