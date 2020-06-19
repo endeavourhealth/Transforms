@@ -203,7 +203,7 @@ public class EmergencyCdsTargetTransformer {
 
             CodeableConceptBuilder codeableConceptBuilderAssessment
                     = new CodeableConceptBuilder(assessmentEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-            codeableConceptBuilderAssessment.setText("Emergency Initial Assessment");
+            codeableConceptBuilderAssessment.setText("Emergency Assessment");
 
             setCommonEncounterAttributes(assessmentEncounterBuilder, targetEmergencyCds, csvHelper, true);
 
@@ -250,7 +250,7 @@ public class EmergencyCdsTargetTransformer {
 
             CodeableConceptBuilder codeableConceptBuilderTreatments
                     = new CodeableConceptBuilder(treatmentsEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-            codeableConceptBuilderTreatments.setText("Emergency Investigations and Treatments");
+            codeableConceptBuilderTreatments.setText("Emergency Treatment");
 
             setCommonEncounterAttributes(treatmentsEncounterBuilder, targetEmergencyCds, csvHelper, true);
 
@@ -326,8 +326,9 @@ public class EmergencyCdsTargetTransformer {
                 containedParametersBuilderDischarge.addParameter("ae_discharge_destination", "" + dischargeDestinationCode);
             }
 
+            //note ordering of date here, i.e. if not departed then conclusion is the end date
             Date aeDischargeEndDate
-                    = ObjectUtils.firstNonNull(conclusionDate, dischargeDate);
+                    = ObjectUtils.firstNonNull(dischargeDate, conclusionDate);
             if (aeDischargeEndDate != null) {
 
                 dischargeEncounterBuilder.setPeriodEnd(aeDischargeEndDate);
@@ -340,11 +341,10 @@ public class EmergencyCdsTargetTransformer {
         LOG.debug("Saving parent EM encounter: "+ FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
-        //save the A&E arrival encounter
-        if (arrivalEncounterBuilder != null) {
-            LOG.debug("Saving child arrival EM encounter: "+ FhirSerializationHelper.serializeResource(arrivalEncounterBuilder.getResource()));
-            fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
-        }
+        //save the A&E arrival encounter - always created
+        LOG.debug("Saving child arrival EM encounter: "+ FhirSerializationHelper.serializeResource(arrivalEncounterBuilder.getResource()));
+        fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
+
         //save the A&E assessment encounter
         if (assessmentEncounterBuilder != null) {
             LOG.debug("Saving child assessment EM encounter: "+ FhirSerializationHelper.serializeResource(assessmentEncounterBuilder.getResource()));
@@ -543,6 +543,7 @@ public class EmergencyCdsTargetTransformer {
             Date conclusionDate = targetEmergencyCds.getDtConclusion();
             if (conclusionDate != null) {
 
+                existingEncounterBuilder.setPeriodEnd(conclusionDate);
                 existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
             } else {

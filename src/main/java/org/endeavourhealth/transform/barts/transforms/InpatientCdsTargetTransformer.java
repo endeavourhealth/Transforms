@@ -222,7 +222,7 @@ public class InpatientCdsTargetTransformer {
 
             String adminCategoryCode = targetInpatientCds.getAdministrativeCategoryCode();
             if (!Strings.isNullOrEmpty(adminCategoryCode)) {
-                containedParametersBuilderAdmission.addParameter("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCode);
+                containedParametersBuilderAdmission.addParameter("administrative_category_code", adminCategoryCode);
             }
             String admissionMethodCode = targetInpatientCds.getAdmissionMethodCode();
             if (!Strings.isNullOrEmpty(admissionMethodCode)) {
