@@ -85,13 +85,7 @@ public class SpellsTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
         //Create ParentEncounterBuilder
-        createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
-        String parentEncounterId = idCell.getString();
-        Encounter existingParentEncounter
-                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, parentEncounterId);
-
-        //if existingParentEncounter is null a new Parent would be created.
-        EncounterBuilder encounterBuilder = new EncounterBuilder(existingParentEncounter);
+        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
         createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
         encounterBuilder.setPatient(patientReference, patientIdCell);
 
@@ -364,7 +358,7 @@ public class SpellsTransformer {
         }
     }
 
-    private static void createEncountersParentMinimum(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static EncounterBuilder createEncountersParentMinimum(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
@@ -390,7 +384,8 @@ public class SpellsTransformer {
         codeableConceptBuilder.setText("Inpatient Admission");
 
         setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper);
-        fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+
+        return parentTopEncounterBuilder;
 
     }
 

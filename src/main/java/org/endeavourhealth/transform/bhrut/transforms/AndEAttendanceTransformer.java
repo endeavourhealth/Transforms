@@ -85,19 +85,11 @@ public class AndEAttendanceTransformer {
                                        String version) throws Exception {
 
         CsvCell idCell = parser.getId();
-        String parentEncounterId = idCell.getString();
-        // encounterBuilder.setId(idCell.getString());
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
         //Create EncounterBuilder object
-        createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
-
-        Encounter existingParentEncounter
-                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, parentEncounterId);
-
-        //if existingParentEncounter is null a new Parent would be created.
-        EncounterBuilder encounterBuilder = new EncounterBuilder(existingParentEncounter);
+        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
         createEmergencyEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
         encounterBuilder.setPatient(patientReference, patientIdCell);
 
@@ -289,7 +281,7 @@ public class AndEAttendanceTransformer {
 
     }
 
-    private static void createEncountersParentMinimum(AandeAttendances parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static EncounterBuilder createEncountersParentMinimum(AandeAttendances parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
@@ -311,8 +303,7 @@ public class AndEAttendanceTransformer {
 
         setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper);
 
-        //save encounterBuilder record
-        fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+        return parentTopEncounterBuilder;
 
     }
 
