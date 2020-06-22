@@ -96,6 +96,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         //check if the patient is deleted, is confidential, has no NHS number etc.
         if (!params.shouldPatientBePresentInSubscriber(fhirPatient)
                 || params.isBulkDeleteFromSubscriber()) {
+
+            //delete the patient
             csvWriter.writeDelete(enterpriseId.longValue());
 
             //TODO - remove live check when table is rolled out everywhere
