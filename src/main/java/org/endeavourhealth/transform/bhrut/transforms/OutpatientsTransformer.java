@@ -124,7 +124,7 @@ public class OutpatientsTransformer {
         //create an Encounter reference for the procedures and conditions to use
         Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
         Reference organisationReference = csvHelper.createOrganisationReference(hospitalOdsCodeCell.getString());
-        if (encounterBuilder.isIdMapped()) {
+        if (csvHelper.isBhrutIdMapped(encounterBuilder.getResourceId())) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
             thisEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisEncounter, csvHelper);
         }
@@ -385,7 +385,7 @@ public class OutpatientsTransformer {
         }
 
         //save the Encounter, Appointment and Slot
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(),!encounterBuilder.isIdMapped(), encounterBuilder, appointmentBuilder, slotBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(),!csvHelper.isBhrutIdMapped(encounterBuilder.getResourceId()), encounterBuilder, appointmentBuilder, slotBuilder);
     }
 
     private static void deleteOutpatientEncounterAndChildren(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -459,13 +459,13 @@ public class OutpatientsTransformer {
 
         //and link the parent to this new child encounter
         Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, outpatientEncounterId);
-        if (existingParentEncounterBuilder.isIdMapped()) {
+        if (csvHelper.isBhrutIdMapped(existingParentEncounterBuilder.getResourceId())) {
             childDischargeRef
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
         }
         existingEncounterList.addReference(childDischargeRef);
 
-        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder,outpatientEncounterBuilder);
+        fhirResourceFiler.savePatientResource(null, !csvHelper.isBhrutIdMapped(existingParentEncounterBuilder.getResourceId()), existingParentEncounterBuilder,outpatientEncounterBuilder);
 
         //save the discharge encounter builder
         //fhirResourceFiler.savePatientResource(null, outpatientEncounterBuilder);
@@ -502,7 +502,7 @@ public class OutpatientsTransformer {
         if (!patientIdCell.isEmpty()) {
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, patientIdCell.getString());
-            if (builder.isIdMapped()) {
+            if (csvHelper.isBhrutIdMapped(builder.getResourceId())) {
 
                 patientReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
@@ -514,7 +514,7 @@ public class OutpatientsTransformer {
 
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, idCell.getString());
-            if (builder.isIdMapped()) {
+            if (csvHelper.isBhrutIdMapped(builder.getResourceId())) {
 
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
@@ -527,7 +527,7 @@ public class OutpatientsTransformer {
 
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, admissionConsultantCodeCell.getString());
-            if (builder.isIdMapped()) {
+            if (csvHelper.isBhrutIdMapped(builder.getResourceId())) {
 
                 practitionerReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
@@ -539,7 +539,7 @@ public class OutpatientsTransformer {
         if (!hospitalOdsCodeCell.isEmpty()) {
             Reference organizationReference
                     = ReferenceHelper.createReference(ResourceType.Organization, hospitalOdsCodeCell.getString());
-            if (builder.isIdMapped()) {
+            if (csvHelper.isBhrutIdMapped(builder.getResourceId())) {
 
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
@@ -549,7 +549,7 @@ public class OutpatientsTransformer {
         if (!idCell.isEmpty()) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-            if (builder.isIdMapped()) {
+            if (csvHelper.isBhrutIdMapped(builder.getResourceId())) {
 
                 parentEncounter
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
@@ -628,7 +628,7 @@ public class OutpatientsTransformer {
 
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
-        if (episodeBuilder.isIdMapped()) {
+        if (csvHelper.isBhrutIdMapped(episodeBuilder.getResourceId())) {
             patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
         }
         episodeBuilder.setPatient(patientReference, patientIdCell);
@@ -645,7 +645,7 @@ public class OutpatientsTransformer {
         if (!odsCodeCell.isEmpty()) {
             Reference organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
             // if episode already ID mapped, get the mapped ID for the org
-            if (episodeBuilder.isIdMapped()) {
+            if (csvHelper.isBhrutIdMapped(episodeBuilder.getResourceId())) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
             episodeBuilder.setManagingOrganisation(organisationReference, odsCodeCell);
@@ -654,7 +654,7 @@ public class OutpatientsTransformer {
             UUID serviceId = parser.getServiceId();
             Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
             // if episode already ID mapped, get the mapped ID for the org
-            if (episodeBuilder.isIdMapped()) {
+            if (csvHelper.isBhrutIdMapped(episodeBuilder.getResourceId())) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
             episodeBuilder.setManagingOrganisation(organisationReference);
@@ -663,7 +663,7 @@ public class OutpatientsTransformer {
         CsvCell consultantCodeCell = parser.getConsultantCode();
         if (!consultantCodeCell.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
-            if (episodeBuilder.isIdMapped()) {
+            if (csvHelper.isBhrutIdMapped(episodeBuilder.getResourceId())) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
             }
             episodeBuilder.setCareManager(practitionerReference, consultantCodeCell);
