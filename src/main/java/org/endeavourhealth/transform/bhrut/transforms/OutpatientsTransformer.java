@@ -40,6 +40,7 @@ public class OutpatientsTransformer {
                 if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
                     continue;
                 }
+                LOG.debug("Processing Outpatient record for " + parser.getCell("PAS_ID"));
                 try {
                     createResource((org.endeavourhealth.transform.bhrut.schema.Outpatients) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
@@ -92,6 +93,7 @@ public class OutpatientsTransformer {
         //add the appointment ref to the encounter
         Reference appointmentRef = csvHelper.createAppointmentReference(apptUniqueId);
         encounterBuilder.setAppointment(appointmentRef);
+        LOG.debug("appointmentRef:" + appointmentRef.getReference());
 
         //use the appointment date as the clinical date for the linked diagnosis / procedures as this
         //date and time is always present in the record
@@ -119,14 +121,17 @@ public class OutpatientsTransformer {
 
         //set the service provider reference from the hospital ods code
         CsvCell hospitalOdsCodeCell = parser.getHospitalCode();
+        //create an Encounter reference for the procedures and conditions to use
+        Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
         Reference organisationReference = csvHelper.createOrganisationReference(hospitalOdsCodeCell.getString());
         if (encounterBuilder.isIdMapped()) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+            thisEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisEncounter, csvHelper);
         }
         encounterBuilder.setServiceProvider(organisationReference);
-
-        //create an Encounter reference for the procedures and conditions to use
-        Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+        LOG.debug("organisationReference:" + organisationReference.getReference());
+        LOG.debug("thisEncounter:" + thisEncounter.getReference());
+        LOG.debug("consultantReference:" + consultantReference.getReference());
 
         //Primary Procedure
         CsvCell primaryProcedureCodeCell = parser.getPrimaryProcedureCode();
