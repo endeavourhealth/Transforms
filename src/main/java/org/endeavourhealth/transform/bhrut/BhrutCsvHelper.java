@@ -84,6 +84,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     private EpisodeOfCareCache episodeOfCareCache = new EpisodeOfCareCache();
     private Set<String> personIdsToFilterOn = null;
+
     public BhrutCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
         this.systemId = systemId;
@@ -106,10 +107,32 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     public static CsvCell handleQuote(CsvCell in) {
         if (in.getString().contains("\"")) {
             CsvCell ret = new CsvCell(in.getPublishedFileId(), in.getRecordNumber(), in.getColIndex(),
-                    in.getString().replace("\""," ").trim(), in.getParentParser());
+                    in.getString().replace("\"", " ").trim(), in.getParentParser());
             return ret;
         } else {
             return in;
+        }
+    }
+
+    public boolean hasUpper(String in) { // Bhrut local "external" ids look like UUIDs but have upper case
+        // this confuses the isIdMapped() method in ResourceBuilderBase.
+        return in.equals(in.toUpperCase());
+    }
+
+    public boolean isBhrutLocalId(String in) {
+        return (isIdMapped((in)) && hasUpper(in));
+    }
+
+    public boolean isBhrutIdMapped(String in) {
+        return (isIdMapped((in)) && !hasUpper(in));
+    }
+
+    private boolean isIdMapped(String in) { //Copied from ResourceBuilderBase isIdMapped method.
+        try {
+            UUID.fromString(in);
+            return true;
+        } catch (Throwable t) {
+            return false;
         }
     }
 
@@ -790,7 +813,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
         } else {
             TransformWarnings.log(LOG, parser, "Patient Id (PAS_ID) is empty for external id {} in file {}",
-                    parser.getCell("EXTERNAL_ID"),parser.getFilePath());
+                    parser.getCell("EXTERNAL_ID"), parser.getFilePath());
             return false;
         }
 
