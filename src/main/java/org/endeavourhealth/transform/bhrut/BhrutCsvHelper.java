@@ -16,15 +16,13 @@ import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.bhrut.cache.EpisodeOfCareCache;
 import org.endeavourhealth.transform.bhrut.cache.OrgCache;
 import org.endeavourhealth.transform.bhrut.cache.PasIdtoGPCache;
 import org.endeavourhealth.transform.bhrut.cache.StaffCache;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
@@ -36,6 +34,8 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -83,7 +83,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
 
     private EpisodeOfCareCache episodeOfCareCache = new EpisodeOfCareCache();
-
+    private Set<String> personIdsToFilterOn = null;
     public BhrutCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
         this.systemId = systemId;
@@ -692,71 +692,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return readCode;
     }
 
-    /**
-     * when we process the IssueRecord file, we build up a map of first and last issue dates for the medication.
-     * If we have any entries in the maps at the end of the transform, then we need to update the existing
-     * resources on the DB with these new dates
-     */
-    public void processRemainingMedicationIssueDates(FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        //both maps (first and last issue dates) will have the same key set
-        for (String medicationStatementLocalId : drugRecordLastIssueDateMap.keySet()) {
-
-            DateType lastIssueDate = drugRecordLastIssueDateMap.get(medicationStatementLocalId);
-            DateType firstIssueDate = drugRecordFirstIssueDateMap.get(medicationStatementLocalId);
-
-            MedicationStatement fhirMedicationStatement = (MedicationStatement) retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement);
-            if (fhirMedicationStatement == null) {
-                //if the medication statement doesn't exist or has been deleted, then just skip it
-                continue;
-            }
-            boolean changed = false;
-
-            if (firstIssueDate != null) {
-                Extension extension = ExtensionConverter.findExtension(fhirMedicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE);
-                if (extension == null) {
-                    fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_FIRST_ISSUE_DATE, firstIssueDate));
-                    changed = true;
-
-                } else {
-                    Date newDate = firstIssueDate.getValue();
-
-                    DateType existingValue = (DateType) extension.getValue();
-                    Date existingDate = existingValue.getValue();
-
-                    if (newDate.before(existingDate)) {
-                        extension.setValue(firstIssueDate);
-                        changed = true;
-                    }
-                }
-            }
-
-            if (lastIssueDate != null) {
-                Extension extension = ExtensionConverter.findExtension(fhirMedicationStatement, FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE);
-                if (extension == null) {
-                    fhirMedicationStatement.addExtension(ExtensionConverter.createExtension(FhirExtensionUri.MEDICATION_AUTHORISATION_MOST_RECENT_ISSUE_DATE, lastIssueDate));
-                    changed = true;
-
-                } else {
-                    Date newDate = lastIssueDate.getValue();
-
-                    DateType existingValue = (DateType) extension.getValue();
-                    Date existingDate = existingValue.getValue();
-
-                    if (newDate.after(existingDate)) {
-                        extension.setValue(lastIssueDate);
-                        changed = true;
-                    }
-                }
-            }
-
-            //if we've made any changes then save to the DB, making sure to skip ID mapping (since it's already mapped)
-            if (changed) {
-                //String patientGuid = getPatientGuidFromUniqueId(medicationStatementLocalId);
-                fhirResourceFiler.savePatientResource(null, false, new MedicationStatementBuilder(fhirMedicationStatement));
-            }
-        }
-    }
 
     @Override
     public UUID getServiceId() {
@@ -805,25 +740,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public static String cleanUserId(String data) {
-        if (!Strings.isNullOrEmpty(data)) {
-            if (data.contains(":STAFF:")) {
-                data = data.replace(":", "").replace("STAFF", "");
-                return data;
-            }
-            if (data.contains(":EXT_STAFF:")) {
-                data = data.substring(0, data.indexOf(","));
-                data = data.replace(":", "").replace("EXT_STAFF", "").replace(",", "");
-                return data;
-            }
-        }
-        return data;
-    }
-
-
-    public Service getService(UUID id) throws Exception {
-        return serviceRepository.getById(id);
-    }
 
     public EpisodeOfCareCache getEpisodeOfCareCache() {
         return episodeOfCareCache;
@@ -861,6 +777,67 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         } catch (Throwable t) {
             throw new Exception("Error deserialising " + resourceType + " " + resourceId, t);
         }
+    }
+
+    public boolean processRecordFilteringOnPatientId(AbstractCsvParser parser) throws Exception {
+        CsvCell personIdCell = parser.getCell("PAS_ID");
+        if (!personIdCell.isEmpty() && !personIdCell.getString().equalsIgnoreCase("\0")) {
+            personIdCell = parser.getCell("PAS_ID");
+
+            //if nothing that looks like a person ID, process the record
+            if (personIdCell == null) {
+                throw new TransformException("No PAS_ID column on parser " + parser.getFilePath());
+            }
+        } else {
+            TransformWarnings.log(LOG, parser, "Patient Id (PAS_ID) is empty for external id {} in file {}",
+                    parser.getCell("EXTERNAL_ID"),parser.getFilePath());
+            return false;
+        }
+
+        String personId = personIdCell.getString();
+
+        return processRecordFilteringOnPatientId(personId);
+    }
+
+    public boolean processRecordFilteringOnPatientId(String personId) {
+
+        if (personIdsToFilterOn == null) {
+            String filePath = TransformConfig.instance().getBhrutPatientIdFile();
+            if (Strings.isNullOrEmpty(filePath)) {
+                LOG.debug("Not filtering on patients");
+                personIdsToFilterOn = new HashSet<>();
+
+            } else {
+                personIdsToFilterOn = new HashSet<>();
+                try {
+                    List<String> lines = Files.readAllLines(new File(filePath).toPath());
+                    for (String line : lines) {
+                        line = line.trim().replace("\"", "");
+
+                        //ignore comments
+                        if (line.startsWith("#")) {
+                            continue;
+                        }
+                        personIdsToFilterOn.add(line);
+                    }
+
+
+                } catch (Exception ex) {
+                    LOG.error("Error reading in person ID file " + filePath, ex);
+                }
+            }
+        }
+
+        //if no filtering IDs
+        if (personIdsToFilterOn.isEmpty()) {
+            return true;
+        }
+
+        //many files have an empty person ID when they're being deleted, and we don't want to skip processing them
+        if (Strings.isNullOrEmpty(personId)) {
+            return true;
+        }
+        return personIdsToFilterOn.contains(personId);
     }
 
 }
