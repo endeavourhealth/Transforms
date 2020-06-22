@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
+
 public class OutpatientsTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(OutpatientsTransformer.class);
@@ -36,7 +37,9 @@ public class OutpatientsTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 try {
                     createResource((org.endeavourhealth.transform.bhrut.schema.Outpatients) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
@@ -377,7 +380,7 @@ public class OutpatientsTransformer {
         }
 
         //save the Encounter, Appointment and Slot
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, appointmentBuilder, slotBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(),!encounterBuilder.isIdMapped(), encounterBuilder, appointmentBuilder, slotBuilder);
     }
 
     private static void deleteOutpatientEncounterAndChildren(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -457,10 +460,10 @@ public class OutpatientsTransformer {
         }
         existingEncounterList.addReference(childDischargeRef);
 
-        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder,outpatientEncounterBuilder);
 
         //save the discharge encounter builder
-        fhirResourceFiler.savePatientResource(null, outpatientEncounterBuilder);
+        //fhirResourceFiler.savePatientResource(null, outpatientEncounterBuilder);
     }
 
     private static  EncounterBuilder createEncountersParentMinimum(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
