@@ -38,15 +38,16 @@ public class PMIPreTransformer {
             long count = 0;
             long checkpoint = 5000;
             while (parser.nextRecord()) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 count++;
                 try {
                     if (!parser.getRegisteredGpPracticeCode().isEmpty()) {
-
                         CsvCell gpPracticeCodeCell = parser.getRegisteredGpPracticeCode();
                         String gpPracticeCode = gpPracticeCodeCell.getString();
                         createResource(parser, fhirResourceFiler, csvHelper, version, gpPracticeCode);
                     }
-
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }

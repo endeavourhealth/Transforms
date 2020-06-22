@@ -43,7 +43,9 @@ public class AndEAttendanceTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 try {
                     AandeAttendances andeParser = (AandeAttendances) parser;
 

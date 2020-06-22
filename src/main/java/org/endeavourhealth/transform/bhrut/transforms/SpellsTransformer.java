@@ -32,7 +32,9 @@ public class SpellsTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 try {
                     Spells spellsParser = (Spells) parser;
 

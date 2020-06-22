@@ -33,7 +33,9 @@ public class EpisodesTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 try {
                     createResources((Episodes) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {

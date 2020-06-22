@@ -32,7 +32,9 @@ public class OutpatientsPreTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 try {
                     createResource(parser, fhirResourceFiler, csvHelper, version);
 
