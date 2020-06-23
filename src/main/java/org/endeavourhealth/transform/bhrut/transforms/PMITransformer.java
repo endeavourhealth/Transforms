@@ -178,7 +178,7 @@ public class PMITransformer {
         if (!causeOfDeathCell.isEmpty()) {
             // ObservationBuilder observationBuilder = new ObservationBuilder();
             ConditionBuilder conditionBuilder = createSkeletonCondition(parser, csvHelper);
-            String conditionId = parser.getId() + "CAUSEOFDEATH";
+            String conditionId = parser.getId().getString() + "CAUSEOFDEATH";
             conditionBuilder.setId(conditionId);
             //TODO containedParametersBuilder are wrong. Rewrite once we know how this works.
             // IM dependency

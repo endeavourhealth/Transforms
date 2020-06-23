@@ -369,7 +369,7 @@ public class EpisodesTransformer {
             if (!epiNumCell.isEmpty() && epiNumCell.getString().equalsIgnoreCase("01")) {
                 admissionEncounterBuilder = new EncounterBuilder();
                 admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
-                String admissionEncounterId = parser.getId() + ":01:IP:Admission";
+                String admissionEncounterId = parser.getId().getString() + ":01:IP:Admission";
                 admissionEncounterBuilder.setId(admissionEncounterId);
                 CsvCell spellStartDateCell = parser.getEpisodeStartDttm();
                 admissionEncounterBuilder.setPeriodStart(spellStartDateCell.getDateTime());
@@ -423,7 +423,7 @@ public class EpisodesTransformer {
                     dischargeEncounterBuilder = new EncounterBuilder();
                     dischargeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
-                    String dischargeEncounterId = parser.getId() + ":01:IP:Discharge";
+                    String dischargeEncounterId = parser.getId().getString() + ":01:IP:Discharge";
                     dischargeEncounterBuilder.setId(dischargeEncounterId);
                     dischargeEncounterBuilder.setPeriodStart(episodeEndDateCell.getDateTime());
                     dischargeEncounterBuilder.setPeriodEnd(episodeEndDateCell.getDateTime());
@@ -464,7 +464,7 @@ public class EpisodesTransformer {
             EncounterBuilder episodeEncounterBuilder = new EncounterBuilder();
             episodeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
-            String episodeEncounterId = parser.getId() + ":" + parser.getEpiNum() + ":IP:Episode";
+            String episodeEncounterId = parser.getId().getString() + ":" + parser.getEpiNum() + ":IP:Episode";
             episodeEncounterBuilder.setId(episodeEncounterId);
 
             //spell episode encounter have their own start and end date/times

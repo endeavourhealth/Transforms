@@ -379,7 +379,7 @@ public class AndEAttendanceTransformer {
         EncounterBuilder arrivalEncounterBuilder = new EncounterBuilder();
         arrivalEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
-        String arrivalEncounterId = parser.getId() + ":01:EM";
+        String arrivalEncounterId = parser.getId().getString() + ":01:EM";
         arrivalEncounterBuilder.setId(arrivalEncounterId);
 
         arrivalEncounterBuilder.setPeriodStart(parser.getArrivalDttm().getDateTime(), parser.getArrivalDttm());
@@ -444,7 +444,7 @@ public class AndEAttendanceTransformer {
             assessmentEncounterBuilder = new EncounterBuilder();
             assessmentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
-            String assessmentEncounterId = parser.getId() + ":02:EM";
+            String assessmentEncounterId = parser.getId().getString() + ":02:EM";
             assessmentEncounterBuilder.setId(assessmentEncounterId);
             assessmentEncounterBuilder.setPeriodStart(assessmentDateCell.getDateTime());
             assessmentEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
@@ -488,7 +488,7 @@ public class AndEAttendanceTransformer {
             treatmentsEncounterBuilder = new EncounterBuilder();
             treatmentsEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
-            String treatmentsEncounterId = parser.getId() + ":03:EM";
+            String treatmentsEncounterId = parser.getId().getString() + ":03:EM";
             treatmentsEncounterBuilder.setId(treatmentsEncounterId);
             treatmentsEncounterBuilder.setPeriodStart(invAndTreatmentsDateCell.getDateTime());
             treatmentsEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
@@ -528,7 +528,7 @@ public class AndEAttendanceTransformer {
             dischargeEncounterBuilder = new EncounterBuilder();
             dischargeEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
-            String dischargeEncounterId = parser.getId() + ":04:EM";
+            String dischargeEncounterId = parser.getId().getString() + ":04:EM";
             dischargeEncounterBuilder.setId(dischargeEncounterId);
             dischargeEncounterBuilder.setPeriodStart(dischargeDateCell.getDateTime());
             dischargeEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);

@@ -398,7 +398,7 @@ public class SpellsTransformer {
         EncounterBuilder admissionEncounterBuilder = new EncounterBuilder();
         admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
-        String admissionEncounterId = parser.getId() + ":01:IP:Admission";
+        String admissionEncounterId = parser.getId().getString() + ":01:IP:Admission";
         admissionEncounterBuilder.setId(admissionEncounterId);
 
         admissionEncounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
@@ -446,7 +446,7 @@ public class SpellsTransformer {
             EncounterBuilder dischargeEncounterBuilder = new EncounterBuilder();
             dischargeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
-            String dischargeEncounterId = parser.getId() + ":01:IP:Discharge";
+            String dischargeEncounterId = parser.getId().getString() + ":01:IP:Discharge";
             dischargeEncounterBuilder.setId(dischargeEncounterId);
             dischargeEncounterBuilder.setPeriodStart(spellDischargeDateCell.getDate());
             dischargeEncounterBuilder.setPeriodEnd(spellDischargeDateCell.getDate());
