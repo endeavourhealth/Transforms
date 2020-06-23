@@ -476,7 +476,7 @@ public class OutpatientsTransformer {
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
-        parentTopEncounterBuilder.setId(parser.getId().toString());
+        parentTopEncounterBuilder.setId(parser.getId().getString());
         parentTopEncounterBuilder.setPeriodStart(parser.getAppointmentDttm().getDateTime(), parser.getAppointmentDttm());
         parentTopEncounterBuilder.setPeriodEnd(parser.getAppointmentDttm().getDateTime(), parser.getAppointmentDttm());
         parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
