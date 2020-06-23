@@ -463,6 +463,7 @@ public class OutpatientsTransformer {
             childDischargeRef
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
         }
+        LOG.debug("childDischargeRef: " + childDischargeRef.getReference());
         existingEncounterList.addReference(childDischargeRef);
 
         fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder,outpatientEncounterBuilder);
@@ -503,7 +504,6 @@ public class OutpatientsTransformer {
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, patientIdCell.getString());
             if (builder.isIdMapped()) {
-
                 patientReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
             }
@@ -511,11 +511,9 @@ public class OutpatientsTransformer {
         }
 
         if (!idCell.isEmpty()) {
-
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, idCell.getString());
             if (builder.isIdMapped()) {
-
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
             }
@@ -528,7 +526,6 @@ public class OutpatientsTransformer {
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, admissionConsultantCodeCell.getString());
             if (builder.isIdMapped()) {
-
                 practitionerReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
             }
@@ -540,7 +537,6 @@ public class OutpatientsTransformer {
             Reference organizationReference
                     = ReferenceHelper.createReference(ResourceType.Organization, hospitalOdsCodeCell.getString());
             if (builder.isIdMapped()) {
-
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
             }
@@ -554,6 +550,7 @@ public class OutpatientsTransformer {
                 parentEncounter
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
             }
+            LOG.debug("parentEncounter: " + parentEncounter.getReference());
             builder.setPartOf(parentEncounter);
         }
 
