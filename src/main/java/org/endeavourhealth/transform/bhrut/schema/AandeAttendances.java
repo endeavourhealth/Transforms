@@ -76,7 +76,7 @@ public class AandeAttendances extends AbstractCsvParser {
 
     }
 
-    public CsvCell getID() {
+    public CsvCell getId() {
         CsvCell id = super.getCell("EXTERNAL_ID");
         String newId = "BHRUT-" + id.getString();
         CsvCell ret = new CsvCell(id.getPublishedFileId(), id.getRecordNumber(), id.getColIndex(), newId, id.getParentParser());

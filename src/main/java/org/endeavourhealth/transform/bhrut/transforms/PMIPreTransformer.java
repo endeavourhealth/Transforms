@@ -97,7 +97,7 @@ public class PMIPreTransformer {
             organizationBuilder.setName(org.getOrganisationName());
         } else {
             if (!ArrayUtils.contains(V_CODES, orgId)) {
-                TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {} ID  {}", orgId, parser.getID().getString());
+                TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {} ID  {}", orgId, parser.getId().getString());
             }
             return;
 

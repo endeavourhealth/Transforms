@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.bhrut;
 
 import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.transform.bhrut.schema.*;
@@ -26,7 +27,8 @@ public abstract class BhrutCsvToFhirTransformer {
     public static final String DATE_FORMAT = "dd/MM/yyyy";
     //public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "HH:mm:ss";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader().withQuoteMode(QuoteMode.MINIMAL);
+    //public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"').withQuote(' ').withQuoteMode(QuoteMode.MINIMAL);
     //CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"').withQuote(' ');
             //CSVFormat.DEFAULT.withHeader();   //BHRUT files contain a header
     public static final String BHRUT_ORG_ODS_CODE = "RF4";
@@ -183,8 +185,8 @@ public abstract class BhrutCsvToFhirTransformer {
             //then the patient resources - note the order of these transforms is important, as Patients should be before Encounters
             PMITransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved();
-            AlertsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-            fhirResourceFiler.waitUntilEverythingIsSaved();
+           // AlertsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+          //  fhirResourceFiler.waitUntilEverythingIsSaved();
             OutpatientsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             SpellsTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
             fhirResourceFiler.waitUntilEverythingIsSaved();
