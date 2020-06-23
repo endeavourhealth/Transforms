@@ -59,7 +59,7 @@ public class SpellsTransformer {
                                       BhrutCsvHelper csvHelper,
                                       String version) throws Exception {
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        encounterBuilder.setId(parser.getId().toString());
+        encounterBuilder.setId(parser.getId().getString());
 
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
@@ -367,7 +367,7 @@ public class SpellsTransformer {
         CsvCell dischargeDateCell = parser.getDischargeDttm();
         CsvCell admissionDateCell = parser.getAdmissionDttm();
 
-        parentTopEncounterBuilder.setId(parser.getId().toString());
+        parentTopEncounterBuilder.setId(parser.getId().getString());
         if (!admissionDateCell.isEmpty()) {
             parentTopEncounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
         }

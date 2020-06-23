@@ -531,7 +531,7 @@ public class EpisodesTransformer {
         CsvCell admissionDateCell = parser.getEpisodeStartDttm();
         CsvCell dischargeDateCell = parser.getEpisodeEndDttm();
 
-        parentTopEncounterBuilder.setId(parser.getId().toString());
+        parentTopEncounterBuilder.setId(parser.getId().getString());
 
         if (!admissionDateCell.isEmpty()) {
             parentTopEncounterBuilder.setPeriodStart(parser.getEpisodeStartDttm().getDateTime(), parser.getEpisodeStartDttm());

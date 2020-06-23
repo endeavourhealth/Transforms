@@ -71,7 +71,7 @@ public class AndEAttendanceTransformer {
                                       String version) throws Exception {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        encounterBuilder.setId(parser.getId().toString());
+        encounterBuilder.setId(parser.getId().getString());
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
@@ -287,7 +287,7 @@ public class AndEAttendanceTransformer {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
-        parentTopEncounterBuilder.setId(parser.getId().toString());
+        parentTopEncounterBuilder.setId(parser.getId().getString());
         parentTopEncounterBuilder.setPeriodStart(parser.getArrivalDttm().getDateTime(), parser.getArrivalDttm());
 
         CsvCell dischargeDateCell = parser.getDischargedDttm();
