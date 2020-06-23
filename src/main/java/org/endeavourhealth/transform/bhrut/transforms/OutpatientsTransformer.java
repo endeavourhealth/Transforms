@@ -427,7 +427,7 @@ public class OutpatientsTransformer {
         EncounterBuilder outpatientEncounterBuilder = new EncounterBuilder();
         outpatientEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
-        String outpatientEncounterId = parser.getId() + ":OP";
+        String outpatientEncounterId = parser.getId().getString() + ":OP";
         outpatientEncounterBuilder.setId(outpatientEncounterId);
         outpatientEncounterBuilder.setPeriodStart(parser.getAppointmentDttm().getDateTime(), parser.getAppointmentDttm());
         CodeableConceptBuilder codeableConceptBuilder
