@@ -136,13 +136,13 @@
     <dependency>
       <groupId>ca.uhn.hapi</groupId>
       <artifactId>hapi-base</artifactId>
-      <version>2.3</version>
+      <version>2.2</version>
     </dependency>
     <!-- These are structure JARs for HL7 2.5.1 (as an example) -->
     <dependency>
       <groupId>ca.uhn.hapi</groupId>
-      <artifactId>hapi-structures-v251</artifactId>
-      <version>2.3</version>
+      <artifactId>hapi-structures-v23</artifactId>
+      <version>2.2</version>
     </dependency>
 
     <!-- eCache caching framework -->
