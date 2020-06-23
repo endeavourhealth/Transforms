@@ -114,27 +114,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public boolean hasUpper(String in) { // Bhrut local "external" ids look like UUIDs but have upper case
-        // this confuses the isIdMapped() method in ResourceBuilderBase.
-        return in.equals(in.toUpperCase());
-    }
-
-    public boolean isBhrutLocalId(String in) {
-        return (isIdMapped((in)) && hasUpper(in));
-    }
-
-    public boolean isBhrutIdMapped(String in) {
-        return (isIdMapped((in)) && !hasUpper(in));
-    }
-
-    private boolean isIdMapped(String in) { //Copied from ResourceBuilderBase isIdMapped method.
-        try {
-            UUID.fromString(in);
-            return true;
-        } catch (Throwable t) {
-            return false;
-        }
-    }
 
     public static DateTimeType getDateTimeType(CsvCell cell) throws ParseException {
         DateTimeType dtt = new DateTimeType(DATE_TIME_FORMAT_BHRUT.parse(cell.getString()));
