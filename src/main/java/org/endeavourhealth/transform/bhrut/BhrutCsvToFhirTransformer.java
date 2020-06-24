@@ -136,7 +136,6 @@ public abstract class BhrutCsvToFhirTransformer {
                 String fileType = toks[2];
                 if (className.equalsIgnoreCase("PMI") && fileType.equalsIgnoreCase("PMI")) {
                     // Class and file match
-                    LOG.debug("Matched class:" + className +":" + fileType);
                 } else {
                     continue;
                 }
@@ -148,7 +147,6 @@ public abstract class BhrutCsvToFhirTransformer {
                         || (className.equalsIgnoreCase("Outpatients") && fileType.equalsIgnoreCase("OUTPATIENT_APPOINTMENTS"))
                         || (className.equalsIgnoreCase("AandeAttendances") && fileType.equalsIgnoreCase("AE_ATTENDANCES"))) {
                     //Class and file match
-                    LOG.debug("Matched class:" + className + ":" + fileType);
                 } else {
                     continue;
                 }

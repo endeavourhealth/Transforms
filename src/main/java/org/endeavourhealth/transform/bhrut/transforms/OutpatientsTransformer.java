@@ -40,7 +40,7 @@ public class OutpatientsTransformer {
                 if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
                     continue;
                 }
-                LOG.debug("Processing Outpatient record for " + parser.getCell("PAS_ID"));
+                LOG.debug("Processing Outpatient record for " + parser.getCell("PAS_ID").getString());
                 try {
                     createResource((org.endeavourhealth.transform.bhrut.schema.Outpatients) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
