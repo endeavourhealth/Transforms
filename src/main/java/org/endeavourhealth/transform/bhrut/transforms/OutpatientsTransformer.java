@@ -37,7 +37,7 @@ public class OutpatientsTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
                 LOG.debug("Processing Outpatient record for " + parser.getCell("PAS_ID").getString());
@@ -62,7 +62,7 @@ public class OutpatientsTransformer {
         CsvCell patientIdCell = parser.getPasId();
 
         //Create ParentEncounterBuilder
-        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
+        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper, false);
         createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
 
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
@@ -385,7 +385,7 @@ public class OutpatientsTransformer {
         }
 
         //save the Encounter, Appointment and Slot
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(),!encounterBuilder.isIdMapped(), encounterBuilder, appointmentBuilder, slotBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder, appointmentBuilder, slotBuilder);
     }
 
     private static void deleteOutpatientEncounterAndChildren(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -434,7 +434,7 @@ public class OutpatientsTransformer {
                 = new CodeableConceptBuilder(outpatientEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Outpatient Attendance");
 
-        setCommonEncounterAttributes(outpatientEncounterBuilder, parser, csvHelper);
+        setCommonEncounterAttributes(outpatientEncounterBuilder, parser, csvHelper, true);
 
         //add in additional extended data as Parameters resource with additional extension
         ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(outpatientEncounterBuilder);
@@ -466,13 +466,13 @@ public class OutpatientsTransformer {
         LOG.debug("childDischargeRef: " + childDischargeRef.getReference());
         existingEncounterList.addReference(childDischargeRef);
 
-        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder,outpatientEncounterBuilder);
+        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder, outpatientEncounterBuilder);
 
         //save the discharge encounter builder
         //fhirResourceFiler.savePatientResource(null, outpatientEncounterBuilder);
     }
 
-    private static  EncounterBuilder createEncountersParentMinimum(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static EncounterBuilder createEncountersParentMinimum(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, boolean isChild) throws Exception {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
@@ -486,7 +486,7 @@ public class OutpatientsTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Outpatient");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
         //save encounterBuilder record
         //fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
@@ -494,7 +494,7 @@ public class OutpatientsTransformer {
 
     }
 
-    private static void setCommonEncounterAttributes(EncounterBuilder builder, Outpatients parser, BhrutCsvHelper csvHelper) throws Exception {
+    private static void setCommonEncounterAttributes(EncounterBuilder builder, Outpatients parser, BhrutCsvHelper csvHelper, boolean isChildEncounter) throws Exception {
 
         //every encounter has the following common attributes
         CsvCell patientIdCell = parser.getPasId();
@@ -542,7 +542,7 @@ public class OutpatientsTransformer {
             }
             builder.setServiceProvider(organizationReference);
         }
-        if (!idCell.isEmpty()) {
+        if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
             if (builder.isIdMapped()) {

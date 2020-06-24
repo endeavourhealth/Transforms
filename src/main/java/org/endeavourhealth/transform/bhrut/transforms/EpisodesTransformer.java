@@ -33,7 +33,7 @@ public class EpisodesTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
                 try {
@@ -379,7 +379,7 @@ public class EpisodesTransformer {
                         = new CodeableConceptBuilder(admissionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
                 codeableConceptBuilderAdmission.setText("Inpatient Admission");
 
-                setCommonEncounterAttributes(admissionEncounterBuilder, parser, csvHelper);
+                setCommonEncounterAttributes(admissionEncounterBuilder, parser, csvHelper, true);
 
                 //add in additional extended data as Parameters resource with additional extension
                 ContainedParametersBuilder containedParametersBuilderAdmission
@@ -433,7 +433,7 @@ public class EpisodesTransformer {
                             = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
                     codeableConceptBuilderDischarge.setText("Inpatient Discharge");
 
-                    setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper);
+                    setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper, true);
 
                     //add in additional extended data as Parameters resource with additional extension
                     ContainedParametersBuilder containedParametersBuilderDischarge
@@ -483,7 +483,7 @@ public class EpisodesTransformer {
                     = new CodeableConceptBuilder(episodeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilder.setText("Inpatient Episode");
 
-            setCommonEncounterAttributes(episodeEncounterBuilder, parser, csvHelper);
+            setCommonEncounterAttributes(episodeEncounterBuilder, parser, csvHelper, true);
 
             //and link the parent to this new child encounter
             Reference childEpisodeRef = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
@@ -549,13 +549,13 @@ public class EpisodesTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Inpatient Admission");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
         return parentTopEncounterBuilder;
 
     }
 
-    private static void setCommonEncounterAttributes(EncounterBuilder builder, Episodes parser, BhrutCsvHelper csvHelper) throws Exception {
+    private static void setCommonEncounterAttributes(EncounterBuilder builder, Episodes parser, BhrutCsvHelper csvHelper, boolean isChildEncounter) throws Exception {
 
         //every encounter has the following common attributes
         CsvCell patientIdCell = parser.getPasId();
@@ -607,7 +607,7 @@ public class EpisodesTransformer {
         }
 
         CsvCell spellExternalIdCell = parser.getIpSpellExternalId();
-        if (!spellExternalIdCell.isEmpty()) {
+        if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, parser.getIpSpellExternalId().getString());
             if (builder.isIdMapped()) {

@@ -32,7 +32,7 @@ public class SpellsTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
                 try {
@@ -385,7 +385,7 @@ public class SpellsTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Inpatient Admission");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
         return parentTopEncounterBuilder;
 
@@ -406,7 +406,7 @@ public class SpellsTransformer {
         CodeableConceptBuilder codeableConceptBuilderAdmission
                 = new CodeableConceptBuilder(admissionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilderAdmission.setText("Inpatient Admission");
-        setCommonEncounterAttributes(admissionEncounterBuilder, parser, csvHelper);
+        setCommonEncounterAttributes(admissionEncounterBuilder, parser, csvHelper, true);
 
         //add in additional extended data as Parameters resource with additional extension
         ContainedParametersBuilder containedParametersBuilderMain
@@ -456,7 +456,7 @@ public class SpellsTransformer {
                     = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderDischarge.setText("Inpatient Discharge");
 
-            setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper);
+            setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper, true);
             ContainedParametersBuilder containedParametersBuilderDischarge
                     = new ContainedParametersBuilder(dischargeEncounterBuilder);
             containedParametersBuilderDischarge.removeContainedParameters();
@@ -497,7 +497,7 @@ public class SpellsTransformer {
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      Spells parser,
-                                                     BhrutCsvHelper csvHelper) throws Exception {
+                                                     BhrutCsvHelper csvHelper, boolean isChildEncounter) throws Exception {
 
         //every encounter has the following common attributes
         CsvCell patientIdCell = parser.getPasId();
@@ -551,7 +551,7 @@ public class SpellsTransformer {
             builder.setServiceProvider(organizationReference);
         }
 
-        if (!idCell.isEmpty()) {
+        if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
             if (builder.isIdMapped()) {

@@ -43,7 +43,7 @@ public class AndEAttendanceTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
                 try {
@@ -303,13 +303,13 @@ public class AndEAttendanceTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Emergency");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
         return parentTopEncounterBuilder;
 
     }
 
-    private static void setCommonEncounterAttributes(EncounterBuilder builder, AandeAttendances parser, BhrutCsvHelper csvHelper) throws Exception {
+    private static void setCommonEncounterAttributes(EncounterBuilder builder, AandeAttendances parser, BhrutCsvHelper csvHelper, boolean isChildEncounter) throws Exception {
 
         CsvCell patientIdCell = parser.getPasId();
         CsvCell idCell = parser.getId();
@@ -359,7 +359,7 @@ public class AndEAttendanceTransformer {
             builder.setServiceProvider(organizationReference);
         }
 
-        if (!idCell.isEmpty()) {
+        if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
             if (builder.isIdMapped()) {
@@ -389,7 +389,7 @@ public class AndEAttendanceTransformer {
                 = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilderAdmission.setText("Emergency Arrival");
 
-        setCommonEncounterAttributes(arrivalEncounterBuilder, parser, csvHelper);
+        setCommonEncounterAttributes(arrivalEncounterBuilder, parser, csvHelper, true);
 
         //and link the parent to this new child encounter
         Reference childArrivalRef = ReferenceHelper.createReference(ResourceType.Encounter, arrivalEncounterId);
@@ -453,7 +453,7 @@ public class AndEAttendanceTransformer {
                     = new CodeableConceptBuilder(assessmentEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderAssessment.setText("Emergency Initial Assessment");
 
-            setCommonEncounterAttributes(assessmentEncounterBuilder, parser, csvHelper);
+            setCommonEncounterAttributes(assessmentEncounterBuilder, parser, csvHelper, true);
 
             //and link the parent to this new child encounter
             Reference childAssessmentRef = ReferenceHelper.createReference(ResourceType.Encounter, assessmentEncounterId);
@@ -497,7 +497,7 @@ public class AndEAttendanceTransformer {
                     = new CodeableConceptBuilder(treatmentsEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderTreatments.setText("Emergency Investigations and Treatments");
 
-            setCommonEncounterAttributes(treatmentsEncounterBuilder, parser, csvHelper);
+            setCommonEncounterAttributes(treatmentsEncounterBuilder, parser, csvHelper, true);
 
             //and link the parent to this new child encounter
             Reference childTreatmentsRef = ReferenceHelper.createReference(ResourceType.Encounter, treatmentsEncounterId);
@@ -537,7 +537,7 @@ public class AndEAttendanceTransformer {
                     = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderDischarge.setText("Emergency Discharge");
 
-            setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper);
+            setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper, true);
 
             //and link the parent to this new child encounter
             Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
