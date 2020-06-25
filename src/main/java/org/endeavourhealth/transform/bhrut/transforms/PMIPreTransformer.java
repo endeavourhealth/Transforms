@@ -25,19 +25,20 @@ public class PMIPreTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(PMIPreTransformer.class);
     private static final String[] V_CODES = {"V81997", "V81998", "V81999"};
-    private static final Map<String, String> odsCodesMap;
+    private static final Map<String, String> localOdsCodesMap;
 
+    //Prepopulate with the localOdsCodes
     static {
 
-        odsCodesMap = new HashMap<String, String>();
-        odsCodesMap.put("RF4TC", "North East London NHS Treatment Centre");
-        odsCodesMap.put("RF4AD", "Baddow Hospital");
-        odsCodesMap.put("RF4BM", "BMI The London Independent Hospital");
-        odsCodesMap.put("RF4CF", "The Chelmsford Private Day Surgery Hospital");
-        odsCodesMap.put("RF4CP", "Chartwell Private Hospital");
-        odsCodesMap.put("RF4HH", "Holly House Hospital");
-        odsCodesMap.put("RF4NH", "Nuffield Health Hospital");
-        odsCodesMap.put("RF4RH", "Spire London East Hospital");
+        localOdsCodesMap = new HashMap<String, String>();
+        localOdsCodesMap.put("RF4TC", "North East London NHS Treatment Centre");
+        localOdsCodesMap.put("RF4AD", "Baddow Hospital");
+        localOdsCodesMap.put("RF4BM", "BMI The London Independent Hospital");
+        localOdsCodesMap.put("RF4CF", "The Chelmsford Private Day Surgery Hospital");
+        localOdsCodesMap.put("RF4CP", "Chartwell Private Hospital");
+        localOdsCodesMap.put("RF4HH", "Holly House Hospital");
+        localOdsCodesMap.put("RF4NH", "Nuffield Health Hospital");
+        localOdsCodesMap.put("RF4RH", "Spire London East Hospital");
     }
 
     public static void transform(String version,
@@ -104,9 +105,9 @@ public class PMIPreTransformer {
             TransformWarnings.log(LOG, parser, "Error creating Organization resource for ODS: {}", orgId);
             return;
         }
-
-        if (odsCodesMap.containsKey(orgId)) {
-            orgName = odsCodesMap.get(orgId);
+        //verify if orgId matches with the localOdsCodes else verify from the REST
+        if (localOdsCodesMap.containsKey(orgId)) {
+            orgName = localOdsCodesMap.get(orgId);
             organizationBuilder.setName(orgName);
         } else {
             OdsOrganisation org = new OdsOrganisation();
