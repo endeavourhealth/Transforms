@@ -18,28 +18,12 @@ import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class PMIPreTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(PMIPreTransformer.class);
     private static final String[] V_CODES = {"V81997", "V81998", "V81999"};
-    private static final Map<String, String> localOdsCodesMap;
-
-    //Prepopulate with the localOdsCodes
-    static {
-
-        localOdsCodesMap = new HashMap<String, String>();
-        localOdsCodesMap.put("RF4TC", "North East London NHS Treatment Centre");
-        localOdsCodesMap.put("RF4AD", "Baddow Hospital");
-        localOdsCodesMap.put("RF4BM", "BMI The London Independent Hospital");
-        localOdsCodesMap.put("RF4CF", "The Chelmsford Private Day Surgery Hospital");
-        localOdsCodesMap.put("RF4CP", "Chartwell Private Hospital");
-        localOdsCodesMap.put("RF4HH", "Holly House Hospital");
-        localOdsCodesMap.put("RF4NH", "Nuffield Health Hospital");
-        localOdsCodesMap.put("RF4RH", "Spire London East Hospital");
-    }
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -105,9 +89,10 @@ public class PMIPreTransformer {
             TransformWarnings.log(LOG, parser, "Error creating Organization resource for ODS: {}", orgId);
             return;
         }
-        //verify if orgId matches with the localOdsCodes else verify from the REST
-        if (localOdsCodesMap.containsKey(orgId)) {
-            orgName = localOdsCodesMap.get(orgId);
+        //verify if it matches with the localOdsCodes else verify from the REST
+        orgName = csvHelper.findBhrutLocalOdsCode(orgId);
+
+        if (!orgName.isEmpty()) {
             organizationBuilder.setName(orgName);
         } else {
             OdsOrganisation org = new OdsOrganisation();

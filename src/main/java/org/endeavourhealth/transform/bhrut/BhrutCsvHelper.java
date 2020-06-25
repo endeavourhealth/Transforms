@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.bhrut;
 
 import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
@@ -8,6 +9,7 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
+import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
@@ -16,12 +18,14 @@ import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.bhrut.cache.EpisodeOfCareCache;
 import org.endeavourhealth.transform.bhrut.cache.OrgCache;
 import org.endeavourhealth.transform.bhrut.cache.PasIdtoGPCache;
 import org.endeavourhealth.transform.bhrut.cache.StaffCache;
+import org.endeavourhealth.transform.bhrut.schema.PMI;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
@@ -44,7 +48,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BhrutCsvHelper.class);
     public static final SimpleDateFormat DATE_TIME_FORMAT_BHRUT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    ;
+    private static Map<String, String> localOdsCodesMap;
+
 
 
     //
@@ -841,5 +846,24 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
         return personIdsToFilterOn.contains(personId);
     }
+
+    public static String findBhrutLocalOdsCode(String orgCode) throws Exception {
+
+        if (localOdsCodesMap == null) {
+            localOdsCodesMap = ResourceParser.readCsvResourceIntoMap("BhrutLocalOdsCodesMap.csv", "LocalOdsCode", "OrganisationName", CSVFormat.DEFAULT.withHeader());
+        }
+
+        String code = localOdsCodesMap.get(orgCode);
+        if (code == null) {
+            throw new RuntimeException("Unknown organisation Code [" + orgCode + "]");
+
+        } else if (!Strings.isNullOrEmpty(code)) {
+            return code;
+
+        } else {
+            return null;
+        }
+    }
+
 
 }
