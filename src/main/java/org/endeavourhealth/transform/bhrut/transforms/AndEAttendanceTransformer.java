@@ -394,8 +394,10 @@ public class AndEAttendanceTransformer {
         //and link the parent to this new child encounter
         Reference childArrivalRef = ReferenceHelper.createReference(ResourceType.Encounter, arrivalEncounterId);
         if (existingParentEncounterBuilder.isIdMapped()) {
-            existingEncounterList.addReference(childArrivalRef);
+            childArrivalRef
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childArrivalRef, csvHelper);
         }
+        existingEncounterList.addReference(childArrivalRef);
 
         ContainedParametersBuilder containedParametersBuilderArrival
                 = new ContainedParametersBuilder(arrivalEncounterBuilder);
