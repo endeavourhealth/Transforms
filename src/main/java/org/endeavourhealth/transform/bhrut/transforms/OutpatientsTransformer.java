@@ -466,10 +466,10 @@ public class OutpatientsTransformer {
         LOG.debug("childDischargeRef: " + childDischargeRef.getReference());
         existingEncounterList.addReference(childDischargeRef);
 
-        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder, outpatientEncounterBuilder);
+        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
         //save the discharge encounter builder
-        //fhirResourceFiler.savePatientResource(null, outpatientEncounterBuilder);
+        fhirResourceFiler.savePatientResource(null, outpatientEncounterBuilder);
     }
 
     private static EncounterBuilder createEncountersParentMinimum(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, boolean isChild) throws Exception {
