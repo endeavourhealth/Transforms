@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.ArrayUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.ods.OdsOrganisation;
@@ -92,7 +93,7 @@ public class PMIPreTransformer {
         //verify if it matches with the localOdsCodes else verify from the REST
         orgName = csvHelper.findBhrutLocalOdsCode(orgId);
 
-        if (!orgName.isEmpty()) {
+        if (!Strings.isNullOrEmpty(orgName)) {
             organizationBuilder.setName(orgName);
         } else {
             OdsOrganisation org = new OdsOrganisation();
