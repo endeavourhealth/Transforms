@@ -5,33 +5,24 @@ import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
-import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
-import org.endeavourhealth.core.database.dal.admin.models.Service;
-import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
-import org.endeavourhealth.core.database.dal.audit.models.Exchange;
-import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.bhrut.cache.EpisodeOfCareCache;
 import org.endeavourhealth.transform.bhrut.cache.OrgCache;
 import org.endeavourhealth.transform.bhrut.cache.PasIdtoGPCache;
 import org.endeavourhealth.transform.bhrut.cache.StaffCache;
-import org.endeavourhealth.transform.bhrut.schema.PMI;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.*;
@@ -854,16 +845,12 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
 
         String code = localOdsCodesMap.get(orgCode);
-        if (code == null) {
-            throw new RuntimeException("Unknown organisation Code [" + orgCode + "]");
-
-        } else if (!Strings.isNullOrEmpty(code)) {
+        if (!Strings.isNullOrEmpty(code)) {
             return code;
 
         } else {
             return null;
         }
     }
-
 
 }
