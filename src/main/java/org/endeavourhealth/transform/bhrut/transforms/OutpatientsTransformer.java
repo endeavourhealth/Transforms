@@ -63,10 +63,12 @@ public class OutpatientsTransformer {
 
         //Create ParentEncounterBuilder
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper, false);
-        createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
-
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+        EncounterBuilder subEncounter = createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
+
+
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
         String apptUniqueId = idCell.getString() + APPT_ID_SUFFIX;
         appointmentBuilder.setId(apptUniqueId, idCell);
@@ -385,7 +387,7 @@ public class OutpatientsTransformer {
         }
 
         //save the Encounter, Appointment and Slot
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder, appointmentBuilder, slotBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder, subEncounter, appointmentBuilder, slotBuilder);
     }
 
     private static void deleteOutpatientEncounterAndChildren(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -420,7 +422,7 @@ public class OutpatientsTransformer {
         }
     }
 
-    private static void createSubEncounters(Outpatients parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static EncounterBuilder createSubEncounters(Outpatients parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
         ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
 
@@ -459,17 +461,17 @@ public class OutpatientsTransformer {
 
         //and link the parent to this new child encounter
         Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, outpatientEncounterId);
-        if (existingParentEncounterBuilder.isIdMapped()) {
+       if (existingParentEncounterBuilder.isIdMapped()) {
             childDischargeRef
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
-        }
+       }
         LOG.debug("childDischargeRef: " + childDischargeRef.getReference());
         existingEncounterList.addReference(childDischargeRef);
-
-        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
-
+        return outpatientEncounterBuilder;
+       //fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder, outpatientEncounterBuilder);
+       // LOG.debug("saved enc");
         //save the discharge encounter builder
-        fhirResourceFiler.savePatientResource(null, outpatientEncounterBuilder);
+        //fhirResourceFiler.savePatientResource(null, !outpatientEncounterBuilder.isIdMapped(), outpatientEncounterBuilder);
     }
 
     private static EncounterBuilder createEncountersParentMinimum(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, boolean isChild) throws Exception {
@@ -503,18 +505,20 @@ public class OutpatientsTransformer {
         if (!patientIdCell.isEmpty()) {
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, patientIdCell.getString());
-            patientReference
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
-
+            if (builder.isIdMapped()) {
+                patientReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
+            }
             builder.setPatient(patientReference);
         }
 
         if (!idCell.isEmpty()) {
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, idCell.getString());
-            episodeReference
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
-
+            if (builder.isIdMapped()) {
+                episodeReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
+            }
             builder.setEpisodeOfCare(episodeReference);
         }
 
@@ -523,9 +527,10 @@ public class OutpatientsTransformer {
 
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, admissionConsultantCodeCell.getString());
-            practitionerReference
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
-
+            if (builder.isIdMapped()) {
+                practitionerReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            }
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
 
@@ -533,17 +538,19 @@ public class OutpatientsTransformer {
         if (!hospitalOdsCodeCell.isEmpty()) {
             Reference organizationReference
                     = ReferenceHelper.createReference(ResourceType.Organization, hospitalOdsCodeCell.getString());
-            organizationReference
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
-
+            if (builder.isIdMapped()) {
+                organizationReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
+            }
             builder.setServiceProvider(organizationReference);
         }
         if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-            parentEncounter
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-
+            if (builder.isIdMapped()) {
+                parentEncounter
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            }
             LOG.debug("parentEncounter: " + parentEncounter.getReference());
             builder.setPartOf(parentEncounter);
         }
