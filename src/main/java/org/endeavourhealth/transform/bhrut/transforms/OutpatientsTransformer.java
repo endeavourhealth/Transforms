@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -65,7 +66,7 @@ public class OutpatientsTransformer {
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper, false);
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
         EncounterBuilder subEncounter = createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
 
 
@@ -85,6 +86,10 @@ public class OutpatientsTransformer {
             //then, delete the linked resources
             deleteChildResources(parser, fhirResourceFiler, csvHelper, version);
             deleteOutpatientEncounterAndChildren(parser, fhirResourceFiler, csvHelper);
+            return;
+        }
+        if (patientIdCell.isEmpty()) {
+            TransformWarnings.log(LOG, csvHelper, "Missing patient id for {} ", idCell.getString() );
             return;
         }
 
@@ -387,7 +392,17 @@ public class OutpatientsTransformer {
         }
 
         //save the Encounter, Appointment and Slot
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder, subEncounter, appointmentBuilder, slotBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !subEncounter.isIdMapped(), subEncounter);
+        Appointment appt  =  (Appointment)appointmentBuilder.getResource();
+        List<Appointment.AppointmentParticipantComponent> who = appt.getParticipant();
+        for (Appointment.AppointmentParticipantComponent a : who) {
+            Reference ref  = a.getActor();
+
+            LOG.debug("Appt person " + ref.getId());
+        }
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !appointmentBuilder.isIdMapped(), appointmentBuilder, slotBuilder);
+
     }
 
     private static void deleteOutpatientEncounterAndChildren(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -461,10 +476,10 @@ public class OutpatientsTransformer {
 
         //and link the parent to this new child encounter
         Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, outpatientEncounterId);
-       if (existingParentEncounterBuilder.isIdMapped()) {
-            childDischargeRef
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
-       }
+//       if (existingParentEncounterBuilder.isIdMapped()) {
+//            childDischargeRef
+//                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
+//       }
         LOG.debug("childDischargeRef: " + childDischargeRef.getReference());
         existingEncounterList.addReference(childDischargeRef);
         return outpatientEncounterBuilder;
