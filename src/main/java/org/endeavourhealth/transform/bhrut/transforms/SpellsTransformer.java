@@ -506,8 +506,10 @@ public class SpellsTransformer {
         if (!patientIdCell.isEmpty()) {
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, patientIdCell.getString());
-            patientReference
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
+            if (builder.isIdMapped()) {
+                patientReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
+            }
 
             builder.setPatient(patientReference);
         }
@@ -517,8 +519,10 @@ public class SpellsTransformer {
 
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, idCell.getString());
-            episodeReference
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
+            if (builder.isIdMapped()) {
+                episodeReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
+            }
 
             builder.setEpisodeOfCare(episodeReference);
         }
@@ -528,8 +532,10 @@ public class SpellsTransformer {
 
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, admissionConsultantCodeCell.getString());
-            practitionerReference
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            if (builder.isIdMapped()) {
+                practitionerReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
+            }
 
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
@@ -537,8 +543,10 @@ public class SpellsTransformer {
         if (!admissionHospitalCode.isEmpty()) {
             Reference organizationReference
                     = ReferenceHelper.createReference(ResourceType.Organization, admissionHospitalCode.getString());
-            organizationReference
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
+            if (builder.isIdMapped()) {
+                organizationReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
+            }
 
             builder.setServiceProvider(organizationReference);
         }
