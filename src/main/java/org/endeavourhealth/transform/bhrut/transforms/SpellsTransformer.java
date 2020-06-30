@@ -307,7 +307,7 @@ public class SpellsTransformer {
             episodeOfCareBuilder.setManagingOrganisation(organisationReference);
         }
         CsvCell consultantCodeCell = parser.getAdmissionConsultantCode();
-        if (!consultantCodeCell.isEmpty() && !consultantCodeCell.isEmpty()) {
+        if (!consultantCodeCell.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
             if (episodeOfCareBuilder.isIdMapped()) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
