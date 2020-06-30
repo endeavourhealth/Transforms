@@ -202,8 +202,9 @@ public class EpisodesTransformer {
             condition.setIsPrimary(true);
             condition.setAsProblem(false);
             condition.setEncounter(thisEncounter, parser.getId());
-            if (!practitionerReference.isEmpty()) {
-                condition.setClinician(practitionerReference, episodeConsultantCodeCell);
+            if (!episodeConsultantCodeCell.isEmpty()) {
+                Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
+                condition.setClinician(practitionerReference2, episodeConsultantCodeCell);
             }
             CodeableConceptBuilder code
                     = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
@@ -265,8 +266,10 @@ public class EpisodesTransformer {
                 DateTimeType dttp = new DateTimeType(parser.getPrimaryProcedureDate().getDateTime());
                 proc.setPerformed(dttp, parser.getPrimaryProcedureDate());
             }
-            if (!practitionerReference.isEmpty()) {
-                proc.addPerformer(practitionerReference, episodeConsultantCodeCell);
+
+            if (!episodeConsultantCodeCell.isEmpty()) {
+                Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
+                proc.addPerformer(practitionerReference2, episodeConsultantCodeCell);
             }
 
             CodeableConceptBuilder code
@@ -511,7 +514,7 @@ public class EpisodesTransformer {
                 containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString());
             }
             //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
-            fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
             //then save the child encounter builders if they are set
             if (admissionEncounterBuilder != null) {

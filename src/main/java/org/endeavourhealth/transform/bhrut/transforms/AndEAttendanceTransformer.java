@@ -569,7 +569,7 @@ public class AndEAttendanceTransformer {
         //save the existing parent encounter here with the updated child refs added during this method,
         //then the child sub encounter afterwards
         LOG.debug("Saving parent EM encounter: " + FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
-        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
         //save the A&E arrival encounter
         if (arrivalEncounterBuilder != null) {
