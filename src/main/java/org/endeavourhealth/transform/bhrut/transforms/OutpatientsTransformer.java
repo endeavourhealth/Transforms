@@ -75,7 +75,8 @@ public class OutpatientsTransformer {
         appointmentBuilder.setId(apptUniqueId, idCell);
         SlotBuilder slotBuilder = new SlotBuilder();
         slotBuilder.setId(apptUniqueId, idCell);
-        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
+        Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
+        appointmentBuilder.addParticipant(newPatientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
