@@ -88,7 +88,7 @@ public class OutpatientsTransformer {
             return;
         }
         if (patientIdCell.isEmpty()) {
-            TransformWarnings.log(LOG, csvHelper, "Missing patient id for {} ", idCell.getString() );
+            TransformWarnings.log(LOG, csvHelper, "Missing patient id for {} ", idCell.getString());
             return;
         }
 
@@ -174,8 +174,8 @@ public class OutpatientsTransformer {
 
                 ProcedureBuilder procedureBuilder = new ProcedureBuilder();
                 procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
-                Reference procPatientReference = csvHelper.createPatientReference(patientIdCell);
-                procedureBuilder.setPatient(procPatientReference, patientIdCell);
+                Reference patientReference2 = csvHelper.createPatientReference(patientIdCell);
+                procedureBuilder.setPatient(patientReference2, patientIdCell);
                 Reference procEncReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
                 procedureBuilder.setEncounter(procEncReference, idCell);
                 procedureBuilder.setIsPrimary(false);
@@ -204,7 +204,8 @@ public class OutpatientsTransformer {
         if (!primaryDiagnosisCodeCell.isEmpty()) {
             ConditionBuilder conditionBuilder = new ConditionBuilder();
             conditionBuilder.setId(idCell.getString() + ":Condition:0");
-            conditionBuilder.setPatient(patientReference, patientIdCell);
+            Reference patientReference2 = csvHelper.createPatientReference(patientIdCell);
+            conditionBuilder.setPatient(patientReference2, patientIdCell);
             conditionBuilder.setEncounter(thisEncounter, idCell);
             conditionBuilder.setAsProblem(false);
             conditionBuilder.setIsPrimary(true);
@@ -400,9 +401,9 @@ public class OutpatientsTransformer {
         //save the Encounter, Appointment and Slot
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !subEncounter.isIdMapped(), subEncounter);
-        Appointment appt  =  (Appointment)appointmentBuilder.getResource();
+        Appointment appt = (Appointment) appointmentBuilder.getResource();
         List<Appointment.AppointmentParticipantComponent> who = appt.getParticipant();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder ,appointmentBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
 
     }
 
@@ -429,7 +430,7 @@ public class OutpatientsTransformer {
                 if (childEncounter != null) {
                     fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
                 } else {
-                  TransformWarnings.log(LOG, csvHelper, "Cannot find existing child Encounter: {} for deletion", childEncounter.getId());
+                    TransformWarnings.log(LOG, csvHelper, "Cannot find existing child Encounter: {} for deletion", childEncounter.getId());
                 }
             }
         }
@@ -556,8 +557,8 @@ public class OutpatientsTransformer {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
             //if (builder.isIdMapped()) {
-                parentEncounter
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            parentEncounter
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
             //}
             builder.setPartOf(parentEncounter);
         }
