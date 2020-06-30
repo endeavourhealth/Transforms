@@ -131,7 +131,8 @@ public class SpellsTransformer {
 
             ConditionBuilder conditionBuilder = new ConditionBuilder();
             conditionBuilder.setId(idCell.getString() + ":Condition:0", idCell);
-            conditionBuilder.setPatient(patientReference, patientIdCell);
+            Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
+            conditionBuilder.setPatient(newPatientReference, patientIdCell);
             conditionBuilder.setEncounter(thisEncounter, idCell);
             if (!practitionerReference.isEmpty()) {
                 conditionBuilder.setClinician(practitionerReference, admissionConsultantCodeCell);
@@ -160,7 +161,8 @@ public class SpellsTransformer {
         if (!parser.getPrimaryProcedureCode().isEmpty()) {
             CsvCell primaryProcCode = parser.getPrimaryProcedureCode();
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
-            procedureBuilder.setPatient(patientReference, patientIdCell);
+            Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
+            procedureBuilder.setPatient(newPatientReference, patientIdCell);
             procedureBuilder.setId(idCell.getString() + ":Procedure:0", idCell);
             procedureBuilder.setIsPrimary(true);
             procedureBuilder.setEncounter(thisEncounter, idCell);

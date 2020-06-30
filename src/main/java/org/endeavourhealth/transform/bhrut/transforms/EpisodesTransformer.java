@@ -186,15 +186,17 @@ public class EpisodesTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
 
         //create an Encounter reference for the procedures and diagnosis
+        Reference patientEncReference = csvHelper.createPatientReference(patientIdCell);
         Reference thisEncounter
-                = csvHelper.createEncounterReference(parser.getId().getString(), patientReference.getId());
+                = csvHelper.createEncounterReference(parser.getId().getString(), patientEncReference.getId());
 
         //its rare that there is no primary diagnosis, but check just in case
         if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
 
             ConditionBuilder condition = new ConditionBuilder();
             condition.setId(idCell.getString() + "Condition:0");
-            condition.setPatient(patientReference, patientIdCell);
+            Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
+            condition.setPatient(newPatientReference, patientIdCell);
             DateTimeType dtt = new DateTimeType(parser.getPrimdiagDttm().getDateTime());
             condition.setOnset(dtt, parser.getPrimdiagDttm());
             condition.setIsPrimary(true);
@@ -255,7 +257,8 @@ public class EpisodesTransformer {
             ProcedureBuilder proc = new ProcedureBuilder();
             proc.setIsPrimary(true);
             proc.setId(idCell.getString() + ":Procedure:0", idCell);
-            proc.setPatient(patientReference, patientIdCell);
+            Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
+            proc.setPatient(newPatientReference, patientIdCell);
             proc.setIsPrimary(true);
             proc.setEncounter(thisEncounter, idCell);
             if (!parser.getPrimaryProcedureDate().isEmpty()) {
