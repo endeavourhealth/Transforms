@@ -134,9 +134,9 @@ public class SpellsTransformer {
             Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
             conditionBuilder.setPatient(newPatientReference, patientIdCell);
             conditionBuilder.setEncounter(thisEncounter, idCell);
-            if (!practitionerReference.isEmpty()) {
-                conditionBuilder.setClinician(practitionerReference, admissionConsultantCodeCell);
-            }
+            Reference newPractitionerReference = csvHelper.createPractitionerReference(primaryDiagnosisCodeCell.getString());
+            conditionBuilder.setClinician(newPractitionerReference, admissionConsultantCodeCell);
+
             DateTimeType dtt = new DateTimeType(parser.getAdmissionDttm().getDateTime());
             conditionBuilder.setOnset(dtt, parser.getAdmissionDttm());
 
@@ -166,9 +166,9 @@ public class SpellsTransformer {
             procedureBuilder.setId(idCell.getString() + ":Procedure:0", idCell);
             procedureBuilder.setIsPrimary(true);
             procedureBuilder.setEncounter(thisEncounter, idCell);
-            if (!practitionerReference.isEmpty()) {
-                procedureBuilder.addPerformer(practitionerReference, admissionConsultantCodeCell);
-            }
+            Reference newPractitionerDiagnosisReference = csvHelper.createPractitionerReference(parser.getPrimaryProcedureCode().getString());
+            procedureBuilder.addPerformer(newPractitionerDiagnosisReference, admissionConsultantCodeCell);
+
             DateTimeType dateTimeType = new DateTimeType(parser.getAdmissionDttm().getDateTime());
             procedureBuilder.setPerformed(dateTimeType, parser.getAdmissionDttm());
 
