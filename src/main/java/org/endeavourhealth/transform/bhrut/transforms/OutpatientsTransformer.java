@@ -396,12 +396,13 @@ public class OutpatientsTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !subEncounter.isIdMapped(), subEncounter);
         Appointment appt  =  (Appointment)appointmentBuilder.getResource();
         List<Appointment.AppointmentParticipantComponent> who = appt.getParticipant();
+        LOG.debug("No of people " + who.size());
         for (Appointment.AppointmentParticipantComponent a : who) {
             Reference ref  = a.getActor();
-
-            LOG.debug("Appt person " + ref.getId());
+            LOG.debug("Appt ref" + ref.getReference());
         }
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !appointmentBuilder.isIdMapped(), appointmentBuilder, slotBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder ,appointmentBuilder);
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), !slotBuilder.isIdMapped(),  slotBuilder);
 
     }
 
@@ -562,10 +563,10 @@ public class OutpatientsTransformer {
         if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-            if (builder.isIdMapped()) {
+            //if (builder.isIdMapped()) {
                 parentEncounter
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            }
+            //}
             LOG.debug("parentEncounter: " + parentEncounter.getReference());
             builder.setPartOf(parentEncounter);
         }
