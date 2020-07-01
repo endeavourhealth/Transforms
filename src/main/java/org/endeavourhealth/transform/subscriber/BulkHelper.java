@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.ui.helpers;
+package org.endeavourhealth.transform.subscriber;
 
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.XmlSerializer;
@@ -13,8 +13,6 @@ import org.endeavourhealth.core.xml.QueryDocument.LibraryItem;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.FhirToEnterpriseCsvTransformer;
 import org.endeavourhealth.transform.enterprise.transforms.AbstractEnterpriseTransformer;
-import org.endeavourhealth.transform.subscriber.FhirToSubscriberCsvTransformer;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.endeavourhealth.transform.subscriber.transforms.AbstractSubscriberTransformer;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -212,6 +210,75 @@ public class BulkHelper {
 
         List<String> filesToKeep = new ArrayList<>();
         filesToKeep.add(SubscriberTableId.REGISTRATION_STATUS_HISTORY.getName());
+
+        params.getOutputContainer().clearDownOutputContainer(filesToKeep);
+
+        byte[] bytes = params.getOutputContainer().writeToZip();
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+
+    public static String getSubscriberContainerForPatientData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
+
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, null, batchUUID, subscriberConfigName, resources, false);
+
+        // Check if patient exists in target DB
+        boolean patientFoundInSubscriber = checkIfPatientIsInSubscriberDatabase(params, patientId.toString());
+
+        if (!patientFoundInSubscriber) {
+            LOG.info("Skipping patient " + patientId + " as not found in subscriber DB");
+            return null;
+        }
+
+        Long enterpriseOrgId = FhirToSubscriberCsvTransformer.findEnterpriseOrgId(serviceUUID, params, Collections.emptyList());
+        params.setSubscriberOrganisationId(enterpriseOrgId);
+
+        // take a copy of resources to avoid ConcurrentModificationException
+        List<ResourceWrapper> copy = new ArrayList(resources);
+
+        // // create a patient transformer and transform the Patient fhir resources
+        AbstractSubscriberTransformer subscriberTransformer =
+                FhirToSubscriberCsvTransformer.createTransformerForResourceType(ResourceType.Patient);
+        subscriberTransformer.transformResources(resources, params);
+
+        List<SubscriberTableId> filesToKeep = new ArrayList<>();
+        filesToKeep.add(SubscriberTableId.PATIENT);
+        filesToKeep.add(SubscriberTableId.PATIENT_ADDRESS);
+        filesToKeep.add(SubscriberTableId.PATIENT_CONTACT);
+
+        params.getOutputContainer().clearDownOutputContainer(filesToKeep);
+
+        byte[] bytes = params.getOutputContainer().writeToZip();
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+
+    public static String getSubscriberContainerForEpisodeData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
+
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, null, batchUUID, subscriberConfigName, resources, false);
+
+        // Check if patient exists in target DB
+        boolean patientFoundInSubscriber = checkIfPatientIsInSubscriberDatabase(params, patientId.toString());
+
+        if (!patientFoundInSubscriber) {
+            LOG.info("Skipping patient " + patientId + " as not found in subscriber DB");
+            return null;
+        }
+
+        Long enterpriseOrgId = FhirToSubscriberCsvTransformer.findEnterpriseOrgId(serviceUUID, params, Collections.emptyList());
+        params.setSubscriberOrganisationId(enterpriseOrgId);
+
+        //having done any patient resource in our batch, we should have created an enterprise patient ID and person ID that we can use for all remaining resources
+        params.populatePatientAndPersonIds();
+
+        // take a copy of resources to avoid ConcurrentModificationException
+        List<ResourceWrapper> copy = new ArrayList(resources);
+
+        // create a episode of care transformer and transform the fhir resources
+        AbstractSubscriberTransformer enterpriseEpisodeOfCareTransformer
+                = FhirToSubscriberCsvTransformer.createTransformerForResourceType(ResourceType.EpisodeOfCare);
+        enterpriseEpisodeOfCareTransformer.transformResources(copy, params);
+
+        List<SubscriberTableId> filesToKeep = new ArrayList<>();
+        filesToKeep.add(SubscriberTableId.REGISTRATION_STATUS_HISTORY);
 
         params.getOutputContainer().clearDownOutputContainer(filesToKeep);
 
