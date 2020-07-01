@@ -209,10 +209,14 @@ public class EpisodesTransformer {
             CodeableConceptBuilder code
                     = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
             code.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            code.setCodingCode(parser.getPrimaryDiagnosisCode().getString(), parser.getPrimaryDiagnosisCode());
-            String diagTerm = TerminologyService.lookupIcd10CodeDescription(parser.getPrimaryDiagnosisCode().getString());
+            String icd10 = parser.getPrimaryDiagnosisCode().getString();
+            if (icd10.endsWith("X")) {
+                icd10 = icd10.substring(0,3);
+            }
+            code.setCodingCode(icd10, parser.getPrimaryDiagnosisCode());
+            String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
             if (Strings.isNullOrEmpty(diagTerm)) {
-                throw new Exception("Failed to find diagnosis term for ICD 10 code " + parser.getPrimaryDiagnosisCode().getString());
+                throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10);
             }
             code.setCodingDisplay(diagTerm);
             //note: no original text to set
@@ -237,7 +241,11 @@ public class EpisodesTransformer {
                     CodeableConceptBuilder codeableConceptBuilder
                             = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                    codeableConceptBuilder.setCodingCode(diagCode.getString(), diagCode);
+                    icd10=diagCode.getString();
+                    if (icd10.endsWith("X")) {
+                        icd10=icd10.substring(0,3);
+                    }
+                    codeableConceptBuilder.setCodingCode(icd10, diagCode);
                     diagTerm = TerminologyService.lookupIcd10CodeDescription(diagCode.getString());
                     if (Strings.isNullOrEmpty(diagTerm)) {
                         throw new Exception("Failed to find diagnosis term for ICD 10 code " + diagCode.getString());

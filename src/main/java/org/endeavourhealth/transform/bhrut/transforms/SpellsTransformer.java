@@ -146,9 +146,14 @@ public class SpellsTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            codeableConceptBuilder.setCodingCode(primaryDiagnosisCodeCell.getString(), primaryDiagnosisCodeCell);
-            String diagTerm = TerminologyService.lookupIcd10CodeDescription(primaryDiagnosisCodeCell.getString());
+            String icd10 = primaryDiagnosisCodeCell.getString();
+            codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
+            if (icd10.endsWith("X")) {  //X being a wildcard
+                icd10 = icd10.substring(0, 3);
+            }
+            String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
             if (Strings.isNullOrEmpty(diagTerm)) {
+
                 throw new Exception("Failed to find diagnosis term for ICD 10 code " + primaryDiagnosisCodeCell.getString());
             }
             codeableConceptBuilder.setCodingDisplay(diagTerm);

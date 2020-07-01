@@ -212,10 +212,14 @@ public class OutpatientsTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            codeableConceptBuilder.setCodingCode(primaryDiagnosisCodeCell.getString(), primaryDiagnosisCodeCell);
-            String diagTerm = TerminologyService.lookupIcd10CodeDescription(parser.getPrimaryDiagnosisCode().getString());
+            String icd10 = primaryDiagnosisCodeCell.getString();
+            if (icd10.endsWith("X")) {
+                icd10 = icd10.substring(0,3);
+            }
+            codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
+            String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
             if (Strings.isNullOrEmpty(diagTerm)) {
-                throw new Exception("Failed to find diagnosis term for ICD 10 code " + parser.getPrimaryDiagnosisCode().getString());
+                throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10);
             }
             codeableConceptBuilder.setCodingDisplay(diagTerm);
             Reference consultantReference5 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
@@ -246,10 +250,14 @@ public class OutpatientsTransformer {
                 CodeableConceptBuilder codeableConceptBuilder
                         = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                codeableConceptBuilder.setCodingCode(secondaryDiagnosisCodeCell.getString(), secondaryDiagnosisCodeCell);
-                String diagTerm = TerminologyService.lookupIcd10CodeDescription(secondaryDiagnosisCodeCell.getString());
+                String icd10 = secondaryDiagnosisCodeCell.getString();
+                if (icd10.endsWith("X")) {
+                    icd10 = icd10.substring(0,3);
+                }
+                codeableConceptBuilder.setCodingCode(icd10, secondaryDiagnosisCodeCell);
+                String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
                 if (Strings.isNullOrEmpty(diagTerm)) {
-                    throw new Exception("Failed to find diagnosis term for ICD 10 code " + parser.getPrimaryDiagnosisCode().getString());
+                    throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10);
                 }
                 codeableConceptBuilder.setCodingDisplay(diagTerm);
                 Reference consultantReference6 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
