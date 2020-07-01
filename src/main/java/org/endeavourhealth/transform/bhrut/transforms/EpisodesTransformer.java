@@ -518,13 +518,13 @@ public class EpisodesTransformer {
 
             //then save the child encounter builders if they are set
             if (admissionEncounterBuilder != null) {
-                fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
             }
             if (dischargeEncounterBuilder != null) {
-                fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
             }
             //finally, save the episode encounter which always exists
-            fhirResourceFiler.savePatientResource(null, episodeEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);
         }
 
     }

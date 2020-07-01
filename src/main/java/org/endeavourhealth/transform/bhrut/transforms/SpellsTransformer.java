@@ -446,7 +446,7 @@ public class SpellsTransformer {
         existingEncounterList.addReference(childAdmissionRef);
 
         //save the admission encounter
-        fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
 
         CsvCell spellDischargeDateCell = parser.getDischargeDttm();
         if (!spellDischargeDateCell.isEmpty()) {
@@ -489,17 +489,17 @@ public class SpellsTransformer {
             existingEncounterList.addReference(childDischargeRef);
 
             //save the discharge encounter builder
-            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
 
             //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
-            fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
             //then save the child encounter builders if they are set
             if (admissionEncounterBuilder != null) {
-                fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
             }
             if (dischargeEncounterBuilder != null) {
-                fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
             }
         }
     }

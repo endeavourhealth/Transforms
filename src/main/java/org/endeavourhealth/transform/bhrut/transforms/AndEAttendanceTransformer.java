@@ -436,7 +436,7 @@ public class AndEAttendanceTransformer {
             arrivalEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         }
         //save the A&E arrival encounter
-        fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), arrivalEncounterBuilder);
         //Is there an initial assessment encounter?
         EncounterBuilder assessmentEncounterBuilder = null;
         if (!assessmentDateCell.isEmpty()) {
@@ -477,7 +477,7 @@ public class AndEAttendanceTransformer {
                 assessmentEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
             }
             //save the A&E assessment encounter
-            fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), assessmentEncounterBuilder);
 
         }
 
@@ -517,7 +517,7 @@ public class AndEAttendanceTransformer {
             }
 
             //save the A&E treatments encounter
-            fhirResourceFiler.savePatientResource(null, treatmentsEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), treatmentsEncounterBuilder);
 
         }
 
@@ -562,7 +562,7 @@ public class AndEAttendanceTransformer {
             }
 
             //save the A&E discharge encounter
-            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
 
         }
 
@@ -574,23 +574,23 @@ public class AndEAttendanceTransformer {
         //save the A&E arrival encounter
         if (arrivalEncounterBuilder != null) {
             LOG.debug("Saving child arrival EM encounter: " + FhirSerializationHelper.serializeResource(arrivalEncounterBuilder.getResource()));
-            fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), arrivalEncounterBuilder);
         }
 
         //save the A&E assessment encounter
         if (assessmentEncounterBuilder != null) {
             LOG.debug("Saving child assessment EM encounter: " + FhirSerializationHelper.serializeResource(assessmentEncounterBuilder.getResource()));
-            fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), assessmentEncounterBuilder);
         }
         //save the A&E treatments encounter
         if (treatmentsEncounterBuilder != null) {
             LOG.debug("Saving child treatments EM encounter: " + FhirSerializationHelper.serializeResource(treatmentsEncounterBuilder.getResource()));
-            fhirResourceFiler.savePatientResource(null, treatmentsEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), treatmentsEncounterBuilder);
         }
         //save the A&E discharge encounter
         if (dischargeEncounterBuilder != null) {
             LOG.debug("Saving child discharge EM encounter: " + FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
-            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
         }
     }
 

@@ -72,10 +72,11 @@ public class Spells extends AbstractCsvParser {
                 "PRIMARY_PROCEDURE_CODE",
                 "REFERRING_CONSULTANT",
                 "SPELL_REGISTERED_GP_CODE",
+                "SPELL_REGISTERED_GP_PRACTICE",
                 "SPELL_REGISTERED_GP_PRACTICE_CODE",
                 "SPELL_CCG",
                 "PATHWAY_ID",
-                "READMISSION_EXTERNAL_ID",
+                "READMISSION_IPSP_EXTERNAL_ID",
                 "WLENTRY_EXTERNAL_ID",
                 "DataUpdateStatus"
         };
@@ -294,7 +295,7 @@ public class Spells extends AbstractCsvParser {
     }
 
     public CsvCell getReadmissionExternalId() {
-        return super.getCell("READMISSION_EXTERNAL_ID");
+        return super.getCell("READMISSION_IPSP_EXTERNAL_ID");
     }
 
     public CsvCell getWlentryExternalId() {
