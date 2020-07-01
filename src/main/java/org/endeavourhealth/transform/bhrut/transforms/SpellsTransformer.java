@@ -13,6 +13,7 @@ import org.endeavourhealth.transform.bhrut.schema.Spells;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.utilities.ucum.Term;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,7 +147,7 @@ public class SpellsTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            String icd10 = primaryDiagnosisCodeCell.getString();
+            String icd10 = TerminologyService.standardiseIcd10Code(primaryDiagnosisCodeCell.getString());
             codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
             if (icd10.endsWith("X")) {  //X being a wildcard
                 icd10 = icd10.substring(0, 3);

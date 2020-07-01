@@ -209,7 +209,7 @@ public class EpisodesTransformer {
             CodeableConceptBuilder code
                     = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
             code.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            String icd10 = parser.getPrimaryDiagnosisCode().getString();
+            String icd10 = TerminologyService.standardiseIcd10Code(parser.getPrimaryDiagnosisCode().getString());
             if (icd10.endsWith("X")) {
                 icd10 = icd10.substring(0,3);
             }
@@ -241,7 +241,7 @@ public class EpisodesTransformer {
                     CodeableConceptBuilder codeableConceptBuilder
                             = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                    icd10=diagCode.getString();
+                    icd10=TerminologyService.standardiseIcd10Code(diagCode.getString());
                     if (icd10.endsWith("X")) {
                         icd10=icd10.substring(0,3);
                     }
