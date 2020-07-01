@@ -1,5 +1,7 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.IParser;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
@@ -17,6 +19,8 @@ import org.hl7.fhir.utilities.ucum.Term;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -85,7 +89,7 @@ public class SpellsTransformer {
         EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(idCell, csvHelper, fhirResourceFiler);
         createEpisodeOfcare(parser, fhirResourceFiler, csvHelper, version, episodeOfCareBuilder);
         CsvCell patientIdCell = parser.getPasId();
-        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+        //Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
         //Create ParentEncounterBuilder
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
@@ -120,12 +124,19 @@ public class SpellsTransformer {
         //Reference practitioner = csvHelper.createPractitionerReference(admittingConsultant.getString());
         //encounterBuilder.addParticipant(practitioner, EncounterParticipantType.CONSULTANT, admittingConsultant);
 
-        CsvCell dischargeConsultant = parser.getDischargeConsultant();
-        Reference discharger = csvHelper.createPractitionerReference(dischargeConsultant.getString());
-        encounterBuilder.addParticipant(discharger, EncounterParticipantType.DISCHARGER, dischargeConsultant);
-
+        if (!parser.getDischargeConsultantCode().isEmpty()) {
+            CsvCell dischargeConsultant = parser.getDischargeConsultantCode();
+            Reference discharger = csvHelper.createPractitionerReference(dischargeConsultant.getString());
+            if (encounterBuilder.isIdMapped()) {
+                discharger = IdHelper.convertLocallyUniqueReferenceToEdsReference(discharger,csvHelper);
+            }
+            encounterBuilder.addParticipant(discharger, EncounterParticipantType.DISCHARGER, dischargeConsultant);
+        }
         //create an Encounter reference for the procedures and conditions to use
         Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+        if (encounterBuilder.isIdMapped()) {
+            thisEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisEncounter,csvHelper);
+        }
 
         //Primary Diagnosis
         CsvCell primaryDiagnosisCodeCell = parser.getPrimaryDiagnosisCode();
@@ -155,7 +166,7 @@ public class SpellsTransformer {
             String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
             if (Strings.isNullOrEmpty(diagTerm)) {
 
-                throw new Exception("Failed to find diagnosis term for ICD 10 code " + primaryDiagnosisCodeCell.getString());
+                throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10);
             }
             codeableConceptBuilder.setCodingDisplay(diagTerm);
 
@@ -276,7 +287,7 @@ public class SpellsTransformer {
             cc.setCodingDisplay(dischargeDest.getString(), dischargeDest);
         }
 
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
     }
 
     private static void createEpisodeOfcare(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
@@ -450,9 +461,19 @@ public class SpellsTransformer {
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
         }
         existingEncounterList.addReference(childAdmissionRef);
-
+//        FhirContext ctx = FhirContext.forDstu2Hl7Org();
+//        Meta meta = new Meta();
+//        meta.setVersionId("DSTU2");
+//        Encounter encounter = (Encounter) admissionEncounterBuilder.getResource();
+//        encounter.setMeta(meta);
+//        IParser ctxparser = ctx.newJsonParser();
+//           ctxparser.setPrettyPrint(true);
+//        // Serialize it
+//        encounter.
+//        String serialized = ctxparser.encodeResourceToString(encounter);
+//        LOG.debug("RAB>>>>" + serialized);
         //save the admission encounter
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
+       // fhirResourceFiler.savePatientResource(parser.getCurrentState(),!admissionEncounterBuilder.isIdMapped(), admissionEncounterBuilder);
 
         CsvCell spellDischargeDateCell = parser.getDischargeDttm();
         if (!spellDischargeDateCell.isEmpty()) {
@@ -495,18 +516,28 @@ public class SpellsTransformer {
             existingEncounterList.addReference(childDischargeRef);
 
             //save the discharge encounter builder
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
+           // fhirResourceFiler.savePatientResource(parser.getCurrentState(), !dischargeEncounterBuilder.isIdMapped(),dischargeEncounterBuilder);
 
             //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+            List<ResourceBuilderBase> res  = new ArrayList<ResourceBuilderBase>();
+            res.add(existingParentEncounterBuilder);
+            //fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
             //then save the child encounter builders if they are set
             if (admissionEncounterBuilder != null) {
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
+                res.add(admissionEncounterBuilder);
+                //fhirResourceFiler.savePatientResource(parser.getCurrentState(),!admissionEncounterBuilder.isIdMapped(),  admissionEncounterBuilder);
             }
             if (dischargeEncounterBuilder != null) {
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
+                res.add(dischargeEncounterBuilder);
+                //fhirResourceFiler.savePatientResource(parser.getCurrentState(), !dischargeEncounterBuilder.isIdMapped(),  dischargeEncounterBuilder);
             }
+
+            ResourceBuilderBase base[] = new ResourceBuilderBase[ res.size() ];
+            res.toArray(base);
+
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), base);
+
         }
     }
 
