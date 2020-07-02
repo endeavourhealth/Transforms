@@ -453,24 +453,11 @@ public class SpellsTransformer {
         //and link the parent to this new child encounter
         Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
         if (existingParentEncounterBuilder.isIdMapped()) {
-
+            LOG.debug("Existing parent is mapped - admission");
             childAdmissionRef
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
         }
         existingEncounterList.addReference(childAdmissionRef);
-//        FhirContext ctx = FhirContext.forDstu2Hl7Org();
-//        Meta meta = new Meta();
-//        meta.setVersionId("DSTU2");
-//        Encounter encounter = (Encounter) admissionEncounterBuilder.getResource();
-//        encounter.setMeta(meta);
-//        IParser ctxparser = ctx.newJsonParser();
-//           ctxparser.setPrettyPrint(true);
-//        // Serialize it
-//        encounter.
-//        String serialized = ctxparser.encodeResourceToString(encounter);
-//        LOG.debug("RAB>>>>" + serialized);
-        //save the admission encounter
-        // fhirResourceFiler.savePatientResource(parser.getCurrentState(),!admissionEncounterBuilder.isIdMapped(), admissionEncounterBuilder);
 
         CsvCell spellDischargeDateCell = parser.getDischargeDttm();
         if (!spellDischargeDateCell.isEmpty()) {
@@ -506,7 +493,7 @@ public class SpellsTransformer {
             //and link the parent to this new child encounter
             Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
             if (existingParentEncounterBuilder.isIdMapped()) {
-
+            LOG.debug("Existing parent is mapped - discharge");
                 childDischargeRef
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
             }
@@ -516,24 +503,26 @@ public class SpellsTransformer {
             // fhirResourceFiler.savePatientResource(parser.getCurrentState(), !dischargeEncounterBuilder.isIdMapped(),dischargeEncounterBuilder);
 
             //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
-            List<ResourceBuilderBase> res = new ArrayList<ResourceBuilderBase>();
-            res.add(existingParentEncounterBuilder);
-            //fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+           // List<ResourceBuilderBase> res = new ArrayList<ResourceBuilderBase>();
+            // res.add(existingParentEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
             //then save the child encounter builders if they are set
             if (admissionEncounterBuilder != null) {
-                res.add(admissionEncounterBuilder);
-                //fhirResourceFiler.savePatientResource(parser.getCurrentState(),!admissionEncounterBuilder.isIdMapped(),  admissionEncounterBuilder);
+            //    res.add(admissionEncounterBuilder);
+            //  fhirResourceFiler.savePatientResource(parser.getCurrentState(),!existingParentEncounterBuilder.isIdMapped(),  admissionEncounterBuilder);
+                fhirResourceFiler.savePatientResource(null,  admissionEncounterBuilder);
             }
             if (dischargeEncounterBuilder != null) {
-                res.add(dischargeEncounterBuilder);
-                //fhirResourceFiler.savePatientResource(parser.getCurrentState(), !dischargeEncounterBuilder.isIdMapped(),  dischargeEncounterBuilder);
+             //   res.add(dischargeEncounterBuilder);
+            //   fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(),  dischargeEncounterBuilder);
+                fhirResourceFiler.savePatientResource(null,  dischargeEncounterBuilder);
             }
-
-            ResourceBuilderBase base[] = new ResourceBuilderBase[res.size()];
-            res.toArray(base);
-
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), base);
+//
+//            ResourceBuilderBase base[] = new ResourceBuilderBase[res.size()];
+//            res.toArray(base);
+//
+//            fhirResourceFiler.savePatientResource(parser.getCurrentState(), base);
 
         }
     }
