@@ -20,7 +20,7 @@ public class OrganizationTransformer {
      * @return
      * @throws Exception
      */
-    public static Organization transformPV1ToOrganization(PV1 pv1, Organization organization) throws Exception {
+    public static Organization transformPV1ToOrganization(Organization organization) throws Exception {
         organization.setId("Imperial College Healthcare NHS Trust");
         organization.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
 

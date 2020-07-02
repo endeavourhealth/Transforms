@@ -229,6 +229,13 @@ public class EncounterBuilder extends ResourceBuilderBase
         setPeriodStart(new DateTimeType(startDateTime), sourceCells);
     }
 
+    public void setPeriodStart(DateTimeType startDateTime) {
+        getOrCreatePeriod().setStartElement(startDateTime);
+    }
+    public void setPeriodStart(Date startDateTime) {
+        setPeriodStart(new DateTimeType(startDateTime));
+    }
+
     public void setPeriodEnd(DateTimeType endDateTime, CsvCell... sourceCells) {
         getOrCreatePeriod().setEndElement(endDateTime);
 

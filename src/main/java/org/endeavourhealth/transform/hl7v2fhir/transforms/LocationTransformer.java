@@ -15,12 +15,11 @@ public class LocationTransformer {
 
     /**
      *
-     * @param pv1
      * @param location
      * @return
      * @throws Exception
      */
-    public static Location transformPV1ToOrgLocation(PV1 pv1, Location location) throws Exception {
+    public static Location transformPV1ToOrgLocation(Location location) throws Exception {
         location.setId("Imperial College Healthcare NHS Trust");
         location.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
         location.setStatus(Location.LocationStatus.ACTIVE);
