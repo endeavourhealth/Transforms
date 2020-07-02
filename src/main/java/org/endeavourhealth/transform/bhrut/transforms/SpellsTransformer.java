@@ -90,8 +90,11 @@ public class SpellsTransformer {
 
         //Create ParentEncounterBuilder
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
-        createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
+        List<ResourceBuilderBase> bases =  createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
         Reference patientReference2 = csvHelper.createPatientReference(patientIdCell);
+        if (encounterBuilder.isIdMapped()) {
+            IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference2, fhirResourceFiler);
+        }
         encounterBuilder.setPatient(patientReference2, patientIdCell);
 
         //EncounterBuilder encounterBuilder = new EncounterBuilder();
@@ -285,6 +288,12 @@ public class SpellsTransformer {
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
+        if (!bases.isEmpty()) {
+            LOG.debug("List of resources is " + bases.size());
+            ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
+            bases.toArray(resources);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), resources);
+        }
     }
 
     private static void createEpisodeOfcare(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
@@ -414,9 +423,11 @@ public class SpellsTransformer {
 
     }
 
-    private static void createSubEncounters(Spells parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static List<ResourceBuilderBase> createSubEncounters(Spells parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
         ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
+        List<ResourceBuilderBase> res = new ArrayList<ResourceBuilderBase>();
+        //res.add(existingParentEncounterBuilder);
 
         EncounterBuilder admissionEncounterBuilder = new EncounterBuilder();
         admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
@@ -458,6 +469,7 @@ public class SpellsTransformer {
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
         }
         existingEncounterList.addReference(childAdmissionRef);
+        res.add(admissionEncounterBuilder);
 
         CsvCell spellDischargeDateCell = parser.getDischargeDttm();
         if (!spellDischargeDateCell.isEmpty()) {
@@ -493,39 +505,17 @@ public class SpellsTransformer {
             //and link the parent to this new child encounter
             Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
             if (existingParentEncounterBuilder.isIdMapped()) {
-            LOG.debug("Existing parent is mapped - discharge");
+                LOG.debug("Existing parent is mapped - discharge");
                 childDischargeRef
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
             }
             existingEncounterList.addReference(childDischargeRef);
-
-            //save the discharge encounter builder
-            // fhirResourceFiler.savePatientResource(parser.getCurrentState(), !dischargeEncounterBuilder.isIdMapped(),dischargeEncounterBuilder);
-
-            //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
-           // List<ResourceBuilderBase> res = new ArrayList<ResourceBuilderBase>();
-            // res.add(existingParentEncounterBuilder);
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
-
-            //then save the child encounter builders if they are set
-            if (admissionEncounterBuilder != null) {
-            //    res.add(admissionEncounterBuilder);
-            //  fhirResourceFiler.savePatientResource(parser.getCurrentState(),!existingParentEncounterBuilder.isIdMapped(),  admissionEncounterBuilder);
-                fhirResourceFiler.savePatientResource(null,  admissionEncounterBuilder);
-            }
-            if (dischargeEncounterBuilder != null) {
-             //   res.add(dischargeEncounterBuilder);
-            //   fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(),  dischargeEncounterBuilder);
-                fhirResourceFiler.savePatientResource(null,  dischargeEncounterBuilder);
-            }
-//
-//            ResourceBuilderBase base[] = new ResourceBuilderBase[res.size()];
-//            res.toArray(base);
-//
-//            fhirResourceFiler.savePatientResource(parser.getCurrentState(), base);
-
+            res.add(dischargeEncounterBuilder);
         }
-    }
+            return res;
+        }
+
+
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      Spells parser,
