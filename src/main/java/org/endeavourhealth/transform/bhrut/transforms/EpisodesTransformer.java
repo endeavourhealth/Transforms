@@ -479,7 +479,7 @@ public class EpisodesTransformer {
                     if (existingParentEncounterBuilder.isIdMapped()) {
 
                         childDischargeRef
-                                = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+                                = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
                     }
 
                     existingParentEncounterList.addReference(childDischargeRef);
