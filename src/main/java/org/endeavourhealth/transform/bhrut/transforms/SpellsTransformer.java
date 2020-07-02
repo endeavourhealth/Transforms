@@ -158,15 +158,16 @@ public class SpellsTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            String icd10 = TerminologyService.standardiseIcd10Code(primaryDiagnosisCodeCell.getString());
+            String icd10 = primaryDiagnosisCodeCell.getString().trim();
             codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
-            if (icd10.endsWith("X")) {  //X being a wildcard
+            if (icd10.endsWith("X") || icd10.endsWith("D")) {  //X being a wildcard
                 icd10 = icd10.substring(0, 3);
             }
+            icd10 = TerminologyService.standardiseIcd10Code(icd10);
             String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
             if (Strings.isNullOrEmpty(diagTerm)) {
 
-                throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10);
+                throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10 + ".");
             }
             codeableConceptBuilder.setCodingDisplay(diagTerm);
 
@@ -292,7 +293,7 @@ public class SpellsTransformer {
             LOG.debug("List of resources is " + bases.size());
             ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
             bases.toArray(resources);
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), resources);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(),  resources);
         }
     }
 
