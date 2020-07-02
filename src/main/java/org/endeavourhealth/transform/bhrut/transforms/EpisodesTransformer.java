@@ -17,6 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class EpisodesTransformer {
@@ -57,7 +59,7 @@ public class EpisodesTransformer {
         CsvCell idCell = parser.getId();
         //Create ParentEncounterBuilder
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
-        createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
+        List<ResourceBuilderBase> bases = createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
 
@@ -211,7 +213,7 @@ public class EpisodesTransformer {
             code.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
             String icd10 = TerminologyService.standardiseIcd10Code(parser.getPrimaryDiagnosisCode().getString().trim());
             if (icd10.endsWith("X")) {
-                icd10 = icd10.substring(0,3);
+                icd10 = icd10.substring(0, 3);
             }
             code.setCodingCode(icd10, parser.getPrimaryDiagnosisCode());
             String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
@@ -243,7 +245,7 @@ public class EpisodesTransformer {
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
                     //icd10=TerminologyService.standardiseIcd10Code(diagCode.getString());
                     if (icd10.endsWith("X")) {
-                        icd10=icd10.substring(0,3);
+                        icd10 = icd10.substring(0, 3);
                     }
                     diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
                     if (Strings.isNullOrEmpty(diagTerm)) {
@@ -318,6 +320,14 @@ public class EpisodesTransformer {
                 }
             }
         }
+
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
+        if (!bases.isEmpty()) {
+            LOG.debug("List of resources is " + bases.size());
+            ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
+            bases.toArray(resources);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), resources);
+        }
     }
 
     private static void deleteEncounterAndChildren(Episodes parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -370,9 +380,10 @@ public class EpisodesTransformer {
 
     }
 
-    private static void createSubEncounters(Episodes parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static List<ResourceBuilderBase> createSubEncounters(Episodes parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
         ContainedListBuilder existingParentEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
+        List<ResourceBuilderBase> res = new ArrayList<ResourceBuilderBase>();
 
         EncounterBuilder admissionEncounterBuilder = null;
         EncounterBuilder dischargeEncounterBuilder = null;
@@ -430,6 +441,7 @@ public class EpisodesTransformer {
                             = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
                 }
                 existingParentEncounterList.addReference(childAdmissionRef);
+                res.add(admissionEncounterBuilder);
 
                 //the main encounter has a discharge date so set the end date and create a linked Discharge encounter
                 if (!episodeEndDateCell.isEmpty()) {
@@ -471,6 +483,7 @@ public class EpisodesTransformer {
                     }
 
                     existingParentEncounterList.addReference(childDischargeRef);
+                    res.add(dischargeEncounterBuilder);
                 }
             }
             //these are the 01, 02, 03, 04 subsequent episodes where activity happens, maternity, wards change etc.
@@ -507,6 +520,7 @@ public class EpisodesTransformer {
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(childEpisodeRef, csvHelper);
             }
             existingParentEncounterList.addReference(childEpisodeRef);
+            res.add(episodeEncounterBuilder);
 
             //add in additional extended data as Parameters resource with additional extension
             ContainedParametersBuilder containedParametersBuilder
@@ -521,7 +535,7 @@ public class EpisodesTransformer {
             if (!episodeEndWardCodeCell.isEmpty()) {
                 containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString());
             }
-            //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
+           /* //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
             //then save the child encounter builders if they are set
@@ -532,9 +546,9 @@ public class EpisodesTransformer {
                 fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
             }
             //finally, save the episode encounter which always exists
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);*/
         }
-
+        return res;
     }
 
     private static EncounterBuilder createEncountersParentMinimum(Episodes parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
