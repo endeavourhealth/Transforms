@@ -178,7 +178,11 @@ public class BulkHelper {
         params.getOutputContainer().clearDownOutputContainer(filesToKeep);
 
         byte[] bytes = params.getOutputContainer().writeToZip();
-        return Base64.getEncoder().encodeToString(bytes);
+        if (bytes != null) {
+            return Base64.getEncoder().encodeToString(bytes);
+        } else {
+            return null;
+        }
     }
 
     public static String getEnterpriseContainerForEpisodeData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
@@ -214,7 +218,11 @@ public class BulkHelper {
         params.getOutputContainer().clearDownOutputContainer(filesToKeep);
 
         byte[] bytes = params.getOutputContainer().writeToZip();
-        return Base64.getEncoder().encodeToString(bytes);
+        if (bytes != null) {
+            return Base64.getEncoder().encodeToString(bytes);
+        } else {
+            return null;
+        }
     }
 
     public static String getSubscriberContainerForPatientData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
@@ -248,7 +256,11 @@ public class BulkHelper {
         params.getOutputContainer().clearDownOutputContainer(filesToKeep);
 
         byte[] bytes = params.getOutputContainer().writeToZip();
-        return Base64.getEncoder().encodeToString(bytes);
+        if (bytes != null) {
+            return Base64.getEncoder().encodeToString(bytes);
+        } else {
+            return null;
+        }
     }
 
     public static String getSubscriberContainerForEpisodeData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
@@ -283,6 +295,10 @@ public class BulkHelper {
         params.getOutputContainer().clearDownOutputContainer(filesToKeep);
 
         byte[] bytes = params.getOutputContainer().writeToZip();
-        return Base64.getEncoder().encodeToString(bytes);
+        if (bytes != null) {
+            return Base64.getEncoder().encodeToString(bytes);
+        } else {
+            return null;
+        }
     }
 }
