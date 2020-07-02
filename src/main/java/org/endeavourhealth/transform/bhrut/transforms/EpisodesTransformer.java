@@ -209,7 +209,7 @@ public class EpisodesTransformer {
             CodeableConceptBuilder code
                     = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
             code.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            String icd10 = TerminologyService.standardiseIcd10Code(parser.getPrimaryDiagnosisCode().getString());
+            String icd10 = TerminologyService.standardiseIcd10Code(parser.getPrimaryDiagnosisCode().getString().trim());
             if (icd10.endsWith("X")) {
                 icd10 = icd10.substring(0,3);
             }
@@ -241,15 +241,15 @@ public class EpisodesTransformer {
                     CodeableConceptBuilder codeableConceptBuilder
                             = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                    icd10=TerminologyService.standardiseIcd10Code(diagCode.getString());
+                    //icd10=TerminologyService.standardiseIcd10Code(diagCode.getString());
                     if (icd10.endsWith("X")) {
                         icd10=icd10.substring(0,3);
                     }
-                    codeableConceptBuilder.setCodingCode(icd10, diagCode);
-                    diagTerm = TerminologyService.lookupIcd10CodeDescription(diagCode.getString());
+                    diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
                     if (Strings.isNullOrEmpty(diagTerm)) {
-                        throw new Exception("Failed to find diagnosis term for ICD 10 code " + diagCode.getString());
+                        throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10 + ".");
                     }
+                    codeableConceptBuilder.setCodingCode(icd10, diagCode);
                     code.setCodingDisplay(diagTerm);
                     cc.setCategory("diagnosis");
 
