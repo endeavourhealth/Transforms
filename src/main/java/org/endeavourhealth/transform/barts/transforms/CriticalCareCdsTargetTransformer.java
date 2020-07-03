@@ -5,7 +5,6 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCriticalCareCdsTarget;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -220,7 +219,7 @@ public class CriticalCareCdsTargetTransformer {
             //save critical care encounter record and the parent (with updated references). Parent is filed first.
             fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
-            LOG.debug("Saving child critical encounter: "+ FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+            //LOG.debug("Saving child critical encounter: "+ FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, encounterBuilder);
         }
     }

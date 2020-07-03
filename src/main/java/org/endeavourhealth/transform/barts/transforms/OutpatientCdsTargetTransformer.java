@@ -8,9 +8,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingOutpatientCdsTarget;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
@@ -79,7 +77,7 @@ public class OutpatientCdsTargetTransformer {
 
                 } else {
 
-                    //create top level parent with minimum data
+                    //create top level parent with minimum data and then the sub encounter
                     createOutpatientCdsEncounterParentAndSub(targetOutpatientCds, fhirResourceFiler, csvHelper);
                 }
             } else {
@@ -169,7 +167,7 @@ public class OutpatientCdsTargetTransformer {
 
         String adminCategoryCode = targetOutpatientCds.getAdministrativeCategoryCode();
         if (!Strings.isNullOrEmpty(adminCategoryCode)) {
-            containedParametersBuilder.addParameter("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCode);
+            containedParametersBuilder.addParameter("administrative_category_code", adminCategoryCode);
         }
         String referralSourceId = targetOutpatientCds.getReferralSource();
         if (!Strings.isNullOrEmpty(referralSourceId)) {
@@ -186,12 +184,14 @@ public class OutpatientCdsTargetTransformer {
         //this is a Cerner code which is mapped to an NHS DD alias
         String treatmentFunctionCode = targetOutpatientCds.getTreatmentFunctionCode();
         if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
-            if (codeRef != null) {
+            //CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
+            //if (codeRef != null) {
 
-                String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
-                containedParametersBuilder.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
-            }
+                //String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
+                //containedParametersBuilder.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
+            //todo - codeableconcept etc. -> IM API
+            containedParametersBuilder.addParameter("treatment_function", "" + treatmentFunctionCode);
+            //}
         }
 
         //add in diagnosis or procedure data match the encounter date? - already processed via proc and diag CDS transforms
@@ -307,6 +307,8 @@ public class OutpatientCdsTargetTransformer {
             }
             builder.setPatient(patientReference);
         }
+
+        //TODO: if we cannot map to the HL7 episode then need to create
         Integer episodeId = targetOutpatientCds.getEpisodeId();
         if (episodeId != null) {
 

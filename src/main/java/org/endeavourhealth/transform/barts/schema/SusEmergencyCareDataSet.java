@@ -472,7 +472,7 @@ public class SusEmergencyCareDataSet extends AbstractCsvParser implements CdsRec
                 "SafeguardingConcernSnomed10",
                 "EmergencyCareDischargeDestination",                            //staging
                 "OrganisationSiteIdentifierDischargeFromEmergencyCare",         //staging
-                "EmergencyCareDischargeFollowup",
+                "EmergencyCareDischargeFollowup",                               //staging
                 "EmergencyCareDischargeInformationGiven",
                 "ClinicalTrialIdentifier",
                 "DiseaseOutbreakNotification"
@@ -512,9 +512,10 @@ public class SusEmergencyCareDataSet extends AbstractCsvParser implements CdsRec
     public CsvCell getConclusionDate() { return super.getCell("EmergencyCareConclusionDate");}
     public CsvCell getConclusionTime() { return super.getCell("EmergencyCareConclusionTime");}
     public CsvCell getDepartureDate() { return super.getCell("EmergencyCareDepartureDate");}
-    public CsvCell getDepartureTime() { return super.getCell("EmergencyCareDischargeStatusSnomed");}
+    public CsvCell getDepartureTime() { return super.getCell("EmergencyCareDepartureTime");}
     public CsvCell getDischargeDestination() { return super.getCell("EmergencyCareDischargeDestination");}
     public CsvCell getDischargeDestinationSiteId() { return super.getCell("OrganisationSiteIdentifierDischargeFromEmergencyCare");}
+    public CsvCell getDischargeFollowUp() { return super.getCell("EmergencyCareDischargeFollowup");}
 
     //mental health classifications 1-10
     public CsvCell getMHClassificationCode(int dataNumber) { return super.getCell("MHALegalStatusClassificationCode"+dataNumber);}

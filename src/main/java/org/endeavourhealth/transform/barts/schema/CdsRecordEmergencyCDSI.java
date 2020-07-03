@@ -40,6 +40,7 @@ public interface CdsRecordEmergencyCDSI {
     CsvCell getDepartureTime();
     CsvCell getDischargeDestination();
     CsvCell getDischargeDestinationSiteId();
+    CsvCell getDischargeFollowUp();
 
     //Mental Health Classifications 1 - 10
     CsvCell getMHClassificationCode(int dataNumber);

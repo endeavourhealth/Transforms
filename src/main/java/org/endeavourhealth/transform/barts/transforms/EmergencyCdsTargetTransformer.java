@@ -9,10 +9,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
@@ -146,7 +143,19 @@ public class EmergencyCdsTargetTransformer {
 
         String aeAttendanceCategoryCode = targetEmergencyCds.getAttendanceCategory();
         if (!Strings.isNullOrEmpty(aeAttendanceCategoryCode)) {
-            containedParametersBuilderArrival.addParameter("ae_attendance_category", "" + aeAttendanceCategoryCode);
+
+            //purely for example - replace with actuals throughout
+//            String property
+//                    = IMClient.getPropertyConceptIri("/CDS/ACC", "attendance_category_code");
+//            String value
+//                    = IMClient.getValueConceptIri("/CDS/ACC",
+//                                                    new Field()
+//                                                            .setName("attendance_category_code")
+//                                                            .setValue(aeAttendanceCategoryCode));
+
+            String property  = "attendance_category_code";
+            String value = aeAttendanceCategoryCode;
+            containedParametersBuilderArrival.addParameter(property, value);
         }
         String aeAttendanceSource = targetEmergencyCds.getAttendanceSource();
         if (!Strings.isNullOrEmpty(aeAttendanceSource)) {
@@ -167,12 +176,14 @@ public class EmergencyCdsTargetTransformer {
         //this is a Cerner code which is mapped to an NHS DD alias
         String treatmentFunctionCode = targetEmergencyCds.getTreatmentFunctionCode();
         if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
-            CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
-            if (codeRef != null) {
+            //CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
+            //if (codeRef != null) {
 
-                String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
-                containedParametersBuilderArrival.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
-            }
+               // String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
+                //containedParametersBuilderArrival.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
+            //todo - codeableconcept etc. -> IM API
+            containedParametersBuilderArrival.addParameter("treatment_function", "" + treatmentFunctionCode);
+            //}
         }
 
         //check for other dates to determine if the arrival has ended
@@ -180,9 +191,9 @@ public class EmergencyCdsTargetTransformer {
         Date invAndTreatmentsDate = targetEmergencyCds.getDtSeenForTreatment();
         Date admitDate = targetEmergencyCds.getDtDecidedToAdmit();
         Date conclusionDate = targetEmergencyCds.getDtConclusion();
-        Date dischargeDate = targetEmergencyCds.getDtDeparture();
+        Date departureDate = targetEmergencyCds.getDtDeparture();
         Date aeEndDate
-                = ObjectUtils.firstNonNull(assessmentDate, invAndTreatmentsDate, admitDate, conclusionDate, dischargeDate);
+                = ObjectUtils.firstNonNull(assessmentDate, invAndTreatmentsDate, admitDate, conclusionDate, departureDate);
         if (aeEndDate != null) {
 
             arrivalEncounterBuilder.setPeriodEnd(aeEndDate);
@@ -228,7 +239,7 @@ public class EmergencyCdsTargetTransformer {
             }
 
             Date aeAssessmentEndDate
-                    = ObjectUtils.firstNonNull(invAndTreatmentsDate, admitDate, conclusionDate, dischargeDate);
+                    = ObjectUtils.firstNonNull(invAndTreatmentsDate, admitDate, conclusionDate, departureDate);
             if (aeAssessmentEndDate != null) {
 
                 assessmentEncounterBuilder.setPeriodEnd(aeAssessmentEndDate);
@@ -275,7 +286,7 @@ public class EmergencyCdsTargetTransformer {
             }
 
             Date aeTreatmentsEndDate
-                    = ObjectUtils.firstNonNull(admitDate, conclusionDate, dischargeDate);
+                    = ObjectUtils.firstNonNull(admitDate, conclusionDate, departureDate);
             if (aeTreatmentsEndDate != null) {
 
                 treatmentsEncounterBuilder.setPeriodEnd(aeTreatmentsEndDate);
@@ -284,37 +295,37 @@ public class EmergencyCdsTargetTransformer {
         }
 
 
-        ////Is there a discharge encounter?/////////////////////////////////////////////////////////////////////////////
-        EncounterBuilder dischargeEncounterBuilder = null;
-        if (dischargeDate != null) {
+        ////Is there a conclusion/discharge encounter?/////////////////////////////////////////////////////////////////////////////
+        EncounterBuilder conclusionEncounterBuilder = null;
+        if (conclusionDate != null) {
 
-            dischargeEncounterBuilder = new EncounterBuilder();
-            dischargeEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
+            conclusionEncounterBuilder = new EncounterBuilder();
+            conclusionEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
-            String dischargeEncounterId = attendanceId + ":04:EM";
-            dischargeEncounterBuilder.setId(dischargeEncounterId);
-            dischargeEncounterBuilder.setPeriodStart(dischargeDate);
-            dischargeEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+            String conclusionEncounterId = attendanceId + ":04:EM";
+            conclusionEncounterBuilder.setId(conclusionEncounterId);
+            conclusionEncounterBuilder.setPeriodStart(conclusionDate);
+            conclusionEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderDischarge
-                    = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-            codeableConceptBuilderDischarge.setText("Emergency Discharge");
+                    = new CodeableConceptBuilder(conclusionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+            codeableConceptBuilderDischarge.setText("Emergency Conclusion");
 
-            setCommonEncounterAttributes(dischargeEncounterBuilder, targetEmergencyCds, csvHelper, true);
+            setCommonEncounterAttributes(conclusionEncounterBuilder, targetEmergencyCds, csvHelper, true);
 
             //and link the parent to this new child encounter
-            Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
+            Reference childConclusionRef = ReferenceHelper.createReference(ResourceType.Encounter, conclusionEncounterId);
             if (existingParentEncounterBuilder.isIdMapped()) {
 
-                childDischargeRef
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
+                childConclusionRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childConclusionRef, csvHelper);
             }
-            existingEncounterList.addReference(childDischargeRef);
+            existingEncounterList.addReference(childConclusionRef);
 
             //add in additional extended data as Parameters resource with additional extension
             //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
             ContainedParametersBuilder containedParametersBuilderDischarge
-                    = new ContainedParametersBuilder(dischargeEncounterBuilder);
+                    = new ContainedParametersBuilder(conclusionEncounterBuilder);
             containedParametersBuilderDischarge.removeContainedParameters();
 
             String dischargeStatusCode = targetEmergencyCds.getDischargeStatus();
@@ -325,40 +336,44 @@ public class EmergencyCdsTargetTransformer {
             if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
                 containedParametersBuilderDischarge.addParameter("ae_discharge_destination", "" + dischargeDestinationCode);
             }
+            String dischargeFollowUp = targetEmergencyCds.getDischargeFollowUp();
+            if (!Strings.isNullOrEmpty(dischargeFollowUp)) {
+                containedParametersBuilderDischarge.addParameter("ae_discharge_follow_up", "" + dischargeFollowUp);
+            }
 
-            //note ordering of date here, i.e. if not departed then conclusion is the end date
-            Date aeDischargeEndDate
-                    = ObjectUtils.firstNonNull(dischargeDate, conclusionDate);
-            if (aeDischargeEndDate != null) {
+            //note ordering of date here, i.e. if not concluded, then departed is the end date
+            Date aeConclusionEndDate
+                    = ObjectUtils.firstNonNull(conclusionDate, departureDate);
+            if (aeConclusionEndDate != null) {
 
-                dischargeEncounterBuilder.setPeriodEnd(aeDischargeEndDate);
-                dischargeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+                conclusionEncounterBuilder.setPeriodEnd(aeConclusionEndDate);
+                conclusionEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
             }
         }
 
         //save the existing parent encounter here with the updated child refs added during this method,
         //then the child sub encounter afterwards
-        LOG.debug("Saving parent EM encounter: "+ FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
+        //LOG.debug("Saving parent EM encounter: "+ FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
         //save the A&E arrival encounter - always created
-        LOG.debug("Saving child arrival EM encounter: "+ FhirSerializationHelper.serializeResource(arrivalEncounterBuilder.getResource()));
+        //LOG.debug("Saving child arrival EM encounter: "+ FhirSerializationHelper.serializeResource(arrivalEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
 
         //save the A&E assessment encounter
         if (assessmentEncounterBuilder != null) {
-            LOG.debug("Saving child assessment EM encounter: "+ FhirSerializationHelper.serializeResource(assessmentEncounterBuilder.getResource()));
+            //LOG.debug("Saving child assessment EM encounter: "+ FhirSerializationHelper.serializeResource(assessmentEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
         }
         //save the A&E treatments encounter
         if (treatmentsEncounterBuilder != null) {
-            LOG.debug("Saving child treatments EM encounter: "+ FhirSerializationHelper.serializeResource(treatmentsEncounterBuilder.getResource()));
+            //LOG.debug("Saving child treatments EM encounter: "+ FhirSerializationHelper.serializeResource(treatmentsEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, treatmentsEncounterBuilder);
         }
         //save the A&E discharge encounter
-        if (dischargeEncounterBuilder != null) {
-            LOG.debug("Saving child discharge EM encounter: "+ FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
-            fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+        if (conclusionEncounterBuilder != null) {
+            //LOG.debug("Saving child discharge EM encounter: "+ FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(null, conclusionEncounterBuilder);
         }
     }
 
@@ -412,6 +427,8 @@ public class EmergencyCdsTargetTransformer {
             }
             builder.setPatient(patientReference);
         }
+
+        //TODO: if we cannot map to the HL7 episode then need to create
         Integer episodeId = targetEmergencyCds.getEpisodeId();
         if (episodeId != null) {
 
