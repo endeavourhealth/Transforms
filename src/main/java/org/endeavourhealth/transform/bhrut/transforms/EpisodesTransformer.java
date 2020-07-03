@@ -389,8 +389,6 @@ public class EpisodesTransformer {
         EncounterBuilder dischargeEncounterBuilder = null;
         CsvCell epiNumCell = parser.getEpiNum();
 
-
-        admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
         if (!epiNumCell.isEmpty() && epiNumCell.getString().equalsIgnoreCase("01")) {
             admissionEncounterBuilder = new EncounterBuilder();
             admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
