@@ -59,23 +59,25 @@ public class PatientTransformer {
         }
 
         XAD[] patientAddress = pid.getPatientAddress();
-        ID addType = patientAddress[0].getAddressType();
-        ST city = patientAddress[0].getCity();
-        ID country = patientAddress[0].getCountry();
-        ST add = patientAddress[0].getStreetAddress();
-        ST postCode = patientAddress[0].getZipOrPostalCode();
+        if(patientAddress != null && patientAddress.length > 0) {
+            ID addType = patientAddress[0].getAddressType();
+            ST city = patientAddress[0].getCity();
+            ID country = patientAddress[0].getCountry();
+            ST add = patientAddress[0].getStreetAddress();
+            ST postCode = patientAddress[0].getZipOrPostalCode();
 
-        Address address = new Address();
-        if (String.valueOf(addType).equals("HOME")) {address.setUse(Address.AddressUse.HOME);}
-        if (String.valueOf(addType).equals("TEMP")) {address.setUse(Address.AddressUse.TEMP);}
-        if (String.valueOf(addType).equals("OLD")) {address.setUse(Address.AddressUse.OLD);}
+            Address address = new Address();
+            if (String.valueOf(addType).equals("HOME")) {address.setUse(Address.AddressUse.HOME);}
+            if (String.valueOf(addType).equals("TEMP")) {address.setUse(Address.AddressUse.TEMP);}
+            if (String.valueOf(addType).equals("OLD")) {address.setUse(Address.AddressUse.OLD);}
 
-        address.addLine(String.valueOf(add));
-        address.setCountry(String.valueOf(country));
-        address.setPostalCode(String.valueOf(postCode).replaceAll("\\s",""));
-        address.setCity(String.valueOf(city));
-        address.setDistrict("");
-        patient.addAddress(address);
+            address.addLine(String.valueOf(add));
+            address.setCountry(String.valueOf(country));
+            address.setPostalCode(String.valueOf(postCode).replaceAll("\\s",""));
+            address.setCity(String.valueOf(city));
+            address.setDistrict("");
+            patient.addAddress(address);
+        }
 
         TS dod = pid.getPatientDeathDateAndTime();
         if (!dod.isEmpty()) {

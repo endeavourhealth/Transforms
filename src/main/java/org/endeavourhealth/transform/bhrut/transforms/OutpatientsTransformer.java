@@ -212,9 +212,11 @@ public class OutpatientsTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            String icd10 = primaryDiagnosisCodeCell.getString();
+            String icd10 = TerminologyService.standardiseIcd10Code(primaryDiagnosisCodeCell.getString());
             if (icd10.endsWith("X")) {
                 icd10 = icd10.substring(0,3);
+            } else if (icd10.length()>4) {
+
             }
             codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
             String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
@@ -250,7 +252,7 @@ public class OutpatientsTransformer {
                 CodeableConceptBuilder codeableConceptBuilder
                         = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                String icd10 = secondaryDiagnosisCodeCell.getString();
+                String icd10 = TerminologyService.standardiseIcd10Code(secondaryDiagnosisCodeCell.getString());
                 if (icd10.endsWith("X")) {
                     icd10 = icd10.substring(0,3);
                 }

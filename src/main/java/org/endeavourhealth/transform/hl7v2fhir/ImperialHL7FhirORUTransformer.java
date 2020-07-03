@@ -1,13 +1,16 @@
 package org.endeavourhealth.transform.hl7v2fhir;
 
-import ca.uhn.hl7v2.DefaultHapiContext;
-import ca.uhn.hl7v2.HL7Exception;
-import ca.uhn.hl7v2.HapiContext;
 import ca.uhn.hl7v2.model.Message;
-import ca.uhn.hl7v2.parser.EncodingNotSupportedException;
-import ca.uhn.hl7v2.parser.PipeParser;
+import ca.uhn.hl7v2.model.v23.datatype.CX;
+import ca.uhn.hl7v2.model.v23.message.ADT_A01;
+import ca.uhn.hl7v2.model.v23.message.ORU_R01;
+import ca.uhn.hl7v2.model.v23.segment.PID;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
+import org.endeavourhealth.transform.hl7v2fhir.transforms.*;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,66 +22,79 @@ public abstract class ImperialHL7FhirORUTransformer {
      * @param exchangeBody
      * @param fhirResourceFiler
      * @param version
+     * @param hapiMsg
      * @throws Exception
      */
-    public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
-        String HL7Message = null;
-        /*FileInputStream iS = new FileInputStream("C:\\Users\\USER\\Desktop\\Examples\\A01");
-        HL7Message = IOUtils.toString(iS);*/
-        //get HL7 message from the table based on id
-        /*Connection connection = ConnectionManager.getHL7v2InboundConnection();
-        PreparedStatement ps = null;
-        try {
-            String sql = "SELECT * from imperial where id=?";
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, 1);
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    if(resultSet.next()) {
-                        HL7Message = resultSet.getString("hl7_message");
-                    }
-                }
-            }
-            connection.commit();
-        } finally {
-            if (ps != null) {
-                ps.close();
-            }
-            connection.close();
-        }*/
-        //get HL7 message from the table based on id
+    public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version, Message hapiMsg) throws Exception {
 
-        Message hapiMsg = parseHL7Message(HL7Message);
         String msgType = (hapiMsg.printStructure()).substring(0,7);
         ImperialHL7Helper imperialHL7Helper = new ImperialHL7Helper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
                 fhirResourceFiler.getExchangeId(), null, null);
 
-    }
+        if("ORU_R01".equalsIgnoreCase(msgType)) {
+            ORU_R01 oruMsg = (ORU_R01) hapiMsg;
 
-    /**
-     *
-     * @param hl7Message
-     * @return
-     * @throws Exception
-     */
-    private static Message parseHL7Message(String hl7Message) throws Exception {
-        HapiContext context = new DefaultHapiContext();
-        context.getParserConfiguration().setValidating(false);
+            //Organization
+            Organization fhirOrganization = null;
+            fhirOrganization = new Organization();
+            fhirOrganization = OrganizationTransformer.transformPV1ToOrganization(fhirOrganization);
+            //Organization
 
-        PipeParser pipeParser = new PipeParser(context) {
-            public String getVersion(String message) throws HL7Exception {
-                return "2.3";
+            //LocationOrg
+            Location fhirLocationOrg = null;
+            fhirLocationOrg = new Location();
+            fhirLocationOrg = LocationTransformer.transformPV1ToOrgLocation(fhirLocationOrg);
+            fhirLocationOrg.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+
+            LocationBuilder locationBuilderOrg = new LocationBuilder(fhirLocationOrg);
+            fhirResourceFiler.saveAdminResource(null, locationBuilderOrg);
+            //LocationOrg
+
+            //Organization
+            fhirOrganization.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationOrg.getId()));
+
+            OrganizationBuilder organizationBuilder = new OrganizationBuilder(fhirOrganization);
+            fhirResourceFiler.saveAdminResource(null, organizationBuilder);
+            //Organization
+
+            //Patient
+            PID pid = oruMsg.getRESPONSE().getPATIENT().getPID();
+            CX[] patientIdList = pid.getPatientIDInternalID();
+            String patientGuid = String.valueOf(patientIdList[0].getID());
+            boolean newPatient = false;
+            Patient fhirPatient = null;
+            fhirPatient = (Patient) imperialHL7Helper.retrieveResource(patientGuid, ResourceType.Patient);
+            if(fhirPatient == null) {
+                fhirPatient = new Patient();
+                fhirPatient.setId(patientGuid);
+                newPatient = true;
             }
-        };
-        Message hapiMsg = null;
-        try {
-            // The parse method performs the actual parsing
-            hapiMsg = pipeParser.parse(hl7Message);
-        } catch (EncodingNotSupportedException e) {
-            e.printStackTrace();
-        } catch (HL7Exception e) {
-            e.printStackTrace();
+            fhirPatient = PatientTransformer.transformPIDToPatient(pid, fhirPatient);
+
+            if (newPatient) {
+                fhirPatient.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+                /*fhirPatient.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Practitioner, fhirPractitioner.getId()));*/
+            } else {
+                /*Reference organizationReference = imperialHL7Helper.createOrganizationReference(fhirOrganization.getId());
+                organizationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, fhirResourceFiler);
+                fhirPatient.setManagingOrganization(organizationReference);
+                fhirPatient.addCareProvider(organizationReference);
+
+                Reference practitionerReference = imperialHL7Helper.createPractitionerReference(fhirPractitioner.getId());
+                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
+                fhirPatient.addCareProvider(practitionerReference);*/
+            }
+
+            PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
+            if(newPatient) {
+                fhirResourceFiler.savePatientResource(null, true, patientBuilder);
+            } else {
+                fhirResourceFiler.savePatientResource(null, false, patientBuilder);
+            }
+            //Patient
+
         }
-        return hapiMsg;
     }
 
 }

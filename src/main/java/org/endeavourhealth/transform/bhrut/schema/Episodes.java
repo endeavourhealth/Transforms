@@ -58,6 +58,7 @@ public class Episodes extends AbstractCsvParser {
                 "ADMISSION_HOSPITAL_CODE",
                 "ADMISSION_HOSPITAL_NAME",
                 "PRIMARY_DIAGNOSIS_CODE",
+                "PRIMARY_DIAGNOSIS_CODING_TYPE",
                 "PRIMDIAG_DTTM",
                 "DIAG_01",
                 "DIAG1_DTTM",
@@ -283,6 +284,10 @@ public class Episodes extends AbstractCsvParser {
 
     public CsvCell getPrimaryDiagnosisCode() {
         return super.getCell("PRIMARY_DIAGNOSIS_CODE");
+    }
+
+    public CsvCell getPrimaryDiagnosisCodingType() {
+        return super.getCell("PRIMARY_DIAGNOSIS_CODING_TYPE");
     }
 
     public CsvCell getPrimdiagDttm() {

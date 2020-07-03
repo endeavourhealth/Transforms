@@ -192,5 +192,34 @@ public class ImperialHL7Helper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
+    public Resource retrieveResourceForLocalId(ResourceType resourceType, String locallyUniqueId) throws Exception {
+
+        UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, resourceType, locallyUniqueId);
+
+        //if we've never mapped the local ID to a EDS UI, then we've never heard of this resource before
+        if (globallyUniqueId == null) {
+            return null;
+        }
+        return retrieveResourceForUuid(resourceType, globallyUniqueId);
+    }
+
+    public Resource retrieveResourceForUuid(ResourceType resourceType, UUID resourceId) throws Exception {
+
+        ResourceWrapper resourceHistory = resourceRepository.getCurrentVersion(serviceId, resourceType.toString(), resourceId);
+
+        //if the resource has been deleted before, we'll have a null entry or one that says it's deleted
+        if (resourceHistory == null
+                || resourceHistory.isDeleted()) {
+            return null;
+        }
+
+        String json = resourceHistory.getResourceData();
+        try {
+            return FhirSerializationHelper.deserializeResource(json);
+        } catch (Throwable t) {
+            throw new Exception("Error deserialising " + resourceType + " " + resourceId, t);
+        }
+    }
+
 }
 
