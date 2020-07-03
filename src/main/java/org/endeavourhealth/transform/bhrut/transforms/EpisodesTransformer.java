@@ -388,153 +388,153 @@ public class EpisodesTransformer {
         EncounterBuilder admissionEncounterBuilder = null;
         EncounterBuilder dischargeEncounterBuilder = null;
         CsvCell epiNumCell = parser.getEpiNum();
+
+
+        admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
         if (!epiNumCell.isEmpty() && epiNumCell.getString().equalsIgnoreCase("01")) {
-
+            admissionEncounterBuilder = new EncounterBuilder();
             admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
-            if (!epiNumCell.isEmpty() && epiNumCell.getString().equalsIgnoreCase("01")) {
-                admissionEncounterBuilder = new EncounterBuilder();
-                admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
-                String admissionEncounterId = parser.getId().getString() + ":01:IP:Admission";
-                admissionEncounterBuilder.setId(admissionEncounterId);
-                CsvCell spellStartDateCell = parser.getEpisodeStartDttm();
-                admissionEncounterBuilder.setPeriodStart(spellStartDateCell.getDateTime());
-                admissionEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+            String admissionEncounterId = parser.getId().getString() + ":01:IP:Admission";
+            admissionEncounterBuilder.setId(admissionEncounterId);
+            CsvCell spellStartDateCell = parser.getEpisodeStartDttm();
+            admissionEncounterBuilder.setPeriodStart(spellStartDateCell.getDateTime());
+            admissionEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
-                CodeableConceptBuilder codeableConceptBuilderAdmission
-                        = new CodeableConceptBuilder(admissionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-                codeableConceptBuilderAdmission.setText("Inpatient Admission");
+            CodeableConceptBuilder codeableConceptBuilderAdmission
+                    = new CodeableConceptBuilder(admissionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+            codeableConceptBuilderAdmission.setText("Inpatient Admission");
 
-                setCommonEncounterAttributes(admissionEncounterBuilder, parser, csvHelper, true);
-
-                //add in additional extended data as Parameters resource with additional extension
-                ContainedParametersBuilder containedParametersBuilderAdmission
-                        = new ContainedParametersBuilder(admissionEncounterBuilder);
-                containedParametersBuilderAdmission.removeContainedParameters();
-
-                CsvCell adminCategoryCodeCe = parser.getAdministrativeCategoryCode();
-                if (!adminCategoryCodeCe.isEmpty()) {
-                    containedParametersBuilderAdmission.addParameter("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCodeCe.getString());
-                }
-                CsvCell admissionMethodCodeCell = parser.getAdmissionMethodCode();
-                if (!admissionMethodCodeCell.isEmpty()) {
-                    containedParametersBuilderAdmission.addParameter("ip_admission_method", "" + admissionMethodCodeCell.getString());
-                }
-                CsvCell admissionSourceCodeCell = parser.getAdmissionSourceCode();
-                if (!admissionSourceCodeCell.isEmpty()) {
-                    containedParametersBuilderAdmission.addParameter("ip_admission_source", "" + admissionSourceCodeCell);
-                }
-                CsvCell patientClassCodeCell = parser.getPatientClassCode();
-                if (!patientClassCodeCell.isEmpty()) {
-                    containedParametersBuilderAdmission.addParameter("patient_classification", "" + patientClassCodeCell.getString());
-                }
-                //if the 01 episode has an episode end date, set the admission end date
-                CsvCell episodeEndDateCell = parser.getEpisodeEndDttm();
-                if (!episodeEndDateCell.isEmpty()) {
-                    admissionEncounterBuilder.setPeriodEnd(episodeEndDateCell.getDateTime());
-                    admissionEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
-                }
-                //and link the parent to this new child encounter
-                Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
-                if (existingParentEncounterBuilder.isIdMapped()) {
-
-                    childAdmissionRef
-                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
-                }
-                existingParentEncounterList.addReference(childAdmissionRef);
-                res.add(admissionEncounterBuilder);
-
-                //the main encounter has a discharge date so set the end date and create a linked Discharge encounter
-                if (!episodeEndDateCell.isEmpty()) {
-                    //create new additional Discharge encounter event to link to the top level parent
-                    dischargeEncounterBuilder = new EncounterBuilder();
-                    dischargeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
-
-                    String dischargeEncounterId = parser.getId().getString() + ":01:IP:Discharge";
-                    dischargeEncounterBuilder.setId(dischargeEncounterId);
-                    dischargeEncounterBuilder.setPeriodStart(episodeEndDateCell.getDateTime());
-                    dischargeEncounterBuilder.setPeriodEnd(episodeEndDateCell.getDateTime());
-                    dischargeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
-
-                    CodeableConceptBuilder codeableConceptBuilderDischarge
-                            = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-                    codeableConceptBuilderDischarge.setText("Inpatient Discharge");
-
-                    setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper, true);
-
-                    //add in additional extended data as Parameters resource with additional extension
-                    ContainedParametersBuilder containedParametersBuilderDischarge
-                            = new ContainedParametersBuilder(dischargeEncounterBuilder);
-                    containedParametersBuilderDischarge.removeContainedParameters();
-
-                    CsvCell dischargeMethodCodeCell = parser.getDischargeMethod();
-                    if (!dischargeMethodCodeCell.isEmpty()) {
-                        containedParametersBuilderDischarge.addParameter("ip_discharge_method", "" + dischargeMethodCodeCell.getString());
-                    }
-                    CsvCell dischargeDestinationCodeCell = parser.getDischargeDestinationCode();
-                    if (!dischargeDestinationCodeCell.isEmpty()) {
-                        containedParametersBuilderDischarge.addParameter("ip_discharge_destination", "" + dischargeDestinationCodeCell.getString());
-                    }
-                    //and link the parent to this new child encounter
-                    Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
-                    if (existingParentEncounterBuilder.isIdMapped()) {
-
-                        childDischargeRef
-                                = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
-                    }
-
-                    existingParentEncounterList.addReference(childDischargeRef);
-                    res.add(dischargeEncounterBuilder);
-                }
-            }
-            //these are the 01, 02, 03, 04 subsequent episodes where activity happens, maternity, wards change etc.
-            //also, critical care child encounters link back to these as their parents via their own transform
-            EncounterBuilder episodeEncounterBuilder = new EncounterBuilder();
-            episodeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
-
-            String episodeEncounterId = parser.getId().getString() + ":" + parser.getEpiNum() + ":IP:Episode";
-            episodeEncounterBuilder.setId(episodeEncounterId);
-
-            //spell episode encounter have their own start and end date/times
-            CsvCell episodeStartDateCell = parser.getEpisodeStartDttm();
-            if (!episodeStartDateCell.isEmpty()) {
-                episodeEncounterBuilder.setPeriodStart(episodeStartDateCell.getDateTime());
-            }
-            CsvCell episodeEndDateCell = parser.getEpisodeEndDttm();
-            if (!episodeEndDateCell.isEmpty()) {
-                episodeEncounterBuilder.setPeriodEnd(episodeEndDateCell.getDateTime());
-                episodeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
-            } else {
-                episodeEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
-            }
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(episodeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-            codeableConceptBuilder.setText("Inpatient Episode");
-
-            setCommonEncounterAttributes(episodeEncounterBuilder, parser, csvHelper, true);
-
-            //and link the parent to this new child encounter
-            Reference childEpisodeRef = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
-            if (existingParentEncounterBuilder.isIdMapped()) {
-
-                childEpisodeRef
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childEpisodeRef, csvHelper);
-            }
-            existingParentEncounterList.addReference(childEpisodeRef);
-            res.add(episodeEncounterBuilder);
+            setCommonEncounterAttributes(admissionEncounterBuilder, parser, csvHelper, true);
 
             //add in additional extended data as Parameters resource with additional extension
-            ContainedParametersBuilder containedParametersBuilder
-                    = new ContainedParametersBuilder(episodeEncounterBuilder);
-            containedParametersBuilder.removeContainedParameters();
+            ContainedParametersBuilder containedParametersBuilderAdmission
+                    = new ContainedParametersBuilder(admissionEncounterBuilder);
+            containedParametersBuilderAdmission.removeContainedParameters();
 
-            CsvCell episodeStartWardCodeCell = parser.getEpisodeStartWardCode();
-            if (!episodeStartWardCodeCell.isEmpty()) {
-                containedParametersBuilder.addParameter("ip_episode_start_ward", "" + episodeStartWardCodeCell.getString());
+            CsvCell adminCategoryCodeCe = parser.getAdministrativeCategoryCode();
+            if (!adminCategoryCodeCe.isEmpty()) {
+                containedParametersBuilderAdmission.addParameter("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCodeCe.getString());
             }
-            CsvCell episodeEndWardCodeCell = parser.getEpisodeEndWardCode();
-            if (!episodeEndWardCodeCell.isEmpty()) {
-                containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString());
+            CsvCell admissionMethodCodeCell = parser.getAdmissionMethodCode();
+            if (!admissionMethodCodeCell.isEmpty()) {
+                containedParametersBuilderAdmission.addParameter("ip_admission_method", "" + admissionMethodCodeCell.getString());
             }
+            CsvCell admissionSourceCodeCell = parser.getAdmissionSourceCode();
+            if (!admissionSourceCodeCell.isEmpty()) {
+                containedParametersBuilderAdmission.addParameter("ip_admission_source", "" + admissionSourceCodeCell);
+            }
+            CsvCell patientClassCodeCell = parser.getPatientClassCode();
+            if (!patientClassCodeCell.isEmpty()) {
+                containedParametersBuilderAdmission.addParameter("patient_classification", "" + patientClassCodeCell.getString());
+            }
+            //if the 01 episode has an episode end date, set the admission end date
+            CsvCell episodeEndDateCell = parser.getEpisodeEndDttm();
+            if (!episodeEndDateCell.isEmpty()) {
+                admissionEncounterBuilder.setPeriodEnd(episodeEndDateCell.getDateTime());
+                admissionEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            }
+            //and link the parent to this new child encounter
+            Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
+            if (existingParentEncounterBuilder.isIdMapped()) {
+
+                childAdmissionRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+            }
+            existingParentEncounterList.addReference(childAdmissionRef);
+            res.add(admissionEncounterBuilder);
+
+            //the main encounter has a discharge date so set the end date and create a linked Discharge encounter
+            if (!episodeEndDateCell.isEmpty()) {
+                //create new additional Discharge encounter event to link to the top level parent
+                dischargeEncounterBuilder = new EncounterBuilder();
+                dischargeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
+                String dischargeEncounterId = parser.getId().getString() + ":01:IP:Discharge";
+                dischargeEncounterBuilder.setId(dischargeEncounterId);
+                dischargeEncounterBuilder.setPeriodStart(episodeEndDateCell.getDateTime());
+                dischargeEncounterBuilder.setPeriodEnd(episodeEndDateCell.getDateTime());
+                dischargeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+
+                CodeableConceptBuilder codeableConceptBuilderDischarge
+                        = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+                codeableConceptBuilderDischarge.setText("Inpatient Discharge");
+
+                setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper, true);
+
+                //add in additional extended data as Parameters resource with additional extension
+                ContainedParametersBuilder containedParametersBuilderDischarge
+                        = new ContainedParametersBuilder(dischargeEncounterBuilder);
+                containedParametersBuilderDischarge.removeContainedParameters();
+
+                CsvCell dischargeMethodCodeCell = parser.getDischargeMethod();
+                if (!dischargeMethodCodeCell.isEmpty()) {
+                    containedParametersBuilderDischarge.addParameter("ip_discharge_method", "" + dischargeMethodCodeCell.getString());
+                }
+                CsvCell dischargeDestinationCodeCell = parser.getDischargeDestinationCode();
+                if (!dischargeDestinationCodeCell.isEmpty()) {
+                    containedParametersBuilderDischarge.addParameter("ip_discharge_destination", "" + dischargeDestinationCodeCell.getString());
+                }
+                //and link the parent to this new child encounter
+                Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
+                if (existingParentEncounterBuilder.isIdMapped()) {
+
+                    childDischargeRef
+                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
+                }
+
+                existingParentEncounterList.addReference(childDischargeRef);
+                res.add(dischargeEncounterBuilder);
+            }
+        }
+        //these are the 01, 02, 03, 04 subsequent episodes where activity happens, maternity, wards change etc.
+        //also, critical care child encounters link back to these as their parents via their own transform
+        EncounterBuilder episodeEncounterBuilder = new EncounterBuilder();
+        episodeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
+        String episodeEncounterId = parser.getId().getString() + ":" + parser.getEpiNum() + ":IP:Episode";
+        episodeEncounterBuilder.setId(episodeEncounterId);
+
+        //spell episode encounter have their own start and end date/times
+        CsvCell episodeStartDateCell = parser.getEpisodeStartDttm();
+        if (!episodeStartDateCell.isEmpty()) {
+            episodeEncounterBuilder.setPeriodStart(episodeStartDateCell.getDateTime());
+        }
+        CsvCell episodeEndDateCell = parser.getEpisodeEndDttm();
+        if (!episodeEndDateCell.isEmpty()) {
+            episodeEncounterBuilder.setPeriodEnd(episodeEndDateCell.getDateTime());
+            episodeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        } else {
+            episodeEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+        }
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(episodeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+        codeableConceptBuilder.setText("Inpatient Episode");
+
+        setCommonEncounterAttributes(episodeEncounterBuilder, parser, csvHelper, true);
+
+        //and link the parent to this new child encounter
+        Reference childEpisodeRef = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
+        if (existingParentEncounterBuilder.isIdMapped()) {
+
+            childEpisodeRef
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childEpisodeRef, csvHelper);
+        }
+        existingParentEncounterList.addReference(childEpisodeRef);
+        res.add(episodeEncounterBuilder);
+
+        //add in additional extended data as Parameters resource with additional extension
+        ContainedParametersBuilder containedParametersBuilder
+                = new ContainedParametersBuilder(episodeEncounterBuilder);
+        containedParametersBuilder.removeContainedParameters();
+
+        CsvCell episodeStartWardCodeCell = parser.getEpisodeStartWardCode();
+        if (!episodeStartWardCodeCell.isEmpty()) {
+            containedParametersBuilder.addParameter("ip_episode_start_ward", "" + episodeStartWardCodeCell.getString());
+        }
+        CsvCell episodeEndWardCodeCell = parser.getEpisodeEndWardCode();
+        if (!episodeEndWardCodeCell.isEmpty()) {
+            containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString());
+        }
            /* //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
@@ -547,7 +547,7 @@ public class EpisodesTransformer {
             }
             //finally, save the episode encounter which always exists
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);*/
-        }
+
         return res;
     }
 
