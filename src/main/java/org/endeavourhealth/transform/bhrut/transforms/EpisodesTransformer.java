@@ -188,9 +188,9 @@ public class EpisodesTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
 
         //create an Encounter reference for the procedures and diagnosis
-       // Reference patientEncReference = csvHelper.createPatientReference(patientIdCell);
-       // Reference thisEncounter
-         //       = csvHelper.createEncounterReference(parser.getId().getString(), patientEncReference.getId());
+        // Reference patientEncReference = csvHelper.createPatientReference(patientIdCell);
+        // Reference thisEncounter
+        //       = csvHelper.createEncounterReference(parser.getId().getString(), patientEncReference.getId());
 
         //its rare that there is no primary diagnosis, but check just in case
         if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
