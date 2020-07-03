@@ -188,9 +188,9 @@ public class EpisodesTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
 
         //create an Encounter reference for the procedures and diagnosis
-        Reference patientEncReference = csvHelper.createPatientReference(patientIdCell);
-        Reference thisEncounter
-                = csvHelper.createEncounterReference(parser.getId().getString(), patientEncReference.getId());
+       // Reference patientEncReference = csvHelper.createPatientReference(patientIdCell);
+       // Reference thisEncounter
+         //       = csvHelper.createEncounterReference(parser.getId().getString(), patientEncReference.getId());
 
         //its rare that there is no primary diagnosis, but check just in case
         if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
@@ -203,7 +203,8 @@ public class EpisodesTransformer {
             condition.setOnset(dtt, parser.getPrimdiagDttm());
             condition.setIsPrimary(true);
             condition.setAsProblem(false);
-            condition.setEncounter(thisEncounter, parser.getId());
+            Reference encounterReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+            condition.setEncounter(encounterReference, parser.getId());
             if (!episodeConsultantCodeCell.isEmpty()) {
                 Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
                 condition.setClinician(practitionerReference2, episodeConsultantCodeCell);
@@ -271,7 +272,8 @@ public class EpisodesTransformer {
             Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
             proc.setPatient(newPatientReference, patientIdCell);
             proc.setIsPrimary(true);
-            proc.setEncounter(thisEncounter, idCell);
+            Reference encounterReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+            proc.setEncounter(encounterReference, idCell);
             if (!parser.getPrimaryProcedureDate().isEmpty()) {
                 DateTimeType dttp = new DateTimeType(parser.getPrimaryProcedureDate().getDateTime());
                 proc.setPerformed(dttp, parser.getPrimaryProcedureDate());
