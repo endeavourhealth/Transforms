@@ -296,6 +296,11 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             this.cachedPatient = (Patient) patientWrapper.getResource();
         }
 
+        //if our patient resource has been deleted, then everything should be deleted
+        if (this.cachedPatient == null) {
+            this.shouldPatientRecordBeDeleted = Boolean.TRUE;
+        }
+
         //protocol QR now checks to see if our patient is in or out
         //this.shouldPatientRecordBeDeleted = new Boolean(!shouldPatientBePresentInSubscriber(cachedPatient));
 

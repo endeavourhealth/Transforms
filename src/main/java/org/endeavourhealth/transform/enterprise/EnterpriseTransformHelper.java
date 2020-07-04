@@ -55,12 +55,12 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     //private final String excludeNhsNumberRegex;
     private final boolean isBulkDeleteFromSubscriber;
 
-
     private Long enterpriseOrganisationId = null;
     private Long enterprisePatientId = null;
     private Long enterprisePersonId = null;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
     private ResourceWrapper patientTransformedWrapper = null;
+    private Patient cachedPatient = null;
 
     public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, SubscriberConfig subscriberConfig,
                                      List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber) throws Exception {
@@ -319,9 +319,13 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         //retrieve the patient resource to see if the record has been deleted or is confidential
         Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
         ResourceWrapper patientWrapper = findOrRetrieveResource(patientRef);
-        Patient patient = null;
         if (patientWrapper != null) {
-            patient = (Patient) FhirSerializationHelper.deserializeResource(patientWrapper.getResourceData());
+            cachedPatient = (Patient)patientWrapper.getResource();
+        }
+
+        //if our patient resource has been deleted, then everything should be deleted
+        if (this.cachedPatient == null) {
+            this.shouldPatientRecordBeDeleted = Boolean.TRUE;
         }
 
         //the protocol QR now checks for whether our patient is in or not
