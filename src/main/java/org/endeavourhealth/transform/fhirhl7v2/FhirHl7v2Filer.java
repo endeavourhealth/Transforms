@@ -234,19 +234,29 @@ public class FhirHl7v2Filer {
         //copy the resources to the major patient
         for (ResourceWrapper minorPatientResource: minorPatientResources) {
 
-            String json = minorPatientResource.getResourceData();
-            Resource fhirOriginal = ParserPool.getInstance().parse(json);
+            Resource resource = minorPatientResource.getResource();
 
-            if (fhirOriginal instanceof Patient) {
+            if (resource instanceof Patient) {
                 //we don't want to move patient resources, so just delete it
-                filer.deletePatientResource(new GenericBuilder(fhirOriginal));
+                filer.deletePatientResource(new GenericBuilder(resource));
 
             } else {
                 //for all other resources, re-map the IDs and save to the DB
                 try {
                     //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
-                    IdHelper.applyExternalReferenceMappings(fhirOriginal, idMappings, false);
-                    filer.savePatientResource(new GenericBuilder(fhirOriginal));
+                    String idBefore = resource.getId();
+                    IdHelper.applyExternalReferenceMappings(resource, idMappings, false);
+                    filer.savePatientResource(new GenericBuilder(resource));
+                    LOG.trace("Saved " + resource.getResourceType() + " " + resource.getId() + " (ID was " + idBefore + ")");
+
+                    //if the ID mapping has changed the resource ID, then the above save will obviously save it
+                    //with the new ID, so we need to delete the original
+                    String idAfter = resource.getId();
+                    if (!idAfter.equals(idBefore)) {
+                        Resource resourceOriginal = minorPatientResource.getResource();
+                        filer.deletePatientResource(new GenericBuilder(resourceOriginal));
+                        LOG.trace("ID changed so deleted the original version");
+                    }
 
                     //no delete required - the resource_current table has a unique ID on resource_id and resource_type so simply saving
                     //the resource (above) with the updated reference(s) is enough, and doesn't leave us with a confusing deleted record
@@ -259,10 +269,10 @@ public class FhirHl7v2Filer {
                     fhirResourceFiler.deletePatientResource(null, false, new GenericBuilder(fhirOriginal));*/
 
                 } catch (Exception ex) {
-                    throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + minorPatientResource.getResourceId() + " and now has " + fhirOriginal.getId(), ex);
+                    throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + minorPatientResource.getResourceId() + " and now has " + resource.getId(), ex);
                 }
 
-                LOG.debug("Moved " + fhirOriginal.getResourceType() + " " + fhirOriginal.getId());
+                //LOG.debug("Moved " + resource.getResourceType() + " " + resource.getId());
             }
         }
 
