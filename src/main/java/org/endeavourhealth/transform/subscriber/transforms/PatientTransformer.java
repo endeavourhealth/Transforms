@@ -26,9 +26,7 @@ import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
-import org.endeavourhealth.transform.subscriber.IMConstant;
-import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+import org.endeavourhealth.transform.subscriber.*;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.PatientAddress;
@@ -43,8 +41,6 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import org.endeavourhealth.transform.subscriber.UPRN;
-
 public class PatientTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
 
@@ -53,19 +49,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     private static final String PREFIX_TELECOM_ID = "-TELECOM-";
     private static final String PREFIX_ADDRESS_MATCH_ID = "-ADDRMATCH-";
 
-    /*private static final String PSEUDO_KEY_NHS_NUMBER = "NHSNumber";
-    private static final String PSEUDO_KEY_PATIENT_NUMBER = "PatientNumber";
-    private static final String PSEUDO_KEY_DATE_OF_BIRTH = "DOB";*/
-
-    //private static final int BEST_ORG_SCORE = 10;
-
-    //private static Map<String, LinkDistributorConfig> mainPseudoCacheMap = new HashMap<>();
-    private static Map<String, List<LinkDistributorConfig>> linkDistributorCacheMap = new HashMap<>();
-
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
-    private static final PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
-    //private static byte[] saltBytes = null;
-    //private static ResourceRepository resourceRepository = new ResourceRepository();
 
     public static String uprnToken = "";
 
@@ -96,7 +80,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
         //check if the patient is deleted, is confidential, has no NHS number etc.
-        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)
+        if (fhirPatient == null
                 || params.isBulkDeleteFromSubscriber()) {
 
             //delete the patient
@@ -274,7 +258,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
                 //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
-                long organisationId = params.getSubscriberOrganisationId();
+                long organisationId = params.getSubscriberOrganisationId().longValue();
                 Integer useConceptId = null;
                 Integer typeConceptId = null;
                 Date startDate = null;
@@ -465,15 +449,17 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         if (params.isPseudonymised()) {
             LOG.debug("Pseduonymise!");
 
-            config = ConfigManager.getConfigurationAsJson(params.getSubscriberConfigName(), "db_subscriber");
+            SubscriberConfig c = params.getConfig();
+            List<LinkDistributorConfig> salts = c.getPseudoSalts();
+            LinkDistributorConfig firstSalt = salts.get(0);
+            String base64Salt = firstSalt.getSalt();
 
+            /*config = ConfigManager.getConfigurationAsJson(params.getSubscriberConfigName(), "db_subscriber");
             JsonNode s = config.get("pseudo_salts");
             ArrayNode arrayNode = (ArrayNode) s;
-
             if (s == null) {throw new Exception("Unable to find UPRN salt");}
-
             JsonNode arrayElement = arrayNode.get(0);
-            String base64Salt = arrayElement.get("salt").asText();
+            String base64Salt = arrayElement.get("salt").asText();*/
 
             LOG.debug(base64Salt);
 
@@ -544,7 +530,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                     currentAddressId = new Long(subTableId.getSubscriberId());
                 }
 
-                long organisationId = params.getSubscriberOrganisationId();
+                long organisationId = params.getSubscriberOrganisationId().longValue();
                 String addressLine1 = null;
                 String addressLine2 = null;
                 String addressLine3 = null;
@@ -730,7 +716,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
-        List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getSubscriberConfigName());
+        List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
 
@@ -752,7 +738,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
-        List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getSubscriberConfigName());
+        List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
 
@@ -877,29 +863,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         return builder.createPseudoId();
     }
 
-    private static List<LinkDistributorConfig> getLinkedDistributorConfig(String configName) throws Exception {
-
-        List<LinkDistributorConfig> ret = linkDistributorCacheMap.get(configName);
-        if (ret == null) {
-
-            ret = new ArrayList<>();
-
-            JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-            JsonNode linkDistributorsNode = config.get("pseudo_salts");
-
-            if (linkDistributorsNode != null) {
-                String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
-                LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
-
-                for (LinkDistributorConfig l : arr) {
-                    ret.add(l);
-                }
-            }
-
-            linkDistributorCacheMap.put(configName, ret);
-        }
-        return ret;
-    }
 
 
     private static String convertJsonNodeToString(JsonNode jsonNode) throws Exception {
@@ -917,8 +880,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         //if the present status has changed then we need to either bulk-add or bulk-delete all data for the patient
         //and if the NHS number has changed, the person ID on each table will need updating
         //and if the DoB has changed, then the age_at_event will need recalculating for everything
-        if (hasPresentStateChanged(params, current, previous)
-            || hasDobChanged(current, previous)
+        if (hasDobChanged(current, previous)
             || hasNhsNumberChanged(current, previous)) {
 
             //retrieve all resources and add them to the current transform. This will ensure they then get transformed
@@ -933,13 +895,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private boolean hasPresentStateChanged(SubscriberTransformHelper helper, Patient current, Patient previous) {
+    /*private boolean hasPresentStateChanged(SubscriberTransformHelper helper, Patient current, Patient previous) {
 
         boolean nowShouldBePresent = helper.shouldPatientBePresentInSubscriber(current);
         boolean previousShouldBePresent = helper.shouldPatientBePresentInSubscriber(previous);
 
         return nowShouldBePresent != previousShouldBePresent;
-    }
+    }*/
 
     private boolean hasNhsNumberChanged(Patient current, Patient previous) {
 

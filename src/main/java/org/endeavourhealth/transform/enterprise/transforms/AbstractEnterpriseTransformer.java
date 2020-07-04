@@ -57,6 +57,7 @@ public abstract class AbstractEnterpriseTransformer {
 
         validateResources(resourceWrappers);
 
+        LOG.trace("Transforming " + resourceWrappers.size() + " " + getExpectedResourceType() + " resources to " + params.getEnterpriseConfigName());
         Map<ResourceWrapper, Long> enterpriseIds = mapIds(params.getEnterpriseConfigName(), resourceWrappers, shouldAlwaysTransform(), params);
 
         for (ResourceWrapper resourceWrapper: resourceWrappers) {

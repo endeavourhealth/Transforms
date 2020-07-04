@@ -57,6 +57,7 @@ public class OutputContainer {
         csvWriters.add(new RegistrationStatusHistory("registration_status_history.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterEvent("encounter_event.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterAdditional("encounter_additional.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new PseudoId("pseudo_id.csv", csvFormat, dateFormat, timeFormat));
 
     }
 
@@ -98,7 +99,7 @@ public class OutputContainer {
     private boolean isEmpty() {
 
         //if any writer is not empty, return false
-        for (AbstractEnterpriseCsvWriter csvWriter: csvWriters) {
+        for (AbstractEnterpriseCsvWriter csvWriter : csvWriters) {
             if (!csvWriter.isEmpty()) {
                 return false;
             }
@@ -258,5 +259,11 @@ public class OutputContainer {
         return findCsvWriter(EncounterEvent.class);
     }
 
-    public EncounterAdditional getEncounterAdditional() {return findCsvWriter(EncounterAdditional.class); }
+    public EncounterAdditional getEncounterAdditional() {
+        return findCsvWriter(EncounterAdditional.class);
+    }
+
+    public PseudoId getPseudoId() {
+        return findCsvWriter(PseudoId.class);
+    }
 }

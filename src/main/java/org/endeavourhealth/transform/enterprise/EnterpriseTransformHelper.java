@@ -22,6 +22,7 @@ import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.AbstractEnterpriseTransformer;
+import org.endeavourhealth.transform.subscriber.SubscriberConfig;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -35,59 +36,47 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     private static final Logger LOG = LoggerFactory.getLogger(EnterpriseTransformHelper.class);
 
     private static final Object MAP_VAL = new Object(); //concurrent hash map requires non-null values, so just use this
-    private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
 
     private final UUID serviceId;
     private final UUID systemId;
     private final UUID exchangeId;
     private final UUID batchId;
-    private final String enterpriseConfigName;
+    private final SubscriberConfig config;
     private final OutputContainer outputContainer;
     private final Map<String, ResourceWrapper> hmAllResourcesByReferenceString;
     private final List<ResourceWrapper> allResources;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final ReentrantLock lock = new ReentrantLock();
-    private final boolean isPseudonymised;
-    private final boolean includeDateRecorded;
-    private final String excludeNhsNumberRegex;
+    //private final String enterpriseConfigName;
+    //private final boolean isPseudonymised;
+    //private final boolean includeDateRecorded;
+    //private int batchSize;
+    //private final String excludeNhsNumberRegex;
     private final boolean isBulkDeleteFromSubscriber;
 
-    private int batchSize;
+
     private Long enterpriseOrganisationId = null;
     private Long enterprisePatientId = null;
     private Long enterprisePersonId = null;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
     private ResourceWrapper patientTransformedWrapper = null;
 
-    public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, String enterpriseConfigName,
+    public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, SubscriberConfig subscriberConfig,
                                      List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
-        this.enterpriseConfigName = enterpriseConfigName;
         this.isBulkDeleteFromSubscriber = isBulkDeleteFromSubscriber;
 
         //load our config record for some parameters
-        JsonNode config = ConfigManager.getConfigurationAsJson(enterpriseConfigName, "db_subscriber");
-
-        this.isPseudonymised = config.has("pseudonymisation");
-        this.outputContainer = new OutputContainer(isPseudonymised);
-
-        this.includeDateRecorded = config.has("include_date_recorded") && config.get("include_date_recorded").asBoolean();
-
-        if (config.has("transform_batch_size")) {
-            this.batchSize = config.get("transform_batch_size").asInt();
-        } else {
-            this.batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
+        this.config = subscriberConfig;
+        if (config.getSubscriberType() != SubscriberConfig.SubscriberType.CompassV1) {
+            throw new Exception("Expecting config for compassv1 but got " + config.getSubscriberType());
         }
 
-        if (config.has("excluded_nhs_number_regex")) {
-            this.excludeNhsNumberRegex = config.get("excluded_nhs_number_regex").asText();
-        } else {
-            this.excludeNhsNumberRegex = null;
-        }
+        this.outputContainer = new OutputContainer(isPseudonymised());
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         this.allResources = allResources;
@@ -135,7 +124,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public String getEnterpriseConfigName() {
-        return enterpriseConfigName;
+        return config.getSubscriberConfigName();
     }
 
     public OutputContainer getOutputContainer() {
@@ -143,11 +132,11 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public int getBatchSize() {
-        return batchSize;
+        return config.getBatchSize();
     }
 
     public boolean isPseudonymised() {
-        return isPseudonymised;
+        return config.isPseudonymised();
     }
 
     public boolean isBulkDeleteFromSubscriber() {
@@ -155,12 +144,12 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public boolean isIncludeDateRecorded() {
-        return includeDateRecorded;
+        return config.isIncludeDateRecorded();
     }
 
     public Date includeDateRecorded(DomainResource fhir) {
         Date dateRecorded = null;
-        if (includeDateRecorded) {
+        if (isIncludeDateRecorded()) {
             Extension recordedDate = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
             if (recordedDate != null) {
                 DateTimeType value = (DateTimeType) recordedDate.getValue();
@@ -325,6 +314,8 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
             return;
         }
 
+        this.shouldPatientRecordBeDeleted = Boolean.FALSE;
+
         //retrieve the patient resource to see if the record has been deleted or is confidential
         Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
         ResourceWrapper patientWrapper = findOrRetrieveResource(patientRef);
@@ -332,8 +323,9 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
         if (patientWrapper != null) {
             patient = (Patient) FhirSerializationHelper.deserializeResource(patientWrapper.getResourceData());
         }
-        this.shouldPatientRecordBeDeleted = new Boolean(!shouldPatientBePresentInSubscriber(patient));
 
+        //the protocol QR now checks for whether our patient is in or not
+        //this.shouldPatientRecordBeDeleted = new Boolean(!shouldPatientBePresentInSubscriber(patient));
 
         PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
         String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
@@ -388,9 +380,9 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
 
-    public boolean shouldPatientBePresentInSubscriber(Patient patient) {
-        return SubscriberTransformHelper.shouldPatientBePresentInSubscriber(patient, this.excludeNhsNumberRegex);
-    }
+    /*public boolean shouldPatientBePresentInSubscriber(Patient patient) {
+        return SubscriberTransformHelper.shouldPatientBePresentInSubscriber(patient, config.getExcludeNhsNumberRegex());
+    }*/
 
 
     public void checkForMissedResources() throws Exception {
@@ -517,5 +509,9 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public void setDtLastTransformedPatient(ResourceWrapper resourceWrapper) {
         this.patientTransformedWrapper = resourceWrapper;
+    }
+
+    public SubscriberConfig getConfig() {
+        return config;
     }
 }

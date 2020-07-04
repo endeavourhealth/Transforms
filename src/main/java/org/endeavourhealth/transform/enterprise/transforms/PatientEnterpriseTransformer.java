@@ -25,17 +25,14 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
-import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
-import org.endeavourhealth.transform.enterprise.outputModels.PatientAddress;
-import org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch;
-import org.endeavourhealth.transform.enterprise.outputModels.PatientContact;
-import org.endeavourhealth.transform.subscriber.IMConstant;
-import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.UPRN;
+import org.endeavourhealth.transform.enterprise.outputModels.*;
+import org.endeavourhealth.transform.subscriber.*;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.endeavourhealth.transform.subscriber.transforms.PatientTransformer;
 import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Practitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,14 +50,9 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
     private static final String PREFIX_ADDRESS_ID = "-ADDR-";
     private static final String PREFIX_TELECOM_ID = "-TELECOM-";
     private static final String PREFIX_ADDRESS_MATCH_ID = "-ADDRMATCH-";
-
-    private static Map<String, LinkDistributorConfig> mainPseudoCacheMap = new HashMap<>();
-    private static Map<String, List<LinkDistributorConfig>> linkDistributorCacheMap = new HashMap<>();
+    private static final String PREFIX_PSEUDO_ID = "-PSEUDO-";
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
-    private static final PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
-    //private static byte[] saltBytes = null;
-    //private static ResourceRepository resourceRepository = new ResourceRepository();
 
     public static String uprnToken = "";
 
@@ -94,11 +86,17 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         //check if the patient is deleted, is confidential, has no NHS number etc.
-        if (!params.shouldPatientBePresentInSubscriber(fhirPatient)
+        if (fhirPatient == null
                 || params.isBulkDeleteFromSubscriber()) {
 
             //delete the patient
             csvWriter.writeDelete(enterpriseId.longValue());
+
+            //delete any dependent pseudo ID records
+            //TODO - get this table put on all Compass v1 DBs (including remote ones)
+            if (false) {
+                deletePseudoIds(resourceWrapper, params);
+            }
 
             //TODO - remove live check when table is rolled out everywhere
             if (!TransformConfig.instance().isLive()) {
@@ -151,6 +149,19 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         id = enterpriseId.longValue();
         organizationId = params.getEnterpriseOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
+
+        //TODO - get this table put on all Compass v1 DBs (including remote ones)
+        if (false) {
+            transformPseudoIds(enterpriseId.longValue(), personId, fhirPatient, resourceWrapper, params);
+        }
+
+
+        //TODO: remove this check for go live to introduce Compass v1 upgrade tables population
+        //TODO - don't forget to remove similar check at the top of this fn for deleting these entities
+        if (!TransformConfig.instance().isLive()) {
+            currentAddressId = transformAddresses(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
+            transformTelecoms(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
+        }
 
 
         //Calendar cal = Calendar.getInstance();
@@ -231,13 +242,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             lastNames = NameHelper.findSurname(fhirPatient);
         }
 
-        //TODO: remove this check for go live to introduce Compass v1 upgrade tables population
-        //TODO - don't forget to remove similar check at the top of this fn for deleting these entities
-        if (!TransformConfig.instance().isLive()) {
-            currentAddressId = transformAddresses(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
-            transformTelecoms(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
-        }
-
         if (patientWriter.isPseduonymised()) {
 
             //if pseudonymised, all non-male/non-female genders should be treated as female
@@ -246,18 +250,18 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                 patientGenderId = Enumerations.AdministrativeGender.FEMALE.ordinal();
             }
 
-            LinkDistributorConfig mainPseudoSalt = getMainSaltConfig(params.getEnterpriseConfigName());
+            List<LinkDistributorConfig> salts = params.getConfig().getPseudoSalts();
+            LinkDistributorConfig mainPseudoSalt = salts.get(0);
             pseudoId = pseudonymiseUsingConfig(params, fhirPatient, id, mainPseudoSalt, true);
 
             if (pseudoId != null) {
 
                 //generate any other pseudo mappings - the table uses the main pseudo ID as the source key, so this
                 //can only be done if we've successfully generated a main pseudo ID
-                List<LinkDistributorConfig> linkDistributorConfigs = getLinkedDistributorConfig(params.getEnterpriseConfigName());
-                for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+                for (int i=1; i<salts.size(); i++) { //start at 1, because we've done the first one above
+                    LinkDistributorConfig ldConfig = salts.get(i);
                     targetSaltKeyName = ldConfig.getSaltKeyName();
                     targetSkid = pseudonymiseUsingConfig(params, fhirPatient, id, ldConfig, false);
-
 
                     linkDistributorWriter.writeUpsert(pseudoId,
                             targetSaltKeyName,
@@ -317,7 +321,62 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         PatientAddressMatch uprnwriter = params.getOutputContainer().findCsvWriter(PatientAddressMatch.class);
-        UPRN(fhirPatient, id, personId, uprnwriter, params.getEnterpriseConfigName());
+        UPRN(params, fhirPatient, id, personId, uprnwriter, params.getEnterpriseConfigName());
+    }
+
+    /**
+     * deletes all pseudo IDs for a patient
+     */
+    private void deletePseudoIds(ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
+
+        PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoId();
+
+        List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
+        for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+            String saltKeyName = ldConfig.getSaltKeyName();
+
+            //create a unique source ID from the patient UUID plus the salt key name
+            String sourceId = resourceWrapper.getReferenceString() + PREFIX_PSEUDO_ID + saltKeyName;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
+            if (subTableId != null) {
+                pseudoIdWriter.writeDelete(subTableId.getSubscriberId());
+            }
+        }
+    }
+
+    private void transformPseudoIds(long subscriberPatientId, long subscriberPersonId, Patient fhirPatient, ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
+
+        PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoId();
+
+        List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
+        for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+            String saltKeyName = ldConfig.getSaltKeyName();
+
+
+            String pseudoId = PseudoIdBuilder.generatePsuedoIdFromConfig(params.getEnterpriseConfigName(), ldConfig, fhirPatient);
+
+            //create a unique source ID from the patient UUID plus the salt key name
+            String sourceId = resourceWrapper.getReferenceString() + PREFIX_PSEUDO_ID + saltKeyName;
+            SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
+            //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+
+            if (!Strings.isNullOrEmpty(pseudoId)) {
+
+                pseudoIdWriter.writeUpsert(subTableId.getSubscriberId(),
+                        subscriberPatientId,
+                        saltKeyName,
+                        pseudoId);
+
+                //only persist the pseudo ID if it's non-null
+                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
+                pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), subscriberPatientId, saltKeyName, pseudoId);
+
+            } else {
+
+                pseudoIdWriter.writeDelete(subTableId.getSubscriberId());
+
+            }
+        }
     }
 
     /**
@@ -442,8 +501,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         //if the present status has changed then we need to either bulk-add or bulk-delete all data for the patient
         //and if the NHS number has changed, the person ID on each table will need updating
-        if (hasPresentStateChanged(params, current, previous)
-                || hasNhsNumberChanged(current, previous)) {
+        if (hasNhsNumberChanged(current, previous)) {
 
             //retrieve all resources and add them to the current transform. This will ensure they then get transformed
             //back in FhirToEnterpriseCsvTransformer. Each individual transform will know if the patient is confidential
@@ -457,13 +515,13 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
     }
 
-    private boolean hasPresentStateChanged(EnterpriseTransformHelper params, Patient current, Patient previous) {
+    /*private boolean hasPresentStateChanged(EnterpriseTransformHelper params, Patient current, Patient previous) {
 
         boolean nowShouldBePresent = params.shouldPatientBePresentInSubscriber(current);
         boolean previousShouldBePresent = params.shouldPatientBePresentInSubscriber(previous);
 
         return nowShouldBePresent != previousShouldBePresent;
-    }
+    }*/
 
     private boolean hasNhsNumberChanged(Patient current, Patient previous) {
 
@@ -677,59 +735,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
     }*/
 
 
-    private LinkDistributorConfig getMainSaltConfig(String configName) throws Exception {
-
-        LinkDistributorConfig ret = mainPseudoCacheMap.get(configName);
-        if (ret == null) {
-            JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-            JsonNode saltNode = config.get("pseudonymisation");
-
-            String json = convertJsonNodeToString(saltNode);
-            ret = ObjectMapperPool.getInstance().readValue(json, LinkDistributorConfig.class);
-
-            mainPseudoCacheMap.put(configName, ret);
-        }
-        return ret;
-    }
-
-
-
-    private static List<LinkDistributorConfig> getLinkedDistributorConfig(String configName) throws Exception {
-
-        List<LinkDistributorConfig> ret = linkDistributorCacheMap.get(configName);
-        if (ret == null) {
-
-            ret = new ArrayList<>();
-
-            JsonNode config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
-            JsonNode linkDistributorsNode = config.get("linkedDistributors");
-
-            if (linkDistributorsNode != null) {
-                String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
-                LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
-
-                for (LinkDistributorConfig l : arr) {
-                    ret.add(l);
-                }
-            }
-
-            linkDistributorCacheMap.put(configName, ret);
-        }
-        return ret;
-    }
-
-
-    private static String convertJsonNodeToString(JsonNode jsonNode) throws Exception {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            Object json = mapper.readValue(jsonNode.toString(), Object.class);
-            return mapper.writeValueAsString(json);
-        } catch (Exception e) {
-            throw new Exception("Error parsing Link Distributor Config");
-        }
-    }
-
-
 
     /*private static byte[] getEncryptedSalt() throws Exception {
         if (saltBytes == null) {
@@ -876,166 +881,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
     }
 
-
-    /*
-    private void UPRN(EnterpriseTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper,
-                      SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4,
-                      String city, String postcode, Long currentAddressId) throws Exception {
-
-        JsonNode config = ConfigManager.getConfigurationAsJson("UPRN", "db_subscriber");
-        if (config==null) {return;}
-
-        //JsonNode enabled = config.get("enabled");
-        //if (enabled.asText().equals("0")) {return;}
-
-        String configName = params.getEnterpriseConfigName();
-
-        String uprn_sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_MATCH_ID + i;
-        SubscriberId uprn_subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS_MATCH, uprn_sourceId); // was sourceId
-
-        params.setSubscriberIdTransformed(resourceWrapper, uprn_subTableId);
-
-        // call the UPRN API
-        JsonNode token_endpoint=config.get("token_endpoint");
-        JsonNode clientid = config.get("clientid");
-        JsonNode password = config.get("password");
-        JsonNode username = config.get("username");
-        JsonNode uprn_endpoint = config.get("uprn_endpoint");
-
-        JsonNode zs = config.get("subscribers");
-        Integer ok = UPRN.Activated(zs, configName);
-        if (ok.equals(0)) {
-            LOG.debug("subscriber "+configName+" not activated, exiting");
-            return;
-        }
-
-        uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
-
-        if (addressLine1==null) {addressLine1="";}
-        if (addressLine2==null) {addressLine2="";}
-        if (addressLine3==null) {addressLine3="";}
-        if (addressLine4==null) {addressLine4="";}
-        if (city==null) {city="";}
-        if (postcode==null) {postcode="";}
-
-        String adrec = addressLine1+","+addressLine2+","+addressLine3+","+addressLine4+","+city+","+postcode;
-
-        // debug
-        // adrec="201,Darkes Lane,Potters Bar,EN6 1BX";
-
-        String ids = Long.toString(subTableId.getSubscriberId())+"`"+configName;
-        String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
-        // token time out?
-        if (csv.isEmpty()) {
-            UPRN.uprnToken="";
-            // get another token
-            uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
-            csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
-            if (csv.isEmpty()) {
-                LOG.debug("Unable to get address from UPRN API");
-                return;
-            }
-        }
-
-        PatientAddressMatch uprnwriter = params.getOutputContainer().getPatientAddressMatch();
-
-        Date match_date = new Date();
-
-        String[] ss = csv.split("\\~",-1);
-
-        // 0=locality, 1=number, 2=org, 3=postcode, 4=street, 5=town, 6=alg, 7=qual
-        // 8=matpatbuild, 9=matpatflat, 10=matpatnumber, 11=matpatpostcode, 12=matpatstreet
-        // 13=quality, 14=latitude, 15=longitude, 16=point
-        // 17=X, 18=Y, 19=class, 20=uprn
-
-        String sLat=ss[14]; String sLong = ss[15]; String sX=ss[17]; String sY=ss[18]; String sClass = ss[19]; String sQualifier = ss[7];
-
-        String sUprn = ss[20];
-
-        if (sUprn.isEmpty()) {
-            LOG.debug("UPRN = 0");
-            return;
-        }
-
-        BigDecimal lat = new BigDecimal(0);
-        if (!sLat.isEmpty()) {lat=new BigDecimal(sLat);}
-
-        BigDecimal longitude = new BigDecimal(0);
-        if (!sLong.isEmpty()) {longitude=new BigDecimal(sLong);}
-
-        BigDecimal x = new BigDecimal(0);
-        if (!sX.isEmpty()) {x = new BigDecimal(sX);}
-
-        BigDecimal y = new BigDecimal(0);
-        if (!sY.isEmpty()) {y = new BigDecimal(sY);}
-
-        Integer stati = 0;
-        if (currentAddressId!=null) {stati=1;}
-
-        String znumber = ss[1]; String zstreet = ss[4]; String zlocality = ss[0]; String ztown = ss[5]; String zpostcode = ss[3]; String zorg = ss[2];
-        String match_post = ss[11]; String match_street = ss[12]; String match_number = ss[10]; String match_building = ss[8];
-        String match_flat = ss[9];
-
-        // null fields because isPseudonymised
-        if (params.isPseudonymised()) {
-            LOG.debug("Pseduonymise!");
-
-            config = ConfigManager.getConfigurationAsJson(params.getEnterpriseConfigName(), "db_subscriber");
-
-            JsonNode s = config.get("pseudo_salts");
-            ArrayNode arrayNode = (ArrayNode) s;
-
-            if (s == null) {throw new Exception("Unable to find UPRN salt");}
-
-            JsonNode arrayElement = arrayNode.get(0);
-            String base64Salt = arrayElement.get("salt").asText();
-
-            LOG.debug(base64Salt);
-
-            byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
-
-            String pseudoUprn = null;
-            TreeMap<String, String> keys = new TreeMap<>();
-            keys.put("UPRN", "" + sUprn);
-
-            Crypto crypto = new Crypto();
-            crypto.SetEncryptedSalt(saltBytes);
-            pseudoUprn = crypto.GetDigest(keys);
-            sUprn = pseudoUprn;
-            // nullify fields
-            znumber=null; zstreet=null; zlocality=null; ztown=null; zpostcode=null; zorg=null;
-            match_post=null; match_street=null; match_number=null; match_building=null; match_flat=null;
-            lat = null; longitude=null; x=null; y=null;
-        }
-
-        uprnwriter.writeUpsert(//uprn_subTableId,
-                //subTableId.getSubscriberId(),
-                subTableId.getSubscriberId(),
-                sUprn,
-                stati, // status
-                sClass,
-                lat,
-                longitude,
-                x,
-                y,
-                sQualifier,
-                ss[6], // algorithm
-                match_date, // match_date
-                znumber, // number [1]
-                zstreet, // street [4]
-                zlocality, // locality [0]
-                ztown, // town [5]
-                zpostcode, // postcode [3]
-                zorg, // org [2]
-                match_post, // match post [11]
-                match_street, // match street [12]
-                match_number, // match number [10]
-                match_building, // match building [8]
-                match_flat, // match flat [9]
-                "", // alg version ** TO DO
-                ""); // epoc ** TO DO
-    }*/
-
     private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient,
                                    List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
 
@@ -1106,7 +951,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
     }
 
 
-    public void UPRN(Patient fhirPatient, long id, long personId, AbstractEnterpriseCsvWriter csvWriter, String configName)  throws Exception {
+    public void UPRN(EnterpriseTransformHelper params, Patient fhirPatient, long id, long personId, AbstractEnterpriseCsvWriter csvWriter, String configName)  throws Exception {
         if (!fhirPatient.hasAddress()) {return;}
 
         Iterator var2 = fhirPatient.getAddress().iterator();
@@ -1207,10 +1052,14 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
                 LOG.debug("Pseduonymise!");
 
-                config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
+                SubscriberConfig c = params.getConfig();
+                List<LinkDistributorConfig> salts = c.getPseudoSalts();
+                LinkDistributorConfig firstSalt = salts.get(0);
+                String base64Salt = firstSalt.getSalt();
+                /*config = ConfigManager.getConfigurationAsJson(configName, "db_subscriber");
                 JsonNode pseudoNode = config.get("pseudonymisation");
                 JsonNode saltNode = pseudoNode.get("salt");
-                String base64Salt = saltNode.asText();
+                String base64Salt = saltNode.asText();*/
                 byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
 
                 String pseudoUprn = null;
