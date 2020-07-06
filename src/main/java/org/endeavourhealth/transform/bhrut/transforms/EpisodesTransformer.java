@@ -645,10 +645,9 @@ public class EpisodesTransformer {
             builder.setServiceProvider(organizationReference);
         }
 
-        CsvCell spellExternalIdCell = parser.getIpSpellExternalId();
         if (isChildEncounter) {
             Reference parentEncounter
-                    = ReferenceHelper.createReference(ResourceType.Encounter, spellExternalIdCell.getString());
+                    = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
             parentEncounter
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
 

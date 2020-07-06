@@ -1,7 +1,9 @@
 package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
 import ca.uhn.hl7v2.model.v23.datatype.ID;
+import ca.uhn.hl7v2.model.v23.datatype.ST;
 import ca.uhn.hl7v2.model.v23.datatype.TS;
+import ca.uhn.hl7v2.model.v23.datatype.XCN;
 import ca.uhn.hl7v2.model.v23.segment.PV1;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -112,7 +114,12 @@ public class EncounterTransformer {
     private static void setCommonEncounterAttributes(PV1 pv1, EncounterBuilder builder, ImperialHL7Helper imperialHL7Helper, String patientGuid, boolean encounterInd) throws Exception {
 
         String patientId = String.valueOf(patientGuid);
-        String encounterId = String.valueOf(pv1.getVisitNumber());
+        String patientVisitId = String.valueOf(pv1.getVisitNumber().getID());
+        XCN[] consultingDoctor = pv1.getConsultingDoctor();
+        String consultingDoctorId = null;
+        if(consultingDoctor != null && consultingDoctor.length > 0) {
+            consultingDoctorId = String.valueOf(consultingDoctor[0].getIDNumber());
+        }
 
         if (!patientId.isEmpty()) {
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientId);
@@ -122,9 +129,9 @@ public class EncounterTransformer {
             builder.setPatient(patientReference);
         }
 
-        if (!patientId.isEmpty()) {
+        if (!patientVisitId.isEmpty()) {
             Reference episodeReference
-                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientId);
+                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientId+":"+patientVisitId);
             if (builder.isIdMapped()) {
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, imperialHL7Helper);
@@ -133,9 +140,9 @@ public class EncounterTransformer {
         }
 
         //Todo need to verify the practitioner code
-        if (!patientId.isEmpty()) {
+        if (!consultingDoctorId.isEmpty()) {
             Reference practitionerReference
-                    = ReferenceHelper.createReference(ResourceType.Practitioner, patientId);
+                    = ReferenceHelper.createReference(ResourceType.Practitioner, consultingDoctorId);
             if (builder.isIdMapped()) {
 
                 practitionerReference
@@ -156,9 +163,9 @@ public class EncounterTransformer {
             builder.setServiceProvider(organizationReference);
         }
 
-        if ((encounterInd) && (!patientId.isEmpty())) {
+        if ((encounterInd) && (!patientVisitId.isEmpty())) {
             Reference parentEncounter
-                    = ReferenceHelper.createReference(ResourceType.Encounter, patientId);
+                    = ReferenceHelper.createReference(ResourceType.Encounter, patientVisitId);
             if (builder.isIdMapped()) {
 
                 parentEncounter
