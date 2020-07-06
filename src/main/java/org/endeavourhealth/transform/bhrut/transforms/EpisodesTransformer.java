@@ -1,12 +1,15 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
 import com.google.common.base.Strings;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.Episodes;
@@ -185,7 +188,7 @@ public class EpisodesTransformer {
         }
 
         //save the encounter resource
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+       // fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
 
         //create an Encounter reference for the procedures and diagnosis
         // Reference patientEncReference = csvHelper.createPatientReference(patientIdCell);
@@ -323,12 +326,19 @@ public class EpisodesTransformer {
             }
         }
 
+        LOG.debug("Filing main encounter");
+        LOG.error("" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
         if (!bases.isEmpty()) {
             LOG.debug("List of resources is " + bases.size());
             ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
             bases.toArray(resources);
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), resources);
+            for (ResourceBuilderBase res : resources) {
+                String fhir = FhirSerializationHelper.serializeResource(res.getResource());
+                System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(fhir)));
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), res);
+                //fhirResourceFiler.savePatientResource(parser.getCurrentState(), resources);
+            }
         }
     }
 
@@ -391,7 +401,8 @@ public class EpisodesTransformer {
         EncounterBuilder dischargeEncounterBuilder = null;
         CsvCell epiNumCell = parser.getEpiNum();
 
-        if (!epiNumCell.isEmpty() && epiNumCell.getString().equalsIgnoreCase("01")) {
+        if (!epiNumCell.isEmpty() && epiNumCell.getInt() ==1) {
+                //epiNumCell.getString().equalsIgnoreCase("1")) {
             admissionEncounterBuilder = new EncounterBuilder();
             admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
             String admissionEncounterId = parser.getId().getString() + ":01:IP:Admission";
