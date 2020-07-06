@@ -93,10 +93,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             csvWriter.writeDelete(enterpriseId.longValue());
 
             //delete any dependent pseudo ID records
-            //TODO - get this table put on all Compass v1 DBs (including remote ones)
-            if (false) {
-                deletePseudoIds(resourceWrapper, params);
-            }
+            deletePseudoIds(resourceWrapper, params);
 
             //TODO - remove live check when table is rolled out everywhere
             if (!TransformConfig.instance().isLive()) {
@@ -150,11 +147,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         organizationId = params.getEnterpriseOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
 
-        //TODO - get this table put on all Compass v1 DBs (including remote ones)
-        if (false) {
-            transformPseudoIds(enterpriseId.longValue(), personId, fhirPatient, resourceWrapper, params);
-        }
-
+        transformPseudoIds(organizationId, id, personId, fhirPatient, resourceWrapper, params);
 
         //TODO: remove this check for go live to introduce Compass v1 upgrade tables population
         //TODO - don't forget to remove similar check at the top of this fn for deleting these entities
@@ -344,7 +337,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
     }
 
-    private void transformPseudoIds(long subscriberPatientId, long subscriberPersonId, Patient fhirPatient, ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
+    private void transformPseudoIds(long organizationId, long subscriberPatientId, long personId,
+                                    Patient fhirPatient, ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
 
         PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoId();
 
@@ -363,7 +357,9 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             if (!Strings.isNullOrEmpty(pseudoId)) {
 
                 pseudoIdWriter.writeUpsert(subTableId.getSubscriberId(),
+                        organizationId,
                         subscriberPatientId,
+                        personId,
                         saltKeyName,
                         pseudoId);
 
@@ -372,7 +368,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                 pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), subscriberPatientId, saltKeyName, pseudoId);
 
             } else {
-
                 pseudoIdWriter.writeDelete(subTableId.getSubscriberId());
 
             }

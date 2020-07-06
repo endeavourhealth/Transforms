@@ -16,12 +16,14 @@ public class PseudoId extends AbstractEnterpriseCsvWriter {
     }
 
 
-    public void writeUpsert(long id, long patientId, String saltKeyName, String pseudoId) throws Exception {
+    public void writeUpsert(long id, long organizationId, long patientId, long personId, String saltKeyName, String pseudoId) throws Exception {
 
         super.printRecord(
                 OutputContainer.UPSERT,
                 "" + id,
+                "" + organizationId,
                 "" + patientId,
+                "" + personId,
                 saltKeyName,
                 pseudoId
         );
@@ -33,7 +35,9 @@ public class PseudoId extends AbstractEnterpriseCsvWriter {
         return new Class[] {
                 String.class,
                 Long.TYPE,
-                String.class,
+                Long.TYPE,
+                Long.TYPE,
+                Long.TYPE,
                 String.class,
                 String.class
         };
@@ -44,7 +48,9 @@ public class PseudoId extends AbstractEnterpriseCsvWriter {
         return new String[] {
                 "save_mode",
                 "id",
+                "organization_id",
                 "patient_id",
+                "person_id",
                 "salt_key_name",
                 "pseudo_id"
         };
