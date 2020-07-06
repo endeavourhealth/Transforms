@@ -163,17 +163,35 @@ public class SubscriberConfig {
         //compass v1-specific config
         if (subscriberType == SubscriberType.CompassV1) {
 
-            //compass v1 config may be stored in an older style or newer one
-            if (config.has("pseudonymisation")) { //old style
-                this.isPseudonymised = config.has("pseudonymisation");
+            this.isPseudonymised = config.has("pseudonymised")
+                    && config.get("pseudonymised").asBoolean();
+
+            if (config.has("pseudo_salts")) {
+
+                JsonNode linkDistributorsNode = config.get("pseudo_salts");
+
+                if (linkDistributorsNode != null) {
+                    String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
+                    LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
+
+                    for (LinkDistributorConfig l : arr) {
+                        this.pseudoSalts.add(l);
+                    }
+                }
+            }
+
+            //compass v1 config may be stored in an older style, so check for that
+            if (!config.has("pseudonymised") //not the new style
+                && !config.has("pseudo_salts") //not the new style
+                && config.has("pseudonymisation")) { //old style
+
+                this.isPseudonymised = true;
 
                 //the pseudonymisation node itself contains the primary salt key
-                if (this.isPseudonymised) {
-                    JsonNode saltNode = config.get("pseudonymisation");
-                    String json = convertJsonNodeToString(saltNode);
-                    LinkDistributorConfig firstSalt = ObjectMapperPool.getInstance().readValue(json, LinkDistributorConfig.class);
-                    this.pseudoSalts.add(firstSalt);
-                }
+                JsonNode saltNode = config.get("pseudonymisation");
+                String json = convertJsonNodeToString(saltNode);
+                LinkDistributorConfig firstSalt = ObjectMapperPool.getInstance().readValue(json, LinkDistributorConfig.class);
+                this.pseudoSalts.add(firstSalt);
 
                 //subsequent salts will be in this element
                 if (config.has("linkedDistributors")) {
@@ -183,25 +201,6 @@ public class SubscriberConfig {
                     LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
                     for (LinkDistributorConfig l : arr) {
                         this.pseudoSalts.add(l);
-                    }
-                }
-
-            } else { //new style
-
-                this.isPseudonymised = config.has("pseudonymised")
-                        && config.get("pseudonymised").asBoolean();
-
-                if (config.has("pseudo_salts")) {
-
-                    JsonNode linkDistributorsNode = config.get("pseudo_salts");
-
-                    if (linkDistributorsNode != null) {
-                        String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
-                        LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
-
-                        for (LinkDistributorConfig l : arr) {
-                            this.pseudoSalts.add(l);
-                        }
                     }
                 }
             }
