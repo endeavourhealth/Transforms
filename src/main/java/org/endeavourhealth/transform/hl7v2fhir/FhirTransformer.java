@@ -25,8 +25,8 @@ public abstract class FhirTransformer {
      */
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
         String HL7Message = null;
-        FileInputStream iS = new FileInputStream("C:\\Users\\USER\\Desktop\\Examples\\RAD");
-        HL7Message = IOUtils.toString(iS);
+        /*FileInputStream iS = new FileInputStream("C:\\Users\\USER\\Desktop\\Examples\\A01");
+        HL7Message = IOUtils.toString(iS);*/
         //get HL7 message from the table based on id
         /*Connection connection = ConnectionManager.getHL7v2InboundConnection();
         PreparedStatement ps = null;
