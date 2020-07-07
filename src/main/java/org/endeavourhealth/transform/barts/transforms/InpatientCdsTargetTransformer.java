@@ -8,9 +8,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingInpatientCdsTarget;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
-import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
@@ -64,7 +62,7 @@ public class InpatientCdsTargetTransformer {
             }
 
             //process top level encounter - the existing parent encounter set during ADT feed -
-            Integer encounterId = targetInpatientCds.getEncounterId();  //this is used to identify the top level parent episode
+            Integer encounterId = targetInpatientCds.getEncounterId();  //this is used to identify the top level parent encounter
 
             if (encounterId != null) {
 
@@ -111,6 +109,7 @@ public class InpatientCdsTargetTransformer {
             builder.setPatient(patientReference);
         }
 
+        //TODO: if we cannot map to the HL7 episode then need to create
         Integer episodeId = targetInpatientCds.getEpisodeId();
         if (episodeId != null) {
 
@@ -222,36 +221,52 @@ public class InpatientCdsTargetTransformer {
 
             String adminCategoryCode = targetInpatientCds.getAdministrativeCategoryCode();
             if (!Strings.isNullOrEmpty(adminCategoryCode)) {
-                containedParametersBuilderAdmission.addParameter("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCode);
+                containedParametersBuilderAdmission.addParameter("administrative_category_code", adminCategoryCode);
             }
             String admissionMethodCode = targetInpatientCds.getAdmissionMethodCode();
             if (!Strings.isNullOrEmpty(admissionMethodCode)) {
-                containedParametersBuilderAdmission.addParameter("ip_admission_method", "" + admissionMethodCode);
+                containedParametersBuilderAdmission.addParameter("ip_admission_method",  admissionMethodCode);
             }
             String admissionSourceCode = targetInpatientCds.getAdmissionSourceCode();
             if (!Strings.isNullOrEmpty(admissionSourceCode)) {
-                containedParametersBuilderAdmission.addParameter("ip_admission_source", "" + admissionSourceCode);
+                containedParametersBuilderAdmission.addParameter("ip_admission_source", admissionSourceCode);
             }
             String patientClassification = targetInpatientCds.getPatientClassification();
             if (!Strings.isNullOrEmpty(patientClassification)) {
-                containedParametersBuilderAdmission.addParameter("patient_classification", "" + patientClassification);
+                containedParametersBuilderAdmission.addParameter("patient_classification", patientClassification);
             }
             //this is a Cerner code which is mapped to an NHS DD alias
             String treatmentFunctionCode = targetInpatientCds.getTreatmentFunctionCode();
             if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
-                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
-                if (codeRef != null) {
+                //CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
+                //if (codeRef != null) {
 
-                    String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
-                    containedParametersBuilderAdmission.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
-                }
+                    //String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
+                    //containedParametersBuilderAdmission.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
+
+                //todo - codeableconcept etc. -> IM API
+                containedParametersBuilderAdmission.addParameter("treatment_function", treatmentFunctionCode);
+                //}
             }
 
-            //if the 01 episode has an episode end date, set the admission end date
-            Date episodeEndDate = targetInpatientCds.getDtEpisodeEnd();
-            if (episodeEndDate != null) {
+            //add the primary and secondary diagnosis codes as additional parameters. Note: these are also filed
+            //as part of the diagnosis CDS transform as separate diagnosis records
+            String primaryDiagnosis = targetInpatientCds.getPrimaryDiagnosisICD();
+            if (!Strings.isNullOrEmpty(primaryDiagnosis)) {
+                containedParametersBuilderAdmission.addParameter("primary_diagnosis", primaryDiagnosis);
+            }
+            String secondaryDiagnosis = targetInpatientCds.getSecondaryDiagnosisICD();
+            if (!Strings.isNullOrEmpty(secondaryDiagnosis)) {
+                containedParametersBuilderAdmission.addParameter("secondary_diagnosis", secondaryDiagnosis);
+            }
 
-                admissionEncounterBuilder.setPeriodEnd(episodeEndDate);
+            String otherDiagnosis = targetInpatientCds.getOtherDiagnosisICD();
+
+            //if the 01 episode has an episode start date, set the admission status to finished and end date
+            Date episodeStartDate = targetInpatientCds.getDtEpisodeStart();
+            if (episodeStartDate != null) {
+
+                admissionEncounterBuilder.setPeriodEnd(episodeStartDate);
                 admissionEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
             }
 
@@ -362,20 +377,23 @@ public class InpatientCdsTargetTransformer {
             containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCode);
         }
 
-        //TODO:  linked diagnosis, procedures and maternity?
-
-        // targetInpatientCds.getPrimaryDiagnosisICD());
-        // targetInpatientCds.getSecondaryDiagnosisICD());
-        // targetInpatientCds.getOtherDiagnosisICD());
+        //TODO:  procedures associated with episode encounters - already in via specific transforms?
         // targetInpatientCds.getPrimaryProcedureOPCS());
         // targetInpatientCds.getSecondaryProcedureOPCS());
         // targetInpatientCds.getOtherProceduresOPCS());
 
-        // episode entry wil either have none, one or the other maternity json records
-        // targetInpatientCds.getMaternityDataBirth());      -- the encounter is about the baby and contains the mothers nhs number
-        // targetInpatientCds.getMaternityDataDelivery());   -- the encounter is about the mother and this is the birth(s) detail
+        //TODO: mothers NHS number linking from birth records at subscriber
+        String maternityBirth = targetInpatientCds.getMaternityDataBirth();
+        //the encounter is about the baby and contains the mothers nhs number
+        if (!Strings.isNullOrEmpty(maternityBirth)) {
+            containedParametersBuilder.addParameter("maternity_birth", maternityBirth);
+        }
 
-        //TODO: mothers NHS number linking from birth records
+        String maternityDelivery = targetInpatientCds.getMaternityDataDelivery();
+        //the encounter is about the mother and this is the birth(s) detail
+        if (!Strings.isNullOrEmpty(maternityDelivery)) {
+            containedParametersBuilder.addParameter("maternity_delivery", maternityBirth);
+        }
 
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         //LOG.debug("Saving IP parent encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));

@@ -17,6 +17,7 @@ import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseC
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.*;
 import org.endeavourhealth.transform.subscriber.FhirToSubscriberCsvTransformer;
+import org.endeavourhealth.transform.subscriber.SubscriberConfig;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
@@ -39,15 +40,15 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
                                            UUID exchangeId,
                                            UUID batchId,
                                            List<ResourceWrapper> resources,
-                                           String configName,
+                                           SubscriberConfig subscriberConfig,
                                            boolean isBulkDeleteFromSubscriber) throws Exception {
 
-        LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + configName);
+        LOG.trace("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + subscriberConfig.getSubscriberConfigName());
 
         //use the common validation from the other transform
         FhirToSubscriberCsvTransformer.validateResources(resources);
 
-        EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceId, systemId, exchangeId, batchId, configName, resources, isBulkDeleteFromSubscriber);
+        EnterpriseTransformHelper params = new EnterpriseTransformHelper(serviceId, systemId, exchangeId, batchId, subscriberConfig, resources, isBulkDeleteFromSubscriber);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params);
         params.setEnterpriseOrganisationId(enterpriseOrgId);

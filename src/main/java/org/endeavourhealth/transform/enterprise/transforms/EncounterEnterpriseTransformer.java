@@ -364,14 +364,15 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                         //each parameter entry  will have a key value pair of name and StringType value?
                         if (parameter.hasName() && parameter.hasValue()) {
 
-                            String property = parameter.getName();
+                            //these values are straight from IM mapping, to file direct into the table
+                            String propertyId = parameter.getName();
                             StringType parameterValue = (StringType) parameter.getValue();
-                            String value = parameterValue.asStringValue();
+                            String valueId = parameterValue.asStringValue();
 
-                            String propertyId = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(
-                                    IMConstant.ENCOUNTER_LEGACY, "TYPE", property);
-                            String valueId = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(
-                                    IMConstant.ENCOUNTER_LEGACY, "TYPE", value);
+//                            String propertyId = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(
+//                                    IMConstant.ENCOUNTER_LEGACY, "TYPE", property);
+//                            String valueId = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(
+//                                    IMConstant.ENCOUNTER_LEGACY, "TYPE", value);
 
                             //transform the IM values to the encounter_triple table upsert
                             encounterAdditional.writeUpsert(id, propertyId, valueId );

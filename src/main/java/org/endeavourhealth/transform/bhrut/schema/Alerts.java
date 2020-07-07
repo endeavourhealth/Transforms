@@ -39,7 +39,10 @@ public class Alerts extends AbstractCsvParser {
     }
 
     public CsvCell getId() {
-        return super.getCell("EXTERNAL_ID");
+        CsvCell id = super.getCell("EXTERNAL_ID");
+        String newId = "BHRUT-" + id.getString();
+        CsvCell ret = new CsvCell(id.getPublishedFileId(), id.getRecordNumber(), id.getColIndex(), newId, id.getParentParser());
+        return ret;
     }
 
     public CsvCell getPasId() {

@@ -19,8 +19,10 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 
 public class OutpatientsTransformer {
 
@@ -36,7 +38,9 @@ public class OutpatientsTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                    continue;
+                }
                 try {
                     createResource((org.endeavourhealth.transform.bhrut.schema.Outpatients) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
@@ -54,30 +58,23 @@ public class OutpatientsTransformer {
                                       BhrutCsvHelper csvHelper,
                                       String version) throws Exception {
 
-        //EncounterBuilder encounterBuilder = new EncounterBuilder();
         CsvCell idCell = parser.getId();
-        //encounterBuilder.setId(idCell.getString());
-
         CsvCell patientIdCell = parser.getPasId();
 
         //Create ParentEncounterBuilder
-        createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
-        String parentEncounterId = idCell.getString();
-        Encounter existingParentEncounter
-                = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, parentEncounterId);
-
-        //if existingParentEncounter is null a new Parent would be created.
-        EncounterBuilder encounterBuilder = new EncounterBuilder(existingParentEncounter);
-        createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
-
+        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper, false);
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
+        EncounterBuilder subEncounter = createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
+
+
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
         String apptUniqueId = idCell.getString() + APPT_ID_SUFFIX;
         appointmentBuilder.setId(apptUniqueId, idCell);
         SlotBuilder slotBuilder = new SlotBuilder();
         slotBuilder.setId(apptUniqueId, idCell);
-        appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
+        Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
+        appointmentBuilder.addParticipant(newPatientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
@@ -88,6 +85,10 @@ public class OutpatientsTransformer {
             //then, delete the linked resources
             deleteChildResources(parser, fhirResourceFiler, csvHelper, version);
             deleteOutpatientEncounterAndChildren(parser, fhirResourceFiler, csvHelper);
+            return;
+        }
+        if (patientIdCell.isEmpty()) {
+            TransformWarnings.log(LOG, csvHelper, "Missing patient id for {} ", idCell.getString());
             return;
         }
 
@@ -111,8 +112,9 @@ public class OutpatientsTransformer {
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
         CsvCell consultantCodeCell = parser.getConsultantCode();
-        Reference consultantReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
-        encounterBuilder.addParticipant(consultantReference, EncounterParticipantType.CONSULTANT, consultantCodeCell);
+        //Reference consultantReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+        Reference consultantReference2 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+        encounterBuilder.addParticipant(consultantReference2, EncounterParticipantType.CONSULTANT, consultantCodeCell);
 
         //TODO - work out episode of care creation for BHRUT
         //link the consultation to our episode of care
@@ -125,14 +127,15 @@ public class OutpatientsTransformer {
 
         //set the service provider reference from the hospital ods code
         CsvCell hospitalOdsCodeCell = parser.getHospitalCode();
+        //create an Encounter reference for the procedures and conditions to use
+        Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
         Reference organisationReference = csvHelper.createOrganisationReference(hospitalOdsCodeCell.getString());
         if (encounterBuilder.isIdMapped()) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+            thisEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisEncounter, csvHelper);
         }
         encounterBuilder.setServiceProvider(organisationReference);
 
-        //create an Encounter reference for the procedures and conditions to use
-        Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
 
         //Primary Procedure
         CsvCell primaryProcedureCodeCell = parser.getPrimaryProcedureCode();
@@ -140,8 +143,10 @@ public class OutpatientsTransformer {
 
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
             procedureBuilder.setId(idCell.getString() + ":Procedure:0");
-            procedureBuilder.setPatient(patientReference, patientIdCell);
-            procedureBuilder.setEncounter(thisEncounter, idCell);
+            Reference procPatientReference = csvHelper.createPatientReference(patientIdCell);
+            procedureBuilder.setPatient(procPatientReference, patientIdCell);
+            Reference procEncReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+            procedureBuilder.setEncounter(procEncReference, idCell);
             procedureBuilder.setIsPrimary(true);
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
@@ -152,7 +157,8 @@ public class OutpatientsTransformer {
                 throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
             }
             codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
-            procedureBuilder.addPerformer(consultantReference, consultantCodeCell);
+            Reference consultantReference3 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+            procedureBuilder.addPerformer(consultantReference3, consultantCodeCell);
 
             DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
             procedureBuilder.setPerformed(dateTimeType, appointmentDateCell);
@@ -168,8 +174,10 @@ public class OutpatientsTransformer {
 
                 ProcedureBuilder procedureBuilder = new ProcedureBuilder();
                 procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
-                procedureBuilder.setPatient(patientReference, patientIdCell);
-                procedureBuilder.setEncounter(thisEncounter, idCell);
+                Reference patientReference2 = csvHelper.createPatientReference(patientIdCell);
+                procedureBuilder.setPatient(patientReference2, patientIdCell);
+                Reference procEncReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+                procedureBuilder.setEncounter(procEncReference, idCell);
                 procedureBuilder.setIsPrimary(false);
                 CodeableConceptBuilder codeableConceptBuilder
                         = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
@@ -179,7 +187,8 @@ public class OutpatientsTransformer {
                 if (Strings.isNullOrEmpty(procTerm)) {
                     throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
                 }
-                procedureBuilder.addPerformer(consultantReference, consultantCodeCell);
+                Reference consultantReference4 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+                procedureBuilder.addPerformer(consultantReference4, consultantCodeCell);
 
                 DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
                 procedureBuilder.setPerformed(dateTimeType, appointmentDateCell);
@@ -195,21 +204,28 @@ public class OutpatientsTransformer {
         if (!primaryDiagnosisCodeCell.isEmpty()) {
             ConditionBuilder conditionBuilder = new ConditionBuilder();
             conditionBuilder.setId(idCell.getString() + ":Condition:0");
-            conditionBuilder.setPatient(patientReference, patientIdCell);
+            Reference patientReference2 = csvHelper.createPatientReference(patientIdCell);
+            conditionBuilder.setPatient(patientReference2, patientIdCell);
             conditionBuilder.setEncounter(thisEncounter, idCell);
             conditionBuilder.setAsProblem(false);
             conditionBuilder.setIsPrimary(true);
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-            codeableConceptBuilder.setCodingCode(primaryDiagnosisCodeCell.getString(), primaryDiagnosisCodeCell);
-            String diagTerm = TerminologyService.lookupIcd10CodeDescription(parser.getPrimaryDiagnosisCode().getString());
+            String icd10 = TerminologyService.standardiseIcd10Code(primaryDiagnosisCodeCell.getString());
+            if (icd10.endsWith("X")) {
+                icd10 = icd10.substring(0,3);
+            } else if (icd10.length()>4) {
+
+            }
+            codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
+            String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
             if (Strings.isNullOrEmpty(diagTerm)) {
-                throw new Exception("Failed to find diagnosis term for ICD 10 code " + parser.getPrimaryDiagnosisCode().getString());
+                throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10);
             }
             codeableConceptBuilder.setCodingDisplay(diagTerm);
-
-            conditionBuilder.setClinician(consultantReference, consultantCodeCell);
+            Reference consultantReference5 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+            conditionBuilder.setClinician(consultantReference5, consultantCodeCell);
 
             DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
             conditionBuilder.setOnset(dateTimeType, appointmentDateCell);
@@ -226,21 +242,28 @@ public class OutpatientsTransformer {
 
                 ConditionBuilder conditionBuilder = new ConditionBuilder();
                 conditionBuilder.setId(idCell.getString() + ":Condition:" + i);
-                conditionBuilder.setPatient(patientReference, patientIdCell);
-                conditionBuilder.setEncounter(thisEncounter, idCell);
+                Reference diagPatientReference = csvHelper.createPatientReference(patientIdCell);
+                conditionBuilder.setPatient(diagPatientReference, patientIdCell);
+                Reference procEncReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+                conditionBuilder.setEncounter(procEncReference, idCell);
                 conditionBuilder.setAsProblem(false);
                 conditionBuilder.setIsPrimary(false);
 
                 CodeableConceptBuilder codeableConceptBuilder
                         = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                codeableConceptBuilder.setCodingCode(secondaryDiagnosisCodeCell.getString(), secondaryDiagnosisCodeCell);
-                String diagTerm = TerminologyService.lookupIcd10CodeDescription(secondaryDiagnosisCodeCell.getString());
+                String icd10 = TerminologyService.standardiseIcd10Code(secondaryDiagnosisCodeCell.getString());
+                if (icd10.endsWith("X")) {
+                    icd10 = icd10.substring(0,3);
+                }
+                codeableConceptBuilder.setCodingCode(icd10, secondaryDiagnosisCodeCell);
+                String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
                 if (Strings.isNullOrEmpty(diagTerm)) {
-                    throw new Exception("Failed to find diagnosis term for ICD 10 code " + parser.getPrimaryDiagnosisCode().getString());
+                    throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10);
                 }
                 codeableConceptBuilder.setCodingDisplay(diagTerm);
-                conditionBuilder.setClinician(consultantReference, consultantCodeCell);
+                Reference consultantReference6 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+                conditionBuilder.setClinician(consultantReference6, consultantCodeCell);
 
                 DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
                 conditionBuilder.setOnset(dateTimeType, appointmentDateCell);
@@ -386,7 +409,12 @@ public class OutpatientsTransformer {
         }
 
         //save the Encounter, Appointment and Slot
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, appointmentBuilder, slotBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !subEncounter.isIdMapped(), subEncounter);
+        Appointment appt = (Appointment) appointmentBuilder.getResource();
+        List<Appointment.AppointmentParticipantComponent> who = appt.getParticipant();
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
+
     }
 
     private static void deleteOutpatientEncounterAndChildren(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -410,32 +438,29 @@ public class OutpatientsTransformer {
                 Encounter childEncounter
                         = (Encounter) resourceDal.getCurrentVersionAsResource(csvHelper.getServiceId(), ResourceType.Encounter, comps.getId());
                 if (childEncounter != null) {
-                    LOG.debug("Deleting child encounter " + childEncounter.getId());
-
                     fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
                 } else {
-
                     TransformWarnings.log(LOG, csvHelper, "Cannot find existing child Encounter: {} for deletion", childEncounter.getId());
                 }
             }
         }
     }
 
-    private static void createSubEncounters(Outpatients parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static EncounterBuilder createSubEncounters(Outpatients parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
         ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
 
         EncounterBuilder outpatientEncounterBuilder = new EncounterBuilder();
         outpatientEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
-        String outpatientEncounterId = parser.getId() + ":OP";
+        String outpatientEncounterId = parser.getId().getString() + ":OP";
         outpatientEncounterBuilder.setId(outpatientEncounterId);
         outpatientEncounterBuilder.setPeriodStart(parser.getAppointmentDttm().getDateTime(), parser.getAppointmentDttm());
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(outpatientEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Outpatient Attendance");
 
-        setCommonEncounterAttributes(outpatientEncounterBuilder, parser, csvHelper);
+        setCommonEncounterAttributes(outpatientEncounterBuilder, parser, csvHelper, true);
 
         //add in additional extended data as Parameters resource with additional extension
         ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(outpatientEncounterBuilder);
@@ -460,24 +485,20 @@ public class OutpatientsTransformer {
 
         //and link the parent to this new child encounter
         Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, outpatientEncounterId);
-        if (existingParentEncounterBuilder.isIdMapped()) {
-            childDischargeRef
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
-        }
+//       if (existingParentEncounterBuilder.isIdMapped()) {
+//            childDischargeRef
+//                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
+//       }
         existingEncounterList.addReference(childDischargeRef);
-
-        fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
-
-        //save the discharge encounter builder
-        fhirResourceFiler.savePatientResource(null, outpatientEncounterBuilder);
+        return outpatientEncounterBuilder;
     }
 
-    private static void createEncountersParentMinimum(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static EncounterBuilder createEncountersParentMinimum(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, boolean isChild) throws Exception {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
 
-        parentTopEncounterBuilder.setId(parser.getId().toString());
+        parentTopEncounterBuilder.setId(parser.getId().getString());
         parentTopEncounterBuilder.setPeriodStart(parser.getAppointmentDttm().getDateTime(), parser.getAppointmentDttm());
         parentTopEncounterBuilder.setPeriodEnd(parser.getAppointmentDttm().getDateTime(), parser.getAppointmentDttm());
         parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
@@ -486,14 +507,15 @@ public class OutpatientsTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Outpatient");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
         //save encounterBuilder record
-        fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+        //fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
+        return parentTopEncounterBuilder;
 
     }
 
-    private static void setCommonEncounterAttributes(EncounterBuilder builder, Outpatients parser, BhrutCsvHelper csvHelper) throws Exception {
+    private static void setCommonEncounterAttributes(EncounterBuilder builder, Outpatients parser, BhrutCsvHelper csvHelper, boolean isChildEncounter) throws Exception {
 
         //every encounter has the following common attributes
         CsvCell patientIdCell = parser.getPasId();
@@ -503,7 +525,6 @@ public class OutpatientsTransformer {
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, patientIdCell.getString());
             if (builder.isIdMapped()) {
-
                 patientReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
             }
@@ -511,11 +532,9 @@ public class OutpatientsTransformer {
         }
 
         if (!idCell.isEmpty()) {
-
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, idCell.getString());
             if (builder.isIdMapped()) {
-
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
             }
@@ -528,7 +547,6 @@ public class OutpatientsTransformer {
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, admissionConsultantCodeCell.getString());
             if (builder.isIdMapped()) {
-
                 practitionerReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
             }
@@ -540,20 +558,18 @@ public class OutpatientsTransformer {
             Reference organizationReference
                     = ReferenceHelper.createReference(ResourceType.Organization, hospitalOdsCodeCell.getString());
             if (builder.isIdMapped()) {
-
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
             }
             builder.setServiceProvider(organizationReference);
         }
-        if (!idCell.isEmpty()) {
+        if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-            if (builder.isIdMapped()) {
-
-                parentEncounter
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            }
+            //if (builder.isIdMapped()) {
+            parentEncounter
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            //}
             builder.setPartOf(parentEncounter);
         }
 
@@ -661,7 +677,7 @@ public class OutpatientsTransformer {
         }
 
         CsvCell consultantCodeCell = parser.getConsultantCode();
-        if (consultantCodeCell != null && !consultantCodeCell.isEmpty()) {
+        if (!consultantCodeCell.isEmpty()) {
             Reference practitionerReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
             if (episodeBuilder.isIdMapped()) {
                 practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);

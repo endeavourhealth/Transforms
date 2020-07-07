@@ -23,7 +23,7 @@ public class PseudoId extends AbstractTargetTable {
         super.printRecord(
                 convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
-                convertLong(patientId),
+                "" + patientId,
                 saltKeyName,
                 pseudoId
         );

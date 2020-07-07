@@ -36,7 +36,6 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private static final Logger LOG = LoggerFactory.getLogger(SubscriberTransformHelper.class);
 
     private static final Object MAP_VAL = new Object(); //concurrent hash map requires non-null values, so just use this
-    private static final int DEFAULT_TRANSFORM_BATCH_SIZE = 50;
 
     private static Set<String> protectedCodesRead2;
     private static Set<String> protectedCodesCTV3;
@@ -46,18 +45,18 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final UUID systemId;
     private final UUID exchangeId;
     private final UUID batchId;
-    private final String subscriberConfigName;
     private final OutputContainer outputContainer;
-    //private final List<SubscriberId> subscriberIdsUpdated;
-    private final boolean isPseudonymised;
-    private final boolean includeDateRecorded;
-    private final boolean hasEncounterEventTable;
+    //private final String subscriberConfigName;
+    //private final boolean isPseudonymised;
+    //private final boolean includeDateRecorded;
+    //private final boolean hasEncounterEventTable;
+    //private final int batchSize;
+    //private final String excludeNhsNumberRegex;
     private final Map<String, ResourceWrapper> hmAllResourcesByReferenceString;
     private final List<ResourceWrapper> allResources;
     private final Map<String, Object> resourcesTransformedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
-    private final int batchSize;
-    private final String excludeNhsNumberRegex;
+    private final SubscriberConfig config;
     private final boolean isBulkDeleteFromSubscriber;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
     private Patient cachedPatient = null;
@@ -69,39 +68,19 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private Long subscriberPatientId = null;
     private Long subscriberPersonId = null;
 
-    public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, String subscriberConfigName,
+    public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, SubscriberConfig subscriberConfig,
                                      List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
-        this.subscriberConfigName = subscriberConfigName;
         this.outputContainer = new OutputContainer();
-        //this.subscriberIdsUpdated = new ArrayList<>();
         this.isBulkDeleteFromSubscriber = isBulkDeleteFromSubscriber;
 
         //load our config record for some parameters
-        JsonNode config = ConfigManager.getConfigurationAsJson(subscriberConfigName, "db_subscriber");
-
-        this.isPseudonymised = config.has("pseudonymised")
-                && config.get("pseudonymised").asBoolean();
-
-        this.includeDateRecorded = config.has("include_date_recorded")
-                && config.get("include_date_recorded").asBoolean();
-
-        this.hasEncounterEventTable = config.has("include_encounter_event")
-                && config.get("include_encounter_event").asBoolean();
-
-        if (config.has("transform_batch_size")) {
-            this.batchSize = config.get("transform_batch_size").asInt();
-        } else {
-            this.batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
-        }
-
-        if (config.has("excluded_nhs_number_regex")) {
-            this.excludeNhsNumberRegex = config.get("excluded_nhs_number_regex").asText();
-        } else {
-            this.excludeNhsNumberRegex = null;
+        this.config = subscriberConfig;
+        if (config.getSubscriberType() != SubscriberConfig.SubscriberType.CompassV2) {
+            throw new Exception("Expecting config for compassv2 but got " + config.getSubscriberType());
         }
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
@@ -133,15 +112,15 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public boolean isPseudonymised() {
-        return isPseudonymised;
+        return config.isPseudonymised();
     }
 
     public boolean isIncludeDateRecorded() {
-        return includeDateRecorded;
+        return config.isIncludeDateRecorded();
     }
 
     public boolean isHasEncounterEventTable() {
-        return hasEncounterEventTable;
+        return config.isV2HasEncounterEventTable();
     }
 
     public boolean isBulkDeleteFromSubscriber() {
@@ -150,7 +129,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public Date includeDateRecorded(DomainResource fhir) {
         Date dateRecorded = null;
-        if (includeDateRecorded) {
+        if (isIncludeDateRecorded()) {
             Extension recordedDate = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
             if (recordedDate != null) {
                 DateTimeType value = (DateTimeType) recordedDate.getValue();
@@ -182,7 +161,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public String getSubscriberConfigName() {
-        return subscriberConfigName;
+        return config.getSubscriberConfigName();
     }
 
     public OutputContainer getOutputContainer() {
@@ -190,7 +169,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     }
 
     public int getBatchSize() {
-        return batchSize;
+        return config.getBatchSize();
     }
 
 
@@ -308,14 +287,22 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
             return;
         }
 
-        //retrieve the patient resource to see if the record has been deleted or is confidential
+        this.shouldPatientRecordBeDeleted = Boolean.FALSE;
+
+                //retrieve the patient resource to see if the record has been deleted or is confidential
         Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
         ResourceWrapper patientWrapper = findOrRetrieveResourceWrapper(patientRef);
         if (patientWrapper != null) {
             this.cachedPatient = (Patient) patientWrapper.getResource();
         }
-        this.shouldPatientRecordBeDeleted = new Boolean(!shouldPatientBePresentInSubscriber(cachedPatient));
 
+        //if our patient resource has been deleted, then everything should be deleted
+        if (this.cachedPatient == null) {
+            this.shouldPatientRecordBeDeleted = Boolean.TRUE;
+        }
+
+        //protocol QR now checks to see if our patient is in or out
+        //this.shouldPatientRecordBeDeleted = new Boolean(!shouldPatientBePresentInSubscriber(cachedPatient));
 
         PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
         String discoveryPersonId = patientLinkDal.getPersonId(discoveryPatientId);
@@ -372,9 +359,9 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         }
     }
 
-    public boolean shouldPatientBePresentInSubscriber(Patient patient) {
-        return shouldPatientBePresentInSubscriber(patient, this.excludeNhsNumberRegex);
-    }
+    /*public boolean shouldPatientBePresentInSubscriber(Patient patient) {
+        return shouldPatientBePresentInSubscriber(patient, config.getExcludeNhsNumberRegex());
+    }*/
 
     /**
      * used by both FHIR->Subscriber and FHIR->Enterprise transforms
@@ -384,7 +371,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
      * Non-valid NHS – include
      * Dummy patients and test patients – exclude
      */
-    public static boolean shouldPatientBePresentInSubscriber(Patient patient, String excludeNhsNumberRegex) {
+    /*public static boolean shouldPatientBePresentInSubscriber(Patient patient, String excludeNhsNumberRegex) {
 
         //deleted records shouldn't be in subscriber DBs
         if (patient == null) {
@@ -411,7 +398,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         }
 
         return true;
-    }
+    }*/
 
     public boolean getShouldPatientRecordBeDeleted() {
         if (shouldPatientRecordBeDeleted == null) {
@@ -750,4 +737,8 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return orgReference;
     }*/
 
+
+    public SubscriberConfig getConfig() {
+        return config;
+    }
 }

@@ -28,8 +28,7 @@ public class SRPatientRelationship extends AbstractCsvParser {
                 || version.equals(TppCsvToFhirTransformer.VERSION_91)
                 || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
                 || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_2)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)
-                || version.equals(TppCsvToFhirTransformer.VERSION_92)) {
+                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -132,6 +131,60 @@ public class SRPatientRelationship extends AbstractCsvParser {
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
             };
+
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_92)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "DateEnded",
+                    "RelationshipType",
+                    "PersonalGuardianOrProxy",
+                    "NextOfKin",
+                    "CaresForPatient",
+                    "PrincipalCarerForPatient",
+                    "KeyHolder",
+                    "HasParentalResponsibility",
+                    "FinancialRepresentative",
+                    "Advocate",
+                    "MainVisitor",
+                    "CallCentreCallBackConsent",
+                    "CopyCorrespondence",
+                    "ContactOrder",
+                    "ContactMethod",
+                    "CommunicationFormat",
+                    "InterpreterRequired",
+                    "IDRelationshipWithPatient",
+                    "IDPatientRelationshipWith",
+                    "CodeRelationshipWithUser",
+                    "RelationshipWithName",
+                    "RelationshipWithDateOfBirth",
+                    "RelationshipWithHouseName",
+                    "RelationshipWithHouseNumber",
+                    "RelationshipWithRoad",
+                    "RelationshipWithLocality",
+                    "RelationshipWithPostTown",
+                    "RelationshipWithCounty",
+                    "RelationshipWithPostCode",
+                    "RelationshipWithTelephone",
+                    "RelationshipWithWorkTelephone",
+                    "RelationshipWithMobileTelephone",
+                    "RelationshipWithFax",
+                    "RelationshipWithEmailAddress",
+                    "RelationshipWithSex",
+                    "RelationshipWithSpokenLanguage",
+                    "RelationshipWithOrganisation",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+
         } else {
             return new String[]{
                     "RowIdentifier",

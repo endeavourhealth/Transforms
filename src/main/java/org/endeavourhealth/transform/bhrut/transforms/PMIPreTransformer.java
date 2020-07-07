@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.ArrayUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.ods.OdsOrganisation;
@@ -38,15 +39,16 @@ public class PMIPreTransformer {
             long count = 0;
             long checkpoint = 5000;
             while (parser.nextRecord()) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                    continue;
+                }
                 count++;
                 try {
                     if (!parser.getRegisteredGpPracticeCode().isEmpty()) {
-
                         CsvCell gpPracticeCodeCell = parser.getRegisteredGpPracticeCode();
                         String gpPracticeCode = gpPracticeCodeCell.getString();
                         createResource(parser, fhirResourceFiler, csvHelper, version, gpPracticeCode);
                     }
-
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -63,7 +65,6 @@ public class PMIPreTransformer {
                                       BhrutCsvHelper csvHelper,
                                       String version, String orgId) throws Exception {
 
-
         boolean orgInCache = csvHelper.getOrgCache().organizationInCache(orgId);
         if (!orgInCache) {
             boolean orgResourceAlreadyFiled
@@ -79,27 +80,38 @@ public class PMIPreTransformer {
                                           BhrutCsvHelper csvHelper,
                                           String orgId) throws Exception {
 
+
+        String orgName = null;
+
         OrganizationBuilder organizationBuilder
                 = csvHelper.getOrgCache().getOrCreateOrganizationBuilder(orgId, csvHelper);
+
         if (organizationBuilder == null) {
             TransformWarnings.log(LOG, parser, "Error creating Organization resource for ODS: {}", orgId);
             return;
         }
-        OdsOrganisation org = new OdsOrganisation();
-        try {
-            org = OdsWebService.lookupOrganisationViaRest(orgId);
-        } catch (Exception e) {
-            TransformWarnings.log(LOG, parser, "Exception looking up Organization for ODS: {} Exception : {} Line {}", orgId, e.getMessage());
-            return;
-        }
-        if (org != null) {
-            organizationBuilder.setName(org.getOrganisationName());
-        } else {
-            if (!ArrayUtils.contains(V_CODES, orgId)) {
-                TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {} ID  {}", orgId, parser.getID().getString());
-            }
-            return;
+        //verify if it matches with the localOdsCodes else verify from the REST
+        orgName = csvHelper.findBhrutLocalOdsCode(orgId);
 
+        if (!Strings.isNullOrEmpty(orgName)) {
+            organizationBuilder.setName(orgName);
+        } else {
+            OdsOrganisation org = new OdsOrganisation();
+            try {
+                org = OdsWebService.lookupOrganisationViaRest(orgId);
+            } catch (Exception e) {
+                TransformWarnings.log(LOG, parser, "Exception looking up Organization for ODS: {} Exception : {} Line {}", orgId, e.getMessage());
+                return;
+            }
+            if (org != null) {
+                organizationBuilder.setName(org.getOrganisationName());
+            } else {
+                if (!ArrayUtils.contains(V_CODES, orgId)) {
+                    TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {} ID  {}", orgId, parser.getId().getString());
+                }
+                return;
+
+            }
         }
 
         //set the ods identifier

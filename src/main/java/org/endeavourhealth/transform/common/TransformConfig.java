@@ -22,6 +22,7 @@ public class TransformConfig {
     //private boolean emisSkipAdminData;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private String cernerPatientIdFile;
+    private String bhrutPatientIdFile;
     private int maxTransformErrorsBeforeAbort;
     private List<Pattern> warningsToFailOn;
     private boolean disableSavingResources;
@@ -62,6 +63,7 @@ public class TransformConfig {
         //this.emisSkipAdminData = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.cernerPatientIdFile = null;
+        this.bhrutPatientIdFile = null;
         this.maxTransformErrorsBeforeAbort = 50;
         this.warningsToFailOn = new ArrayList<>();
         this.disableSavingResources = false;
@@ -85,6 +87,9 @@ public class TransformConfig {
             json = ConfigManager.getConfigurationAsJson("cerner_config", "queuereader");
             loadCernerConfig(json);
 
+            json = ConfigManager.getConfigurationAsJson("bhrut_config", "queuereader");
+            loadBhrutConfig(json);
+
         } catch (Exception ex) {
             //if the config record is there, just log it out rather than throw an exception
             LOG.error("", ex);
@@ -103,7 +108,16 @@ public class TransformConfig {
             this.cernerPatientIdFile = node.asText();
         }
     }
+    private void loadBhrutConfig(JsonNode json) {
+        if (json == null) {
+            return;
+        }
 
+        JsonNode node = json.get("patient_id_file");
+        if (node != null) {
+            this.bhrutPatientIdFile = node.asText();
+        }
+    }
     private void loadCommonConfig(JsonNode json) throws Exception {
 
         if (json == null) {
@@ -176,6 +190,11 @@ public class TransformConfig {
         if (node != null) {
             //the cerner config should now be in a separate config record, but still apply it if it's still found as part of the common config
             loadCernerConfig(node);
+        }
+        node = json.get("bhrut");
+        if (node != null) {
+            //the cerner config should now be in a separate config record, but still apply it if it's still found as part of the common config
+            loadBhrutConfig(node);
         }
 
         node = json.get("subscriber");
@@ -344,6 +363,9 @@ public class TransformConfig {
         return cernerPatientIdFile;
     }
 
+    public String getBhrutPatientIdFile() {
+        return  bhrutPatientIdFile;
+    }
     public boolean isAllowMissingConceptIdsInSubscriberTransform() {
         return allowMissingConceptIdsInSubscriberTransform;
     }

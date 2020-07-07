@@ -25,7 +25,9 @@ public class AlertsTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 try {
                     createResource((Alerts) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {

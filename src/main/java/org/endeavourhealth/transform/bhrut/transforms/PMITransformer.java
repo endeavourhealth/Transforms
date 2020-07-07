@@ -29,6 +29,9 @@ public class PMITransformer {
         if (parser != null) {
             while (parser.nextRecord()) {
                 count++;
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 try {
                     createResources((PMI) parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
@@ -58,7 +61,7 @@ public class PMITransformer {
         }
 
         PatientBuilder patientBuilder = createPatientResource(parser, csvHelper, fhirResourceFiler);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !patientBuilder.isIdMapped() , patientBuilder);
     }
 
     private static PatientBuilder createPatientResource(PMI parser,
@@ -98,7 +101,7 @@ public class PMITransformer {
             ObservationBuilder observationBuilder = new ObservationBuilder();
             observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
             CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Component_Code);
+                    = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
             codeableConceptBuilder.setText(infectionStatusCell.getString());
 
         }
@@ -175,7 +178,7 @@ public class PMITransformer {
         if (!causeOfDeathCell.isEmpty()) {
             // ObservationBuilder observationBuilder = new ObservationBuilder();
             ConditionBuilder conditionBuilder = createSkeletonCondition(parser, csvHelper);
-            String conditionId = parser.getID() + "CAUSEOFDEATH";
+            String conditionId = parser.getId().getString() + "CAUSEOFDEATH";
             conditionBuilder.setId(conditionId);
             //TODO containedParametersBuilder are wrong. Rewrite once we know how this works.
             // IM dependency
@@ -196,7 +199,9 @@ public class PMITransformer {
             if (!causeOfDeath2CCell.isEmpty()) {
                // containedParametersBuilder.addParameter(conditionId,causeOfDeath2CCell.getString(),causeOfDeath2CCell);
             }
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), !conditionBuilder.isIdMapped(), conditionBuilder);
+
+
         }
     }
 

@@ -61,6 +61,7 @@ public abstract class AbstractSubscriberTransformer {
         validateResources(resourceWrappers);
 
         //find or create subscriber DB IDs for each of our resources
+        LOG.trace("Transforming " + resourceWrappers.size() + " " + getExpectedResourceType() + " resources to " + params.getSubscriberConfigName());
         Map<String, SubscriberId> idsForMainTable = mapIds(params.getSubscriberConfigName(), getMainSubscriberTableId(), resourceWrappers, shouldAlwaysTransform(), params);
 
         for (ResourceWrapper resourceWrapper : resourceWrappers) {

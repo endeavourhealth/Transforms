@@ -59,6 +59,7 @@ public class Episodes extends AbstractCsvParser {
                 "ADMISSION_HOSPITAL_NAME",
                 "PRIMARY_DIAGNOSIS_CODE",
                 "PRIMDIAG_DTTM",
+                "PRIMARY_DIAGNOSIS_CODING_TYPE",
                 "DIAG_01",
                 "DIAG1_DTTM",
                 "DIAG1_CODING_TYPE",
@@ -96,9 +97,9 @@ public class Episodes extends AbstractCsvParser {
                 "DIAG12_DTTM",
                 "DIAG12_CODING_TYPE",
                 "PRIMARY_PROCEDURE_CODE",
-                "PRIMARY_PROCEDURE_CODING_TYPE",
                 "PRIMARY_PROCEDURE_DATE",
                 "PRIMARY_PROCEDURE",
+                "PRIMARY_PROCEDURE_CODING_TYPE",
                 "PROC_01",
                 "PROC_01_DESC",
                 "PROC_01_CODING_TYPE",
@@ -143,7 +144,10 @@ public class Episodes extends AbstractCsvParser {
     }
 
     public CsvCell getId() {
-        return super.getCell("EXTERNAL_ID");
+        CsvCell id = super.getCell("EXTERNAL_ID");
+        String newId = "BHRUT-" + id.getString();
+        CsvCell ret = new CsvCell(id.getPublishedFileId(), id.getRecordNumber(), id.getColIndex(), newId, id.getParentParser());
+        return ret;
     }
 
     public CsvCell getIpSpellExternalId() {
@@ -280,6 +284,10 @@ public class Episodes extends AbstractCsvParser {
 
     public CsvCell getPrimaryDiagnosisCode() {
         return super.getCell("PRIMARY_DIAGNOSIS_CODE");
+    }
+
+    public CsvCell getPrimaryDiagnosisCodingType() {
+        return super.getCell("PRIMARY_DIAGNOSIS_CODING_TYPE");
     }
 
     public CsvCell getPrimdiagDttm() {

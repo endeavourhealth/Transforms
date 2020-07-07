@@ -1147,6 +1147,7 @@ public abstract class CdsPreTransformerBase {
         }
         stagingEmergencyCds.setDischargeDestination(parser.getDischargeDestination().getString());
         stagingEmergencyCds.setDischargeDestinationSiteId(parser.getDischargeDestinationSiteId().getString());
+        stagingEmergencyCds.setDischargeFollowUp(parser.getDischargeFollowUp().getString());
 
         // process all Mental Health Classification data into a delimetered string format eg:
         // start datetime~end datetime~code|start datetime~end datetime~code
