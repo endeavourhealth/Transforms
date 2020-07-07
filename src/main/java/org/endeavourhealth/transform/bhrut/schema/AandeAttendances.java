@@ -14,7 +14,7 @@ public class AandeAttendances extends AbstractCsvParser {
 
     public AandeAttendances(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
-                BhrutCsvToFhirTransformer.CSV_FORMAT.withHeader(getCsvHeaders()),
+                BhrutCsvToFhirTransformer.CSV_FORMAT.withHeader(getHeaders(version)),
                 BhrutCsvToFhirTransformer.DATE_FORMAT,
                 BhrutCsvToFhirTransformer.TIME_FORMAT);
     }
@@ -22,9 +22,9 @@ public class AandeAttendances extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return getCsvHeaders();
+        return getHeaders(version);
     }
-    protected static String[] getCsvHeaders() {
+    private static String[] getHeaders(String version) {
         return new String[]{
                 "EXTERNAL_ID",
                 "ATTENDANCE_NUMBER",
