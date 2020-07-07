@@ -195,6 +195,13 @@ public class EpisodesTransformer {
         // Reference thisEncounter
         //       = csvHelper.createEncounterReference(parser.getId().getString(), patientEncReference.getId());
 
+        //create an Encounter reference for the procedures and conditions to use
+        Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+        if (encounterBuilder.isIdMapped()) {
+            thisEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisEncounter, csvHelper);
+        }
+
+
         //its rare that there is no primary diagnosis, but check just in case
         if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
 
@@ -206,8 +213,8 @@ public class EpisodesTransformer {
             condition.setOnset(dtt, parser.getPrimdiagDttm());
             condition.setIsPrimary(true);
             condition.setAsProblem(false);
-            Reference encounterReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
-            condition.setEncounter(encounterReference, parser.getId());
+            //Reference encounterReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+            condition.setEncounter(thisEncounter, parser.getId());
             if (!episodeConsultantCodeCell.isEmpty()) {
                 Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
                 condition.setClinician(practitionerReference2, episodeConsultantCodeCell);
