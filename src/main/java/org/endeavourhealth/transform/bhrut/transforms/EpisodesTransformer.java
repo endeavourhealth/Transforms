@@ -230,7 +230,7 @@ public class EpisodesTransformer {
             //note: no original text to set
             condition.setCategory("diagnosis");
             LOG.debug("Condition 0 :" + FhirSerializationHelper.serializeResource(condition.getResource()));
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
+            // fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
 
             // 0 - 12 potential secondary diagnostic codes. Only if there has been a primary
             for (int i = 1; i <= 12; i++) {
@@ -261,11 +261,12 @@ public class EpisodesTransformer {
                     code.setCodingDisplay(diagTerm);
                     cc.setCategory("diagnosis");
                     String json = FhirSerializationHelper.serializeResource(cc.getResource());
-                    LOG.debug("RAB>>>> About to file condition :" + "<"+ i +">:" + json);
-                    fhirResourceFiler.savePatientResource(parser.getCurrentState(), cc);
+                    LOG.debug("RAB>>>> About to file condition :" + "<" + i + ">:" + json);
+                    fhirResourceFiler.savePatientResource(parser.getCurrentState(),!cc.isIdMapped(), cc);
                 } else {
                     break;  //No point parsing empty cells. Assume non-empty cells are sequential.
                 }
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
             }
         }
 
@@ -330,8 +331,9 @@ public class EpisodesTransformer {
         }
 
         //LOG.debug("Filing main encounter");
-        //LOG.debug("" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
+        LOG.debug("" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
+        //encounterBuilder.setPatient();
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
 //        if (!bases.isEmpty()) {
 //            LOG.debug("List of resources is " + bases.size());
 //            ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
