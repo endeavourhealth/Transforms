@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
 import com.google.common.base.Strings;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -231,7 +229,7 @@ public class EpisodesTransformer {
             condition.setCategory("diagnosis");
             String json = FhirSerializationHelper.serializeResource(condition.getResource());
 
-             fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
 
             // 0 - 12 potential secondary diagnostic codes. Only if there has been a primary
             for (int i = 1; i <= 12; i++) {
@@ -239,7 +237,7 @@ public class EpisodesTransformer {
                 CsvCell diagCode = (CsvCell) method.invoke(parser);
                 if (!diagCode.isEmpty()) {
                     //ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
-                    ConditionBuilder cc  = new ConditionBuilder((Condition) FhirSerializationHelper.deserializeResource(json));
+                    ConditionBuilder cc = new ConditionBuilder((Condition) FhirSerializationHelper.deserializeResource(json));
                     //LOG.debug("Retreived cond: "+ FhirSerializationHelper.serializeResource(condition.getResource()));
                     cc.setId(idCell.getString() + "Condition:" + i);
                     cc.setAsProblem(false);
@@ -267,8 +265,8 @@ public class EpisodesTransformer {
                 } else {
                     break;  //No point parsing empty cells. Assume non-empty cells are sequential.
                 }
-       //         fhirResourceFiler.waitUntilEverythingIsSaved();
-               // fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
+                //         fhirResourceFiler.waitUntilEverythingIsSaved();
+                // fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
             }
         }
 
@@ -303,7 +301,7 @@ public class EpisodesTransformer {
                 throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
             }
             code.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
-
+            String json = FhirSerializationHelper.serializeResource(proc.getResource());
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), proc);
 
             //ProcedureBuilder 1-12
@@ -311,7 +309,8 @@ public class EpisodesTransformer {
                 Method method = Episodes.class.getDeclaredMethod("getProc" + i);
                 CsvCell procCode = (CsvCell) method.invoke(parser);
                 if (!procCode.isEmpty()) {
-                    ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) proc.getResource());
+                    //ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) proc.getResource());
+                    ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) FhirSerializationHelper.deserializeResource(json));
                     procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
                     procedureBuilder.setIsPrimary(false);
                     procedureBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Procedure_Main_Code, null);
