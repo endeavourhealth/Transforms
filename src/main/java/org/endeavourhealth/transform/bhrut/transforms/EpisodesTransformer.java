@@ -229,25 +229,28 @@ public class EpisodesTransformer {
             code.setCodingDisplay(diagTerm);
             //note: no original text to set
             condition.setCategory("diagnosis");
-            LOG.debug("Condition 0 :" + FhirSerializationHelper.serializeResource(condition.getResource()));
-            // fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
+            String json = FhirSerializationHelper.serializeResource(condition.getResource());
+
+             fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
 
             // 0 - 12 potential secondary diagnostic codes. Only if there has been a primary
             for (int i = 1; i <= 12; i++) {
                 Method method = Episodes.class.getDeclaredMethod("getDiag" + i);
                 CsvCell diagCode = (CsvCell) method.invoke(parser);
                 if (!diagCode.isEmpty()) {
-                    ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
+                    //ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
+                    ConditionBuilder cc  = new ConditionBuilder((Condition) FhirSerializationHelper.deserializeResource(json));
+                    //LOG.debug("Retreived cond: "+ FhirSerializationHelper.serializeResource(condition.getResource()));
                     cc.setId(idCell.getString() + "Condition:" + i);
                     cc.setAsProblem(false);
-                    condition.setPatient(csvHelper.createPatientReference(patientIdCell), patientIdCell);
+                    cc.setPatient(csvHelper.createPatientReference(patientIdCell), patientIdCell);
                     method = Episodes.class.getDeclaredMethod("getDiag" + i + "Dttm");
                     CsvCell diagtime = (CsvCell) method.invoke(parser);
                     DateTimeType dtti = new DateTimeType(diagtime.getDateTime());
                     cc.setOnset(dtti, diagtime);
                     cc.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
                     CodeableConceptBuilder codeableConceptBuilder
-                            = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
+                            = new CodeableConceptBuilder(cc, CodeableConceptBuilder.Tag.Condition_Main_Code);
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
                     //icd10=TerminologyService.standardiseIcd10Code(diagCode.getString());
                     if (icd10.endsWith("X")) {
@@ -260,13 +263,12 @@ public class EpisodesTransformer {
                     codeableConceptBuilder.setCodingCode(icd10, diagCode);
                     code.setCodingDisplay(diagTerm);
                     cc.setCategory("diagnosis");
-                    String json = FhirSerializationHelper.serializeResource(cc.getResource());
-                    LOG.debug("RAB>>>> About to file condition :" + "<" + i + ">:" + json);
-                    fhirResourceFiler.savePatientResource(parser.getCurrentState(),!cc.isIdMapped(), cc);
+                    fhirResourceFiler.savePatientResource(parser.getCurrentState(), cc);
                 } else {
                     break;  //No point parsing empty cells. Assume non-empty cells are sequential.
                 }
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
+       //         fhirResourceFiler.waitUntilEverythingIsSaved();
+               // fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
             }
         }
 
@@ -330,21 +332,7 @@ public class EpisodesTransformer {
             }
         }
 
-        //LOG.debug("Filing main encounter");
-        LOG.debug("" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-        //encounterBuilder.setPatient();
-        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
-//        if (!bases.isEmpty()) {
-//            LOG.debug("List of resources is " + bases.size());
-//            ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
-//            bases.toArray(resources);
-//            for (ResourceBuilderBase res : resources) {
-//                String fhir = FhirSerializationHelper.serializeResource(res.getResource());
-//                System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(fhir)));
-//              //  fhirResourceFiler.savePatientResource(parser.getCurrentState(), res);
-//                //fhirResourceFiler.savePatientResource(parser.getCurrentState(), resources);
-        // }
-        //}
+
     }
 
     private static void deleteEncounterAndChildren(Episodes parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
