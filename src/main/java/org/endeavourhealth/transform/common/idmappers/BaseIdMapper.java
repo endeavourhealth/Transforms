@@ -26,17 +26,20 @@ public abstract class BaseIdMapper {
 
     protected void addCommonResourceReferences(DomainResource resource, Set<String> referenceValues) throws Exception {
 
-        if (resource.hasExtension()) {
-            addExtensionReferences(resource.getExtension(), referenceValues);
-        }
+        synchronized (this) {
+            if (resource.hasExtension()) {
+                addExtensionReferences(resource.getExtension(), referenceValues);
+            }
 
-        if (resource.hasContained()) {
-            //for each contained resource, we just use it's own ID mapper class to get its references.
-            //Note that this means we don't map the ID on the contained resources, but that's fine as
-            //the ID of contained resources is not a global ID
-            for (Resource contained : resource.getContained()) {
-                BaseIdMapper idMapper = IdHelper.getIdMapper(contained);
-                idMapper.getResourceReferences(contained, referenceValues);
+
+            if (resource.hasContained()) {
+                //for each contained resource, we just use it's own ID mapper class to get its references.
+                //Note that this means we don't map the ID on the contained resources, but that's fine as
+                //the ID of contained resources is not a global ID
+                for (Resource contained : resource.getContained()) {
+                    BaseIdMapper idMapper = IdHelper.getIdMapper(contained);
+                    idMapper.getResourceReferences(contained, referenceValues);
+                }
             }
         }
     }
