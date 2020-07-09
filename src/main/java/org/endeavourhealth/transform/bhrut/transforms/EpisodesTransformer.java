@@ -1,8 +1,6 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
 import com.google.common.base.Strings;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -62,7 +60,8 @@ public class EpisodesTransformer {
         CsvCell idCell = parser.getId();
         //Create ParentEncounterBuilder
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
-        List<ResourceBuilderBase> bases = createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
+        //List<ResourceBuilderBase> bases =
+
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
 
@@ -76,7 +75,7 @@ public class EpisodesTransformer {
             deleteEncounterAndChildren(parser, fhirResourceFiler, csvHelper);
             return;
         }
-
+        createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
         //the class is Inpatient, i.e. Inpatient Episode
         encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
         //encounterBuilder.setPeriodStart(parser.getEpisodeStartDttm().getDateTime(), parser.getEpisodeStartDttm());
@@ -188,7 +187,7 @@ public class EpisodesTransformer {
         }
 
         //save the encounter resource
-       // fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
 
         //create an Encounter reference for the procedures and diagnosis
         // Reference patientEncReference = csvHelper.createPatientReference(patientIdCell);
@@ -202,6 +201,7 @@ public class EpisodesTransformer {
             condition.setId(idCell.getString() + "Condition:0");
             Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
             condition.setPatient(newPatientReference, patientIdCell);
+
             DateTimeType dtt = new DateTimeType(parser.getPrimdiagDttm().getDateTime());
             condition.setOnset(dtt, parser.getPrimdiagDttm());
             condition.setIsPrimary(true);
@@ -227,6 +227,7 @@ public class EpisodesTransformer {
             code.setCodingDisplay(diagTerm);
             //note: no original text to set
             condition.setCategory("diagnosis");
+            String json = FhirSerializationHelper.serializeResource(condition.getResource());
 
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
 
@@ -235,17 +236,19 @@ public class EpisodesTransformer {
                 Method method = Episodes.class.getDeclaredMethod("getDiag" + i);
                 CsvCell diagCode = (CsvCell) method.invoke(parser);
                 if (!diagCode.isEmpty()) {
-                    ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
+                    //ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
+                    ConditionBuilder cc = new ConditionBuilder((Condition) FhirSerializationHelper.deserializeResource(json));
+                    //LOG.debug("Retreived cond: "+ FhirSerializationHelper.serializeResource(condition.getResource()));
                     cc.setId(idCell.getString() + "Condition:" + i);
                     cc.setAsProblem(false);
-                    cc.setIsPrimary(false);
+                    cc.setPatient(csvHelper.createPatientReference(patientIdCell), patientIdCell);
                     method = Episodes.class.getDeclaredMethod("getDiag" + i + "Dttm");
                     CsvCell diagtime = (CsvCell) method.invoke(parser);
                     DateTimeType dtti = new DateTimeType(diagtime.getDateTime());
                     cc.setOnset(dtti, diagtime);
                     cc.removeCodeableConcept(CodeableConceptBuilder.Tag.Condition_Main_Code, null);
                     CodeableConceptBuilder codeableConceptBuilder
-                            = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
+                            = new CodeableConceptBuilder(cc, CodeableConceptBuilder.Tag.Condition_Main_Code);
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
                     //icd10=TerminologyService.standardiseIcd10Code(diagCode.getString());
                     if (icd10.endsWith("X")) {
@@ -258,11 +261,12 @@ public class EpisodesTransformer {
                     codeableConceptBuilder.setCodingCode(icd10, diagCode);
                     code.setCodingDisplay(diagTerm);
                     cc.setCategory("diagnosis");
-
                     fhirResourceFiler.savePatientResource(parser.getCurrentState(), cc);
                 } else {
                     break;  //No point parsing empty cells. Assume non-empty cells are sequential.
                 }
+                //         fhirResourceFiler.waitUntilEverythingIsSaved();
+                // fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
             }
         }
 
@@ -297,7 +301,7 @@ public class EpisodesTransformer {
                 throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
             }
             code.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
-
+            String json = FhirSerializationHelper.serializeResource(proc.getResource());
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), proc);
 
             //ProcedureBuilder 1-12
@@ -305,7 +309,8 @@ public class EpisodesTransformer {
                 Method method = Episodes.class.getDeclaredMethod("getProc" + i);
                 CsvCell procCode = (CsvCell) method.invoke(parser);
                 if (!procCode.isEmpty()) {
-                    ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) proc.getResource());
+                    //ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) proc.getResource());
+                    ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) FhirSerializationHelper.deserializeResource(json));
                     procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
                     procedureBuilder.setIsPrimary(false);
                     procedureBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Procedure_Main_Code, null);
@@ -326,20 +331,7 @@ public class EpisodesTransformer {
             }
         }
 
-        LOG.debug("Filing main encounter");
-        LOG.error("" + FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
-        if (!bases.isEmpty()) {
-            LOG.debug("List of resources is " + bases.size());
-            ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
-            bases.toArray(resources);
-            for (ResourceBuilderBase res : resources) {
-                String fhir = FhirSerializationHelper.serializeResource(res.getResource());
-                System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(fhir)));
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), res);
-                //fhirResourceFiler.savePatientResource(parser.getCurrentState(), resources);
-            }
-        }
+
     }
 
     private static void deleteEncounterAndChildren(Episodes parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -396,13 +388,15 @@ public class EpisodesTransformer {
 
         ContainedListBuilder existingParentEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
         List<ResourceBuilderBase> res = new ArrayList<ResourceBuilderBase>();
+        //fhirResourceFiler.savePatientResource(null,existingParentEncounterBuilder);
+
 
         EncounterBuilder admissionEncounterBuilder = null;
         EncounterBuilder dischargeEncounterBuilder = null;
         CsvCell epiNumCell = parser.getEpiNum();
 
-        if (!epiNumCell.isEmpty() && epiNumCell.getInt() ==1) {
-                //epiNumCell.getString().equalsIgnoreCase("1")) {
+        if (!epiNumCell.isEmpty() && epiNumCell.getInt() == 1) {
+            //epiNumCell.getString().equalsIgnoreCase("1")) {
             admissionEncounterBuilder = new EncounterBuilder();
             admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
             String admissionEncounterId = parser.getId().getString() + ":01:IP:Admission";
@@ -494,6 +488,7 @@ public class EpisodesTransformer {
                 }
 
                 existingParentEncounterList.addReference(childDischargeRef);
+                //fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
                 res.add(dischargeEncounterBuilder);
             }
         }
@@ -546,18 +541,23 @@ public class EpisodesTransformer {
         if (!episodeEndWardCodeCell.isEmpty()) {
             containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString());
         }
-           /* //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+        //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
+        LOG.debug("Saving initial enc :" + FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
-            //then save the child encounter builders if they are set
-            if (admissionEncounterBuilder != null) {
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
-            }
-            if (dischargeEncounterBuilder != null) {
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
-            }
-            //finally, save the episode encounter which always exists
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);*/
+        //then save the child encounter builders if they are set
+
+        if (admissionEncounterBuilder != null) {
+            LOG.debug("Saving admit enc :" + FhirSerializationHelper.serializeResource(admissionEncounterBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
+        }
+        if (dischargeEncounterBuilder != null) {
+            LOG.debug("Saving dis enc :" + FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
+        }
+        //finally, save the episode encounter which always exists
+        LOG.debug("Saving episode enc :" + FhirSerializationHelper.serializeResource(episodeEncounterBuilder.getResource()));
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);
 
         return res;
     }

@@ -14,7 +14,7 @@ public class Alerts extends AbstractCsvParser {
 
     public Alerts(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
-                BhrutCsvToFhirTransformer.CSV_FORMAT,
+                BhrutCsvToFhirTransformer.CSV_FORMAT.withHeader(getHeaders(version)),
                 BhrutCsvToFhirTransformer.DATE_FORMAT,
                 BhrutCsvToFhirTransformer.TIME_FORMAT);
     }
@@ -22,6 +22,10 @@ public class Alerts extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
+        return getHeaders(version);
+    }
+
+    private static String[] getHeaders(String version) {
         return new String[]{
                 "EXTERNAL_ID",
                 "PAS_ID",
