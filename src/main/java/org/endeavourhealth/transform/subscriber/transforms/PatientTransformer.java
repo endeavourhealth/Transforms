@@ -480,7 +480,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             sUprn = pseudoUprn;
             // nullify fields
             znumber=null; zstreet=null; zlocality=null; ztown=null; zpostcode=null; zorg=null;
-            match_post=null; match_street=null; match_number=null; match_building=null; match_flat=null;
+            //match_post=null; match_street=null; match_number=null; match_building=null; match_flat=null;
             lat = null; longitude=null; x=null; y=null;
         }
 
