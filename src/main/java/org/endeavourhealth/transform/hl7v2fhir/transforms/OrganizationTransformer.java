@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
-import ca.uhn.hl7v2.model.v23.segment.PV1;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.Identifier;

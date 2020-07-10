@@ -2,15 +2,24 @@ package org.endeavourhealth.transform.hl7v2fhir;
 
 import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.model.v23.datatype.CX;
-import ca.uhn.hl7v2.model.v23.message.ADT_A01;
 import ca.uhn.hl7v2.model.v23.message.ORU_R01;
+import ca.uhn.hl7v2.model.v23.segment.OBR;
+import ca.uhn.hl7v2.model.v23.segment.OBX;
+import ca.uhn.hl7v2.model.v23.segment.ORC;
 import ca.uhn.hl7v2.model.v23.segment.PID;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
-import org.endeavourhealth.transform.hl7v2fhir.transforms.*;
-import org.hl7.fhir.instance.model.*;
+import org.endeavourhealth.transform.hl7v2fhir.transforms.DiagnosticReportTransformer;
+import org.endeavourhealth.transform.hl7v2fhir.transforms.LocationTransformer;
+import org.endeavourhealth.transform.hl7v2fhir.transforms.OrganizationTransformer;
+import org.endeavourhealth.transform.hl7v2fhir.transforms.PatientTransformer;
+import org.hl7.fhir.instance.model.Location;
+import org.hl7.fhir.instance.model.Organization;
+import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,6 +102,19 @@ public abstract class ImperialHL7FhirORUTransformer {
                 fhirResourceFiler.savePatientResource(null, false, patientBuilder);
             }
             //Patient
+
+            //Diagnostic Report
+            ORC orc = oruMsg.getRESPONSE().getORDER_OBSERVATION().getORC();
+            OBR obr = oruMsg.getRESPONSE().getORDER_OBSERVATION().getOBR();
+            OBX obx = oruMsg.getRESPONSE().getORDER_OBSERVATION().getOBSERVATION().getOBX();
+
+            orc.getOrderStatus();
+            orc.getPlacerGroupNumber();
+            orc.getPlacerOrderNumber();
+            orc.getFillerOrderNumber();
+
+            DiagnosticReportTransformer.createOrDeleteDiagnosticReport(pid, obr, fhirResourceFiler, imperialHL7Helper);
+            //Diagnostic Report
 
         }
     }
