@@ -160,7 +160,7 @@ public class SpellsTransformer {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
             String icd10 = primaryDiagnosisCodeCell.getString().trim();
             codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
-            if (icd10.endsWith("X") || icd10.endsWith("D")) {  //X being a wildcard
+            if (icd10.endsWith("X") || icd10.endsWith("D") || icd10.endsWith("A")) {  //X being a wildcard
                 icd10 = icd10.substring(0, 3);
             }
             icd10 = TerminologyService.standardiseIcd10Code(icd10);
@@ -290,7 +290,6 @@ public class SpellsTransformer {
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
         if (!bases.isEmpty()) {
-            LOG.debug("List of resources is " + bases.size());
             ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
             bases.toArray(resources);
             fhirResourceFiler.savePatientResource(parser.getCurrentState(),  resources);
@@ -465,7 +464,6 @@ public class SpellsTransformer {
         //and link the parent to this new child encounter
         Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
         if (existingParentEncounterBuilder.isIdMapped()) {
-            LOG.debug("Existing parent is mapped - admission");
             childAdmissionRef
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
         }
@@ -506,7 +504,6 @@ public class SpellsTransformer {
             //and link the parent to this new child encounter
             Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
             if (existingParentEncounterBuilder.isIdMapped()) {
-                LOG.debug("Existing parent is mapped - discharge");
                 childDischargeRef
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
             }
@@ -607,7 +604,6 @@ public class SpellsTransformer {
                 Encounter childEncounter
                         = (Encounter) resourceDal.getCurrentVersionAsResource(csvHelper.getServiceId(), ResourceType.Encounter, comps.getId());
                 if (childEncounter != null) {
-                    LOG.debug("Deleting child encounter " + childEncounter.getId());
 
                     fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
                 } else {

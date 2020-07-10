@@ -21,15 +21,15 @@ public class AlertsTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BhrutCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Alerts.class);
+        Alerts parser = (Alerts) parsers.get(Alerts.class);
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId(parser)) {
                     continue;
                 }
                 try {
-                    createResource((Alerts) parser, fhirResourceFiler, csvHelper, version);
+                    createResource(parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }

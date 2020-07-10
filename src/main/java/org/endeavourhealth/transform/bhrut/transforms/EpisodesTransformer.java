@@ -32,15 +32,15 @@ public class EpisodesTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  BhrutCsvHelper csvHelper) throws Exception {
 
-        AbstractCsvParser parser = parsers.get(Episodes.class);
+        Episodes parser = (Episodes) parsers.get(Episodes.class);
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId(parser)) {
                     continue;
                 }
                 try {
-                    createResources((Episodes) parser, fhirResourceFiler, csvHelper, version);
+                    createResources(parser, fhirResourceFiler, csvHelper, version);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -60,7 +60,6 @@ public class EpisodesTransformer {
         CsvCell idCell = parser.getId();
         //Create ParentEncounterBuilder
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
-        //List<ResourceBuilderBase> bases =
 
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
@@ -75,15 +74,10 @@ public class EpisodesTransformer {
             deleteEncounterAndChildren(parser, fhirResourceFiler, csvHelper);
             return;
         }
-        createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
-        //the class is Inpatient, i.e. Inpatient Episode
-        encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
-        //encounterBuilder.setPeriodStart(parser.getEpisodeStartDttm().getDateTime(), parser.getEpisodeStartDttm());
-        //encounterBuilder.setPeriodEnd(parser.getEpisodeEndDttm().getDateTime(), parser.getEpisodeEndDttm());
+        createExtensions(parser, encounterBuilder);
 
-        //CsvCell org = parser.getAdmissionHospitalCode();
-        //Reference orgReference = csvHelper.createOrganisationReference(org.getString());
-        //encounterBuilder.setServiceProvider(orgReference);
+
+        createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
 
         CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
         if (!admissionHospitalCodeCell.isEmpty()) {
@@ -95,11 +89,14 @@ public class EpisodesTransformer {
         }
 
 
-        //the parent inpatient spell encounter
-        // Reference spellEncounter
-        //         = csvHelper.createEncounterReference(parser.getIpSpellExternalId().getString(), patientReference.getId());
-        // encounterBuilder.setPartOf(spellEncounter);
+        createConditions(parser, fhirResourceFiler, csvHelper);
 
+        createProcedures(parser, fhirResourceFiler, csvHelper);
+
+
+    }
+
+    private static void createExtensions(Episodes parser, EncounterBuilder encounterBuilder) {
         //set the Encounter extensions
         //these are usually set on the parent spell encounter, but set them here also for completeness of record
         if (!parser.getPatientClassCode().isEmpty()) {
@@ -172,16 +169,76 @@ public class EpisodesTransformer {
             cc.setCodingCode(dischargeDestCode.getString(), dischargeDestCode);
             cc.setCodingDisplay(dischargeDest.getString(), dischargeDest);
         }
+    }
 
-        //save the encounter resource
-        //fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+    private static void createProcedures(Episodes parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+        CsvCell patientIdCell = parser.getPasId();
+        CsvCell idCell = parser.getId();
+        if (!parser.getPrimaryProcedureCode().isEmpty()) {
 
-        //create an Encounter reference for the procedures and diagnosis
-        // Reference patientEncReference = csvHelper.createPatientReference(patientIdCell);
-        // Reference thisEncounter
-        //       = csvHelper.createEncounterReference(parser.getId().getString(), patientEncReference.getId());
+            ProcedureBuilder proc = new ProcedureBuilder();
+            proc.setIsPrimary(true);
+            proc.setId(idCell.getString() + ":Procedure:0", idCell);
+            Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
+            proc.setPatient(newPatientReference, patientIdCell);
+            Reference encounterReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+            String json = FhirSerializationHelper.serializeResource(proc.getResource());
+            proc.setIsPrimary(true);
+            proc.setEncounter(encounterReference, idCell);
+            if (!parser.getPrimaryProcedureDate().isEmpty()) {
+                DateTimeType dttp = new DateTimeType(parser.getPrimaryProcedureDate().getDateTime());
+                proc.setPerformed(dttp, parser.getPrimaryProcedureDate());
+            }
 
-        //its rare that there is no primary diagnosis, but check just in case
+//            if (!episodeConsultantCodeCell.isEmpty()) {
+//                Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
+//                proc.addPerformer(practitionerReference2, episodeConsultantCodeCell);
+//            }
+
+            CodeableConceptBuilder code
+                    = new CodeableConceptBuilder(proc, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+            code.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
+            code.setCodingCode(parser.getPrimaryProcedureCode().getString(),
+                    parser.getPrimaryProcedureCode());
+            String procTerm = TerminologyService.lookupOpcs4ProcedureName(parser.getPrimaryProcedureCode().getString());
+            if (Strings.isNullOrEmpty(procTerm)) {
+                throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
+            }
+            code.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
+            //String json = FhirSerializationHelper.serializeResource(proc.getResource());
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), proc);
+
+            //ProcedureBuilder 1-12
+            for (int i = 1; i <= 12; i++) {
+                Method method = Episodes.class.getDeclaredMethod("getProc" + i);
+                CsvCell procCode = (CsvCell) method.invoke(parser);
+                if (!procCode.isEmpty()) {
+                    //ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) proc.getResource());
+                    ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) FhirSerializationHelper.deserializeResource(json));
+                    procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
+                    procedureBuilder.setIsPrimary(false);
+                    procedureBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Procedure_Main_Code, null);
+                    CodeableConceptBuilder codeableConceptBuilder
+                            = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
+                    codeableConceptBuilder.setCodingCode(procCode.getString(), procCode);
+                    procTerm = TerminologyService.lookupOpcs4ProcedureName(procCode.getString());
+                    if (Strings.isNullOrEmpty(procTerm)) {
+                        throw new Exception("Failed to find procedure term for OPCS-4 code " + procCode.getString());
+                    }
+                    codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
+
+                    fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
+                } else {
+                    break;  //No point parsing empty cells. Assume non-empty cells are sequential.
+                }
+            }
+        }
+    }
+
+    private static void createConditions(Episodes parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+        CsvCell patientIdCell = parser.getPasId();
+        CsvCell idCell = parser.getId();
         if (!parser.getPrimaryDiagnosisCode().isEmpty()) {
 
             ConditionBuilder condition = new ConditionBuilder();
@@ -257,70 +314,6 @@ public class EpisodesTransformer {
                 // fhirResourceFiler.savePatientResource(parser.getCurrentState(), condition);
             }
         }
-
-        //Primary procedure - check one exists
-        if (!parser.getPrimaryProcedureCode().isEmpty()) {
-
-            ProcedureBuilder proc = new ProcedureBuilder();
-            proc.setIsPrimary(true);
-            proc.setId(idCell.getString() + ":Procedure:0", idCell);
-            Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
-            proc.setPatient(newPatientReference, patientIdCell);
-            Reference encounterReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
-            String json = FhirSerializationHelper.serializeResource(proc.getResource());
-            proc.setIsPrimary(true);
-            proc.setEncounter(encounterReference, idCell);
-            if (!parser.getPrimaryProcedureDate().isEmpty()) {
-                DateTimeType dttp = new DateTimeType(parser.getPrimaryProcedureDate().getDateTime());
-                proc.setPerformed(dttp, parser.getPrimaryProcedureDate());
-            }
-
-//            if (!episodeConsultantCodeCell.isEmpty()) {
-//                Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
-//                proc.addPerformer(practitionerReference2, episodeConsultantCodeCell);
-//            }
-
-            CodeableConceptBuilder code
-                    = new CodeableConceptBuilder(proc, CodeableConceptBuilder.Tag.Procedure_Main_Code);
-            code.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
-            code.setCodingCode(parser.getPrimaryProcedureCode().getString(),
-                    parser.getPrimaryProcedureCode());
-            String procTerm = TerminologyService.lookupOpcs4ProcedureName(parser.getPrimaryProcedureCode().getString());
-            if (Strings.isNullOrEmpty(procTerm)) {
-                throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
-            }
-            code.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
-            //String json = FhirSerializationHelper.serializeResource(proc.getResource());
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), proc);
-
-            //ProcedureBuilder 1-12
-            for (int i = 1; i <= 12; i++) {
-                Method method = Episodes.class.getDeclaredMethod("getProc" + i);
-                CsvCell procCode = (CsvCell) method.invoke(parser);
-                if (!procCode.isEmpty()) {
-                    //ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) proc.getResource());
-                    ProcedureBuilder procedureBuilder = new ProcedureBuilder((Procedure) FhirSerializationHelper.deserializeResource(json));
-                    procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
-                    procedureBuilder.setIsPrimary(false);
-                    procedureBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Procedure_Main_Code, null);
-                    CodeableConceptBuilder codeableConceptBuilder
-                            = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
-                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
-                    codeableConceptBuilder.setCodingCode(procCode.getString(), procCode);
-                    procTerm = TerminologyService.lookupOpcs4ProcedureName(procCode.getString());
-                    if (Strings.isNullOrEmpty(procTerm)) {
-                        throw new Exception("Failed to find procedure term for OPCS-4 code " + procCode.getString());
-                    }
-                    codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
-
-                    fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
-                } else {
-                    break;  //No point parsing empty cells. Assume non-empty cells are sequential.
-                }
-            }
-        }
-
-
     }
 
     private static void deleteEncounterAndChildren(Episodes parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -374,6 +367,8 @@ public class EpisodesTransformer {
     }
 
     private static List<ResourceBuilderBase> createSubEncounters(Episodes parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+
+        existingParentEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
         ContainedListBuilder existingParentEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
         List<ResourceBuilderBase> res = new ArrayList<ResourceBuilderBase>();
@@ -541,8 +536,9 @@ public class EpisodesTransformer {
         if (dischargeEncounterBuilder != null) {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
         }
-        //finally, save the episode encounter which always exists
+//        //finally, save the episode encounter which always exists
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);
+
 
         return res;
     }
