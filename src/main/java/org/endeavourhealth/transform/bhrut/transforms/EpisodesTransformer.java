@@ -94,19 +94,6 @@ public class EpisodesTransformer {
             encounterBuilder.setServiceProvider(organisationReference);
         }
 
-        // CsvCell episodeConsultantCell = parser.getEpisodeConsultantCode();
-        // Reference episodePractitioner = csvHelper.createPractitionerReference(episodeConsultantCell.getString());
-        // encounterBuilder.addParticipant(episodePractitioner, EncounterParticipantType.CONSULTANT, episodeConsultantCell);
-
-        CsvCell episodeConsultantCodeCell = parser.getEpisodeConsultantCode();
-        Reference practitionerReference = null;
-        if (!episodeConsultantCodeCell.isEmpty()) {
-            practitionerReference = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
-            if (encounterBuilder.isIdMapped()) {
-                practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
-            }
-            encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.CONSULTANT, episodeConsultantCodeCell);
-        }
 
         //the parent inpatient spell encounter
         // Reference spellEncounter
@@ -208,6 +195,7 @@ public class EpisodesTransformer {
             condition.setAsProblem(false);
             Reference encounterReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
             condition.setEncounter(encounterReference, parser.getId());
+            CsvCell episodeConsultantCodeCell = parser.getEpisodeConsultantCode();
             if (!episodeConsultantCodeCell.isEmpty()) {
                 Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
                 condition.setClinician(practitionerReference2, episodeConsultantCodeCell);
@@ -216,7 +204,7 @@ public class EpisodesTransformer {
                     = new CodeableConceptBuilder(condition, CodeableConceptBuilder.Tag.Condition_Main_Code);
             code.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
             String icd10 = TerminologyService.standardiseIcd10Code(parser.getPrimaryDiagnosisCode().getString().trim());
-            if (icd10.endsWith("X")) {
+            if (icd10.endsWith("X") || icd10.endsWith("D") || icd10.endsWith("A")) {
                 icd10 = icd10.substring(0, 3);
             }
             code.setCodingCode(icd10, parser.getPrimaryDiagnosisCode());
@@ -251,7 +239,7 @@ public class EpisodesTransformer {
                             = new CodeableConceptBuilder(cc, CodeableConceptBuilder.Tag.Condition_Main_Code);
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
                     //icd10=TerminologyService.standardiseIcd10Code(diagCode.getString());
-                    if (icd10.endsWith("X")) {
+                    if (icd10.endsWith("X") || icd10.endsWith("D") || icd10.endsWith("A")) {
                         icd10 = icd10.substring(0, 3);
                     }
                     diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
@@ -278,18 +266,19 @@ public class EpisodesTransformer {
             proc.setId(idCell.getString() + ":Procedure:0", idCell);
             Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
             proc.setPatient(newPatientReference, patientIdCell);
-            proc.setIsPrimary(true);
             Reference encounterReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
+            String json = FhirSerializationHelper.serializeResource(proc.getResource());
+            proc.setIsPrimary(true);
             proc.setEncounter(encounterReference, idCell);
             if (!parser.getPrimaryProcedureDate().isEmpty()) {
                 DateTimeType dttp = new DateTimeType(parser.getPrimaryProcedureDate().getDateTime());
                 proc.setPerformed(dttp, parser.getPrimaryProcedureDate());
             }
 
-            if (!episodeConsultantCodeCell.isEmpty()) {
-                Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
-                proc.addPerformer(practitionerReference2, episodeConsultantCodeCell);
-            }
+//            if (!episodeConsultantCodeCell.isEmpty()) {
+//                Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
+//                proc.addPerformer(practitionerReference2, episodeConsultantCodeCell);
+//            }
 
             CodeableConceptBuilder code
                     = new CodeableConceptBuilder(proc, CodeableConceptBuilder.Tag.Procedure_Main_Code);
@@ -301,7 +290,7 @@ public class EpisodesTransformer {
                 throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
             }
             code.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
-            String json = FhirSerializationHelper.serializeResource(proc.getResource());
+            //String json = FhirSerializationHelper.serializeResource(proc.getResource());
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), proc);
 
             //ProcedureBuilder 1-12
@@ -497,7 +486,7 @@ public class EpisodesTransformer {
         EncounterBuilder episodeEncounterBuilder = new EncounterBuilder();
         episodeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
-        String episodeEncounterId = parser.getId().getString() + ":" + parser.getEpiNum() + ":IP:Episode";
+        String episodeEncounterId = parser.getId().getString() + ":" + parser.getEpiNum().getInt() + ":IP:Episode";
         episodeEncounterBuilder.setId(episodeEncounterId);
 
         //spell episode encounter have their own start and end date/times
@@ -542,21 +531,17 @@ public class EpisodesTransformer {
             containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString());
         }
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
-        LOG.debug("Saving initial enc :" + FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
 
         //then save the child encounter builders if they are set
 
         if (admissionEncounterBuilder != null) {
-            LOG.debug("Saving admit enc :" + FhirSerializationHelper.serializeResource(admissionEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
         }
         if (dischargeEncounterBuilder != null) {
-            LOG.debug("Saving dis enc :" + FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
         }
         //finally, save the episode encounter which always exists
-        LOG.debug("Saving episode enc :" + FhirSerializationHelper.serializeResource(episodeEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);
 
         return res;
@@ -704,7 +689,8 @@ public class EpisodesTransformer {
                 if (!procCode.isEmpty()) {
                     ProcedureBuilder procedureBuilder = new ProcedureBuilder();
                     procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
-                    procedureBuilder.setPatient(patientReference, patientIdCell);
+                    Reference loopPatientReference = csvHelper.createPatientReference(patientIdCell);
+                    procedureBuilder.setPatient(loopPatientReference, patientIdCell);
                     procedureBuilder.setDeletedAudit(dataUpdateStatusCell);
 
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
