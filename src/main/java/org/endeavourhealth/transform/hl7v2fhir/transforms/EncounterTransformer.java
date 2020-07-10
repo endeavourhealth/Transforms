@@ -1,7 +1,5 @@
 package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
-import ca.uhn.hl7v2.model.v23.datatype.ID;
-import ca.uhn.hl7v2.model.v23.datatype.ST;
 import ca.uhn.hl7v2.model.v23.datatype.TS;
 import ca.uhn.hl7v2.model.v23.datatype.XCN;
 import ca.uhn.hl7v2.model.v23.segment.PV1;
@@ -151,17 +149,14 @@ public class EncounterTransformer {
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
 
-        ID admissionHospitalCode = pv1.getHospitalService();
-        if (!admissionHospitalCode.isEmpty()) {
-            Reference organizationReference
-                    = ReferenceHelper.createReference(ResourceType.Organization, String.valueOf(admissionHospitalCode));
-            if (builder.isIdMapped()) {
+        Reference organizationReference
+                = ReferenceHelper.createReference(ResourceType.Organization, "Imperial College Healthcare NHS Trust");
+        if (builder.isIdMapped()) {
 
-                organizationReference
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, imperialHL7Helper);
-            }
-            builder.setServiceProvider(organizationReference);
+            organizationReference
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, imperialHL7Helper);
         }
+        builder.setServiceProvider(organizationReference);
 
         if ((encounterInd) && (!patientVisitId.isEmpty())) {
             Reference parentEncounter

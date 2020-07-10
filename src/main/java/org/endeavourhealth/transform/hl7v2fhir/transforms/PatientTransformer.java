@@ -104,17 +104,21 @@ public class PatientTransformer {
     /**
      * A34 messages merge all content from one patient (minor patient) to another (the major patient)
      */
-    public static void performA34PatientMerge(Bundle bundle, FhirHl7v2Filer.AdtResourceFiler filer, PID pid, MRG mrg) throws Exception {
-
-        Parameters parameters = findParameters(bundle);
+    public static void performA34PatientMerge(FhirHl7v2Filer.AdtResourceFiler filer, PID pid, MRG mrg) throws Exception {
 
         CX[] patientIdList = pid.getPatientIDInternalID();
-        String majorPatientId = String.valueOf(patientIdList[0].getID());
-        String minorPatientId = String.valueOf(mrg.getPriorPatientIDInternal());
+        String majorPId = String.valueOf(patientIdList[0].getID());
+        String minorPId = String.valueOf((mrg.getPriorPatientIDInternal())[0].getID());
+
+        UUID majPatientId = IdHelper.getEdsResourceId(filer.getServiceId(), ResourceType.Patient, majorPId);
+        String majorPatientId = String.valueOf(majPatientId);
+
+        UUID minPatientId = IdHelper.getEdsResourceId(filer.getServiceId(), ResourceType.Patient, minorPId);
+        String minorPatientId = String.valueOf(minPatientId);
 
         LOG.debug("Doing A34 merge from minor patient " + minorPatientId + " to major patient " + majorPatientId);
 
-        Map<String, String> idMappings = findIdMappings(parameters);
+        Map<String, String> idMappings = new HashMap<>();
 
         //add the minor and major patient IDs to the ID map, so we change the patient references in our resources too
         String majorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, majorPatientId);

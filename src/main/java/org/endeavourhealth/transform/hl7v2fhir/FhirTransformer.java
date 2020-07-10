@@ -6,12 +6,9 @@ import ca.uhn.hl7v2.HapiContext;
 import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.parser.EncodingNotSupportedException;
 import ca.uhn.hl7v2.parser.PipeParser;
-import org.apache.commons.io.IOUtils;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.FileInputStream;
 
 public abstract class FhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(FhirTransformer.class);
@@ -25,7 +22,7 @@ public abstract class FhirTransformer {
      */
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
         String HL7Message = null;
-        /*FileInputStream iS = new FileInputStream("C:\\Users\\USER\\Desktop\\Examples\\A01");
+        /*FileInputStream iS = new FileInputStream("C:\\Users\\USER\\Desktop\\Examples\\A34");
         HL7Message = IOUtils.toString(iS);*/
         //get HL7 message from the table based on id
         /*Connection connection = ConnectionManager.getHL7v2InboundConnection();

@@ -4,7 +4,6 @@ import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.model.v23.datatype.*;
 import ca.uhn.hl7v2.model.v23.message.*;
 import ca.uhn.hl7v2.model.v23.segment.MSH;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -1119,14 +1118,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             ADT_A34 adtMsg = (ADT_A34) hapiMsg;
             FhirHl7v2Filer.AdtResourceFiler filer = new FhirHl7v2Filer.AdtResourceFiler(fhirResourceFiler);
 
-            Resource bundleResource = FhirResourceHelper.deserialiseResouce(exchangeBody);
-
-            if (bundleResource.getResourceType() != ResourceType.Bundle) {
-                throw new Exception("Resource is not a bundle");
-            }
-            Bundle bundle = (Bundle)bundleResource;
-
-            PatientTransformer.performA34PatientMerge(bundle, filer, adtMsg.getPID(), adtMsg.getMRG());
+            PatientTransformer.performA34PatientMerge(filer, adtMsg.getPID(), adtMsg.getMRG());
         }
     }
 
