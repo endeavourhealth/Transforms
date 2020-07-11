@@ -118,7 +118,7 @@ public class SRReferralOutTransformer {
             }
             referralRequestBuilder.setRequester(staffReference, profileIdRecordedBy);
 
-        } else if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneByCell)) {
+        } else {
             Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneByCell, orgIdDoneAtCell);
             if (practitionerReference != null) {
                 if (referralRequestBuilder.isIdMapped()) {
@@ -126,13 +126,6 @@ public class SRReferralOutTransformer {
                 }
                 referralRequestBuilder.setRequester(practitionerReference, staffMemberIdDoneByCell);
             }
-
-        } else if (!orgIdDoneAtCell.isEmpty()) {
-            Reference orgReference = csvHelper.createOrganisationReference(orgIdDoneAtCell);
-            if (referralRequestBuilder.isIdMapped()) {
-                orgReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(orgReference, fhirResourceFiler);
-            }
-            referralRequestBuilder.setRequester(orgReference, orgIdDoneAtCell);
         }
 
         //NOTE: the TPP TypeOfReferral and ServiceOffered essentially represent the same concept -

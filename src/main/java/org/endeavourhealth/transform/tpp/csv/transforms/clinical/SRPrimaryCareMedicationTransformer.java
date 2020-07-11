@@ -113,11 +113,9 @@ public class SRPrimaryCareMedicationTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-            if (staffReference != null) {
-                medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
-            }
+        Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
+        if (staffReference != null) {
+            medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
         }
 
         //TPP acute medication can be future-dated, so use the start date as the clinically relevant date, rather than
@@ -241,11 +239,9 @@ public class SRPrimaryCareMedicationTransformer {
 
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
-            Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-            if (practitionerReference != null) {
-                medicationOrderBuilder.setPrescriber(practitionerReference);
-            }
+        Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
+        if (practitionerReference != null) {
+            medicationOrderBuilder.setPrescriber(practitionerReference);
         }
 
         CsvCell dateRecored = parser.getDateEventRecorded();

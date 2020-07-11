@@ -78,11 +78,9 @@ public class SRDrugSensitivityTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!TppCsvHelper.isEmptyOrNegative(staffMemberIdDoneBy)) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-            if (staffReference != null) {
-                allergyIntoleranceBuilder.setClinician(staffReference, staffMemberIdDoneBy);
-            }
+        Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
+        if (staffReference != null) {
+            allergyIntoleranceBuilder.setClinician(staffReference, staffMemberIdDoneBy);
         }
 
         CsvCell dateRecored = parser.getDateEventRecorded();

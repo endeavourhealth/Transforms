@@ -121,11 +121,11 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public Reference createPractitionerReferenceForStaffMemberId(CsvCell staffMemberIdCell, CsvCell organisationDoneAtCell) throws Exception {
-        Integer profileId = getStaffMemberCache().findProfileIdForStaffMemberAndOrg(staffMemberIdCell, organisationDoneAtCell);
+        Object profileId = getStaffMemberCache().findProfileIdForStaffMemberAndOrg(staffMemberIdCell, organisationDoneAtCell);
         if (profileId == null) {
             return null;
         }
-        return ReferenceHelper.createReference(ResourceType.Practitioner, "" + profileId);
+        return ReferenceHelper.createReference(ResourceType.Practitioner, profileId.toString());
     }
 
 

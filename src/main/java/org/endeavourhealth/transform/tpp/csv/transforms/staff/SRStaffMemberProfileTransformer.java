@@ -27,9 +27,7 @@ public class SRStaffMemberProfileTransformer {
             while (parser.nextRecord()) {
 
                 CsvCell profileId = parser.getRowIdentifier();
-                CsvCell staffId = parser.getIDStaffMember();
-                CsvCell orgId = parser.getIDOrganisation();
-                csvHelper.getStaffMemberCache().addChangedProfileId(profileId, staffId, orgId);
+                csvHelper.getStaffMemberCache().addChangedProfileId(profileId);
             }
 
             //bulk load the file into the DB

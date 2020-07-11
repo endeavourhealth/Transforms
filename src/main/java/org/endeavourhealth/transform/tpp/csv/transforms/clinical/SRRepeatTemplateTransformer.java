@@ -93,11 +93,9 @@ public class SRRepeatTemplateTransformer {
         }
 
         CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        if (!staffMemberIdDoneBy.isEmpty() && staffMemberIdDoneBy.getLong() > -1) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-            if (staffReference != null) {
-                medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
-            }
+        Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
+        if (staffReference != null) {
+            medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
         }
 
         //for TPP repeat medication, we receive an update when they're ended, with the end date. Carry these both
