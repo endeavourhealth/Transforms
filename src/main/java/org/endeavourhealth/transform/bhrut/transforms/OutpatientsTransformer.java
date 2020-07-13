@@ -116,10 +116,6 @@ public class OutpatientsTransformer {
         Reference consultantReference2 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
         encounterBuilder.addParticipant(consultantReference2, EncounterParticipantType.CONSULTANT, consultantCodeCell);
 
-        //TODO - work out episode of care creation for BHRUT
-        //link the consultation to our episode of care
-        //Reference episodeReference = csvHelper.createEpisodeReference(patientIdCell);
-        //encounterBuilder.setEpisodeOfCare(episodeReference);
         createEpisodeOfcare(parser, fhirResourceFiler, csvHelper, version);
 
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
@@ -135,7 +131,6 @@ public class OutpatientsTransformer {
             thisEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisEncounter, csvHelper);
         }
         encounterBuilder.setServiceProvider(organisationReference);
-
 
         //Primary Procedure
         CsvCell primaryProcedureCodeCell = parser.getPrimaryProcedureCode();
@@ -214,8 +209,8 @@ public class OutpatientsTransformer {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
             String icd10 = TerminologyService.standardiseIcd10Code(primaryDiagnosisCodeCell.getString());
             if (icd10.endsWith("X")) {
-                icd10 = icd10.substring(0,3);
-            } else if (icd10.length()>4) {
+                icd10 = icd10.substring(0, 3);
+            } else if (icd10.length() > 4) {
 
             }
             codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
@@ -254,7 +249,7 @@ public class OutpatientsTransformer {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
                 String icd10 = TerminologyService.standardiseIcd10Code(secondaryDiagnosisCodeCell.getString());
                 if (icd10.endsWith("X")) {
-                    icd10 = icd10.substring(0,3);
+                    icd10 = icd10.substring(0, 3);
                 }
                 codeableConceptBuilder.setCodingCode(icd10, secondaryDiagnosisCodeCell);
                 String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
@@ -509,8 +504,6 @@ public class OutpatientsTransformer {
 
         setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
-        //save encounterBuilder record
-        //fhirResourceFiler.savePatientResource(null, parentTopEncounterBuilder);
         return parentTopEncounterBuilder;
 
     }
@@ -566,10 +559,10 @@ public class OutpatientsTransformer {
         if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-            //if (builder.isIdMapped()) {
+
             parentEncounter
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            //}
+
             builder.setPartOf(parentEncounter);
         }
 

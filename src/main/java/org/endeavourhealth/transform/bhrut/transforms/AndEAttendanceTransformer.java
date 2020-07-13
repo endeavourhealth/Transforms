@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-//import static org.hl7.fhir.instance.model.ResourceType.Encounter;
 
 public class AndEAttendanceTransformer {
 
@@ -91,15 +90,9 @@ public class AndEAttendanceTransformer {
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
 
         encounterBuilder.setPatient(patientReference, patientIdCell);
-        //the class is Emergency
-        // encounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
-        //encounterBuilder.setPeriodStart(parser.getArrivalDttm().getDateTime(), parser.getArrivalDttm());
-        // encounterBuilder.setPeriodEnd(parser.getDischargedDttm().getDateTime(), parser.getDischargedDttm());
         CsvCell org = parser.getHospitalCode();
         Reference orgReference = csvHelper.createOrganisationReference(org.getString());
         encounterBuilder.setServiceProvider(orgReference);
-
-        //TODO - the ATTENDANCE_NUMBER,  maybe an identifier?
 
         //set the encounter extensions
         CsvCell arrivalModeCell = parser.getArrivalMode();
@@ -163,7 +156,6 @@ public class AndEAttendanceTransformer {
 
         //TODO - analysis data to see if there are sub-encounters possible to model, i.e. treatments
 
-
         //the chief complaint needs capturing - it's not coded, so set as the reason for the encounter
         CsvCell complaintCell = parser.getComplaint();
         if (!complaintCell.isEmpty()) {
@@ -175,8 +167,6 @@ public class AndEAttendanceTransformer {
         if (!dischargeOutcomeCell.isEmpty()) {
             encounterBuilder.setDischargeDisposition(dischargeOutcomeCell.getString());
         }
-
-
 
         //List<ResourceBuilderBase> bases =
         createEmergencyEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
@@ -571,7 +561,7 @@ public class AndEAttendanceTransformer {
             ret.add(dischargeEncounterBuilder);
         }
 
-    return ret;
+        return ret;
     }
 
 

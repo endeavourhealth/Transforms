@@ -37,9 +37,9 @@ public class PMITransformer {
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
-                if(count%checkpoint == 0){
-                    LOG.info("PMI processed " + count + " records.");
-                }
+                //if(count%checkpoint == 0){
+                    //LOG.info("PMI processed " + count + " records.");
+                //}
             }
         }
 

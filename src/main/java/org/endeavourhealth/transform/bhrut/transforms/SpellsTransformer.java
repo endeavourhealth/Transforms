@@ -86,21 +86,15 @@ public class SpellsTransformer {
         EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getOrCreateEpisodeOfCareBuilder(idCell, csvHelper, fhirResourceFiler);
         createEpisodeOfcare(parser, fhirResourceFiler, csvHelper, version, episodeOfCareBuilder);
         CsvCell patientIdCell = parser.getPasId();
-        //Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
         //Create ParentEncounterBuilder
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
-        List<ResourceBuilderBase> bases =  createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
+        List<ResourceBuilderBase> bases = createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
         Reference patientReference2 = csvHelper.createPatientReference(patientIdCell);
         if (encounterBuilder.isIdMapped()) {
             IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference2, fhirResourceFiler);
         }
         encounterBuilder.setPatient(patientReference2, patientIdCell);
-
-        //EncounterBuilder encounterBuilder = new EncounterBuilder();
-        //encounterBuilder.setId(idCell.getString());
-        //encounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
-        //encounterBuilder.setPeriodEnd(parser.getDischargeDttm().getDateTime(), parser.getDischargeDttm());
 
         CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
         if (!admissionHospitalCodeCell.isEmpty()) {
@@ -120,9 +114,6 @@ public class SpellsTransformer {
             }
             encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.CONSULTANT, admissionConsultantCodeCell);
         }
-        //CsvCell admittingConsultant = parser.getAdmissionConsultantCode();
-        //Reference practitioner = csvHelper.createPractitionerReference(admittingConsultant.getString());
-        //encounterBuilder.addParticipant(practitioner, EncounterParticipantType.CONSULTANT, admittingConsultant);
 
         if (!parser.getDischargeConsultantCode().isEmpty()) {
             CsvCell dischargeConsultant = parser.getDischargeConsultantCode();
@@ -147,7 +138,6 @@ public class SpellsTransformer {
             Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
             conditionBuilder.setPatient(newPatientReference, patientIdCell);
             conditionBuilder.setEncounter(thisEncounter, idCell);
-            //if (!practitionerReference.isEmpty()) {
             if (!admissionConsultantCodeCell.isEmpty()) {
                 Reference practitionerReference2 = csvHelper.createPractitionerReference(admissionConsultantCodeCell.getString());
                 conditionBuilder.setClinician(practitionerReference2, admissionConsultantCodeCell);
@@ -188,11 +178,12 @@ public class SpellsTransformer {
             procedureBuilder.setIsPrimary(true);
             Reference encounterReference = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
             procedureBuilder.setEncounter(encounterReference, idCell);
-            //if (!practitionerReference.isEmpty()) {
+
             if (!admissionConsultantCodeCell.isEmpty()) {
                 Reference practitionerReference2 = csvHelper.createPractitionerReference(admissionConsultantCodeCell.getString());
                 procedureBuilder.addPerformer(practitionerReference2, admissionConsultantCodeCell);
             }
+
             DateTimeType dateTimeType = new DateTimeType(parser.getAdmissionDttm().getDateTime());
             procedureBuilder.setPerformed(dateTimeType, parser.getAdmissionDttm());
 
@@ -292,7 +283,7 @@ public class SpellsTransformer {
         if (!bases.isEmpty()) {
             ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
             bases.toArray(resources);
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(),  resources);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), resources);
         }
     }
 
@@ -427,7 +418,6 @@ public class SpellsTransformer {
 
         ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
         List<ResourceBuilderBase> res = new ArrayList<ResourceBuilderBase>();
-        //res.add(existingParentEncounterBuilder);
 
         EncounterBuilder admissionEncounterBuilder = new EncounterBuilder();
         admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
@@ -510,9 +500,8 @@ public class SpellsTransformer {
             existingEncounterList.addReference(childDischargeRef);
             res.add(dischargeEncounterBuilder);
         }
-            return res;
-        }
-
+        return res;
+    }
 
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
