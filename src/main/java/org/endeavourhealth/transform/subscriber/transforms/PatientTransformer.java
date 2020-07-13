@@ -680,6 +680,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     private Patient findPreviousVersionSent(ResourceWrapper currentWrapper, List<ResourceWrapper> history, SubscriberTransformHelper helper) throws Exception {
 
+        //if the helper has a null exchange ID we're invoking the transform from some one-off routine (e.g. bulk
+        //populating the patient_pseudo_id table), so don't return any previous version so we don't end up trying
+        //to re-bulk the entire patient record
+        if (helper.getExchangeId() == null) {
+            return null;
+        }
+
         //if we've a null datetime, it means we've never sent for this patient
         Date dtLastSent = helper.getDtLastTransformedPatient(currentWrapper.getResourceId());
         //Date dtLastSent = subscriberId.getDtUpdatedPreviouslySent();
