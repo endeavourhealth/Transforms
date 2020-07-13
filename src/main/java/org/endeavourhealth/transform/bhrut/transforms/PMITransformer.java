@@ -73,11 +73,11 @@ public class PMITransformer {
         //NHS number contains spaces.
         String nhs = nhsNumber.getString().replace(" ", "");
         CsvCell formattedNHS = new CsvCell(nhsNumber.getPublishedFileId(), nhsNumber.getRecordNumber(),nhsNumber.getColIndex(),nhs, nhsNumber.getParentParser());
-        createIdentifier(patientBuilder, csvHelper, formattedNHS, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
+        createIdentifier(patientBuilder, fhirResourceFiler, formattedNHS, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
         //store the PAS ID as a secondary identifier
         CsvCell patientIdCell = parser.getPasId();
-        createIdentifier(patientBuilder, csvHelper, patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BHRUT_PAS_ID);
+        createIdentifier(patientBuilder, fhirResourceFiler, patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BHRUT_PAS_ID);
 
         CsvCell dob = parser.getDateOfBirth();
         if (!dob.isEmpty()) {
@@ -242,13 +242,13 @@ public class PMITransformer {
         }
     }
 
-    private static void createIdentifier(PatientBuilder patientBuilder, BhrutCsvHelper csvHelper, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
+    private static void createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
         if (!cell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(use);
             identifierBuilder.setSystem(system);
             identifierBuilder.setValue(cell.getString(), cell);
-
+            identifierBuilder.deDuplicateLastIdentifier(patientBuilder,fhirResourceFiler.getDataDate());
         }
     }
 
