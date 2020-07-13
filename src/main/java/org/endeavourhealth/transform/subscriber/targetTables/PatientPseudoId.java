@@ -3,17 +3,13 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
-/**
- * this class has been superseded by PatientPseudoId so will be removed soon
- */
-public class PseudoId extends AbstractTargetTable {
+public class PatientPseudoId extends AbstractTargetTable {
 
-    public PseudoId(CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+    public PatientPseudoId(CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(csvFormat, dateFormat, timeFormat);
     }
 
     public void writeDelete(SubscriberId subscriberId) throws Exception {
-
         super.printRecord(
                 convertBoolean(true),
                 "" + subscriberId.getSubscriberId()
@@ -21,26 +17,35 @@ public class PseudoId extends AbstractTargetTable {
     }
 
 
-    public void writeUpsert(SubscriberId subscriberId, long patientId, String saltKeyName, String pseudoId) throws Exception {
+    public void writeUpsert(SubscriberId subscriberId, long organizationId, long patientId, long personId, String saltKeyName, String pseudoId,
+                            boolean isNhsNumberValid, boolean isNhsNumberVerifiedByPublisher) throws Exception {
 
         super.printRecord(
                 convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
+                "" + organizationId,
                 "" + patientId,
+                "" + personId,
                 saltKeyName,
-                pseudoId
+                pseudoId,
+                convertBoolean(isNhsNumberValid),
+                convertBoolean(isNhsNumberVerifiedByPublisher)
         );
     }
 
 
     @Override
     public Class[] getColumnTypes() {
-        return new Class[] {
+        return new Class[]{
                 Byte.TYPE,
+                Long.TYPE,
+                Long.TYPE,
+                Long.TYPE,
                 Long.TYPE,
                 String.class,
                 String.class,
-                String.class
+                Boolean.TYPE,
+                Boolean.TYPE
         };
     }
 
@@ -49,14 +54,19 @@ public class PseudoId extends AbstractTargetTable {
         return new String[] {
                 "is_delete",
                 "id",
+                "organization_id",
                 "patient_id",
-                "salt_key_name",
-                "pseudo_id"
+                "person_id",
+                "salt_name",
+                "skid",
+                "is_nhs_number_valid",
+                "is_nhs_number_verified_by_publisher"
         };
+
     }
 
     @Override
     public SubscriberTableId getTableId() {
-        return SubscriberTableId.PSEUDO_ID;
+        return SubscriberTableId.PATIENT_PSEUDO_ID;
     }
 }

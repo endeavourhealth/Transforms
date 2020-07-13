@@ -236,7 +236,9 @@ public class SRPatientTransformer {
             return NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;
 
         } else {
-            return NhsNumberVerificationStatus.PRESENT_BUT_NOT_TRACED;
+            //not enough info to make this choice - just leave null
+            return null;
+            //return NhsNumberVerificationStatus.PRESENT_BUT_NOT_TRACED;
         }
     }
 

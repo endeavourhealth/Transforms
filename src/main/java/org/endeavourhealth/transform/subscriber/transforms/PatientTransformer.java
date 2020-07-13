@@ -3,18 +3,13 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
-import org.endeavourhealth.common.fhir.schema.OrganisationType;
+import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.admin.LibraryRepositoryHelper;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
-import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
 import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
-import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.PostcodeDalI;
@@ -22,23 +17,18 @@ import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.core.xml.QueryDocument.*;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.subscriber.*;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
-import org.endeavourhealth.transform.subscriber.targetTables.PatientAddress;
-import org.endeavourhealth.transform.subscriber.targetTables.PatientAddressMatch;
-import org.endeavourhealth.transform.subscriber.targetTables.PatientContact;
-import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
+import org.endeavourhealth.transform.subscriber.targetTables.*;
 import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Practitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class PatientTransformer extends AbstractSubscriberTransformer {
@@ -87,7 +77,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             patientWriter.writeDelete(subscriberId);
 
             //delete any dependent pseudo ID records
-            deletePseudoIds(resourceWrapper, params);
+            deletePseudoIdsOldWay(resourceWrapper, params);
+            deletePseudoIdsNewWay(resourceWrapper, params);
 
             //we'll need a previous instance to delete any dependent addresses and telecoms
             deleteAddresses(resourceWrapper, fullHistory, params);
@@ -127,7 +118,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         personId = enterprisePersonId.longValue();
 
         //transform our dependent objects first, as we need the address ID
-        transformPseudoIds(subscriberId.getSubscriberId(), personId, fhirPatient, resourceWrapper, params);
+        transformPseudoIdsNewWay(organizationId, subscriberId.getSubscriberId(), personId, fhirPatient, resourceWrapper, params);
+        transformPseudoIdsOldWay(subscriberId.getSubscriberId(), personId, fhirPatient, resourceWrapper, params);
+
         currentAddressId = transformAddresses(subscriberId.getSubscriberId(), personId, fhirPatient, fullHistory, resourceWrapper, params);
         transformTelecoms(subscriberId.getSubscriberId(), personId, fhirPatient, fullHistory, resourceWrapper, params);
 
@@ -716,8 +709,25 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         //throw new Exception("Failed to find previous version of " + currentWrapper.getReferenceString() + " for dtLastSent " + dtLastSent);
     }
 
+    private void deletePseudoIdsNewWay(ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
-    private void deletePseudoIds(ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
+        PatientPseudoId writer = params.getOutputContainer().getPatientPseudoId();
+
+        List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
+        for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+            String saltKeyName = ldConfig.getSaltKeyName();
+
+            //create a unique source ID from the patient UUID plus the salt key name
+            String referenceStr = ReferenceHelper.createResourceReference(resourceWrapper.getResourceTypeObj(), resourceWrapper.getResourceIdStr());
+            String sourceId = referenceStr + PREFIX_PSEUDO_ID + saltKeyName;
+            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
+            if (subTableId != null) {
+                writer.writeDelete(subTableId);
+            }
+        }
+    }
+
+    private void deletePseudoIdsOldWay(ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
@@ -737,9 +747,55 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     }
 
+    private void transformPseudoIdsNewWay(long organizationId, long subscriberPatientId, long personId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
+
+        List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
+        if (linkDistributorConfigs.isEmpty()) {
+            return;
+        }
 
 
-    private void transformPseudoIds(long subscriberPatientId, long subscriberPersonId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
+        String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
+        Boolean b = IdentifierHelper.isValidNhsNumber(nhsNumber);
+        boolean isNhsNumberValid = b != null && b.booleanValue();
+
+        NhsNumberVerificationStatus status = IdentifierHelper.findNhsNumberVerificationStatus(fhirPatient);
+        boolean isNhsNumberVerifiedByPublisher = status != null && status == NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;
+
+        PatientPseudoId writer = params.getOutputContainer().getPatientPseudoId();
+
+        for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+            String saltKeyName = ldConfig.getSaltKeyName();
+
+            String pseudoId = PseudoIdBuilder.generatePsuedoIdFromConfig(params.getSubscriberConfigName(), ldConfig, fhirPatient);
+
+            //create a unique source ID from the patient UUID plus the salt key name
+            String sourceId = ReferenceHelper.createReferenceExternal(fhirPatient).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
+            SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
+            //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+
+            if (!Strings.isNullOrEmpty(pseudoId)) {
+
+                writer.writeUpsert(subTableId,
+                        organizationId,
+                        subscriberPatientId,
+                        personId,
+                        saltKeyName,
+                        pseudoId,
+                        isNhsNumberValid,
+                        isNhsNumberVerifiedByPublisher);
+
+                //only persist the pseudo ID if it's non-null
+                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getSubscriberConfigName());
+                pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), subscriberPatientId, saltKeyName, pseudoId);
+
+            } else {
+                writer.writeDelete(subTableId);
+            }
+        }
+    }
+
+    private void transformPseudoIdsOldWay(long subscriberPatientId, long subscriberPersonId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 

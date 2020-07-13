@@ -2,9 +2,9 @@ package org.endeavourhealth.transform.enterprise.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
 
-public class PseudoId extends AbstractEnterpriseCsvWriter {
+public class PatientPseudoId extends AbstractEnterpriseCsvWriter {
 
-    public PseudoId(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
+    public PatientPseudoId(String fileName, CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
         super(fileName, csvFormat, dateFormat, timeFormat);
     }
 
@@ -16,7 +16,8 @@ public class PseudoId extends AbstractEnterpriseCsvWriter {
     }
 
 
-    public void writeUpsert(long id, long organizationId, long patientId, long personId, String saltKeyName, String pseudoId) throws Exception {
+    public void writeUpsert(long id, long organizationId, long patientId, long personId, String saltKeyName, String pseudoId,
+                            boolean isNhsNumberValid, boolean isNhsNumberVerifiedByPublisher) throws Exception {
 
         super.printRecord(
                 OutputContainer.UPSERT,
@@ -25,7 +26,9 @@ public class PseudoId extends AbstractEnterpriseCsvWriter {
                 "" + patientId,
                 "" + personId,
                 saltKeyName,
-                pseudoId
+                pseudoId,
+                convertBoolean(isNhsNumberValid),
+                convertBoolean(isNhsNumberVerifiedByPublisher)
         );
     }
 
@@ -39,7 +42,9 @@ public class PseudoId extends AbstractEnterpriseCsvWriter {
                 Long.TYPE,
                 Long.TYPE,
                 String.class,
-                String.class
+                String.class,
+                Boolean.TYPE,
+                Boolean.TYPE
         };
     }
 
@@ -51,8 +56,10 @@ public class PseudoId extends AbstractEnterpriseCsvWriter {
                 "organization_id",
                 "patient_id",
                 "person_id",
-                "salt_key_name",
-                "pseudo_id"
+                "salt_name",
+                "skid",
+                "is_nhs_number_valid",
+                "is_nhs_number_verified_by_publisher"
         };
     }
 

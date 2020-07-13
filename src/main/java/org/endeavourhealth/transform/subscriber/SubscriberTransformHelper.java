@@ -70,11 +70,17 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, SubscriberConfig subscriberConfig,
                                      List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber) throws Exception {
+
+        this(serviceId, systemId, exchangeId, batchId, subscriberConfig, allResources, isBulkDeleteFromSubscriber, new OutputContainer());
+    }
+
+    public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, SubscriberConfig subscriberConfig,
+                List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber, OutputContainer outputContainer) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
-        this.outputContainer = new OutputContainer();
+        this.outputContainer = outputContainer;
         this.isBulkDeleteFromSubscriber = isBulkDeleteFromSubscriber;
 
         //load our config record for some parameters

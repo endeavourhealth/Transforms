@@ -2,15 +2,13 @@ package org.endeavourhealth.transform.enterprise.transforms;
 
 import OpenPseudonymiser.Crypto;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
+import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
-import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
 import org.endeavourhealth.core.database.dal.eds.models.PatientLinkPair;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -322,7 +320,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
      */
     private void deletePseudoIds(ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
 
-        PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoId();
+        PatientPseudoId pseudoIdWriter = params.getOutputContainer().getPatientPseudoId();
 
         List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
@@ -340,12 +338,22 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
     private void transformPseudoIds(long organizationId, long subscriberPatientId, long personId,
                                     Patient fhirPatient, ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
 
-        PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoId();
+        PatientPseudoId pseudoIdWriter = params.getOutputContainer().getPatientPseudoId();
 
         List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
+        if (linkDistributorConfigs.isEmpty()) {
+            return;
+        }
+
+        String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
+        Boolean b = IdentifierHelper.isValidNhsNumber(nhsNumber);
+        boolean isNhsNumberValid = b != null && b.booleanValue();
+
+        NhsNumberVerificationStatus status = IdentifierHelper.findNhsNumberVerificationStatus(fhirPatient);
+        boolean isNhsNumberVerifiedByPublisher = status != null && status == NhsNumberVerificationStatus.PRESENT_AND_VERIFIED;
+
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
-
 
             String pseudoId = PseudoIdBuilder.generatePsuedoIdFromConfig(params.getEnterpriseConfigName(), ldConfig, fhirPatient);
 
@@ -361,7 +369,9 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                         subscriberPatientId,
                         personId,
                         saltKeyName,
-                        pseudoId);
+                        pseudoId,
+                        isNhsNumberValid,
+                        isNhsNumberVerifiedByPublisher);
 
                 //only persist the pseudo ID if it's non-null
                 PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());

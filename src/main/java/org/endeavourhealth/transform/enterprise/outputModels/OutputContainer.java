@@ -57,7 +57,7 @@ public class OutputContainer {
         csvWriters.add(new RegistrationStatusHistory("registration_status_history.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterEvent("encounter_event.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterAdditional("encounter_additional.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new PseudoId("pseudo_id.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new PatientPseudoId("patient_pseudo_id.csv", csvFormat, dateFormat, timeFormat));
 
     }
 
@@ -263,7 +263,7 @@ public class OutputContainer {
         return findCsvWriter(EncounterAdditional.class);
     }
 
-    public PseudoId getPseudoId() {
-        return findCsvWriter(PseudoId.class);
+    public PatientPseudoId getPatientPseudoId() {
+        return findCsvWriter(PatientPseudoId.class);
     }
 }

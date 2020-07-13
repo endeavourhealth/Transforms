@@ -64,6 +64,12 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, SubscriberConfig subscriberConfig,
                                      List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber) throws Exception {
+
+        this(serviceId, systemId, exchangeId, batchId, subscriberConfig, allResources, isBulkDeleteFromSubscriber, new OutputContainer(subscriberConfig.isPseudonymised()));
+    }
+
+    public EnterpriseTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, SubscriberConfig subscriberConfig,
+            List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber, OutputContainer outputContainer) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
@@ -76,7 +82,7 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
             throw new Exception("Expecting config for compassv1 but got " + config.getSubscriberType());
         }
 
-        this.outputContainer = new OutputContainer(isPseudonymised());
+        this.outputContainer = outputContainer;
 
         //hash the resources by reference to them, so the transforms can quickly look up dependant resources
         this.allResources = allResources;

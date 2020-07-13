@@ -23,7 +23,7 @@ public class OutputContainer {
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
 
     private static final String COLUMN_CLASS_MAPPINGS = "ColumnClassMappings.json";
-    
+
     private final List<AbstractTargetTable> csvWriters;
 
 
@@ -57,6 +57,7 @@ public class OutputContainer {
         csvWriters.add(new PatientAddressMatch(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new RegistrationStatusHistory(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterAdditional(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new PatientPseudoId(csvFormat, dateFormat, timeFormat));
     }
 
     public byte[] writeToZip() throws Exception {
@@ -73,7 +74,7 @@ public class OutputContainer {
         //the first entry is a json file giving us the target class names for each column
         ObjectNode columnClassMappingJson = new ObjectNode(JsonNodeFactory.instance);
 
-        for (AbstractTargetTable csvWriter: csvWriters) {
+        for (AbstractTargetTable csvWriter : csvWriters) {
             writeColumnClassMappings(csvWriter, columnClassMappingJson);
         }
 
@@ -83,7 +84,7 @@ public class OutputContainer {
         zos.flush();
 
         //then write the CSV files
-        for (AbstractTargetTable csvWriter: csvWriters) {
+        for (AbstractTargetTable csvWriter : csvWriters) {
             writeZipEntry(csvWriter, zos);
         }
 
@@ -97,7 +98,7 @@ public class OutputContainer {
     private boolean isEmpty() {
 
         //if any writer is not empty, return false
-        for (AbstractTargetTable csvWriter: csvWriters) {
+        for (AbstractTargetTable csvWriter : csvWriters) {
             if (!csvWriter.isEmpty()) {
                 return false;
             }
@@ -128,7 +129,7 @@ public class OutputContainer {
 
         ObjectNode jsonObject = columnClassMappingJson.putObject(fileName);
 
-        for (int i=0; i<columnNames.length; i++) {
+        for (int i = 0; i < columnNames.length; i++) {
             String columnName = columnNames[i];
             Class cls = classes[i];
             jsonObject.put(columnName, cls.getName());
@@ -156,9 +157,9 @@ public class OutputContainer {
 
     @SuppressWarnings("unchecked")
     public <T extends AbstractTargetTable> T findCsvWriter(Class<T> cls) {
-        for (AbstractTargetTable csvWriter: csvWriters) {
+        for (AbstractTargetTable csvWriter : csvWriters) {
             if (csvWriter.getClass() == cls) {
-                return (T)csvWriter;
+                return (T) csvWriter;
             }
         }
         return null;
@@ -248,7 +249,15 @@ public class OutputContainer {
         return findCsvWriter(PatientAddressMatch.class);
     }
 
-    public RegistrationStatusHistory getRegistrationStatusHistory () { return findCsvWriter(RegistrationStatusHistory .class); }
+    public RegistrationStatusHistory getRegistrationStatusHistory() {
+        return findCsvWriter(RegistrationStatusHistory.class);
+    }
 
-    public EncounterAdditional getEncounterAdditional () { return findCsvWriter(EncounterAdditional .class); }
+    public EncounterAdditional getEncounterAdditional() {
+        return findCsvWriter(EncounterAdditional.class);
+    }
+
+    public PatientPseudoId getPatientPseudoId() {
+        return findCsvWriter(PatientPseudoId.class);
+    }
 }

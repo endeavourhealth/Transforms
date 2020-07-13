@@ -141,7 +141,7 @@ public class SubscriberConfig {
         if (config.has("remote_subscriber_id")) {
             this.remoteSubscriberId = new Integer(config.get("remote_subscriber_id").asInt());
         }
-        
+
         if (config.has("web_server")) {
             this.enterpriseServerUrl = config.get("web_server").asText();
         }
@@ -289,7 +289,6 @@ public class SubscriberConfig {
         sb.append("batchSize = [" + batchSize + "],\r\n");
         sb.append("v2HasEncounterEventTable = [" + v2HasEncounterEventTable + "],\r\n");
         sb.append("enterpriseServerUrl = [" + enterpriseServerUrl + "]");
-
         return sb.toString();
     }
 }
