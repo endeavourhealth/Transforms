@@ -216,28 +216,47 @@ public abstract class AbstractSubscriberTransformer {
     }*/
 
 
-    public static SubscriberId findSubscriberId(SubscriberTransformHelper params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
 
-        SubscriberId ret = checkCacheForId(params.getSubscriberConfigName(), subscriberTable, sourceId);
-        if (ret == null) {
-            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getSubscriberConfigName());
-            ret = enterpriseIdDal.findSubscriberId(subscriberTable.getId(), sourceId);
-            if (ret != null) {
-                addIdToCache(params.getSubscriberConfigName(), subscriberTable, sourceId, ret);
+    public static Map<String, SubscriberId> findOrCreateSubscriberIds(String subscriberConfigName,
+                                                                      SubscriberTableId subscriberTable,
+                                                                      Collection<String> sourceIds,
+                                                                      boolean createIfNotFound) throws Exception {
+
+        Map<String, SubscriberId> ret = new HashMap<>();
+
+        List<String> sourceIdsForDb = new ArrayList<>();
+
+        //first check the cache for any IDs we've already got
+        for (String sourceId: sourceIds) {
+            SubscriberId cached = checkCacheForId(subscriberConfigName, subscriberTable, sourceId);
+            if (cached != null) {
+                ret.put(sourceId, cached);
+            } else {
+                sourceIdsForDb.add(sourceId);
             }
         }
-        return ret;
-    }
 
+        //then hit the DB for any we didn't find
+        if (!sourceIdsForDb.isEmpty()) {
+            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(subscriberConfigName);
 
-    public static SubscriberId findOrCreateSubscriberId(SubscriberTransformHelper params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
-        SubscriberId ret = checkCacheForId(params.getSubscriberConfigName(), subscriberTable, sourceId);
-        if (ret == null) {
-            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getSubscriberConfigName());
-            ret = enterpriseIdDal.findOrCreateSubscriberId(subscriberTable.getId(), sourceId);
+            Map<String, SubscriberId> dbMap = null;
+            if (createIfNotFound) {
+                dbMap = enterpriseIdDal.findOrCreateSubscriberIds(subscriberTable.getId(), sourceIdsForDb);
 
-            addIdToCache(params.getSubscriberConfigName(), subscriberTable, sourceId, ret);
+            } else {
+                dbMap = enterpriseIdDal.findSubscriberIds(subscriberTable.getId(), sourceIdsForDb);
+            }
+
+            for (String sourceId: dbMap.keySet()) {
+                SubscriberId id = dbMap.get(sourceId);
+                ret.put(sourceId, id);
+
+                //add to cache
+                addIdToCache(subscriberConfigName, subscriberTable, sourceId, id);
+            }
         }
+
         return ret;
     }
 
@@ -659,5 +678,19 @@ public abstract class AbstractSubscriberTransformer {
         return str;
     }
 
+    public static SubscriberId findSubscriberId(SubscriberTransformHelper params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
+        List<String> list = new ArrayList<>();
+        list.add(sourceId);
+        Map<String, SubscriberId> hm = findOrCreateSubscriberIds(params.getSubscriberConfigName(), subscriberTable, list, false);
+        return hm.get(sourceId);
+    }
+
+
+    public static SubscriberId findOrCreateSubscriberId(SubscriberTransformHelper params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
+        List<String> list = new ArrayList<>();
+        list.add(sourceId);
+        Map<String, SubscriberId> hm = findOrCreateSubscriberIds(params.getSubscriberConfigName(), subscriberTable, list, true);
+        return hm.get(sourceId);
+    }
 
 }

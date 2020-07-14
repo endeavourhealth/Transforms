@@ -137,19 +137,24 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
         org.endeavourhealth.transform.enterprise.outputModels.RegistrationStatusHistory writer = params.getOutputContainer().getRegistrationStatusHistory();
         Set<EpisodeOfCareTransformer.RegStatus> regStatuses = EpisodeOfCareTransformer.getAllRegStatuses(fullHistory);
 
+        //generate IDs
+        Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> hmIds = EpisodeOfCareTransformer.findRegStatusIds(regStatuses, params.getEnterpriseConfigName(), false);
+
+        //transform each one
         for (EpisodeOfCareTransformer.RegStatus regStatus: regStatuses) {
 
             //create a unique Id mapping reference for this episode of care registration status using
             //code and date. Sometimes duplicates are sent which we will simply overwrite/upsert
             String sourceId = regStatus.generateUniqueId();
-            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
-            if (subTableId != null) {
+            SubscriberId subTableId = hmIds.get(sourceId);
+            if (subTableId != null) { //will be null if never transformed before
 
                 long registrationHistoryId = subTableId.getSubscriberId();
                 writer.writeDelete(registrationHistoryId);
             }
         }
     }
+
 
     private static void transformRegistrationStatusHistory(long organisationId, long patientId, long personId,
                                                            long episodeOfCareId, EpisodeOfCare episodeOfCare,
@@ -158,6 +163,10 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
         org.endeavourhealth.transform.enterprise.outputModels.RegistrationStatusHistory writer = params.getOutputContainer().getRegistrationStatusHistory();
         List<EpisodeOfCareTransformer.RegStatus> regStatuses = EpisodeOfCareTransformer.getRegStatusList(episodeOfCare);
 
+        //generate IDs
+        Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> hmIds = EpisodeOfCareTransformer.findRegStatusIds(regStatuses, params.getEnterpriseConfigName(), true);
+
+        //transform each one
         for (int i=0; i<regStatuses.size(); i++) {
             EpisodeOfCareTransformer.RegStatus regStatus = regStatuses.get(i);
 
@@ -176,8 +185,7 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
 
             //create a unique Id mapping reference for this episode of care registration status using
             //code and date. Sometimes duplicates are sent which we will simply overwrite/upsert
-            String sourceId = regStatus.generateUniqueId();
-            SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
+            SubscriberId subTableId = hmIds.get(regStatus);
             long registrationHistoryId = subTableId.getSubscriberId();
 
             writer.writeUpsert(registrationHistoryId,
@@ -190,5 +198,7 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                     endDate);
         }
     }
+
+
 }
 

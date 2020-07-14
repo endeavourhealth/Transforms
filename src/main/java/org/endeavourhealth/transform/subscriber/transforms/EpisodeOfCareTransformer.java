@@ -142,12 +142,13 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         RegistrationStatusHistory writer = params.getOutputContainer().getRegistrationStatusHistory();
         Set<EpisodeOfCareTransformer.RegStatus> regStatuses = EpisodeOfCareTransformer.getAllRegStatuses(fullHistory);
 
+        //generate IDs
+        Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> hmIds = EpisodeOfCareTransformer.findRegStatusIds(regStatuses, params.getSubscriberConfigName(), false);
+
         for (EpisodeOfCareTransformer.RegStatus regStatus: regStatuses) {
 
-            String sourceId = regStatus.generateUniqueId();
-            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
-            if (subTableId != null) {
-                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+            SubscriberId subTableId = hmIds.get(regStatus);
+            if (subTableId != null) { //may be null if never transformed before
                 writer.writeDelete(subTableId);
             }
         }
@@ -159,6 +160,10 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
 
         RegistrationStatusHistory writer = params.getOutputContainer().getRegistrationStatusHistory();
         List<EpisodeOfCareTransformer.RegStatus> regStatuses = EpisodeOfCareTransformer.getRegStatusList(episodeOfCare);
+
+        //generate IDs
+        Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> hmIds = EpisodeOfCareTransformer.findRegStatusIds(regStatuses, params.getSubscriberConfigName(), true);
+
 
         for (int i=0; i<regStatuses.size(); i++) {
             EpisodeOfCareTransformer.RegStatus regStatus = regStatuses.get(i);
@@ -178,9 +183,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
 
             //create a unique Id mapping reference for this episode of care registration status using
             //code and date. Sometimes duplicates are sent which we will simply overwrite/upsert
-            String sourceId = regStatus.generateUniqueId();
-            SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceId);
-            //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+            SubscriberId subTableId = hmIds.get(regStatus);
 
             writer.writeUpsert(subTableId,
                     organisationId,
@@ -191,7 +194,41 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                     startDate,
                     endDate);
         }
-    }    
+    }
+
+    /**
+     * finds (and creates) mapped IDs for each reg status record
+     */
+    public static Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> findRegStatusIds(Collection<EpisodeOfCareTransformer.RegStatus> regStatuses,
+                                                                                          String subscriberConfigName,
+                                                                                          boolean createIfMissing) throws Exception {
+
+        if (regStatuses.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        //pre-prepare a list of all source IDs that need mapping
+        Map<String, EpisodeOfCareTransformer.RegStatus> hmBySourceId = new HashMap<>();
+        List<String> sourceIds = new ArrayList<>();
+        for (EpisodeOfCareTransformer.RegStatus regStatus: regStatuses) {
+            String sourceId = regStatus.generateUniqueId();
+            sourceIds.add(sourceId);
+            hmBySourceId.put(sourceId, regStatus);
+        }
+
+        //map all in one go
+        Map<String, SubscriberId> hmIds = findOrCreateSubscriberIds(subscriberConfigName, SubscriberTableId.REGISTRATION_STATUS_HISTORY, sourceIds, createIfMissing);
+
+        //revserve look up to return an ID for each status
+        Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> ret = new HashMap<>();
+        for (String sourceId: hmIds.keySet()) {
+            SubscriberId id = hmIds.get(sourceId);
+            EpisodeOfCareTransformer.RegStatus regStatus = hmBySourceId.get(sourceId);
+            ret.put(regStatus, id);
+        }
+
+        return ret;
+    }
     
     /**
      * returns the list of reg statuses, in date order (earliest to latest)

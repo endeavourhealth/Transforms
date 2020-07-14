@@ -18,6 +18,7 @@ import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.FhirToEnterpriseCsvTransformer;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
+import org.endeavourhealth.transform.subscriber.transforms.AbstractSubscriberTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -489,79 +490,16 @@ public abstract class AbstractEnterpriseTransformer {
         instanceCache.put(key, mappedResourceId);
     }
 
-    public static SubscriberId findOrCreateSubscriberId(EnterpriseTransformHelper params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
-        SubscriberId ret = checkCacheForId(params.getEnterpriseConfigName(), subscriberTable, sourceId);
-        if (ret == null) {
-            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
-            ret = enterpriseIdDal.findOrCreateSubscriberId(subscriberTable.getId(), sourceId);
 
-            addIdToCache(params.getEnterpriseConfigName(), subscriberTable, sourceId, ret);
-        }
-        return ret;
+    /**
+     * although most enterprise transforms use the enterprise_id_map tables for their ID maps, when we have dependent
+     * records from within FHIR resources to map (e.g. addresses within a FHIR Patient) then we use the new subscriber ID
+     * map table since that supports that
+     */
+    public static Map<String, SubscriberId> findOrCreateSubscriberIds(EnterpriseTransformHelper params, SubscriberTableId subscriberTable, List<String> sourceIds, boolean createIfNotFound) throws Exception {
+        return AbstractSubscriberTransformer.findOrCreateSubscriberIds(params.getEnterpriseConfigName(), subscriberTable, sourceIds, createIfNotFound);
     }
 
-    private static void addIdToCache(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId, SubscriberId toCache) throws Exception {
-        if (toCache == null) {
-            return;
-        }
-        idCache.put(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId), toCache);
-    }
 
-    private static SubscriberId checkCacheForId(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId) throws Exception {
-        return (SubscriberId) idCache.get(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId));
-    }
 
-    private static String createSubscriberIdCacheKey(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(enterpriseConfigName);
-        sb.append(":");
-        sb.append(subscriberTableId.getId());
-        sb.append(":");
-        sb.append(sourceId);
-        return sb.toString();
-    }
-
-    public static SubscriberId findSubscriberId(EnterpriseTransformHelper params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
-
-        SubscriberId ret = checkCacheForId(params.getEnterpriseConfigName(), subscriberTable, sourceId);
-        if (ret == null) {
-            SubscriberResourceMappingDalI enterpriseIdDal = DalProvider.factorySubscriberResourceMappingDal(params.getEnterpriseConfigName());
-            ret = enterpriseIdDal.findSubscriberId(subscriberTable.getId(), sourceId);
-            if (ret != null) {
-                addIdToCache(params.getEnterpriseConfigName(), subscriberTable, sourceId, ret);
-            }
-        }
-        return ret;
-    }
-
-    /*protected Long transformOnDemandAndMapId(Reference reference,
-                                             EnterpriseTransformParams params) throws Exception {
-
-        Long enterpriseId = null;
-
-        if (!params.hasResourceBeenTransformedAddIfNot(reference)) {
-
-            Resource fhir = findResource(reference, params);
-            if (fhir == null) {
-                //if the target resource doesn't exist, or has been deleted, just return null as we can't use it
-                return null;
-            }
-
-            enterpriseId = findOrCreateEnterpriseId(params, reference);
-
-            ResourceType resourceType = fhir.getResourceType();
-            AbstractTransformer transformer = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(resourceType);
-            if (transformer == null) {
-                throw new TransformException("No transformer found for resource " + reference.getReference());
-            }
-
-            AbstractPcrCsvWriter csvWriter = FhirToEnterpriseCsvTransformer.findCsvWriterForResourceType(resourceType, params);
-            transformer.transform(enterpriseId, fhir, csvWriter, params);
-
-        } else {
-            enterpriseId = findEnterpriseId(params, reference);
-        }
-
-        return enterpriseId;
-    }*/
 }

@@ -37,7 +37,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     public static final String PREFIX_PSEUDO_ID = "-PSEUDO-";
     private static final String PREFIX_ADDRESS_ID = "-ADDR-";
     private static final String PREFIX_TELECOM_ID = "-TELECOM-";
-    private static final String PREFIX_ADDRESS_MATCH_ID = "-ADDRMATCH-";
+    //private static final String PREFIX_ADDRESS_MATCH_ID = "-ADDRMATCH-";
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
 
@@ -57,7 +57,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         org.endeavourhealth.transform.subscriber.targetTables.Patient patientWriter = params.getOutputContainer().getPatients();
 
-        Patient fhirPatient = (Patient)resourceWrapper.getResource(); //returns null if deleted
+        Patient fhirPatient = (Patient) resourceWrapper.getResource(); //returns null if deleted
 
         //call this so we can audit which version of the patient we transformed last - must be done whether deleted or not
         params.setDtLastTransformedPatient(resourceWrapper);
@@ -131,10 +131,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             int yearOfDeath = cal.get(Calendar.YEAR);
             model.setYearOfDeath(new Integer(yearOfDeath));*/
         } else if (fhirPatient.hasDeceased()
-            && fhirPatient.getDeceased() instanceof DateType) {
+                && fhirPatient.getDeceased() instanceof DateType) {
             //should always be a DATE TIME type, but a bug in the CSV->FHIR transform
             //means we've got data with a DATE type too
-            DateType d = (DateType)fhirPatient.getDeceased();
+            DateType d = (DateType) fhirPatient.getDeceased();
             dateOfDeath = d.getValue();
         }
 
@@ -160,7 +160,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
-            CodeableConcept codeableConcept = (CodeableConcept)ethnicityExtension.getValue();
+            CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
             String ethnicCodeId = "";
             ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
             String display = CodeableConceptHelper.findCodingDisplay(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
@@ -242,13 +242,16 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         PatientContact writer = params.getOutputContainer().getPatientContacts();
 
+        int maxTelecoms = getMaxNumberOfTelecoms(fullHistory);
+
+        Map<Integer, SubscriberId> hmIds = findTelecomIds(maxTelecoms, params.getSubscriberConfigName(), resourceWrapper, true);
+
         //update all addresses, delete any extra
         if (currentPatient.hasTelecom()) {
             for (int i = 0; i < currentPatient.getTelecom().size(); i++) {
                 ContactPoint telecom = currentPatient.getTelecom().get(i);
 
-                String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
-                SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+                SubscriberId subTableId = hmIds.get(new Integer(i));
                 //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
                 long organisationId = params.getSubscriberOrganisationId().longValue();
@@ -290,20 +293,14 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         //and make sure to delete any that we previously sent over that are no longer present
         //i.e. if we previously had five addresses and now only have three, we need to delete four and five
-        int maxPreviousTelecoms = getMaxNumberOfTelecoms(fullHistory);
-
         int start = 0;
         if (currentPatient.hasTelecom()) {
             start = currentPatient.getTelecom().size();
         }
 
-        for (int i=start; i<maxPreviousTelecoms; i++) {
-
-            String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_TELECOM_ID + i;
-            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
+        for (int i = start; i < maxTelecoms; i++) {
+            SubscriberId subTableId = hmIds.get(new Integer(i));
             if (subTableId != null) {
-                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
-
                 writer.writeDelete(subTableId);
             }
 
@@ -315,12 +312,12 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         PatientContact writer = params.getOutputContainer().getPatientContacts();
         int maxTelecoms = getMaxNumberOfTelecoms(fullHistory);
 
-        for (int i=0; i<maxTelecoms; i++) {
+        Map<Integer, SubscriberId> hmIds = findTelecomIds(maxTelecoms, params.getSubscriberConfigName(), resourceWrapper, false);
 
-            String sourceId = resourceWrapper.getReferenceString() + PREFIX_TELECOM_ID + i;
-            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_CONTACT, sourceId);
-            if (subTableId != null) {
-                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+        for (int i = 0; i < maxTelecoms; i++) {
+
+            SubscriberId subTableId = hmIds.get(new Integer(i));
+            if (subTableId != null) { //may be null if never transformed before
                 writer.writeDelete(subTableId);
             }
         }
@@ -333,16 +330,12 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         PatientAddress writer = params.getOutputContainer().getPatientAddresses();
         int maxAddresses = getMaxNumberOfAddresses(fullHistory);
 
-        for (int i=0; i<maxAddresses; i++) {
+        Map<Integer, SubscriberId> hmIds = findAddressIds(maxAddresses, params.getSubscriberConfigName(), resourceWrapper, false);
 
-            String sourceId = resourceWrapper.getReferenceString() + PREFIX_ADDRESS_ID + i;
-            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
-            if (subTableId != null) {
-                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+        for (int i = 0; i < maxAddresses; i++) {
+            SubscriberId subTableId = hmIds.get(new Integer(i));
+            if (subTableId != null) { //may be null if never transformed before
                 writer.writeDelete(subTableId);
-
-                // uprnwriter.writeDelete(subTableId);
-
             }
         }
     }
@@ -350,20 +343,23 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     private void UPRN(SubscriberTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode, Long currentAddressId) throws Exception {
 
         JsonNode config = ConfigManager.getConfigurationAsJson("UPRN", "db_subscriber");
-        if (config==null) {return;}
+        if (config == null) {
+            return;
+        }
 
         //JsonNode enabled = config.get("enabled");
         //if (enabled.asText().equals("0")) {return;}
 
         String configName = params.getSubscriberConfigName();
 
-        String uprn_sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_MATCH_ID + i;
-        SubscriberId uprn_subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS_MATCH, uprn_sourceId); // was sourceId
+        //removed as this ID was never used but was generating a ton of IDs in the DB
+        /*String uprn_sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_MATCH_ID + i;
+        SubscriberId uprn_subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS_MATCH, uprn_sourceId); // was sourceId*/
 
         //params.setSubscriberIdTransformed(resourceWrapper, uprn_subTableId);
 
         // call the UPRN API
-        JsonNode token_endpoint=config.get("token_endpoint");
+        JsonNode token_endpoint = config.get("token_endpoint");
         JsonNode clientid = config.get("clientid");
         JsonNode password = config.get("password");
         JsonNode username = config.get("username");
@@ -372,29 +368,41 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         JsonNode zs = config.get("subscribers");
         Integer ok = UPRN.Activated(zs, configName);
         if (ok.equals(0)) {
-            LOG.debug("subscriber "+configName+" not activated for UPRN, exiting");
+            LOG.debug("subscriber " + configName + " not activated for UPRN, exiting");
             return;
         }
 
         uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
 
-        if (addressLine1==null) {addressLine1="";}
-        if (addressLine2==null) {addressLine2="";}
-        if (addressLine3==null) {addressLine3="";}
-        if (addressLine4==null) {addressLine4="";}
-        if (city==null) {city="";}
-        if (postcode==null) {postcode="";}
+        if (addressLine1 == null) {
+            addressLine1 = "";
+        }
+        if (addressLine2 == null) {
+            addressLine2 = "";
+        }
+        if (addressLine3 == null) {
+            addressLine3 = "";
+        }
+        if (addressLine4 == null) {
+            addressLine4 = "";
+        }
+        if (city == null) {
+            city = "";
+        }
+        if (postcode == null) {
+            postcode = "";
+        }
 
-        String adrec = addressLine1+","+addressLine2+","+addressLine3+","+addressLine4+","+city+","+postcode;
+        String adrec = addressLine1 + "," + addressLine2 + "," + addressLine3 + "," + addressLine4 + "," + city + "," + postcode;
 
         // debug
         // adrec="201,Darkes Lane,Potters Bar,EN6 1BX";
 
-        String ids = Long.toString(subTableId.getSubscriberId())+"`"+configName;
+        String ids = Long.toString(subTableId.getSubscriberId()) + "`" + configName;
         String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
         // token time out?
         if (csv.isEmpty()) {
-            UPRN.uprnToken="";
+            UPRN.uprnToken = "";
             // get another token
             uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
             csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
@@ -408,14 +416,19 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         Date match_date = new Date();
 
-        String[] ss = csv.split("\\~",-1);
+        String[] ss = csv.split("\\~", -1);
 
         // 0=locality, 1=number, 2=org, 3=postcode, 4=street, 5=town, 6=alg, 7=qual
         // 8=matpatbuild, 9=matpatflat, 10=matpatnumber, 11=matpatpostcode, 12=matpatstreet
         // 13=quality, 14=latitude, 15=longitude, 16=point
         // 17=X, 18=Y, 19=class, 20=uprn
 
-        String sLat=ss[14]; String sLong = ss[15]; String sX=ss[17]; String sY=ss[18]; String sClass = ss[19]; String sQualifier = ss[7];
+        String sLat = ss[14];
+        String sLong = ss[15];
+        String sX = ss[17];
+        String sY = ss[18];
+        String sClass = ss[19];
+        String sQualifier = ss[7];
 
         String sUprn = ss[20];
 
@@ -425,22 +438,40 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
         BigDecimal lat = new BigDecimal(0);
-        if (!sLat.isEmpty()) {lat=new BigDecimal(sLat);}
+        if (!sLat.isEmpty()) {
+            lat = new BigDecimal(sLat);
+        }
 
         BigDecimal longitude = new BigDecimal(0);
-        if (!sLong.isEmpty()) {longitude=new BigDecimal(sLong);}
+        if (!sLong.isEmpty()) {
+            longitude = new BigDecimal(sLong);
+        }
 
         BigDecimal x = new BigDecimal(0);
-        if (!sX.isEmpty()) {x = new BigDecimal(sX);}
+        if (!sX.isEmpty()) {
+            x = new BigDecimal(sX);
+        }
 
         BigDecimal y = new BigDecimal(0);
-        if (!sY.isEmpty()) {y = new BigDecimal(sY);}
+        if (!sY.isEmpty()) {
+            y = new BigDecimal(sY);
+        }
 
         Integer stati = 0;
-        if (currentAddressId!=null) {stati=1;}
+        if (currentAddressId != null) {
+            stati = 1;
+        }
 
-        String znumber = ss[1]; String zstreet = ss[4]; String zlocality = ss[0]; String ztown = ss[5]; String zpostcode = ss[3]; String zorg = ss[2];
-        String match_post = ss[11]; String match_street = ss[12]; String match_number = ss[10]; String match_building = ss[8];
+        String znumber = ss[1];
+        String zstreet = ss[4];
+        String zlocality = ss[0];
+        String ztown = ss[5];
+        String zpostcode = ss[3];
+        String zorg = ss[2];
+        String match_post = ss[11];
+        String match_street = ss[12];
+        String match_number = ss[10];
+        String match_building = ss[8];
         String match_flat = ss[9];
 
         // null fields because isPseudonymised
@@ -472,9 +503,17 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             pseudoUprn = crypto.GetDigest(keys);
             sUprn = pseudoUprn;
             // nullify fields
-            znumber=null; zstreet=null; zlocality=null; ztown=null; zpostcode=null; zorg=null;
+            znumber = null;
+            zstreet = null;
+            zlocality = null;
+            ztown = null;
+            zpostcode = null;
+            zorg = null;
             //match_post=null; match_street=null; match_number=null; match_building=null; match_flat=null;
-            lat = null; longitude=null; x=null; y=null;
+            lat = null;
+            longitude = null;
+            x = null;
+            y = null;
         }
 
         uprnwriter.writeUpsert(//uprn_subTableId,
@@ -509,6 +548,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         PatientAddress writer = params.getOutputContainer().getPatientAddresses();
 
+        int maxAddresses = getMaxNumberOfAddresses(fullHistory);
+
+        Map<Integer, SubscriberId> hmIds = findAddressIds(maxAddresses, params.getSubscriberConfigName(), resourceWrapper, true);
+
         Long currentAddressId = null;
 
         //update all addresses, delete any extra
@@ -519,9 +562,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             for (int i = 0; i < currentPatient.getAddress().size(); i++) {
                 Address address = currentPatient.getAddress().get(i);
 
-                String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
-                SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
-                //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+                SubscriberId subTableId = hmIds.get(new Integer(i));
 
                 //if this address is our current home one, then assign the ID
                 if (address == currentAddress) {
@@ -608,23 +649,20 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 city = address.getCity();
                 postcode = address.getPostalCode();
 
-                UPRN(params,currentPatient,i,resourceWrapper,subTableId,addressLine1,addressLine2,addressLine3,addressLine4,city,postcode,currentAddressId);
+                UPRN(params, currentPatient, i, resourceWrapper, subTableId, addressLine1, addressLine2, addressLine3, addressLine4, city, postcode, currentAddressId);
             }
         }
 
         //and make sure to delete any that we previously sent over that are no longer present
         //i.e. if we previously had five addresses and now only have three, we need to delete four and five
-        int maxsAddresses = getMaxNumberOfAddresses(fullHistory);
-
         int start = 0;
         if (currentPatient.hasAddress()) {
             start = currentPatient.getAddress().size();
         }
 
-        for (int i=start; i<maxsAddresses; i++) {
+        for (int i = start; i < maxAddresses; i++) {
 
-            String sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_ID + i;
-            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS, sourceId);
+            SubscriberId subTableId = hmIds.get(new Integer(i));
             if (subTableId != null) {
                 //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
 
@@ -654,7 +692,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     public static int getMaxNumberOfTelecoms(List<ResourceWrapper> history) throws Exception {
         int max = 0;
-        for (ResourceWrapper wrapper: history) {
+        for (ResourceWrapper wrapper : history) {
             if (!wrapper.isDeleted()) {
                 Patient patient = (Patient) wrapper.getResource();
                 if (patient.hasTelecom()) {
@@ -667,7 +705,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     public static int getMaxNumberOfAddresses(List<ResourceWrapper> history) throws Exception {
         int max = 0;
-        for (ResourceWrapper wrapper: history) {
+        for (ResourceWrapper wrapper : history) {
             if (!wrapper.isDeleted()) {
                 Patient patient = (Patient) wrapper.getResource();
                 if (patient.hasAddress()) {
@@ -697,12 +735,12 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
         //history is most-recent-first
-        for (ResourceWrapper wrapper: history) {
+        for (ResourceWrapper wrapper : history) {
             Date dtCreatedAt = wrapper.getCreatedAt();
             //LOG.debug("Compare dt_last_sent " + dtLastSent + " (" + dtLastSent.getTime() + ") against dtCreatedAt " + dtCreatedAt + " (" + dtCreatedAt.getTime() + ")");
             if (dtCreatedAt.equals(dtLastSent)) {
                 //LOG.debug("" + currentWrapper.getReferenceString() + " has dt_last_sent of " + dtLastSent + " so using version from that date");
-                return (Patient)wrapper.getResource();
+                return (Patient) wrapper.getResource();
             }
         }
 
@@ -721,13 +759,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         PatientPseudoId writer = params.getOutputContainer().getPatientPseudoId();
 
         List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
+
+        Map<LinkDistributorConfig, SubscriberId> hmIds = findPseudoIdIds(linkDistributorConfigs, params.getSubscriberConfigName(), resourceWrapper, false);
+
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
-            String saltKeyName = ldConfig.getSaltKeyName();
 
             //create a unique source ID from the patient UUID plus the salt key name
-            String referenceStr = ReferenceHelper.createResourceReference(resourceWrapper.getResourceTypeObj(), resourceWrapper.getResourceIdStr());
-            String sourceId = referenceStr + PREFIX_PSEUDO_ID + saltKeyName;
-            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
+            SubscriberId subTableId = hmIds.get(ldConfig);
             if (subTableId != null) {
                 writer.writeDelete(subTableId);
             }
@@ -739,13 +777,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
         List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
+
+        Map<LinkDistributorConfig, SubscriberId> hmIds = findPseudoIdIds(linkDistributorConfigs, params.getSubscriberConfigName(), resourceWrapper, false);
+
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
-            String saltKeyName = ldConfig.getSaltKeyName();
 
             //create a unique source ID from the patient UUID plus the salt key name
-            String referenceStr = ReferenceHelper.createResourceReference(resourceWrapper.getResourceTypeObj(), resourceWrapper.getResourceIdStr());
-            String sourceId = referenceStr + PREFIX_PSEUDO_ID + saltKeyName;
-            SubscriberId subTableId = findSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
+            SubscriberId subTableId = hmIds.get(ldConfig);
             if (subTableId != null) {
                 //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
                 pseudoIdWriter.writeDelete(subTableId);
@@ -754,7 +792,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     }
 
-    private void transformPseudoIdsNewWay(long organizationId, long subscriberPatientId, long personId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
+    public void transformPseudoIdsNewWay(long organizationId, long subscriberPatientId, long personId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
         if (linkDistributorConfigs.isEmpty()) {
@@ -771,15 +809,15 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         PatientPseudoId writer = params.getOutputContainer().getPatientPseudoId();
 
+        Map<LinkDistributorConfig, SubscriberId> hmIds = findPseudoIdIds(linkDistributorConfigs, params.getSubscriberConfigName(), resourceWrapper, true);
+
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
 
             String pseudoId = PseudoIdBuilder.generatePsuedoIdFromConfig(params.getSubscriberConfigName(), ldConfig, fhirPatient);
 
             //create a unique source ID from the patient UUID plus the salt key name
-            String sourceId = ReferenceHelper.createReferenceExternal(fhirPatient).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
-            SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
-            //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+            SubscriberId subTableId = hmIds.get(ldConfig);
 
             if (!Strings.isNullOrEmpty(pseudoId)) {
 
@@ -807,16 +845,16 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
         List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
+
+        Map<LinkDistributorConfig, SubscriberId> hmIds = findPseudoIdIds(linkDistributorConfigs, params.getSubscriberConfigName(), resourceWrapper, true);
+
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
 
 
             String pseudoId = PseudoIdBuilder.generatePsuedoIdFromConfig(params.getSubscriberConfigName(), ldConfig, fhirPatient);
 
-            //create a unique source ID from the patient UUID plus the salt key name
-            String sourceId = ReferenceHelper.createReferenceExternal(fhirPatient).getReference() + PREFIX_PSEUDO_ID + saltKeyName;
-            SubscriberId subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PSEUDO_ID, sourceId);
-            //params.setSubscriberIdTransformed(resourceWrapper, subTableId);
+            SubscriberId subTableId = hmIds.get(ldConfig);
 
             if (!Strings.isNullOrEmpty(pseudoId)) {
 
@@ -846,7 +884,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     private Reference findOrgReference(Patient fhirPatient, SubscriberTransformHelper params) throws Exception {
 
         //find a direct org reference first
-        for (Reference reference: fhirPatient.getCareProvider()) {
+        for (Reference reference : fhirPatient.getCareProvider()) {
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
 
             if (comps.getResourceType() == ResourceType.Organization) {
@@ -855,21 +893,21 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
         //if no org reference, look for a practitioner one
-        for (Reference reference: fhirPatient.getCareProvider()) {
+        for (Reference reference : fhirPatient.getCareProvider()) {
             ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
             if (comps.getResourceType() == ResourceType.Practitioner) {
 
-                Practitioner practitioner = (Practitioner)params.findOrRetrieveResource(reference);
+                Practitioner practitioner = (Practitioner) params.findOrRetrieveResource(reference);
                 if (practitioner == null
                         || !practitioner.hasPractitionerRole()) {
                     continue;
                 }
 
-                for (Practitioner.PractitionerPractitionerRoleComponent role: practitioner.getPractitionerRole()) {
+                for (Practitioner.PractitionerPractitionerRoleComponent role : practitioner.getPractitionerRole()) {
 
                     //ignore any ended roles
                     if (role.hasPeriod()
-                        && !PeriodHelper.isActive(role.getPeriod())) {
+                            && !PeriodHelper.isActive(role.getPeriod())) {
                         continue;
                     }
 
@@ -903,7 +941,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             return null;
         }
 
-        return postcode.substring(0, len-3);
+        return postcode.substring(0, len - 3);
     }
 
     private String pseudonymiseUsingConfig(SubscriberTransformHelper params, Patient fhirPatient, LinkDistributorConfig config) throws Exception {
@@ -932,7 +970,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     }
 
 
-
     private static String convertJsonNodeToString(JsonNode jsonNode) throws Exception {
         try {
             ObjectMapper mapper = new ObjectMapper();
@@ -943,13 +980,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, SubscriberTransformHelper params) throws  Exception {
+    private void processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, SubscriberTransformHelper params) throws Exception {
 
         //if the present status has changed then we need to either bulk-add or bulk-delete all data for the patient
         //and if the NHS number has changed, the person ID on each table will need updating
         //and if the DoB has changed, then the age_at_event will need recalculating for everything
         if (hasDobChanged(current, previous)
-            || hasNhsNumberChanged(current, previous)) {
+                || hasNhsNumberChanged(current, previous)) {
 
             //retrieve all resources and add them to the current transform. This will ensure they then get transformed
             //back in FhirToEnterpriseCsvTransformer. Each individual transform will know if the patient is confidential
@@ -957,7 +994,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             UUID patientUuid = UUID.fromString(previous.getId()); //current may be null, so get ID from previous
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
             List<ResourceWrapper> allPatientResources = resourceDal.getResourcesByPatient(serviceId, patientUuid);
-            for (ResourceWrapper wrapper: allPatientResources) {
+            for (ResourceWrapper wrapper : allPatientResources) {
                 params.addResourceToTransform(wrapper);
             }
         }
@@ -1026,5 +1063,114 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
         return saltBytes;
     }*/
+
+
+    /**
+     * finds (and creates) mapped IDs for each pseudo ID
+     */
+    public static Map<LinkDistributorConfig, SubscriberId> findPseudoIdIds(List<LinkDistributorConfig> linkDistributorConfigs,
+                                                                            String subscriberConfigName,
+                                                                            ResourceWrapper patientWrapper,
+                                                                            boolean createIfMissing) throws Exception {
+
+        if (linkDistributorConfigs.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        //pre-prepare a list of all source IDs that need mapping
+        Map<String, LinkDistributorConfig> hmBySourceId = new HashMap<>();
+        List<String> sourceIds = new ArrayList<>();
+        for (LinkDistributorConfig linkDistributorConfig : linkDistributorConfigs) {
+            String sourceId = patientWrapper.getReferenceString() + PREFIX_PSEUDO_ID + linkDistributorConfig.getSaltKeyName();
+            sourceIds.add(sourceId);
+            hmBySourceId.put(sourceId, linkDistributorConfig);
+        }
+
+        //map all in one go
+        Map<String, SubscriberId> hmIds = findOrCreateSubscriberIds(subscriberConfigName, SubscriberTableId.PATIENT_PSEUDO_ID, sourceIds, createIfMissing);
+
+        //reverse look up to return an ID for each status
+        Map<LinkDistributorConfig, SubscriberId> ret = new HashMap<>();
+        for (String sourceId : hmIds.keySet()) {
+            SubscriberId id = hmIds.get(sourceId);
+            LinkDistributorConfig linkDistributorConfig = hmBySourceId.get(sourceId);
+            ret.put(linkDistributorConfig, id);
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * finds (and creates) mapped IDs for each pseudo ID
+     */
+    public static Map<Integer, SubscriberId> findTelecomIds(int maxTelecoms,
+                                                             String subscriberConfigName,
+                                                             ResourceWrapper patientWrapper,
+                                                             boolean createIfMissing) throws Exception {
+
+        if (maxTelecoms == 0) {
+            return new HashMap<>();
+        }
+
+        //pre-prepare a list of all source IDs that need mapping
+        Map<String, Integer> hmBySourceId = new HashMap<>();
+        List<String> sourceIds = new ArrayList<>();
+        for (int i = 0; i < maxTelecoms; i++) {
+            String sourceId = patientWrapper.getReferenceString() + PREFIX_TELECOM_ID + i;
+            sourceIds.add(sourceId);
+            hmBySourceId.put(sourceId, new Integer(i));
+        }
+
+        //map all in one go
+        Map<String, SubscriberId> hmIds = findOrCreateSubscriberIds(subscriberConfigName, SubscriberTableId.PATIENT_CONTACT, sourceIds, createIfMissing);
+
+        //reverse look up to return an ID for each record
+        Map<Integer, SubscriberId> ret = new HashMap<>();
+        for (String sourceId : hmIds.keySet()) {
+            SubscriberId id = hmIds.get(sourceId);
+            Integer index = hmBySourceId.get(sourceId);
+            ret.put(index, id);
+        }
+
+        return ret;
+    }
+
+
+
+    /**
+     * finds (and creates) mapped IDs for each pseudo ID
+     */
+    public static Map<Integer, SubscriberId> findAddressIds(int maxAddresses,
+                                                             String subscriberConfigName,
+                                                             ResourceWrapper patientWrapper,
+                                                             boolean createIfMissing) throws Exception {
+
+        if (maxAddresses == 0) {
+            return new HashMap<>();
+        }
+
+        //pre-prepare a list of all source IDs that need mapping
+        Map<String, Integer> hmBySourceId = new HashMap<>();
+        List<String> sourceIds = new ArrayList<>();
+        for (int i = 0; i < maxAddresses; i++) {
+            String sourceId = patientWrapper.getReferenceString() + PREFIX_ADDRESS_ID + i;
+            sourceIds.add(sourceId);
+            hmBySourceId.put(sourceId, new Integer(i));
+        }
+
+        //map all in one go
+        Map<String, SubscriberId> hmIds = findOrCreateSubscriberIds(subscriberConfigName, SubscriberTableId.PATIENT_ADDRESS, sourceIds, createIfMissing);
+
+        //reverse look up to return an ID for each record
+        Map<Integer, SubscriberId> ret = new HashMap<>();
+        for (String sourceId : hmIds.keySet()) {
+            SubscriberId id = hmIds.get(sourceId);
+            Integer index = hmBySourceId.get(sourceId);
+            ret.put(index, id);
+        }
+
+        return ret;
+    }
 
 }
