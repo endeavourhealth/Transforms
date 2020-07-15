@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ public class PMITransformer {
         if (parser != null) {
             while (parser.nextRecord()) {
                 count++;
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
                 try {
@@ -38,7 +39,7 @@ public class PMITransformer {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
                 //if(count%checkpoint == 0){
-                    //LOG.info("PMI processed " + count + " records.");
+                //LOG.info("PMI processed " + count + " records.");
                 //}
             }
         }
@@ -61,7 +62,7 @@ public class PMITransformer {
         }
 
         PatientBuilder patientBuilder = createPatientResource(parser, csvHelper, fhirResourceFiler);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !patientBuilder.isIdMapped() , patientBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !patientBuilder.isIdMapped(), patientBuilder);
     }
 
     private static PatientBuilder createPatientResource(PMI parser,
@@ -72,7 +73,7 @@ public class PMITransformer {
         CsvCell nhsNumber = parser.getNhsNumber();
         //NHS number contains spaces.
         String nhs = nhsNumber.getString().replace(" ", "");
-        CsvCell formattedNHS = new CsvCell(nhsNumber.getPublishedFileId(), nhsNumber.getRecordNumber(),nhsNumber.getColIndex(),nhs, nhsNumber.getParentParser());
+        CsvCell formattedNHS = new CsvCell(nhsNumber.getPublishedFileId(), nhsNumber.getRecordNumber(), nhsNumber.getColIndex(), nhs, nhsNumber.getParentParser());
         createIdentifier(patientBuilder, fhirResourceFiler, formattedNHS, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
         //store the PAS ID as a secondary identifier
@@ -110,13 +111,17 @@ public class PMITransformer {
         if (!sex.isEmpty()) {
             int genderCode = sex.getInt();
             switch (genderCode) {
-                case 0:  patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
-                break;
-                case 1:  patientBuilder.setGender(Enumerations.AdministrativeGender.MALE, sex);
+                case 0:
+                    patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
                     break;
-                case 2:  patientBuilder.setGender(Enumerations.AdministrativeGender.FEMALE, sex);
+                case 1:
+                    patientBuilder.setGender(Enumerations.AdministrativeGender.MALE, sex);
                     break;
-                case 9:  patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
+                case 2:
+                    patientBuilder.setGender(Enumerations.AdministrativeGender.FEMALE, sex);
+                    break;
+                case 9:
+                    patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
                     break;
             }
 
@@ -171,7 +176,7 @@ public class PMITransformer {
         return patientBuilder;
     }
 
-    private static  void processCauseOfDeath(PMI parser, BhrutCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private static void processCauseOfDeath(PMI parser, BhrutCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
         //TODO call to this method is commented out.
         Reference mainCauseOfDeathReference = null;
         CsvCell causeOfDeathCell = parser.getCauseOfDeath();
@@ -189,17 +194,17 @@ public class PMITransformer {
             mainCauseOfDeathReference = csvHelper.createObservationReference(conditionId, parser.getPasId().getString());
             CsvCell causeOfDeath1BCell = parser.getCauseOfDeath1B();
             if (!causeOfDeath1BCell.isEmpty()) {
-               // containedParametersBuilder.addParameter(conditionId,causeOfDeath1BCell.getString(),causeOfDeath1BCell);
+                // containedParametersBuilder.addParameter(conditionId,causeOfDeath1BCell.getString(),causeOfDeath1BCell);
             }
             CsvCell causeOfDeath1CCell = parser.getCauseOfDeath1C();
             if (!causeOfDeath1CCell.isEmpty()) {
-               // containedParametersBuilder.addParameter(conditionId,causeOfDeath1CCell.getString(),causeOfDeath1CCell);
-        }
+                // containedParametersBuilder.addParameter(conditionId,causeOfDeath1CCell.getString(),causeOfDeath1CCell);
+            }
             CsvCell causeOfDeath2CCell = parser.getCauseOfDeath2();
             if (!causeOfDeath2CCell.isEmpty()) {
-               // containedParametersBuilder.addParameter(conditionId,causeOfDeath2CCell.getString(),causeOfDeath2CCell);
+                // containedParametersBuilder.addParameter(conditionId,causeOfDeath2CCell.getString(),causeOfDeath2CCell);
             }
-                fhirResourceFiler.savePatientResource(parser.getCurrentState(), !conditionBuilder.isIdMapped(), conditionBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !conditionBuilder.isIdMapped(), conditionBuilder);
 
 
         }
@@ -244,11 +249,18 @@ public class PMITransformer {
 
     private static void createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
         if (!cell.isEmpty()) {
+            if (use.equals(Identifier.IdentifierUse.OFFICIAL)) { //remove previous
+                for (Identifier i : patientBuilder.getIdentifiers()) {
+                    if (i.getUse().equals(Identifier.IdentifierUse.OFFICIAL)) {
+                        patientBuilder.removeIdentifier(i);
+                    }
+                }
+            }
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(use);
             identifierBuilder.setSystem(system);
             identifierBuilder.setValue(cell.getString(), cell);
-            identifierBuilder.deDuplicateLastIdentifier(patientBuilder,fhirResourceFiler.getDataDate());
+
         }
     }
 
@@ -307,7 +319,7 @@ public class PMITransformer {
             contactPointBuilder.setSystem(system);
             contactPointBuilder.setValue(cell.getString(), cell);
 
-          }
+        }
     }
 
     /**

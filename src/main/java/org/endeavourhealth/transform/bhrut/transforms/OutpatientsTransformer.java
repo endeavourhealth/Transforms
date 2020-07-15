@@ -209,24 +209,33 @@ public class OutpatientsTransformer {
         // 0   Not applicable - APPOINTMENT occurs in the future
         CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
         if (!appointmentStatusCode.isEmpty()) {
-
-            switch (appointmentStatusCode.getInt()) {
-                case 2:
-                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
-                case 3:
-                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
-                case 4:
-                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
-                case 5:
-                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
-                case 6:
-                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
-                case 7:
-                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
-                case  0:
-                    appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
-                default:
-                    TransformWarnings.log(LOG, csvHelper, "Unknown appointment status code  {} ", appointmentStatusCode.getString());
+            try {
+                int statusCode = Integer.parseInt(appointmentStatusCode.getString());
+                switch (statusCode) { //Ostensibly an int but there's garbage in the field
+                    case 2:
+                    case 4:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
+                        break;
+                    case 3:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
+                        break;
+                    case 5:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+                        break;
+                    case 6:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+                        break;
+                    case 7:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
+                        break;
+                    case 0:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
+                        break;
+                    default:
+                        TransformWarnings.log(LOG, csvHelper, "Unknown appointment status code integer {} for id {} ", statusCode, idCell.getString());
+                }
+            } catch (NumberFormatException ex) {
+                TransformWarnings.log(LOG, csvHelper, "Invalid appointment status code - not integer {} ", appointmentStatusCode.getString());
             }
         }
 
@@ -279,7 +288,7 @@ public class OutpatientsTransformer {
     private static void createDiagnoses(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
         CsvCell idCell = parser.getId();
         CsvCell patientIdCell = parser.getPasId();
-        CsvCell appointmentDateCell = parser.getAppointmentDttm() ;
+        CsvCell appointmentDateCell = parser.getAppointmentDttm();
         CsvCell consultantCodeCell = parser.getConsultantCode();
         Reference thisEncounter = csvHelper.createEncounterReference(idCell.getString(), patientIdCell.getString());
         //Primary Diagnosis
@@ -361,7 +370,7 @@ public class OutpatientsTransformer {
 
     private static void createProcedures(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
         CsvCell idCell = parser.getId();
-        CsvCell patientIdCell = parser.getPasId() ;
+        CsvCell patientIdCell = parser.getPasId();
         CsvCell appointmentDateCell = parser.getAppointmentDttm();
         CsvCell consultantCodeCell = parser.getConsultantCode();
         //Primary Procedure
