@@ -236,23 +236,27 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             }
 
             List<LinkDistributorConfig> salts = params.getConfig().getPseudoSalts();
-            LinkDistributorConfig mainPseudoSalt = salts.get(0);
-            pseudoId = pseudonymiseUsingConfig(params, fhirPatient, id, mainPseudoSalt, true);
+            if (!salts.isEmpty()) {
+                LinkDistributorConfig mainPseudoSalt = salts.get(0);
+                LOG.trace("Generating enteprrise pseudo ID using salt " + mainPseudoSalt.getSaltKeyName());
+                pseudoId = pseudonymiseUsingConfig(params, fhirPatient, id, mainPseudoSalt, true);
 
-            if (pseudoId != null) {
+                if (pseudoId != null) {
 
-                //generate any other pseudo mappings - the table uses the main pseudo ID as the source key, so this
-                //can only be done if we've successfully generated a main pseudo ID
-                for (int i = 1; i < salts.size(); i++) { //start at 1, because we've done the first one above
-                    LinkDistributorConfig ldConfig = salts.get(i);
-                    targetSaltKeyName = ldConfig.getSaltKeyName();
-                    targetSkid = pseudonymiseUsingConfig(params, fhirPatient, id, ldConfig, false);
+                    //generate any other pseudo mappings - the table uses the main pseudo ID as the source key, so this
+                    //can only be done if we've successfully generated a main pseudo ID
+                    for (int i = 1; i < salts.size(); i++) { //start at 1, because we've done the first one above
+                        LinkDistributorConfig ldConfig = salts.get(i);
+                        targetSaltKeyName = ldConfig.getSaltKeyName();
+                        targetSkid = pseudonymiseUsingConfig(params, fhirPatient, id, ldConfig, false);
 
-                    linkDistributorWriter.writeUpsert(pseudoId,
-                            targetSaltKeyName,
-                            targetSkid);
+                        linkDistributorWriter.writeUpsert(pseudoId,
+                                targetSaltKeyName,
+                                targetSkid);
+                    }
                 }
             }
+
 
             EnterpriseAgeUpdaterlDalI enterpriseAgeUpdaterlDal = DalProvider.factoryEnterpriseAgeUpdaterlDal(params.getEnterpriseConfigName());
             Integer[] ageValues = enterpriseAgeUpdaterlDal.calculateAgeValuesAndUpdateTable(id, dateOfBirth, dateOfDeath);
@@ -840,116 +844,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         return pseudoId;
     }
-
-    /*public static String pseudonymiseUsingConfig(Patient fhirPatient, LinkDistributorConfig config) throws Exception {
-        TreeMap<String, String> keys = new TreeMap<>();
-
-        List<ConfigParameter> parameters = config.getParameters();
-
-        for (ConfigParameter param : parameters) {
-
-            String fieldName = param.getFieldName();
-            String fieldFormat = param.getFormat();
-            String fieldValue = null;
-
-            if (fieldName.equals("date_of_birth")) {
-                if (fhirPatient.hasBirthDate()) {
-                    Date d = fhirPatient.getBirthDate();
-                    fieldValue = formatPseudoDate(d, fieldFormat);
-                }
-            } else if (fieldName.equals("nhs_number")) {
-
-                String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient); //this will be in nnnnnnnnnn format
-                if (!Strings.isNullOrEmpty(nhsNumber)) {
-                    fieldValue = formatPseudoNhsNumber(nhsNumber, fieldFormat);
-                }
-
-            } else {
-                throw new Exception("Unsupported field name [" + fieldName + "]");
-            }
-
-            if (Strings.isNullOrEmpty(fieldValue)) {
-                // we always need a non null string for the psuedo ID
-                continue;
-            }
-
-            //if this element is mandatory, then fail if our field is empty
-            Boolean mandatory = param.getMandatory();
-            if (mandatory != null
-                    && mandatory.booleanValue()
-                    && Strings.isNullOrEmpty(fieldValue)) {
-                return null;
-            }
-
-            String fieldLabel = param.getFieldLabel();
-            keys.put(fieldLabel, fieldValue);
-        }
-
-        //if not keys, then we can't generate a pseudo ID
-        if (keys.isEmpty()) {
-            return null;
-        }
-
-        return applySaltToKeys(keys, Base64.getDecoder().decode(config.getSalt()));
-    }
-
-    private static String applySaltToKeys(TreeMap<String, String> keys, byte[] salt) throws Exception {
-        Crypto crypto = new Crypto();
-        crypto.SetEncryptedSalt(salt);
-        return crypto.GetDigest(keys);
-    }
-
-    private static String formatPseudoNhsNumber(String nhsNumber, String fieldFormat) throws Exception {
-
-        //if no explicit format provided, assume one
-        if (Strings.isNullOrEmpty(fieldFormat)) {
-            fieldFormat = "nnnnnnnnnn";
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        int pos = 0;
-        char[] chars = nhsNumber.toCharArray();
-
-        char[] formatChars = fieldFormat.toCharArray();
-        for (int i=0; i<formatChars.length; i++) {
-            char formatChar = formatChars[i];
-            if (formatChar == 'n') {
-                if (pos < chars.length) {
-                    char c = chars[pos];
-                    sb.append(c);
-                    pos ++;
-                }
-
-            } else if (Character.isAlphabetic(formatChar)) {
-                throw new Exception("Unsupported character " + formatChar + " in NHS number format [" + fieldFormat + "]");
-
-            } else {
-                sb.append(formatChar);
-            }
-        }
-
-        return sb.toString();
-    }
-
-    private static String formatPseudoDate(Date d, String fieldFormat) {
-
-        //if no explicit format provided, assume one
-        if (Strings.isNullOrEmpty(fieldFormat)) {
-            fieldFormat = "dd-MM-yyyy";
-        }
-
-        return new SimpleDateFormat(fieldFormat).format(d);
-    }*/
-
-
-
-    /*private static byte[] getEncryptedSalt() throws Exception {
-        if (saltBytes == null) {
-            saltBytes = Resources.getResourceAsBytes(PSEUDO_SALT_RESOURCE);
-        }
-        return saltBytes;
-    }*/
 
 
     public void UPRN(EnterpriseTransformHelper params, Patient fhirPatient, long id, long personId, AbstractEnterpriseCsvWriter csvWriter, String configName) throws Exception {
