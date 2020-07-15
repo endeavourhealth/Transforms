@@ -43,8 +43,9 @@ public abstract class CdsPreTransformerBase {
 
         } else {
 
-            //processDiagnoses(parser, csvHelper, susRecordType, conditionBatch, conditionCountBatch);
-            //processProcedures(parser, csvHelper, susRecordType, procedureBatch, procedureCountBatch);
+            //these calls reinstated for testing with CDS encounters
+            processDiagnoses(parser, csvHelper, susRecordType, conditionBatch, conditionCountBatch);
+            processProcedures(parser, csvHelper, susRecordType, procedureBatch, procedureCountBatch);
         }
     }
 

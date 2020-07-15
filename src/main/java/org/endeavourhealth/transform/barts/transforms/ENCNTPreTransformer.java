@@ -5,8 +5,6 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingPROCE;
-import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -174,10 +172,14 @@ public class ENCNTPreTransformer {
 
                 //don't create the EpisodeOfCare yet, as we don't want to create one for every ENCNT. Just
                 //call this fn to set up the Episode ID and FIN -> UUID mappings, so they can be picked up when
-                //we do process the OPATT, AEATT and IPEPI files
-//TODO - taken this out to get the procedures stuff loaded faster, as it depends on the above but not this
-//                csvHelper.getEpisodeOfCareCache().setUpEpisodeOfCareBuilderMappings(encounterIdCell, personIdCell, episodeIdCell, finCell, visitIdCell);
+                //we do process the CDS encounter files to fall back on if EpisodeId is not provided
 
+                //TODO - remove live check after test
+                if (!TransformConfig.instance().isLive()) {
+                    for (CacheENCNT o : batch) {
+                        csvHelper.getEpisodeOfCareCache().setUpEpisodeOfCareBuilderMappings(o.encounterIdCell, o.personIdCell, o.episodeIdCell, o.finCell, o.visitIdCell);
+                    }
+                }
 
             }catch (Throwable t) {
                 LOG.error("", t);

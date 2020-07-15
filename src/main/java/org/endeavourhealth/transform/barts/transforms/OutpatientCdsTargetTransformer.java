@@ -7,7 +7,9 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingOutpatientCdsTarget;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 public class OutpatientCdsTargetTransformer {
 
@@ -60,9 +63,11 @@ public class OutpatientCdsTargetTransformer {
                 continue;
             }
 
-            //process top level encounter - the existing parent encounter set during ADT feed -
+            //process top level encounter - the existing parent encounter
             Integer encounterId = targetOutpatientCds.getEncounterId();  //this is used to identify the top level parent episode
             if (encounterId != null) {
+
+                EncounterBuilder parentEncounterBuilder = null;
 
                 Encounter existingParentEncounter
                         = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(encounterId));
@@ -72,14 +77,29 @@ public class OutpatientCdsTargetTransformer {
                     updateExistingEncounter(existingParentEncounter, targetOutpatientCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounter
-                    EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetOutpatientCds.getAudit());
+                    parentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetOutpatientCds.getAudit());
                     createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
 
                     //create top level parent with minimum data and then the sub encounter
-                    createOutpatientCdsEncounterParentAndSub(targetOutpatientCds, fhirResourceFiler, csvHelper);
+                    parentEncounterBuilder
+                            = createOutpatientCdsEncounterParentAndSub(targetOutpatientCds, fhirResourceFiler, csvHelper);
                 }
+
+                //now delete any older HL7 Encounters for patients we've updated
+                //but waiting until everything has been saved to the DB first
+                fhirResourceFiler.waitUntilEverythingIsSaved();
+
+                //find the patient UUID for the encounters we have just filed, so we can tidy up the
+                //HL7 encounters after doing all the saving of the DW encounters
+                Reference patientReference = parentEncounterBuilder.getPatient();
+                if (!parentEncounterBuilder.isIdMapped()) {
+                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                }
+                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
+                deleteHL7ReceiverPatientOutpatientEncounters(patientUuid, fhirResourceFiler, csvHelper);
+
             } else {
 
                 String uniqueId = targetOutpatientCds.getUniqueId();
@@ -145,7 +165,7 @@ public class OutpatientCdsTargetTransformer {
         //set outpatient encounter
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
-        encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);  //sub encounters are always finished
 
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
@@ -158,7 +178,7 @@ public class OutpatientCdsTargetTransformer {
         Date appDate = targetOutpatientCds.getApptDate();
         encounterBuilder.setPeriodStart(appDate);
 
-        setCommonEncounterAttributes(encounterBuilder, targetOutpatientCds, csvHelper, true);
+        setCommonEncounterAttributes(encounterBuilder, targetOutpatientCds, csvHelper, true, fhirResourceFiler);
 
         //add in additional extended data as Parameters resource with additional extension
         //TODO: set name and values using IM map once done, i.e. replace referral_source etc.
@@ -177,7 +197,7 @@ public class OutpatientCdsTargetTransformer {
         if (!Strings.isNullOrEmpty(apptAttendedCode)) {
             containedParametersBuilder.addParameter("appt_attended_code", "" + apptAttendedCode);
         }
-        String apptOutcomeCode = targetOutpatientCds.getApptAttendedCode();
+        String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
         if (!Strings.isNullOrEmpty(apptOutcomeCode)) {
             containedParametersBuilder.addParameter("appt_outcome_code", "" + apptOutcomeCode);
         }
@@ -242,28 +262,36 @@ public class OutpatientCdsTargetTransformer {
         fhirResourceFiler.savePatientResource(null, encounterBuilder);
     }
 
-    private static void createOutpatientCdsEncounterParentAndSub(StagingOutpatientCdsTarget targetOutpatientCds,
+    private static EncounterBuilder createOutpatientCdsEncounterParentAndSub(StagingOutpatientCdsTarget targetOutpatientCds,
                                                                     FhirResourceFiler fhirResourceFiler,
                                                                     BartsCsvHelper csvHelper) throws Exception {
 
-        EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
-        parentTopEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
+        EncounterBuilder parentEncounterBuilder = new EncounterBuilder();
+        parentEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
         Integer encounterId = targetOutpatientCds.getEncounterId();
-        parentTopEncounterBuilder.setId(Integer.toString(encounterId));
+        parentEncounterBuilder.setId(Integer.toString(encounterId));
 
-        parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        //if the outcome is discharged, then no more appointments for this parent encounter, so finished
+        String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
+        if (apptOutcomeCode.equalsIgnoreCase("1")) {
+            parentEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        } else {
+            parentEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+        }
 
         Date appDate = targetOutpatientCds.getApptDate();
-        parentTopEncounterBuilder.setPeriodStart(appDate);
+        parentEncounterBuilder.setPeriodStart(appDate);
 
         CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+                = new CodeableConceptBuilder(parentEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Outpatient");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, targetOutpatientCds, csvHelper, false);
+        setCommonEncounterAttributes(parentEncounterBuilder, targetOutpatientCds, csvHelper, false, fhirResourceFiler);
 
         //then create child level encounter linked to this new parent
-        createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper, parentTopEncounterBuilder);
+        createOutpatientCdsSubEncounter(targetOutpatientCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
+
+        return parentEncounterBuilder;
     }
 
     private static void updateExistingEncounter(Encounter existingEncounter,
@@ -293,7 +321,8 @@ public class OutpatientCdsTargetTransformer {
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      StagingOutpatientCdsTarget targetOutpatientCds,
                                                      BartsCsvHelper csvHelper,
-                                                     boolean isChildEncounter) throws Exception  {
+                                                     boolean isChildEncounter,
+                                                     FhirResourceFiler fhirResourceFiler) throws Exception  {
 
         //every encounter has the following common attributes
         Integer personId = targetOutpatientCds.getPersonId();
@@ -308,18 +337,37 @@ public class OutpatientCdsTargetTransformer {
             builder.setPatient(patientReference);
         }
 
-        //TODO: if we cannot map to the HL7 episode then need to create
-        Integer episodeId = targetOutpatientCds.getEpisodeId();
-        if (episodeId != null) {
+        // Retrieve or create EpisodeOfCare for top level parent encounter only
+        if (!isChildEncounter) {
 
-            Reference episodeReference
-                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString());
-            if (builder.isIdMapped()) {
+            EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(targetOutpatientCds);
+            if (episodeOfCareBuilder != null) {
 
-                episodeReference
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
+                csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, builder, fhirResourceFiler);
+
+                Date appDate = targetOutpatientCds.getApptDate();
+                //we may have missed the original referral, so our episode of care may have the wrong start date, so adjust that now
+                if (appDate != null) {
+                    if (episodeOfCareBuilder.getRegistrationStartDate() == null
+                            || appDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+
+                        episodeOfCareBuilder.setRegistrationStartDate(appDate);
+                        episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+                    }
+                }
+
+                // Check whether to Finish EpisodeOfCare by using the AppOutcomeCode
+                // outcome corresponds to NHS Data Dictionary: https://www.datadictionary.nhs.uk/data_dictionary/attributes/o/out/outcome_of_attendance_de.asp?shownav=1
+                // outcome = 1 means discharged from care, so no more appointments, so end of care
+                String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
+                if (apptOutcomeCode.equalsIgnoreCase("1")) {
+                    // Discharged from CONSULTANT's care (last attendance)
+                    // make sure to set the status AFTER setting the end date, as setting the end date
+                    // will auto-calculate the status and we want to just overwrite that because we KNOW the episode is ended
+                    episodeOfCareBuilder.setRegistrationEndDate(appDate);
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+                }
             }
-            builder.setEpisodeOfCare(episodeReference);
         }
         Integer performerPersonnelId = targetOutpatientCds.getPerformerPersonnelId();
         if (performerPersonnelId != null) {
@@ -345,15 +393,12 @@ public class OutpatientCdsTargetTransformer {
             }
             builder.setServiceProvider(organizationReference);
         }
-        //get the existing parent encounter set during ADT feed, to link to this top level encounter if this is a child
+        //get the existing parent encounter to link to this top level encounter if this is a child
         if (isChildEncounter) {
             Integer parentEncounterId = targetOutpatientCds.getEncounterId();
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(parentEncounterId));
-            //if (builder.isIdMapped()) {
-
-                parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            //}
+            parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
             builder.setPartOf(parentEncounter);
         }
         //set the CDS identifier against the Encounter
@@ -375,6 +420,52 @@ public class OutpatientCdsTargetTransformer {
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
             identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_PATHWAY_ID);
             identifierBuilder.setValue(pathwayIdentifier);
+        }
+    }
+
+    /**
+     * we match to some HL7 Receiver Encounters, basically taking them over
+     * so we call this to tidy up (delete) any Episodes left not taken over, as the HL7 Receiver creates too many
+     * episodes because it doesn't have the data to avoid doing so
+     */
+    private static void deleteHL7ReceiverPatientOutpatientEncounters(String patientUuid,
+                                                                    FhirResourceFiler fhirResourceFiler,
+                                                                    BartsCsvHelper csvHelper) throws Exception {
+
+        UUID serviceUuid = fhirResourceFiler.getServiceId();
+        UUID systemUuid = fhirResourceFiler.getSystemId();
+
+        //we want to delete any HL7 Encounter more than 24 hours older than the DW file extract date
+        Date extractDateTime = csvHelper.getExtractDateTime();
+        Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
+
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> resourceWrappers
+                = resourceDal.getResourcesByPatient(serviceUuid, UUID.fromString(patientUuid), ResourceType.Encounter.toString());
+        for (ResourceWrapper wrapper: resourceWrappers) {
+
+            //if this episode is for our own service + system ID (i.e. DW feed), then leave it
+            UUID wrapperSystemId = wrapper.getSystemId();
+            if (wrapperSystemId.equals(systemUuid)) {
+                continue;
+            }
+
+            String json = wrapper.getResourceData();
+            Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
+
+            //if the HL7 Encounter has no date info at all or is before our cutoff, delete it
+            if (!existingEncounter.hasPeriod()
+                    || !existingEncounter.getPeriod().hasStart()
+                    || existingEncounter.getPeriod().getStart().before(cutoff)) {
+
+                //finally, check it is an Outpatient encounter class before deleting
+                if (existingEncounter.getClass_().equals(Encounter.EncounterClass.OUTPATIENT)) {
+                    GenericBuilder builder = new GenericBuilder(existingEncounter);
+                    //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
+                    //builder.setDeletedAudit(...);
+                    fhirResourceFiler.deletePatientResource(null, false, builder);
+                }
+            }
         }
     }
 }

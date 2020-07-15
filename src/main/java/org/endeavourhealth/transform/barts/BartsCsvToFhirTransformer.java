@@ -232,6 +232,9 @@ public abstract class BartsCsvToFhirTransformer {
             //CriticalCareCds data transformation on final criticalCareCds target staging table for Encounters
             CriticalCareCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
 
+            //the CDS encounter transforms create episode of care resources in the cache which need filing
+            csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler);
+
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //other clinical transformers

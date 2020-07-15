@@ -8,7 +8,9 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 public class EmergencyCdsTargetTransformer {
 
@@ -62,10 +65,12 @@ public class EmergencyCdsTargetTransformer {
                 continue;
             }
 
-            //process top level encounter - the existing parent encounter set during ADT feed -
-            Integer encounterId = targetEmergencyCds.getEncounterId();  //this is used to identify the top level parent episode
+            //process top level encounter - the existing parent encounter
+            Integer encounterId = targetEmergencyCds.getEncounterId();  //this is used to identify the top level parent encounter
 
             if (encounterId != null) {
+
+                EncounterBuilder parentEncounterBuilder = null;
 
                 Encounter existingParentEncounter
                         = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(encounterId));
@@ -75,14 +80,29 @@ public class EmergencyCdsTargetTransformer {
                     updateExistingParentEncounter(existingParentEncounter, targetEmergencyCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounters
-                    EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetEmergencyCds.getAudit());
+                    parentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetEmergencyCds.getAudit());
                     createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
 
                     //create top level parent with minimum data and the sub encounters
-                    createEmergencyCdsEncounterParentAndSubs(targetEmergencyCds, fhirResourceFiler, csvHelper);
+                    parentEncounterBuilder
+                            = createEmergencyCdsEncounterParentAndSubs(targetEmergencyCds, fhirResourceFiler, csvHelper);
                 }
+
+                //now delete any older HL7 Encounters for patients we've updated
+                //but waiting until everything has been saved to the DB first
+                fhirResourceFiler.waitUntilEverythingIsSaved();
+
+                //find the patient UUID for the encounters we have just filed, so we can tidy up the
+                //HL7 encounters after doing all the saving of the DW encounters
+                Reference patientReference = parentEncounterBuilder.getPatient();
+                if (!parentEncounterBuilder.isIdMapped()) {
+                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+                }
+                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
+                deleteHL7ReceiverPatientEmergencyEncounters(patientUuid, fhirResourceFiler, csvHelper);
+
             } else {
 
                 String uniqueId = targetEmergencyCds.getUniqueId();
@@ -124,7 +144,7 @@ public class EmergencyCdsTargetTransformer {
                 = new CodeableConceptBuilder(arrivalEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilderAdmission.setText("Emergency Arrival");
 
-        setCommonEncounterAttributes(arrivalEncounterBuilder, targetEmergencyCds, csvHelper, true);
+        setCommonEncounterAttributes(arrivalEncounterBuilder, targetEmergencyCds, csvHelper, true, fhirResourceFiler);
 
         //and link the parent to this new child encounter
         Reference childArrivalRef = ReferenceHelper.createReference(ResourceType.Encounter, arrivalEncounterId);
@@ -216,7 +236,7 @@ public class EmergencyCdsTargetTransformer {
                     = new CodeableConceptBuilder(assessmentEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderAssessment.setText("Emergency Assessment");
 
-            setCommonEncounterAttributes(assessmentEncounterBuilder, targetEmergencyCds, csvHelper, true);
+            setCommonEncounterAttributes(assessmentEncounterBuilder, targetEmergencyCds, csvHelper, true, fhirResourceFiler);
 
             //and link the parent to this new child encounter
             Reference childAssessmentRef = ReferenceHelper.createReference(ResourceType.Encounter, assessmentEncounterId);
@@ -263,7 +283,7 @@ public class EmergencyCdsTargetTransformer {
                     = new CodeableConceptBuilder(treatmentsEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderTreatments.setText("Emergency Treatment");
 
-            setCommonEncounterAttributes(treatmentsEncounterBuilder, targetEmergencyCds, csvHelper, true);
+            setCommonEncounterAttributes(treatmentsEncounterBuilder, targetEmergencyCds, csvHelper, true, fhirResourceFiler);
 
             //and link the parent to this new child encounter
             Reference childTreatmentsRef = ReferenceHelper.createReference(ResourceType.Encounter, treatmentsEncounterId);
@@ -311,7 +331,7 @@ public class EmergencyCdsTargetTransformer {
                     = new CodeableConceptBuilder(conclusionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
             codeableConceptBuilderDischarge.setText("Emergency Conclusion");
 
-            setCommonEncounterAttributes(conclusionEncounterBuilder, targetEmergencyCds, csvHelper, true);
+            setCommonEncounterAttributes(conclusionEncounterBuilder, targetEmergencyCds, csvHelper, true, fhirResourceFiler);
 
             //and link the parent to this new child encounter
             Reference childConclusionRef = ReferenceHelper.createReference(ResourceType.Encounter, conclusionEncounterId);
@@ -377,43 +397,46 @@ public class EmergencyCdsTargetTransformer {
         }
     }
 
-    private static void createEmergencyCdsEncounterParentAndSubs(StagingEmergencyCdsTarget targetEmergencyCds,
+    private static EncounterBuilder createEmergencyCdsEncounterParentAndSubs(StagingEmergencyCdsTarget targetEmergencyCds,
                                                                  FhirResourceFiler fhirResourceFiler,
                                                                  BartsCsvHelper csvHelper) throws Exception {
 
-        EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
-        parentTopEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
+        EncounterBuilder parentEncounterBuilder = new EncounterBuilder();
+        parentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
         Integer encounterId = targetEmergencyCds.getEncounterId();
-        parentTopEncounterBuilder.setId(Integer.toString(encounterId));
+        parentEncounterBuilder.setId(Integer.toString(encounterId));
 
         Date arrivalDate = targetEmergencyCds.getDtArrival();
-        parentTopEncounterBuilder.setPeriodStart(arrivalDate);
+        parentEncounterBuilder.setPeriodStart(arrivalDate);
 
         Date departureDate = targetEmergencyCds.getDtDeparture();
         if (departureDate != null) {
 
-            parentTopEncounterBuilder.setPeriodEnd(departureDate);
-            parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            parentEncounterBuilder.setPeriodEnd(departureDate);
+            parentEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         } else {
 
-            parentTopEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+            parentEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
         }
 
         CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+                = new CodeableConceptBuilder(parentEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Emergency");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, targetEmergencyCds, csvHelper, false);
+        setCommonEncounterAttributes(parentEncounterBuilder, targetEmergencyCds, csvHelper, false, fhirResourceFiler);
 
         //then create child level encounters linked to this new parent
-        createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper, parentTopEncounterBuilder);
+        createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
+
+        return parentEncounterBuilder;
     }
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      StagingEmergencyCdsTarget targetEmergencyCds,
                                                      BartsCsvHelper csvHelper,
-                                                     boolean isChildEncounter) throws Exception  {
+                                                     boolean isChildEncounter,
+                                                     FhirResourceFiler fhirResourceFiler) throws Exception  {
 
         //every encounter has the following common attributes
         Integer personId = targetEmergencyCds.getPersonId();
@@ -427,19 +450,48 @@ public class EmergencyCdsTargetTransformer {
             }
             builder.setPatient(patientReference);
         }
+        // Retrieve or create EpisodeOfCare for top level parent encounter only
+        if (!isChildEncounter) {
 
-        //TODO: if we cannot map to the HL7 episode then need to create
-        Integer episodeId = targetEmergencyCds.getEpisodeId();
-        if (episodeId != null) {
+            EpisodeOfCareBuilder episodeOfCareBuilder
+                    = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(targetEmergencyCds);
+            if (episodeOfCareBuilder != null) {
 
-            Reference episodeReference
-                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeId.toString());
-            if (builder.isIdMapped()) {
+                csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, builder, fhirResourceFiler);
 
-                episodeReference
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
+                // Using parent encounter start and end times
+                Date arrivalDate = targetEmergencyCds.getDtArrival();
+                Date departureDate = targetEmergencyCds.getDtDeparture();
+
+                if (arrivalDate != null) {
+
+                    if (episodeOfCareBuilder.getRegistrationStartDate() == null || arrivalDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+                        episodeOfCareBuilder.setRegistrationStartDate(arrivalDate);
+                        episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+                    }
+
+                    // End date
+                    if (departureDate != null) {
+
+                        if (episodeOfCareBuilder.getRegistrationEndDate() == null || departureDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
+                            episodeOfCareBuilder.setRegistrationEndDate(departureDate);
+                        }
+                    }
+                } else {
+                    if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
+                        episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
+                    }
+                }
+
+                // Check whether to Finish EpisodeOfCare
+                // If the patient has left AE (checkout-time/enddatetime) and not been admitted (decisionToAdmitDateTime empty) complete EpisodeOfCare
+                Date decidedToAdmitDate = targetEmergencyCds.getDtDecidedToAdmit();
+                if (departureDate != null
+                        && decidedToAdmitDate != null) {
+
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+                }
             }
-            builder.setEpisodeOfCare(episodeReference);
         }
         Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
         if (performerPersonnelId != null) {
@@ -465,15 +517,13 @@ public class EmergencyCdsTargetTransformer {
             }
             builder.setServiceProvider(organizationReference);
         }
-        //get the existing parent encounter set during ADT feed, to link to this top level encounter if this is a child
+        //get the existing parent encounter to link to this top level encounter if this is a child
         if (isChildEncounter) {
+
             Integer encounterId = targetEmergencyCds.getEncounterId();
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, Integer.toString(encounterId));
-            //if (builder.isIdMapped()) {
-
-                parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            //}
+            parentEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
             builder.setPartOf(parentEncounter);
         }
         //set the CDS identifier against the Encounter
@@ -581,5 +631,51 @@ public class EmergencyCdsTargetTransformer {
         }
 
         fhirResourceFiler.savePatientResource(null, !existingEncounterBuilder.isIdMapped(), existingEncounterBuilder);
+    }
+
+    /**
+     * we match to some HL7 Receiver Encounters, basically taking them over
+     * so we call this to tidy up (delete) any Episodes left not taken over, as the HL7 Receiver creates too many
+     * episodes because it doesn't have the data to avoid doing so
+     */
+    private static void deleteHL7ReceiverPatientEmergencyEncounters(String patientUuid,
+                                                           FhirResourceFiler fhirResourceFiler,
+                                                           BartsCsvHelper csvHelper) throws Exception {
+
+        UUID serviceUuid = fhirResourceFiler.getServiceId();
+        UUID systemUuid = fhirResourceFiler.getSystemId();
+
+        //we want to delete any HL7 Encounter more than 24 hours older than the DW file extract date
+        Date extractDateTime = csvHelper.getExtractDateTime();
+        Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
+
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+        List<ResourceWrapper> resourceWrappers
+                = resourceDal.getResourcesByPatient(serviceUuid, UUID.fromString(patientUuid), ResourceType.Encounter.toString());
+        for (ResourceWrapper wrapper: resourceWrappers) {
+
+            //if this episode is for our own service + system ID (i.e. DW feed), then leave it
+            UUID wrapperSystemId = wrapper.getSystemId();
+            if (wrapperSystemId.equals(systemUuid)) {
+                continue;
+            }
+
+            String json = wrapper.getResourceData();
+            Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
+
+            //if the HL7 Encounter has no date info at all or is before our cutoff, delete it
+            if (!existingEncounter.hasPeriod()
+                    || !existingEncounter.getPeriod().hasStart()
+                    || existingEncounter.getPeriod().getStart().before(cutoff)) {
+
+                //finally, check it is an Emergency encounter class before deleting
+                if (existingEncounter.getClass_().equals(Encounter.EncounterClass.EMERGENCY)) {
+                    GenericBuilder builder = new GenericBuilder(existingEncounter);
+                    //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
+                    //builder.setDeletedAudit(...);
+                    fhirResourceFiler.deletePatientResource(null, false, builder);
+                }
+            }
+        }
     }
 }

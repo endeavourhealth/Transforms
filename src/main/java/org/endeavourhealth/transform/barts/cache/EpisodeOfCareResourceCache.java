@@ -5,6 +5,9 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingInpatientCdsTarget;
+import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingOutpatientCdsTarget;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
@@ -42,7 +45,7 @@ public class EpisodeOfCareResourceCache {
     /**
      * when processing the ENCNT file we set up the Episode ID -> UUID and FIN -> UUID mappings for the EpisodeOfCare
      * but don't actually create the Episode itself.
-     * Let the transforms for IPEPI, OPATT and AEATT pick up the mappings and create the EpisodeOfCare resource
+     * Let the transforms for the CDS encounters pick up the mappings and create the EpisodeOfCare resource
      */
     public void setUpEpisodeOfCareBuilderMappings(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell episodeIdCell, CsvCell finCell, CsvCell visitIdCell) throws Exception {
 
@@ -109,6 +112,51 @@ public class EpisodeOfCareResourceCache {
         return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
     }
 
+    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(StagingEmergencyCdsTarget targetEmergencyCds) throws Exception {
+
+        CsvCell personIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetEmergencyCds.getPersonId()));
+        CsvCell activeIndicatorCell = CsvCell.factoryDummyWrapper(Boolean.toString(targetEmergencyCds.isDeleted()));
+        CsvCell encounterIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetEmergencyCds.getEncounterId()));
+        Integer episodeId = targetEmergencyCds.getEpisodeId();
+
+        //if we have an episodeId try that first
+        if (episodeId != null) {
+            return getEpisodeOfCareBuilder(episodeId, personIdCell, activeIndicatorCell);
+        } else {
+            return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
+        }
+    }
+
+    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(StagingOutpatientCdsTarget targetOutpatientCds) throws Exception {
+
+        CsvCell personIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetOutpatientCds.getPersonId()));
+        CsvCell activeIndicatorCell = CsvCell.factoryDummyWrapper(Boolean.toString(targetOutpatientCds.isDeleted()));
+        CsvCell encounterIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetOutpatientCds.getEncounterId()));
+        Integer episodeId = targetOutpatientCds.getEpisodeId();
+
+        //if we have an episodeId try that first
+        if (episodeId != null) {
+            return getEpisodeOfCareBuilder(episodeId, personIdCell, activeIndicatorCell);
+        } else {
+            return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
+        }
+    }
+
+    public EpisodeOfCareBuilder getEpisodeOfCareBuilder(StagingInpatientCdsTarget targetInpatientCds) throws Exception {
+
+        CsvCell personIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetInpatientCds.getPersonId()));
+        CsvCell activeIndicatorCell = CsvCell.factoryDummyWrapper(Boolean.toString(targetInpatientCds.isDeleted()));
+        CsvCell encounterIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetInpatientCds.getEncounterId()));
+        Integer episodeId = targetInpatientCds.getEpisodeId();
+
+        //if we have an episodeId try that first
+        if (episodeId != null) {
+            return getEpisodeOfCareBuilder(episodeId, personIdCell, activeIndicatorCell);
+        } else {
+            return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
+        }
+    }
+
     /**
      * for three of the encounter-related files, there's just an Encounter ID, so we must try to
      * find the EpisodeOfCare by looking up either an Episode ID or FIN using the interal ID map table
@@ -129,6 +177,17 @@ public class EpisodeOfCareResourceCache {
 
             String finLocalRef = createEpisodeReferenceFromFin(fin);
             return retrieveAndCacheBuilder(finLocalRef, personIdCell, activeIndicatorCell);
+        }
+
+        return null;
+    }
+
+    private EpisodeOfCareBuilder getEpisodeOfCareBuilder(Integer episodeId, CsvCell personIdCell, CsvCell activeIndicatorCell) throws Exception {
+
+        if (episodeId != null) {
+
+            String episodeLocalRef = createEpisodeReferenceFromEpisodeId(Integer.toString(episodeId));
+            return retrieveAndCacheBuilder(episodeLocalRef, personIdCell, activeIndicatorCell);
         }
 
         return null;

@@ -35,8 +35,10 @@ public class CdsTailPreTransformerBase {
         } else {
             //on Cerner Transform server, just run the latest tail records for now
             processCdsTailRecord(parser, csvHelper, susRecordType, cdsTailBatch);
-            //processTailRecordCondition(parser, csvHelper, susRecordType, conditionBatch);
-            //processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
+
+            //these calls reinstated for testing with CDS encounters
+            processTailRecordCondition(parser, csvHelper, susRecordType, conditionBatch);
+            processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
         }
     }
 
