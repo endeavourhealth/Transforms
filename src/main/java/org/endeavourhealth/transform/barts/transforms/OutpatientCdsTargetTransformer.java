@@ -10,6 +10,10 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingOutpatientCdsTarget;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -181,38 +185,7 @@ public class OutpatientCdsTargetTransformer {
         setCommonEncounterAttributes(encounterBuilder, targetOutpatientCds, csvHelper, true, fhirResourceFiler);
 
         //add in additional extended data as Parameters resource with additional extension
-        //TODO: set name and values using IM map once done, i.e. replace referral_source etc.
-        ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(encounterBuilder);
-        containedParametersBuilder.removeContainedParameters();
-
-        String adminCategoryCode = targetOutpatientCds.getAdministrativeCategoryCode();
-        if (!Strings.isNullOrEmpty(adminCategoryCode)) {
-            containedParametersBuilder.addParameter("administrative_category_code", adminCategoryCode);
-        }
-        String referralSourceId = targetOutpatientCds.getReferralSource();
-        if (!Strings.isNullOrEmpty(referralSourceId)) {
-            containedParametersBuilder.addParameter("referral_source", "" + referralSourceId);
-        }
-        String apptAttendedCode = targetOutpatientCds.getApptAttendedCode();
-        if (!Strings.isNullOrEmpty(apptAttendedCode)) {
-            containedParametersBuilder.addParameter("appt_attended_code", "" + apptAttendedCode);
-        }
-        String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
-        if (!Strings.isNullOrEmpty(apptOutcomeCode)) {
-            containedParametersBuilder.addParameter("appt_outcome_code", "" + apptOutcomeCode);
-        }
-        //this is a Cerner code which is mapped to an NHS DD alias
-        String treatmentFunctionCode = targetOutpatientCds.getTreatmentFunctionCode();
-        if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
-            //CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
-            //if (codeRef != null) {
-
-                //String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
-                //containedParametersBuilder.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
-            //todo - codeableconcept etc. -> IM API
-            containedParametersBuilder.addParameter("treatment_function", "" + treatmentFunctionCode);
-            //}
-        }
+        setAttendanceContainedParameters(encounterBuilder, targetOutpatientCds);
 
         //add in diagnosis or procedure data match the encounter date? - already processed via proc and diag CDS transforms
 
@@ -466,6 +439,113 @@ public class OutpatientCdsTargetTransformer {
                     fhirResourceFiler.deletePatientResource(null, false, builder);
                 }
             }
+        }
+    }
+
+    private static void setAttendanceContainedParameters(EncounterBuilder encounterBuilder,
+                                                        StagingOutpatientCdsTarget targetOutpatientCds) throws Exception {
+
+        ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(encounterBuilder);
+        parametersBuilder.removeContainedParameters();
+
+        String adminCategoryCode = targetOutpatientCds.getAdministrativeCategoryCode();
+        if (!Strings.isNullOrEmpty(adminCategoryCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "administrative_category_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "administrative_category_code", adminCategoryCode,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String referralSourceId = targetOutpatientCds.getReferralSource();
+        if (!Strings.isNullOrEmpty(referralSourceId)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "referral_source"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "referral_source", referralSourceId,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String apptAttendedCode = targetOutpatientCds.getApptAttendedCode();
+        if (!Strings.isNullOrEmpty(apptAttendedCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "appt_attended_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "appt_attended_code", apptAttendedCode,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
+        if (!Strings.isNullOrEmpty(apptOutcomeCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "appt_outcome_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "appt_outcome_code", apptOutcomeCode,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String treatmentFunctionCode = targetOutpatientCds.getTreatmentFunctionCode();
+        if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "treatment_function_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
+                    "treatment_function_code", treatmentFunctionCode,"CM_BartCernerCode"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
         }
     }
 }

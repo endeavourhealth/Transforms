@@ -10,6 +10,10 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingInpatientCdsTarget;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -251,53 +255,7 @@ public class InpatientCdsTargetTransformer {
             setCommonEncounterAttributes(admissionEncounterBuilder, targetInpatientCds, csvHelper, true, fhirResourceFiler);
 
             //add in additional extended data as Parameters resource with additional extension
-            //TODO: set name and values using IM map once done, i.e. replace ip_admission_source etc.
-            ContainedParametersBuilder containedParametersBuilderAdmission
-                    = new ContainedParametersBuilder(admissionEncounterBuilder);
-            containedParametersBuilderAdmission.removeContainedParameters();
-
-            String adminCategoryCode = targetInpatientCds.getAdministrativeCategoryCode();
-            if (!Strings.isNullOrEmpty(adminCategoryCode)) {
-                containedParametersBuilderAdmission.addParameter("administrative_category_code", adminCategoryCode);
-            }
-            String admissionMethodCode = targetInpatientCds.getAdmissionMethodCode();
-            if (!Strings.isNullOrEmpty(admissionMethodCode)) {
-                containedParametersBuilderAdmission.addParameter("ip_admission_method",  admissionMethodCode);
-            }
-            String admissionSourceCode = targetInpatientCds.getAdmissionSourceCode();
-            if (!Strings.isNullOrEmpty(admissionSourceCode)) {
-                containedParametersBuilderAdmission.addParameter("ip_admission_source", admissionSourceCode);
-            }
-            String patientClassification = targetInpatientCds.getPatientClassification();
-            if (!Strings.isNullOrEmpty(patientClassification)) {
-                containedParametersBuilderAdmission.addParameter("patient_classification", patientClassification);
-            }
-            //this is a Cerner code which is mapped to an NHS DD alias
-            String treatmentFunctionCode = targetInpatientCds.getTreatmentFunctionCode();
-            if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
-                //CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
-                //if (codeRef != null) {
-
-                    //String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
-                    //containedParametersBuilderAdmission.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
-
-                //todo - codeableconcept etc. -> IM API
-                containedParametersBuilderAdmission.addParameter("treatment_function", treatmentFunctionCode);
-                //}
-            }
-
-            //add the primary and secondary diagnosis codes as additional parameters. Note: these are also filed
-            //as part of the diagnosis CDS transform as separate diagnosis records
-            String primaryDiagnosis = targetInpatientCds.getPrimaryDiagnosisICD();
-            if (!Strings.isNullOrEmpty(primaryDiagnosis)) {
-                containedParametersBuilderAdmission.addParameter("primary_diagnosis", primaryDiagnosis);
-            }
-            String secondaryDiagnosis = targetInpatientCds.getSecondaryDiagnosisICD();
-            if (!Strings.isNullOrEmpty(secondaryDiagnosis)) {
-                containedParametersBuilderAdmission.addParameter("secondary_diagnosis", secondaryDiagnosis);
-            }
-
-            String otherDiagnosis = targetInpatientCds.getOtherDiagnosisICD();
+            setAdmissionContainedParameters(admissionEncounterBuilder, targetInpatientCds);
 
             //if the 01 episode has an episode start date, set the admission status to finished and end date
             Date episodeStartDate = targetInpatientCds.getDtEpisodeStart();
@@ -337,19 +295,7 @@ public class InpatientCdsTargetTransformer {
                 setCommonEncounterAttributes(dischargeEncounterBuilder, targetInpatientCds, csvHelper, true, fhirResourceFiler);
 
                 //add in additional extended data as Parameters resource with additional extension
-                //TODO: set name and values using IM map once done, i.e. replace ip_discharge_method etc.
-                ContainedParametersBuilder containedParametersBuilderDischarge
-                        = new ContainedParametersBuilder(dischargeEncounterBuilder);
-                containedParametersBuilderDischarge.removeContainedParameters();
-
-                String dischargeMethodCode = targetInpatientCds.getDischargeMethod();
-                if (!Strings.isNullOrEmpty(dischargeMethodCode)) {
-                    containedParametersBuilderDischarge.addParameter("ip_discharge_method", "" + dischargeMethodCode);
-                }
-                String dischargeDestinationCode = targetInpatientCds.getDischargeDestinationCode();
-                if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
-                    containedParametersBuilderDischarge.addParameter("ip_discharge_destination", "" + dischargeDestinationCode);
-                }
+                setDischargeContainedParameters(dischargeEncounterBuilder, targetInpatientCds);
 
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
@@ -399,20 +345,19 @@ public class InpatientCdsTargetTransformer {
         }
         existingParentEncounterList.addReference(childEpisodeRef);
 
-        //add in additional extended data as Parameters resource with additional extension
-        //TODO: set name and values using IM map once done - ward start and end?
-        ContainedParametersBuilder containedParametersBuilder
-                = new ContainedParametersBuilder(episodeEncounterBuilder);
-        containedParametersBuilder.removeContainedParameters();
-
-        String episodeStartWardCode = targetInpatientCds.getEpisodeStartWardCode();
-        if (!Strings.isNullOrEmpty(episodeStartWardCode)) {
-            containedParametersBuilder.addParameter("ip_episode_start_ward", "" + episodeStartWardCode);
-        }
-        String episodeEndWardCode = targetInpatientCds.getEpisodeEndWardCode();
-        if (!Strings.isNullOrEmpty(episodeEndWardCode)) {
-            containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCode);
-        }
+        //TODO: processing start and end wards?
+//        ContainedParametersBuilder containedParametersBuilder
+//                = new ContainedParametersBuilder(episodeEncounterBuilder);
+//        containedParametersBuilder.removeContainedParameters();
+//
+//        String episodeStartWardCode = targetInpatientCds.getEpisodeStartWardCode();
+//        if (!Strings.isNullOrEmpty(episodeStartWardCode)) {
+//            containedParametersBuilder.addParameter("ip_episode_start_ward", "" + episodeStartWardCode);
+//        }
+//        String episodeEndWardCode = targetInpatientCds.getEpisodeEndWardCode();
+//        if (!Strings.isNullOrEmpty(episodeEndWardCode)) {
+//            containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCode);
+//        }
 
         //TODO:  procedures associated with episode encounters - already in via specific transforms?
         // targetInpatientCds.getPrimaryProcedureOPCS());
@@ -420,17 +365,17 @@ public class InpatientCdsTargetTransformer {
         // targetInpatientCds.getOtherProceduresOPCS());
 
         //TODO: mothers NHS number linking from birth records at subscriber
-        String maternityBirth = targetInpatientCds.getMaternityDataBirth();
-        //the encounter is about the baby and contains the mothers nhs number
-        if (!Strings.isNullOrEmpty(maternityBirth)) {
-            containedParametersBuilder.addParameter("maternity_birth", maternityBirth);
-        }
-
-        String maternityDelivery = targetInpatientCds.getMaternityDataDelivery();
-        //the encounter is about the mother and this is the birth(s) detail
-        if (!Strings.isNullOrEmpty(maternityDelivery)) {
-            containedParametersBuilder.addParameter("maternity_delivery", maternityBirth);
-        }
+//        String maternityBirth = targetInpatientCds.getMaternityDataBirth();
+//        //the encounter is about the baby and contains the mothers nhs number
+//        if (!Strings.isNullOrEmpty(maternityBirth)) {
+//            containedParametersBuilder.addParameter("maternity_birth", maternityBirth);
+//        }
+//
+//        String maternityDelivery = targetInpatientCds.getMaternityDataDelivery();
+//        //the encounter is about the mother and this is the birth(s) detail
+//        if (!Strings.isNullOrEmpty(maternityDelivery)) {
+//            containedParametersBuilder.addParameter("maternity_delivery", maternityBirth);
+//        }
 
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         //LOG.debug("Saving IP parent encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
@@ -614,6 +559,173 @@ public class InpatientCdsTargetTransformer {
                     fhirResourceFiler.deletePatientResource(null, false, builder);
                 }
             }
+        }
+    }
+
+    private static void setAdmissionContainedParameters(EncounterBuilder encounterBuilder,
+                                                         StagingInpatientCdsTarget targetInpatientCds) throws Exception {
+
+        ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(encounterBuilder);
+        parametersBuilder.removeContainedParameters();
+
+        String adminCategoryCode = targetInpatientCds.getAdministrativeCategoryCode();
+        if (!Strings.isNullOrEmpty(adminCategoryCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "administrative_category_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "administrative_category_code", adminCategoryCode,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String admissionMethodCode = targetInpatientCds.getAdmissionMethodCode();
+        if (!Strings.isNullOrEmpty(admissionMethodCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "admission_method_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "admission_method_code", admissionMethodCode,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String admissionSourceCode = targetInpatientCds.getAdmissionSourceCode();
+        if (!Strings.isNullOrEmpty(admissionSourceCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "admission_source_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "admission_source_code", admissionSourceCode,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String patientClassification = targetInpatientCds.getPatientClassification();
+        if (!Strings.isNullOrEmpty(patientClassification)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "patient_classification"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "patient_classification", patientClassification,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String treatmentFunctionCode = targetInpatientCds.getTreatmentFunctionCode();
+        if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "treatment_function_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "treatment_function_code", treatmentFunctionCode,"CM_BartCernerCode"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        //add the primary and secondary diagnosis codes as additional parameters.
+        // TODO: Check these are filed as part of the diagnosis CDS transform as separate diagnosis records
+
+//            String primaryDiagnosis = targetInpatientCds.getPrimaryDiagnosisICD();
+//            if (!Strings.isNullOrEmpty(primaryDiagnosis)) {
+//                containedParametersBuilderAdmission.addParameter("primary_diagnosis", primaryDiagnosis);
+//            }
+//            String secondaryDiagnosis = targetInpatientCds.getSecondaryDiagnosisICD();
+//            if (!Strings.isNullOrEmpty(secondaryDiagnosis)) {
+//                containedParametersBuilderAdmission.addParameter("secondary_diagnosis", secondaryDiagnosis);
+//            }
+//            String otherDiagnosis = targetInpatientCds.getOtherDiagnosisICD();
+    }
+
+    private static void setDischargeContainedParameters(EncounterBuilder encounterBuilder,
+                                                        StagingInpatientCdsTarget targetInpatientCds) throws Exception {
+
+        ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(encounterBuilder);
+        parametersBuilder.removeContainedParameters();
+
+        String dischargeMethodCode = targetInpatientCds.getDischargeMethod();
+        if (!Strings.isNullOrEmpty(dischargeMethodCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "discharge_method"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "discharge_method", dischargeMethodCode,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String dischargeDestinationCode = targetInpatientCds.getDischargeDestinationCode();
+        if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "discharge_destination_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
+                    "discharge_destination_code", dischargeDestinationCode,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
         }
     }
 }

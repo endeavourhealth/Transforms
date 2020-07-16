@@ -2,15 +2,17 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.ObjectUtils;
-import org.endeavourhealth.common.fhir.FhirIdentifierUri;
-import org.endeavourhealth.common.fhir.ReferenceComponents;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -155,56 +157,8 @@ public class EmergencyCdsTargetTransformer {
         }
         existingEncounterList.addReference(childArrivalRef);
 
-        //add in additional extended data as Parameters resource with additional extension
-        //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
-        ContainedParametersBuilder containedParametersBuilderArrival
-                = new ContainedParametersBuilder(arrivalEncounterBuilder);
-        containedParametersBuilderArrival.removeContainedParameters();
-
-        String aeAttendanceCategoryCode = targetEmergencyCds.getAttendanceCategory();
-        if (!Strings.isNullOrEmpty(aeAttendanceCategoryCode)) {
-
-            //purely for example - replace with actuals throughout
-//            String property
-//                    = IMClient.getPropertyConceptIri("/CDS/ACC", "attendance_category_code");
-//            String value
-//                    = IMClient.getValueConceptIri("/CDS/ACC",
-//                                                    new Field()
-//                                                            .setName("attendance_category_code")
-//                                                            .setValue(aeAttendanceCategoryCode));
-
-            String property  = "attendance_category_code";
-            String value = aeAttendanceCategoryCode;
-            containedParametersBuilderArrival.addParameter(property, value);
-        }
-        String aeAttendanceSource = targetEmergencyCds.getAttendanceSource();
-        if (!Strings.isNullOrEmpty(aeAttendanceSource)) {
-            containedParametersBuilderArrival.addParameter("ae_attendance_source", "" + aeAttendanceSource);
-        }
-        String aeDepartmentType = targetEmergencyCds.getDepartmentType();
-        if (!Strings.isNullOrEmpty(aeDepartmentType)) {
-            containedParametersBuilderArrival.addParameter("ae_department_type", "" + aeDepartmentType);
-        }
-        String aeArrivalMode = targetEmergencyCds.getArrivalMode();
-        if (!Strings.isNullOrEmpty(aeArrivalMode)) {
-            containedParametersBuilderArrival.addParameter("ae_arrival_mode", "" + aeArrivalMode);
-        }
-        String chiefComplaint = targetEmergencyCds.getChiefComplaint();
-        if (!Strings.isNullOrEmpty(chiefComplaint)) {
-            containedParametersBuilderArrival.addParameter("ae_chief_complaint", "" + chiefComplaint);
-        }
-        //this is a Cerner code which is mapped to an NHS DD alias
-        String treatmentFunctionCode = targetEmergencyCds.getTreatmentFunctionCode();
-        if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
-            //CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.TREATMENT_FUNCTION, treatmentFunctionCode);
-            //if (codeRef != null) {
-
-               // String treatmentFunctionCodeNHSAliasCode = codeRef.getAliasNhsCdAlias();
-                //containedParametersBuilderArrival.addParameter("treatment_function", "" + treatmentFunctionCodeNHSAliasCode);
-            //todo - codeableconcept etc. -> IM API
-            containedParametersBuilderArrival.addParameter("treatment_function", "" + treatmentFunctionCode);
-            //}
-        }
+        //set the additional extended data as Parameters resource with additional extension
+        setArrivalContainedParameters(arrivalEncounterBuilder, targetEmergencyCds);
 
         //check for other dates to determine if the arrival has ended
         Date assessmentDate = targetEmergencyCds.getDtInitialAssessment();
@@ -248,15 +202,16 @@ public class EmergencyCdsTargetTransformer {
             existingEncounterList.addReference(childAssessmentRef);
 
             //add in additional extended data as Parameters resource with additional extension
-            //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
-            ContainedParametersBuilder containedParametersBuilderAss
-                    = new ContainedParametersBuilder(assessmentEncounterBuilder);
-            containedParametersBuilderAss.removeContainedParameters();
-
-            String safeGuardingConcerns = targetEmergencyCds.getSafeguardingConcerns();
-            if (!Strings.isNullOrEmpty(safeGuardingConcerns)) {
-                containedParametersBuilderAss.addParameter("safe_guarding_concerns", "" + safeGuardingConcerns);
-            }
+            //TODO:  Check on live that safeguearding concerns Snomed examples are filed verses additional
+//            ContainedParametersBuilder containedParametersBuilderAss
+//                    = new ContainedParametersBuilder(assessmentEncounterBuilder);
+//            containedParametersBuilderAss.removeContainedParameters();
+//
+//            String safeGuardingConcerns = targetEmergencyCds.getSafeguardingConcerns();
+//            if (!Strings.isNullOrEmpty(safeGuardingConcerns)) {
+//
+//                //containedParametersBuilderAss.addParameter("safe_guarding_concerns", "" + safeGuardingConcerns);
+//            }
 
             Date aeAssessmentEndDate
                     = ObjectUtils.firstNonNull(invAndTreatmentsDate, admitDate, conclusionDate, departureDate);
@@ -294,7 +249,7 @@ public class EmergencyCdsTargetTransformer {
             }
             existingEncounterList.addReference(childTreatmentsRef);
 
-            //TODO - do we save the linked clinical data here?
+            //TODO - do we save the linked clinical data here - check live examples?
             //targetEmergencyCds.getDiagnosis();
             //targetEmergencyCds.getInvestigations();
             //targetEmergencyCds.getTreatments();
@@ -343,23 +298,7 @@ public class EmergencyCdsTargetTransformer {
             existingEncounterList.addReference(childConclusionRef);
 
             //add in additional extended data as Parameters resource with additional extension
-            //TODO: set name and values using IM map once done, i.e. replace ae_arrival_mode etc.
-            ContainedParametersBuilder containedParametersBuilderDischarge
-                    = new ContainedParametersBuilder(conclusionEncounterBuilder);
-            containedParametersBuilderDischarge.removeContainedParameters();
-
-            String dischargeStatusCode = targetEmergencyCds.getDischargeStatus();
-            if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
-                containedParametersBuilderDischarge.addParameter("ae_discharge_status", "" + dischargeStatusCode);
-            }
-            String dischargeDestinationCode = targetEmergencyCds.getDischargeDestination();
-            if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
-                containedParametersBuilderDischarge.addParameter("ae_discharge_destination", "" + dischargeDestinationCode);
-            }
-            String dischargeFollowUp = targetEmergencyCds.getDischargeFollowUp();
-            if (!Strings.isNullOrEmpty(dischargeFollowUp)) {
-                containedParametersBuilderDischarge.addParameter("ae_discharge_follow_up", "" + dischargeFollowUp);
-            }
+            setConclusionContainedParameters(conclusionEncounterBuilder, targetEmergencyCds);
 
             //note ordering of date here, i.e. if not concluded, then departed is the end date
             Date aeConclusionEndDate
@@ -677,5 +616,146 @@ public class EmergencyCdsTargetTransformer {
                 }
             }
         }
+    }
+
+    private static void setArrivalContainedParameters(EncounterBuilder encounterBuilder,
+                                                      StagingEmergencyCdsTarget targetEmergencyCds) throws Exception {
+
+        ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(encounterBuilder);
+        parametersBuilder.removeContainedParameters();
+
+        String aeAttendanceCategoryCode = targetEmergencyCds.getAttendanceCategory();
+        if (!Strings.isNullOrEmpty(aeAttendanceCategoryCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "attendance_category"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "attendance_category", aeAttendanceCategoryCode,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();   //DM_aeAttendanceCategory
+            String valueConceptIri = valueResponse.getConcept().getIri();         //CM_AEAttCat3
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String aeAttendanceSource = targetEmergencyCds.getAttendanceSource();
+        if (!Strings.isNullOrEmpty(aeAttendanceSource)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "attendance_source"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "attendance_source", aeAttendanceSource,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String aeDepartmentType = targetEmergencyCds.getDepartmentType();
+        if (!Strings.isNullOrEmpty(aeDepartmentType)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "department_type"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "department_type", aeDepartmentType,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String aeArrivalMode = targetEmergencyCds.getArrivalMode();
+        if (!Strings.isNullOrEmpty(aeArrivalMode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "arrival_mode"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = "SM_".concat(aeArrivalMode);  //NOTE: a Snomed code so no IM lookup
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        //TODO: check filed as observation?
+//        String chiefComplaint = targetEmergencyCds.getChiefComplaint();
+//        if (!Strings.isNullOrEmpty(chiefComplaint)) {
+//
+//            //value SN_{code}
+//            parametersBuilder.addParameter("ae_chief_complaint", "" + chiefComplaint);
+//        }
+
+
+        String treatmentFunctionCode = targetEmergencyCds.getTreatmentFunctionCode();
+        if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "treatment_function_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "treatment_function_code", treatmentFunctionCode,"CM_BartCernerCode"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+    }
+
+    private static void setConclusionContainedParameters(EncounterBuilder encounterBuilder,
+                                                        StagingEmergencyCdsTarget targetEmergencyCds) throws Exception {
+
+        ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(encounterBuilder);
+        parametersBuilder.removeContainedParameters();
+
+        String dischargeDestinationCode = targetEmergencyCds.getDischargeDestination();
+        if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "discharge_destination"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = "SM_".concat(dischargeDestinationCode);  //NOTE: a Snomed code so no IM value lookup
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        //TODO - are these being mapped as additional?
+//        String dischargeStatusCode = targetEmergencyCds.getDischargeStatus();
+//        if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
+//            parametersBuilder.addParameter("ae_discharge_status", "" + dischargeStatusCode);
+//        }
+//        String dischargeFollowUp = targetEmergencyCds.getDischargeFollowUp();
+//        if (!Strings.isNullOrEmpty(dischargeFollowUp)) {
+//            parametersBuilder.addParameter("ae_discharge_follow_up", "" + dischargeFollowUp);
+//        }
     }
 }

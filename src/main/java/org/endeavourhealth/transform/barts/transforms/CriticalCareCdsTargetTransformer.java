@@ -5,6 +5,10 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCriticalCareCdsTarget;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -151,43 +155,8 @@ public class CriticalCareCdsTargetTransformer {
             encounterBuilder.setPartOf(parentEncounter);
 
             //add in additional extended data as Parameters resource with additional extension
-            //TODO: set name and values using IM map once done, i.e. replace critical_care_type etc.
-            ContainedParametersBuilder containedParametersBuilder
-                    = new ContainedParametersBuilder(encounterBuilder);
-            containedParametersBuilder.removeContainedParameters();
+            setCriticalContainedParameters(encounterBuilder, targetCriticalCareCds);
 
-            String criticalCareTypeId = targetCriticalCareCds.getCriticalCareTypeId();
-            if (!Strings.isNullOrEmpty(criticalCareTypeId)) {
-                containedParametersBuilder.addParameter("critical_care_type", "" + criticalCareTypeId);
-            }
-            String careUnitFunction = targetCriticalCareCds.getCareUnitFunction();
-            if (!Strings.isNullOrEmpty(careUnitFunction)) {
-                containedParametersBuilder.addParameter("cc_unit_function", "" + careUnitFunction);
-            }
-            String admissionSourceCode = targetCriticalCareCds.getAdmissionSourceCode();
-            if (!Strings.isNullOrEmpty(admissionSourceCode)) {
-                containedParametersBuilder.addParameter("cc_admission_source", "" + admissionSourceCode);
-            }
-            String admissionTypeCode = targetCriticalCareCds.getAdmissionTypeCode();
-            if (!Strings.isNullOrEmpty(admissionTypeCode)) {
-                containedParametersBuilder.addParameter("cc_admission_type", "" + admissionTypeCode);
-            }
-            String admissionLocationCode = targetCriticalCareCds.getAdmissionLocation();
-            if (!Strings.isNullOrEmpty(admissionLocationCode)) {
-                containedParametersBuilder.addParameter("cc_admission_location", "" + admissionLocationCode);
-            }
-            String dischargeStatusCode = targetCriticalCareCds.getDischargeStatusCode();
-            if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
-                containedParametersBuilder.addParameter("cc_discharge_status", "" + dischargeStatusCode);
-            }
-            String dischargeDestinationCode = targetCriticalCareCds.getDischargeDestination();
-            if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
-                containedParametersBuilder.addParameter("cc_discharge_destination", "" + dischargeDestinationCode);
-            }
-            String dischargeLocationCode = targetCriticalCareCds.getDischargeLocation();
-            if (!Strings.isNullOrEmpty(dischargeLocationCode)) {
-                containedParametersBuilder.addParameter("cc_discharge_location", "" + dischargeLocationCode);
-            }
             String cdsUniqueId = targetCriticalCareCds.getUniqueId();
             if (!cdsUniqueId.isEmpty()) {
 
@@ -222,5 +191,174 @@ public class CriticalCareCdsTargetTransformer {
             //LOG.debug("Saving child critical encounter: "+ FhirSerializationHelper.serializeResource(encounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, encounterBuilder);
         }
+    }
+
+    private static void setCriticalContainedParameters(EncounterBuilder encounterBuilder,
+                                                        StagingCriticalCareCdsTarget targetCriticalCareCds) throws Exception {
+
+        ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(encounterBuilder);
+        parametersBuilder.removeContainedParameters();
+
+        String careUnitFunction = targetCriticalCareCds.getCareUnitFunction();
+        if (!Strings.isNullOrEmpty(careUnitFunction)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+                    "care_unit_function"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+                    "care_unit_function", careUnitFunction,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String admissionSourceCode = targetCriticalCareCds.getAdmissionSourceCode();
+        if (!Strings.isNullOrEmpty(admissionSourceCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+                    "admission_source_code"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+                    "admission_source_code", careUnitFunction,"CM_NHS_DD"
+            );
+            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = valueResponse.getConcept().getIri();
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        //TODO: These are not IM mapped yet
+
+//        String criticalCareTypeId = targetCriticalCareCds.getCriticalCareTypeId();
+//        if (!Strings.isNullOrEmpty(criticalCareTypeId)) {
+//
+//            MapColumnRequest propertyRequest = new MapColumnRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "critical_care_type"
+//            );
+//            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+//
+//            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "critical_care_type", criticalCareTypeId,"CM_BartCernerCode"
+//            );
+//            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+//
+//            String propertyConceptIri = propertyResponse.getConcept().getIri();
+//            String valueConceptIri = valueResponse.getConcept().getIri();
+//            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+//        }
+//
+//        String admissionTypeCode = targetCriticalCareCds.getAdmissionTypeCode();
+//        if (!Strings.isNullOrEmpty(admissionTypeCode)) {
+//
+//            MapColumnRequest propertyRequest = new MapColumnRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "admission_type_code"
+//            );
+//            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+//
+//            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "admission_type_code", admissionTypeCode,"CM_NHS_DD"
+//            );
+//            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+//
+//            String propertyConceptIri = propertyResponse.getConcept().getIri();
+//            String valueConceptIri = valueResponse.getConcept().getIri();
+//            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+//        }
+//
+//        String admissionLocationCode = targetCriticalCareCds.getAdmissionLocation();
+//        if (!Strings.isNullOrEmpty(admissionLocationCode)) {
+//
+//            MapColumnRequest propertyRequest = new MapColumnRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "admission_location"
+//            );
+//            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+//
+//            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "admission_location", admissionLocationCode,"CM_NHS_DD"
+//            );
+//            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+//
+//            String propertyConceptIri = propertyResponse.getConcept().getIri();
+//            String valueConceptIri = valueResponse.getConcept().getIri();
+//            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+//        }
+//
+//        String dischargeStatusCode = targetCriticalCareCds.getDischargeStatusCode();
+//        if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
+//
+//            MapColumnRequest propertyRequest = new MapColumnRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "discharge_status_code"
+//            );
+//            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+//
+//            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "discharge_status_code", dischargeStatusCode,"CM_NHS_DD"
+//            );
+//            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+//
+//            String propertyConceptIri = propertyResponse.getConcept().getIri();
+//            String valueConceptIri = valueResponse.getConcept().getIri();
+//            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+//        }
+//
+//        String dischargeDestinationCode = targetCriticalCareCds.getDischargeDestination();
+//        if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
+//
+//            MapColumnRequest propertyRequest = new MapColumnRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "discharge_destination"
+//            );
+//            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+//
+//            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "discharge_destination", dischargeDestinationCode,"CM_NHS_DD"
+//            );
+//            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+//
+//            String propertyConceptIri = propertyResponse.getConcept().getIri();
+//            String valueConceptIri = valueResponse.getConcept().getIri();
+//            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+//        }
+//
+//        String dischargeLocationCode = targetCriticalCareCds.getDischargeLocation();
+//        if (!Strings.isNullOrEmpty(dischargeLocationCode)) {
+//
+//            MapColumnRequest propertyRequest = new MapColumnRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "discharge_location"
+//            );
+//            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+//
+//            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+//                    "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
+//                    "discharge_location", dischargeLocationCode,"CM_NHS_DD"
+//            );
+//            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+//
+//            String propertyConceptIri = propertyResponse.getConcept().getIri();
+//            String valueConceptIri = valueResponse.getConcept().getIri();
+//            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+//        }
     }
 }
