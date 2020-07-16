@@ -8,6 +8,7 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.Outpatients;
@@ -104,8 +105,10 @@ public class OutpatientsTransformer {
         //date and time is always present in the record
         CsvCell appointmentDateCell = parser.getAppointmentDttm();
         if (!appointmentDateCell.isEmpty()) {
-            slotBuilder.setStartDateTime(appointmentDateCell.getDate(), appointmentDateCell);
-            appointmentBuilder.setStartDateTime(appointmentDateCell.getDate(), appointmentDateCell);
+            slotBuilder.setStartDateTime(appointmentDateCell.getDateTime(), appointmentDateCell);
+            appointmentBuilder.setStartDateTime(appointmentDateCell.getDateTime(), appointmentDateCell);
+        } else {
+            LOG.debug("Start date empty for " + idCell.getString());
         }
 
         //the class is Outpatient
@@ -277,6 +280,7 @@ public class OutpatientsTransformer {
         }
 
         //save the Encounter, Appointment and Slot
+
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !subEncounter.isIdMapped(), subEncounter);
         Appointment appt = (Appointment) appointmentBuilder.getResource();
