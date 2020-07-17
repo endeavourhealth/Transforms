@@ -748,14 +748,33 @@ public class EmergencyCdsTargetTransformer {
             parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
         }
 
-        //TODO - are these being mapped as additional?
-//        String dischargeStatusCode = targetEmergencyCds.getDischargeStatus();
-//        if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
-//            parametersBuilder.addParameter("ae_discharge_status", "" + dischargeStatusCode);
-//        }
-//        String dischargeFollowUp = targetEmergencyCds.getDischargeFollowUp();
-//        if (!Strings.isNullOrEmpty(dischargeFollowUp)) {
-//            parametersBuilder.addParameter("ae_discharge_follow_up", "" + dischargeFollowUp);
-//        }
+        //TODO: These might not be IM mapped yet, so check auto create
+        String dischargeStatusCode = targetEmergencyCds.getDischargeStatus();
+        if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "discharge_status"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = "SM_".concat(dischargeStatusCode);  //NOTE: a Snomed code so no IM value lookup
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
+
+        String dischargeFollowUp = targetEmergencyCds.getDischargeFollowUp();
+        if (!Strings.isNullOrEmpty(dischargeFollowUp)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "follow_up"
+            );
+            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+            String propertyConceptIri = propertyResponse.getConcept().getIri();
+            String valueConceptIri = "SM_".concat(dischargeFollowUp);  //NOTE: a Snomed code so no IM value lookup
+            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+        }
     }
 }
