@@ -59,10 +59,17 @@ public class EpisodesTransformer {
         CsvCell patientIdCell = parser.getPasId();
         CsvCell idCell = parser.getId();
         //Create ParentEncounterBuilder
+
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
 
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
+
+        //TODO needs to be rewritten to retrieve the spell encounter.  This is a start.
+        if (!parser.getIpSpellExternalId().isEmpty()) {
+            Reference spellReference = csvHelper.createEncounterReference(parser.getIpSpellExternalId().getString(), patientIdCell.getString());
+            encounterBuilder.setPartOf(spellReference,parser.getIpSpellExternalId());
+        }
 
         CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
         if (dataUpdateStatusCell.getString().equalsIgnoreCase("Deleted")) {

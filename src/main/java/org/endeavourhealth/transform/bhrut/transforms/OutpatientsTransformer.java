@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.ObjectUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
@@ -192,11 +193,16 @@ public class OutpatientsTransformer {
         }
 
         //calculate the total duration as the difference between the seen time and when they left
-        if (!patientSeenDateCell.isEmpty() && !endDateCell.isEmpty()) {
-
+        CsvCell patientCallDateCell = parser.getApptCallDttm();
+        if (!endDateCell.isEmpty()) {
             Date dtSeen = patientSeenDateCell.getDateTime();
+            Date callDate = patientCallDateCell.getDateTime();
+            Date  appointmentDate = appointmentDateCell.getDateTime();
+
+            Date appointmentStartDate
+                    = ObjectUtils.firstNonNull(dtSeen, callDate, appointmentDate);
             Date dtLeft = endDateCell.getDateTime();
-            long msDiff = dtLeft.getTime() - dtSeen.getTime();
+            long msDiff = dtLeft.getTime() - appointmentStartDate.getTime();
             long minDiff = msDiff / (1000L * 60L);
 
             appointmentBuilder.setMinutesActualDuration(new Integer((int) minDiff));
