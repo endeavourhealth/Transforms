@@ -16,8 +16,6 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -89,7 +87,6 @@ public class SpellsTransformer {
 
         //Create ParentEncounterBuilder
         EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
-        List<ResourceBuilderBase> bases = createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
         Reference patientReference2 = csvHelper.createPatientReference(patientIdCell);
         if (encounterBuilder.isIdMapped()) {
             IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference2, fhirResourceFiler);
@@ -280,11 +277,6 @@ public class SpellsTransformer {
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
-        if (!bases.isEmpty()) {
-            ResourceBuilderBase resources[] = new ResourceBuilderBase[bases.size()];
-            bases.toArray(resources);
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), resources);
-        }
     }
 
     private static void createEpisodeOfcare(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
@@ -406,103 +398,13 @@ public class SpellsTransformer {
 
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-        codeableConceptBuilder.setText("Inpatient Admission");
+        codeableConceptBuilder.setText("Inpatient Spell");
 
         setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
         return parentTopEncounterBuilder;
 
     }
-
-    private static List<ResourceBuilderBase> createSubEncounters(Spells parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
-
-        ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
-        List<ResourceBuilderBase> res = new ArrayList<ResourceBuilderBase>();
-
-        EncounterBuilder admissionEncounterBuilder = new EncounterBuilder();
-        admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
-
-        String admissionEncounterId = parser.getId().getString() + ":01:IP:Admission";
-        admissionEncounterBuilder.setId(admissionEncounterId);
-
-        admissionEncounterBuilder.setPeriodStart(parser.getAdmissionDttm().getDateTime(), parser.getAdmissionDttm());
-        admissionEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
-        CodeableConceptBuilder codeableConceptBuilderAdmission
-                = new CodeableConceptBuilder(admissionEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-        codeableConceptBuilderAdmission.setText("Inpatient Admission");
-        setCommonEncounterAttributes(admissionEncounterBuilder, parser, csvHelper, true);
-
-        //add in additional extended data as Parameters resource with additional extension
-        ContainedParametersBuilder containedParametersBuilderMain
-                = new ContainedParametersBuilder(admissionEncounterBuilder);
-        containedParametersBuilderMain.removeContainedParameters();
-
-        CsvCell admissionMethodCodeCell = parser.getAdmissionMethodCode();
-        if (!admissionMethodCodeCell.isEmpty()) {
-            containedParametersBuilderMain.addParameter("ip_admission_method", "" + admissionMethodCodeCell.getString());
-        }
-        CsvCell admissionSourceCodeCell = parser.getAdmissionSourceCode();
-        if (!admissionSourceCodeCell.isEmpty()) {
-            containedParametersBuilderMain.addParameter("ip_admission_source", "" + admissionSourceCodeCell.getString());
-        }
-
-        CsvCell patientClassCodeCell = parser.getPatientClassCode();
-        if (!patientClassCodeCell.isEmpty()) {
-            containedParametersBuilderMain.addParameter("patient_classification", "" + patientClassCodeCell.getString());
-        }
-
-        //and link the parent to this new child encounter
-        Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
-        if (existingParentEncounterBuilder.isIdMapped()) {
-            childAdmissionRef
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
-        }
-        existingEncounterList.addReference(childAdmissionRef);
-        res.add(admissionEncounterBuilder);
-
-        CsvCell spellDischargeDateCell = parser.getDischargeDttm();
-        if (!spellDischargeDateCell.isEmpty()) {
-
-            //create new additional Discharge encounter event to link to the top level parent
-            EncounterBuilder dischargeEncounterBuilder = new EncounterBuilder();
-            dischargeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
-
-            String dischargeEncounterId = parser.getId().getString() + ":01:IP:Discharge";
-            dischargeEncounterBuilder.setId(dischargeEncounterId);
-            dischargeEncounterBuilder.setPeriodStart(spellDischargeDateCell.getDate());
-            dischargeEncounterBuilder.setPeriodEnd(spellDischargeDateCell.getDate());
-            dischargeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
-
-            CodeableConceptBuilder codeableConceptBuilderDischarge
-                    = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-            codeableConceptBuilderDischarge.setText("Inpatient Discharge");
-
-            setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper, true);
-            ContainedParametersBuilder containedParametersBuilderDischarge
-                    = new ContainedParametersBuilder(dischargeEncounterBuilder);
-            containedParametersBuilderDischarge.removeContainedParameters();
-
-            if (!parser.getDischargeMethodCode().isEmpty()) {
-                containedParametersBuilderMain.addParameter("ip_discharge_method", "" + parser.getDischargeMethodCode().getString());
-            }
-
-            if (!parser.getDischargeDestinationCode().isEmpty()) {
-                CsvCell dischargeDestCode = parser.getDischargeDestinationCode();
-                containedParametersBuilderMain.addParameter("ip_discharge_destination", "" + dischargeDestCode.getString());
-            }
-
-            //and link the parent to this new child encounter
-            Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
-            if (existingParentEncounterBuilder.isIdMapped()) {
-                childDischargeRef
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
-            }
-            existingEncounterList.addReference(childDischargeRef);
-            res.add(dischargeEncounterBuilder);
-        }
-        return res;
-    }
-
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      Spells parser,
