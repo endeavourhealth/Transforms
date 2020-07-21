@@ -231,7 +231,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         }
 
         List<List_.ListEntryComponent> entries = list.getEntry();
-        List<String> uniqueEntries = new ArrayList<>();
+        HashSet<String> uniqueEntries = new HashSet<>();
         for (List_.ListEntryComponent entry: entries) {
             if (entry.hasFlag()) {
                 CodeableConcept codeableConcept = entry.getFlag();
@@ -239,8 +239,9 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                 RegistrationStatus status = RegistrationStatus.fromCode(code);
                 Date d = entry.getDate();
                 RegStatus regStatus = new RegStatus(episodeOfCare, status, d);
-                if (!uniqueEntries.contains(regStatus.generateUniqueId())) {
-                    uniqueEntries.add(regStatus.generateUniqueId());
+                String id = regStatus.generateUniqueId();
+                if (!uniqueEntries.contains(id)) {
+                    uniqueEntries.add(id);
                     ret.add(regStatus);
                 }
             }
