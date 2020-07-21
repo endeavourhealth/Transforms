@@ -3,12 +3,8 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
@@ -47,12 +43,8 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
 
-            //TODO - remove this check one table is rolled out
-            if (!TransformConfig.instance().isLive()) {
-                List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
-                deleteRegistrationStatusHistory(fullHistory, resourceWrapper, params);
-            }
-
+            List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
+            deleteRegistrationStatusHistory(fullHistory, resourceWrapper, params);
             model.writeDelete(subscriberId);
             return;
         }
@@ -123,11 +115,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                 dateRegisteredEnd,
                 usualGpPractitionerId);
 
-        //TODO: remove this check for go live to introduce Compass v1 upgrade tables population
-        //TODO - don't forget to remove similar check at the top of this fn for deleting these entities
-        if (!TransformConfig.instance().isLive()) {
-            transformRegistrationStatusHistory(organizationId, patientId, personId, id, fhir, resourceWrapper, params);
-        }
+        transformRegistrationStatusHistory(organizationId, patientId, personId, id, fhir, resourceWrapper, params);
     }
 
     @Override
