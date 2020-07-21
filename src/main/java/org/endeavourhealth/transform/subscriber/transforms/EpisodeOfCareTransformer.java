@@ -231,14 +231,18 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         }
 
         List<List_.ListEntryComponent> entries = list.getEntry();
+        List<String> uniqueEntries = new ArrayList<>();
         for (List_.ListEntryComponent entry: entries) {
             if (entry.hasFlag()) {
                 CodeableConcept codeableConcept = entry.getFlag();
                 String code = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_REGISTRATION_STATUS);
                 RegistrationStatus status = RegistrationStatus.fromCode(code);
                 Date d = entry.getDate();
-
-                ret.add(new RegStatus(episodeOfCare, status, d));
+                RegStatus regStatus = new RegStatus(episodeOfCare, status, d);
+                if (!uniqueEntries.contains(regStatus.generateUniqueId())) {
+                    uniqueEntries.add(regStatus.generateUniqueId());
+                    ret.add(regStatus);
+                }
             }
         }
 
