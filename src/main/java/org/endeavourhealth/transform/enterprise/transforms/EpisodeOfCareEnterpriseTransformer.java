@@ -128,8 +128,7 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
 
             //create a unique Id mapping reference for this episode of care registration status using
             //code and date. Sometimes duplicates are sent which we will simply overwrite/upsert
-            String sourceId = regStatus.generateUniqueId();
-            SubscriberId subTableId = hmIds.get(sourceId);
+            SubscriberId subTableId = hmIds.get(regStatus);
             if (subTableId != null) { //will be null if never transformed before
 
                 long registrationHistoryId = subTableId.getSubscriberId();
