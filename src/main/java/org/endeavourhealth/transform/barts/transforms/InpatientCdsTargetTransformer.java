@@ -583,9 +583,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String admissionMethodCode = targetInpatientCds.getAdmissionMethodCode();
@@ -603,9 +604,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String admissionSourceCode = targetInpatientCds.getAdmissionSourceCode();
@@ -623,9 +625,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String patientClassification = targetInpatientCds.getPatientClassification();
@@ -643,9 +646,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String treatmentFunctionCode = targetInpatientCds.getTreatmentFunctionCode();
@@ -663,9 +667,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         //add the primary and secondary diagnosis codes as additional parameters.
@@ -703,9 +708,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String dischargeDestinationCode = targetInpatientCds.getDischargeDestinationCode();
@@ -723,9 +729,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
     }
 }

@@ -2,7 +2,10 @@ package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.ObjectUtils;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
@@ -639,9 +642,10 @@ public class EmergencyCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();   //DM_aeAttendanceCategory
-            String valueConceptIri = valueResponse.getConcept().getIri();         //CM_AEAttCat3
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                               .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String aeAttendanceSource = targetEmergencyCds.getAttendanceSource();
@@ -659,9 +663,10 @@ public class EmergencyCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String aeDepartmentType = targetEmergencyCds.getDepartmentType();
@@ -679,9 +684,10 @@ public class EmergencyCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String aeArrivalMode = targetEmergencyCds.getArrivalMode();
@@ -693,19 +699,19 @@ public class EmergencyCdsTargetTransformer {
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = "SM_".concat(aeArrivalMode);  //NOTE: a Snomed code so no IM lookup
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(aeArrivalMode)
+                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
-        //TODO: check filed as observation?
+        //TODO: check filed as observation - yes, many on live
 //        String chiefComplaint = targetEmergencyCds.getChiefComplaint();
 //        if (!Strings.isNullOrEmpty(chiefComplaint)) {
 //
 //            //value SN_{code}
 //            parametersBuilder.addParameter("ae_chief_complaint", "" + chiefComplaint);
 //        }
-
 
         String treatmentFunctionCode = targetEmergencyCds.getTreatmentFunctionCode();
         if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
@@ -722,9 +728,10 @@ public class EmergencyCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
     }
 
@@ -743,9 +750,10 @@ public class EmergencyCdsTargetTransformer {
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = "SM_".concat(dischargeDestinationCode);  //NOTE: a Snomed code so no IM value lookup
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(dischargeDestinationCode)
+                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         //TODO: These might not be IM mapped yet, so check auto create
@@ -758,9 +766,10 @@ public class EmergencyCdsTargetTransformer {
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = "SM_".concat(dischargeStatusCode);  //NOTE: a Snomed code so no IM value lookup
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(dischargeStatusCode)
+                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String dischargeFollowUp = targetEmergencyCds.getDischargeFollowUp();
@@ -772,9 +781,10 @@ public class EmergencyCdsTargetTransformer {
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = "SM_".concat(dischargeFollowUp);  //NOTE: a Snomed code so no IM value lookup
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(dischargeFollowUp)
+                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
     }
 }

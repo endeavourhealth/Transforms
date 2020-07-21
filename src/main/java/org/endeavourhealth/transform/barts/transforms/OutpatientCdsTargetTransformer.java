@@ -463,9 +463,10 @@ public class OutpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String referralSourceId = targetOutpatientCds.getReferralSource();
@@ -483,9 +484,10 @@ public class OutpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String apptAttendedCode = targetOutpatientCds.getApptAttendedCode();
@@ -503,9 +505,10 @@ public class OutpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
@@ -523,9 +526,10 @@ public class OutpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String treatmentFunctionCode = targetOutpatientCds.getTreatmentFunctionCode();
@@ -543,9 +547,10 @@ public class OutpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
     }
 }
