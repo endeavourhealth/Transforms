@@ -228,7 +228,7 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "admission_source_code", careUnitFunction,"CM_NHS_DD"
+                    "admission_source_code", admissionSourceCode,"CM_NHS_DD"
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
