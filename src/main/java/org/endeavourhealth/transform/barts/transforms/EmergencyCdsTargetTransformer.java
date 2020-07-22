@@ -25,13 +25,12 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class EmergencyCdsTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmergencyCdsTargetTransformer.class);
+    private static Set<Long> patientEmergencyEncounterDates = new HashSet<>();
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -70,6 +69,8 @@ public class EmergencyCdsTargetTransformer {
                 continue;
             }
 
+            patientEmergencyEncounterDates.clear();
+
             //process top level encounter - the existing parent encounter
             Integer encounterId = targetEmergencyCds.getEncounterId();  //this is used to identify the top level parent encounter
 
@@ -82,10 +83,10 @@ public class EmergencyCdsTargetTransformer {
                 if (existingParentEncounter != null) {
 
                     //update the existing top level encounter
-                    updateExistingParentEncounter(existingParentEncounter, targetEmergencyCds, fhirResourceFiler, csvHelper);
+                    parentEncounterBuilder
+                            = updateExistingParentEncounter(existingParentEncounter, targetEmergencyCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounters
-                    parentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetEmergencyCds.getAudit());
                     createEmergencyCdsEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
@@ -107,6 +108,7 @@ public class EmergencyCdsTargetTransformer {
                 }
                 String patientUuid = ReferenceHelper.getReferenceId(patientReference);
                 deleteHL7ReceiverPatientEmergencyEncounters(patientUuid, fhirResourceFiler, csvHelper);
+                patientEmergencyEncounterDates.clear();
 
             } else {
 
@@ -317,25 +319,29 @@ public class EmergencyCdsTargetTransformer {
         //then the child sub encounter afterwards
         //LOG.debug("Saving parent EM encounter: "+ FhirSerializationHelper.serializeResource(existingParentEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
-
+        patientEmergencyEncounterDates.add(existingParentEncounterBuilder.getPeriod().getStart().getTime());
         //save the A&E arrival encounter - always created
         //LOG.debug("Saving child arrival EM encounter: "+ FhirSerializationHelper.serializeResource(arrivalEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, arrivalEncounterBuilder);
+        patientEmergencyEncounterDates.add(arrivalEncounterBuilder.getPeriod().getStart().getTime());
 
         //save the A&E assessment encounter
         if (assessmentEncounterBuilder != null) {
             //LOG.debug("Saving child assessment EM encounter: "+ FhirSerializationHelper.serializeResource(assessmentEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, assessmentEncounterBuilder);
+            patientEmergencyEncounterDates.add(assessmentEncounterBuilder.getPeriod().getStart().getTime());
         }
         //save the A&E treatments encounter
         if (treatmentsEncounterBuilder != null) {
             //LOG.debug("Saving child treatments EM encounter: "+ FhirSerializationHelper.serializeResource(treatmentsEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, treatmentsEncounterBuilder);
+            patientEmergencyEncounterDates.add(treatmentsEncounterBuilder.getPeriod().getStart().getTime());
         }
         //save the A&E discharge encounter
         if (conclusionEncounterBuilder != null) {
             //LOG.debug("Saving child discharge EM encounter: "+ FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, conclusionEncounterBuilder);
+            patientEmergencyEncounterDates.add(conclusionEncounterBuilder.getPeriod().getStart().getTime());
         }
     }
 
@@ -532,7 +538,7 @@ public class EmergencyCdsTargetTransformer {
         }
     }
 
-    private static void updateExistingParentEncounter(Encounter existingEncounter,
+    private static EncounterBuilder updateExistingParentEncounter(Encounter existingEncounter,
                                                       StagingEmergencyCdsTarget targetEmergencyCds,
                                                       FhirResourceFiler fhirResourceFiler,
                                                       BartsCsvHelper csvHelper) throws Exception {
@@ -572,13 +578,12 @@ public class EmergencyCdsTargetTransformer {
             identifierBuilder.setValue(cdsUniqueId);
         }
 
-        fhirResourceFiler.savePatientResource(null, !existingEncounterBuilder.isIdMapped(), existingEncounterBuilder);
+        return existingEncounterBuilder;
     }
 
-    /**
+    /*
      * we match to some HL7 Receiver Encounters, basically taking them over
-     * so we call this to tidy up (delete) any Episodes left not taken over, as the HL7 Receiver creates too many
-     * episodes because it doesn't have the data to avoid doing so
+     * so we call this to tidy up (delete) any matching Encounters that have been taken over
      */
     private static void deleteHL7ReceiverPatientEmergencyEncounters(String patientUuid,
                                                            FhirResourceFiler fhirResourceFiler,
@@ -587,8 +592,8 @@ public class EmergencyCdsTargetTransformer {
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
 
-        //we want to delete any HL7 Encounter more than 24 hours older than the DW file extract date
-        Date extractDateTime = csvHelper.getExtractDateTime();
+        //we want to delete HL7 Emergency Encounters more than 24 hours older than the extract data date
+        Date extractDateTime = fhirResourceFiler.getDataDate();
         Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
 
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
@@ -605,17 +610,21 @@ public class EmergencyCdsTargetTransformer {
             String json = wrapper.getResourceData();
             Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
-            //if the HL7 Encounter has no date info at all or is before our cutoff, delete it
-            if (!existingEncounter.hasPeriod()
-                    || !existingEncounter.getPeriod().hasStart()
-                    || existingEncounter.getPeriod().getStart().before(cutoff)) {
+            //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
+            if (existingEncounter.hasPeriod()
+                    && existingEncounter.getPeriod().hasStart()
+                    && existingEncounter.getPeriod().getStart().before(cutoff)) {
 
-                //finally, check it is an Emergency encounter class before deleting
+                //finally, check it is an Emergency encounter and has a matching start date to one just filed before deleting
                 if (existingEncounter.getClass_().equals(Encounter.EncounterClass.EMERGENCY)) {
-                    GenericBuilder builder = new GenericBuilder(existingEncounter);
-                    //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
-                    //builder.setDeletedAudit(...);
-                    fhirResourceFiler.deletePatientResource(null, false, builder);
+
+                    if (patientEmergencyEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
+
+                        GenericBuilder builder = new GenericBuilder(existingEncounter);
+                        //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
+                        //builder.setDeletedAudit(...);
+                        fhirResourceFiler.deletePatientResource(null, false, builder);
+                    }
                 }
             }
         }

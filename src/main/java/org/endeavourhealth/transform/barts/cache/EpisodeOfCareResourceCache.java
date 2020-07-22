@@ -159,7 +159,7 @@ public class EpisodeOfCareResourceCache {
 
     /**
      * for three of the encounter-related files, there's just an Encounter ID, so we must try to
-     * find the EpisodeOfCare by looking up either an Episode ID or FIN using the interal ID map table
+     * find the EpisodeOfCare by looking up either an Episode ID or FIN using the internal ID map table
      */
     private EpisodeOfCareBuilder getEpisodeOfCareBuilder(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell activeIndicatorCell) throws Exception {
 
@@ -286,7 +286,7 @@ public class EpisodeOfCareResourceCache {
     private EpisodeOfCareBuilder retrieveAndCacheBuilder(String localRef, CsvCell personIdCell, CsvCell activeIndicatorCell) throws Exception {
 
         //the local ref may be an Episode ID or FIN, but both mappings should be created in the source ID -> UUID map table
-        UUID episodeUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, localRef);
+        UUID episodeUuid = IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, localRef);
 
         EpisodeOfCareBuilder builder = episodeBuildersByUuid.get(episodeUuid);
         if (builder == null) {
