@@ -537,7 +537,7 @@ public class InpatientCdsTargetTransformer {
                 = resourceDal.getResourcesByPatient(serviceUuid, UUID.fromString(patientUuid), ResourceType.Encounter.toString());
         for (ResourceWrapper wrapper: resourceWrappers) {
 
-            //if this episode is for our own service + system ID (i.e. DW feed), then leave it
+            //if this Encounter is for our own service + system ID (i.e. DW feed), then leave it
             UUID wrapperSystemId = wrapper.getSystemId();
             if (wrapperSystemId.equals(systemUuid)) {
                 continue;
@@ -551,7 +551,7 @@ public class InpatientCdsTargetTransformer {
                     || !existingEncounter.getPeriod().hasStart()
                     || existingEncounter.getPeriod().getStart().before(cutoff)) {
 
-                //finally, check it is an Outpatient encounter class before deleting
+                //finally, check it is an Inpatient encounter class before deleting
                 if (existingEncounter.getClass_().equals(Encounter.EncounterClass.INPATIENT)) {
                     GenericBuilder builder = new GenericBuilder(existingEncounter);
                     //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
@@ -663,7 +663,7 @@ public class InpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
-                    "treatment_function_code", treatmentFunctionCode,"CM_BartCernerCode"
+                    "treatment_function_code", treatmentFunctionCode,"BartsCerner"
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 

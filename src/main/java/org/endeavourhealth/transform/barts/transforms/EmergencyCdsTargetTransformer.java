@@ -596,7 +596,7 @@ public class EmergencyCdsTargetTransformer {
                 = resourceDal.getResourcesByPatient(serviceUuid, UUID.fromString(patientUuid), ResourceType.Encounter.toString());
         for (ResourceWrapper wrapper: resourceWrappers) {
 
-            //if this episode is for our own service + system ID (i.e. DW feed), then leave it
+            //if this Encounter is for our own service + system ID (i.e. DW feed), then leave it
             UUID wrapperSystemId = wrapper.getSystemId();
             if (wrapperSystemId.equals(systemUuid)) {
                 continue;
@@ -724,7 +724,7 @@ public class EmergencyCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
-                    "treatment_function_code", treatmentFunctionCode,"CM_BartCernerCode"
+                    "treatment_function_code", treatmentFunctionCode,"BartsCerner"
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
