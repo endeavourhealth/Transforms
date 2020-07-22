@@ -21,7 +21,6 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Enterpri
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
-import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.*;
 import org.endeavourhealth.transform.subscriber.IMConstant;
@@ -29,7 +28,6 @@ import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberConfig;
 import org.endeavourhealth.transform.subscriber.UPRN;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
-import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.endeavourhealth.transform.subscriber.transforms.PatientTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Patient;
@@ -87,11 +85,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             //delete any dependent pseudo ID records
             deletePseudoIds(resourceWrapper, params);
 
-            //TODO - remove live check when table is rolled out everywhere
-            if (!TransformConfig.instance().isLive()) {
-                deleteAddresses(resourceWrapper, fullHistory, params);
-                deleteTelecoms(resourceWrapper, fullHistory, params);
-            }
+            deleteAddresses(resourceWrapper, fullHistory, params);
+            deleteTelecoms(resourceWrapper, fullHistory, params);
 
             return;
         }
@@ -141,12 +136,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         transformPseudoIds(organizationId, id, personId, fhirPatient, resourceWrapper, params);
 
-        //TODO: remove this check for go live to introduce Compass v1 upgrade tables population
-        //TODO - don't forget to remove similar check at the top of this fn for deleting these entities
-        if (!TransformConfig.instance().isLive()) {
-            currentAddressId = transformAddresses(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
-            transformTelecoms(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
-        }
+        currentAddressId = transformAddresses(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
+        transformTelecoms(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
 
 
         //Calendar cal = Calendar.getInstance();
