@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class EpisodesTransformer {
 
@@ -60,39 +61,46 @@ public class EpisodesTransformer {
         CsvCell idCell = parser.getId();
         //Create ParentEncounterBuilder
 
-        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
+        //EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
 
+//        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+//        encounterBuilder.setPatient(patientReference, patientIdCell);
+//
+//        //TODO needs to be rewritten to retrieve the spell encounter.  This is a start.
+//        if (!parser.getIpSpellExternalId().isEmpty()) {
+//            Reference spellReference = csvHelper.createEncounterReference(parser.getIpSpellExternalId().getString(), patientIdCell.getString());
+//            encounterBuilder.setPartOf(spellReference,parser.getIpSpellExternalId());
+//        }
+//
+//        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
+//        if (dataUpdateStatusCell.getString().equalsIgnoreCase("Deleted")) {
+//
+//            encounterBuilder.setDeletedAudit(dataUpdateStatusCell);
+//            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
+//
+//            deleteChildResources(parser, fhirResourceFiler, csvHelper, version);
+//            deleteEncounterAndChildren(parser, fhirResourceFiler, csvHelper);
+//            return;
+//        }
+//        createExtensions(parser, encounterBuilder);
+
+        Encounter spellEncounter = (Encounter) csvHelper.retrieveResource(parser.getIpSpellExternalId().getString(), ResourceType.Encounter);
+        EncounterBuilder spellEncounterBuilder = new EncounterBuilder(spellEncounter);
+        String localId = parser.getIpSpellExternalId().getString();
+        UUID uuid= IdHelper.getOrCreateEdsResourceId(parser.getServiceId(),ResourceType.Encounter, localId);
+        spellEncounterBuilder.setId(uuid.toString());
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
-        encounterBuilder.setPatient(patientReference, patientIdCell);
-
-        //TODO needs to be rewritten to retrieve the spell encounter.  This is a start.
-        if (!parser.getIpSpellExternalId().isEmpty()) {
-            Reference spellReference = csvHelper.createEncounterReference(parser.getIpSpellExternalId().getString(), patientIdCell.getString());
-            encounterBuilder.setPartOf(spellReference,parser.getIpSpellExternalId());
-        }
-
-        CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
-        if (dataUpdateStatusCell.getString().equalsIgnoreCase("Deleted")) {
-
-            encounterBuilder.setDeletedAudit(dataUpdateStatusCell);
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder);
-
-            deleteChildResources(parser, fhirResourceFiler, csvHelper, version);
-            deleteEncounterAndChildren(parser, fhirResourceFiler, csvHelper);
-            return;
-        }
-        createExtensions(parser, encounterBuilder);
+        patientReference =    IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+        spellEncounterBuilder.setPatient(patientReference, patientIdCell);
 
 
-        createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
+        createSubEncounters(parser, spellEncounterBuilder, fhirResourceFiler, csvHelper);
 
         CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
         if (!admissionHospitalCodeCell.isEmpty()) {
             Reference organisationReference = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
-            if (encounterBuilder.isIdMapped()) {
-                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
-            }
-            encounterBuilder.setServiceProvider(organisationReference);
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+            spellEncounterBuilder.setServiceProvider(organisationReference);
         }
 
 
@@ -431,11 +439,7 @@ public class EpisodesTransformer {
             }
             //and link the parent to this new child encounter
             Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
-            if (existingParentEncounterBuilder.isIdMapped()) {
-
-                childAdmissionRef
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
-            }
+            childAdmissionRef = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
             existingParentEncounterList.addReference(childAdmissionRef);
             res.add(admissionEncounterBuilder);
 
@@ -472,13 +476,8 @@ public class EpisodesTransformer {
                 }
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
-                if (existingParentEncounterBuilder.isIdMapped()) {
-
-                    childDischargeRef
-                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
-                }
-
-                existingParentEncounterList.addReference(childDischargeRef);
+                childDischargeRef = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
+                         existingParentEncounterList.addReference(childDischargeRef);
                 //fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
                 res.add(dischargeEncounterBuilder);
             }
@@ -511,11 +510,7 @@ public class EpisodesTransformer {
 
         //and link the parent to this new child encounter
         Reference childEpisodeRef = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
-        if (existingParentEncounterBuilder.isIdMapped()) {
-
-            childEpisodeRef
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childEpisodeRef, csvHelper);
-        }
+        childEpisodeRef = IdHelper.convertLocallyUniqueReferenceToEdsReference(childEpisodeRef, csvHelper);
         existingParentEncounterList.addReference(childEpisodeRef);
         res.add(episodeEncounterBuilder);
 
@@ -533,7 +528,7 @@ public class EpisodesTransformer {
             containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString());
         }
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, existingParentEncounterBuilder);
 
         //then save the child encounter builders if they are set
 
