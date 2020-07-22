@@ -115,7 +115,12 @@ public class EpisodeOfCareResourceCache {
     public EpisodeOfCareBuilder getEpisodeOfCareBuilder(StagingEmergencyCdsTarget targetEmergencyCds) throws Exception {
 
         CsvCell personIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetEmergencyCds.getPersonId()));
-        CsvCell activeIndicatorCell = CsvCell.factoryDummyWrapper(Boolean.toString(targetEmergencyCds.isDeleted()));
+        CsvCell activeIndicatorCell;
+        if (targetEmergencyCds.isDeleted()) {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("0");
+        } else {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("1");
+        }
         CsvCell encounterIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetEmergencyCds.getEncounterId()));
         Integer episodeId = targetEmergencyCds.getEpisodeId();
 
@@ -130,7 +135,12 @@ public class EpisodeOfCareResourceCache {
     public EpisodeOfCareBuilder getEpisodeOfCareBuilder(StagingOutpatientCdsTarget targetOutpatientCds) throws Exception {
 
         CsvCell personIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetOutpatientCds.getPersonId()));
-        CsvCell activeIndicatorCell = CsvCell.factoryDummyWrapper(Boolean.toString(targetOutpatientCds.isDeleted()));
+        CsvCell activeIndicatorCell;
+        if (targetOutpatientCds.isDeleted()) {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("0");
+        } else {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("1");
+        }
         CsvCell encounterIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetOutpatientCds.getEncounterId()));
         Integer episodeId = targetOutpatientCds.getEpisodeId();
 
@@ -145,7 +155,12 @@ public class EpisodeOfCareResourceCache {
     public EpisodeOfCareBuilder getEpisodeOfCareBuilder(StagingInpatientCdsTarget targetInpatientCds) throws Exception {
 
         CsvCell personIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetInpatientCds.getPersonId()));
-        CsvCell activeIndicatorCell = CsvCell.factoryDummyWrapper(Boolean.toString(targetInpatientCds.isDeleted()));
+        CsvCell activeIndicatorCell;
+        if (targetInpatientCds.isDeleted()) {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("0");
+        } else {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("1");
+        }
         CsvCell encounterIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetInpatientCds.getEncounterId()));
         Integer episodeId = targetInpatientCds.getEpisodeId();
 
