@@ -23,13 +23,12 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class InpatientCdsTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(InpatientCdsTargetTransformer.class);
+    private static Set<Long> patientInpatientEncounterDates = new HashSet<>();
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -68,6 +67,8 @@ public class InpatientCdsTargetTransformer {
                 continue;
             }
 
+            patientInpatientEncounterDates.clear();
+
             //process top level encounter - the existing parent encounter
             Integer encounterId = targetInpatientCds.getEncounterId();  //this is used to identify the top level parent encounter
 
@@ -80,10 +81,10 @@ public class InpatientCdsTargetTransformer {
                 if (existingParentEncounter != null) {
 
                     //update the existing top level encounter
-                    updateExistingParentEncounter(existingParentEncounter, targetInpatientCds, fhirResourceFiler, csvHelper);
+                    parentEncounterBuilder
+                            = updateExistingParentEncounter(existingParentEncounter, targetInpatientCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounters
-                    parentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetInpatientCds.getAudit());
                     createInpatientCdsSubEncounters(targetInpatientCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
@@ -105,6 +106,7 @@ public class InpatientCdsTargetTransformer {
                 }
                 String patientUuid = ReferenceHelper.getReferenceId(patientReference);
                 deleteHL7ReceiverPatientInpatientEncounters(patientUuid, fhirResourceFiler, csvHelper);
+                patientInpatientEncounterDates.clear();
 
             } else {
 
@@ -380,21 +382,25 @@ public class InpatientCdsTargetTransformer {
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         //LOG.debug("Saving IP parent encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+        patientInpatientEncounterDates.add(existingParentEncounterBuilder.getPeriod().getStart().getTime());
 
         //then save the child encounter builders if they are set
         if (admissionEncounterBuilder != null) {
 
             //LOG.debug("Saving child IP admission encounter: "+ FhirSerializationHelper.serializeResource(admissionEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
+            patientInpatientEncounterDates.add(admissionEncounterBuilder.getPeriod().getStart().getTime());
         }
         if (dischargeEncounterBuilder != null) {
 
             //LOG.debug("Saving child IP discharge encounter: "+ FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+            patientInpatientEncounterDates.add(dischargeEncounterBuilder.getPeriod().getStart().getTime());
         }
         //finally, save the episode encounter which always exists
         //LOG.debug("Saving child IP episode encounter: "+ FhirSerializationHelper.serializeResource(episodeEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, episodeEncounterBuilder);
+        patientInpatientEncounterDates.add(episodeEncounterBuilder.getPeriod().getStart().getTime());
     }
 
     private static void deleteInpatientCdsEncounterAndChildren(StagingInpatientCdsTarget targetInpatientCds,
@@ -483,7 +489,7 @@ public class InpatientCdsTargetTransformer {
         return parentEncounterBuilder;
     }
 
-    private static void updateExistingParentEncounter(Encounter existingEncounter,
+    private static EncounterBuilder updateExistingParentEncounter(Encounter existingEncounter,
                                                 StagingInpatientCdsTarget targetInpatientCds,
                                                 FhirResourceFiler fhirResourceFiler,
                                                 BartsCsvHelper csvHelper) throws Exception {
@@ -513,13 +519,12 @@ public class InpatientCdsTargetTransformer {
             identifierBuilder.setValue(cdsUniqueId);
         }
 
-        fhirResourceFiler.savePatientResource(null, !existingEncounterBuilder.isIdMapped(), existingEncounterBuilder);
+        return existingEncounterBuilder;
     }
 
-    /**
+    /*
      * we match to some HL7 Receiver Encounters, basically taking them over
-     * so we call this to tidy up (delete) any Episodes left not taken over, as the HL7 Receiver creates too many
-     * episodes because it doesn't have the data to avoid doing so
+     * so we call this to tidy up (delete) any matching Encounters that have been taken over
      */
     private static void deleteHL7ReceiverPatientInpatientEncounters(String patientUuid,
                                                                      FhirResourceFiler fhirResourceFiler,
@@ -528,8 +533,8 @@ public class InpatientCdsTargetTransformer {
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
 
-        //we want to delete any HL7 Encounter more than 24 hours older than the DW file extract date
-        Date extractDateTime = csvHelper.getExtractDateTime();
+        //we want to delete HL7 Emergency Encounters more than 24 hours older than the extract data date
+        Date extractDateTime = fhirResourceFiler.getDataDate();
         Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
 
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
@@ -546,17 +551,20 @@ public class InpatientCdsTargetTransformer {
             String json = wrapper.getResourceData();
             Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
-            //if the HL7 Encounter has no date info at all or is before our cutoff, delete it
-            if (!existingEncounter.hasPeriod()
-                    || !existingEncounter.getPeriod().hasStart()
-                    || existingEncounter.getPeriod().getStart().before(cutoff)) {
+            //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
+            if (existingEncounter.hasPeriod()
+                    && existingEncounter.getPeriod().hasStart()
+                    && existingEncounter.getPeriod().getStart().before(cutoff)) {
 
                 //finally, check it is an Inpatient encounter class before deleting
                 if (existingEncounter.getClass_().equals(Encounter.EncounterClass.INPATIENT)) {
-                    GenericBuilder builder = new GenericBuilder(existingEncounter);
-                    //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
-                    //builder.setDeletedAudit(...);
-                    fhirResourceFiler.deletePatientResource(null, false, builder);
+
+                    if (patientInpatientEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
+                        GenericBuilder builder = new GenericBuilder(existingEncounter);
+                        //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
+                        //builder.setDeletedAudit(...);
+                        fhirResourceFiler.deletePatientResource(null, false, builder);
+                    }
                 }
             }
         }
