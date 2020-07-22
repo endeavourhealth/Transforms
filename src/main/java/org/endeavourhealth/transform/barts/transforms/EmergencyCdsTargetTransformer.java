@@ -657,15 +657,9 @@ public class EmergencyCdsTargetTransformer {
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
 
-            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
-                    "attendance_source", aeAttendanceSource,"CM_NHS_DD"
-            );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
-
             CodeableConcept ccValue = new CodeableConcept();
-            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
-                    .setSystem(valueResponse.getConcept().getScheme());
+            ccValue.addCoding().setCode(aeAttendanceSource)
+                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
