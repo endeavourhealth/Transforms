@@ -613,13 +613,14 @@ public class EpisodeOfCareResourceCache {
         //clear down as everything has been saved
         episodeBuildersByUuid.clear();
 
-        //now delete any older HL7 Encounters for patients we've updated
+        //now delete any older HL7 Episodes for patients we've updated
         //but waiting until everything has been saved to the DB first
-        fhirResourceFiler.waitUntilEverythingIsSaved();
-
-        for (String patientUuid: hsPatientUuidsChanged) {
-            deleteHl7ReceiverEpisodes(UUID.fromString(patientUuid), fhirResourceFiler);
-        }
+        //TODO:  check during test if EOC duplication exists
+//        fhirResourceFiler.waitUntilEverythingIsSaved();
+//
+//        for (String patientUuid: hsPatientUuidsChanged) {
+//            deleteHl7ReceiverEpisodes(UUID.fromString(patientUuid), fhirResourceFiler);
+//        }
     }
 
     /**
@@ -632,12 +633,13 @@ public class EpisodeOfCareResourceCache {
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
 
-        //we want to delete any HL7 Encounter more than 24 hours older than the DW file extract date
-        Date extractDateTime = csvHelper.getExtractDateTime();
+        //we want to delete HL7 Episodes more than 24 hours older than the extract data date
+        Date extractDateTime = fhirResourceFiler.getDataDate();
         Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
 
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        List<ResourceWrapper> resourceWrappers = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.EpisodeOfCare.toString());
+        List<ResourceWrapper> resourceWrappers
+                = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.EpisodeOfCare.toString());
         for (ResourceWrapper wrapper: resourceWrappers) {
 
             //if this episode is for our own system ID (i.e. DW feed), then leave it
