@@ -28,13 +28,12 @@ public abstract class ImperialHL7FhirORUTransformer {
 
     /**
      *
-     * @param exchangeBody
      * @param fhirResourceFiler
      * @param version
      * @param hapiMsg
      * @throws Exception
      */
-    public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version, Message hapiMsg) throws Exception {
+    public static void transform(FhirResourceFiler fhirResourceFiler, String version, Message hapiMsg) throws Exception {
 
         String msgType = (hapiMsg.printStructure()).substring(0,7);
         ImperialHL7Helper imperialHL7Helper = new ImperialHL7Helper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
@@ -108,12 +107,7 @@ public abstract class ImperialHL7FhirORUTransformer {
             OBR obr = oruMsg.getRESPONSE().getORDER_OBSERVATION().getOBR();
             OBX obx = oruMsg.getRESPONSE().getORDER_OBSERVATION().getOBSERVATION().getOBX();
 
-            orc.getOrderStatus();
-            orc.getPlacerGroupNumber();
-            orc.getPlacerOrderNumber();
-            orc.getFillerOrderNumber();
-
-            DiagnosticReportTransformer.createOrDeleteDiagnosticReport(pid, obr, fhirResourceFiler, imperialHL7Helper);
+            DiagnosticReportTransformer.createOrDeleteDiagnosticReport(pid, orc, obr, obx, fhirResourceFiler, imperialHL7Helper);
             //Diagnostic Report
 
         }

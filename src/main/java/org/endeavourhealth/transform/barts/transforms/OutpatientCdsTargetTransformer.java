@@ -98,12 +98,12 @@ public class OutpatientCdsTargetTransformer {
 
                 //find the patient UUID for the encounters we have just filed, so we can tidy up the
                 //HL7 encounters after doing all the saving of the DW encounters
-                Reference patientReference = parentEncounterBuilder.getPatient();
-                if (!parentEncounterBuilder.isIdMapped()) {
-                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
-                }
-                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
-                deleteHL7ReceiverPatientOutpatientEncounters(patientUuid, fhirResourceFiler, csvHelper);
+//                Reference patientReference = parentEncounterBuilder.getPatient();
+//                if (!parentEncounterBuilder.isIdMapped()) {
+//                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+//                }
+//                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
+                deleteHL7ReceiverPatientOutpatientEncounters(targetOutpatientCds, fhirResourceFiler, csvHelper);
                 patientOutpatientEncounterDates.clear();
 
             } else {
@@ -279,7 +279,12 @@ public class OutpatientCdsTargetTransformer {
         EncounterBuilder existingEncounterBuilder
                 = new EncounterBuilder(existingEncounter, targetOutpatientCds.getAudit());
 
-        //todo - deceide on how much to update the top level with
+        //update the parent Encounter status to finished depending on the outcome of latest sub encounter
+        String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
+        if (apptOutcomeCode.equalsIgnoreCase("1")) {
+
+            existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        }
 
         String cdsUniqueId = targetOutpatientCds.getUniqueId();
         if (!cdsUniqueId.isEmpty()) {
@@ -404,7 +409,7 @@ public class OutpatientCdsTargetTransformer {
      * we match to some HL7 Receiver Encounters, basically taking them over
      * so we call this to tidy up (delete) any matching Encounters that have been taken over
      */
-    private static void deleteHL7ReceiverPatientOutpatientEncounters(String patientUuid,
+    private static void deleteHL7ReceiverPatientOutpatientEncounters(StagingOutpatientCdsTarget targetOutpatientCds,
                                                                     FhirResourceFiler fhirResourceFiler,
                                                                     BartsCsvHelper csvHelper) throws Exception {
 
@@ -415,9 +420,12 @@ public class OutpatientCdsTargetTransformer {
         Date extractDateTime = fhirResourceFiler.getDataDate();
         Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
 
+        String sourcePatientId = Integer.toString(targetOutpatientCds.getPersonId());
+        UUID patientUuid = IdHelper.getEdsResourceId(serviceUuid, ResourceType.Patient, sourcePatientId);
+
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
         List<ResourceWrapper> resourceWrappers
-                = resourceDal.getResourcesByPatient(serviceUuid, UUID.fromString(patientUuid), ResourceType.Encounter.toString());
+                = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.Encounter.toString());
         for (ResourceWrapper wrapper: resourceWrappers) {
 
             //if this Encounter is for our own service + system ID (i.e. DW feed), then leave it
@@ -429,10 +437,14 @@ public class OutpatientCdsTargetTransformer {
             String json = wrapper.getResourceData();
             Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
+            LOG.debug("Existing HL7 Outpatient encounter "+existingEncounter.getId()+", date: "+existingEncounter.getPeriod().getStart().toString()+", cut off date: "+cutoff.toString());
+
             //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
             if (existingEncounter.hasPeriod()
                     && existingEncounter.getPeriod().hasStart()
                     && existingEncounter.getPeriod().getStart().before(cutoff)) {
+
+                LOG.debug("Checking existing Outpatient encounter date (long): "+existingEncounter.getPeriod().getStart().getTime()+" in dates array: "+patientOutpatientEncounterDates.toArray());
 
                 //finally, check it is an Outpatient encounter class before deleting
                 if (existingEncounter.getClass_().equals(Encounter.EncounterClass.OUTPATIENT)) {
