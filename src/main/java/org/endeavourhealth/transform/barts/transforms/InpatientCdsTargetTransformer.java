@@ -558,12 +558,12 @@ public class InpatientCdsTargetTransformer {
             String json = wrapper.getResourceData();
             Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
+            LOG.debug("Existing encounter "+existingEncounter.getId()+", date: "+existingEncounter.getPeriod().getStart().toString()+", cut off date: "+cutoff.toString());
+
             //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
             if (existingEncounter.hasPeriod()
                     && existingEncounter.getPeriod().hasStart()
                     && existingEncounter.getPeriod().getStart().before(cutoff)) {
-
-                LOG.debug("Existing encounter date: "+existingEncounter.getPeriod().getStart().toString()+" before cut off date: "+cutoff.toString());
 
                 //finally, check it is an Inpatient encounter class before deleting
                 if (existingEncounter.getClass_().equals(Encounter.EncounterClass.INPATIENT)) {
