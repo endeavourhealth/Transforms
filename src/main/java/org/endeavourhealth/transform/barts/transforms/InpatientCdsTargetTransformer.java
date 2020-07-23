@@ -100,12 +100,12 @@ public class InpatientCdsTargetTransformer {
 
                 //find the patient UUID for the encounters we have just filed, so we can tidy up the
                 //HL7 encounters after doing all the saving of the DW encounters
-                Reference patientReference = parentEncounterBuilder.getPatient();
-                if (!parentEncounterBuilder.isIdMapped()) {
-                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
-                }
-                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
-                deleteHL7ReceiverPatientInpatientEncounters(patientUuid, fhirResourceFiler, csvHelper);
+//                Reference patientReference = parentEncounterBuilder.getPatient();
+//                if (!parentEncounterBuilder.isIdMapped()) {
+//                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+//                }
+//                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
+                deleteHL7ReceiverPatientInpatientEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
                 patientInpatientEncounterDates.clear();
 
             } else {
@@ -533,7 +533,7 @@ public class InpatientCdsTargetTransformer {
      * we match to some HL7 Receiver Encounters, basically taking them over
      * so we call this to tidy up (delete) any matching Encounters that have been taken over
      */
-    private static void deleteHL7ReceiverPatientInpatientEncounters(String patientUuid,
+    private static void deleteHL7ReceiverPatientInpatientEncounters(StagingInpatientCdsTarget targetInpatientCds,
                                                                      FhirResourceFiler fhirResourceFiler,
                                                                      BartsCsvHelper csvHelper) throws Exception {
 
@@ -544,9 +544,14 @@ public class InpatientCdsTargetTransformer {
         Date extractDateTime = fhirResourceFiler.getDataDate();
         Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
 
+        String sourcePatientId = Integer.toString(targetInpatientCds.getPersonId());
+        UUID patientUuid = IdHelper.getEdsResourceId(serviceUuid, ResourceType.Patient, sourcePatientId);
+
+        LOG.debug("Checking patient: "+patientUuid.toString()+" for existing service: "+serviceUuid.toString()+" encounters");
+
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
         List<ResourceWrapper> resourceWrappers
-                = resourceDal.getResourcesByPatient(serviceUuid, UUID.fromString(patientUuid), ResourceType.Encounter.toString());
+                = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.Encounter.toString());
         for (ResourceWrapper wrapper: resourceWrappers) {
 
             //if this Encounter is for our own service + system ID (i.e. DW feed), then leave it
@@ -558,7 +563,7 @@ public class InpatientCdsTargetTransformer {
             String json = wrapper.getResourceData();
             Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
-            LOG.debug("Existing encounter "+existingEncounter.getId()+", date: "+existingEncounter.getPeriod().getStart().toString()+", cut off date: "+cutoff.toString());
+            LOG.debug("Existing HL7 Inpatient encounter "+existingEncounter.getId()+", date: "+existingEncounter.getPeriod().getStart().toString()+", cut off date: "+cutoff.toString());
 
             //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
             if (existingEncounter.hasPeriod()
@@ -568,7 +573,7 @@ public class InpatientCdsTargetTransformer {
                 //finally, check it is an Inpatient encounter class before deleting
                 if (existingEncounter.getClass_().equals(Encounter.EncounterClass.INPATIENT)) {
 
-                    LOG.debug("Checking existing encounter date (long): "+existingEncounter.getPeriod().getStart().getTime()+" in dates array: "+patientInpatientEncounterDates.toArray());
+                    LOG.debug("Checking existing Inpatient encounter date (long): "+existingEncounter.getPeriod().getStart().getTime()+" in dates array: "+patientInpatientEncounterDates.toArray());
                     if (patientInpatientEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
                         GenericBuilder builder = new GenericBuilder(existingEncounter);
                         //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data

@@ -102,12 +102,12 @@ public class EmergencyCdsTargetTransformer {
 
                 //find the patient UUID for the encounters we have just filed, so we can tidy up the
                 //HL7 encounters after doing all the saving of the DW encounters
-                Reference patientReference = parentEncounterBuilder.getPatient();
-                if (!parentEncounterBuilder.isIdMapped()) {
-                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
-                }
-                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
-                deleteHL7ReceiverPatientEmergencyEncounters(patientUuid, fhirResourceFiler, csvHelper);
+//                Reference patientReference = parentEncounterBuilder.getPatient();
+//                if (!parentEncounterBuilder.isIdMapped()) {
+//                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
+//                }
+//                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
+                deleteHL7ReceiverPatientEmergencyEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
                 patientEmergencyEncounterDates.clear();
 
             } else {
@@ -585,7 +585,7 @@ public class EmergencyCdsTargetTransformer {
      * we match to some HL7 Receiver Encounters, basically taking them over
      * so we call this to tidy up (delete) any matching Encounters that have been taken over
      */
-    private static void deleteHL7ReceiverPatientEmergencyEncounters(String patientUuid,
+    private static void deleteHL7ReceiverPatientEmergencyEncounters(StagingEmergencyCdsTarget targetEmergencyCds,
                                                            FhirResourceFiler fhirResourceFiler,
                                                            BartsCsvHelper csvHelper) throws Exception {
 
@@ -596,9 +596,12 @@ public class EmergencyCdsTargetTransformer {
         Date extractDateTime = fhirResourceFiler.getDataDate();
         Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
 
+        String sourcePatientId = Integer.toString(targetEmergencyCds.getPersonId());
+        UUID patientUuid = IdHelper.getEdsResourceId(serviceUuid, ResourceType.Patient, sourcePatientId);
+
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
         List<ResourceWrapper> resourceWrappers
-                = resourceDal.getResourcesByPatient(serviceUuid, UUID.fromString(patientUuid), ResourceType.Encounter.toString());
+                = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.Encounter.toString());
         for (ResourceWrapper wrapper: resourceWrappers) {
 
             //if this Encounter is for our own service + system ID (i.e. DW feed), then leave it
@@ -610,6 +613,8 @@ public class EmergencyCdsTargetTransformer {
             String json = wrapper.getResourceData();
             Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
+            LOG.debug("Existing HL7 Emergency encounter "+existingEncounter.getId()+", date: "+existingEncounter.getPeriod().getStart().toString()+", cut off date: "+cutoff.toString());
+
             //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
             if (existingEncounter.hasPeriod()
                     && existingEncounter.getPeriod().hasStart()
@@ -617,6 +622,8 @@ public class EmergencyCdsTargetTransformer {
 
                 //finally, check it is an Emergency encounter and has a matching start date to one just filed before deleting
                 if (existingEncounter.getClass_().equals(Encounter.EncounterClass.EMERGENCY)) {
+
+                    LOG.debug("Checking existing Emergency encounter date (long): "+existingEncounter.getPeriod().getStart().getTime()+" in dates array: "+patientEmergencyEncounterDates.toArray());
 
                     if (patientEmergencyEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
 
