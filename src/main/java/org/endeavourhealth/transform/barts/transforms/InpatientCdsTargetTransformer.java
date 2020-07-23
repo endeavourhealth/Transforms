@@ -563,13 +563,14 @@ public class InpatientCdsTargetTransformer {
         Map<UUID, UUID> patientIdsForService = patientSearchDal.findPatientIdsForNhsNumber(serviceIds, nhsNumber);
         Set<UUID> patientIds = patientIdsForService.keySet();   //get the unique patientId values, >1 where >1 system
 
+        //loop through all the patientIds for that patient to check the encounters
         for (UUID patientId: patientIds) {
 
             LOG.debug("Checking patient: " + patientId.toString() + " for existing service: " + serviceUuid.toString() + " encounters");
 
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
             List<ResourceWrapper> resourceWrappers
-                    = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.Encounter.toString());
+                    = resourceDal.getResourcesByPatient(serviceUuid, patientId, ResourceType.Encounter.toString());
             for (ResourceWrapper wrapper : resourceWrappers) {
 
                 //if this Encounter is for our own service + system ID (i.e. DW feed), then leave it
