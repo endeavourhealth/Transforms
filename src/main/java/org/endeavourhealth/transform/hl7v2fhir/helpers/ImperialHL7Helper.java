@@ -6,8 +6,10 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -217,6 +219,11 @@ public class ImperialHL7Helper implements HasServiceSystemAndExchangeIdI {
         } catch (Throwable t) {
             throw new Exception("Error deserialising " + resourceType + " " + resourceId, t);
         }
+    }
+
+    public static void setUniqueId(ResourceBuilderBase resourceBuilder, String patientGuid, String sourceGuid) {
+        String resourceId = createUniqueId(patientGuid, sourceGuid);
+        resourceBuilder.setId(resourceId);
     }
 
 }

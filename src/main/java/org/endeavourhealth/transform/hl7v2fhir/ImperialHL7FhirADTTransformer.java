@@ -19,13 +19,12 @@ public abstract class ImperialHL7FhirADTTransformer {
 
     /**
      *
-     * @param exchangeBody
      * @param fhirResourceFiler
      * @param version
      * @param hapiMsg
      * @throws Exception
      */
-    public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version, Message hapiMsg) throws Exception {
+    public static void transform(FhirResourceFiler fhirResourceFiler, String version, Message hapiMsg) throws Exception {
 
         String msgType = (hapiMsg.printStructure()).substring(0,7);
         ImperialHL7Helper imperialHL7Helper = new ImperialHL7Helper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
@@ -564,24 +563,57 @@ public abstract class ImperialHL7FhirADTTransformer {
 
         } else if("ADT_A11".equalsIgnoreCase(msgType)) {
             ADT_A11 adtMsg = (ADT_A11) hapiMsg;
-
             //Encounter
             EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper);
             //Encounter
+
+            //EpisodeOfCare
+            String visitNum = String.valueOf(adtMsg.getPV1().getVisitNumber().getID());
+            CX[] patientIdList = adtMsg.getPID().getPatientIDInternalID();
+            String patientGuid = String.valueOf(patientIdList[0].getID());
+            String sourceEpisodeId = ImperialHL7Helper.createUniqueId(patientGuid, visitNum);
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare)imperialHL7Helper.retrieveResource(sourceEpisodeId, ResourceType.EpisodeOfCare);
+            if(episodeOfCare != null) {
+                EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(episodeOfCare);
+                fhirResourceFiler.deletePatientResource(null, false, episodeOfCareBuilder);
+            }
+            //EpisodeOfCare
 
         } else if("ADT_A12".equalsIgnoreCase(msgType)) {
             ADT_A12 adtMsg = (ADT_A12) hapiMsg;
-
             //Encounter
             EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper);
             //Encounter
+
+            //EpisodeOfCare
+            String visitNum = String.valueOf(adtMsg.getPV1().getVisitNumber().getID());
+            CX[] patientIdList = adtMsg.getPID().getPatientIDInternalID();
+            String patientGuid = String.valueOf(patientIdList[0].getID());
+            String sourceEpisodeId = ImperialHL7Helper.createUniqueId(patientGuid, visitNum);
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare)imperialHL7Helper.retrieveResource(sourceEpisodeId, ResourceType.EpisodeOfCare);
+            if(episodeOfCare != null) {
+                EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(episodeOfCare);
+                fhirResourceFiler.deletePatientResource(null, false, episodeOfCareBuilder);
+            }
+            //EpisodeOfCare
 
         } else if("ADT_A13".equalsIgnoreCase(msgType)) {
             ADT_A13 adtMsg = (ADT_A13) hapiMsg;
-
             //Encounter
             EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper);
             //Encounter
+
+            //EpisodeOfCare
+            String visitNum = String.valueOf(adtMsg.getPV1().getVisitNumber().getID());
+            CX[] patientIdList = adtMsg.getPID().getPatientIDInternalID();
+            String patientGuid = String.valueOf(patientIdList[0].getID());
+            String sourceEpisodeId = ImperialHL7Helper.createUniqueId(patientGuid, visitNum);
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare)imperialHL7Helper.retrieveResource(sourceEpisodeId, ResourceType.EpisodeOfCare);
+            if(episodeOfCare != null) {
+                EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(episodeOfCare);
+                fhirResourceFiler.deletePatientResource(null, false, episodeOfCareBuilder);
+            }
+            //EpisodeOfCare
 
         } else if("ADT_A08".equalsIgnoreCase(msgType)) {
             ADT_A08 adtMsg = (ADT_A08) hapiMsg;
