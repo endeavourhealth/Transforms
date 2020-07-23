@@ -284,7 +284,7 @@ public abstract class CdsPreTransformerBase {
                 return;
             }
             if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
-                TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
+                //TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
                 return;
             }
             stagingCds.setLookupPersonId(Integer.valueOf(personId));
@@ -678,7 +678,7 @@ public abstract class CdsPreTransformerBase {
                 return;
             }
             if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
-                TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
+                //TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
                 return;
             }
             stagingConditionCds.setLookupPersonId(Integer.valueOf(personId));
