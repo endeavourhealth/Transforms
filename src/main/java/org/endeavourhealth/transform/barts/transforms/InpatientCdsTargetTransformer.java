@@ -542,9 +542,9 @@ public class InpatientCdsTargetTransformer {
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
 
-        //we want to delete HL7 Emergency Encounters more than 24 hours older than the extract data date
+        //we want to check for and delete HL7 Inpatient Encounters more than 12 hours older than the DW extract data date
         Date extractDateTime = fhirResourceFiler.getDataDate();
-        Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
+        Date cutoff = new Date(extractDateTime.getTime() - (12 * 60 * 60 * 1000));
 
         String sourcePatientId = Integer.toString(targetInpatientCds.getPersonId());
         UUID patientUuid = IdHelper.getEdsResourceId(serviceUuid, ResourceType.Patient, sourcePatientId);
@@ -584,7 +584,7 @@ public class InpatientCdsTargetTransformer {
 
                 LOG.debug("Existing HL7 Inpatient encounter " + existingEncounter.getId() + ", date: " + existingEncounter.getPeriod().getStart().toString() + ", cut off date: " + cutoff.toString());
 
-                //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
+                //if the HL7 Encounter is before our 12 hr cutoff, look to delete it
                 if (existingEncounter.hasPeriod()
                         && existingEncounter.getPeriod().hasStart()
                         && existingEncounter.getPeriod().getStart().before(cutoff)) {
