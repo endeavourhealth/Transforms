@@ -505,6 +505,13 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
                 SubscriberId subTableId = hmIds.get(new Integer(i));
 
+                //we have some addresses from the HL7 feed that are nearly empty and don't include a "use",
+                //which makes them useless in a subscriber DB, so delete these rather than adding them
+                if (!address.hasUse()) {
+                    writer.writeDelete(subTableId.getSubscriberId());
+                    continue;
+                }
+
                 //if this address is our current home one, then assign the ID
                 if (address == currentAddress) {
                     currentAddressId = new Long(subTableId.getSubscriberId());
@@ -541,10 +548,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                 }
 
                 Address.AddressUse use = address.getUse();
-
-                if (address.hasUse()) {
-                    useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_ADDRESS_USE, use.toCode(), use.getDisplay());
-                }
+                useConceptId = IMHelper.getIMConcept(params, currentPatient, IMConstant.FHIR_ADDRESS_USE, use.toCode(), use.getDisplay());
 
                 if (address.hasPeriod()) {
                     startDate = address.getPeriod().getStart();
