@@ -4,14 +4,19 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.bhrut.cache.StaffCache;
 import org.endeavourhealth.transform.bhrut.schema.Outpatients;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +58,9 @@ public class OutpatientsPreTransformer {
 
         //for each unique ods code in the outpatient file, check, file and cache the resource
         CsvCell odsCodeCell = parser.getHospitalCode();
+        CsvCell consultantCell = parser.getConsultant();
+        CsvCell consultantCodeCell = parser.getConsultantCode();
+
         if (!odsCodeCell.isEmpty()) {
             boolean orgInCache = csvHelper.getOrgCache().organizationInCache(odsCodeCell.getString());
             if (!orgInCache) {
@@ -61,6 +69,21 @@ public class OutpatientsPreTransformer {
                 if (!orgResourceAlreadyFiled) {
                     createOrganisation(parser, fhirResourceFiler, csvHelper);
                 }
+            }
+        }
+        if (!consultantCodeCell.isEmpty()) {
+            boolean staffInCache = csvHelper.getStaffCache().cCodeInCache(consultantCodeCell.getString());
+            if (!staffInCache) {
+                csvHelper.getStaffCache().addConsultantCode(consultantCodeCell, consultantCell);
+                PractitionerBuilder practitionerBuilder
+                        = csvHelper.getStaffCache().getOrCreatePractitionerBuilder(consultantCodeCell.getString(), csvHelper);
+                if (practitionerBuilder.getNames().isEmpty()) {
+                    NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
+                    //nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
+                    nameBuilder.setText(consultantCell.getString(), consultantCell);
+                }
+                csvHelper.getStaffCache().returnPractitionerBuilder(practitionerBuilder.getResourceId(), practitionerBuilder);
+                fhirResourceFiler.saveAdminResource(parser.getCurrentState(), !practitionerBuilder.isIdMapped(),practitionerBuilder);
             }
         }
     }

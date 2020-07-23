@@ -204,11 +204,11 @@ public class EpisodesTransformer {
                 DateTimeType dttp = new DateTimeType(parser.getPrimaryProcedureDate().getDateTime());
                 proc.setPerformed(dttp, parser.getPrimaryProcedureDate());
             }
-
-//            if (!episodeConsultantCodeCell.isEmpty()) {
-//                Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
-//                proc.addPerformer(practitionerReference2, episodeConsultantCodeCell);
-//            }
+            CsvCell episodeConsultantCodeCell = parser.getEpisodeConsultantCode();
+            if (!episodeConsultantCodeCell.isEmpty()) {
+                Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
+                proc.addPerformer(practitionerReference2, episodeConsultantCodeCell);
+            }
 
             CodeableConceptBuilder code
                     = new CodeableConceptBuilder(proc, CodeableConceptBuilder.Tag.Procedure_Main_Code);
