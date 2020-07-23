@@ -279,7 +279,12 @@ public class OutpatientCdsTargetTransformer {
         EncounterBuilder existingEncounterBuilder
                 = new EncounterBuilder(existingEncounter, targetOutpatientCds.getAudit());
 
-        //todo - deceide on how much to update the top level with
+        //update the parent Encounter status to finished depending on the outcome of latest sub encounter
+        String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
+        if (apptOutcomeCode.equalsIgnoreCase("1")) {
+
+            existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+        }
 
         String cdsUniqueId = targetOutpatientCds.getUniqueId();
         if (!cdsUniqueId.isEmpty()) {

@@ -546,7 +546,7 @@ public class EmergencyCdsTargetTransformer {
         EncounterBuilder existingEncounterBuilder
                 = new EncounterBuilder(existingEncounter, targetEmergencyCds.getAudit());
 
-        //todo - decide on how much to update the top level with
+        //set the overall encounter status depending on sub encounter completion
         Date departureDate = targetEmergencyCds.getDtDeparture();
         if (departureDate != null) {
 

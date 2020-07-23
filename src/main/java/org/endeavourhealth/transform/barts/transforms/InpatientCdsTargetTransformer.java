@@ -497,15 +497,22 @@ public class InpatientCdsTargetTransformer {
         EncounterBuilder existingEncounterBuilder
                 = new EncounterBuilder(existingEncounter, targetInpatientCds.getAudit());
 
-        //todo - decide on how much to update the top level with
+        //set the overall encounter status depending on sub encounter completion
+        Date spellStartDate = targetInpatientCds.getDtSpellStart();
         Date dischargeDate = targetInpatientCds.getDtDischarge();
-        if (dischargeDate != null) {
-
-            existingEncounterBuilder.setPeriodEnd(dischargeDate);
-            existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
-        } else {
+        if (spellStartDate != null) {
 
             existingEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+
+            // End date
+            if (dischargeDate != null) {
+
+                existingEncounterBuilder.setPeriodEnd(dischargeDate);
+                existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            }
+        } else {
+
+                existingEncounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
         }
 
         String cdsUniqueId = targetInpatientCds.getUniqueId();
@@ -556,9 +563,12 @@ public class InpatientCdsTargetTransformer {
                     && existingEncounter.getPeriod().hasStart()
                     && existingEncounter.getPeriod().getStart().before(cutoff)) {
 
+                LOG.debug("Existing encounter date: "+existingEncounter.getPeriod().getStart().toString()+" before cut off date: "+cutoff.toString());
+
                 //finally, check it is an Inpatient encounter class before deleting
                 if (existingEncounter.getClass_().equals(Encounter.EncounterClass.INPATIENT)) {
 
+                    LOG.debug("Checking existing encounter date (long): "+existingEncounter.getPeriod().getStart().getTime()+" in dates array: "+patientInpatientEncounterDates.toArray());
                     if (patientInpatientEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
                         GenericBuilder builder = new GenericBuilder(existingEncounter);
                         //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
