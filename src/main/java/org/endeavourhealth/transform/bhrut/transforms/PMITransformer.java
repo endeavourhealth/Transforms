@@ -2,6 +2,10 @@ package org.endeavourhealth.transform.bhrut.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.PMI;
@@ -27,6 +31,7 @@ public class PMITransformer {
         AbstractCsvParser parser = parsers.get(PMI.class);
         long count = 0;
         long checkpoint = 5000;
+        LOG.debug("RAB>>>>> 24th 0931");
         if (parser != null) {
             while (parser.nextRecord()) {
                 count++;
@@ -91,10 +96,7 @@ public class PMITransformer {
         } else {
             patientBuilder.clearDateOfDeath();
         }
-        //TODO  hidden for now as we don't know how to code it
-//        if (!parser.getCauseOfDeath().isEmpty()) {
-//            processCauseOfDeath(parser, csvHelper, fhirResourceFiler);
-//        }
+
 
         //Todo Need to verify the InfectionStatus
         CsvCell infectionStatusCell = parser.getInfectionStatus();
@@ -129,6 +131,8 @@ public class PMITransformer {
 
         createName(patientBuilder, parser, csvHelper);
         createAddress(patientBuilder, parser, csvHelper);
+
+        addCausesOfDeath(parser, patientBuilder);
 
         CsvCell homePhone = parser.getHomePhoneNumber();
         if (!homePhone.isEmpty()) {
@@ -174,40 +178,6 @@ public class PMITransformer {
             patientBuilder.addCareProvider(gpOrganisationReference);
         }
         return patientBuilder;
-    }
-
-    private static void processCauseOfDeath(PMI parser, BhrutCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
-        //TODO call to this method is commented out.
-        Reference mainCauseOfDeathReference = null;
-        CsvCell causeOfDeathCell = parser.getCauseOfDeath();
-        if (!causeOfDeathCell.isEmpty()) {
-            // ObservationBuilder observationBuilder = new ObservationBuilder();
-            ConditionBuilder conditionBuilder = createSkeletonCondition(parser, csvHelper);
-            String conditionId = parser.getId().getString() + "CAUSEOFDEATH";
-            conditionBuilder.setId(conditionId);
-            //TODO containedParametersBuilder are wrong. Rewrite once we know how this works.
-            // IM dependency
-//            ContainedParametersBuilder containedParametersBuilder
-//                    = new ContainedParametersBuilder(conditionBuilder);
-//            containedParametersBuilder.removeContainedParameters();
-//            containedParametersBuilder.addParameter(conditionId, causeOfDeathCell.getString(), causeOfDeathCell);
-            mainCauseOfDeathReference = csvHelper.createObservationReference(conditionId, parser.getPasId().getString());
-            CsvCell causeOfDeath1BCell = parser.getCauseOfDeath1B();
-            if (!causeOfDeath1BCell.isEmpty()) {
-                // containedParametersBuilder.addParameter(conditionId,causeOfDeath1BCell.getString(),causeOfDeath1BCell);
-            }
-            CsvCell causeOfDeath1CCell = parser.getCauseOfDeath1C();
-            if (!causeOfDeath1CCell.isEmpty()) {
-                // containedParametersBuilder.addParameter(conditionId,causeOfDeath1CCell.getString(),causeOfDeath1CCell);
-            }
-            CsvCell causeOfDeath2CCell = parser.getCauseOfDeath2();
-            if (!causeOfDeath2CCell.isEmpty()) {
-                // containedParametersBuilder.addParameter(conditionId,causeOfDeath2CCell.getString(),causeOfDeath2CCell);
-            }
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !conditionBuilder.isIdMapped(), conditionBuilder);
-
-
-        }
     }
 
 
@@ -351,4 +321,67 @@ public class PMITransformer {
         }
     }
 
+    private static void addCausesOfDeath(PMI parser, PatientBuilder patientBuilder) throws Exception {
+
+        ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(patientBuilder);
+        parametersBuilder.removeContainedParameters();
+        LOG.debug("RAB>>>> in COD");
+        CsvCell cause = parser.getCauseOfDeath();
+        if (!cause.isEmpty()) {
+            LOG.debug("COD:" + cause.getString());
+            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH, cause.getString(), parametersBuilder);
+            }
+        CsvCell cause1B = parser.getCauseOfDeath1B();
+        if (!cause1B.isEmpty()) {
+            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1B, cause1B.getString(), parametersBuilder);
+        }
+        CsvCell cause1C = parser.getCauseOfDeath1C();
+        if (!cause1C.isEmpty()) {
+            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1C, cause1C.getString(), parametersBuilder);
+        }
+        CsvCell cause2 = parser.getCauseOfDeath2();
+        if (!cause2.isEmpty()) {
+            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_2, cause2.getString(), parametersBuilder);
+        }
+        CsvCell infectionStatus = parser.getInfectionStatus();
+        if (!infectionStatus.isEmpty()) {
+            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_INFECTION_STATUS, infectionStatus.getString(), parametersBuilder);
+        }
+
+    }
+
+    private static void addParmIfNotNull(String propertyName, String columnName, ContainedParametersBuilder parametersBuilder) throws Exception {
+        MapResponse propertyResponse = getProperty(propertyName);
+        MapResponse valueResponse = getColumnValue(columnName, propertyName);
+        CodeableConcept ccValue = new CodeableConcept();
+        ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                .setSystem(valueResponse.getConcept().getScheme());
+        parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+    }
+
+    private static MapResponse getProperty(String column) throws Exception {
+        MapColumnRequest propertyRequest = new MapColumnRequest(
+                BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SCHEMA,
+                BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME,
+                column
+        );
+        MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+        return propertyResponse;
+    }
+
+    private static MapResponse getColumnValue(String cause, String column) throws Exception {
+        MapColumnValueRequest request = new MapColumnValueRequest(
+                BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SCHEMA,
+                BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME,
+                column,
+                cause
+        );
+        MapResponse valueResponse = IMClient.getMapPropertyValue(request);
+        return valueResponse;
+    }
 }
+

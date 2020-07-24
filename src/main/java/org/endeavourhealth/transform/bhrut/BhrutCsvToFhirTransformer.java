@@ -29,10 +29,16 @@ public abstract class BhrutCsvToFhirTransformer {
     public static final String TIME_FORMAT = "HH:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader().withQuoteMode(QuoteMode.MINIMAL);
     public static final CSVFormat CSV_FORMAT_NEW = CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"')
-            // .withQuote(' ')
-            //.withEscape('\'')
             .withSkipHeaderRecord();
-
+    public final static  String  IM_PROVIDER_CONCEPT_ID ="CM_Org_BHRUT";
+    public final static  String  IM_SYSTEM_CONCEPT_ID = "CM_Sys_Medway";
+    public final static  String  IM_SCHEMA = "MedwayBI";
+    public final static  String  IM_PMI_TABLE_NAME ="PMI";
+    public final static  String  IM_CAUSE_OF_DEATH = "CAUSEOFDEATH";
+    public final static  String  IM_CAUSE_OF_DEATH_1B = "CAUSEOFDEATH 1B";
+    public final static  String  IM_CAUSE_OF_DEATH_1C = "CAUSEOFDEATH 1c";
+    public final static  String  IM_CAUSE_OF_DEATH_2 = "CAUSEOFDEATH 2";
+    public final static  String  IM_INFECTION_STATUS = "INFECTION_STATUS";
 
     //public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"').withQuote(' ').withQuoteMode(QuoteMode.MINIMAL);
     //CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"').withQuote(' ');
@@ -180,7 +186,6 @@ public abstract class BhrutCsvToFhirTransformer {
             AbstractCsvParser prs = (AbstractCsvParser) entry.getValue();
         }
         //these pre-transforms create Organization and Practitioner resources which subsequent transforms will reference
-        //TODO Commented out for test to increase turnaround.
         PMIPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         OutpatientsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         SpellsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);

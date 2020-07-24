@@ -15,12 +15,12 @@ import java.util.Date;
 import java.util.List;
 
 public class PatientBuilder extends ResourceBuilderBase
-                            implements HasNameI,
-                                       HasAddressI,
-                                       HasIdentifierI,
-                                       HasContactPointI,
-                                       HasCodeableConceptI {
-
+        implements HasNameI,
+        HasAddressI,
+        HasIdentifierI,
+        HasContactPointI,
+        HasCodeableConceptI,
+        HasContainedParametersI {
 
 
     private Patient patient = null;
@@ -48,6 +48,10 @@ public class PatientBuilder extends ResourceBuilderBase
         return patient;
     }
 
+    @Override
+    public String getContainedParametersExtensionUrl() {
+        return FhirExtensionUri.ADDITIONAL;
+    }
 
 
     public void setDateOfBirth(Date dob, CsvCell... sourceCells) {
@@ -163,7 +167,7 @@ public class PatientBuilder extends ResourceBuilderBase
 
     public void addCareProvider(Reference practitionerOrOrganizationReference, CsvCell... sourceCells) {
         //only add to the patient if not already present
-        for (Reference reference: this.patient.getCareProvider()) {
+        for (Reference reference : this.patient.getCareProvider()) {
             if (ReferenceHelper.equals(reference, practitionerOrOrganizationReference)) {
                 return;
             }
@@ -171,7 +175,7 @@ public class PatientBuilder extends ResourceBuilderBase
 
         this.patient.addCareProvider(practitionerOrOrganizationReference);
 
-        int index = this.patient.getCareProvider().size()-1;
+        int index = this.patient.getCareProvider().size() - 1;
         auditValue("careProvider[" + index + "].reference", sourceCells);
     }
 
@@ -185,7 +189,7 @@ public class PatientBuilder extends ResourceBuilderBase
         getAuditWrapper().removeAudit("careProvider");
 
         //can't just remove from the list because the Reference class doesn't implement equals(..) properly
-        for (int i=this.patient.getCareProvider().size()-1; i>=0; i--) {
+        for (int i = this.patient.getCareProvider().size() - 1; i >= 0; i--) {
             Reference reference = patient.getCareProvider().get(i);
             if (ReferenceHelper.equals(reference, practitionerOrOrganizationReference)) {
                 this.patient.getCareProvider().remove(i);
@@ -265,7 +269,6 @@ public class PatientBuilder extends ResourceBuilderBase
         int index = contact.getRelationship().indexOf(codeableConcept);
         auditValue("contact[" + getLastAddressIndex() + "].relationship[" + index + "].text", sourceCells);
     }*/
-
     public MaritalStatus getMaritalStatus() {
         CodeableConcept codeableConcept = this.patient.getMaritalStatus();
         if (codeableConcept == null) {
@@ -293,7 +296,7 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public EthnicCategory getEthnicity() {
-        CodeableConcept codeableConcept = (CodeableConcept)ExtensionConverter.findExtensionValue(this.patient, FhirExtensionUri.PATIENT_ETHNICITY);
+        CodeableConcept codeableConcept = (CodeableConcept) ExtensionConverter.findExtensionValue(this.patient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (codeableConcept == null) {
             return null;
         }
@@ -302,7 +305,7 @@ public class PatientBuilder extends ResourceBuilderBase
         if (coding == null) {
             return null;
         }
-            return EthnicCategory.fromCode(coding.getCode());
+        return EthnicCategory.fromCode(coding.getCode());
     }
 
     public void setEthnicity(EthnicCategory fhirEthnicity, CsvCell... sourceCells) {
@@ -318,7 +321,7 @@ public class PatientBuilder extends ResourceBuilderBase
 
 
     public Religion getReligion() {
-        CodeableConcept codeableConcept = (CodeableConcept)ExtensionConverter.findExtensionValue(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+        CodeableConcept codeableConcept = (CodeableConcept) ExtensionConverter.findExtensionValue(this.patient, FhirExtensionUri.PATIENT_RELIGION);
         if (codeableConcept == null) {
             return null;
         }
@@ -358,7 +361,7 @@ public class PatientBuilder extends ResourceBuilderBase
     }
 
     public String getReligionFreeText() {
-        CodeableConcept codeableConcept = (CodeableConcept)ExtensionConverter.findExtensionValue(this.patient, FhirExtensionUri.PATIENT_RELIGION);
+        CodeableConcept codeableConcept = (CodeableConcept) ExtensionConverter.findExtensionValue(this.patient, FhirExtensionUri.PATIENT_RELIGION);
         if (codeableConcept == null) {
             return null;
         }
@@ -595,7 +598,6 @@ public class PatientBuilder extends ResourceBuilderBase
             ExtensionConverter.removeExtension(this.patient, FhirExtensionUri.PATIENT_INTERPRETER_REQUIRED);
         }
     }*/
-
     public boolean hasManagingOrganisation() {
         return this.patient.hasManagingOrganization();
     }
