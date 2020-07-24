@@ -6,6 +6,8 @@ import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
+import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingOutpatientCdsTarget;
@@ -418,41 +420,74 @@ public class OutpatientCdsTargetTransformer {
 
         //we want to delete HL7 Emergency Encounters more than 24 hours older than the extract data date
         Date extractDateTime = fhirResourceFiler.getDataDate();
-        Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
+        Date cutoff = new Date(extractDateTime.getTime() - (12 * 60 * 60 * 1000));
 
         String sourcePatientId = Integer.toString(targetOutpatientCds.getPersonId());
         UUID patientUuid = IdHelper.getEdsResourceId(serviceUuid, ResourceType.Patient, sourcePatientId);
 
-        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        List<ResourceWrapper> resourceWrappers
-                = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.Encounter.toString());
-        for (ResourceWrapper wrapper: resourceWrappers) {
+        //try to locate the patient to obtain the nhs number
+        PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
+        PatientSearch patientSearch = patientSearchDal.searchByPatientId(patientUuid);
+        if (patientSearch == null) {
+            LOG.warn("Cannot find patient using Id: "+patientUuid.toString());
+            return;
+        }
+        String nhsNumber = patientSearch.getNhsNumber();
+        Set<String> serviceIds = new HashSet<>();
+        serviceIds.add(serviceUuid.toString());
+        //get the list of patientId values for this service as Map<patientId, serviceId>
+        Map<UUID, UUID> patientIdsForService = patientSearchDal.findPatientIdsForNhsNumber(serviceIds, nhsNumber);
+        Set<UUID> patientIds = patientIdsForService.keySet();   //get the unique patientId values, >1 where >1 system
 
-            //if this Encounter is for our own service + system ID (i.e. DW feed), then leave it
-            UUID wrapperSystemId = wrapper.getSystemId();
-            if (wrapperSystemId.equals(systemUuid)) {
-                continue;
-            }
+        //loop through all the patientIds for that patient to check the encounters
+        for (UUID patientId: patientIds) {
 
-            String json = wrapper.getResourceData();
-            Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+            List<ResourceWrapper> resourceWrappers
+                    = resourceDal.getResourcesByPatient(serviceUuid, patientId, ResourceType.Encounter.toString());
+            for (ResourceWrapper wrapper : resourceWrappers) {
 
-            LOG.debug("Existing HL7 Outpatient encounter "+existingEncounter.getId()+", date: "+existingEncounter.getPeriod().getStart().toString()+", cut off date: "+cutoff.toString());
+                //if this Encounter is for our own service + system ID (i.e. DW feed), then leave it
+                UUID wrapperSystemId = wrapper.getSystemId();
+                if (wrapperSystemId.equals(systemUuid)) {
+                    continue;
+                }
 
-            //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
-            if (existingEncounter.hasPeriod()
-                    && existingEncounter.getPeriod().hasStart()
-                    && existingEncounter.getPeriod().getStart().before(cutoff)) {
+                String json = wrapper.getResourceData();
+                Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
-                LOG.debug("Checking existing Outpatient encounter date (long): "+existingEncounter.getPeriod().getStart().getTime()+" in dates array: "+patientOutpatientEncounterDates.toArray());
+                //LOG.debug("Existing HL7 Outpatient encounter " + existingEncounter.getId() + ", date: " + existingEncounter.getPeriod().getStart().toString() + ", cut off date: " + cutoff.toString());
 
-                //finally, check it is an Outpatient encounter class before deleting
-                if (existingEncounter.getClass_().equals(Encounter.EncounterClass.OUTPATIENT)) {
-                    if (patientOutpatientEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
-                        GenericBuilder builder = new GenericBuilder(existingEncounter);
-                        //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
-                        //builder.setDeletedAudit(...);
-                        fhirResourceFiler.deletePatientResource(null, false, builder);
+                //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
+                if (existingEncounter.hasPeriod()
+                        && existingEncounter.getPeriod().hasStart()
+                        && existingEncounter.getPeriod().getStart().before(cutoff)) {
+
+                    //LOG.debug("Checking existing Outpatient encounter date (long): " + existingEncounter.getPeriod().getStart().getTime() + " in dates array: " + patientOutpatientEncounterDates.toArray());
+
+                    //finally, check it is an Outpatient encounter class before deleting
+                    if (existingEncounter.getClass_().equals(Encounter.EncounterClass.OUTPATIENT)) {
+                        if (patientOutpatientEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
+                            GenericBuilder builder = new GenericBuilder(existingEncounter);
+                            //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
+                            //builder.setDeletedAudit(...);
+                            LOG.debug("Existing Outpatient ADT encounterId: "+existingEncounter.getId()+" deleted as matched type and date to DW");
+                            fhirResourceFiler.deletePatientResource(null, false, builder);
+
+                            //get the linked episode of care reference and delete the resource so duplication does not occur between DW and ADT
+                            if (existingEncounter.hasEpisodeOfCare()) {
+                                Reference episodeReference = existingEncounter.getEpisodeOfCare().get(0);
+                                String episodeUuid = ReferenceHelper.getReferenceId(episodeReference);
+                                EpisodeOfCare episodeOfCare
+                                        = (EpisodeOfCare)resourceDal.getCurrentVersionAsResource(serviceUuid, ResourceType.EpisodeOfCare, episodeUuid);
+
+                                if (episodeOfCare != null) {
+                                    GenericBuilder builderEpisode = new GenericBuilder(episodeOfCare);
+                                    fhirResourceFiler.deletePatientResource(null, false, builderEpisode);
+                                    LOG.debug("Existing Emergency ADT episodeId: " + episodeUuid + " deleted as linked to deleted encounter");
+                                }
+                            }
+                        }
                     }
                 }
             }

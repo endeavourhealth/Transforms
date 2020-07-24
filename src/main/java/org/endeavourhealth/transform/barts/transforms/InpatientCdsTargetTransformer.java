@@ -566,7 +566,7 @@ public class InpatientCdsTargetTransformer {
         //loop through all the patientIds for that patient to check the encounters
         for (UUID patientId: patientIds) {
 
-            LOG.debug("Checking patient: " + patientId.toString() + " for existing service: " + serviceUuid.toString() + " encounters");
+            //LOG.debug("Checking patient: " + patientId.toString() + " for existing service: " + serviceUuid.toString() + " encounters");
 
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
             List<ResourceWrapper> resourceWrappers
@@ -582,7 +582,7 @@ public class InpatientCdsTargetTransformer {
                 String json = wrapper.getResourceData();
                 Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
-                LOG.debug("Existing HL7 Inpatient encounter " + existingEncounter.getId() + ", date: " + existingEncounter.getPeriod().getStart().toString() + ", cut off date: " + cutoff.toString());
+                //LOG.debug("Existing HL7 Inpatient encounter " + existingEncounter.getId() + ", date: " + existingEncounter.getPeriod().getStart().toString() + ", cut off date: " + cutoff.toString());
 
                 //if the HL7 Encounter is before our 12 hr cutoff, look to delete it
                 if (existingEncounter.hasPeriod()
@@ -594,10 +594,26 @@ public class InpatientCdsTargetTransformer {
 
                         LOG.debug("Checking existing Inpatient encounter date (long): " + existingEncounter.getPeriod().getStart().getTime() + " in dates array: " + patientInpatientEncounterDates.toArray());
                         if (patientInpatientEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
-                            GenericBuilder builder = new GenericBuilder(existingEncounter);
+                            GenericBuilder builderEncounter = new GenericBuilder(existingEncounter);
                             //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
                             //builder.setDeletedAudit(...);
-                            fhirResourceFiler.deletePatientResource(null, false, builder);
+
+                            LOG.debug("Existing Inpatient ADT encounterId: "+existingEncounter.getId()+" deleted as matched type and date to DW");
+                            fhirResourceFiler.deletePatientResource(null, false, builderEncounter);
+
+                            //get the linked episode of care reference and delete the resource so duplication does not occur between DW and ADT
+                            if (existingEncounter.hasEpisodeOfCare()) {
+                                Reference episodeReference = existingEncounter.getEpisodeOfCare().get(0);
+                                String episodeUuid = ReferenceHelper.getReferenceId(episodeReference);
+                                EpisodeOfCare episodeOfCare
+                                        = (EpisodeOfCare)resourceDal.getCurrentVersionAsResource(serviceUuid, ResourceType.EpisodeOfCare, episodeUuid);
+
+                                if (episodeOfCare != null) {
+                                    GenericBuilder builderEpisode = new GenericBuilder(episodeOfCare);
+                                    fhirResourceFiler.deletePatientResource(null, false, builderEpisode);
+                                    LOG.debug("Existing Inpatient ADT episodeId: " + episodeUuid + " deleted as linked to deleted encounter");
+                                }
+                            }
                         }
                     }
                 }
