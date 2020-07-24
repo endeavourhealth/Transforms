@@ -31,7 +31,6 @@ public class PMITransformer {
         AbstractCsvParser parser = parsers.get(PMI.class);
         long count = 0;
         long checkpoint = 5000;
-        LOG.debug("RAB>>>>> 24th 0931");
         if (parser != null) {
             while (parser.nextRecord()) {
                 count++;
@@ -325,10 +324,8 @@ public class PMITransformer {
 
         ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(patientBuilder);
         parametersBuilder.removeContainedParameters();
-        LOG.debug("RAB>>>> in COD");
         CsvCell cause = parser.getCauseOfDeath();
         if (!cause.isEmpty()) {
-            LOG.debug("COD:" + cause.getString());
             addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH, cause.getString(), parametersBuilder);
             }
         CsvCell cause1B = parser.getCauseOfDeath1B();
