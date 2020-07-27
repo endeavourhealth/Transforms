@@ -437,7 +437,7 @@ public class EmergencyCdsTargetTransformer {
                 // If the patient has left AE (checkout-time/enddatetime) and not been admitted (decisionToAdmitDateTime empty) complete EpisodeOfCare
                 Date decidedToAdmitDate = targetEmergencyCds.getDtDecidedToAdmit();
                 if (departureDate != null
-                        && decidedToAdmitDate != null) {
+                        && decidedToAdmitDate == null) {
 
                     episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
                 }
