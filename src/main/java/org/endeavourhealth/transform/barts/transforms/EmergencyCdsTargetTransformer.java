@@ -102,6 +102,7 @@ public class EmergencyCdsTargetTransformer {
                 }
                 //now process and linked clinical event data
                 fhirResourceFiler.waitUntilEverythingIsSaved();
+                createEmergencyCdsEncounterClinicalEvents(targetEmergencyCds, fhirResourceFiler);
 
                 //now delete any older HL7 Encounters for patients we've updated
                 //but waiting until everything has been saved to the DB first
@@ -829,8 +830,7 @@ public class EmergencyCdsTargetTransformer {
         need filing as part of this data transformation
      */
     private static void createEmergencyCdsEncounterClinicalEvents(StagingEmergencyCdsTarget targetEmergencyCds,
-                                                                  FhirResourceFiler fhirResourceFiler,
-                                                                  BartsCsvHelper csvHelper) throws Exception {
+                                                                  FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //Chief complaint is a Snomed coded problem type condition resource
         String chiefComplaint = targetEmergencyCds.getChiefComplaint();
