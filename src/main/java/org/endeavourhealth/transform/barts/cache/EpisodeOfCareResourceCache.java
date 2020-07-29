@@ -115,7 +115,12 @@ public class EpisodeOfCareResourceCache {
     public EpisodeOfCareBuilder getEpisodeOfCareBuilder(StagingEmergencyCdsTarget targetEmergencyCds) throws Exception {
 
         CsvCell personIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetEmergencyCds.getPersonId()));
-        CsvCell activeIndicatorCell = CsvCell.factoryDummyWrapper(Boolean.toString(targetEmergencyCds.isDeleted()));
+        CsvCell activeIndicatorCell;
+        if (targetEmergencyCds.isDeleted()) {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("0");
+        } else {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("1");
+        }
         CsvCell encounterIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetEmergencyCds.getEncounterId()));
         Integer episodeId = targetEmergencyCds.getEpisodeId();
 
@@ -130,7 +135,12 @@ public class EpisodeOfCareResourceCache {
     public EpisodeOfCareBuilder getEpisodeOfCareBuilder(StagingOutpatientCdsTarget targetOutpatientCds) throws Exception {
 
         CsvCell personIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetOutpatientCds.getPersonId()));
-        CsvCell activeIndicatorCell = CsvCell.factoryDummyWrapper(Boolean.toString(targetOutpatientCds.isDeleted()));
+        CsvCell activeIndicatorCell;
+        if (targetOutpatientCds.isDeleted()) {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("0");
+        } else {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("1");
+        }
         CsvCell encounterIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetOutpatientCds.getEncounterId()));
         Integer episodeId = targetOutpatientCds.getEpisodeId();
 
@@ -145,7 +155,12 @@ public class EpisodeOfCareResourceCache {
     public EpisodeOfCareBuilder getEpisodeOfCareBuilder(StagingInpatientCdsTarget targetInpatientCds) throws Exception {
 
         CsvCell personIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetInpatientCds.getPersonId()));
-        CsvCell activeIndicatorCell = CsvCell.factoryDummyWrapper(Boolean.toString(targetInpatientCds.isDeleted()));
+        CsvCell activeIndicatorCell;
+        if (targetInpatientCds.isDeleted()) {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("0");
+        } else {
+            activeIndicatorCell = CsvCell.factoryDummyWrapper("1");
+        }
         CsvCell encounterIdCell = CsvCell.factoryDummyWrapper(Integer.toString(targetInpatientCds.getEncounterId()));
         Integer episodeId = targetInpatientCds.getEpisodeId();
 
@@ -159,7 +174,7 @@ public class EpisodeOfCareResourceCache {
 
     /**
      * for three of the encounter-related files, there's just an Encounter ID, so we must try to
-     * find the EpisodeOfCare by looking up either an Episode ID or FIN using the interal ID map table
+     * find the EpisodeOfCare by looking up either an Episode ID or FIN using the internal ID map table
      */
     private EpisodeOfCareBuilder getEpisodeOfCareBuilder(CsvCell encounterIdCell, CsvCell personIdCell, CsvCell activeIndicatorCell) throws Exception {
 
@@ -286,7 +301,7 @@ public class EpisodeOfCareResourceCache {
     private EpisodeOfCareBuilder retrieveAndCacheBuilder(String localRef, CsvCell personIdCell, CsvCell activeIndicatorCell) throws Exception {
 
         //the local ref may be an Episode ID or FIN, but both mappings should be created in the source ID -> UUID map table
-        UUID episodeUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, localRef);
+        UUID episodeUuid = IdHelper.getOrCreateEdsResourceId(csvHelper.getServiceId(), ResourceType.EpisodeOfCare, localRef);
 
         EpisodeOfCareBuilder builder = episodeBuildersByUuid.get(episodeUuid);
         if (builder == null) {
@@ -598,13 +613,14 @@ public class EpisodeOfCareResourceCache {
         //clear down as everything has been saved
         episodeBuildersByUuid.clear();
 
-        //now delete any older HL7 Encounters for patients we've updated
+        //now delete any older HL7 Episodes for patients we've updated
         //but waiting until everything has been saved to the DB first
-        fhirResourceFiler.waitUntilEverythingIsSaved();
-
-        for (String patientUuid: hsPatientUuidsChanged) {
-            deleteHl7ReceiverEpisodes(UUID.fromString(patientUuid), fhirResourceFiler);
-        }
+        //TODO:  check during test if EOC duplication exists
+//        fhirResourceFiler.waitUntilEverythingIsSaved();
+//
+//        for (String patientUuid: hsPatientUuidsChanged) {
+//            deleteHl7ReceiverEpisodes(UUID.fromString(patientUuid), fhirResourceFiler);
+//        }
     }
 
     /**
@@ -617,12 +633,13 @@ public class EpisodeOfCareResourceCache {
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
 
-        //we want to delete any HL7 Encounter more than 24 hours older than the DW file extract date
-        Date extractDateTime = csvHelper.getExtractDateTime();
+        //we want to delete HL7 Episodes more than 24 hours older than the extract data date
+        Date extractDateTime = fhirResourceFiler.getDataDate();
         Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
 
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        List<ResourceWrapper> resourceWrappers = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.EpisodeOfCare.toString());
+        List<ResourceWrapper> resourceWrappers
+                = resourceDal.getResourcesByPatient(serviceUuid, patientUuid, ResourceType.EpisodeOfCare.toString());
         for (ResourceWrapper wrapper: resourceWrappers) {
 
             //if this episode is for our own system ID (i.e. DW feed), then leave it

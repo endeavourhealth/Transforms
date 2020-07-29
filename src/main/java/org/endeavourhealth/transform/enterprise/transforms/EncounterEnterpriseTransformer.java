@@ -1,7 +1,10 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -364,16 +367,15 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                         //each parameter entry  will have a key value pair of name and StringType value?
                         if (parameter.hasName() && parameter.hasValue()) {
 
-                            //these values are straight from IM API mapping, to file the IRI direct into the table
-                            String propertyId = parameter.getName();
-                            StringType parameterValue = (StringType) parameter.getValue();
-                            String valueId = parameterValue.asStringValue();
+                            //these values are from IM API mapping
+                            String propertyCode = parameter.getName();
+                            CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                            String valueCode = parameterValue.getCoding().get(0).getCode();
 
-                            //transform the IM values to the encounter_triple table upsert
-                            encounterAdditional.writeUpsert(id, propertyId, valueId );
+                            //write the IM values to the encounter_additional table upsert
+                            encounterAdditional.writeUpsert(id, propertyCode, valueCode);
                         }
                     }
-
                     break;
                 }
             }

@@ -284,7 +284,7 @@ public abstract class CdsPreTransformerBase {
                 return;
             }
             if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
-                TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
+                //TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
                 return;
             }
             stagingCds.setLookupPersonId(Integer.valueOf(personId));
@@ -678,7 +678,7 @@ public abstract class CdsPreTransformerBase {
                 return;
             }
             if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
-                TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
+                //TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
                 return;
             }
             stagingConditionCds.setLookupPersonId(Integer.valueOf(personId));
@@ -1189,6 +1189,11 @@ public abstract class CdsPreTransformerBase {
             //if no more data break out of loop
             if (Strings.isNullOrEmpty(dataCode)) {
                 break;
+            }
+            //check if diagnosis is confirmed.  we are only interested in confirmed diagnosis
+            String confirmed = parser.getDiagnosisQualifier(dataNumber).getString();
+            if (Strings.isNullOrEmpty(confirmed) || !confirmed.equalsIgnoreCase("410605003")) {
+                continue;
             }
             diagnosisList.add(dataCode);
 

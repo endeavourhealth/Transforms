@@ -14,10 +14,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.hl7.fhir.instance.model.Encounter;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -214,9 +211,10 @@ public class CriticalCareCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String admissionSourceCode = targetCriticalCareCds.getAdmissionSourceCode();
@@ -230,13 +228,14 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "admission_source_code", careUnitFunction,"CM_NHS_DD"
+                    "admission_source_code", admissionSourceCode,"CM_NHS_DD"
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         //TODO: These might not be IM mapped yet, so check auto create
@@ -251,13 +250,14 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "critical_care_type", criticalCareTypeId,"CM_BartCernerCode"
+                    "critical_care_type", criticalCareTypeId,"BartsCerner"
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String admissionTypeCode = targetCriticalCareCds.getAdmissionTypeCode();
@@ -275,9 +275,10 @@ public class CriticalCareCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String admissionLocationCode = targetCriticalCareCds.getAdmissionLocation();
@@ -295,9 +296,10 @@ public class CriticalCareCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String dischargeStatusCode = targetCriticalCareCds.getDischargeStatusCode();
@@ -315,9 +317,10 @@ public class CriticalCareCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String dischargeDestinationCode = targetCriticalCareCds.getDischargeDestination();
@@ -335,9 +338,10 @@ public class CriticalCareCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String dischargeLocationCode = targetCriticalCareCds.getDischargeLocation();
@@ -355,9 +359,10 @@ public class CriticalCareCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
     }
 }

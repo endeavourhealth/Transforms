@@ -577,6 +577,7 @@ public class SusEmergencyCareDataSet extends AbstractCsvParser implements CdsRec
 
     //Diagnosis 1 - 20
     public CsvCell getDiagnosis(int dataNumber) { return super.getCell("EmergencyCareDiagnosis"+dataNumber);}
+    public CsvCell getDiagnosisQualifier(int dataNumber) { return super.getCell("EmergencyCareDiagnosisQualifier"+dataNumber);}
 
     public CsvCell getDiagnosis1() { return super.getCell("EmergencyCareDiagnosis1");}
     public CsvCell getDiagnosis2() { return super.getCell("EmergencyCareDiagnosis2");}

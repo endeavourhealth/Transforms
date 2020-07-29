@@ -154,7 +154,10 @@ public class Episodes extends AbstractCsvParser {
     }
 
     public CsvCell getIpSpellExternalId() {
-        return super.getCell("IP_SPELL_EXTERNAL_ID");
+        CsvCell id = super.getCell("IP_SPELL_EXTERNAL_ID");
+        String newId = "BHRUT-" + id.getString();
+        CsvCell ret = new CsvCell(id.getPublishedFileId(), id.getRecordNumber(), id.getColIndex(), newId, id.getParentParser());
+        return ret;
     }
 
     public CsvCell getAdmEpiFlag() {

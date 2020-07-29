@@ -3,21 +3,12 @@ package org.endeavourhealth.transform.enterprise.transforms;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.common.TransformConfig;
-import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
-import org.endeavourhealth.transform.enterprise.outputModels.PatientAddress;
-import org.endeavourhealth.transform.subscriber.IMConstant;
-import org.endeavourhealth.transform.subscriber.IMHelper;
-import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.endeavourhealth.transform.subscriber.transforms.EpisodeOfCareTransformer;
-import org.endeavourhealth.transform.subscriber.transforms.PatientTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,12 +39,8 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
 
-            //TODO - remove this check one table is rolled out
-            if (!TransformConfig.instance().isLive()) {
-                List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
-                deleteRegistrationStatusHistory(fullHistory, params);
-            }
-
+            List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
+            deleteRegistrationStatusHistory(fullHistory, params);
             csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }
@@ -125,11 +112,7 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
             dateRegisteredEnd,
             usualGpPractitionerId);
 
-        //TODO: remove this check for go live to introduce Compass v1 upgrade tables population
-        //TODO - don't forget to remove similar check at the top of this fn for deleting these entities
-        if (!TransformConfig.instance().isLive()) {
-            transformRegistrationStatusHistory(organisationId, patientId, personId, id, fhir, params);
-        }
+        transformRegistrationStatusHistory(organisationId, patientId, personId, id, fhir, params);
     }
 
     private void deleteRegistrationStatusHistory(List<ResourceWrapper> fullHistory, EnterpriseTransformHelper params) throws Exception {
@@ -145,8 +128,7 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
 
             //create a unique Id mapping reference for this episode of care registration status using
             //code and date. Sometimes duplicates are sent which we will simply overwrite/upsert
-            String sourceId = regStatus.generateUniqueId();
-            SubscriberId subTableId = hmIds.get(sourceId);
+            SubscriberId subTableId = hmIds.get(regStatus);
             if (subTableId != null) { //will be null if never transformed before
 
                 long registrationHistoryId = subTableId.getSubscriberId();

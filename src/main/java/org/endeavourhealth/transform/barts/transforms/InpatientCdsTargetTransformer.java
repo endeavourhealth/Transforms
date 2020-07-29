@@ -6,6 +6,8 @@ import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
+import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingInpatientCdsTarget;
@@ -23,13 +25,13 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class InpatientCdsTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(InpatientCdsTargetTransformer.class);
+    private static Set<Long> patientInpatientEncounterDates = new HashSet<>();
+    private static Set<String> patientInpatientEpisodesDeleted = new HashSet<>();
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -68,6 +70,9 @@ public class InpatientCdsTargetTransformer {
                 continue;
             }
 
+            patientInpatientEncounterDates.clear();
+            patientInpatientEpisodesDeleted.clear();
+
             //process top level encounter - the existing parent encounter
             Integer encounterId = targetInpatientCds.getEncounterId();  //this is used to identify the top level parent encounter
 
@@ -80,10 +85,10 @@ public class InpatientCdsTargetTransformer {
                 if (existingParentEncounter != null) {
 
                     //update the existing top level encounter
-                    updateExistingParentEncounter(existingParentEncounter, targetInpatientCds, fhirResourceFiler, csvHelper);
+                    parentEncounterBuilder
+                            = updateExistingParentEncounter(existingParentEncounter, targetInpatientCds, fhirResourceFiler, csvHelper);
 
                     //create the linked child encounters
-                    parentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetInpatientCds.getAudit());
                     createInpatientCdsSubEncounters(targetInpatientCds, fhirResourceFiler, csvHelper, parentEncounterBuilder);
 
                 } else {
@@ -99,12 +104,9 @@ public class InpatientCdsTargetTransformer {
 
                 //find the patient UUID for the encounters we have just filed, so we can tidy up the
                 //HL7 encounters after doing all the saving of the DW encounters
-                Reference patientReference = parentEncounterBuilder.getPatient();
-                if (!parentEncounterBuilder.isIdMapped()) {
-                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
-                }
-                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
-                deleteHL7ReceiverPatientInpatientEncounters(patientUuid, fhirResourceFiler, csvHelper);
+                deleteHL7ReceiverPatientInpatientEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
+                patientInpatientEncounterDates.clear();
+                patientInpatientEpisodesDeleted.clear();
 
             } else {
 
@@ -380,21 +382,25 @@ public class InpatientCdsTargetTransformer {
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         //LOG.debug("Saving IP parent encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+        patientInpatientEncounterDates.add(existingParentEncounterBuilder.getPeriod().getStart().getTime());
 
         //then save the child encounter builders if they are set
         if (admissionEncounterBuilder != null) {
 
             //LOG.debug("Saving child IP admission encounter: "+ FhirSerializationHelper.serializeResource(admissionEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, admissionEncounterBuilder);
+            patientInpatientEncounterDates.add(admissionEncounterBuilder.getPeriod().getStart().getTime());
         }
         if (dischargeEncounterBuilder != null) {
 
             //LOG.debug("Saving child IP discharge encounter: "+ FhirSerializationHelper.serializeResource(dischargeEncounterBuilder.getResource()));
             fhirResourceFiler.savePatientResource(null, dischargeEncounterBuilder);
+            patientInpatientEncounterDates.add(dischargeEncounterBuilder.getPeriod().getStart().getTime());
         }
         //finally, save the episode encounter which always exists
         //LOG.debug("Saving child IP episode encounter: "+ FhirSerializationHelper.serializeResource(episodeEncounterBuilder.getResource()));
         fhirResourceFiler.savePatientResource(null, episodeEncounterBuilder);
+        patientInpatientEncounterDates.add(episodeEncounterBuilder.getPeriod().getStart().getTime());
     }
 
     private static void deleteInpatientCdsEncounterAndChildren(StagingInpatientCdsTarget targetInpatientCds,
@@ -483,7 +489,7 @@ public class InpatientCdsTargetTransformer {
         return parentEncounterBuilder;
     }
 
-    private static void updateExistingParentEncounter(Encounter existingEncounter,
+    private static EncounterBuilder updateExistingParentEncounter(Encounter existingEncounter,
                                                 StagingInpatientCdsTarget targetInpatientCds,
                                                 FhirResourceFiler fhirResourceFiler,
                                                 BartsCsvHelper csvHelper) throws Exception {
@@ -491,15 +497,22 @@ public class InpatientCdsTargetTransformer {
         EncounterBuilder existingEncounterBuilder
                 = new EncounterBuilder(existingEncounter, targetInpatientCds.getAudit());
 
-        //todo - decide on how much to update the top level with
+        //set the overall encounter status depending on sub encounter completion
+        Date spellStartDate = targetInpatientCds.getDtSpellStart();
         Date dischargeDate = targetInpatientCds.getDtDischarge();
-        if (dischargeDate != null) {
-
-            existingEncounterBuilder.setPeriodEnd(dischargeDate);
-            existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
-        } else {
+        if (spellStartDate != null) {
 
             existingEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
+
+            // End date
+            if (dischargeDate != null) {
+
+                existingEncounterBuilder.setPeriodEnd(dischargeDate);
+                existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            }
+        } else {
+
+                existingEncounterBuilder.setStatus(Encounter.EncounterState.PLANNED);
         }
 
         String cdsUniqueId = targetInpatientCds.getUniqueId();
@@ -513,50 +526,101 @@ public class InpatientCdsTargetTransformer {
             identifierBuilder.setValue(cdsUniqueId);
         }
 
-        fhirResourceFiler.savePatientResource(null, !existingEncounterBuilder.isIdMapped(), existingEncounterBuilder);
+        return existingEncounterBuilder;
     }
 
-    /**
+    /*
      * we match to some HL7 Receiver Encounters, basically taking them over
-     * so we call this to tidy up (delete) any Episodes left not taken over, as the HL7 Receiver creates too many
-     * episodes because it doesn't have the data to avoid doing so
+     * so we call this to tidy up (delete) any matching Encounters that have been taken over
      */
-    private static void deleteHL7ReceiverPatientInpatientEncounters(String patientUuid,
+    private static void deleteHL7ReceiverPatientInpatientEncounters(StagingInpatientCdsTarget targetInpatientCds,
                                                                      FhirResourceFiler fhirResourceFiler,
                                                                      BartsCsvHelper csvHelper) throws Exception {
 
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
 
-        //we want to delete any HL7 Encounter more than 24 hours older than the DW file extract date
-        Date extractDateTime = csvHelper.getExtractDateTime();
-        Date cutoff = new Date(extractDateTime.getTime() - (24 * 60 * 60 * 1000));
+        //we want to check for and delete HL7 Inpatient Encounters more than 12 hours older than the DW extract data date
+        Date extractDateTime = fhirResourceFiler.getDataDate();
+        Date cutoff = new Date(extractDateTime.getTime() - (12 * 60 * 60 * 1000));
 
-        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
-        List<ResourceWrapper> resourceWrappers
-                = resourceDal.getResourcesByPatient(serviceUuid, UUID.fromString(patientUuid), ResourceType.Encounter.toString());
-        for (ResourceWrapper wrapper: resourceWrappers) {
+        String sourcePatientId = Integer.toString(targetInpatientCds.getPersonId());
+        UUID patientUuid = IdHelper.getEdsResourceId(serviceUuid, ResourceType.Patient, sourcePatientId);
 
-            //if this episode is for our own service + system ID (i.e. DW feed), then leave it
-            UUID wrapperSystemId = wrapper.getSystemId();
-            if (wrapperSystemId.equals(systemUuid)) {
-                continue;
-            }
+        //try to locate the patient to obtain the nhs number
+        PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
+        PatientSearch patientSearch = patientSearchDal.searchByPatientId(patientUuid);
+        if (patientSearch == null) {
+            LOG.warn("Cannot find patient using Id: "+patientUuid.toString());
+            return;
+        }
+        String nhsNumber = patientSearch.getNhsNumber();
+        Set<String> serviceIds = new HashSet<>();
+        serviceIds.add(serviceUuid.toString());
+        //get the list of patientId values for this service as Map<patientId, serviceId>
+        Map<UUID, UUID> patientIdsForService = patientSearchDal.findPatientIdsForNhsNumber(serviceIds, nhsNumber);
+        Set<UUID> patientIds = patientIdsForService.keySet();   //get the unique patientId values, >1 where >1 system
 
-            String json = wrapper.getResourceData();
-            Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
+        //loop through all the patientIds for that patient to check the encounters
+        for (UUID patientId: patientIds) {
 
-            //if the HL7 Encounter has no date info at all or is before our cutoff, delete it
-            if (!existingEncounter.hasPeriod()
-                    || !existingEncounter.getPeriod().hasStart()
-                    || existingEncounter.getPeriod().getStart().before(cutoff)) {
+            //LOG.debug("Checking patient: " + patientId.toString() + " for existing service: " + serviceUuid.toString() + " encounters");
 
-                //finally, check it is an Outpatient encounter class before deleting
-                if (existingEncounter.getClass_().equals(Encounter.EncounterClass.INPATIENT)) {
-                    GenericBuilder builder = new GenericBuilder(existingEncounter);
-                    //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
-                    //builder.setDeletedAudit(...);
-                    fhirResourceFiler.deletePatientResource(null, false, builder);
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+            List<ResourceWrapper> resourceWrappers
+                    = resourceDal.getResourcesByPatient(serviceUuid, patientId, ResourceType.Encounter.toString());
+            for (ResourceWrapper wrapper : resourceWrappers) {
+
+                //if this Encounter is for our own service + system ID (i.e. DW feed), then leave it
+                UUID wrapperSystemId = wrapper.getSystemId();
+                if (wrapperSystemId.equals(systemUuid)) {
+                    continue;
+                }
+
+                String json = wrapper.getResourceData();
+                Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
+
+                //LOG.debug("Existing HL7 Inpatient encounter " + existingEncounter.getId() + ", date: " + existingEncounter.getPeriod().getStart().toString() + ", cut off date: " + cutoff.toString());
+
+                //if the HL7 Encounter is before our 12 hr cutoff, look to delete it
+                if (existingEncounter.hasPeriod()
+                        && existingEncounter.getPeriod().hasStart()
+                        && existingEncounter.getPeriod().getStart().before(cutoff)) {
+
+                    //finally, check it is an Inpatient encounter class before deleting
+                    if (existingEncounter.getClass_().equals(Encounter.EncounterClass.INPATIENT)) {
+
+                        //LOG.debug("Checking existing Inpatient encounter date (long): " + existingEncounter.getPeriod().getStart().getTime() + " in dates array: " + patientInpatientEncounterDates.toArray());
+                        if (patientInpatientEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
+                            GenericBuilder builderEncounter = new GenericBuilder(existingEncounter);
+                            //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
+                            //builder.setDeletedAudit(...);
+
+                            LOG.debug("Existing Inpatient ADT encounterId: "+existingEncounter.getId()+" deleted as matched type and date to DW");
+                            fhirResourceFiler.deletePatientResource(null, false, builderEncounter);
+
+                            //get the linked episode of care reference and delete the resource so duplication does not occur between DW and ADT
+                            if (existingEncounter.hasEpisodeOfCare()) {
+                                Reference episodeReference = existingEncounter.getEpisodeOfCare().get(0);
+                                String episodeUuid = ReferenceHelper.getReferenceId(episodeReference);
+
+                                //add episode of care for deletion if not already deleted
+                                if (patientInpatientEpisodesDeleted.contains(episodeUuid)) {
+                                    continue;
+                                }
+                                EpisodeOfCare episodeOfCare
+                                        = (EpisodeOfCare)resourceDal.getCurrentVersionAsResource(serviceUuid, ResourceType.EpisodeOfCare, episodeUuid);
+
+                                if (episodeOfCare != null) {
+                                    GenericBuilder builderEpisode = new GenericBuilder(episodeOfCare);
+
+                                    patientInpatientEpisodesDeleted.add(episodeUuid);
+                                    fhirResourceFiler.deletePatientResource(null, false, builderEpisode);
+                                    LOG.debug("Existing Inpatient ADT episodeId: " + episodeUuid + " deleted as linked to deleted encounter");
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -583,9 +647,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String admissionMethodCode = targetInpatientCds.getAdmissionMethodCode();
@@ -603,9 +668,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String admissionSourceCode = targetInpatientCds.getAdmissionSourceCode();
@@ -623,9 +689,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String patientClassification = targetInpatientCds.getPatientClassification();
@@ -643,9 +710,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String treatmentFunctionCode = targetInpatientCds.getTreatmentFunctionCode();
@@ -659,27 +727,17 @@ public class InpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
-                    "treatment_function_code", treatmentFunctionCode,"CM_BartCernerCode"
+                    "treatment_function_code", treatmentFunctionCode,"BartsCerner"
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
-        //add the primary and secondary diagnosis codes as additional parameters.
-        // TODO: Check these are filed as part of the diagnosis CDS transform as separate diagnosis records
-
-//            String primaryDiagnosis = targetInpatientCds.getPrimaryDiagnosisICD();
-//            if (!Strings.isNullOrEmpty(primaryDiagnosis)) {
-//                containedParametersBuilderAdmission.addParameter("primary_diagnosis", primaryDiagnosis);
-//            }
-//            String secondaryDiagnosis = targetInpatientCds.getSecondaryDiagnosisICD();
-//            if (!Strings.isNullOrEmpty(secondaryDiagnosis)) {
-//                containedParametersBuilderAdmission.addParameter("secondary_diagnosis", secondaryDiagnosis);
-//            }
-//            String otherDiagnosis = targetInpatientCds.getOtherDiagnosisICD();
+        //NOTE: diagnosis and procedure data is already processed via proc and diag CDS transforms
     }
 
     private static void setDischargeContainedParameters(EncounterBuilder encounterBuilder,
@@ -703,9 +761,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String dischargeDestinationCode = targetInpatientCds.getDischargeDestinationCode();
@@ -723,9 +782,10 @@ public class InpatientCdsTargetTransformer {
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
-            String propertyConceptIri = propertyResponse.getConcept().getIri();
-            String valueConceptIri = valueResponse.getConcept().getIri();
-            parametersBuilder.addParameter(propertyConceptIri, valueConceptIri);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
     }
 }
