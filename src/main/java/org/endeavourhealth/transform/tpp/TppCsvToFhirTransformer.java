@@ -473,7 +473,8 @@ public abstract class TppCsvToFhirTransformer {
                 || fileName.equals("SRCtv3ToVersion2")
                 || fileName.equals("SRMapping")
                 || fileName.equals("SRMedicationReadCodeDetails")
-                || fileName.equals("SRTemplate")) {
+                || fileName.equals("SRTemplate")
+                || fileName.equals("SRCtv3ToSnomed")) {
             return "codes";
 
         } else if (fileName.equals("SRMedia")
@@ -531,6 +532,7 @@ public abstract class TppCsvToFhirTransformer {
             SRMappingTransformer.transform(parsers, fhirResourceFiler);
             SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
             SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SRCtv3ToSnomedTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             //organisational admin data
             LOG.info("Starting admin transforms");
