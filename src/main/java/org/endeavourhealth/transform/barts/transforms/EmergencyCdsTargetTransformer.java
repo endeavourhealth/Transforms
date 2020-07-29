@@ -14,6 +14,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.mapping.MapColumnRequest;
 import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
@@ -33,6 +34,7 @@ public class EmergencyCdsTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmergencyCdsTargetTransformer.class);
     private static Set<Long> patientEmergencyEncounterDates = new HashSet<>();
+    private static Set<String> patientEmergencyEpisodesDeleted = new HashSet<>();
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -72,6 +74,7 @@ public class EmergencyCdsTargetTransformer {
             }
 
             patientEmergencyEncounterDates.clear();
+            patientEmergencyEpisodesDeleted.clear();
 
             //process top level encounter - the existing parent encounter
             Integer encounterId = targetEmergencyCds.getEncounterId();  //this is used to identify the top level parent encounter
@@ -97,6 +100,8 @@ public class EmergencyCdsTargetTransformer {
                     parentEncounterBuilder
                             = createEmergencyCdsEncounterParentAndSubs(targetEmergencyCds, fhirResourceFiler, csvHelper);
                 }
+                //now process and linked clinical event data
+                fhirResourceFiler.waitUntilEverythingIsSaved();
 
                 //now delete any older HL7 Encounters for patients we've updated
                 //but waiting until everything has been saved to the DB first
@@ -104,13 +109,9 @@ public class EmergencyCdsTargetTransformer {
 
                 //find the patient UUID for the encounters we have just filed, so we can tidy up the
                 //HL7 encounters after doing all the saving of the DW encounters
-//                Reference patientReference = parentEncounterBuilder.getPatient();
-//                if (!parentEncounterBuilder.isIdMapped()) {
-//                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
-//                }
-//                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
                 deleteHL7ReceiverPatientEmergencyEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
                 patientEmergencyEncounterDates.clear();
+                patientEmergencyEpisodesDeleted.clear();
 
             } else {
 
@@ -256,17 +257,6 @@ public class EmergencyCdsTargetTransformer {
             }
             existingEncounterList.addReference(childTreatmentsRef);
 
-            //TODO - do we save the linked clinical data here - check live examples?
-            //targetEmergencyCds.getDiagnosis();
-            //targetEmergencyCds.getInvestigations();
-            //targetEmergencyCds.getTreatments();
-
-            String referredToServices = targetEmergencyCds.getReferredToServices();
-            if (!Strings.isNullOrEmpty(referredToServices)) {
-
-                //TODO:  create referrals(s) linked to main encounter_id or ParametersList?
-            }
-
             Date aeTreatmentsEndDate
                     = ObjectUtils.firstNonNull(admitDate, conclusionDate, departureDate);
             if (aeTreatmentsEndDate != null) {
@@ -348,8 +338,8 @@ public class EmergencyCdsTargetTransformer {
     }
 
     private static EncounterBuilder createEmergencyCdsEncounterParentAndSubs(StagingEmergencyCdsTarget targetEmergencyCds,
-                                                                 FhirResourceFiler fhirResourceFiler,
-                                                                 BartsCsvHelper csvHelper) throws Exception {
+                                                                             FhirResourceFiler fhirResourceFiler,
+                                                                             BartsCsvHelper csvHelper) throws Exception {
 
         EncounterBuilder parentEncounterBuilder = new EncounterBuilder();
         parentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
@@ -386,11 +376,11 @@ public class EmergencyCdsTargetTransformer {
                                                      StagingEmergencyCdsTarget targetEmergencyCds,
                                                      BartsCsvHelper csvHelper,
                                                      boolean isChildEncounter,
-                                                     FhirResourceFiler fhirResourceFiler) throws Exception  {
+                                                     FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //every encounter has the following common attributes
         Integer personId = targetEmergencyCds.getPersonId();
-        if (personId !=null) {
+        if (personId != null) {
             Reference patientReference
                     = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
             if (builder.isIdMapped()) {
@@ -480,7 +470,7 @@ public class EmergencyCdsTargetTransformer {
         String cdsUniqueId = targetEmergencyCds.getUniqueId();
         if (!cdsUniqueId.isEmpty()) {
 
-            cdsUniqueId = cdsUniqueId.replaceFirst("ECDS-","");
+            cdsUniqueId = cdsUniqueId.replaceFirst("ECDS-", "");
             IdentifierBuilder.removeExistingIdentifiersForSystem(builder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(builder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
@@ -541,9 +531,9 @@ public class EmergencyCdsTargetTransformer {
     }
 
     private static EncounterBuilder updateExistingParentEncounter(Encounter existingEncounter,
-                                                      StagingEmergencyCdsTarget targetEmergencyCds,
-                                                      FhirResourceFiler fhirResourceFiler,
-                                                      BartsCsvHelper csvHelper) throws Exception {
+                                                                  StagingEmergencyCdsTarget targetEmergencyCds,
+                                                                  FhirResourceFiler fhirResourceFiler,
+                                                                  BartsCsvHelper csvHelper) throws Exception {
 
         EncounterBuilder existingEncounterBuilder
                 = new EncounterBuilder(existingEncounter, targetEmergencyCds.getAudit());
@@ -572,7 +562,7 @@ public class EmergencyCdsTargetTransformer {
         String cdsUniqueId = targetEmergencyCds.getUniqueId();
         if (!cdsUniqueId.isEmpty()) {
 
-            cdsUniqueId = cdsUniqueId.replaceFirst("ECDS-","");
+            cdsUniqueId = cdsUniqueId.replaceFirst("ECDS-", "");
             IdentifierBuilder.removeExistingIdentifiersForSystem(existingEncounterBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(existingEncounterBuilder);
             identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
@@ -588,8 +578,8 @@ public class EmergencyCdsTargetTransformer {
      * so we call this to tidy up (delete) any matching Encounters that have been taken over
      */
     private static void deleteHL7ReceiverPatientEmergencyEncounters(StagingEmergencyCdsTarget targetEmergencyCds,
-                                                           FhirResourceFiler fhirResourceFiler,
-                                                           BartsCsvHelper csvHelper) throws Exception {
+                                                                    FhirResourceFiler fhirResourceFiler,
+                                                                    BartsCsvHelper csvHelper) throws Exception {
 
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
@@ -605,7 +595,7 @@ public class EmergencyCdsTargetTransformer {
         PatientSearchDalI patientSearchDal = DalProvider.factoryPatientSearchDal();
         PatientSearch patientSearch = patientSearchDal.searchByPatientId(patientUuid);
         if (patientSearch == null) {
-            LOG.warn("Cannot find patient using Id: "+patientUuid.toString());
+            LOG.warn("Cannot find patient using Id: " + patientUuid.toString());
             return;
         }
         String nhsNumber = patientSearch.getNhsNumber();
@@ -616,7 +606,7 @@ public class EmergencyCdsTargetTransformer {
         Set<UUID> patientIds = patientIdsForService.keySet();   //get the unique patientId values, >1 where >1 system
 
         //loop through all the patientIds for that patient to check the encounters
-        for (UUID patientId: patientIds) {
+        for (UUID patientId : patientIds) {
 
             //LOG.debug("Checking patient: " + patientId.toString() + " for existing service: " + serviceUuid.toString() + " encounters");
 
@@ -651,18 +641,25 @@ public class EmergencyCdsTargetTransformer {
                             GenericBuilder builder = new GenericBuilder(existingEncounter);
                             //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
                             //builder.setDeletedAudit(...);
-                            LOG.debug("Existing Emergency ADT encounterId: "+existingEncounter.getId()+" deleted as matched type and date to DW");
+                            LOG.debug("Existing Emergency ADT encounterId: " + existingEncounter.getId() + " deleted as matched type and date to DW");
                             fhirResourceFiler.deletePatientResource(null, false, builder);
 
                             //get the linked episode of care reference and delete the resource so duplication does not occur between DW and ADT
                             if (existingEncounter.hasEpisodeOfCare()) {
                                 Reference episodeReference = existingEncounter.getEpisodeOfCare().get(0);
                                 String episodeUuid = ReferenceHelper.getReferenceId(episodeReference);
+
+                                //add episode of care for deletion if not already deleted
+                                if (patientEmergencyEpisodesDeleted.contains(episodeUuid)) {
+                                    continue;
+                                }
                                 EpisodeOfCare episodeOfCare
-                                        = (EpisodeOfCare)resourceDal.getCurrentVersionAsResource(serviceUuid, ResourceType.EpisodeOfCare, episodeUuid);
+                                        = (EpisodeOfCare) resourceDal.getCurrentVersionAsResource(serviceUuid, ResourceType.EpisodeOfCare, episodeUuid);
 
                                 if (episodeOfCare != null) {
                                     GenericBuilder builderEpisode = new GenericBuilder(episodeOfCare);
+
+                                    patientEmergencyEpisodesDeleted.add(episodeUuid);
                                     fhirResourceFiler.deletePatientResource(null, false, builderEpisode);
                                     LOG.debug("Existing Emergency ADT episodeId: " + episodeUuid + " deleted as linked to deleted encounter");
                                 }
@@ -684,20 +681,20 @@ public class EmergencyCdsTargetTransformer {
         if (!Strings.isNullOrEmpty(aeAttendanceCategoryCode)) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "attendance_category"
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
-                    "attendance_category", aeAttendanceCategoryCode,"CM_NHS_DD"
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
+                    "attendance_category", aeAttendanceCategoryCode, "CM_NHS_DD"
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
-                               .setSystem(valueResponse.getConcept().getScheme());
+                    .setSystem(valueResponse.getConcept().getScheme());
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
@@ -705,7 +702,7 @@ public class EmergencyCdsTargetTransformer {
         if (!Strings.isNullOrEmpty(aeAttendanceSource)) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "attendance_source"
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
@@ -720,14 +717,14 @@ public class EmergencyCdsTargetTransformer {
         if (!Strings.isNullOrEmpty(aeDepartmentType)) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "department_type"
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
-                    "department_type", aeDepartmentType,"CM_NHS_DD"
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
+                    "department_type", aeDepartmentType, "CM_NHS_DD"
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
@@ -741,7 +738,7 @@ public class EmergencyCdsTargetTransformer {
         if (!Strings.isNullOrEmpty(aeArrivalMode)) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "arrival_mode"
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
@@ -752,26 +749,18 @@ public class EmergencyCdsTargetTransformer {
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
-        //TODO: check filed as observation - yes, many on live
-//        String chiefComplaint = targetEmergencyCds.getChiefComplaint();
-//        if (!Strings.isNullOrEmpty(chiefComplaint)) {
-//
-//            //value SN_{code}
-//            parametersBuilder.addParameter("ae_chief_complaint", "" + chiefComplaint);
-//        }
-
         String treatmentFunctionCode = targetEmergencyCds.getTreatmentFunctionCode();
         if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "treatment_function_code"
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
-                    "treatment_function_code", treatmentFunctionCode,"BartsCerner"
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
+                    "treatment_function_code", treatmentFunctionCode, "BartsCerner"
             );
             MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
 
@@ -783,7 +772,7 @@ public class EmergencyCdsTargetTransformer {
     }
 
     private static void setConclusionContainedParameters(EncounterBuilder encounterBuilder,
-                                                        StagingEmergencyCdsTarget targetEmergencyCds) throws Exception {
+                                                         StagingEmergencyCdsTarget targetEmergencyCds) throws Exception {
 
         ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(encounterBuilder);
         parametersBuilder.removeContainedParameters();
@@ -792,7 +781,7 @@ public class EmergencyCdsTargetTransformer {
         if (!Strings.isNullOrEmpty(dischargeDestinationCode)) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "discharge_destination"
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
@@ -808,7 +797,7 @@ public class EmergencyCdsTargetTransformer {
         if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "discharge_status"
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
@@ -823,7 +812,7 @@ public class EmergencyCdsTargetTransformer {
         if (!Strings.isNullOrEmpty(dischargeFollowUp)) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Barts","CM_Sys_Cerner","CDS","emergency",
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "follow_up"
             );
             MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
@@ -832,6 +821,176 @@ public class EmergencyCdsTargetTransformer {
             ccValue.addCoding().setCode(dischargeFollowUp)
                     .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+        }
+    }
+
+    /*
+        The EmergencyCDS dataset contains clinical events which are not handled in other transforms so
+        need filing as part of this data transformation
+     */
+    private static void createEmergencyCdsEncounterClinicalEvents(StagingEmergencyCdsTarget targetEmergencyCds,
+                                                                  FhirResourceFiler fhirResourceFiler,
+                                                                  BartsCsvHelper csvHelper) throws Exception {
+
+        //Chief complaint is a Snomed coded problem type condition resource
+        String chiefComplaint = targetEmergencyCds.getChiefComplaint();
+        if (!Strings.isNullOrEmpty(chiefComplaint)) {
+
+            //create the id using the uniqueId for the encounter plus text
+            String uniqueId = targetEmergencyCds.getUniqueId()+"chief_complaint";
+
+            // create the FHIR Condition resource
+            ConditionBuilder conditionComplaintBuilder
+                    = new ConditionBuilder(null, targetEmergencyCds.getAudit());
+            conditionComplaintBuilder.setId(uniqueId);
+
+            //arrival date at A&E
+            if (targetEmergencyCds.getDtArrival()!= null) {
+
+                DateTimeType conditionDateTime = new DateTimeType(targetEmergencyCds.getDtArrival());
+                conditionComplaintBuilder.setOnset(conditionDateTime);
+            }
+
+            // set the patient reference
+            Integer personId = targetEmergencyCds.getPersonId();
+            if (personId != null) {
+
+                Reference patientReference
+                        = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
+                conditionComplaintBuilder.setPatient(patientReference);
+            }
+
+            //Set the encounter reference as the top level encounter Id
+            Integer encounterId = targetEmergencyCds.getEncounterId();
+            if (encounterId != null) {
+
+                Reference encounterReference
+                        = ReferenceHelper.createReference(ResourceType.Encounter, "" + encounterId);
+                conditionComplaintBuilder.setEncounter(encounterReference);
+            }
+
+            //a complaint is a problem, so set as true
+            boolean isProblem = true;
+            conditionComplaintBuilder.setAsProblem(isProblem);
+            conditionComplaintBuilder.setCategory("complaint");
+
+            //these are confirmed complaints/problems
+            conditionComplaintBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
+
+            //the complaint is active at this time
+            conditionComplaintBuilder.setEndDateOrBoolean(null);
+
+            // clinician is the A&E practitioner
+            Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
+            if (performerPersonnelId != null) {
+                Reference practitionerPerformerReference
+                        = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
+                conditionComplaintBuilder.setClinician(practitionerPerformerReference);
+            }
+
+            // coded concept - these are Snomed coded
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(conditionComplaintBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+            codeableConceptBuilder.setCodingCode(chiefComplaint);
+
+            //only the code is supplied so perform a lookup to derive the term
+            String complaintTerm = TerminologyService.lookupSnomedTerm(chiefComplaint);
+            if (Strings.isNullOrEmpty(complaintTerm)) {
+                throw new Exception("Failed to find term for Snomed code " + chiefComplaint);
+            }
+            codeableConceptBuilder.setCodingDisplay(complaintTerm);
+            codeableConceptBuilder.setText(complaintTerm);
+
+            //file the chief complaint condition
+            fhirResourceFiler.savePatientResource(null, conditionComplaintBuilder);
+        }
+
+        //Diagnosis records are Snomed coded confirmed conditions separated by |
+        String diagnosisRecords = targetEmergencyCds.getDiagnosis();
+        if (!Strings.isNullOrEmpty(diagnosisRecords)) {
+
+            String[] records = diagnosisRecords.split("\\|");
+            int count = 0;
+            for (String diagnosisCode : records) {
+
+                count++;
+
+                //create the id using the uniqueId for the encounter plus text
+                String uniqueId = targetEmergencyCds.getUniqueId()+"diagnosis"+count;
+
+                // create the FHIR Condition resource
+                ConditionBuilder conditionDiagnosisBuilder
+                        = new ConditionBuilder(null, targetEmergencyCds.getAudit());
+                conditionDiagnosisBuilder.setId(uniqueId);
+
+                Date assessmentDate = targetEmergencyCds.getDtInitialAssessment();
+                Date invAndTreatmentsDate = targetEmergencyCds.getDtSeenForTreatment();
+                Date admitDate = targetEmergencyCds.getDtDecidedToAdmit();
+                Date arrivalDate = targetEmergencyCds.getDtArrival();
+                Date diagnosisDate
+                        = ObjectUtils.firstNonNull(assessmentDate, invAndTreatmentsDate, admitDate, arrivalDate);
+                //the diagnosis date and time is the first one of these not null
+                if (diagnosisDate != null) {
+
+                    DateTimeType conditionDateTime = new DateTimeType(diagnosisDate);
+                    conditionDiagnosisBuilder.setOnset(conditionDateTime);
+                }
+
+                // set the patient reference
+                Integer personId = targetEmergencyCds.getPersonId();
+                if (personId != null) {
+
+                    Reference patientReference
+                            = ReferenceHelper.createReference(ResourceType.Patient, personId.toString());
+                    conditionDiagnosisBuilder.setPatient(patientReference);
+                }
+
+                //Set the encounter reference as the top level encounter Id
+                Integer encounterId = targetEmergencyCds.getEncounterId();
+                if (encounterId != null) {
+
+                    Reference encounterReference
+                            = ReferenceHelper.createReference(ResourceType.Encounter, "" + encounterId);
+                    conditionDiagnosisBuilder.setEncounter(encounterReference);
+                }
+
+                //a diganosis is not a problem, so set as false
+                boolean isProblem = false;
+                conditionDiagnosisBuilder.setAsProblem(isProblem);
+                conditionDiagnosisBuilder.setCategory("diagnosis");
+
+                //these are confirmed diagnosis from pre-transform
+                conditionDiagnosisBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
+
+                //the diagnosis is active at this time
+                conditionDiagnosisBuilder.setEndDateOrBoolean(null);
+
+                //clinician is the A&E practitioner
+                Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
+                if (performerPersonnelId != null) {
+                    Reference practitionerPerformerReference
+                            = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
+                    conditionDiagnosisBuilder.setClinician(practitionerPerformerReference);
+                }
+
+                // coded concept - these are Snomed coded
+                CodeableConceptBuilder codeableConceptBuilder
+                        = new CodeableConceptBuilder(conditionDiagnosisBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                codeableConceptBuilder.setCodingCode(diagnosisCode);
+
+                //only the code is supplied so perform a lookup to derive the term
+                String complaintTerm = TerminologyService.lookupSnomedTerm(diagnosisCode);
+                if (Strings.isNullOrEmpty(diagnosisCode)) {
+                    throw new Exception("Failed to find term for Snomed code " + diagnosisCode);
+                }
+                codeableConceptBuilder.setCodingDisplay(diagnosisCode);
+                codeableConceptBuilder.setText(diagnosisCode);
+
+                //file the diagnosis condition
+                fhirResourceFiler.savePatientResource(null, conditionDiagnosisBuilder);
+            }
         }
     }
 }

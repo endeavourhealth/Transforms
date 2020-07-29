@@ -31,6 +31,7 @@ public class InpatientCdsTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(InpatientCdsTargetTransformer.class);
     private static Set<Long> patientInpatientEncounterDates = new HashSet<>();
+    private static Set<String> patientInpatientEpisodesDeleted = new HashSet<>();
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -70,6 +71,7 @@ public class InpatientCdsTargetTransformer {
             }
 
             patientInpatientEncounterDates.clear();
+            patientInpatientEpisodesDeleted.clear();
 
             //process top level encounter - the existing parent encounter
             Integer encounterId = targetInpatientCds.getEncounterId();  //this is used to identify the top level parent encounter
@@ -102,13 +104,9 @@ public class InpatientCdsTargetTransformer {
 
                 //find the patient UUID for the encounters we have just filed, so we can tidy up the
                 //HL7 encounters after doing all the saving of the DW encounters
-//                Reference patientReference = parentEncounterBuilder.getPatient();
-//                if (!parentEncounterBuilder.isIdMapped()) {
-//                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
-//                }
-//                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
                 deleteHL7ReceiverPatientInpatientEncounters(targetInpatientCds, fhirResourceFiler, csvHelper);
                 patientInpatientEncounterDates.clear();
+                patientInpatientEpisodesDeleted.clear();
 
             } else {
 
@@ -592,7 +590,7 @@ public class InpatientCdsTargetTransformer {
                     //finally, check it is an Inpatient encounter class before deleting
                     if (existingEncounter.getClass_().equals(Encounter.EncounterClass.INPATIENT)) {
 
-                        LOG.debug("Checking existing Inpatient encounter date (long): " + existingEncounter.getPeriod().getStart().getTime() + " in dates array: " + patientInpatientEncounterDates.toArray());
+                        //LOG.debug("Checking existing Inpatient encounter date (long): " + existingEncounter.getPeriod().getStart().getTime() + " in dates array: " + patientInpatientEncounterDates.toArray());
                         if (patientInpatientEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
                             GenericBuilder builderEncounter = new GenericBuilder(existingEncounter);
                             //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
@@ -605,11 +603,18 @@ public class InpatientCdsTargetTransformer {
                             if (existingEncounter.hasEpisodeOfCare()) {
                                 Reference episodeReference = existingEncounter.getEpisodeOfCare().get(0);
                                 String episodeUuid = ReferenceHelper.getReferenceId(episodeReference);
+
+                                //add episode of care for deletion if not already deleted
+                                if (patientInpatientEpisodesDeleted.contains(episodeUuid)) {
+                                    continue;
+                                }
                                 EpisodeOfCare episodeOfCare
                                         = (EpisodeOfCare)resourceDal.getCurrentVersionAsResource(serviceUuid, ResourceType.EpisodeOfCare, episodeUuid);
 
                                 if (episodeOfCare != null) {
                                     GenericBuilder builderEpisode = new GenericBuilder(episodeOfCare);
+
+                                    patientInpatientEpisodesDeleted.add(episodeUuid);
                                     fhirResourceFiler.deletePatientResource(null, false, builderEpisode);
                                     LOG.debug("Existing Inpatient ADT episodeId: " + episodeUuid + " deleted as linked to deleted encounter");
                                 }
@@ -732,18 +737,7 @@ public class InpatientCdsTargetTransformer {
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
-        //add the primary and secondary diagnosis codes as additional parameters.
-        // TODO: Check these are filed as part of the diagnosis CDS transform as separate diagnosis records
-
-//            String primaryDiagnosis = targetInpatientCds.getPrimaryDiagnosisICD();
-//            if (!Strings.isNullOrEmpty(primaryDiagnosis)) {
-//                containedParametersBuilderAdmission.addParameter("primary_diagnosis", primaryDiagnosis);
-//            }
-//            String secondaryDiagnosis = targetInpatientCds.getSecondaryDiagnosisICD();
-//            if (!Strings.isNullOrEmpty(secondaryDiagnosis)) {
-//                containedParametersBuilderAdmission.addParameter("secondary_diagnosis", secondaryDiagnosis);
-//            }
-//            String otherDiagnosis = targetInpatientCds.getOtherDiagnosisICD();
+        //NOTE: diagnosis and procedure data is already processed via proc and diag CDS transforms
     }
 
     private static void setDischargeContainedParameters(EncounterBuilder encounterBuilder,

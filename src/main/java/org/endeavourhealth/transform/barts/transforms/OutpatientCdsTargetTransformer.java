@@ -31,6 +31,7 @@ public class OutpatientCdsTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(OutpatientCdsTargetTransformer.class);
     private static Set<Long> patientOutpatientEncounterDates = new HashSet<>();
+    private static Set<String> patientOutpatientEpisodesDeleted = new HashSet<>();
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
@@ -69,6 +70,7 @@ public class OutpatientCdsTargetTransformer {
             }
 
             patientOutpatientEncounterDates.clear();
+            patientOutpatientEpisodesDeleted.clear();
 
             //process top level encounter - the existing parent encounter
             Integer encounterId = targetOutpatientCds.getEncounterId();  //this is used to identify the top level parent episode
@@ -100,13 +102,9 @@ public class OutpatientCdsTargetTransformer {
 
                 //find the patient UUID for the encounters we have just filed, so we can tidy up the
                 //HL7 encounters after doing all the saving of the DW encounters
-//                Reference patientReference = parentEncounterBuilder.getPatient();
-//                if (!parentEncounterBuilder.isIdMapped()) {
-//                    patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
-//                }
-//                String patientUuid = ReferenceHelper.getReferenceId(patientReference);
                 deleteHL7ReceiverPatientOutpatientEncounters(targetOutpatientCds, fhirResourceFiler, csvHelper);
                 patientOutpatientEncounterDates.clear();
+                patientOutpatientEpisodesDeleted.clear();
 
             } else {
 
@@ -191,26 +189,7 @@ public class OutpatientCdsTargetTransformer {
         //add in additional extended data as Parameters resource with additional extension
         setAttendanceContainedParameters(encounterBuilder, targetOutpatientCds);
 
-        //add in diagnosis or procedure data match the encounter date? - already processed via proc and diag CDS transforms
-
-//            if (!Strings.isNullOrEmpty(targetOutpatientCds.getPrimaryDiagnosisICD())) {
-//                additionalArrivalObjs.addProperty("primary_diagnosis", targetOutpatientCds.getPrimaryDiagnosisICD());
-//            }
-//            if (!Strings.isNullOrEmpty(targetOutpatientCds.getSecondaryDiagnosisICD())) {
-//                additionalArrivalObjs.addProperty("secondary_diagnosis", targetOutpatientCds.getSecondaryDiagnosisICD());
-//            }
-//            if (!Strings.isNullOrEmpty(targetOutpatientCds.getOtherDiagnosisICD())) {
-//                additionalArrivalObjs.addProperty("other_diagnosis", targetOutpatientCds.getOtherDiagnosisICD());
-//            }
-//            if (!Strings.isNullOrEmpty(targetOutpatientCds.getPrimaryProcedureOPCS())) {
-//                additionalArrivalObjs.addProperty("primary_procedure", targetOutpatientCds.getPrimaryProcedureOPCS());
-//            }
-//            if (!Strings.isNullOrEmpty(targetOutpatientCds.getSecondaryProcedureOPCS())) {
-//                additionalArrivalObjs.addProperty("secondary_procedure", targetOutpatientCds.getSecondaryProcedureOPCS());
-//            }
-//            if (!Strings.isNullOrEmpty(targetOutpatientCds.getOtherProceduresOPCS())) {
-//                additionalArrivalObjs.addProperty("other_procedures", targetOutpatientCds.getOtherProceduresOPCS());
-//            }
+        //NOTE: diagnosis and procedure data is already processed via proc and diag CDS transforms
 
         ///retrieve (if not passed in) and update the parent to point to this new child encounter
         if (existingParentEncounterBuilder == null) {
@@ -221,7 +200,6 @@ public class OutpatientCdsTargetTransformer {
         }
 
         //and link the parent to this new child encounter
-
         Reference childOutpatientRef = ReferenceHelper.createReference(ResourceType.Encounter, attendanceId);
         ContainedListBuilder listBuilder = new ContainedListBuilder(existingParentEncounterBuilder);
         if (existingParentEncounterBuilder.isIdMapped()) {
@@ -478,11 +456,18 @@ public class OutpatientCdsTargetTransformer {
                             if (existingEncounter.hasEpisodeOfCare()) {
                                 Reference episodeReference = existingEncounter.getEpisodeOfCare().get(0);
                                 String episodeUuid = ReferenceHelper.getReferenceId(episodeReference);
+
+                                //add episode of care for deletion if not already deleted
+                                if (patientOutpatientEpisodesDeleted.contains(episodeUuid)) {
+                                    continue;
+                                }
                                 EpisodeOfCare episodeOfCare
                                         = (EpisodeOfCare)resourceDal.getCurrentVersionAsResource(serviceUuid, ResourceType.EpisodeOfCare, episodeUuid);
 
                                 if (episodeOfCare != null) {
                                     GenericBuilder builderEpisode = new GenericBuilder(episodeOfCare);
+
+                                    patientOutpatientEpisodesDeleted.add(episodeUuid);
                                     fhirResourceFiler.deletePatientResource(null, false, builderEpisode);
                                     LOG.debug("Existing Emergency ADT episodeId: " + episodeUuid + " deleted as linked to deleted encounter");
                                 }

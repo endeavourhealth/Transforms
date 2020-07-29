@@ -51,6 +51,7 @@ public interface CdsRecordEmergencyCDSI {
 
     //Diagnosis 1 - 20
     CsvCell getDiagnosis(int dataNumber);
+    CsvCell getDiagnosisQualifier(int dataNumber);
 
     //Investigations 1 - 20
     CsvCell getInvestigation(int dataNumber);
