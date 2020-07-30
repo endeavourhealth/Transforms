@@ -136,37 +136,36 @@ public class InpatientCdsTargetTransformer {
             builder.setPatient(patientReference);
         }
 
-        // Retrieve or create EpisodeOfCare for top level parent encounter only
-        if (!isChildEncounter) {
+        // Retrieve or create EpisodeOfCare link for encounter including sub-encounters
+        EpisodeOfCareBuilder episodeOfCareBuilder
+                = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(targetInpatientCds);
+        if (episodeOfCareBuilder != null) {
 
-            EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(targetInpatientCds);
-            if (episodeOfCareBuilder != null) {
+            csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, builder, fhirResourceFiler);
 
-                csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, builder, fhirResourceFiler);
+            Date spellStartDate = targetInpatientCds.getDtSpellStart();
+            Date dischargeDate = targetInpatientCds.getDtDischarge();
+            if (spellStartDate != null) {
 
-                Date spellStartDate = targetInpatientCds.getDtSpellStart();
-                Date dischargeDate = targetInpatientCds.getDtDischarge();
-                if (spellStartDate != null) {
+                //if this episode started in A&E this will not be updated
+                if (episodeOfCareBuilder.getRegistrationStartDate() == null || spellStartDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+                    episodeOfCareBuilder.setRegistrationStartDate(spellStartDate);
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+                }
 
-                    //if this episode started in A&E this will not be updated
-                    if (episodeOfCareBuilder.getRegistrationStartDate() == null || spellStartDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
-                        episodeOfCareBuilder.setRegistrationStartDate(spellStartDate);
-                        episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
+                // End date
+                if (dischargeDate != null) {
+                    if (episodeOfCareBuilder.getRegistrationEndDate() == null || dischargeDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
+                        episodeOfCareBuilder.setRegistrationEndDate(dischargeDate);
                     }
-
-                    // End date
-                    if (dischargeDate != null) {
-                        if (episodeOfCareBuilder.getRegistrationEndDate() == null || dischargeDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
-                            episodeOfCareBuilder.setRegistrationEndDate(dischargeDate);
-                        }
-                    }
-                } else {
-                    if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
-                        episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
-                    }
+                }
+            } else {
+                if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
                 }
             }
         }
+
         Integer performerPersonnelId = targetInpatientCds.getPerformerPersonnelId();
         if (performerPersonnelId != null) {
 

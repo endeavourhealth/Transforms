@@ -299,36 +299,34 @@ public class OutpatientCdsTargetTransformer {
             builder.setPatient(patientReference);
         }
 
-        // Retrieve or create EpisodeOfCare for top level parent encounter only
-        if (!isChildEncounter) {
+        // Retrieve or create EpisodeOfCare link for encounter including sub-encounters
+        EpisodeOfCareBuilder episodeOfCareBuilder
+                = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(targetOutpatientCds);
+        if (episodeOfCareBuilder != null) {
 
-            EpisodeOfCareBuilder episodeOfCareBuilder = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(targetOutpatientCds);
-            if (episodeOfCareBuilder != null) {
+            csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, builder, fhirResourceFiler);
 
-                csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, builder, fhirResourceFiler);
+            Date appDate = targetOutpatientCds.getApptDate();
+            //we may have missed the original referral, so our episode of care may have the wrong start date, so adjust that now
+            if (appDate != null) {
+                if (episodeOfCareBuilder.getRegistrationStartDate() == null
+                        || appDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
 
-                Date appDate = targetOutpatientCds.getApptDate();
-                //we may have missed the original referral, so our episode of care may have the wrong start date, so adjust that now
-                if (appDate != null) {
-                    if (episodeOfCareBuilder.getRegistrationStartDate() == null
-                            || appDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
-
-                        episodeOfCareBuilder.setRegistrationStartDate(appDate);
-                        episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
-                    }
+                    episodeOfCareBuilder.setRegistrationStartDate(appDate);
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
                 }
+            }
 
-                // Check whether to Finish EpisodeOfCare by using the AppOutcomeCode
-                // outcome corresponds to NHS Data Dictionary: https://www.datadictionary.nhs.uk/data_dictionary/attributes/o/out/outcome_of_attendance_de.asp?shownav=1
-                // outcome = 1 means discharged from care, so no more appointments, so end of care
-                String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
-                if (apptOutcomeCode.equalsIgnoreCase("1")) {
-                    // Discharged from CONSULTANT's care (last attendance)
-                    // make sure to set the status AFTER setting the end date, as setting the end date
-                    // will auto-calculate the status and we want to just overwrite that because we KNOW the episode is ended
-                    episodeOfCareBuilder.setRegistrationEndDate(appDate);
-                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
-                }
+            // Check whether to Finish EpisodeOfCare by using the AppOutcomeCode
+            // outcome corresponds to NHS Data Dictionary: https://www.datadictionary.nhs.uk/data_dictionary/attributes/o/out/outcome_of_attendance_de.asp?shownav=1
+            // outcome = 1 means discharged from care, so no more appointments, so end of care
+            String apptOutcomeCode = targetOutpatientCds.getApptOutcomeCode();
+            if (apptOutcomeCode.equalsIgnoreCase("1")) {
+                // Discharged from CONSULTANT's care (last attendance)
+                // make sure to set the status AFTER setting the end date, as setting the end date
+                // will auto-calculate the status and we want to just overwrite that because we KNOW the episode is ended
+                episodeOfCareBuilder.setRegistrationEndDate(appDate);
+                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
             }
         }
         Integer performerPersonnelId = targetOutpatientCds.getPerformerPersonnelId();

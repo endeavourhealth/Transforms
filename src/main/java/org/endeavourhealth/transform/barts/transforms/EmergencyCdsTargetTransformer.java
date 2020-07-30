@@ -391,49 +391,47 @@ public class EmergencyCdsTargetTransformer {
             }
             builder.setPatient(patientReference);
         }
-        // Retrieve or create EpisodeOfCare for top level parent encounter only
-        if (!isChildEncounter) {
+        // Retrieve or create EpisodeOfCare link for encounter including sub-encounters
+        EpisodeOfCareBuilder episodeOfCareBuilder
+                = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(targetEmergencyCds);
+        if (episodeOfCareBuilder != null) {
 
-            EpisodeOfCareBuilder episodeOfCareBuilder
-                    = csvHelper.getEpisodeOfCareCache().getEpisodeOfCareBuilder(targetEmergencyCds);
-            if (episodeOfCareBuilder != null) {
+            csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, builder, fhirResourceFiler);
 
-                csvHelper.setEpisodeReferenceOnEncounter(episodeOfCareBuilder, builder, fhirResourceFiler);
+            // Using parent encounter start and end times
+            Date arrivalDate = targetEmergencyCds.getDtArrival();
+            Date departureDate = targetEmergencyCds.getDtDeparture();
 
-                // Using parent encounter start and end times
-                Date arrivalDate = targetEmergencyCds.getDtArrival();
-                Date departureDate = targetEmergencyCds.getDtDeparture();
+            if (arrivalDate != null) {
 
-                if (arrivalDate != null) {
-
-                    if (episodeOfCareBuilder.getRegistrationStartDate() == null || arrivalDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
-                        episodeOfCareBuilder.setRegistrationStartDate(arrivalDate);
-                        episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
-                    }
-
-                    // End date
-                    if (departureDate != null) {
-
-                        if (episodeOfCareBuilder.getRegistrationEndDate() == null || departureDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
-                            episodeOfCareBuilder.setRegistrationEndDate(departureDate);
-                        }
-                    }
-                } else {
-                    if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
-                        episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
-                    }
+                if (episodeOfCareBuilder.getRegistrationStartDate() == null || arrivalDate.before(episodeOfCareBuilder.getRegistrationStartDate())) {
+                    episodeOfCareBuilder.setRegistrationStartDate(arrivalDate);
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
                 }
 
-                // Check whether to Finish EpisodeOfCare
-                // If the patient has left AE (checkout-time/enddatetime) and not been admitted (decisionToAdmitDateTime empty) complete EpisodeOfCare
-                Date decidedToAdmitDate = targetEmergencyCds.getDtDecidedToAdmit();
-                if (departureDate != null
-                        && decidedToAdmitDate == null) {
+                // End date
+                if (departureDate != null) {
 
-                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+                    if (episodeOfCareBuilder.getRegistrationEndDate() == null || departureDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
+                        episodeOfCareBuilder.setRegistrationEndDate(departureDate);
+                    }
+                }
+            } else {
+                if (episodeOfCareBuilder.getRegistrationEndDate() == null) {
+                    episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.PLANNED);
                 }
             }
+
+            // Check whether to Finish EpisodeOfCare
+            // If the patient has left AE (checkout-time/enddatetime) and not been admitted (decisionToAdmitDateTime empty) complete EpisodeOfCare
+            Date decidedToAdmitDate = targetEmergencyCds.getDtDecidedToAdmit();
+            if (departureDate != null
+                    && decidedToAdmitDate == null) {
+
+                episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
+            }
         }
+
         Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
         if (performerPersonnelId != null) {
 
