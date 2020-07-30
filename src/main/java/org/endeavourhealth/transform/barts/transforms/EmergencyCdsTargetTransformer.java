@@ -836,6 +836,8 @@ public class EmergencyCdsTargetTransformer {
         String chiefComplaint = targetEmergencyCds.getChiefComplaint();
         if (!Strings.isNullOrEmpty(chiefComplaint)) {
 
+            LOG.debug("Processing Chief Complaint: "+chiefComplaint+" for personId: "+targetEmergencyCds.getPersonId());
+
             //create the id using the uniqueId for the encounter plus text
             String uniqueId = targetEmergencyCds.getUniqueId()+"chief_complaint";
 
@@ -904,6 +906,7 @@ public class EmergencyCdsTargetTransformer {
 
             //file the chief complaint condition
             fhirResourceFiler.savePatientResource(null, conditionComplaintBuilder);
+            LOG.debug("Saved Chief Complaint condition resource: "+conditionComplaintBuilder.getResource().toString());
         }
 
         //Diagnosis records are Snomed coded confirmed conditions separated by |
@@ -918,6 +921,8 @@ public class EmergencyCdsTargetTransformer {
 
                 //create the id using the uniqueId for the encounter plus text
                 String uniqueId = targetEmergencyCds.getUniqueId()+"diagnosis"+count;
+
+                LOG.debug("Processing Chief Complaint: "+diagnosisCode+" for personId: "+targetEmergencyCds.getPersonId());
 
                 // create the FHIR Condition resource
                 ConditionBuilder conditionDiagnosisBuilder
@@ -990,6 +995,8 @@ public class EmergencyCdsTargetTransformer {
 
                 //file the diagnosis condition
                 fhirResourceFiler.savePatientResource(null, conditionDiagnosisBuilder);
+
+                LOG.debug("Saved Emergency Diagnosis condition resource: "+conditionDiagnosisBuilder.getResource().toString());
             }
         }
     }
