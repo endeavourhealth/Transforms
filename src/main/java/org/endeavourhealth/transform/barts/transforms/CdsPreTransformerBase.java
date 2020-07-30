@@ -1191,8 +1191,10 @@ public abstract class CdsPreTransformerBase {
                 break;
             }
             //check if diagnosis is confirmed.  we are only interested in confirmed diagnosis
-            String confirmed = parser.getDiagnosisQualifier(dataNumber).getString();
-            if (Strings.isNullOrEmpty(confirmed) || !confirmed.equalsIgnoreCase("410605003")) {
+            String confirmedQualifierCode = parser.getDiagnosisQualifier(dataNumber).getString();
+            if (Strings.isNullOrEmpty(confirmedQualifierCode) || !confirmedQualifierCode.equalsIgnoreCase("410605003")) {
+
+                dataNumber++;
                 continue;
             }
             diagnosisList.add(dataCode);
