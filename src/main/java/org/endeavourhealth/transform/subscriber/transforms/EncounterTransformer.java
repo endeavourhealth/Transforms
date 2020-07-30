@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.subscriber.targetTables.EncounterAdditional;
 import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.IMConstant;
@@ -298,20 +299,24 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                         //each parameter entry  will have a key value pair of name and StringType value?
                         if (parameter.hasName() && parameter.hasValue()) {
 
-                            String property = parameter.getName();
-                            StringType parameterValue = (StringType) parameter.getValue();
-                            String value = parameterValue.asStringValue();
+                            //these values are from IM API mapping
+                            String propertyCode = parameter.getName();
+                            String propertyScheme = "CM_DiscoveryCode";
 
-                            Integer propertyId =
-                                    IMHelper.getIMConcept(params, fhir, IMConstant.ENCOUNTER_LEGACY, property, property);
-                            Integer valueId =
-                                    IMHelper.getIMConcept(params, fhir, IMConstant.ENCOUNTER_LEGACY, value, value);
+                            CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                            String valueCode = parameterValue.getCoding().get(0).getCode();
+                            String valueScheme = parameterValue.getCoding().get(0).getSystem();
 
-                            //transform the IM values to the encounter_triple table upsert
-                            encounterAdditional.writeUpsert(id, propertyId, valueId );
+                            //we need to look up DBids for both
+                            Integer propertyConceptDbid =
+                                    IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
+                            Integer valueConceptDbid =
+                                    IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
+
+                            //transform the IM values to the encounter_additional table upsert
+                            encounterAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid);
                         }
                     }
-
                     break;
                 }
             }

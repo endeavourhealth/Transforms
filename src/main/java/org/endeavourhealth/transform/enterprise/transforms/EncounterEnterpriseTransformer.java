@@ -9,6 +9,7 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.*;
@@ -364,16 +365,23 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                     List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
                     for (Parameters.ParametersParameterComponent parameter : entries) {
 
-                        //each parameter entry  will have a key value pair of name and StringType value?
+                        //each parameter entry  will have a key value pair of name and CodeableConcept value
                         if (parameter.hasName() && parameter.hasValue()) {
 
                             //these values are from IM API mapping
                             String propertyCode = parameter.getName();
+                            String propertyScheme = "CM_DiscoveryCode";
+
                             CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
                             String valueCode = parameterValue.getCoding().get(0).getCode();
+                            String valueScheme = parameterValue.getCoding().get(0).getSystem();
+
+                            //we need to get the unique IM conceptId for the property and value
+                            String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
+                            String valueConceptId =  IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
 
                             //write the IM values to the encounter_additional table upsert
-                            encounterAdditional.writeUpsert(id, propertyCode, valueCode);
+                            encounterAdditional.writeUpsert(id, propertyConceptId, valueConceptId);
                         }
                     }
                     break;
