@@ -22,11 +22,7 @@ public class SRCtv3ToSnomed extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_89)
-                || version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK_3)
-                || version.equals(TppCsvToFhirTransformer.VERSION_93)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_92)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -39,12 +35,11 @@ public class SRCtv3ToSnomed extends AbstractCsvParser {
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
                     "Ctv3Code",
-                    "SnomedCode"
+                    "SnomedCode",
+                    "RemovedData"
             };
         }
     }
-
-    //public CsvCell getRowIdentifier() {        return super.getCell("RowIdentifier");    }
 
     public CsvCell getCtv3Code() {
         return super.getCell("Ctv3Code");

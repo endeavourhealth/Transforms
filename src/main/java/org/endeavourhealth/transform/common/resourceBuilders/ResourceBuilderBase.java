@@ -166,6 +166,10 @@ public abstract class ResourceBuilderBase {
         return getResource().getId();
     }
 
+    public UUID getResourceIdAsUuid() {
+        return UUID.fromString(getResourceId());
+    }
+
     public ResourceFieldMappingAudit getAuditWrapper() {
         return this.auditWrapper;
     }

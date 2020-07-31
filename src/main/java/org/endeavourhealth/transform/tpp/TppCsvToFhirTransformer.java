@@ -247,24 +247,15 @@ public abstract class TppCsvToFhirTransformer {
 
             if (compatibleVersions.isEmpty()) {
                 ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId);
-                versionFailures.add(filePath); //Not dropping straight out as multiple files may have changed.
+                versionFailures.add(filePath); //Not dropping straight out as multiple files may have changed so let's find them all
+
+            } else {
+                ret.put(filePath, compatibleVersions.get(0));
             }
-
-            ret.put(filePath, compatibleVersions.get(0));
-
-/*            } catch (IOException eio) {
-                if (eio.getMessage().contains("startline 1")) {
-                    //
-                    LOG.info("Missing newline in file. Skipping : " + filePath);
-                    parserToVersionsMap.put(filePath, "0");
-                } else {
-                    LOG.error("", eio);
-                }
-            }*/
         }
 
         if (versionFailures.size() > 0) {
-            String msg = "Failed to calculate verion for files [" + String.join(", ", versionFailures) + "]";
+            String msg = "Failed to calculate version for files [" + String.join(", ", versionFailures) + "]";
             throw new TransformException(msg);
         }
 
@@ -532,7 +523,7 @@ public abstract class TppCsvToFhirTransformer {
             SRMappingTransformer.transform(parsers, fhirResourceFiler);
             SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
             SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRCtv3ToSnomedTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            //SRCtv3ToSnomedTransformer.transform(parsers, fhirResourceFiler, csvHelper); //TODO - DREW to restore once tested
 
             //organisational admin data
             LOG.info("Starting admin transforms");
