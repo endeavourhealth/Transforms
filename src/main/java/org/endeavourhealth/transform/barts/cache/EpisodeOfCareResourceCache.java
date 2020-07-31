@@ -125,7 +125,7 @@ public class EpisodeOfCareResourceCache {
         Integer episodeId = targetEmergencyCds.getEpisodeId();
 
         //if we have an episodeId try that first
-        if (episodeId != null) {
+        if (episodeId != null && episodeId != 0) {
             return getEpisodeOfCareBuilder(episodeId, personIdCell, activeIndicatorCell);
         } else {
             return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
@@ -145,7 +145,7 @@ public class EpisodeOfCareResourceCache {
         Integer episodeId = targetOutpatientCds.getEpisodeId();
 
         //if we have an episodeId try that first
-        if (episodeId != null) {
+        if (episodeId != null && episodeId != 0) {
             return getEpisodeOfCareBuilder(episodeId, personIdCell, activeIndicatorCell);
         } else {
             return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
@@ -165,7 +165,7 @@ public class EpisodeOfCareResourceCache {
         Integer episodeId = targetInpatientCds.getEpisodeId();
 
         //if we have an episodeId try that first
-        if (episodeId != null) {
+        if (episodeId != null && episodeId != 0) {
             return getEpisodeOfCareBuilder(episodeId, personIdCell, activeIndicatorCell);
         } else {
             return getEpisodeOfCareBuilder(encounterIdCell, personIdCell, activeIndicatorCell);
@@ -199,7 +199,7 @@ public class EpisodeOfCareResourceCache {
 
     private EpisodeOfCareBuilder getEpisodeOfCareBuilder(Integer episodeId, CsvCell personIdCell, CsvCell activeIndicatorCell) throws Exception {
 
-        if (episodeId != null) {
+        if (episodeId != null && episodeId != 0) {
 
             String episodeLocalRef = createEpisodeReferenceFromEpisodeId(Integer.toString(episodeId));
             return retrieveAndCacheBuilder(episodeLocalRef, personIdCell, activeIndicatorCell);
