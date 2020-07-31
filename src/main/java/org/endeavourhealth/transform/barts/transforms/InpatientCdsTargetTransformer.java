@@ -167,7 +167,7 @@ public class InpatientCdsTargetTransformer {
         }
 
         Integer performerPersonnelId = targetInpatientCds.getPerformerPersonnelId();
-        if (performerPersonnelId != null) {
+        if (performerPersonnelId != null && performerPersonnelId != 0) {
 
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));

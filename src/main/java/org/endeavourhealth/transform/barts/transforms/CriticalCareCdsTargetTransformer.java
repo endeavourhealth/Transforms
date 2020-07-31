@@ -94,7 +94,7 @@ public class CriticalCareCdsTargetTransformer {
             encounterBuilder.setPatient(patientReference);
 
             Integer performerPersonnelId = targetCriticalCareCds.getPerformerPersonnelId();
-            if (performerPersonnelId != null) {
+            if (performerPersonnelId != null && performerPersonnelId != 0) {
 
                 Reference practitionerReference
                         = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));

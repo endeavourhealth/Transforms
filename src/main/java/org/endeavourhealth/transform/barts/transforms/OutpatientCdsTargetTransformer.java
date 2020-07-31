@@ -330,7 +330,7 @@ public class OutpatientCdsTargetTransformer {
             }
         }
         Integer performerPersonnelId = targetOutpatientCds.getPerformerPersonnelId();
-        if (performerPersonnelId != null) {
+        if (performerPersonnelId != null && performerPersonnelId != 0) {
 
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));

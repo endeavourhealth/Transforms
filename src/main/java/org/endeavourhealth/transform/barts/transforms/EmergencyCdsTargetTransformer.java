@@ -433,7 +433,7 @@ public class EmergencyCdsTargetTransformer {
         }
 
         Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
-        if (performerPersonnelId != null) {
+        if (performerPersonnelId != null && performerPersonnelId != 0) {
 
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, Integer.toString(performerPersonnelId));
@@ -880,7 +880,7 @@ public class EmergencyCdsTargetTransformer {
 
             // clinician is the A&E practitioner
             Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
-            if (performerPersonnelId != null) {
+            if (performerPersonnelId != null && performerPersonnelId != 0) {
                 Reference practitionerPerformerReference
                         = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
                 conditionComplaintBuilder.setClinician(practitionerPerformerReference);
@@ -966,7 +966,7 @@ public class EmergencyCdsTargetTransformer {
 
                 //clinician is the A&E practitioner
                 Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
-                if (performerPersonnelId != null) {
+                if (performerPersonnelId != null && performerPersonnelId != 0) {
                     Reference practitionerPerformerReference
                             = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
                     conditionDiagnosisBuilder.setClinician(practitionerPerformerReference);
