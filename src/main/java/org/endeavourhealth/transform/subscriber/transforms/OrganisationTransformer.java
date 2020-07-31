@@ -14,6 +14,9 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class OrganisationTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
 
@@ -118,7 +121,16 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
                     name = odsOrg.getOrganisationName();
                 }
 
-                OrganisationType odsType = odsOrg.getOrganisationType();
+                OrganisationType odsType = null;
+
+                Set<OrganisationType> types = new HashSet<>(odsOrg.getOrganisationTypes());
+                types.remove(OrganisationType.PRESCRIBING_COST_CENTRE); //always remove so we match to the "better" type
+                if (types.size() == 1) {
+                    odsType = types.iterator().next();
+                } else {
+                    LOG.warn("Could not select type for org " + odsOrg);
+                }
+
                 if (odsType != null) {
                     typeCode = odsType.getCode();
                     typeDesc = odsType.getDescription();
