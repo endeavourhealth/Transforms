@@ -316,28 +316,39 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
                 return null;
             }
 
-            Date latestDate = null;
+            List<EpisodeOfCareBuilder> episodeBuilders = new ArrayList<>();
 
             List<ResourceWrapper> episodeWrappers = resourceRepository.getResourcesByPatient(serviceId, patientUuid, ResourceType.EpisodeOfCare.toString());
-            for (ResourceWrapper wrapper: episodeWrappers) {
-                EpisodeOfCare episode = (EpisodeOfCare)FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
-                if (episode.hasPeriod()) {
-                    Date d = episode.getPeriod().getStart();
-                    if (latestDate == null
-                            || d.after(latestDate)) {
-                        latestDate = d;
-                    }
-                }
+            for (ResourceWrapper episodeWrapper: episodeWrappers) {
+                EpisodeOfCare episode = (EpisodeOfCare)episodeWrapper.getResource();
+                EpisodeOfCareBuilder builder = new EpisodeOfCareBuilder(episode);
+                episodeBuilders.add(builder);
             }
 
-            if (latestDate == null) {
+            //sort by reg date
+            episodeBuilders.sort((o1, o2) -> {
+                Date d1 = o1.getRegistrationStartDate();
+                Date d2 = o2.getRegistrationStartDate();
+                return d1.compareTo(d2);
+            });
+
+            if (episodeBuilders.isEmpty()) {
                 return null;
             }
+
+            EpisodeOfCareBuilder latestEpisode = episodeBuilders.get(episodeBuilders.size()-1);
+            Date latestDate = latestEpisode.getRegistrationStartDate();
 
             //need to convert back to a string in the same format as the raw file
             SimpleDateFormat sdf = new SimpleDateFormat(EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD);
             value = sdf.format(latestDate);
             latestEpisodeStartDateCache.put(key, value);
+
+            //if this episode was created by the Reg Status transform, then it won't have a mapping with the normally
+            //formatted start date, so make sure one exists
+            String sourceId = createUniqueId(patientGuid, CsvCell.factoryDummyWrapper(value));
+            UUID episodeUuid = latestEpisode.getResourceIdAsUuid();
+            IdHelper.getOrCreateEdsResourceId(serviceId, ResourceType.EpisodeOfCare, sourceId, episodeUuid);
         }
 
         return CsvCell.factoryDummyWrapper(value);
