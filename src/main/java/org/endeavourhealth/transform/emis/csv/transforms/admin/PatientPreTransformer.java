@@ -56,9 +56,10 @@ public class PatientPreTransformer {
         CsvCell endDateCell = parser.getDateOfDeactivation();
         CsvCell regTypeCell = parser.getPatientTypeDescription();
         CsvCell dummyTypeCell = parser.getDummyType();
+        CsvCell deletedCell = parser.getDeleted();
         CsvCurrentState state = parser.getCurrentState();
 
-        PreCreateEdsPatientIdTask task = new PreCreateEdsPatientIdTask(state, patientGuidCell, startDateCell, endDateCell, regTypeCell, dummyTypeCell, fhirResourceFiler, csvHelper);
+        PreCreateEdsPatientIdTask task = new PreCreateEdsPatientIdTask(state, patientGuidCell, startDateCell, endDateCell, regTypeCell, dummyTypeCell, deletedCell, fhirResourceFiler, csvHelper);
         csvHelper.submitToThreadPool(task);
     }
 
@@ -69,6 +70,7 @@ public class PatientPreTransformer {
         private CsvCell endDateCell;
         private CsvCell regTypeCell;
         private CsvCell dummyTypeCell;
+        private CsvCell deletedCell;
         private FhirResourceFiler fhirResourceFiler;
         private EmisCsvHelper csvHelper;
 
@@ -78,6 +80,7 @@ public class PatientPreTransformer {
                                          CsvCell endDateCell,
                                          CsvCell regTypeCell,
                                          CsvCell dummyTypeCell,
+                                         CsvCell deletedCell,
                                          FhirResourceFiler fhirResourceFiler,
                                          EmisCsvHelper csvHelper) {
             super(state);
@@ -87,6 +90,7 @@ public class PatientPreTransformer {
             this.endDateCell = endDateCell;
             this.regTypeCell = regTypeCell;
             this.dummyTypeCell = dummyTypeCell;
+            this.deletedCell = deletedCell;
             this.fhirResourceFiler = fhirResourceFiler;
             this.csvHelper = csvHelper;
         }
@@ -99,13 +103,16 @@ public class PatientPreTransformer {
                 String sourcePatientId = EmisCsvHelper.createUniqueId(patientGuidCell, null);
                 UUID patientUuid = IdHelper.getOrCreateEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Patient, sourcePatientId);
 
-                //find a UUID for an existing EpisodeOfCare we should write to
-                String sourceEpisodeId = EmisCsvHelper.createUniqueId(patientGuidCell, startDateCell);
-                UUID episodeUuid = findEpisodeUuid(sourceEpisodeId, patientUuid);
+                if (!deletedCell.getBoolean()) {
 
-                //if we've matched to an existing episode, then hit the DB to cache any reg status data
-                if (episodeUuid != null) {
-                    cacheEpisodeRegStatuses(sourceEpisodeId, episodeUuid);
+                    //find a UUID for an existing EpisodeOfCare we should write to
+                    String sourceEpisodeId = EmisCsvHelper.createUniqueId(patientGuidCell, startDateCell);
+                    UUID episodeUuid = findEpisodeUuid(sourceEpisodeId, patientUuid);
+
+                    //if we've matched to an existing episode, then hit the DB to cache any reg status data
+                    if (episodeUuid != null) {
+                        cacheEpisodeRegStatuses(sourceEpisodeId, episodeUuid);
+                    }
                 }
 
             } catch (Throwable t) {
