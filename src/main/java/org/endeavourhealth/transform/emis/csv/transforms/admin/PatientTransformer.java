@@ -89,20 +89,19 @@ public class PatientTransformer {
         //date correctly results in a new episode of care being created
         CsvCell patientGuid = parser.getPatientGuid();
         CsvCell regDateCell = parser.getDateOfRegistration();
-        regDateCell = fixRegDateCell(regDateCell);
         EmisCsvHelper.setUniqueId(episodeBuilder, patientGuid, regDateCell);
 
-        Reference patientReference = csvHelper.createPatientReference(patientGuid);
+        Reference patientReference = EmisCsvHelper.createPatientReference(patientGuid);
         episodeBuilder.setPatient(patientReference, patientGuid);
 
         //create a second reference, since it's not an immutable object
         CsvCell organisationGuid = parser.getOrganisationGuid();
-        Reference organisationReference = csvHelper.createOrganisationReference(organisationGuid);
+        Reference organisationReference = EmisCsvHelper.createOrganisationReference(organisationGuid);
         episodeBuilder.setManagingOrganisation(organisationReference, organisationGuid);
 
         CsvCell patientType = parser.getPatientTypeDescription();
         CsvCell dummyType = parser.getDummyType();
-        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
+        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean());
         episodeBuilder.setRegistrationType(registrationType, patientType, dummyType);
 
         episodeBuilder.setRegistrationStartDate(regDateCell.getDate(), regDateCell);
@@ -116,7 +115,7 @@ public class PatientTransformer {
             episodeBuilder.setRegistrationEndDate(dedDateCell.getDate(), dedDateCell);
         }
 
-        endOtherEpisodes(patientGuid, regDateCell, fhirResourceFiler);
+        //endOtherEpisodes(patientGuid, regDateCell, fhirResourceFiler);
 
         CsvCell confidential = parser.getIsConfidential();
         if (confidential.getBoolean()) {
@@ -155,23 +154,10 @@ public class PatientTransformer {
     }
 
     /**
-     * the test pack includes a handful of records with a missing reg start date. This never happens
-     * with live data. The transform requires a start date, as we use that as part of the unique key.
-     * To get around this, just use a dummy date for the cell.
-     */
-    private static CsvCell fixRegDateCell(CsvCell regDateCell) {
-        if (!regDateCell.isEmpty()) {
-            return regDateCell;
-        }
-
-        return CsvCell.factoryWithNewValue(regDateCell, "1900-01-01");
-    }
-
-    /**
      * if a patient was deducted and re-registered on the same day, we don't ever receive the end date for the previous
      * registration, so we need to manually check for any active episode with a different start date and end them
      */
-    private static void endOtherEpisodes(CsvCell patientGuidCell, CsvCell thisStartDateCell, FhirResourceFiler fhirResourceFiler) throws Exception {
+    /*private static void endOtherEpisodes(CsvCell patientGuidCell, CsvCell thisStartDateCell, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         String sourceId = EmisCsvHelper.createUniqueId(patientGuidCell, null);
         UUID globallyUniqueId = IdHelper.getEdsResourceId(fhirResourceFiler.getServiceId(), ResourceType.Patient, sourceId);
@@ -212,7 +198,7 @@ public class PatientTransformer {
             fhirResourceFiler.savePatientResource(null, false, builder);
         }
     }
-
+*/
 
     /**
      * if we detect the patient was deducted and re-registered on the same day, then we want to manually end
@@ -279,7 +265,7 @@ public class PatientTransformer {
             patientBuilder.setTestPatient(false, dummyType, patientType);
         }
 
-        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean(), parser);
+        RegistrationType registrationType = convertRegistrationType(patientType.getString(), dummyType.getBoolean());
         transformAddress(patientBuilder, parser, fhirResourceFiler, registrationType);
 
         CsvCell homePhone = parser.getHomePhone();
@@ -658,7 +644,7 @@ public class PatientTransformer {
      * converts the patientDescription String from the CSV to the FHIR registration type
      * possible registration types based on the VocPatientType enum from EMIS Open
      */
-    private static RegistrationType convertRegistrationType(String csvRegType, boolean dummyRecord, ParserI parserI) throws Exception {
+    public static RegistrationType convertRegistrationType(String csvRegType, boolean dummyRecord) throws Exception {
 
         //don't assign a reg type to any test patient records we get
         if (dummyRecord) {

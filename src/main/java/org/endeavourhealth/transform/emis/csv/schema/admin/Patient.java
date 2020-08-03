@@ -138,7 +138,13 @@ public class Patient extends AbstractCsvParser {
         return super.getCell("Surname");
     }
     public CsvCell getDateOfRegistration() throws TransformException {
-        return super.getCell("DateOfRegistration");
+        CsvCell ret = super.getCell("DateOfRegistration");
+        //a small number of records in the test pack have no registration date, but this is critical for mapping,
+        //so this fn detects that and swaps in a valid date. This has never been seen to happen with live data.
+        if (ret.isEmpty()) {
+            ret = CsvCell.factoryWithNewValue(ret, "1900-01-01");
+        }
+        return ret;
     }
     public CsvCell getNhsNumber() {
         return super.getCell("NhsNumber");
@@ -232,6 +238,5 @@ public class Patient extends AbstractCsvParser {
     public CsvCell getExternalUsusalGPOrganisation() {
         return super.getCell("ExternalUsusalGPOrganisation");
     }
-
 
 }

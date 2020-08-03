@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.emis.custom.helpers;
 
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.common.fhir.schema.RegistrationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -20,10 +21,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilde
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.custom.transforms.RegistrationStatusTransformer;
-import org.hl7.fhir.instance.model.CodeableConcept;
-import org.hl7.fhir.instance.model.EpisodeOfCare;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,9 +73,18 @@ public class EmisCustomCsvHelper {
 
         //get all episodes for that patient
         List<ResourceWrapper> episodeWrappers = resourceDal.getResourcesByPatient(fhirResourceFiler.getServiceId(), patientUuid, ResourceType.EpisodeOfCare.toString());
+
+        //if no episodes, because we've not processed the bulk yet, skip it
         if (episodeWrappers.isEmpty()) {
-            //if no episodes, because we've not processed the bulk yet, skip it
             return;
+        }
+
+        //create episode builders for each one
+        List<EpisodeOfCareBuilder> builders = new ArrayList<>();
+        for (ResourceWrapper wrapper: episodeWrappers) {
+            EpisodeOfCare episodeOfCare = (EpisodeOfCare)wrapper.getResource();
+            EpisodeOfCareBuilder builder = new EpisodeOfCareBuilder(episodeOfCare);
+            builders.add(builder);
         }
 
         //sort the reg statuses into date order, but handling the case where some have the same date
@@ -85,13 +92,9 @@ public class EmisCustomCsvHelper {
             return o1.compareTo(o2);
         });
 
-        //create episode builders for each one
-        List<EpisodeOfCareBuilder> builders = new ArrayList<>();
-        for (ResourceWrapper wrapper: episodeWrappers) {
-            String json = wrapper.getResourceData();
-            EpisodeOfCare episodeOfCare = (EpisodeOfCare)FhirSerializationHelper.deserializeResource(json);
-            EpisodeOfCareBuilder builder = new EpisodeOfCareBuilder(episodeOfCare);
-            builders.add(builder);
+        LOG.trace("Sorted reg status for " + patientGuidStr);
+        for (RegStatusObj status: regStatusList) {
+            LOG.trace("" + status);
         }
 
         //We're sent the full reg status history, but the regular extract only contains current reg details, so we have missing history.
@@ -106,13 +109,16 @@ public class EmisCustomCsvHelper {
             return d1.compareTo(d2);
         });
 
-        //clear down any reg statuses on each episode
+        LOG.trace("Sorted episodes for " + patientGuidStr);
+        for (EpisodeOfCareBuilder builder: builders) {
+            LOG.trace("" + builder);
+        }
+
+        //clear down any reg statuses on each episode, since each time we get this file, it's a complete replacement
         Map<EpisodeOfCareBuilder, ContainedListBuilder> hmListBuilders = new HashMap<>();
         for (EpisodeOfCareBuilder episodeBuilder: builders) {
 
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(episodeBuilder);
-
-            //remove existing statuses, since each time we get this file, it's a complete replacement
             containedListBuilder.removeContainedList();
             hmListBuilders.put(episodeBuilder, containedListBuilder);
         }
@@ -156,6 +162,58 @@ public class EmisCustomCsvHelper {
      * old reg statuses can give us enough information to generate past episodes that ended before the feed was started
      */
     private void createMissingEpisodes(List<RegStatusObj> regStatusList, List<EpisodeOfCareBuilder> builders) throws Exception {
+
+        //go through the sorted status list and work out distinct registration periods, then
+        //create episodes to support that
+        CsvCell lastStartCell = null;
+
+        for (RegStatusObj statusObj: regStatusList) {
+
+            CsvCell statusDateTimeCell = statusObj.getDateTimeCell();
+            RegistrationStatus status = statusObj.convertRegistrationStatus();
+            if (RegistrationStatusTransformer.isDeductionRegistrationStatus(status)) {
+
+                //if we've got a deduction status after a registration status, then that is a complete past-episode
+                if (lastStartCell != null) {
+
+                    //find an episode for the date range we've got
+                    EpisodeOfCareBuilder existingBuilder = null;
+                    for (EpisodeOfCareBuilder builder: builders) {
+
+                        Date startDate = lastStartCell.getDate(); //specifically using dates, not date times
+                        Date endDate = statusDateTimeCell.getDate(); //specifically using dates, not date times
+
+                        EpisodeOfCare episodeOfCare = (EpisodeOfCare)builder.getResource();
+                        Period period = episodeOfCare.getPeriod();
+                        if (PeriodHelper.isWithin(period, startDate)
+                            && PeriodHelper.isWithin(period, endDate)) {
+                            existingBuilder = builder;
+                            break;
+                        }
+                    }
+
+                    //create a new one
+                    if (existingBuilder == null) {
+                        EpisodeOfCareBuilder builder = createMissingEpisode(statusObj.getPatientGuidCell(), lastStartCell, statusDateTimeCell, statusObj.getRegTypeCell(), statusObj.getOrganisationGuidCell());
+                        builders.add(builder);
+                    }
+
+                    //reset these so we can spot the next start of a registration
+                    lastStartCell = null;
+                }
+
+            } else {
+                //see if we're the start of a new run
+                if (lastStartCell == null) {
+                    lastStartCell = statusDateTimeCell;
+                }
+            }
+        }
+
+
+    }
+
+    /*private void createMissingEpisodes(List<RegStatusObj> regStatusList, List<EpisodeOfCareBuilder> builders) throws Exception {
 
         //find the earliest reg date from the existing episodes (note the builders aren't sorted yet)
         Date earliestRegDate = null;
@@ -204,24 +262,12 @@ public class EmisCustomCsvHelper {
             }
         }
 
-    }
+    }*/
 
     private EpisodeOfCareBuilder createMissingEpisode(CsvCell patientGuidCell, CsvCell startDateCell, CsvCell endDateCell, CsvCell regTypeCell, CsvCell organisationGuidCell) throws Exception {
 
-        //the date and GUIDs in the reg status file are formatted differently to the main extract file, so we need to
-        //re-format all these to be consistent
-        SimpleDateFormat sdf = new SimpleDateFormat(EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD);
-
-        Date startDate = startDateCell.getDate();
-        String formattedStartDate = sdf.format(startDate);
-        startDate = sdf.parse(formattedStartDate); //parse back into a Date object, so we lose any time element
-        startDateCell = CsvCell.factoryWithNewValue(startDateCell, formattedStartDate);
-
-        Date endDate = endDateCell.getDate();
-        String formattedEndDate = sdf.format(endDate);
-        endDate = sdf.parse(formattedEndDate); //parse back into a Date object, so we lose any time element
-        endDateCell = CsvCell.factoryWithNewValue(endDateCell, formattedEndDate);
-
+        //need to re-format the patient and org GUIDs to be the same format as used in the
+        //proper extract, otherwise the ID mapper won't be able to map them
         String patientGuid = patientGuidCell.getString();
         String formattedPatientGuid = "{" + patientGuid.toUpperCase() + "}";
         patientGuidCell = CsvCell.factoryWithNewValue(patientGuidCell, formattedPatientGuid);
@@ -230,22 +276,23 @@ public class EmisCustomCsvHelper {
         String formattedOrganisationGuid = "{" + organisationGuid.toUpperCase() + "}";
         organisationGuidCell = CsvCell.factoryWithNewValue(organisationGuidCell, formattedOrganisationGuid);
 
-        //now create the episode builder and populate with what we can
+        //create the episode builder and populate with what we can
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
         EmisCsvHelper.setUniqueId(episodeBuilder, patientGuidCell, startDateCell);
 
         Reference patientReference = EmisCsvHelper.createPatientReference(patientGuidCell);
         episodeBuilder.setPatient(patientReference, patientGuidCell);
 
-        //create a second reference, since it's not an immutable object
         Reference organisationReference = EmisCsvHelper.createOrganisationReference(organisationGuidCell);
         episodeBuilder.setManagingOrganisation(organisationReference, organisationGuidCell);
 
         RegistrationType registrationType = RegistrationStatusTransformer.convertRegistrationType(regTypeCell.getInt());
         episodeBuilder.setRegistrationType(registrationType, regTypeCell);
 
+        Date startDate = startDateCell.getDate();
         episodeBuilder.setRegistrationStartDate(startDate, startDateCell);
 
+        Date endDate = endDateCell.getDate();
         episodeBuilder.setRegistrationEndDate(endDate, endDateCell);
 
         return episodeBuilder;
@@ -416,6 +463,31 @@ public class EmisCustomCsvHelper {
             this.regTypeCell = regTypeCell;
             this.organisationGuidCell = organisationGuidCell;
             this.processingOrder = processingOrder;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            try {
+                SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date d = dateTimeCell.getDateTime();
+                sb.append(df.format(d));
+            } catch (Exception ex) {
+                sb.append("INVALID DATE " + dateTimeCell.getString());
+            }
+
+            sb.append(", status: ");
+            try {
+                RegistrationStatus status = convertRegistrationStatus();
+                sb.append(status.getCode());
+                sb.append(" ");
+                sb.append(status.getDescription());
+            } catch (Exception ex) {
+                sb.append("UNKNOWN STATUS " + regStatusCell.getInt());
+            }
+
+            return sb.toString();
         }
 
         public CsvCell getPatientGuidCell() {

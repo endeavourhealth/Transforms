@@ -44,7 +44,7 @@ public abstract class EmisCsvToFhirTransformer {
     public static final String VERSION_5_0 = "5.0"; //assumed version received prior to emis test pack (not sure of actual version number)
 
     public static final String DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd";
-    public static final String TIME_FORMAT = "hh:mm:ss";
+    public static final String TIME_FORMAT = "HH:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();   //EMIS csv files always contain a header
 
     public static void transform(Exchange exchange, FhirResourceFiler processor, String version) throws Exception {

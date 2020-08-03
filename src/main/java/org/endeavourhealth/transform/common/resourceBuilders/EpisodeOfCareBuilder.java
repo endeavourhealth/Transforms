@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -266,4 +267,38 @@ public class EpisodeOfCareBuilder extends ResourceBuilderBase implements HasIden
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
         }
     }
+
+    /**
+     * just for logging/debugging
+     */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        if (isIdMapped()) {
+            sb.append("Mapped Episode ");
+        } else {
+            sb.append("Non-mapped Episode ");
+        }
+        sb.append(getResourceId());
+
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+
+        sb.append(", from ");
+
+        Date start = getRegistrationStartDate();
+        if (start == null) {
+            sb.append("NULL");
+        } else {
+            sb.append(df.format(start));
+        }
+
+        Date end = getRegistrationEndDate();
+        if (end != null) {
+            sb.append(" to ");
+            sb.append(df.format(end));
+        }
+
+        return sb.toString();
+    }
+
 }

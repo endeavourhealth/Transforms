@@ -37,13 +37,13 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         org.endeavourhealth.transform.subscriber.targetTables.EpisodeOfCare model = params.getOutputContainer().getEpisodesOfCare();
 
         EpisodeOfCare fhir = (EpisodeOfCare)resourceWrapper.getResource(); //returns null if deleted
+        List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
 
-            List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
             deleteRegistrationStatusHistory(fullHistory, resourceWrapper, params);
             model.writeDelete(subscriberId);
             return;
@@ -115,7 +115,7 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                 dateRegisteredEnd,
                 usualGpPractitionerId);
 
-        transformRegistrationStatusHistory(organizationId, patientId, personId, id, fhir, resourceWrapper, params);
+        transformRegistrationStatusHistory(organizationId, patientId, personId, id, fhir, resourceWrapper, params, fullHistory);
     }
 
     @Override
@@ -144,14 +144,16 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
 
     private static void transformRegistrationStatusHistory(long organisationId, long patientId, long personId,
                                                            long episodeOfCareId, EpisodeOfCare episodeOfCare,
-                                                           ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws  Exception {
+                                                           ResourceWrapper resourceWrapper, SubscriberTransformHelper params,
+                                                           List<ResourceWrapper> fullHistory) throws  Exception {
 
         RegistrationStatusHistory writer = params.getOutputContainer().getRegistrationStatusHistory();
+
         List<EpisodeOfCareTransformer.RegStatus> regStatuses = EpisodeOfCareTransformer.getRegStatusList(episodeOfCare);
+        Set<EpisodeOfCareTransformer.RegStatus> fullHistoryRegStatuses = EpisodeOfCareTransformer.getAllRegStatuses(fullHistory);
 
         //generate IDs
         Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> hmIds = EpisodeOfCareTransformer.findRegStatusIds(regStatuses, params.getSubscriberConfigName(), true);
-
 
         for (int i=0; i<regStatuses.size(); i++) {
             EpisodeOfCareTransformer.RegStatus regStatus = regStatuses.get(i);
@@ -181,6 +183,18 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
                     registrationStatusConceptId,
                     startDate,
                     endDate);
+        }
+
+        //we need to DELETE any reg status records no longer found on our episode
+        fullHistoryRegStatuses.removeAll(regStatuses); //take away the current ones
+
+        Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> fullHistoryHmIds = EpisodeOfCareTransformer.findRegStatusIds(fullHistoryRegStatuses, params.getSubscriberConfigName(), false);
+
+        for (EpisodeOfCareTransformer.RegStatus regStatus: fullHistoryRegStatuses) {
+            SubscriberId subTableId = fullHistoryHmIds.get(regStatus);
+            if (subTableId != null) {
+                writer.writeDelete(subTableId);
+            }
         }
     }
 
@@ -272,11 +286,13 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         return ret;
     }
 
+
     public static class RegStatus {
 
         private String owningEpisodeReferenceStr;
         private RegistrationStatus status;
         private Date start;
+        private String cachedUniqueId = null;
 
         public RegStatus(EpisodeOfCare episodeOfCare, RegistrationStatus status, Date start) {
             this.owningEpisodeReferenceStr = ReferenceHelper.createReferenceExternal(episodeOfCare).getReference();
@@ -297,15 +313,18 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
          */
         public String generateUniqueId() {
 
-            StringBuilder sb = new StringBuilder();
-            sb.append(owningEpisodeReferenceStr);
-            sb.append("-REGSTATUS-");
-            sb.append(status.getCode());
-            if (start != null) {
-                sb.append("-");
-                sb.append(new SimpleDateFormat("yyyyMMddHHmmss").format(start));
+            if (cachedUniqueId == null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(owningEpisodeReferenceStr);
+                sb.append("-REGSTATUS-");
+                sb.append(status.getCode());
+                if (start != null) {
+                    sb.append("-");
+                    sb.append(new SimpleDateFormat("yyyyMMddHHmmss").format(start));
+                }
+                cachedUniqueId = sb.toString();
             }
-            return sb.toString();
+            return cachedUniqueId;
         }
 
         @Override

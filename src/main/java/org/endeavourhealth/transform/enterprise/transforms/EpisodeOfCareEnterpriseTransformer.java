@@ -33,13 +33,13 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                                      EnterpriseTransformHelper params) throws Exception {
 
         EpisodeOfCare fhir = (EpisodeOfCare)resourceWrapper.getResource(); //returns null if deleted
+        List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
 
-            List<ResourceWrapper> fullHistory = EnterpriseTransformHelper.getFullHistory(resourceWrapper);
             deleteRegistrationStatusHistory(fullHistory, params);
             csvWriter.writeDelete(enterpriseId.longValue());
             return;
@@ -112,7 +112,7 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
             dateRegisteredEnd,
             usualGpPractitionerId);
 
-        transformRegistrationStatusHistory(organisationId, patientId, personId, id, fhir, params);
+        transformRegistrationStatusHistory(organisationId, patientId, personId, id, fhir, params, fullHistory);
     }
 
     private void deleteRegistrationStatusHistory(List<ResourceWrapper> fullHistory, EnterpriseTransformHelper params) throws Exception {
@@ -140,10 +140,12 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
 
     private static void transformRegistrationStatusHistory(long organisationId, long patientId, long personId,
                                                            long episodeOfCareId, EpisodeOfCare episodeOfCare,
-                                                           EnterpriseTransformHelper params) throws  Exception {
+                                                           EnterpriseTransformHelper params, List<ResourceWrapper> fullHistory) throws  Exception {
 
         org.endeavourhealth.transform.enterprise.outputModels.RegistrationStatusHistory writer = params.getOutputContainer().getRegistrationStatusHistory();
+
         List<EpisodeOfCareTransformer.RegStatus> regStatuses = EpisodeOfCareTransformer.getRegStatusList(episodeOfCare);
+        Set<EpisodeOfCareTransformer.RegStatus> fullHistoryRegStatuses = EpisodeOfCareTransformer.getAllRegStatuses(fullHistory);
 
         //generate IDs
         Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> hmIds = EpisodeOfCareTransformer.findRegStatusIds(regStatuses, params.getEnterpriseConfigName(), true);
@@ -178,6 +180,18 @@ public class EpisodeOfCareEnterpriseTransformer extends AbstractEnterpriseTransf
                     regStatusId,
                     startDate,
                     endDate);
+        }
+
+        //we need to DELETE any reg status records no longer found on our episode
+        fullHistoryRegStatuses.removeAll(regStatuses); //take away the current ones
+
+        Map<EpisodeOfCareTransformer.RegStatus, SubscriberId> fullHistoryHmIds = EpisodeOfCareTransformer.findRegStatusIds(fullHistoryRegStatuses, params.getEnterpriseConfigName(), false);
+
+        for (EpisodeOfCareTransformer.RegStatus regStatus: fullHistoryRegStatuses) {
+            SubscriberId subTableId = fullHistoryHmIds.get(regStatus);
+            if (subTableId != null) {
+                writer.writeDelete(subTableId.getSubscriberId());
+            }
         }
     }
 
