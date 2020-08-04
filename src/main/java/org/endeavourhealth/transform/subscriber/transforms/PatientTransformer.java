@@ -201,12 +201,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             Enumerations.AdministrativeGender gender = fhirPatient.getGender();
 
             //if pseudonymised, all non-male/non-female genders should be treated as female
-            if (params.isPseudonymised()) {
+            //don't flatten now - https://endeavourhealth.atlassian.net/browse/SD-112
+            /*if (params.isPseudonymised()) {
                 if (gender != Enumerations.AdministrativeGender.FEMALE
                         && gender != Enumerations.AdministrativeGender.MALE) {
                     gender = Enumerations.AdministrativeGender.FEMALE;
                 }
-            }
+            }*/
 
             genderConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ADMINISTRATIVE_GENDER, gender.toCode(), gender.getDisplay());
         }
@@ -325,7 +326,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     private void deleteAddresses(ResourceWrapper resourceWrapper, List<ResourceWrapper> fullHistory, SubscriberTransformHelper params) throws Exception {
 
-        PatientAddressMatch uprnwriter = params.getOutputContainer().getPatientAddressMatch();
+        //PatientAddressMatch uprnwriter = params.getOutputContainer().getPatientAddressMatch();
 
         PatientAddress writer = params.getOutputContainer().getPatientAddresses();
         int maxAddresses = getMaxNumberOfAddresses(fullHistory);
@@ -340,7 +341,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void UPRN(SubscriberTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode, Long currentAddressId) throws Exception {
+    private void uprn(SubscriberTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode, Long currentAddressId) throws Exception {
 
         JsonNode config = ConfigManager.getConfigurationAsJson("UPRN", "db_subscriber");
         if (config == null) {
@@ -476,7 +477,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         // null fields because isPseudonymised
         if (params.isPseudonymised()) {
-            LOG.debug("Pseduonymise!");
+            //LOG.debug("Pseduonymise!");
 
             SubscriberConfig c = params.getConfig();
             List<LinkDistributorConfig> salts = c.getPseudoSalts();
@@ -653,7 +654,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 city = address.getCity();
                 postcode = address.getPostalCode();
 
-                UPRN(params, currentPatient, i, resourceWrapper, subTableId, addressLine1, addressLine2, addressLine3, addressLine4, city, postcode, currentAddressId);
+                uprn(params, currentPatient, i, resourceWrapper, subTableId, addressLine1, addressLine2, addressLine3, addressLine4, city, postcode, currentAddressId);
             }
         }
 

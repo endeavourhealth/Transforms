@@ -221,10 +221,11 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         if (patientWriter.isPseduonymised()) {
 
             //if pseudonymised, all non-male/non-female genders should be treated as female
-            if (fhirPatient.getGender() != Enumerations.AdministrativeGender.FEMALE
+            //don't flatten now - https://endeavourhealth.atlassian.net/browse/SD-112
+            /*if (fhirPatient.getGender() != Enumerations.AdministrativeGender.FEMALE
                     && fhirPatient.getGender() != Enumerations.AdministrativeGender.MALE) {
                 patientGenderId = Enumerations.AdministrativeGender.FEMALE.ordinal();
-            }
+            }*/
 
             List<LinkDistributorConfig> salts = params.getConfig().getPseudoSalts();
             if (!salts.isEmpty()) {
@@ -301,7 +302,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         PatientAddressMatch uprnwriter = params.getOutputContainer().findCsvWriter(PatientAddressMatch.class);
-        UPRN(params, fhirPatient, id, personId, uprnwriter, params.getEnterpriseConfigName());
+        uprn(params, fhirPatient, id, personId, uprnwriter, params.getEnterpriseConfigName());
     }
 
     /**
@@ -841,7 +842,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
     }
 
 
-    public void UPRN(EnterpriseTransformHelper params, Patient fhirPatient, long id, long personId, AbstractEnterpriseCsvWriter csvWriter, String configName) throws Exception {
+    public void uprn(EnterpriseTransformHelper params, Patient fhirPatient, long id, long personId, AbstractEnterpriseCsvWriter csvWriter, String configName) throws Exception {
         if (!fhirPatient.hasAddress()) {
             return;
         }
@@ -946,7 +947,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
             if (uprnWriter.isPseduonymised()) {
 
-                LOG.debug("Pseduonymise!");
+                //LOG.debug("Pseduonymise!");
 
                 SubscriberConfig c = params.getConfig();
                 List<LinkDistributorConfig> salts = c.getPseudoSalts();
