@@ -10,6 +10,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.Episodes;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -371,7 +372,7 @@ public class EpisodesTransformer {
                 }
 
                 //finally, delete the top level parent
-                fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
+                //fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
 
             } else {
                 TransformWarnings.log(LOG, csvHelper, "Cannot find existing Encounter: {} for deletion", spellExternalIdCell);
@@ -417,19 +418,19 @@ public class EpisodesTransformer {
 
             CsvCell adminCategoryCodeCe = parser.getAdministrativeCategoryCode();
             if (!adminCategoryCodeCe.isEmpty()) {
-                containedParametersBuilderAdmission.addParameter("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCodeCe.getString());
+               csvHelper.addParmIfNotNull("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCodeCe.getString(), containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell admissionMethodCodeCell = parser.getAdmissionMethodCode();
             if (!admissionMethodCodeCell.isEmpty()) {
-                containedParametersBuilderAdmission.addParameter("ip_admission_method", "" + admissionMethodCodeCell.getString());
+                csvHelper.addParmIfNotNull("ip_admission_method", "" + admissionMethodCodeCell.getString(), containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell admissionSourceCodeCell = parser.getAdmissionSourceCode();
             if (!admissionSourceCodeCell.isEmpty()) {
-                containedParametersBuilderAdmission.addParameter("ip_admission_source", "" + admissionSourceCodeCell);
+                csvHelper.addParmIfNotNull("ip_admission_source", "" + admissionSourceCodeCell, containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell patientClassCodeCell = parser.getPatientClassCode();
             if (!patientClassCodeCell.isEmpty()) {
-                containedParametersBuilderAdmission.addParameter("patient_classification", "" + patientClassCodeCell.getString());
+                csvHelper.addParmIfNotNull("patient_classification", "" + patientClassCodeCell.getString(), containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             //if the 01 episode has an episode end date, set the admission end date
             CsvCell episodeEndDateCell = parser.getEpisodeEndDttm();
@@ -468,11 +469,11 @@ public class EpisodesTransformer {
 
                 CsvCell dischargeMethodCodeCell = parser.getDischargeMethod();
                 if (!dischargeMethodCodeCell.isEmpty()) {
-                    containedParametersBuilderDischarge.addParameter("ip_discharge_method", "" + dischargeMethodCodeCell.getString());
+                    csvHelper.addParmIfNotNull("ip_discharge_method", "" + dischargeMethodCodeCell.getString(),containedParametersBuilderDischarge,BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
                 }
                 CsvCell dischargeDestinationCodeCell = parser.getDischargeDestinationCode();
                 if (!dischargeDestinationCodeCell.isEmpty()) {
-                    containedParametersBuilderDischarge.addParameter("ip_discharge_destination", "" + dischargeDestinationCodeCell.getString());
+                    csvHelper.addParmIfNotNull("ip_discharge_destination", "" + dischargeDestinationCodeCell.getString(), containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
                 }
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
@@ -521,11 +522,11 @@ public class EpisodesTransformer {
 
         CsvCell episodeStartWardCodeCell = parser.getEpisodeStartWardCode();
         if (!episodeStartWardCodeCell.isEmpty()) {
-            containedParametersBuilder.addParameter("ip_episode_start_ward", "" + episodeStartWardCodeCell.getString());
+            csvHelper.addParmIfNotNull("ip_episode_start_ward", "" + episodeStartWardCodeCell.getString(), containedParametersBuilder, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
         }
         CsvCell episodeEndWardCodeCell = parser.getEpisodeEndWardCode();
         if (!episodeEndWardCodeCell.isEmpty()) {
-            containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString());
+            csvHelper.addParmIfNotNull("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString(), containedParametersBuilder, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
         }
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, existingParentEncounterBuilder);

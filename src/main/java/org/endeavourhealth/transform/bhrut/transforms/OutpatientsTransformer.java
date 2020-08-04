@@ -408,6 +408,8 @@ public class OutpatientsTransformer {
 
             DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
             procedureBuilder.setPerformed(dateTimeType, appointmentDateCell);
+            DateTimeType endedDateTimeType = new DateTimeType(parser.getApptDepartureDttm().getDateTime());
+            procedureBuilder.setEnded(endedDateTimeType,parser.getApptDepartureDttm());
 
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
         }
@@ -556,6 +558,12 @@ public class OutpatientsTransformer {
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
             }
             builder.setPatient(patientReference);
+        }
+        if (!parser.getApptSeenDttm().isEmpty()) {
+            builder.setPeriodStart(parser.getApptSeenDttm().getDateTime(), parser.getApptSeenDttm());
+        }
+        if (!parser.getApptType().isEmpty()) {
+            builder.setPeriodEnd(parser.getApptDepartureDttm().getDateTime(),parser.getApptDepartureDttm());
         }
 
         if (!idCell.isEmpty()) {

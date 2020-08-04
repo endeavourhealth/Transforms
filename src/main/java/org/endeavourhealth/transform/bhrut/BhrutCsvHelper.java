@@ -14,6 +14,10 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.bhrut.cache.EpisodeOfCareCache;
 import org.endeavourhealth.transform.bhrut.cache.OrgCache;
 import org.endeavourhealth.transform.bhrut.cache.PasIdtoGPCache;
@@ -22,6 +26,7 @@ import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
@@ -851,6 +856,39 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         } else {
             return null;
         }
+    }
+    public static void addParmIfNotNull(String propertyName, String columnName, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
+        MapResponse propertyResponse = getProperty(propertyName, tablename);
+        MapResponse valueResponse = getColumnValue(columnName, propertyName, tablename);
+        CodeableConcept ccValue = new CodeableConcept();
+        ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                .setSystem(valueResponse.getConcept().getScheme());
+        parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+    }
+
+    private static MapResponse getProperty(String column, String tablename) throws Exception {
+        MapColumnRequest propertyRequest = new MapColumnRequest(
+                BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SCHEMA,
+                tablename,
+                column
+        );
+        MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+        return propertyResponse;
+    }
+
+    private static MapResponse getColumnValue(String cause, String column, String tablename) throws Exception {
+        MapColumnValueRequest request = new MapColumnValueRequest(
+                BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SCHEMA,
+                tablename,
+                column,
+                cause
+        );
+        MapResponse valueResponse = IMClient.getMapPropertyValue(request);
+        return valueResponse;
     }
 
 }

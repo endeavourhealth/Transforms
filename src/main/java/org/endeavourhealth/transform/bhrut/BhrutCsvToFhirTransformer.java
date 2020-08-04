@@ -30,19 +30,21 @@ public abstract class BhrutCsvToFhirTransformer {
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader().withQuoteMode(QuoteMode.MINIMAL);
     public static final CSVFormat CSV_FORMAT_NEW = CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"')
             .withSkipHeaderRecord();
+    // Strings for calls to IM. The first 3 should be constant for all calls for a publisher
     public final static  String  IM_PROVIDER_CONCEPT_ID ="CM_Org_BHRUT";
     public final static  String  IM_SYSTEM_CONCEPT_ID = "CM_Sys_Medway";
     public final static  String  IM_SCHEMA = "MedwayBI";
+    // Table names used by IM for individual transformers
     public final static  String  IM_PMI_TABLE_NAME ="PMI";
+    public final static  String  IM_AEATTENDANCE_TABLE_NAME  ="AandeAttendances";
+    public final static  String  IM_EPISODES_TABLE_NAME  ="Episodes";
+    //
     public final static  String  IM_CAUSE_OF_DEATH = "CAUSEOFDEATH";
     public final static  String  IM_CAUSE_OF_DEATH_1B = "CAUSEOFDEATH 1B";
     public final static  String  IM_CAUSE_OF_DEATH_1C = "CAUSEOFDEATH 1c";
     public final static  String  IM_CAUSE_OF_DEATH_2 = "CAUSEOFDEATH 2";
     public final static  String  IM_INFECTION_STATUS = "INFECTION_STATUS";
 
-    //public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"').withQuote(' ').withQuoteMode(QuoteMode.MINIMAL);
-    //CSVFormat.RFC4180.withFirstRecordAsHeader().withQuote('"').withQuote(' ');
-    //CSVFormat.DEFAULT.withHeader();   //BHRUT files contain a header
     public static final String BHRUT_ORG_ODS_CODE = "RF4";
 
     public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
@@ -125,23 +127,6 @@ public abstract class BhrutCsvToFhirTransformer {
             if (!extension.equalsIgnoreCase("csv")) {
                 continue;
             }
-
-            /* Files types expected to attempt to match className with:
-                    PMI -> PMI
-                    PATIENT_ALERTS -> Alerts
-                    OUTPATIENT_APPOINTMENTS -> Outpatients
-                    INPATIENT_SPELLS -> Spells
-                    INPATIENT_EPISODES -> Episodes
-                    AE_ATTENDANCES -> AandeAttendances
-             */
-            //filename format from v1.3 specification
-            //BHRUT_3_AE_ATTENDANCES_DW_20200601162237.csv
-            // BHRUT_3_INPATIENT_SPELLS_DW_20200601162237.csv
-            // BHRUT_3_PATIENT_ALERTS_DW_20200601162237.csv
-            //BHRUT_3_INPATIENT_EPISODES_DW_20200601162237.csv
-            // BHRUT_3_OUTPATIENT_APPOINTMENTS_DW_20200601162237.csv
-            // BHRUT_3_PMI_DW_20200601162237.csv
-
 
             String[] toks = fName.split("_");
             if (toks.length == 5) {

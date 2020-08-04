@@ -82,7 +82,7 @@ public class PMITransformer {
 
         //store the PAS ID as a secondary identifier
         CsvCell patientIdCell = parser.getPasId();
-        createIdentifier(patientBuilder, fhirResourceFiler, patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BHRUT_PAS_ID);
+        createIdentifier(patientBuilder, fhirResourceFiler , patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BHRUT_PAS_ID);
 
         CsvCell dob = parser.getDateOfBirth();
         if (!dob.isEmpty()) {
@@ -105,7 +105,6 @@ public class PMITransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
             codeableConceptBuilder.setText(infectionStatusCell.getString());
-
         }
 
         CsvCell sex = parser.getGender();
@@ -128,19 +127,19 @@ public class PMITransformer {
 
         }
 
-        createName(patientBuilder, parser, csvHelper);
-        createAddress(patientBuilder, parser, csvHelper);
+        createName(patientBuilder, fhirResourceFiler,parser, csvHelper);
+        createAddress(patientBuilder, fhirResourceFiler,parser, csvHelper);
 
-        addCausesOfDeath(parser, patientBuilder);
+        addCausesOfDeath(parser, patientBuilder,csvHelper);
 
         CsvCell homePhone = parser.getHomePhoneNumber();
         if (!homePhone.isEmpty()) {
-            createContact(patientBuilder, csvHelper, homePhone, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
+            createContact(patientBuilder, fhirResourceFiler, csvHelper, homePhone, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
         }
 
         CsvCell mobilePhone = parser.getMobilePhoneNumber();
         if (!mobilePhone.isEmpty()) {
-            createContact(patientBuilder, csvHelper, mobilePhone, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
+            createContact(patientBuilder, fhirResourceFiler, csvHelper, mobilePhone, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
         }
 
         CsvCell ethnicCodeCell = parser.getEthnicityCode();
@@ -216,12 +215,16 @@ public class PMITransformer {
         }
     }
 
+
     private static void createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
         if (!cell.isEmpty()) {
             if (use.equals(Identifier.IdentifierUse.OFFICIAL)) { //remove previous
                 for (Identifier i : patientBuilder.getIdentifiers()) {
-                    if (i.getUse().equals(Identifier.IdentifierUse.OFFICIAL)) {
+                    if (use.equals(Identifier.IdentifierUse.OFFICIAL) && i.getUse().equals(Identifier.IdentifierUse.OFFICIAL)) {
                         patientBuilder.removeIdentifier(i);
+                    }
+                    if (i.getSystem().equalsIgnoreCase(system) && i.getValue().equalsIgnoreCase(cell.getString())) {
+                        return;
                     }
                 }
             }
@@ -229,11 +232,11 @@ public class PMITransformer {
             identifierBuilder.setUse(use);
             identifierBuilder.setSystem(system);
             identifierBuilder.setValue(cell.getString(), cell);
-
+            IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, fhirResourceFiler.getDataDate());
         }
     }
 
-    private static void createName(PatientBuilder patientBuilder, PMI parser, BhrutCsvHelper csvHelper) throws Exception {
+    private static void createName(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler,  PMI parser, BhrutCsvHelper csvHelper) throws Exception {
 
         CsvCell givenName = parser.getForename();
         CsvCell surname = parser.getSurname();
@@ -245,11 +248,11 @@ public class PMITransformer {
             nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
             nameBuilder.addGiven(givenName.getString(), givenName);
             nameBuilder.addFamily(surname.getString(), surname);
-
+            NameBuilder.deDuplicateLastName(patientBuilder,fhirResourceFiler.getDataDate());
         }
     }
 
-    private static void createAddress(PatientBuilder patientBuilder, PMI parser, BhrutCsvHelper csvHelper) throws Exception {
+    private static void createAddress(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, PMI parser, BhrutCsvHelper csvHelper) throws Exception {
 
         CsvCell houseNameFlat = csvHelper.handleQuote(parser.getAddress1());
         CsvCell numberAndStreet = csvHelper.handleQuote(parser.getAddress2());
@@ -273,12 +276,12 @@ public class PMITransformer {
             addressBuilder.setCity(town.getString(), town);
             addressBuilder.setDistrict(county.getString(), county);
             addressBuilder.setPostcode(postcode.getString(), postcode);
-
+            AddressBuilder.deDuplicateLastAddress(patientBuilder, fhirResourceFiler.getDataDate());
 
         }
     }
 
-    private static void createContact(PatientBuilder patientBuilder, BhrutCsvHelper csvHelper, CsvCell cell,
+    private static void createContact(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, CsvCell cell,
                                       ContactPoint.ContactPointUse use, ContactPoint.ContactPointSystem system) throws Exception {
 
         if (!cell.isEmpty()) {
@@ -287,7 +290,7 @@ public class PMITransformer {
             contactPointBuilder.setUse(use);
             contactPointBuilder.setSystem(system);
             contactPointBuilder.setValue(cell.getString(), cell);
-
+            ContactPointBuilder.deDuplicateLastContactPoint(patientBuilder, fhirResourceFiler.getDataDate());
         }
     }
 
@@ -320,65 +323,32 @@ public class PMITransformer {
         }
     }
 
-    private static void addCausesOfDeath(PMI parser, PatientBuilder patientBuilder) throws Exception {
+    private static void addCausesOfDeath(PMI parser, PatientBuilder patientBuilder, BhrutCsvHelper csvHelper) throws Exception {
 
         ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(patientBuilder);
         parametersBuilder.removeContainedParameters();
         CsvCell cause = parser.getCauseOfDeath();
         if (!cause.isEmpty()) {
-            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH, cause.getString(), parametersBuilder);
+            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH, cause.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
             }
         CsvCell cause1B = parser.getCauseOfDeath1B();
         if (!cause1B.isEmpty()) {
-            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1B, cause1B.getString(), parametersBuilder);
+            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1B, cause1B.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
         }
         CsvCell cause1C = parser.getCauseOfDeath1C();
         if (!cause1C.isEmpty()) {
-            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1C, cause1C.getString(), parametersBuilder);
+            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1C, cause1C.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
         }
         CsvCell cause2 = parser.getCauseOfDeath2();
         if (!cause2.isEmpty()) {
-            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_2, cause2.getString(), parametersBuilder);
+            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_2, cause2.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
         }
         CsvCell infectionStatus = parser.getInfectionStatus();
         if (!infectionStatus.isEmpty()) {
-            addParmIfNotNull(BhrutCsvToFhirTransformer.IM_INFECTION_STATUS, infectionStatus.getString(), parametersBuilder);
+            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_INFECTION_STATUS, infectionStatus.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
         }
 
     }
 
-    private static void addParmIfNotNull(String propertyName, String columnName, ContainedParametersBuilder parametersBuilder) throws Exception {
-        MapResponse propertyResponse = getProperty(propertyName);
-        MapResponse valueResponse = getColumnValue(columnName, propertyName);
-        CodeableConcept ccValue = new CodeableConcept();
-        ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
-                .setSystem(valueResponse.getConcept().getScheme());
-        parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
-    }
-
-    private static MapResponse getProperty(String column) throws Exception {
-        MapColumnRequest propertyRequest = new MapColumnRequest(
-                BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
-                BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
-                BhrutCsvToFhirTransformer.IM_SCHEMA,
-                BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME,
-                column
-        );
-        MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
-        return propertyResponse;
-    }
-
-    private static MapResponse getColumnValue(String cause, String column) throws Exception {
-        MapColumnValueRequest request = new MapColumnValueRequest(
-                BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
-                BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
-                BhrutCsvToFhirTransformer.IM_SCHEMA,
-                BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME,
-                column,
-                cause
-        );
-        MapResponse valueResponse = IMClient.getMapPropertyValue(request);
-        return valueResponse;
-    }
-}
+  }
 

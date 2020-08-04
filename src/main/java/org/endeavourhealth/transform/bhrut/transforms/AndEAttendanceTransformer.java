@@ -8,14 +8,16 @@ import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.AandeAttendances;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.hl7.fhir.instance.model.Encounter;
-import org.hl7.fhir.instance.model.List_;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.addParmIfNotNull;
 
 
 public class AndEAttendanceTransformer {
@@ -396,22 +400,26 @@ public class AndEAttendanceTransformer {
 
         CsvCell attendanceTypeCell = parser.getAttendanceType();
         if (!attendanceTypeCell.isEmpty()) {
-            containedParametersBuilderArrival.addParameter("ae_attendance_category", "" + attendanceTypeCell.getString());
+          addParmIfNotNull("ae_attendance_category", "" + attendanceTypeCell.getString(),
+                  containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
         CsvCell attendanceSourceCell = parser.getReferralSource();
         if (!attendanceSourceCell.isEmpty()) {
-            containedParametersBuilderArrival.addParameter("ae_attendance_source", "" + attendanceSourceCell.getString());
+            addParmIfNotNull("ae_attendance_source", "" + attendanceSourceCell.getString(),
+                    containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
         CsvCell arrivalModeCell = parser.getArrivalMode();
         if (!arrivalModeCell.isEmpty()) {
-            containedParametersBuilderArrival.addParameter("ae_arrival_mode", "" + arrivalModeCell.getString());
+            addParmIfNotNull("ae_arrival_mode", "" + arrivalModeCell.getString(),
+                    containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
         CsvCell complaintCell = parser.getComplaint();
         if (!complaintCell.isEmpty()) {
-            containedParametersBuilderArrival.addParameter("ae_chief_complaint", "" + complaintCell.getString());
+            addParmIfNotNull("ae_chief_complaint", "" + complaintCell.getString(),
+                    containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
         //Todo verify CAU_BED_REQUEST_DTTM is same as AssessmentDate
         CsvCell assessmentDateCell = parser.getCauBedRequestDttm();
@@ -459,10 +467,11 @@ public class AndEAttendanceTransformer {
             existingEncounterList.addReference(childAssessmentRef);
 
             //add in additional extended data as Parameters resource with additional extension
-            ContainedParametersBuilder containedParametersBuilderAss
-                    = new ContainedParametersBuilder(assessmentEncounterBuilder);
-            containedParametersBuilderAss.removeContainedParameters();
-
+//            ContainedParametersBuilder containedParametersBuilderAss
+//                    = new ContainedParametersBuilder(assessmentEncounterBuilder);
+//            containedParametersBuilderAss.removeContainedParameters();
+//TODO  Why is containedParametersBuilderAss created but not used? Commented out.
+            // Latest spec for assessment does not have fields supplied by this file.
             Date aeAssessmentEndDate
                     = ObjectUtils.firstNonNull(invAndTreatmentsDateCell.getDateTime(), arrivalDateCell.getDateTime(), conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
             if (aeAssessmentEndDate != null) {
@@ -545,7 +554,12 @@ public class AndEAttendanceTransformer {
 
             CsvCell dischargeDestinationCell = parser.getDischargeDestination();
             if (!dischargeDestinationCell.isEmpty()) {
-                containedParametersBuilderArrival.addParameter("ae_discharge_destination", "" + dischargeDestinationCell.getString());
+                //add in additional extended data as Parameters resource with additional extension
+            ContainedParametersBuilder containedParametersBuilderDischarge
+                    = new ContainedParametersBuilder(assessmentEncounterBuilder);
+            containedParametersBuilderDischarge.removeContainedParameters();
+                csvHelper.addParmIfNotNull("ae_discharge_destination", "" + dischargeDestinationCell.getString(),
+                        containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
             }
 
             Date aeDischargeEndDate
