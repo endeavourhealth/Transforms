@@ -30,6 +30,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedParameters
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -874,7 +875,10 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                 tablename,
                 column
         );
-        MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
+        MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+//        MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+
         return propertyResponse;
     }
 
@@ -887,7 +891,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                 column,
                 cause
         );
-        MapResponse valueResponse = IMClient.getMapPropertyValue(request);
+        MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(request);
         return valueResponse;
     }
 
