@@ -12,7 +12,6 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingInpatientCdsTarget;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.mapping.MapColumnRequest;
 import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
 import org.endeavourhealth.im.models.mapping.MapResponse;
@@ -21,6 +20,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -638,13 +638,13 @@ public class InpatientCdsTargetTransformer {
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "administrative_category_code"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "administrative_category_code", adminCategoryCode,"CM_NHS_DD"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -659,13 +659,13 @@ public class InpatientCdsTargetTransformer {
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "admission_method_code"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "admission_method_code", admissionMethodCode,"CM_NHS_DD"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -680,13 +680,13 @@ public class InpatientCdsTargetTransformer {
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "admission_source_code"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "admission_source_code", admissionSourceCode,"CM_NHS_DD"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -701,13 +701,13 @@ public class InpatientCdsTargetTransformer {
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "patient_classification"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "patient_classification", patientClassification,"CM_NHS_DD"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -722,21 +722,19 @@ public class InpatientCdsTargetTransformer {
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "treatment_function_code"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "treatment_function_code", treatmentFunctionCode,"BartsCerner"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                     .setSystem(valueResponse.getConcept().getScheme());
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
-
-        //NOTE: diagnosis and procedure data is already processed via proc and diag CDS transforms
     }
 
     private static void setDischargeContainedParameters(EncounterBuilder encounterBuilder,
@@ -752,13 +750,13 @@ public class InpatientCdsTargetTransformer {
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "discharge_method"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "discharge_method", dischargeMethodCode,"CM_NHS_DD"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -773,13 +771,13 @@ public class InpatientCdsTargetTransformer {
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "discharge_destination_code"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
                     "discharge_destination_code", dischargeDestinationCode,"CM_NHS_DD"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())

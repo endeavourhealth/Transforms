@@ -3,6 +3,9 @@ package org.endeavourhealth.transform.subscriber;
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.TransformConfig;
 import org.hl7.fhir.instance.model.Resource;
@@ -33,6 +36,12 @@ public class IMHelper {
 
     private static Map<String, String> mappedLegacyCodeForLegacyCodeAndTermCache = new ConcurrentHashMap<>();
     private static Set<String> nullMappedLegacyCodeForLegacyCodeAndTermCache = ConcurrentHashMap.newKeySet();
+
+    private static Map<MapColumnRequest, MapResponse> mappedColumnRequestResponseCache = new ConcurrentHashMap<>();
+    private static Set<MapColumnRequest> nullMappedColumnRequestResponseCache = ConcurrentHashMap.newKeySet();
+
+    private static Map<MapColumnValueRequest, MapResponse> mappedColumnValueRequestResponseCache = new ConcurrentHashMap<>();
+    private static Set<MapColumnValueRequest> nullMappedColumnValueRequestResponseCache = ConcurrentHashMap.newKeySet();
 
     private static final ReentrantLock lock = new ReentrantLock();
 
@@ -448,5 +457,53 @@ public class IMHelper {
 
     private static String createCacheKey(String scheme, String code) {
         return scheme + ":" + code;
+    }
+
+    /*
+        Returns a MapResponse for a valid MapColumnRequest, either from the DB or previously cached
+     */
+    public static MapResponse getIMMappedPropertyResponse (MapColumnRequest propertyRequest) throws Exception {
+
+        //check cache first
+        MapResponse ret = mappedColumnRequestResponseCache.get(propertyRequest);
+        if (ret != null
+                || nullMappedColumnRequestResponseCache.contains(propertyRequest)) {
+            return ret;
+        }
+        //then try the API
+        ret = IMClient.getMapProperty(propertyRequest);
+
+        //store in the cache
+        if (ret == null) {
+            nullMappedColumnRequestResponseCache.add (propertyRequest);
+        } else {
+            mappedColumnRequestResponseCache.put(propertyRequest, ret);
+        }
+
+        return ret;
+    }
+
+    /*
+        Returns a MapResponse for a valid MapColumnValueRequest, either from the DB or previously cached
+     */
+    public static MapResponse getIMMappedPropertyValueResponse (MapColumnValueRequest valueRequest) throws Exception {
+
+        //check cache first
+        MapResponse ret = mappedColumnValueRequestResponseCache.get(valueRequest);
+        if (ret != null
+                || nullMappedColumnValueRequestResponseCache.contains(valueRequest)) {
+            return ret;
+        }
+        //then try the API
+        ret = IMClient.getMapPropertyValue(valueRequest);
+
+        //store in the cache
+        if (ret == null) {
+            nullMappedColumnValueRequestResponseCache.add (valueRequest);
+        } else {
+            mappedColumnValueRequestResponseCache.put(valueRequest, ret);
+        }
+
+        return ret;
     }
 }

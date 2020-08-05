@@ -15,7 +15,6 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingEmergencyCdsTarget;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.mapping.MapColumnRequest;
 import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
 import org.endeavourhealth.im.models.mapping.MapResponse;
@@ -24,6 +23,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -209,18 +209,6 @@ public class EmergencyCdsTargetTransformer {
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAssessmentRef, csvHelper);
             }
             existingEncounterList.addReference(childAssessmentRef);
-
-            //add in additional extended data as Parameters resource with additional extension
-            //TODO:  Check on live that safeguearding concerns Snomed examples are filed verses additional
-//            ContainedParametersBuilder containedParametersBuilderAss
-//                    = new ContainedParametersBuilder(assessmentEncounterBuilder);
-//            containedParametersBuilderAss.removeContainedParameters();
-//
-//            String safeGuardingConcerns = targetEmergencyCds.getSafeguardingConcerns();
-//            if (!Strings.isNullOrEmpty(safeGuardingConcerns)) {
-//
-//                //containedParametersBuilderAss.addParameter("safe_guarding_concerns", "" + safeGuardingConcerns);
-//            }
 
             Date aeAssessmentEndDate
                     = ObjectUtils.firstNonNull(invAndTreatmentsDate, admitDate, conclusionDate, departureDate);
@@ -583,7 +571,7 @@ public class EmergencyCdsTargetTransformer {
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
 
-        //we want to delete HL7 Emergency Encounters more than 24 hours older than the extract data date
+        //we want to delete HL7 Emergency Encounters more than 12 hours older than the extract data date
         Date extractDateTime = fhirResourceFiler.getDataDate();
         Date cutoff = new Date(extractDateTime.getTime() - (12 * 60 * 60 * 1000));
 
@@ -683,13 +671,13 @@ public class EmergencyCdsTargetTransformer {
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "attendance_category"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "attendance_category", aeAttendanceCategoryCode, "CM_NHS_DD"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -704,7 +692,7 @@ public class EmergencyCdsTargetTransformer {
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "attendance_source"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(aeAttendanceSource)
@@ -719,13 +707,13 @@ public class EmergencyCdsTargetTransformer {
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "department_type"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "department_type", aeDepartmentType, "CM_NHS_DD"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -740,7 +728,7 @@ public class EmergencyCdsTargetTransformer {
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "arrival_mode"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(aeArrivalMode)
@@ -755,13 +743,13 @@ public class EmergencyCdsTargetTransformer {
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "treatment_function_code"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "treatment_function_code", treatmentFunctionCode, "BartsCerner"
             );
-            MapResponse valueResponse = IMClient.getMapPropertyValue(valueRequest);
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -783,7 +771,7 @@ public class EmergencyCdsTargetTransformer {
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "discharge_destination"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(dischargeDestinationCode)
@@ -791,7 +779,6 @@ public class EmergencyCdsTargetTransformer {
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
-        //TODO: These might not be IM mapped yet, so check auto create
         String dischargeStatusCode = targetEmergencyCds.getDischargeStatus();
         if (!Strings.isNullOrEmpty(dischargeStatusCode)) {
 
@@ -799,7 +786,7 @@ public class EmergencyCdsTargetTransformer {
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "discharge_status"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(dischargeStatusCode)
@@ -814,7 +801,7 @@ public class EmergencyCdsTargetTransformer {
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
                     "follow_up"
             );
-            MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(dischargeFollowUp)
