@@ -248,7 +248,9 @@ public class PMITransformer {
             nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
             nameBuilder.addGiven(givenName.getString(), givenName);
             nameBuilder.addFamily(surname.getString(), surname);
-            NameBuilder.deDuplicateLastName(patientBuilder,fhirResourceFiler.getDataDate());
+            if (patientBuilder.getNames().size()>1) {
+                NameBuilder.deDuplicateLastName(patientBuilder, fhirResourceFiler.getDataDate());
+            }
         }
     }
 
