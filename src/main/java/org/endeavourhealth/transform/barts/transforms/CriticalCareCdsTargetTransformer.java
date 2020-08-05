@@ -13,6 +13,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -207,7 +208,7 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "care_unit_function", careUnitFunction,"CM_NHS_DD"
+                    "care_unit_function", careUnitFunction, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -228,7 +229,7 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "admission_source_code", admissionSourceCode,"CM_NHS_DD"
+                    "admission_source_code", admissionSourceCode,IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -248,7 +249,7 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "critical_care_type", criticalCareTypeId,"BartsCerner"
+                    "critical_care_type", criticalCareTypeId,IMConstant.BARTS_CERNER
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -269,7 +270,7 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "admission_type_code", admissionTypeCode,"CM_NHS_DD"
+                    "admission_type_code", admissionTypeCode,IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -290,7 +291,7 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "admission_location", admissionLocationCode,"CM_NHS_DD"
+                    "admission_location", admissionLocationCode,IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -311,7 +312,7 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "discharge_status_code", dischargeStatusCode,"CM_NHS_DD"
+                    "discharge_status_code", dischargeStatusCode,IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -332,7 +333,7 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "discharge_destination", dischargeDestinationCode,"CM_NHS_DD"
+                    "discharge_destination", dischargeDestinationCode,IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -353,7 +354,7 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "discharge_location", dischargeLocationCode,"CM_NHS_DD"
+                    "discharge_location", dischargeLocationCode,IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 

@@ -20,6 +20,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -494,7 +495,7 @@ public class OutpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
-                    "administrative_category_code", adminCategoryCode,"CM_NHS_DD"
+                    "administrative_category_code", adminCategoryCode, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -515,7 +516,7 @@ public class OutpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
-                    "referral_source", referralSourceId,"CM_NHS_DD"
+                    "referral_source", referralSourceId, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -536,7 +537,7 @@ public class OutpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
-                    "appt_attended_code", apptAttendedCode,"CM_NHS_DD"
+                    "appt_attended_code", apptAttendedCode, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -557,7 +558,7 @@ public class OutpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
-                    "appt_outcome_code", apptOutcomeCode,"CM_NHS_DD"
+                    "appt_outcome_code", apptOutcomeCode, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -568,7 +569,7 @@ public class OutpatientCdsTargetTransformer {
         }
 
         String treatmentFunctionCode = targetOutpatientCds.getTreatmentFunctionCode();
-        if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
+        if (!Strings.isNullOrEmpty(treatmentFunctionCode) && !treatmentFunctionCode.equals("0")) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
@@ -578,7 +579,7 @@ public class OutpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","outpatient",
-                    "treatment_function_code", treatmentFunctionCode,"BartsCerner"
+                    "treatment_function_code", treatmentFunctionCode,IMConstant.BARTS_CERNER
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 

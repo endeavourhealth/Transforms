@@ -23,6 +23,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -675,7 +676,7 @@ public class EmergencyCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
-                    "attendance_category", aeAttendanceCategoryCode, "CM_NHS_DD"
+                    "attendance_category", aeAttendanceCategoryCode, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -696,7 +697,7 @@ public class EmergencyCdsTargetTransformer {
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(aeAttendanceSource)
-                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    .setSystem(IMConstant.SNOMED);
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
@@ -711,7 +712,7 @@ public class EmergencyCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
-                    "department_type", aeDepartmentType, "CM_NHS_DD"
+                    "department_type", aeDepartmentType, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -732,12 +733,12 @@ public class EmergencyCdsTargetTransformer {
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(aeArrivalMode)
-                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    .setSystem(IMConstant.SNOMED);
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         String treatmentFunctionCode = targetEmergencyCds.getTreatmentFunctionCode();
-        if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
+        if (!Strings.isNullOrEmpty(treatmentFunctionCode) && !treatmentFunctionCode.equals("0")) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
@@ -747,7 +748,7 @@ public class EmergencyCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
-                    "treatment_function_code", treatmentFunctionCode, "BartsCerner"
+                    "treatment_function_code", treatmentFunctionCode, IMConstant.BARTS_CERNER
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -775,7 +776,7 @@ public class EmergencyCdsTargetTransformer {
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(dischargeDestinationCode)
-                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    .setSystem(IMConstant.SNOMED);
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
@@ -790,7 +791,7 @@ public class EmergencyCdsTargetTransformer {
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(dischargeStatusCode)
-                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    .setSystem(IMConstant.SNOMED);
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
@@ -805,7 +806,7 @@ public class EmergencyCdsTargetTransformer {
 
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(dischargeFollowUp)
-                    .setSystem(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    .setSystem(IMConstant.SNOMED);
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
     }
