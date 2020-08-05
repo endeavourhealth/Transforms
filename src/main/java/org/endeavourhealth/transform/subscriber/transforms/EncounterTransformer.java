@@ -301,7 +301,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
                             //these values are from IM API mapping
                             String propertyCode = parameter.getName();
-                            String propertyScheme = "CM_DiscoveryCode";
+                            String propertyScheme = IMConstant.DISCOVERY_CODE;
 
                             CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
                             String valueCode = parameterValue.getCoding().get(0).getCode();

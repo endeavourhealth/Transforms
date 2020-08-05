@@ -9,6 +9,8 @@ public class IMConstant {
     public static final String CTV3 = "CTV3";
     public static final String ICD10 = "ICD10";
     public static final String OPCS4 = "OPCS4";
+    public static final String DISCOVERY_CODE = "CM_DiscoveryCode";
+    public static final String NHS_DATA_DICTIONARY = "CM_NHS_DD";
     public static final String FHIR_ADMINISTRATIVE_GENDER = "FHIR_AG";
     public static final String FHIR_ETHNIC_CATEGORY = "FHIR_EC";
     public static final String FHIR_REGISTRATION_TYPE = "FHIR_RT";

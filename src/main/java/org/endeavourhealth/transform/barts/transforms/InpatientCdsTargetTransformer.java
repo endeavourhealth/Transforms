@@ -20,6 +20,7 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -642,7 +643,7 @@ public class InpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
-                    "administrative_category_code", adminCategoryCode,"CM_NHS_DD"
+                    "administrative_category_code", adminCategoryCode, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -663,7 +664,7 @@ public class InpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
-                    "admission_method_code", admissionMethodCode,"CM_NHS_DD"
+                    "admission_method_code", admissionMethodCode, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -684,7 +685,7 @@ public class InpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
-                    "admission_source_code", admissionSourceCode,"CM_NHS_DD"
+                    "admission_source_code", admissionSourceCode, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -705,7 +706,7 @@ public class InpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
-                    "patient_classification", patientClassification,"CM_NHS_DD"
+                    "patient_classification", patientClassification, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -716,7 +717,7 @@ public class InpatientCdsTargetTransformer {
         }
 
         String treatmentFunctionCode = targetInpatientCds.getTreatmentFunctionCode();
-        if (!Strings.isNullOrEmpty(treatmentFunctionCode)) {
+        if (!Strings.isNullOrEmpty(treatmentFunctionCode) && !treatmentFunctionCode.equals("0")) {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
@@ -726,7 +727,7 @@ public class InpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
-                    "treatment_function_code", treatmentFunctionCode,"BartsCerner"
+                    "treatment_function_code", treatmentFunctionCode, IMConstant.BARTS_CERNER
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -754,7 +755,7 @@ public class InpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
-                    "discharge_method", dischargeMethodCode,"CM_NHS_DD"
+                    "discharge_method", dischargeMethodCode, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -775,7 +776,7 @@ public class InpatientCdsTargetTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","inpatient",
-                    "discharge_destination_code", dischargeDestinationCode,"CM_NHS_DD"
+                    "discharge_destination_code", dischargeDestinationCode, IMConstant.NHS_DATA_DICTIONARY
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
