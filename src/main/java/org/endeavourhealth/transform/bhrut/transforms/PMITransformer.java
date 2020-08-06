@@ -232,7 +232,9 @@ public class PMITransformer {
             identifierBuilder.setUse(use);
             identifierBuilder.setSystem(system);
             identifierBuilder.setValue(cell.getString(), cell);
-            IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, fhirResourceFiler.getDataDate());
+            if (patientBuilder.getIdentifiers().size()>1) {
+                IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, fhirResourceFiler.getDataDate());
+            }
         }
     }
 
@@ -248,7 +250,9 @@ public class PMITransformer {
             nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
             nameBuilder.addGiven(givenName.getString(), givenName);
             nameBuilder.addFamily(surname.getString(), surname);
-            NameBuilder.deDuplicateLastName(patientBuilder,fhirResourceFiler.getDataDate());
+            if (patientBuilder.getNames().size()>1) {
+                NameBuilder.deDuplicateLastName(patientBuilder, fhirResourceFiler.getDataDate());
+            }
         }
     }
 
@@ -261,11 +265,16 @@ public class PMITransformer {
         CsvCell county = csvHelper.handleQuote(parser.getAddress5());
         CsvCell postcode = csvHelper.handleQuote(parser.getPostcode());
 
+        for (Address address : patientBuilder.getAddresses()) {
+            if (address.hasUse()) {
+                if (address.getUse().equals(Address.AddressUse.HOME)) {
+                    patientBuilder.removeAddress(address);
+                }
+            }
+        }
+
         if (!houseNameFlat.isEmpty()
                 || !numberAndStreet.isEmpty()
-                || !village.isEmpty()
-                || !town.isEmpty()
-                || !county.isEmpty()
                 || !postcode.isEmpty()) {
 
             AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
@@ -285,13 +294,16 @@ public class PMITransformer {
                                       ContactPoint.ContactPointUse use, ContactPoint.ContactPointSystem system) throws Exception {
 
         if (!cell.isEmpty()) {
-
+            for (ContactPoint cp :patientBuilder.getContactPoint()) {
+                if  (cell.getString().equalsIgnoreCase(cp.getValue())) {
+                    return;
+                }
+            }
             ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
             contactPointBuilder.setUse(use);
             contactPointBuilder.setSystem(system);
             contactPointBuilder.setValue(cell.getString(), cell);
-            ContactPointBuilder.deDuplicateLastContactPoint(patientBuilder, fhirResourceFiler.getDataDate());
-        }
+            }
     }
 
     /**
