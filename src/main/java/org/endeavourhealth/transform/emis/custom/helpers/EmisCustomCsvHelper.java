@@ -92,10 +92,10 @@ public class EmisCustomCsvHelper {
             return o1.compareTo(o2);
         });
 
-        LOG.trace("Sorted reg status for " + patientGuidStr);
+        /*LOG.trace("Sorted reg status for " + patientGuidStr);
         for (RegStatusObj status: regStatusList) {
             LOG.trace("" + status);
-        }
+        }*/
 
         //We're sent the full reg status history, but the regular extract only contains current reg details, so we have missing history.
         //We can use the past reg status records to infer previous registrations
@@ -109,10 +109,10 @@ public class EmisCustomCsvHelper {
             return d1.compareTo(d2);
         });
 
-        LOG.trace("Sorted episodes for " + patientGuidStr);
+        /*LOG.trace("Sorted episodes for " + patientGuidStr);
         for (EpisodeOfCareBuilder builder: builders) {
             LOG.trace("" + builder);
-        }
+        }*/
 
         //clear down any reg statuses on each episode, since each time we get this file, it's a complete replacement
         Map<EpisodeOfCareBuilder, ContainedListBuilder> hmListBuilders = new HashMap<>();
