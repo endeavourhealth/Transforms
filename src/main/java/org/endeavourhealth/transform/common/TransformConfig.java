@@ -95,7 +95,7 @@ public class TransformConfig {
             LOG.error("", ex);
         }
 
-        LOG.debug("resourceSaveBatchSize = " + resourceSaveBatchSize);
+        //LOG.debug("resourceSaveBatchSize = " + resourceSaveBatchSize);
     }
 
     private void loadCernerConfig(JsonNode json) {
