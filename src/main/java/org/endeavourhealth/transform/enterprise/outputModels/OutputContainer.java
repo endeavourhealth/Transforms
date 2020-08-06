@@ -50,7 +50,7 @@ public class OutputContainer {
         csvWriters.add(new MedicationStatement("medication_statement.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationOrder("medication_order.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new AllergyIntolerance("allergy_intolerance.csv", csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new LinkDistributor("link_distributor.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAddressMatch("patient_address_match.csv", csvFormat, dateFormat, timeFormat, pseduonymised));
         csvWriters.add(new PatientAddress("patient_address.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientContact("patient_contact.csv", csvFormat, dateFormat, timeFormat));
@@ -239,9 +239,9 @@ public class OutputContainer {
         return findCsvWriter(AllergyIntolerance.class);
     }
 
-    public LinkDistributor getLinkDistributors() {
+    /*public LinkDistributor getLinkDistributors() {
         return findCsvWriter(LinkDistributor.class);
-    }
+    }*/
 
     public PatientAddress getPatientAddresses() {
         return findCsvWriter(PatientAddress.class);

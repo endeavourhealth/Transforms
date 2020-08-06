@@ -15,7 +15,7 @@ public enum SubscriberTableId {
     ORGANIZATION((byte)12, "organization"),
     PRACTITIONER((byte)13, "practitioner"),
     PROCEDURE_REQUEST((byte)14, "procedure_request"),
-    PSEUDO_ID((byte)15, "pseudo_id"), //superseded by PATIENT_PSEUDO_ID
+    PSEUDO_ID((byte)15, "pseudo_id"), //not used any more - superseded by PATIENT_PSEUDO_ID
     REFERRAL_REQUEST((byte)16, "referral_request"),
     SCHEDULE((byte)17, "schedule"),
     APPOINTMENT((byte)18, "appointment"),

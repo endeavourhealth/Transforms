@@ -210,7 +210,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         org.endeavourhealth.transform.enterprise.outputModels.Patient patientWriter = (org.endeavourhealth.transform.enterprise.outputModels.Patient) csvWriter;
-        org.endeavourhealth.transform.enterprise.outputModels.LinkDistributor linkDistributorWriter = params.getOutputContainer().getLinkDistributors();
+        //org.endeavourhealth.transform.enterprise.outputModels.LinkDistributor linkDistributorWriter = params.getOutputContainer().getLinkDistributors();
 
         if (!params.isPseudonymised()) {
             title = NameHelper.findPrefix(fhirPatient);
@@ -233,7 +233,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                 LOG.trace("Generating enteprrise pseudo ID using salt " + mainPseudoSalt.getSaltKeyName());
                 pseudoId = pseudonymiseUsingConfig(params, fhirPatient, id, mainPseudoSalt, true);
 
-                if (pseudoId != null) {
+                /*if (pseudoId != null) {
 
                     //generate any other pseudo mappings - the table uses the main pseudo ID as the source key, so this
                     //can only be done if we've successfully generated a main pseudo ID
@@ -246,7 +246,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                                 targetSaltKeyName,
                                 targetSkid);
                     }
-                }
+                }*/
             }
 
 

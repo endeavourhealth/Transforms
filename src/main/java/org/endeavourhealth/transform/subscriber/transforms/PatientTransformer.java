@@ -77,7 +77,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             patientWriter.writeDelete(subscriberId);
 
             //delete any dependent pseudo ID records
-            deletePseudoIdsOldWay(resourceWrapper, params);
+            //deletePseudoIdsOldWay(resourceWrapper, params);
             deletePseudoIdsNewWay(resourceWrapper, params);
 
             //we'll need a previous instance to delete any dependent addresses and telecoms
@@ -119,7 +119,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         //transform our dependent objects first, as we need the address ID
         transformPseudoIdsNewWay(organizationId, subscriberId.getSubscriberId(), personId, fhirPatient, resourceWrapper, params);
-        transformPseudoIdsOldWay(subscriberId.getSubscriberId(), personId, fhirPatient, resourceWrapper, params);
+        //transformPseudoIdsOldWay(subscriberId.getSubscriberId(), personId, fhirPatient, resourceWrapper, params);
 
         currentAddressId = transformAddresses(subscriberId.getSubscriberId(), personId, fhirPatient, fullHistory, resourceWrapper, params);
         transformTelecoms(subscriberId.getSubscriberId(), personId, fhirPatient, fullHistory, resourceWrapper, params);
@@ -777,7 +777,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void deletePseudoIdsOldWay(ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
+    /*private void deletePseudoIdsOldWay(ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
@@ -795,7 +795,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-    }
+    }*/
 
     public void transformPseudoIdsNewWay(long organizationId, long subscriberPatientId, long personId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
@@ -845,7 +845,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void transformPseudoIdsOldWay(long subscriberPatientId, long subscriberPersonId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
+    /*private void transformPseudoIdsOldWay(long subscriberPatientId, long subscriberPersonId, Patient fhirPatient, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.PseudoId pseudoIdWriter = params.getOutputContainer().getPseudoIds();
 
@@ -878,7 +878,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
             }
         }
-    }
+    }*/
 
     @Override
     protected SubscriberTableId getMainSubscriberTableId() {

@@ -50,7 +50,7 @@ public class OutputContainer {
         csvWriters.add(new MedicationStatement(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationOrder(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new AllergyIntolerance(csvFormat, dateFormat, timeFormat));
-        csvWriters.add(new PseudoId(csvFormat, dateFormat, timeFormat));
+        //csvWriters.add(new PseudoId(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientContact(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAddress(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new DiagnosticOrder(csvFormat, dateFormat, timeFormat));
@@ -229,9 +229,9 @@ public class OutputContainer {
         return findCsvWriter(AllergyIntolerance.class);
     }
 
-    public PseudoId getPseudoIds() {
+    /*public PseudoId getPseudoIds() {
         return findCsvWriter(PseudoId.class);
-    }
+    }*/
 
     public PatientContact getPatientContacts() {
         return findCsvWriter(PatientContact.class);
