@@ -37,11 +37,11 @@ public class IMHelper {
     private static Map<String, String> mappedLegacyCodeForLegacyCodeAndTermCache = new ConcurrentHashMap<>();
     private static Set<String> nullMappedLegacyCodeForLegacyCodeAndTermCache = ConcurrentHashMap.newKeySet();
 
-    private static Map<MapColumnRequest, MapResponse> mappedColumnRequestResponseCache = new ConcurrentHashMap<>();
-    private static Set<MapColumnRequest> nullMappedColumnRequestResponseCache = ConcurrentHashMap.newKeySet();
+    private static Map<String, MapResponse> mappedColumnRequestResponseCache = new ConcurrentHashMap<>();
+    private static Set<String> nullMappedColumnRequestResponseCache = ConcurrentHashMap.newKeySet();
 
-    private static Map<MapColumnValueRequest, MapResponse> mappedColumnValueRequestResponseCache = new ConcurrentHashMap<>();
-    private static Set<MapColumnValueRequest> nullMappedColumnValueRequestResponseCache = ConcurrentHashMap.newKeySet();
+    private static Map<String, MapResponse> mappedColumnValueRequestResponseCache = new ConcurrentHashMap<>();
+    private static Set<String> nullMappedColumnValueRequestResponseCache = ConcurrentHashMap.newKeySet();
 
     private static final ReentrantLock lock = new ReentrantLock();
 
@@ -459,25 +459,37 @@ public class IMHelper {
         return scheme + ":" + code;
     }
 
+    private static String createMapColumnCacheKey(MapColumnRequest propertyRequest) {
+        return propertyRequest.getProvider()+":"+propertyRequest.getSystem()+":"+propertyRequest.getSchema()+":"
+                +propertyRequest.getTable()+":"+propertyRequest.getColumn();
+    }
+
+    private static String createMapColumnValueCacheKey(MapColumnValueRequest valueRequest) {
+        return valueRequest.getProvider()+":"+valueRequest.getSystem()+":"+valueRequest.getSchema()+":"
+                +valueRequest.getTable()+":"+valueRequest.getColumn()+":"
+                +valueRequest.getValue().getCode()+":"
+                +valueRequest.getValue().getScheme();
+    }
+
     /*
         Returns a MapResponse for a valid MapColumnRequest, either from the DB or previously cached
      */
     public static MapResponse getIMMappedPropertyResponse (MapColumnRequest propertyRequest) throws Exception {
 
         //check cache first
-        MapResponse ret = mappedColumnRequestResponseCache.get(propertyRequest);
+        String mapColumnCacheKey = createMapColumnCacheKey (propertyRequest);
+        MapResponse ret = mappedColumnRequestResponseCache.get(mapColumnCacheKey);
         if (ret != null
-                || nullMappedColumnRequestResponseCache.contains(propertyRequest)) {
+                || nullMappedColumnRequestResponseCache.contains(mapColumnCacheKey)) {
             return ret;
         }
         //then try the API
         ret = IMClient.getMapProperty(propertyRequest);
-
-        //store in the cache
+        //store in the cache using the cache key and response
         if (ret == null) {
-            nullMappedColumnRequestResponseCache.add (propertyRequest);
+            nullMappedColumnRequestResponseCache.add (mapColumnCacheKey);
         } else {
-            mappedColumnRequestResponseCache.put(propertyRequest, ret);
+            mappedColumnRequestResponseCache.put(mapColumnCacheKey, ret);
         }
 
         return ret;
@@ -489,19 +501,20 @@ public class IMHelper {
     public static MapResponse getIMMappedPropertyValueResponse (MapColumnValueRequest valueRequest) throws Exception {
 
         //check cache first
-        MapResponse ret = mappedColumnValueRequestResponseCache.get(valueRequest);
+        String mapColumnValueCacheKey = createMapColumnValueCacheKey (valueRequest);
+        MapResponse ret = mappedColumnValueRequestResponseCache.get(mapColumnValueCacheKey);
         if (ret != null
-                || nullMappedColumnValueRequestResponseCache.contains(valueRequest)) {
+                || nullMappedColumnValueRequestResponseCache.contains(mapColumnValueCacheKey)) {
             return ret;
         }
         //then try the API
         ret = IMClient.getMapPropertyValue(valueRequest);
 
-        //store in the cache
+        //store in the cache using the cache key and response
         if (ret == null) {
-            nullMappedColumnValueRequestResponseCache.add (valueRequest);
+            nullMappedColumnValueRequestResponseCache.add (mapColumnValueCacheKey);
         } else {
-            mappedColumnValueRequestResponseCache.put(valueRequest, ret);
+            mappedColumnValueRequestResponseCache.put(mapColumnValueCacheKey, ret);
         }
 
         return ret;

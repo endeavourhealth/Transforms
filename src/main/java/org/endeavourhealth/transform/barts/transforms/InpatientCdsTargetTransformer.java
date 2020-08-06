@@ -361,11 +361,6 @@ public class InpatientCdsTargetTransformer {
 //            containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCode);
 //        }
 
-        //TODO:  procedures associated with episode encounters - already in via specific transforms?
-        // targetInpatientCds.getPrimaryProcedureOPCS());
-        // targetInpatientCds.getSecondaryProcedureOPCS());
-        // targetInpatientCds.getOtherProceduresOPCS());
-
         //TODO: mothers NHS number linking from birth records at subscriber
 //        String maternityBirth = targetInpatientCds.getMaternityDataBirth();
 //        //the encounter is about the baby and contains the mothers nhs number
