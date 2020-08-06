@@ -233,7 +233,7 @@ public class PMITransformer {
             identifierBuilder.setSystem(system);
             identifierBuilder.setValue(cell.getString(), cell);
             if (patientBuilder.getIdentifiers().size()>1) {
-                IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, fhirResourceFiler.getDataDate());
+            //    IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, fhirResourceFiler.getDataDate());
             }
         }
     }
@@ -250,9 +250,9 @@ public class PMITransformer {
             nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
             nameBuilder.addGiven(givenName.getString(), givenName);
             nameBuilder.addFamily(surname.getString(), surname);
-            if (patientBuilder.getNames().size()>1) {
-                NameBuilder.deDuplicateLastName(patientBuilder, fhirResourceFiler.getDataDate());
-            }
+//            if (patientBuilder.getNames().size()>1) {
+//                NameBuilder.deDuplicateLastName(patientBuilder, fhirResourceFiler.getDataDate());
+//            }
         }
     }
 
@@ -285,7 +285,7 @@ public class PMITransformer {
             addressBuilder.setCity(town.getString(), town);
             addressBuilder.setDistrict(county.getString(), county);
             addressBuilder.setPostcode(postcode.getString(), postcode);
-            AddressBuilder.deDuplicateLastAddress(patientBuilder, fhirResourceFiler.getDataDate());
+          //  AddressBuilder.deDuplicateLastAddress(patientBuilder, fhirResourceFiler.getDataDate());
 
         }
     }
