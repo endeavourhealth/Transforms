@@ -29,6 +29,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class EmergencyCdsTargetTransformer {
@@ -103,7 +104,7 @@ public class EmergencyCdsTargetTransformer {
                 }
                 //now process and linked clinical event data
                 fhirResourceFiler.waitUntilEverythingIsSaved();
-                createEmergencyCdsEncounterClinicalEvents(targetEmergencyCds, fhirResourceFiler);
+                createEmergencyCdsEncounterClinicalEvents(targetEmergencyCds, fhirResourceFiler, csvHelper);
 
                 //now delete any older HL7 Encounters for patients we've updated
                 //but waiting until everything has been saved to the DB first
@@ -813,17 +814,23 @@ public class EmergencyCdsTargetTransformer {
 
     /*
         The EmergencyCDS dataset contains clinical events which are not handled in other transforms so
-        need filing as part of this data transformation
+        need filing as part of this data transformation.  They include:
+            - Chief complaint  -> problem Condition
+            - Diagnosis -> diagnosis Condition
+            - Investigations (non result) -> Observation
+            - Treatments -> Observation
+            - Safe guarding -> Observation
      */
     private static void createEmergencyCdsEncounterClinicalEvents(StagingEmergencyCdsTarget targetEmergencyCds,
-                                                                  FhirResourceFiler fhirResourceFiler) throws Exception {
+                                                                  FhirResourceFiler fhirResourceFiler,
+                                                                  BartsCsvHelper csvHelper) throws Exception {
 
         //Chief complaint is a Snomed coded problem type condition resource
         String chiefComplaint = targetEmergencyCds.getChiefComplaint();
         if (!Strings.isNullOrEmpty(chiefComplaint)) {
 
-            //create the id using the uniqueId for the encounter plus text
-            String uniqueId = targetEmergencyCds.getUniqueId()+"chief_complaint";
+            //create the id using the uniqueId for the encounter complaint plus count text
+            String uniqueId = targetEmergencyCds.getUniqueId() + "chief_complaint";
 
             // create the FHIR Condition resource
             ConditionBuilder conditionComplaintBuilder
@@ -831,7 +838,7 @@ public class EmergencyCdsTargetTransformer {
             conditionComplaintBuilder.setId(uniqueId);
 
             //arrival date at A&E
-            if (targetEmergencyCds.getDtArrival()!= null) {
+            if (targetEmergencyCds.getDtArrival() != null) {
 
                 DateTimeType conditionDateTime = new DateTimeType(targetEmergencyCds.getDtArrival());
                 conditionComplaintBuilder.setOnset(conditionDateTime);
@@ -902,8 +909,8 @@ public class EmergencyCdsTargetTransformer {
 
                 count++;
 
-                //create the id using the uniqueId for the encounter plus text
-                String uniqueId = targetEmergencyCds.getUniqueId()+"diagnosis"+count;
+                //create the id using the uniqueId for the encounter diagnosis plus count text
+                String uniqueId = targetEmergencyCds.getUniqueId() + "diagnosis" + count;
 
                 // create the FHIR Condition resource
                 ConditionBuilder conditionDiagnosisBuilder
@@ -968,7 +975,7 @@ public class EmergencyCdsTargetTransformer {
 
                 //only the code is supplied so perform a lookup to derive the term
                 String diagnosisTerm = TerminologyService.lookupSnomedTerm(diagnosisCode);
-                if (Strings.isNullOrEmpty(diagnosisCode)) {
+                if (Strings.isNullOrEmpty(diagnosisTerm)) {
                     throw new Exception("Failed to find term for Snomed code " + diagnosisCode);
                 }
                 codeableConceptBuilder.setCodingDisplay(diagnosisTerm);
@@ -976,6 +983,211 @@ public class EmergencyCdsTargetTransformer {
 
                 //file the diagnosis condition
                 fhirResourceFiler.savePatientResource(null, conditionDiagnosisBuilder);
+            }
+        }
+
+        //Investigation records are Snomed coded separated by | in the format: date time~code i.e. 20190820 132000~252167001
+        String investigations = targetEmergencyCds.getInvestigations();
+        if (!Strings.isNullOrEmpty(investigations)) {
+
+            String[] invRecords = investigations.split("\\|");
+            int count = 0;
+            for (String invRecord : invRecords) {
+
+                count++;
+
+                ObservationBuilder observationBuilderInv
+                        = new ObservationBuilder(null, targetEmergencyCds.getAudit());
+                //create the id using the uniqueId for the encounter investigation plus count text
+                String uniqueId = targetEmergencyCds.getUniqueId() + "investigation" + count;
+                observationBuilderInv.setId(uniqueId);
+
+                //patient reference
+                int personId = targetEmergencyCds.getPersonId();
+                Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, "" + personId);
+                observationBuilderInv.setPatient(patientReference);
+
+                //encounter reference
+                Integer encounterId = targetEmergencyCds.getEncounterId();
+                if (encounterId != null) {
+                    Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, "" + encounterId);
+                    observationBuilderInv.setEncounter(encounterReference);
+                }
+
+                //each record is in format:  20190820 132000~252167001
+                String[] invRecordDateTimeCode = invRecord.split("~");
+
+                //we always have a performed date, so no null handling required
+                String invDateTime = invRecordDateTimeCode[0];   //20190820 132000
+                Date clinicalDate = new SimpleDateFormat("yyyyMMdd HHmmss").parse(invDateTime);
+                DateTimeType clinicalSignificantDateTime = new DateTimeType(clinicalDate);
+                observationBuilderInv.setEffectiveDate(clinicalSignificantDateTime);
+
+                observationBuilderInv.setStatus(Observation.ObservationStatus.FINAL);
+
+                // performer and recorder
+                Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
+                if (performerPersonnelId != null) {
+                    Reference performerReference
+                            = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
+                    observationBuilderInv.setClinician(performerReference);
+                }
+
+                // coded concept - all codes are Snomed
+                CodeableConceptBuilder codeableConceptBuilder
+                        = new CodeableConceptBuilder(observationBuilderInv, CodeableConceptBuilder.Tag.Observation_Main_Code);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                String invSnomedCode = invRecordDateTimeCode[1];       //Snomed code
+                codeableConceptBuilder.setCodingCode(invSnomedCode);
+
+                //look up the term for the snomed concept
+                String snomedTerm = TerminologyService.lookupSnomedTerm(invSnomedCode);
+                if (Strings.isNullOrEmpty(snomedTerm)) {
+                    throw new Exception("Failed to find term for Snomed code " + invSnomedCode);
+                }
+                codeableConceptBuilder.setCodingDisplay(snomedTerm);
+                codeableConceptBuilder.setText(snomedTerm);
+
+                //save resource
+                fhirResourceFiler.savePatientResource(null, observationBuilderInv);
+            }
+        }
+
+        //Treatment records are Snomed coded separated by | in the format: date time~code i.e. 20190822 003500~182836005
+        String treatments = targetEmergencyCds.getTreatments();
+        if (!Strings.isNullOrEmpty(treatments)) {
+
+            String[] treatmentRecords = treatments.split("\\|");
+            int count = 0;
+            for (String treatmentRecord : treatmentRecords) {
+
+                count++;
+
+                ObservationBuilder observationBuilderTreatment
+                        = new ObservationBuilder(null, targetEmergencyCds.getAudit());
+                //create the id using the uniqueId for the encounter investigation plus count text
+                String uniqueId = targetEmergencyCds.getUniqueId() + "treatment" + count;
+                observationBuilderTreatment.setId(uniqueId);
+
+                //patient reference
+                int personId = targetEmergencyCds.getPersonId();
+                Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, "" + personId);
+                observationBuilderTreatment.setPatient(patientReference);
+
+                //encounter reference
+                Integer encounterId = targetEmergencyCds.getEncounterId();
+                if (encounterId != null) {
+                    Reference encounterReference
+                            = ReferenceHelper.createReference(ResourceType.Encounter, "" + encounterId);
+                    observationBuilderTreatment.setEncounter(encounterReference);
+                }
+
+                //each record is in format:  20190820 132000~252167001
+                String[] treatmentRecordDateTimeCode = treatmentRecord.split("~");
+                String treatmentDateTime = treatmentRecordDateTimeCode[0];   //20190820 132000
+
+                //we always have a performed date, so no null handling required
+                Date clinicalDate = new SimpleDateFormat("yyyyMMdd HHmmss").parse(treatmentDateTime);
+                DateTimeType clinicalSignificantDateTime = new DateTimeType(clinicalDate);
+                observationBuilderTreatment.setEffectiveDate(clinicalSignificantDateTime);
+
+                observationBuilderTreatment.setStatus(Observation.ObservationStatus.FINAL);
+
+                // performer and recorder
+                Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
+                if (performerPersonnelId != null) {
+                    Reference performerReference
+                            = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
+                    observationBuilderTreatment.setClinician(performerReference);
+                }
+
+                // coded concept - all codes are Snomed
+                CodeableConceptBuilder codeableConceptBuilder
+                        = new CodeableConceptBuilder(observationBuilderTreatment, CodeableConceptBuilder.Tag.Observation_Main_Code);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                String treatmentSnomedCode = treatmentRecordDateTimeCode[1];       //Snomed code
+                codeableConceptBuilder.setCodingCode(treatmentSnomedCode);
+
+                //look up the term for the snomed concept
+                String snomedTerm = TerminologyService.lookupSnomedTerm(treatmentSnomedCode);
+                if (Strings.isNullOrEmpty(snomedTerm)) {
+                    throw new Exception("Failed to find term for Snomed code " + treatmentSnomedCode);
+                }
+                codeableConceptBuilder.setCodingDisplay(snomedTerm);
+                codeableConceptBuilder.setText(snomedTerm);
+
+                //save resource
+                fhirResourceFiler.savePatientResource(null, observationBuilderTreatment);
+            }
+        }
+
+        //Safe guarding concerns are Snomed coded separated by |
+        String safeGuardingConcerns = targetEmergencyCds.getSafeguardingConcerns();
+        if (!Strings.isNullOrEmpty(safeGuardingConcerns)) {
+
+            String[] sgRecords = safeGuardingConcerns.split("\\|");
+            int count = 0;
+            for (String sgRecordCode : sgRecords) {
+
+                count++;
+
+                ObservationBuilder observationBuilderSG
+                        = new ObservationBuilder(null, targetEmergencyCds.getAudit());
+                //create the id using the uniqueId for the encounter investigation plus count text
+                String uniqueId = targetEmergencyCds.getUniqueId() + "safeguarding" + count;
+                observationBuilderSG.setId(uniqueId);
+
+                //patient reference
+                int personId = targetEmergencyCds.getPersonId();
+                Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, "" + personId);
+                observationBuilderSG.setPatient(patientReference);
+
+                //encounter reference
+                Integer encounterId = targetEmergencyCds.getEncounterId();
+                if (encounterId != null) {
+                    Reference encounterReference
+                            = ReferenceHelper.createReference(ResourceType.Encounter, "" + encounterId);
+                    observationBuilderSG.setEncounter(encounterReference);
+                }
+
+                //the record entry date and time is the first one of these encounter dates not null
+                Date entryDate
+                        = ObjectUtils.firstNonNull(targetEmergencyCds.getDtInitialAssessment(),
+                                                    targetEmergencyCds.getDtSeenForTreatment(),
+                                                    targetEmergencyCds.getDtDecidedToAdmit(),
+                                                    targetEmergencyCds.getDtArrival());
+                if (entryDate != null) {
+
+                    DateTimeType entryDateTime = new DateTimeType(entryDate);
+                    observationBuilderSG.setEffectiveDate(entryDateTime);
+                }
+
+                observationBuilderSG.setStatus(Observation.ObservationStatus.FINAL);
+
+                // performer and recorder
+                Integer performerPersonnelId = targetEmergencyCds.getPerformerPersonnelId();
+                if (performerPersonnelId != null) {
+                    Reference performerReference
+                            = ReferenceHelper.createReference(ResourceType.Practitioner, String.valueOf(performerPersonnelId));
+                    observationBuilderSG.setClinician(performerReference);
+                }
+
+                // coded concept - all codes are Snomed
+                CodeableConceptBuilder codeableConceptBuilder
+                        = new CodeableConceptBuilder(observationBuilderSG, CodeableConceptBuilder.Tag.Observation_Main_Code);
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                codeableConceptBuilder.setCodingCode(sgRecordCode);
+
+                //look up the term for the snomed concept
+                String snomedTerm = TerminologyService.lookupSnomedTerm(sgRecordCode);
+                if (Strings.isNullOrEmpty(snomedTerm)) {
+                    throw new Exception("Failed to find term for Snomed code " + sgRecordCode);
+                }
+                codeableConceptBuilder.setCodingDisplay(snomedTerm);
+                codeableConceptBuilder.setText(snomedTerm);
+
+                //save resource
+                fhirResourceFiler.savePatientResource(null, observationBuilderSG);
             }
         }
     }
