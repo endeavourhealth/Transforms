@@ -550,8 +550,8 @@ public class InpatientCdsTargetTransformer {
             return;
         }
         String nhsNumber = patientSearch.getNhsNumber();
-        Set<String> serviceIds = new HashSet<>();
-        serviceIds.add(serviceUuid.toString());
+        Set<UUID> serviceIds = new HashSet<>();
+        serviceIds.add(serviceUuid);
         //get the list of patientId values for this service as Map<patientId, serviceId>
         Map<UUID, UUID> patientIdsForService = patientSearchDal.findPatientIdsForNhsNumber(serviceIds, nhsNumber);
         Set<UUID> patientIds = patientIdsForService.keySet();   //get the unique patientId values, >1 where >1 system
