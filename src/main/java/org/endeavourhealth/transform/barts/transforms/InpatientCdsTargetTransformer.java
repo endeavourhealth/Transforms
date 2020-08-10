@@ -468,6 +468,9 @@ public class InpatientCdsTargetTransformer {
         EncounterBuilder existingEncounterBuilder
                 = new EncounterBuilder(existingEncounter, targetInpatientCds.getAudit());
 
+        //this ensures the type is always an Inpatient and handles when an Emergency parent becomes an Inpatient stay
+        existingEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
+
         //set the overall encounter status depending on sub encounter completion
         Date spellStartDate = targetInpatientCds.getDtSpellStart();
         Date dischargeDate = targetInpatientCds.getDtDischarge();

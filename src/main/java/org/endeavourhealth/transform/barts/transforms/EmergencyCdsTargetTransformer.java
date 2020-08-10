@@ -120,7 +120,6 @@ public class EmergencyCdsTargetTransformer {
             } else {
 
                 String uniqueId = targetEmergencyCds.getUniqueId();
-                //throw new Exception("encounter_id missing for Inpatient CDS record: " + uniqueId);
                 LOG.warn("encounter_id missing for Emergency CDS record: " + uniqueId);
             }
         }
