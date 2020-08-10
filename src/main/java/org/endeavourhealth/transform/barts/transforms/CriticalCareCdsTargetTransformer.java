@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import com.google.gson.JsonObject;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
@@ -165,23 +166,6 @@ public class CriticalCareCdsTargetTransformer {
                 identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_CDS_UNIQUE_ID);
                 identifierBuilder.setValue(cdsUniqueId);
             }
-
-            //TODO: loads of very specific critical care type info here
-
-            // targetCriticalCareCds.getGestationLengthAtDelivery());
-            // targetCriticalCareCds.getAdvancedRespiratorySupportDays());
-            // targetCriticalCareCds.getBasicRespiratorySupportsDays());
-            // targetCriticalCareCds.getAdvancedCardiovascularSupportDays());
-            // targetCriticalCareCds.getRenalSupportDays());
-            // targetCriticalCareCds.getNeurologicalSupportDays());
-            // targetCriticalCareCds.getGastroIntestinalSupportDays());
-            // targetCriticalCareCds.getDermatologicalSupportDays());
-            // targetCriticalCareCds.getLiverSupportDays());
-            // targetCriticalCareCds.getOrganSupportMaximum());
-            // targetCriticalCareCds.getCriticalCareLevel2Days());
-            // targetCriticalCareCds.getCriticalCareLevel3Days());
-            // targetCriticalCareCds.getCareActivity1());
-            // targetCriticalCareCds.getCareActivity2100());
 
             //save critical care encounter record and the parent (with updated references). Parent is filed first.
             fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
@@ -362,6 +346,75 @@ public class CriticalCareCdsTargetTransformer {
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                     .setSystem(valueResponse.getConcept().getScheme());
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+        }
+
+        //Very specific critical care type info here added as Additional JSON where present
+        JsonObject criticalCareObjs = new JsonObject();
+
+        String gestationLengthAtDelivery = targetCriticalCareCds.getGestationLengthAtDelivery();
+        if (!Strings.isNullOrEmpty(gestationLengthAtDelivery)) {
+            criticalCareObjs.addProperty("gestation_length_at_delivery", gestationLengthAtDelivery);
+        }
+        Integer advancedRespiratorySupportDays = targetCriticalCareCds.getAdvancedRespiratorySupportDays();
+        if (advancedRespiratorySupportDays != null) {
+            criticalCareObjs.addProperty("advanced_respiratory_support_days", advancedRespiratorySupportDays);
+        }
+        Integer basicRespiratorySupportsDays = targetCriticalCareCds.getBasicRespiratorySupportsDays();
+        if (basicRespiratorySupportsDays != null) {
+            criticalCareObjs.addProperty("basic_respiratory_support_days", basicRespiratorySupportsDays);
+        }
+        Integer advancedCardiovascularSupportDays = targetCriticalCareCds.getAdvancedCardiovascularSupportDays();
+        if (advancedCardiovascularSupportDays != null) {
+            criticalCareObjs.addProperty("advanced_cardiovascular_support_days", advancedCardiovascularSupportDays);
+        }
+        Integer basicCardiovascularSupportDays = targetCriticalCareCds.getBasicCardiovascularSupportDays();
+        if (basicCardiovascularSupportDays != null) {
+            criticalCareObjs.addProperty("basic_cardiovascular_support_days", basicCardiovascularSupportDays);
+        }
+        Integer renalSupportDays = targetCriticalCareCds.getRenalSupportDays();
+        if (renalSupportDays != null) {
+            criticalCareObjs.addProperty("renal_support_days", renalSupportDays);
+        }
+        Integer neurologicalSupportDays = targetCriticalCareCds.getNeurologicalSupportDays();
+        if (neurologicalSupportDays != null) {
+            criticalCareObjs.addProperty("neurological_support_days", neurologicalSupportDays);
+        }
+        Integer gastroIntestinalSupportDays = targetCriticalCareCds.getGastroIntestinalSupportDays();
+        if (gastroIntestinalSupportDays != null) {
+            criticalCareObjs.addProperty("gastrointestinal_support_days", gastroIntestinalSupportDays);
+        }
+        Integer dermatologicalSupportDays = targetCriticalCareCds.getDermatologicalSupportDays();
+        if (dermatologicalSupportDays != null) {
+            criticalCareObjs.addProperty("dermatological_support_days", dermatologicalSupportDays);
+        }
+        Integer liverSupportDays = targetCriticalCareCds.getLiverSupportDays();
+        if (liverSupportDays != null) {
+            criticalCareObjs.addProperty("liver_support_days", liverSupportDays);
+        }
+        Integer organSupportMaximum = targetCriticalCareCds.getOrganSupportMaximum();
+        if (organSupportMaximum != null) {
+            criticalCareObjs.addProperty("organ_support_maximum", organSupportMaximum);
+        }
+        Integer criticalCareLevel2Days = targetCriticalCareCds.getCriticalCareLevel2Days();
+        if (criticalCareLevel2Days != null) {
+            criticalCareObjs.addProperty("critical_care_level_2_days", criticalCareLevel2Days);
+        }
+        Integer criticalCareLevel3Days =  targetCriticalCareCds.getCriticalCareLevel3Days();
+        if (criticalCareLevel3Days != null) {
+            criticalCareObjs.addProperty("critical_care_level_3_days", criticalCareLevel3Days);
+        }
+        String careActivity1 = targetCriticalCareCds.getCareActivity1();
+        if (!Strings.isNullOrEmpty(careActivity1)) {
+            criticalCareObjs.addProperty("care_activity_1", careActivity1);
+        }
+        String careActivity2100 =  targetCriticalCareCds.getCareActivity2100();
+        if (!Strings.isNullOrEmpty(careActivity2100)) {
+            criticalCareObjs.addProperty("care_activity_2100", careActivity2100);
+        }
+
+        //add if any elements in the set
+        if (!criticalCareObjs.entrySet().isEmpty()) {
+            parametersBuilder.addParameter("JSON_critical_care", criticalCareObjs.toString());
         }
     }
 }

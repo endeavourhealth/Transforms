@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import com.google.gson.JsonObject;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -347,32 +348,7 @@ public class InpatientCdsTargetTransformer {
         }
         existingParentEncounterList.addReference(childEpisodeRef);
 
-        //TODO: processing start and end wards?
-//        ContainedParametersBuilder containedParametersBuilder
-//                = new ContainedParametersBuilder(episodeEncounterBuilder);
-//        containedParametersBuilder.removeContainedParameters();
-//
-//        String episodeStartWardCode = targetInpatientCds.getEpisodeStartWardCode();
-//        if (!Strings.isNullOrEmpty(episodeStartWardCode)) {
-//            containedParametersBuilder.addParameter("ip_episode_start_ward", "" + episodeStartWardCode);
-//        }
-//        String episodeEndWardCode = targetInpatientCds.getEpisodeEndWardCode();
-//        if (!Strings.isNullOrEmpty(episodeEndWardCode)) {
-//            containedParametersBuilder.addParameter("ip_episode_end_ward", "" + episodeEndWardCode);
-//        }
-
-        //TODO: mothers NHS number linking from birth records at subscriber
-//        String maternityBirth = targetInpatientCds.getMaternityDataBirth();
-//        //the encounter is about the baby and contains the mothers nhs number
-//        if (!Strings.isNullOrEmpty(maternityBirth)) {
-//            containedParametersBuilder.addParameter("maternity_birth", maternityBirth);
-//        }
-//
-//        String maternityDelivery = targetInpatientCds.getMaternityDataDelivery();
-//        //the encounter is about the mother and this is the birth(s) detail
-//        if (!Strings.isNullOrEmpty(maternityDelivery)) {
-//            containedParametersBuilder.addParameter("maternity_delivery", maternityBirth);
-//        }
+        setEpisodeContainedParameters(episodeEncounterBuilder, targetInpatientCds);
 
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         //LOG.debug("Saving IP parent encounter: "+ FhirSerializationHelper.serializeResource(existingParentEpisodeBuilder.getResource()));
@@ -559,8 +535,6 @@ public class InpatientCdsTargetTransformer {
         //loop through all the patientIds for that patient to check the encounters
         for (UUID patientId: patientIds) {
 
-            //LOG.debug("Checking patient: " + patientId.toString() + " for existing service: " + serviceUuid.toString() + " encounters");
-
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
             List<ResourceWrapper> resourceWrappers
                     = resourceDal.getResourcesByPatient(serviceUuid, patientId, ResourceType.Encounter.toString());
@@ -575,8 +549,6 @@ public class InpatientCdsTargetTransformer {
                 String json = wrapper.getResourceData();
                 Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
-                //LOG.debug("Existing HL7 Inpatient encounter " + existingEncounter.getId() + ", date: " + existingEncounter.getPeriod().getStart().toString() + ", cut off date: " + cutoff.toString());
-
                 //if the HL7 Encounter is before our 12 hr cutoff, look to delete it
                 if (existingEncounter.hasPeriod()
                         && existingEncounter.getPeriod().hasStart()
@@ -585,7 +557,6 @@ public class InpatientCdsTargetTransformer {
                     //finally, check it is an Inpatient encounter class before deleting
                     if (existingEncounter.getClass_().equals(Encounter.EncounterClass.INPATIENT)) {
 
-                        //LOG.debug("Checking existing Inpatient encounter date (long): " + existingEncounter.getPeriod().getStart().getTime() + " in dates array: " + patientInpatientEncounterDates.toArray());
                         if (patientInpatientEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
                             GenericBuilder builderEncounter = new GenericBuilder(existingEncounter);
                             //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
@@ -779,6 +750,46 @@ public class InpatientCdsTargetTransformer {
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                     .setSystem(valueResponse.getConcept().getScheme());
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+        }
+    }
+
+    private static void setEpisodeContainedParameters(EncounterBuilder encounterBuilder,
+                                                        StagingInpatientCdsTarget targetInpatientCds) throws Exception {
+
+        ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(encounterBuilder);
+        parametersBuilder.removeContainedParameters();
+
+        //assign the additional JSON data maternity to episode 1.  The data is already JSON.
+        String episodeNumber = targetInpatientCds.getEpisodeNumber();
+        if (episodeNumber.equalsIgnoreCase("01")) {
+
+            //maternity data is either about the baby (maternityBirth - birth) or the mother (maternityDelivery - births(s))
+            String maternityBirth = targetInpatientCds.getMaternityDataBirth();
+            if (!Strings.isNullOrEmpty(maternityBirth)) {
+                parametersBuilder.addParameter("JSON_maternity_birth", maternityBirth);
+            }
+
+            String maternityDelivery = targetInpatientCds.getMaternityDataDelivery();
+            if (!Strings.isNullOrEmpty(maternityDelivery)) {
+                parametersBuilder.addParameter("JSON_maternity_delivery", maternityDelivery);
+            }
+        }
+
+        //assign the episode ward information as addition JSON.  Need to create JSON for this data
+        String episodeStartWardCode = targetInpatientCds.getEpisodeStartWardCode();
+        String episodeEndWardCode = targetInpatientCds.getEpisodeEndWardCode();
+        if (!Strings.isNullOrEmpty(episodeStartWardCode) || !Strings.isNullOrEmpty(episodeEndWardCode)) {
+
+            JsonObject episodeWardsObjs = new JsonObject();
+            if (!Strings.isNullOrEmpty(episodeStartWardCode)) {
+
+                episodeWardsObjs.addProperty("start_ward", episodeStartWardCode);
+            }
+            if (!Strings.isNullOrEmpty(episodeEndWardCode)) {
+
+                episodeWardsObjs.addProperty("end_ward", episodeEndWardCode);
+            }
+            parametersBuilder.addParameter("JSON_wards", episodeWardsObjs.toString());
         }
     }
 }

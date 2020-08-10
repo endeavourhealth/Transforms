@@ -365,23 +365,30 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                     List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
                     for (Parameters.ParametersParameterComponent parameter : entries) {
 
-                        //each parameter entry  will have a key value pair of name and CodeableConcept value
+                        //each parameter entry will have a key value pair of either:
+                        //  1) JSON_name plus JSON data as value
+                        //  2) IM concept plus a CodeableConcept value
                         if (parameter.hasName() && parameter.hasValue()) {
 
-                            //these values are from IM API mapping
                             String propertyCode = parameter.getName();
-                            String propertyScheme = IMConstant.DISCOVERY_CODE;
+                            if (!propertyCode.startsWith("JSON_")) {
 
-                            CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
-                            String valueCode = parameterValue.getCoding().get(0).getCode();
-                            String valueScheme = parameterValue.getCoding().get(0).getSystem();
+                                //these values are from IM API mapping so set as Discovery Code
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
 
-                            //we need to get the unique IM conceptId for the property and value
-                            String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
-                            String valueConceptId =  IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
+                                CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                                String valueCode = parameterValue.getCoding().get(0).getCode();
+                                String valueScheme = parameterValue.getCoding().get(0).getSystem();
 
-                            //write the IM values to the encounter_additional table upsert
-                            encounterAdditional.writeUpsert(id, propertyConceptId, valueConceptId);
+                                //we need to get the unique IM conceptId for the property and value
+                                String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
+                                String valueConceptId = IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
+
+                                //write the IM values to the encounter_additional table upsert
+                                encounterAdditional.writeUpsert(id, propertyConceptId, valueConceptId);
+                            } else {
+                                //TODO: Handle extended additional Json here
+                            }
                         }
                     }
                     break;

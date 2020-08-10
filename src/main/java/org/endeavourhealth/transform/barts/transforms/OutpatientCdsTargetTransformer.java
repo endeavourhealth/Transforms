@@ -395,7 +395,7 @@ public class OutpatientCdsTargetTransformer {
         UUID serviceUuid = fhirResourceFiler.getServiceId();
         UUID systemUuid = fhirResourceFiler.getSystemId();
 
-        //we want to delete HL7 Emergency Encounters more than 24 hours older than the extract data date
+        //we want to delete HL7 Emergency Encounters more than 12 hours older than the extract data date
         Date extractDateTime = fhirResourceFiler.getDataDate();
         Date cutoff = new Date(extractDateTime.getTime() - (12 * 60 * 60 * 1000));
 
@@ -433,14 +433,10 @@ public class OutpatientCdsTargetTransformer {
                 String json = wrapper.getResourceData();
                 Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
-                //LOG.debug("Existing HL7 Outpatient encounter " + existingEncounter.getId() + ", date: " + existingEncounter.getPeriod().getStart().toString() + ", cut off date: " + cutoff.toString());
-
-                //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
+                //if the HL7 Encounter is before our 12 hr cutoff, look to delete it
                 if (existingEncounter.hasPeriod()
                         && existingEncounter.getPeriod().hasStart()
                         && existingEncounter.getPeriod().getStart().before(cutoff)) {
-
-                    //LOG.debug("Checking existing Outpatient encounter date (long): " + existingEncounter.getPeriod().getStart().getTime() + " in dates array: " + patientOutpatientEncounterDates.toArray());
 
                     //finally, check it is an Outpatient encounter class before deleting
                     if (existingEncounter.getClass_().equals(Encounter.EncounterClass.OUTPATIENT)) {

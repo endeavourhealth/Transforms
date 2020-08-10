@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.barts.transforms;
 
 import com.google.common.base.Strings;
+import com.google.gson.JsonObject;
 import org.apache.commons.lang3.ObjectUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
@@ -597,8 +598,6 @@ public class EmergencyCdsTargetTransformer {
         //loop through all the patientIds for that patient to check the encounters
         for (UUID patientId : patientIds) {
 
-            //LOG.debug("Checking patient: " + patientId.toString() + " for existing service: " + serviceUuid.toString() + " encounters");
-
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
             List<ResourceWrapper> resourceWrappers
                     = resourceDal.getResourcesByPatient(serviceUuid, patientId, ResourceType.Encounter.toString());
@@ -613,17 +612,13 @@ public class EmergencyCdsTargetTransformer {
                 String json = wrapper.getResourceData();
                 Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
-                //LOG.debug("Existing HL7 Emergency encounter " + existingEncounter.getId() + ", date: " + existingEncounter.getPeriod().getStart().toString() + ", cut off date: " + cutoff.toString());
-
-                //if the HL7 Encounter is before our 24 hr cutoff, look to delete it
+                //if the HL7 Encounter is before our 12 hr cutoff, look to delete it
                 if (existingEncounter.hasPeriod()
                         && existingEncounter.getPeriod().hasStart()
                         && existingEncounter.getPeriod().getStart().before(cutoff)) {
 
                     //finally, check it is an Emergency encounter and has a matching start date to one just filed before deleting
                     if (existingEncounter.getClass_().equals(Encounter.EncounterClass.EMERGENCY)) {
-
-                        //LOG.debug("Checking existing Emergency encounter date (long): " + existingEncounter.getPeriod().getStart().getTime() + " in dates array: " + patientEmergencyEncounterDates.toArray());
 
                         if (patientEmergencyEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
 
@@ -757,6 +752,15 @@ public class EmergencyCdsTargetTransformer {
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                     .setSystem(valueResponse.getConcept().getScheme());
             parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+        }
+
+        // set this as additional JSON
+        String ambulanceNo = targetEmergencyCds.getAmbulanceNo();
+        if (!Strings.isNullOrEmpty(ambulanceNo)) {
+
+            JsonObject arrivalObjs = new JsonObject();
+            arrivalObjs.addProperty("ambulance_number", ambulanceNo);
+            parametersBuilder.addParameter("JSON_arrival", arrivalObjs.toString());
         }
     }
 

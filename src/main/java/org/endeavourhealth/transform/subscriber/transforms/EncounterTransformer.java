@@ -296,25 +296,32 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                     List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
                     for (Parameters.ParametersParameterComponent parameter : entries) {
 
-                        //each parameter entry  will have a key value pair of name and StringType value?
+                        //each parameter entry will have a key value pair of either:
+                        //  1) JSON_name plus JSON data as value
+                        //  2) IM concept plus a CodeableConcept value
                         if (parameter.hasName() && parameter.hasValue()) {
 
-                            //these values are from IM API mapping
                             String propertyCode = parameter.getName();
-                            String propertyScheme = IMConstant.DISCOVERY_CODE;
+                            if (!propertyCode.startsWith("JSON_")) {
 
-                            CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
-                            String valueCode = parameterValue.getCoding().get(0).getCode();
-                            String valueScheme = parameterValue.getCoding().get(0).getSystem();
+                                //these values are from IM API mapping
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
 
-                            //we need to look up DBids for both
-                            Integer propertyConceptDbid =
-                                    IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
-                            Integer valueConceptDbid =
-                                    IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
+                                CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                                String valueCode = parameterValue.getCoding().get(0).getCode();
+                                String valueScheme = parameterValue.getCoding().get(0).getSystem();
 
-                            //transform the IM values to the encounter_additional table upsert
-                            encounterAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid);
+                                //we need to look up DBids for both
+                                Integer propertyConceptDbid =
+                                        IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
+                                Integer valueConceptDbid =
+                                        IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
+
+                                //transform the IM values to the encounter_additional table upsert
+                                encounterAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid);
+                            } else {
+                                //TODO: Handle extended additional Json here
+                            }
                         }
                     }
                     break;
