@@ -468,7 +468,11 @@ public class InpatientCdsTargetTransformer {
         EncounterBuilder existingEncounterBuilder
                 = new EncounterBuilder(existingEncounter, targetInpatientCds.getAudit());
 
-        //this ensures the type is always an Inpatient and handles when an Emergency parent becomes an Inpatient stay
+        //this ensures the type is always an Inpatient and handles the scenario when an Emergency parent encounter
+        //becomes an Inpatient Encounter stay
+        CodeableConceptBuilder codeableConceptBuilder
+                = new CodeableConceptBuilder(existingEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
+        codeableConceptBuilder.setText("Inpatient");
         existingEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
         //set the overall encounter status depending on sub encounter completion
