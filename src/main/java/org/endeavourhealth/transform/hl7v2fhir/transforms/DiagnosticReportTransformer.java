@@ -1,7 +1,9 @@
 package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
+import ca.uhn.hl7v2.model.Varies;
 import ca.uhn.hl7v2.model.v23.datatype.CX;
 import ca.uhn.hl7v2.model.v23.datatype.ID;
+import ca.uhn.hl7v2.model.v23.group.ORU_R01_ORDER_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
 import ca.uhn.hl7v2.model.v23.segment.OBX;
 import ca.uhn.hl7v2.model.v23.segment.ORC;
@@ -30,13 +32,12 @@ public class DiagnosticReportTransformer {
      * @param pid
      * @param orc
      * @param obr
-     * @param obx
      * @param fhirResourceFiler
      * @param imperialHL7Helper
      * @throws Exception
      */
-    public static void createOrDeleteDiagnosticReport(PID pid, ORC orc, OBR obr, OBX obx, FhirResourceFiler fhirResourceFiler,
-                                                      ImperialHL7Helper imperialHL7Helper) throws Exception {
+    public static void createDiagnosticReport(PID pid, ORC orc, OBR obr, ORU_R01_ORDER_OBSERVATION orderObserv, FhirResourceFiler fhirResourceFiler,
+                                              ImperialHL7Helper imperialHL7Helper) throws Exception {
         DiagnosticReportBuilder diagnosticReportBuilder = new DiagnosticReportBuilder();
 
         String observationGuid = String.valueOf(obr.getFillerOrderNumber());
@@ -56,12 +57,12 @@ public class DiagnosticReportTransformer {
             return;
         }*/
 
-        //assume that any report already filed into Emis Web is a final report
-        /*diagnosticReportBuilder.setStatus(DiagnosticReport.DiagnosticReportStatus.FINAL);
+        //assume that any report already filed into Imperial HL7 is a final report
+        diagnosticReportBuilder.setStatus(DiagnosticReport.DiagnosticReportStatus.FINAL);
 
-        ID codeId = obr.getUniversalServiceIdentifier().getIdentifier();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(diagnosticReportBuilder, false, codeId, CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code, csvHelper);
-*/
+        /*ID codeId = obr.getUniversalServiceIdentifier().getIdentifier();
+        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(diagnosticReportBuilder, false, codeId, CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code, csvHelper);*/
+
         /*ReferenceList childObservations = imperialHL7Helper.getAndRemoveObservationParentRelationships(diagnosticReportBuilder.getResourceId());
         if (childObservations != null) {
             for (int i=0; i<childObservations.size(); i++) {
@@ -71,7 +72,13 @@ public class DiagnosticReportTransformer {
             }
         }*/
 
-        String observationDate = String.valueOf(obr.getObservationDateTime());
+        /*Reference reference = childObservations.getReference(i);
+        diag*/
+        String uniqueId = String.valueOf(obr.getFillerOrderNumber()) + String.valueOf(orderObserv.getOBSERVATION().getOBX().getObservationIdentifier().getIdentifier());
+        Reference observationReference = imperialHL7Helper.createObservationReference(uniqueId);
+        diagnosticReportBuilder.addResult(observationReference);
+
+        String observationDate = String.valueOf(obr.getObservationDateTime().getTimeOfAnEvent());
         if (observationDate != null) {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
             Date date = formatter.parse(observationDate.substring(0,4)+"-"+observationDate.substring(4,6)+"-"+observationDate.substring(6,8));

@@ -181,6 +181,16 @@ public class ImperialHL7Helper implements HasServiceSystemAndExchangeIdI {
     }
 
     /**
+     *
+     * @param observationId
+     * @return
+     * @throws Exception
+     */
+    public static Reference createObservationReference(String observationId) throws Exception {
+        return createReference(ResourceType.Observation, observationId);
+    }
+
+    /**
      * to ensure globally unique IDs for all resources, a new ID is created
      * from the patientGuid and sourceGuid (e.g. observationGuid)
      */

@@ -2,6 +2,8 @@ package org.endeavourhealth.transform.hl7v2fhir;
 
 import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.model.v23.datatype.CX;
+import ca.uhn.hl7v2.model.v23.group.ORU_R01_OBSERVATION;
+import ca.uhn.hl7v2.model.v23.group.ORU_R01_ORDER_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.message.ORU_R01;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
 import ca.uhn.hl7v2.model.v23.segment.OBX;
@@ -12,10 +14,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
-import org.endeavourhealth.transform.hl7v2fhir.transforms.DiagnosticReportTransformer;
-import org.endeavourhealth.transform.hl7v2fhir.transforms.LocationTransformer;
-import org.endeavourhealth.transform.hl7v2fhir.transforms.OrganizationTransformer;
-import org.endeavourhealth.transform.hl7v2fhir.transforms.PatientTransformer;
+import org.endeavourhealth.transform.hl7v2fhir.transforms.*;
 import org.hl7.fhir.instance.model.Location;
 import org.hl7.fhir.instance.model.Organization;
 import org.hl7.fhir.instance.model.Patient;
@@ -105,9 +104,10 @@ public abstract class ImperialHL7FhirORUTransformer {
             //Diagnostic Report
             ORC orc = oruMsg.getRESPONSE().getORDER_OBSERVATION().getORC();
             OBR obr = oruMsg.getRESPONSE().getORDER_OBSERVATION().getOBR();
-            OBX obx = oruMsg.getRESPONSE().getORDER_OBSERVATION().getOBSERVATION().getOBX();
+            ORU_R01_ORDER_OBSERVATION orderObserv = oruMsg.getRESPONSE().getORDER_OBSERVATION();
 
-            DiagnosticReportTransformer.createOrDeleteDiagnosticReport(pid, orc, obr, obx, fhirResourceFiler, imperialHL7Helper);
+            ObservationTransformer.createObservation(pid, obr, orderObserv, fhirResourceFiler, imperialHL7Helper);
+            DiagnosticReportTransformer.createDiagnosticReport(pid, orc, obr, orderObserv, fhirResourceFiler, imperialHL7Helper);
             //Diagnostic Report
 
         }
