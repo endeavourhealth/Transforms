@@ -69,11 +69,14 @@ public abstract class BartsCsvToFhirTransformer {
             }
         }*/
 
-
-
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
         String exchangeDirectory = ExchangePayloadFile.validateFilesAreInSameDirectory(files);
         LOG.trace("Transforming Barts CSV content in " + exchangeDirectory);
+
+        //config as to whether we only process the Encounters within CDS files
+        if (TransformConfig.instance().isCernerCDSEncountersOnly()) {
+            LOG.debug("**    CDS Encounters Only config applied    **");
+        }
 
         BartsCsvHelper csvHelper = new BartsCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), PRIMARY_ORG_HL7_OID, version);
 
@@ -141,12 +144,17 @@ public abstract class BartsCsvToFhirTransformer {
             //pre-transformers, must be done before encounter ones
             CLEVEPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "CLEVE", false), fhirResourceFiler, csvHelper);
 
-            //CLINICAL EVENTS - execute the staging procedures to target clinical events stored proc
             csvHelper.waitUntilThreadPoolIsEmpty();
-            csvHelper.processStagingForTargetClinicalEvents();
 
-            //Clinical events data transformation on final clinical events target staging table
-            ClinicalEventTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            //CLINICAL EVENTS - execute the staging procedures to target clinical events stored proc only if the CLEVE file is present
+            //this is the last time we reference the CLEVE file if present in the file list, so remove from the parser map
+            if (!getParsers(parserMap, csvHelper, fhirResourceFiler, "CLEVE", true).isEmpty()) {
+
+                csvHelper.processStagingForTargetClinicalEvents();
+
+                //Clinical events data transformation on final clinical events target staging table
+                ClinicalEventTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            }
 
             //while we're just doing the pre-transformer only, allow it to remove from the map, to reduce memory use
             ENCNTPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "ENCNT", true), fhirResourceFiler, csvHelper);
@@ -174,63 +182,104 @@ public abstract class BartsCsvToFhirTransformer {
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //EmergencyCareDataSets
-            SusEmergencyCareDataSetTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSetTail", true),fhirResourceFiler,csvHelper);
-            SusEmergencyCareDataSetPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSet", true),fhirResourceFiler,csvHelper);
+            SusEmergencyCareDataSetTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSetTail", false),fhirResourceFiler,csvHelper);
+            SusEmergencyCareDataSetPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSet", false),fhirResourceFiler,csvHelper);
 
             //CriticalCare CDS
-            CriticalCarePreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "CriticalCare", true),fhirResourceFiler,csvHelper);
-
-            //Home Delivery and Birth CDS - commented out for initial phase
-            //HomeDeliveryAndBirthPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "HomeDeliveryAndBirth", true),fhirResourceFiler,csvHelper);
+            CriticalCarePreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "CriticalCare", false),fhirResourceFiler,csvHelper);
 
             //PROCEDURES - the order is significant, going from less to more rich files
             PROCEPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "PROCE", false), fhirResourceFiler, csvHelper);
-            ProcedurePreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure", true), fhirResourceFiler, csvHelper);
-            SusInpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusInpatientTail", true), fhirResourceFiler,csvHelper);
-            SusOutpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusOutpatientTail", true), fhirResourceFiler,csvHelper);
-            SusEmergencyTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyTail", true),fhirResourceFiler,csvHelper);
-            SusInpatientPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusInpatient", true), fhirResourceFiler,csvHelper);
-            SusOutpatientPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusOutpatient", true), fhirResourceFiler,csvHelper);
-            SusEmergencyPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergency", true),fhirResourceFiler,csvHelper);
+            ProcedurePreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure", false), fhirResourceFiler, csvHelper);
+
+            //These six Sus CDS transforms handle both procedures, diagnosis and encounters.  When running the backlog to
+            //process the encounters only using a specific file filter which never occurs in standard file exchange then
+            //only process the encounters and ignore the procedures and diagnosis processing
+            SusInpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusInpatientTail", false), fhirResourceFiler,csvHelper);
+            SusOutpatientTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusOutpatientTail", false), fhirResourceFiler,csvHelper);
+            SusEmergencyTailPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyTail", false),fhirResourceFiler,csvHelper);
+            SusInpatientPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusInpatient", false), fhirResourceFiler,csvHelper);
+            SusOutpatientPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusOutpatient", false), fhirResourceFiler,csvHelper);
+            SusEmergencyPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergency", false),fhirResourceFiler,csvHelper);
+
             SURCCPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCC", true), fhirResourceFiler,csvHelper); //this MUST be done before CURCP as it caches needed data
             SURCPPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "SURCP",true), fhirResourceFiler,csvHelper);
 
-            //Process the Target tables for Cds based encounter data (Emergency, Inpatient)
+            //Process the Target tables for Cds based encounter data (Emergency, Inpatient, Outpatient, Critical Care)
+            //NOTE: this now checks for the existence of the specific files (main or tail) within the exchange before running
+            //      this is NOT the last time we reference those files if present, so do not remove from the parser map
             csvHelper.waitUntilThreadPoolIsEmpty();
-            csvHelper.processStagingForTargetEmergencyCds();
-            csvHelper.processStagingForTargetInpatientCds();
-            csvHelper.processStagingForTargetOutpatientCds();
-            csvHelper.processStagingForTargetCriticalCareCds();
+            if (!getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSet", false).isEmpty() ||
+                    !getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSetTail", false).isEmpty()) {
+                csvHelper.processStagingForTargetEmergencyCds();
+            }
+            if (!getParsers(parserMap, csvHelper, fhirResourceFiler, "SusInpatient", false).isEmpty() ||
+                    !getParsers(parserMap, csvHelper, fhirResourceFiler, "SusInpatientTail", false).isEmpty()) {
+                csvHelper.processStagingForTargetInpatientCds();
+            }
+            if (!getParsers(parserMap, csvHelper, fhirResourceFiler, "SusOutpatient", false).isEmpty() ||
+                    !getParsers(parserMap, csvHelper, fhirResourceFiler, "SusOutpatientTail", false).isEmpty()) {
+                csvHelper.processStagingForTargetOutpatientCds();
+            }
+            if (!getParsers(parserMap, csvHelper, fhirResourceFiler, "CriticalCare", false).isEmpty()) {
+                csvHelper.processStagingForTargetCriticalCareCds();
+            }
 
-            //PROCEDURES - execute the staging procedures to target procedures stored proc
+            //PROCEDURES - execute the staging procedures to target procedures stored proc - ONLY if the CDS Encounters only config filter is NOT set
             csvHelper.waitUntilThreadPoolIsEmpty();
-            csvHelper.processStagingForTargetProcedures();
+            if (!TransformConfig.instance().isCernerCDSEncountersOnly()) {
 
-            //Procedure data transformation on final procedure target staging table
-            ProcedureTargetTransformer.transform(fhirResourceFiler, csvHelper);
+                //Procedure data transform from staging to target
+                csvHelper.processStagingForTargetProcedures();
+
+                //Procedure data transformation on final procedure target staging table
+                ProcedureTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            } else {
+                //LOG.debug("NOT transforming any Staging / Target Procedures data as CDS Encounters only filter");
+            }
+
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //DIAGNOSES / PROBLEMS - NOTE:  Any Sus Diagnosis data will have been processed during the transforms above, i.e. Inpatient, Outpatient
-            DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "DIAGN", false), fhirResourceFiler, csvHelper);
+            DIAGNPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "DIAGN", true), fhirResourceFiler, csvHelper);
             DiagnosisPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Diagnosis", true), fhirResourceFiler, csvHelper);
             ProblemPreTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Problem", true), fhirResourceFiler, csvHelper);
 
-            //CONDITIONS - execute the staging conditions to target procedures stored proc
+            //CONDITIONS - execute the staging conditions to target procedures stored proc - ONLY if the CDS Encounters only config filter is NOT set
             csvHelper.waitUntilThreadPoolIsEmpty();
-            csvHelper.processStagingForTargetConditions();
+            if (!TransformConfig.instance().isCernerCDSEncountersOnly()) {
 
-            //Condition data transformation on final condition target staging table
-            ConditionTargetTransformer.transform(fhirResourceFiler, csvHelper);
+                //Condition data transform from staging to target
+                csvHelper.processStagingForTargetConditions();
+
+                //Condition data transformation on final condition target staging table
+                ConditionTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            } else {
+                //LOG.debug("NOT transforming any Staging / Target Diagnosis data as CDS Encounters only filter");
+            }
+
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             //EmergencyCds data transformation on final emergencyCds target staging table for Encounters
-            EmergencyCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            //this IS the last time we reference those files if present, so do remove from the parser map
+            if (!getParsers(parserMap, csvHelper, fhirResourceFiler, "SusEmergencyCareDataSet", true).isEmpty()) {
+                EmergencyCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            }
             //InpatientCds data transformation on final inpatientCds target staging table for Encounters
-            InpatientCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            //this IS the last time we reference those files if present, so do remove from the parser map
+            if (!getParsers(parserMap, csvHelper, fhirResourceFiler, "SusInpatient", true).isEmpty()) {
+                InpatientCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            }
             //OutpatientCds data transformation on final outpatientCds target staging table for Encounters
-            OutpatientCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            //this IS the last time we reference those files if present, so do remove from the parser map
+            if (!getParsers(parserMap, csvHelper, fhirResourceFiler, "SusOutpatient", true).isEmpty()) {
+                OutpatientCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            }
             //CriticalCareCds data transformation on final criticalCareCds target staging table for Encounters
-            CriticalCareCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            //this IS the last time we reference those files if present, so do remove from the parser map
+            if (!getParsers(parserMap, csvHelper, fhirResourceFiler, "CriticalCare", true).isEmpty()) {
+                CriticalCareCdsTargetTransformer.transform(fhirResourceFiler, csvHelper);
+            }
 
             //the CDS encounter transforms create episode of care resources in the cache which need filing
             csvHelper.getEpisodeOfCareCache().fileResources(fhirResourceFiler);
@@ -734,6 +783,7 @@ public abstract class BartsCsvToFhirTransformer {
         String s = sb.toString();
         return Integer.parseInt(s);
     }
+
 
     /*public static String identifyFileType(String filename) throws TransformException {
 

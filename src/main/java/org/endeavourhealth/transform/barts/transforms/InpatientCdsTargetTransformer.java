@@ -1,7 +1,9 @@
 package org.endeavourhealth.transform.barts.transforms;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
+import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -305,7 +307,7 @@ public class InpatientCdsTargetTransformer {
                 if (existingParentEncounterBuilder.isIdMapped()) {
 
                     childDischargeRef
-                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
                 }
 
                 existingParentEncounterList.addReference(childDischargeRef);
@@ -771,13 +773,88 @@ public class InpatientCdsTargetTransformer {
         if (episodeNumber.equalsIgnoreCase("01")) {
 
             //maternity data is either about the baby (maternityBirth - birth) or the mother (maternityDelivery - births(s))
-            String maternityBirth = targetInpatientCds.getMaternityDataBirth();
-            if (!Strings.isNullOrEmpty(maternityBirth)) {
-                parametersBuilder.addParameter("JSON_maternity_birth", maternityBirth);
+            String maternityBirthJson = targetInpatientCds.getMaternityDataBirth();
+            if (!Strings.isNullOrEmpty(maternityBirthJson)) {
+
+                //store the full json first
+                parametersBuilder.addParameter("JSON_maternity_birth", maternityBirthJson);
+
+                //we can also save the IM coded data as encounter additional.  This is only possible for the birth
+                //record as a single encounter to birth ratio
+                //"delivery_method" : "0",
+                //"gender" : "2",
+                //"live_or_still_birth_indicator" : "1"
+
+                JsonNode maternityJsonNode = ObjectMapperPool.getInstance().readTree(maternityBirthJson);
+
+                JsonNode deliveryNode = maternityJsonNode.get("delivery_method");
+                if (deliveryNode != null) {
+
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "inpatient",
+                            "delivery_method"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "inpatient",
+                            "delivery_method", deliveryNode.asText(), IMConstant.NHS_DATA_DICTIONARY
+                    );
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
+                    parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                }
+
+                JsonNode genderNode = maternityJsonNode.get("gender");
+                if (genderNode != null) {
+
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "inpatient",
+                            "gender"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "inpatient",
+                            "gender", genderNode.asText(), IMConstant.NHS_DATA_DICTIONARY
+                    );
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
+                    parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                }
+
+                JsonNode liveOrStillNode = maternityJsonNode.get("live_or_still_birth_indicator");
+                if (liveOrStillNode != null) {
+
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "inpatient",
+                            "live_or_still_birth_indicator"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "inpatient",
+                            "live_or_still_birth_indicator", liveOrStillNode.asText(), IMConstant.NHS_DATA_DICTIONARY
+                    );
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
+                    parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                }
             }
 
             String maternityDelivery = targetInpatientCds.getMaternityDataDelivery();
             if (!Strings.isNullOrEmpty(maternityDelivery)) {
+
+                //store the full json
                 parametersBuilder.addParameter("JSON_maternity_delivery", maternityDelivery);
             }
         }

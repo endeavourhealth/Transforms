@@ -5,6 +5,7 @@ import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.SusOutpatient;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,16 +32,20 @@ public class SusOutpatientPreTransformer extends CdsPreTransformerBase {
 
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
-                processRecords(
-                        (SusOutpatient)parser,
-                        csvHelper,
-                        BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT,
-                        procedureBatch,
-                        procedureCountBatch,
-                        conditionBatch,
-                        conditionCountBatch);
 
-                //new function to call into Outpatient attendances
+                //if Cerner transform config has been set with CDS Encounters only
+                if (!TransformConfig.instance().isCernerCDSEncountersOnly()) {
+                    processRecords(
+                            (SusOutpatient) parser,
+                            csvHelper,
+                            BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT,
+                            procedureBatch,
+                            procedureCountBatch,
+                            conditionBatch,
+                            conditionCountBatch);
+                }
+
+                //new function to call into Outpatient Encounters
                 processOutpatientRecords((SusOutpatient)parser, csvHelper, outpatientCdsBatch);
             }
         }

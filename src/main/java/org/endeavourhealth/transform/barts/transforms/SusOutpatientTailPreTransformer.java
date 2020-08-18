@@ -29,7 +29,12 @@ public class SusOutpatientTailPreTransformer extends CdsTailPreTransformerBase {
 
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
-                processTailRecord((SusOutpatientTail)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT, procedureBatch, conditionBatch, cdsTailBatch);
+                processTailRecord((SusOutpatientTail)parser,
+                        csvHelper,
+                        BartsCsvHelper.SUS_RECORD_TYPE_OUTPATIENT,
+                        procedureBatch,
+                        conditionBatch,
+                        cdsTailBatch);
             }
         }
 

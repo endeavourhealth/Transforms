@@ -29,7 +29,12 @@ public class SusEmergencyTailPreTransformer extends CdsTailPreTransformerBase {
 
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
-                processTailRecord((SusEmergencyTail)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY, procedureBatch, conditionBatch, cdsTailBatch);
+                processTailRecord((SusEmergencyTail)parser,
+                        csvHelper,
+                        BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY,
+                        procedureBatch,
+                        conditionBatch,
+                        cdsTailBatch);
             }
         }
 

@@ -8,6 +8,7 @@ import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.schema.SusEmergency;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,17 @@ public class SusEmergencyPreTransformer extends CdsPreTransformerBase {
 
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
-                processRecords((SusEmergency)parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY, procedureBatch, procedureCountBatch, conditionBatch, conditionCountBatch);
+
+                //if Cerner transform config has been set with CDS Encounters only)
+                if (!TransformConfig.instance().isCernerCDSEncountersOnly()) {
+                    processRecords((SusEmergency) parser,
+                            csvHelper,
+                            BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY,
+                            procedureBatch,
+                            procedureCountBatch,
+                            conditionBatch,
+                            conditionCountBatch);
+                }
             }
         }
 

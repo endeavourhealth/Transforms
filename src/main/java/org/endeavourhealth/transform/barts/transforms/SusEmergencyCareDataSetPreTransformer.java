@@ -25,7 +25,7 @@ public class SusEmergencyCareDataSetPreTransformer extends CdsPreTransformerBase
             while (parser.nextRecord()) {
                 //no try/catch here, since any failure here means we don't want to continue
 
-                //new function to call into emergency attendances
+                //new function to call into emergency Encounters
                 processEmergencyCdsRecords((SusEmergencyCareDataSet)parser, csvHelper, emergencyCdsBatch);
             }
         }
