@@ -194,6 +194,9 @@ public class EpisodeOfCareResourceCache {
             return retrieveAndCacheBuilder(finLocalRef, personIdCell, activeIndicatorCell);
         }
 
+        //if its get to here then there is no episodeId or encounterId map to episode or fin map to episode at the moment
+        //this may subsequently come through on an ENCNTR record which would update the encounter record mapping
+
         return null;
     }
 

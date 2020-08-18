@@ -29,16 +29,25 @@ public class CdsTailPreTransformerBase {
                                             List<StagingCdsTail> cdsTailBatch) throws Exception {
 
         if (TransformConfig.instance().isLive()) {
-            processTailRecordCondition(parser, csvHelper, susRecordType, conditionBatch);
-            processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
 
+            //if the exchange file list has been filtered on the CDS Encounters only unique combination then exclude
+            //processing the diagnosis and procedures
+            if (!TransformConfig.instance().isCernerCDSEncountersOnly()) {
+                processTailRecordCondition(parser, csvHelper, susRecordType, conditionBatch);
+                processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
+            }
         } else {
             //on Cerner Transform server, just run the latest tail records for now
             processCdsTailRecord(parser, csvHelper, susRecordType, cdsTailBatch);
 
             //these calls reinstated for testing with CDS encounters
-            processTailRecordCondition(parser, csvHelper, susRecordType, conditionBatch);
-            processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
+            if (!TransformConfig.instance().isCernerCDSEncountersOnly()) {
+                processTailRecordCondition(parser, csvHelper, susRecordType, conditionBatch);
+                processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
+            } else {
+
+                //LOG.debug("NOT transforming any CDS INPATIENT TAIL Procedures or Diagnosis data as CDS Encounters only");
+            }
         }
     }
 
@@ -102,6 +111,11 @@ public class CdsTailPreTransformerBase {
     }
 
     private static void processCdsTailRecord(CdsTailRecordI parser, BartsCsvHelper csvHelper, String susRecordType, List<StagingCdsTail> cdsTailBatch) throws Exception {
+
+        //we need to ignore the old style Sus Emergency files which are superseeded by SUS_RECORD_TYPE_EMERGENCY_CDS
+        if (susRecordType.equalsIgnoreCase(BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY)) {
+            return;
+        }
 
         CsvCell personIdCell = parser.getPersonId();
         String personId = personIdCell.getString();

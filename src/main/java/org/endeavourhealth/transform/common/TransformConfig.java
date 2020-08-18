@@ -1,12 +1,10 @@
 package org.endeavourhealth.transform.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -22,6 +20,7 @@ public class TransformConfig {
     //private boolean emisSkipAdminData;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private String cernerPatientIdFile;
+    private boolean cernerCDSEncountersOnly;
     private String bhrutPatientIdFile;
     private int maxTransformErrorsBeforeAbort;
     private List<Pattern> warningsToFailOn;
@@ -63,6 +62,7 @@ public class TransformConfig {
         //this.emisSkipAdminData = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.cernerPatientIdFile = null;
+        this.cernerCDSEncountersOnly = false;
         this.bhrutPatientIdFile = null;
         this.maxTransformErrorsBeforeAbort = 50;
         this.warningsToFailOn = new ArrayList<>();
@@ -106,6 +106,11 @@ public class TransformConfig {
         JsonNode node = json.get("patient_id_file");
         if (node != null) {
             this.cernerPatientIdFile = node.asText();
+        }
+
+        node = json.get("cds_encounters_only");
+        if (node != null) {
+            this.cernerCDSEncountersOnly = node.asBoolean();
         }
     }
     private void loadBhrutConfig(JsonNode json) {
@@ -361,6 +366,10 @@ public class TransformConfig {
 
     public String getCernerPatientIdFile() {
         return cernerPatientIdFile;
+    }
+
+    public boolean isCernerCDSEncountersOnly() {
+        return cernerCDSEncountersOnly;
     }
 
     public String getBhrutPatientIdFile() {
