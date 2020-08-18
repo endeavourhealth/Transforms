@@ -556,7 +556,7 @@ public class AndEAttendanceTransformer {
             if (!dischargeDestinationCell.isEmpty()) {
                 //add in additional extended data as Parameters resource with additional extension
             ContainedParametersBuilder containedParametersBuilderDischarge
-                    = new ContainedParametersBuilder(assessmentEncounterBuilder);
+                    = new ContainedParametersBuilder(dischargeEncounterBuilder);
             containedParametersBuilderDischarge.removeContainedParameters();
                 csvHelper.addParmIfNotNull("ae_discharge_destination", "" + dischargeDestinationCell.getString(),
                         containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);

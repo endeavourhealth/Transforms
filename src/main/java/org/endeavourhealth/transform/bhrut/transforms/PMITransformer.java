@@ -15,6 +15,8 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -219,7 +221,9 @@ public class PMITransformer {
     private static void createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
         if (!cell.isEmpty()) {
             if (use.equals(Identifier.IdentifierUse.OFFICIAL)) { //remove previous
-                for (Identifier i : patientBuilder.getIdentifiers()) {
+                Iterator<Identifier> ids = patientBuilder.getIdentifiers().iterator();
+                while (ids.hasNext()) {
+                    Identifier i = ids.next();
                     if (use.equals(Identifier.IdentifierUse.OFFICIAL) && i.getUse().equals(Identifier.IdentifierUse.OFFICIAL)) {
                         patientBuilder.removeIdentifier(i);
                     }
@@ -233,7 +237,7 @@ public class PMITransformer {
             identifierBuilder.setSystem(system);
             identifierBuilder.setValue(cell.getString(), cell);
             if (patientBuilder.getIdentifiers().size()>1) {
-            //    IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, fhirResourceFiler.getDataDate());
+                IdentifierBuilder.deDuplicateLastIdentifier(patientBuilder, fhirResourceFiler.getDataDate());
             }
         }
     }
@@ -265,14 +269,6 @@ public class PMITransformer {
         CsvCell county = csvHelper.handleQuote(parser.getAddress5());
         CsvCell postcode = csvHelper.handleQuote(parser.getPostcode());
 
-        for (Address address : patientBuilder.getAddresses()) {
-            if (address.hasUse()) {
-                if (address.getUse().equals(Address.AddressUse.HOME)) {
-                    patientBuilder.removeAddress(address);
-                }
-            }
-        }
-
         if (!houseNameFlat.isEmpty()
                 || !numberAndStreet.isEmpty()
                 || !postcode.isEmpty()) {
@@ -285,7 +281,7 @@ public class PMITransformer {
             addressBuilder.setCity(town.getString(), town);
             addressBuilder.setDistrict(county.getString(), county);
             addressBuilder.setPostcode(postcode.getString(), postcode);
-          //  AddressBuilder.deDuplicateLastAddress(patientBuilder, fhirResourceFiler.getDataDate());
+            AddressBuilder.deDuplicateLastAddress(patientBuilder, fhirResourceFiler.getDataDate());
 
         }
     }
