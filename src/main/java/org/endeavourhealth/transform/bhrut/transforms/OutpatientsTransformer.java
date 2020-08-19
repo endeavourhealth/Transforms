@@ -73,8 +73,8 @@ public class OutpatientsTransformer {
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
         String apptUniqueId = idCell.getString() + APPT_ID_SUFFIX;
         appointmentBuilder.setId(apptUniqueId, idCell);
-        SlotBuilder slotBuilder = new SlotBuilder();
-        slotBuilder.setId(apptUniqueId, idCell);
+//        SlotBuilder slotBuilder = new SlotBuilder();
+//        slotBuilder.setId(apptUniqueId, idCell);
         Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
         appointmentBuilder.addParticipant(newPatientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);
 
@@ -83,7 +83,7 @@ public class OutpatientsTransformer {
         if (dataUpdateStatusCell.getString().equalsIgnoreCase("Deleted")) {
             encounterBuilder.setDeletedAudit(dataUpdateStatusCell);
 
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder, slotBuilder, appointmentBuilder);
+            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), encounterBuilder, appointmentBuilder);
             //then, delete the linked resources
             deleteChildResources(parser, fhirResourceFiler, csvHelper, version);
             deleteOutpatientEncounterAndChildren(parser, fhirResourceFiler, csvHelper);
@@ -106,7 +106,7 @@ public class OutpatientsTransformer {
         //date and time is always present in the record
         CsvCell appointmentDateCell = parser.getAppointmentDttm();
         if (!appointmentDateCell.isEmpty()) {
-            slotBuilder.setStartDateTime(appointmentDateCell.getDateTime(), appointmentDateCell);
+            //slotBuilder.setStartDateTime(appointmentDateCell.getDateTime(), appointmentDateCell);
             appointmentBuilder.setStartDateTime(appointmentDateCell.getDateTime(), appointmentDateCell);
         } else {
             LOG.debug("Start date empty for " + idCell.getString());
@@ -139,7 +139,7 @@ public class OutpatientsTransformer {
         CsvCell endDateCell = parser.getApptDepartureDttm();
         if (!endDateCell.isEmpty()) {
             Date endDateTime = endDateCell.getDateTime();
-            slotBuilder.setEndDateTime(endDateTime, endDateCell);
+            //slotBuilder.setEndDateTime(endDateTime, endDateCell);
             appointmentBuilder.setEndDateTime(endDateTime, endDateCell);
         }
 
@@ -291,7 +291,7 @@ public class OutpatientsTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !subEncounter.isIdMapped(), subEncounter);
         Appointment appt = (Appointment) appointmentBuilder.getResource();
         List<Appointment.AppointmentParticipantComponent> who = appt.getParticipant();
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(),  appointmentBuilder);
 
     }
 
