@@ -6,6 +6,7 @@ import ca.uhn.hl7v2.HapiContext;
 import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.parser.EncodingNotSupportedException;
 import ca.uhn.hl7v2.parser.PipeParser;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
@@ -44,6 +45,9 @@ public abstract class FhirTransformer {
                 }
             }
             connection.commit();
+        } catch (Exception ex) {
+            LOG.error("", ex);
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.EnterpriseAgeUpdaterAlerts, "Exception in transform for exchange id (" + exchange.getId() + ")", ex);
         } finally {
             if (ps != null) {
                 ps.close();
@@ -83,8 +87,10 @@ public abstract class FhirTransformer {
             hapiMsg = pipeParser.parse(hl7Message);
         } catch (EncodingNotSupportedException e) {
             e.printStackTrace();
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.EnterpriseAgeUpdaterAlerts, "Exception in parseHL7Message", e);
         } catch (HL7Exception e) {
             e.printStackTrace();
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.EnterpriseAgeUpdaterAlerts, "Exception in parseHL7Message", e);
         }
         return hapiMsg;
     }
