@@ -136,7 +136,7 @@ public class EmergencyCdsTargetTransformer {
             Integer parentEncounterId = targetEmergencyCds.getEncounterId();
             Encounter existingParentEncounter
                     = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
-            existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+            existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetEmergencyCds.getAudit());
         }
         ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
 
@@ -144,7 +144,7 @@ public class EmergencyCdsTargetTransformer {
         String attendanceId = targetEmergencyCds.getAttendanceId();
 
         ////start with the A&E arrival encounter///////////////////////////////////////////////////////////////////////
-        EncounterBuilder arrivalEncounterBuilder = new EncounterBuilder();
+        EncounterBuilder arrivalEncounterBuilder = new EncounterBuilder(null, targetEmergencyCds.getAudit());
         arrivalEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
         String arrivalEncounterId = attendanceId + ":01:EM";
@@ -189,7 +189,7 @@ public class EmergencyCdsTargetTransformer {
         EncounterBuilder assessmentEncounterBuilder = null;
         if (assessmentDate != null) {
 
-            assessmentEncounterBuilder = new EncounterBuilder();
+            assessmentEncounterBuilder = new EncounterBuilder(null, targetEmergencyCds.getAudit());
             assessmentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String assessmentEncounterId = attendanceId + ":02:EM";
@@ -225,7 +225,7 @@ public class EmergencyCdsTargetTransformer {
         EncounterBuilder treatmentsEncounterBuilder = null;
         if (invAndTreatmentsDate != null) {
 
-            treatmentsEncounterBuilder = new EncounterBuilder();
+            treatmentsEncounterBuilder = new EncounterBuilder(null, targetEmergencyCds.getAudit());
             treatmentsEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String treatmentsEncounterId = attendanceId + ":03:EM";
@@ -262,7 +262,7 @@ public class EmergencyCdsTargetTransformer {
         EncounterBuilder conclusionEncounterBuilder = null;
         if (conclusionDate != null) {
 
-            conclusionEncounterBuilder = new EncounterBuilder();
+            conclusionEncounterBuilder = new EncounterBuilder(null, targetEmergencyCds.getAudit());
             conclusionEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String conclusionEncounterId = attendanceId + ":04:EM";
@@ -332,7 +332,7 @@ public class EmergencyCdsTargetTransformer {
                                                                              FhirResourceFiler fhirResourceFiler,
                                                                              BartsCsvHelper csvHelper) throws Exception {
 
-        EncounterBuilder parentEncounterBuilder = new EncounterBuilder();
+        EncounterBuilder parentEncounterBuilder = new EncounterBuilder(null, targetEmergencyCds.getAudit());
         parentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
         Integer encounterId = targetEmergencyCds.getEncounterId();
@@ -502,7 +502,7 @@ public class EmergencyCdsTargetTransformer {
                         if (childEncounter != null) {
                             LOG.debug("Deleting child encounter " + childEncounter.getId());
 
-                            fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                            fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter, targetEmergencyCds.getAudit()));
                         } else {
 
                             TransformWarnings.log(LOG, csvHelper, "Cannot find existing child Encounter ref: {} for deletion", comps.getId());

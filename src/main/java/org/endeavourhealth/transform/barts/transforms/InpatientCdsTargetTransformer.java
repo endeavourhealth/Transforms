@@ -234,7 +234,7 @@ public class InpatientCdsTargetTransformer {
             Integer parentEncounterId = targetInpatientCds.getEncounterId();
             Encounter existingParentEncounter
                     = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
-            existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+            existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetInpatientCds.getAudit());
         }
         existingParentEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
 
@@ -244,7 +244,7 @@ public class InpatientCdsTargetTransformer {
         //episodeNumber = 01 then create the inpatient admission and the discharge encounters (if date set)
         if (episodeNumber.equalsIgnoreCase("01")) {
 
-            admissionEncounterBuilder = new EncounterBuilder();
+            admissionEncounterBuilder = new EncounterBuilder(null, targetInpatientCds.getAudit());
             admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
             String admissionEncounterId = spellId + ":01:IP:Admission";
@@ -284,7 +284,7 @@ public class InpatientCdsTargetTransformer {
             if (spellDischargeDate != null) {
 
                 //create new additional Discharge encounter event to link to the top level parent
-                dischargeEncounterBuilder = new EncounterBuilder();
+                dischargeEncounterBuilder = new EncounterBuilder(null, targetInpatientCds.getAudit());
                 dischargeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
                 String dischargeEncounterId = spellId + ":01:IP:Discharge";
@@ -316,7 +316,7 @@ public class InpatientCdsTargetTransformer {
 
         //these are the 01, 02, 03, 04 subsequent episodes where activity happens, maternity, wards change etc.
         //also, critical care child encounters link back to these as their parents via their own transform
-        EncounterBuilder episodeEncounterBuilder = new EncounterBuilder();
+        EncounterBuilder episodeEncounterBuilder = new EncounterBuilder(null, targetInpatientCds.getAudit());
         episodeEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
         String episodeEncounterId = spellId +":"+episodeNumber+":IP:Episode";
@@ -410,7 +410,7 @@ public class InpatientCdsTargetTransformer {
                         if (childEncounter != null) {
                             LOG.debug("Deleting child encounter " + childEncounter.getId());
 
-                            fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                            fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter, targetInpatientCds.getAudit()));
                         } else {
 
                             TransformWarnings.log(LOG, csvHelper, "Cannot find existing child Encounter ref: {} for deletion", comps.getId());
@@ -431,7 +431,7 @@ public class InpatientCdsTargetTransformer {
                                                                     FhirResourceFiler fhirResourceFiler,
                                                                     BartsCsvHelper csvHelper) throws Exception {
 
-        EncounterBuilder parentEncounterBuilder = new EncounterBuilder();
+        EncounterBuilder parentEncounterBuilder = new EncounterBuilder(null, targetInpatientCds.getAudit());
         parentEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
 
         Integer encounterId = targetInpatientCds.getEncounterId();

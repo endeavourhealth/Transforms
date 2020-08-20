@@ -150,7 +150,7 @@ public class OutpatientCdsTargetTransformer {
                         if (childEncounter != null) {
                             LOG.debug("Deleting child encounter " + childEncounter.getId());
 
-                            fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                            fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter, targetOutpatientCds.getAudit()));
                         }
                     }
                 }
@@ -170,7 +170,7 @@ public class OutpatientCdsTargetTransformer {
                                                         EncounterBuilder existingParentEncounterBuilder) throws Exception {
 
         //set outpatient encounter
-        EncounterBuilder encounterBuilder = new EncounterBuilder();
+        EncounterBuilder encounterBuilder = new EncounterBuilder(null, targetOutpatientCds.getAudit());
         encounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);  //sub encounters are always finished
 
@@ -197,7 +197,7 @@ public class OutpatientCdsTargetTransformer {
             Integer parentEncounterId = targetOutpatientCds.getEncounterId();
             Encounter existingParentEncounter
                     = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, Integer.toString(parentEncounterId));
-            existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+            existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetOutpatientCds.getAudit());
         }
 
         //and link the parent to this new child encounter
@@ -224,7 +224,7 @@ public class OutpatientCdsTargetTransformer {
                                                                     FhirResourceFiler fhirResourceFiler,
                                                                     BartsCsvHelper csvHelper) throws Exception {
 
-        EncounterBuilder parentEncounterBuilder = new EncounterBuilder();
+        EncounterBuilder parentEncounterBuilder = new EncounterBuilder(null, targetOutpatientCds.getAudit());
         parentEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
         Integer encounterId = targetOutpatientCds.getEncounterId();
         parentEncounterBuilder.setId(Integer.toString(encounterId));

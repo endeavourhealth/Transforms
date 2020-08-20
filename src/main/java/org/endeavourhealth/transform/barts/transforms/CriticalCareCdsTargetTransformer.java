@@ -82,7 +82,7 @@ public class CriticalCareCdsTargetTransformer {
                 continue;
             }
 
-            EncounterBuilder encounterBuilder = new EncounterBuilder();
+            EncounterBuilder encounterBuilder = new EncounterBuilder(null, targetCriticalCareCds.getAudit());
             encounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
             encounterBuilder.setId(criticalCareId);
 
@@ -129,7 +129,7 @@ public class CriticalCareCdsTargetTransformer {
                     = (Encounter) csvHelper.retrieveResourceForLocalId(ResourceType.Encounter, parentEncounterId);
             if (existingParentEncounter != null) {
 
-                existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+                existingParentEncounterBuilder = new EncounterBuilder(existingParentEncounter, targetCriticalCareCds.getAudit());
 
                 //link the parent to the child
                 Reference childCriticalRef = ReferenceHelper.createReference(ResourceType.Encounter, criticalCareId);
