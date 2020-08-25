@@ -27,12 +27,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class OutpatientCdsTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(OutpatientCdsTargetTransformer.class);
-    private static Set<Long> patientOutpatientEncounterDates = new HashSet<>();
-    private static Set<String> patientOutpatientEpisodesDeleted = new HashSet<>();
+    private static Set<Long> patientOutpatientEncounterDates = ConcurrentHashMap.newKeySet();
+    private static Set<String> patientOutpatientEpisodesDeleted = ConcurrentHashMap.newKeySet();
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
