@@ -27,7 +27,8 @@ public enum SubscriberTableId {
     ORGANIZATION_METADATA((byte)24, "organization_metadata"),
     ENCOUNTER_EVENT((byte)25, "encounter_event"),
     ENCOUNTER_ADDITIONAL((byte)26, "encounter_additional"),
-    PATIENT_PSEUDO_ID((byte)27, "patient_pseudo_id");
+    PATIENT_PSEUDO_ID((byte)27, "patient_pseudo_id"),
+    OBSERVATION_ADDITIONAL((byte)28, "observation_additional"),;
 
     private byte id;
     private String name;

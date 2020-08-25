@@ -307,4 +307,80 @@ public class BulkHelper {
             return null;
         }
     }
+
+    public static String getSubscriberContainerForObservationAdditionalData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, String subscriberConfigName, UUID patientId) throws Exception {
+
+        SubscriberConfig subscriberConfig = SubscriberConfig.readFromConfig(subscriberConfigName);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, UUID.randomUUID(), batchUUID, subscriberConfig, resources, false);
+        params.populatePatientAndPersonIds();
+
+        // Check if patient exists in target DB
+        boolean patientFoundInSubscriber = checkIfPatientIsInSubscriberDatabase(params, patientId.toString());
+
+        if (!patientFoundInSubscriber) {
+            LOG.info("Skipping patient " + patientId + " as not found in subscriber DB");
+            return null;
+        }
+
+        // create a patient transformer
+        AbstractSubscriberTransformer subscriberTransformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(ResourceType.Observation);
+
+
+        Long enterpriseOrgId = FhirToSubscriberCsvTransformer.findEnterpriseOrgId(serviceUUID, params, Collections.emptyList());
+        params.setSubscriberOrganisationId(enterpriseOrgId);
+
+        // transform the fhir resource
+        subscriberTransformer.transformResources(resources, params);
+
+
+        List<SubscriberTableId> filesToKeep = new ArrayList<>();
+        filesToKeep.add(SubscriberTableId.OBSERVATION_ADDITIONAL);
+        params.getOutputContainer().clearDownOutputContainer(filesToKeep);
+
+        byte[] bytes = params.getOutputContainer().writeToZip();
+
+        if (bytes != null) {
+            return Base64.getEncoder().encodeToString(bytes);
+        } else {
+            return null;
+        }
+    }
+
+    public static String getSubscriberContainerForConditionAdditionalData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, String subscriberConfigName, UUID patientId) throws Exception {
+
+        SubscriberConfig subscriberConfig = SubscriberConfig.readFromConfig(subscriberConfigName);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, UUID.randomUUID(), batchUUID, subscriberConfig, resources, false);
+        params.populatePatientAndPersonIds();
+
+        // Check if patient exists in target DB
+        boolean patientFoundInSubscriber = checkIfPatientIsInSubscriberDatabase(params, patientId.toString());
+
+        if (!patientFoundInSubscriber) {
+            LOG.info("Skipping patient " + patientId + " as not found in subscriber DB");
+            return null;
+        }
+
+        // create a patient transformer
+        AbstractSubscriberTransformer subscriberTransformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(ResourceType.Condition);
+
+
+        Long enterpriseOrgId = FhirToSubscriberCsvTransformer.findEnterpriseOrgId(serviceUUID, params, Collections.emptyList());
+        params.setSubscriberOrganisationId(enterpriseOrgId);
+
+        // transform the fhir resource
+        subscriberTransformer.transformResources(resources, params);
+
+
+        List<SubscriberTableId> filesToKeep = new ArrayList<>();
+        filesToKeep.add(SubscriberTableId.OBSERVATION_ADDITIONAL);
+        params.getOutputContainer().clearDownOutputContainer(filesToKeep);
+
+        byte[] bytes = params.getOutputContainer().writeToZip();
+
+        if (bytes != null) {
+            return Base64.getEncoder().encodeToString(bytes);
+        } else {
+            return null;
+        }
+    }
 }

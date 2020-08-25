@@ -1,18 +1,25 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
+import com.google.common.base.Strings;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
-import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
+import org.endeavourhealth.transform.subscriber.targetTables.*;
 import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Observation;
+import org.hl7.fhir.instance.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -190,6 +197,10 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             isPrimary,
             dateRecorded);
 
+
+        //we also need to populate the observation additional table with observation extension data
+        // transformAdditionals(fhir, params, subscriberId);
+
     }
 
     public static Long transformParentResourceReference(DomainResource fhir, SubscriberTransformHelper params) throws Exception {
@@ -222,6 +233,89 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
         } else {
             //if it's one of these resource types, then the table doesn't support the link, so ignore
             throw new Exception("Unexpected parent resource type " + parentType + " for " + fhir.getResourceType() + " " + fhir.getId());
+        }
+    }
+
+    private void transformAdditionals(Resource resource, SubscriberTransformHelper params, SubscriberId id) throws Exception {
+
+        Observation fhir = (Observation)resource;
+
+        String significanceDisplay = null;
+
+        //Process the problem significance
+        Extension significanceExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
+
+        if (significanceExtension != null) {
+
+
+            OutputContainer outputContainer = params.getOutputContainer();
+            ObservationAdditional observationAdditional = outputContainer.getObservationAdditional();
+
+            CodeableConcept cc = (CodeableConcept)significanceExtension.getValue();
+            Coding coding = cc.getCoding().get(0);
+            if (coding != null) {
+                significanceDisplay = coding.getDisplay();
+                String significanceCode = coding.getCode();
+
+
+                Integer propertyConceptDbid = 12354;
+                Integer valueConceptDbid = 54321;
+                //we need to look up DBids for both
+                try {
+                    propertyConceptDbid =
+                            IMClient.getConceptDbidForSchemeCode(IMConstant.DISCOVERY_CODE, "CM_ProblemSignificance");
+                } catch (Exception e) {
+
+                }
+
+                try {
+                    valueConceptDbid =
+                            IMClient.getConceptDbidForSchemeCode(IMConstant.SNOMED, significanceCode);
+                } catch (Exception e) {
+
+                }
+
+                //transform the IM values to the encounter_additional table upsert
+                observationAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null);
+                System.out.println("observation significance : " + significanceDisplay);
+            }
+        }
+
+        //if it has no extension data, then nothing further to do
+        if (!fhir.hasReferenceRange()) {
+            return;
+        }
+        String fhirJson = FhirSerializationHelper.serializeResource(fhir);
+
+        com.google.gson.JsonParser parser = new com.google.gson.JsonParser();
+
+        JsonElement jsonElement = parser.parse(fhirJson);
+
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+
+        String reference = jsonObject.get("referenceRange").toString();
+
+        System.out.println("new ref :" + reference);
+
+        if (!Strings.isNullOrEmpty(reference)) {
+
+            OutputContainer outputContainer = params.getOutputContainer();
+            ObservationAdditional observationAdditional = outputContainer.getObservationAdditional();
+
+            Integer propertyConceptDbid = 45678;
+            //we need to look up DBids property
+
+            try {
+                propertyConceptDbid =
+                        IMClient.getConceptDbidForSchemeCode(IMConstant.DISCOVERY_CODE, "CM_ResultReferenceRange");
+            } catch (Exception e) {
+
+            }
+
+            //transform the IM values to the encounter_additional table upsert
+            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  reference);
+            System.out.println("refRange : " + reference);
         }
     }
 

@@ -1,17 +1,18 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+import org.endeavourhealth.transform.subscriber.targetTables.ObservationAdditional;
+import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -178,7 +179,59 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
                 isPrimary,
                 dateRecorded);
 
+        //we also need to populate the observation additional table with observation extension data
+        // transformAdditionals(fhir, params, subscriberId);
 
+    }
+
+    private void transformAdditionals(Resource resource, SubscriberTransformHelper params, SubscriberId id) throws Exception {
+
+        Condition fhir = (Condition)resource;
+
+        //if it has no extension data, then nothing further to do
+        if (!fhir.hasExtension()) {
+            return;
+        }
+
+        String significanceDisplay = null;
+
+        //Process the problem significance
+        Extension significanceExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.PROBLEM_SIGNIFICANCE);
+
+        if (significanceExtension != null) {
+
+
+            OutputContainer outputContainer = params.getOutputContainer();
+            ObservationAdditional observationAdditional = outputContainer.getObservationAdditional();
+
+            CodeableConcept cc = (CodeableConcept)significanceExtension.getValue();
+            Coding coding = cc.getCoding().get(0);
+            if (coding != null) {
+                significanceDisplay = coding.getDisplay();
+                String significanceCode = coding.getCode();
+
+                Integer propertyConceptDbid = 12354;
+                Integer valueConceptDbid = 54321;
+                //we need to look up DBids for both
+                try {
+                    propertyConceptDbid =
+                            IMClient.getConceptDbidForSchemeCode(IMConstant.DISCOVERY_CODE, "CM_ProblemSignificance");
+                } catch (Exception e) {
+
+                }
+
+                try {
+                    valueConceptDbid =
+                            IMClient.getConceptDbidForSchemeCode(IMConstant.SNOMED, significanceCode);
+                } catch (Exception e) {
+
+                }
+                //transform the IM values to the encounter_additional table upsert
+                observationAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null);
+                System.out.println("significance = " + significanceDisplay);
+            }
+        }
     }
 
     @Override

@@ -57,6 +57,7 @@ public class OutputContainer {
         csvWriters.add(new PatientAddressMatch(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new RegistrationStatusHistory(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterAdditional(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new ObservationAdditional(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientPseudoId(csvFormat, dateFormat, timeFormat));
     }
 
@@ -255,6 +256,10 @@ public class OutputContainer {
 
     public EncounterAdditional getEncounterAdditional() {
         return findCsvWriter(EncounterAdditional.class);
+    }
+
+    public ObservationAdditional getObservationAdditional() {
+        return findCsvWriter(ObservationAdditional.class);
     }
 
     public PatientPseudoId getPatientPseudoId() {
