@@ -346,7 +346,13 @@ public class EmergencyCdsTargetTransformer {
         if (departureDate != null) {
 
             parentEncounterBuilder.setPeriodEnd(departureDate);
-            parentEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+
+            //only finish an existing emergency encounter if there is no hospital admission
+            Date decidedToAdmitDate = targetEmergencyCds.getDtDecidedToAdmit();
+            if (decidedToAdmitDate == null) {
+
+                parentEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            }
         } else {
 
             parentEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
@@ -529,19 +535,40 @@ public class EmergencyCdsTargetTransformer {
                 = new EncounterBuilder(existingEncounter, targetEmergencyCds.getAudit());
 
         //set the overall encounter status depending on sub encounter completion
+        Date arrivalDate = targetEmergencyCds.getDtArrival();
         Date departureDate = targetEmergencyCds.getDtDeparture();
+
+        //if this is being set after it becomes an inpatient we need to ensure the dates are correct for overall start and finish
+        if (existingEncounterBuilder.getPeriod() == null || arrivalDate.before(existingEncounterBuilder.getPeriod().getStart())) {
+
+            existingEncounterBuilder.setPeriodStart(arrivalDate);
+        }
+
         if (departureDate != null) {
 
-            existingEncounterBuilder.setPeriodEnd(departureDate);
-            existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            //only finish an existing emergency encounter if there is no hospital admission
+            Date decidedToAdmitDate = targetEmergencyCds.getDtDecidedToAdmit();
+            if (decidedToAdmitDate == null) {
+
+                existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+            }
+
+            if (existingEncounterBuilder.getPeriod() == null || departureDate.after(existingEncounterBuilder.getPeriod().getStart())) {
+
+                existingEncounterBuilder.setPeriodEnd(departureDate);
+            }
+
         } else {
 
             //may not have been discharged, i.e. passed away
             Date conclusionDate = targetEmergencyCds.getDtConclusion();
             if (conclusionDate != null) {
 
-                existingEncounterBuilder.setPeriodEnd(conclusionDate);
                 existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+
+                if (existingEncounterBuilder.getPeriod() == null || conclusionDate.after(existingEncounterBuilder.getPeriod().getStart())) {
+                    existingEncounterBuilder.setPeriodEnd(conclusionDate);
+                }
 
             } else {
 

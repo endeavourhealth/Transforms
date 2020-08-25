@@ -485,11 +485,21 @@ public class InpatientCdsTargetTransformer {
 
             existingEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
+            //only update the start date if it is before the existing date
+            if (existingEncounterBuilder.getPeriod() == null || spellStartDate.before(existingEncounterBuilder.getPeriod().getStart())) {
+
+                existingEncounterBuilder.setPeriodStart(spellStartDate);
+            }
+
             // End date
             if (dischargeDate != null) {
 
-                existingEncounterBuilder.setPeriodEnd(dischargeDate);
                 existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+
+                //only update the end date if it is after the existing date
+                if (existingEncounterBuilder.getPeriod() == null || dischargeDate.after(existingEncounterBuilder.getPeriod().getStart())) {
+                    existingEncounterBuilder.setPeriodEnd(dischargeDate);
+                }
             }
         } else {
 
