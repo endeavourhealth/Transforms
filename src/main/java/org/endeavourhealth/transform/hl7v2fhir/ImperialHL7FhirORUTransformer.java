@@ -101,12 +101,15 @@ public abstract class ImperialHL7FhirORUTransformer {
             }
             //Patient
 
-            //Diagnostic Report
             ORC orc = oruMsg.getRESPONSE().getORDER_OBSERVATION().getORC();
             OBR obr = oruMsg.getRESPONSE().getORDER_OBSERVATION().getOBR();
             ORU_R01_ORDER_OBSERVATION orderObserv = oruMsg.getRESPONSE().getORDER_OBSERVATION();
 
+            //Observation
             ObservationTransformer.createObservation(pid, obr, orderObserv, fhirResourceFiler, imperialHL7Helper);
+            //Observation
+
+            //Diagnostic Report
             DiagnosticReportTransformer.createDiagnosticReport(pid, orc, obr, orderObserv, fhirResourceFiler, imperialHL7Helper);
             //Diagnostic Report
 

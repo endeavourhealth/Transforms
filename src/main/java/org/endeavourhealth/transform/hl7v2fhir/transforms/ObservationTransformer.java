@@ -58,7 +58,7 @@ public class ObservationTransformer {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
             Date date = formatter.parse(observationDate.substring(0,4)+"-"+observationDate.substring(4,6)+"-"+observationDate.substring(6,8));
 
-            DateTimeType eventPerformedDateTime = new DateTimeType(date, TemporalPrecisionEnum.YEAR);
+            DateTimeType eventPerformedDateTime = new DateTimeType(date);
             observationBuilder.setEffectiveDate(eventPerformedDateTime);
         }
 
@@ -67,7 +67,9 @@ public class ObservationTransformer {
         for(ORU_R01_OBSERVATION val : obserVals) {
             Varies[] value = val.getOBX().getObservationValue();
             if(value != null && value.length > 0) {
-                obxVal.append(val.getOBX().getObservationValue()[0].getData()+"\r\n");
+                for(int resultCount=0; resultCount<value.length; resultCount++) {
+                    obxVal.append(value[resultCount].getData()+"\r\n");
+                }
             }
         }
         observationBuilder.setValueString(obxVal.toString());

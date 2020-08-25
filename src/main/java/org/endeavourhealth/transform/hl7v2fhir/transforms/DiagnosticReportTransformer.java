@@ -83,7 +83,7 @@ public class DiagnosticReportTransformer {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
             Date date = formatter.parse(observationDate.substring(0,4)+"-"+observationDate.substring(4,6)+"-"+observationDate.substring(6,8));
 
-            DateTimeType dateTimeType = new DateTimeType(date, TemporalPrecisionEnum.YEAR);
+            DateTimeType dateTimeType = new DateTimeType(date);
             diagnosticReportBuilder.setEffectiveDate(dateTimeType);
             diagnosticReportBuilder.setRecordedDate(date);
         }
