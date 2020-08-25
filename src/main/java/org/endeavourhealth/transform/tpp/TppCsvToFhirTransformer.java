@@ -683,7 +683,7 @@ public abstract class TppCsvToFhirTransformer {
             if (file.getType().equals("Code")) {
                 Long size = file.getSize();
                 if (size != null
-                        && size.longValue() > 50 * 1024 * 1024) {
+                        && size.longValue() > 150 * 1024 * 1024) {
                     auditSkippingSRCode(fhirResourceFiler);
                     return true;
                 }

@@ -532,28 +532,34 @@ public class FhirHl7v2Filer {
 
         String resourceType = resource.getResourceType().toString();
         UUID resourceId = UUID.fromString(resource.getId());
-        List<ResourceWrapper> history = resourceRepository.getResourceHistory(serviceId, resourceType, resourceId);
 
-        //if we've never heard of this resource, it hasn't been deleted by the DW feed
-        if (history.isEmpty()) {
-            return false;
+        try {
+            List<ResourceWrapper> history = resourceRepository.getResourceHistory(serviceId, resourceType, resourceId);
+
+            //if we've never heard of this resource, it hasn't been deleted by the DW feed
+            if (history.isEmpty()) {
+                return false;
+            }
+
+            //most recent is first
+            ResourceWrapper latestHistory = history.get(0);
+
+            //if the latest history isn't deleted, then it wasn't deleted by the DW feed
+            if (!latestHistory.isDeleted()) {
+                return false;
+            }
+
+            //if the delete was by the HL7 feed, then it wasn't deleted by the DW feed
+            UUID latestSystemId = latestHistory.getSystemId();
+            if (latestSystemId.equals(systemId)) {
+                return false;
+            }
+
+            return true;
+
+        } catch (Exception ex) {
+            throw new Exception("Failed to get history for " + resourceType + " " + resourceId, ex);
         }
-
-        //most recent is first
-        ResourceWrapper latestHistory = history.get(0);
-
-        //if the latest history isn't deleted, then it wasn't deleted by the DW feed
-        if (!latestHistory.isDeleted()) {
-            return false;
-        }
-
-        //if the delete was by the HL7 feed, then it wasn't deleted by the DW feed
-        UUID latestSystemId = latestHistory.getSystemId();
-        if (latestSystemId.equals(systemId)) {
-            return false;
-        }
-
-        return true;
     }
 
     private boolean isNewOrCurrentVersionSameSystem(Resource resource, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
