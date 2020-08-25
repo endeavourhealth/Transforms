@@ -32,12 +32,13 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class EmergencyCdsTargetTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmergencyCdsTargetTransformer.class);
-    private static Set<Long> patientEmergencyEncounterDates = new HashSet<>();
-    private static Set<String> patientEmergencyEpisodesDeleted = new HashSet<>();
+    private static Set<Long> patientEmergencyEncounterDates = ConcurrentHashMap.newKeySet();
+    private static Set<String> patientEmergencyEpisodesDeleted = ConcurrentHashMap.newKeySet();
 
     public static void transform(FhirResourceFiler fhirResourceFiler,
                                  BartsCsvHelper csvHelper) throws Exception {
