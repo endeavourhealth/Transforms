@@ -184,6 +184,11 @@ public class InpatientCdsTargetTransformer {
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
         String serviceProviderOrgId = targetInpatientCds.getEpisodeStartSiteCode();
+        //if there is no start site, there is often only an end site, so try that
+        if (Strings.isNullOrEmpty(serviceProviderOrgId)) {
+            serviceProviderOrgId = targetInpatientCds.getEpisodeEndSiteCode();
+        }
+
         if (!Strings.isNullOrEmpty(serviceProviderOrgId)) {
 
             Reference organizationReference
@@ -299,6 +304,20 @@ public class InpatientCdsTargetTransformer {
                 codeableConceptBuilderDischarge.setText("Inpatient Discharge");
 
                 setCommonEncounterAttributes(dischargeEncounterBuilder, targetInpatientCds, csvHelper, true, fhirResourceFiler);
+
+                //For the Discharge encounter, use the episode end site instead of the episode start site if it is provided
+                String serviceProviderOrgId = targetInpatientCds.getEpisodeEndSiteCode();
+                if (!Strings.isNullOrEmpty(serviceProviderOrgId)) {
+
+                    Reference organizationReference
+                            = ReferenceHelper.createReference(ResourceType.Organization, serviceProviderOrgId);
+                    if (dischargeEncounterBuilder.isIdMapped()) {
+
+                        organizationReference
+                                = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
+                    }
+                    dischargeEncounterBuilder.setServiceProvider(organizationReference);
+                }
 
                 //add in additional extended data as Parameters resource with additional extension
                 setDischargeContainedParameters(dischargeEncounterBuilder, targetInpatientCds);
