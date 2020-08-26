@@ -227,14 +227,14 @@ public class CriticalCareCdsTargetTransformer {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "critical_care_type"
+                    "critical_care_type_id"
             );
             MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
             //CriticalCareTypeId is a CDS local code
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Barts","CM_Sys_Cerner","CDS","critical",
-                    "critical_care_type", criticalCareTypeId, IMConstant.CDS_LOCAL
+                    "critical_care_type_id", criticalCareTypeId, IMConstant.CDS_LOCAL
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 

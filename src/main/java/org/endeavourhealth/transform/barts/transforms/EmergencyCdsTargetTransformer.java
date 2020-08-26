@@ -832,7 +832,7 @@ public class EmergencyCdsTargetTransformer {
 
             MapColumnRequest propertyRequest = new MapColumnRequest(
                     "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
-                    "follow_up"
+                    "discharge_follow_up"
             );
             MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
