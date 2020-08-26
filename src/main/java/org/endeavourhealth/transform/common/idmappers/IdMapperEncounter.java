@@ -96,6 +96,9 @@ public class IdMapperEncounter extends BaseIdMapper {
         if (encounter.hasServiceProvider()) {
             super.mapReference(encounter.getServiceProvider(), mappings, failForMissingMappings);
         }
+        if (encounter.hasPartOf()) {
+            super.mapReference(encounter.getPartOf(), mappings, failForMissingMappings);
+        }
 
     }
 

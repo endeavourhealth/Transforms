@@ -17,7 +17,9 @@ import org.endeavourhealth.core.database.dal.reference.models.PostcodeLookup;
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
+import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.subscriber.*;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
@@ -139,25 +141,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
 
-        /*Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
-        if (fhirAddress != null) {
-            postcode = fhirAddress.getPostalCode();
-            postcodePrefix = findPostcodePrefix(postcode);
-        }*/
-
-        //if we've found a postcode, then get the LSOA etc. for it
-        /*if (!Strings.isNullOrEmpty(postcode)) {
-            PostcodeDalI postcodeDal = DalProvider.factoryPostcodeDal();
-            PostcodeLookup postcodeReference = postcodeDal.getPostcodeReference(postcode);
-            if (postcodeReference != null) {
-                lsoaCode = postcodeReference.getLsoaCode();
-                msoaCode = postcodeReference.getMsoaCode();
-                wardCode = postcodeReference.getWardCode();
-                localAuthorityCode = postcodeReference.getLocalAuthorityCode();
-                //townsendScore = postcodeReference.getTownsendScore();
-            }
-        }*/
-
         Extension ethnicityExtension = ExtensionConverter.findExtension(fhirPatient, FhirExtensionUri.PATIENT_ETHNICITY);
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
@@ -237,6 +220,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 currentAddressId,
                 ethnicCodeConceptId,
                 registeredPracticeId);
+
+        transformPatientAdditionals(fhirPatient, params, subscriberId);
     }
 
     private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
@@ -1177,5 +1162,59 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         return ret;
     }
+
+    private void transformPatientAdditionals(Patient fhir, SubscriberTransformHelper params, SubscriberId id) throws Exception {
+        //if it has no extension data, then nothing further to do
+        if (!fhir.hasExtension()) {
+            return;
+        }
+        //then for each additional extension parameter the additional data
+        Extension additionalExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ADDITIONAL);
+        if (additionalExtension != null) {
+
+            Reference idReference = (Reference)additionalExtension.getValue();
+            String idReferenceValue = idReference.getReference();
+            idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
+
+            for (Resource containedResource: fhir.getContained()) {
+                if (containedResource.getId().equals(idReferenceValue)) {
+
+                    OutputContainer outputContainer = params.getOutputContainer();
+                    PatientAdditional patientAdditional = outputContainer.getPatientAdditional();
+
+                    //additional extension data is stored as Parameter resources
+                    Parameters parameters = (Parameters)containedResource;
+
+                    //get all the entries in the parameters list
+                    List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
+                    for (Parameters.ParametersParameterComponent parameter : entries) {
+
+                        //each parameter entry  will have a key value pair of name and CodeableConcept value
+                        if (parameter.hasName() && parameter.hasValue()) {
+
+                            //these values are from IM API mapping
+                            String propertyCode = parameter.getName();
+                            String propertyScheme = "CM_DiscoveryCode";
+
+                            CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                            String valueCode = parameterValue.getCoding().get(0).getCode();
+                            String valueScheme = parameterValue.getCoding().get(0).getSystem();
+
+                            //we need to look up DBids for both
+                            Integer propertyConceptDbid =
+                                    IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
+                            Integer valueConceptDbid =
+                                    IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
+                            //write the IM values to the patient_additional table upsert
+                            patientAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
 
 }

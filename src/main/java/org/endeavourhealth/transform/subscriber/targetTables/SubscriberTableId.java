@@ -28,7 +28,8 @@ public enum SubscriberTableId {
     ENCOUNTER_EVENT((byte)25, "encounter_event"),
     ENCOUNTER_ADDITIONAL((byte)26, "encounter_additional"),
     PATIENT_PSEUDO_ID((byte)27, "patient_pseudo_id"),
-    OBSERVATION_ADDITIONAL((byte)28, "observation_additional"),;
+    OBSERVATION_ADDITIONAL((byte)28, "observation_additional"),
+    PATIENT_ADDITIONAL((byte)28, "patient_additional"),;
 
     private byte id;
     private String name;

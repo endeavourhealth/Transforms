@@ -32,7 +32,7 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
                                      AbstractEnterpriseCsvWriter csvWriter,
                                      EnterpriseTransformHelper params) throws Exception {
 
-        Appointment fhir = (Appointment)resourceWrapper.getResource(); //returns null if deleted
+        Appointment fhir = (Appointment) resourceWrapper.getResource(); //returns null if deleted
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
@@ -59,7 +59,7 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
         Date bookedDate = null;
 
         if (fhir.hasParticipant()) {
-            for (Appointment.AppointmentParticipantComponent participantComponent: fhir.getParticipant()) {
+            for (Appointment.AppointmentParticipantComponent participantComponent : fhir.getParticipant()) {
                 Reference reference = participantComponent.getActor();
                 ReferenceComponents components = ReferenceHelper.getReferenceComponents(reference);
 
@@ -90,8 +90,9 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
             if (wrapper != null) {
                 Slot fhirSlot = (Slot) FhirSerializationHelper.deserializeResource(wrapper.getResourceData());
                 Reference scheduleReference = fhirSlot.getSchedule();
-                scheduleId = transformOnDemandAndMapId(scheduleReference, params);
-
+                if (scheduleReference != null) {
+                    scheduleId = transformOnDemandAndMapId(scheduleReference, params);
+                }
             } else {
                 //a bug was found that meant this happened. So if it happens again, something is wrong
                 throw new TransformException("Failed to find " + slotReference.getReference() + " for " + fhir.getResourceType() + " " + fhir.getId());
@@ -104,7 +105,7 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
         Date end = fhir.getEnd();
         if (startDate != null && end != null) {
             long millisDiff = end.getTime() - startDate.getTime();
-            plannedDuration = Integer.valueOf((int)(millisDiff / (1000 * 60)));
+            plannedDuration = Integer.valueOf((int) (millisDiff / (1000 * 60)));
         }
 
         if (fhir.hasMinutesDuration()) {
@@ -116,10 +117,10 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
         statusId = status.ordinal();
 
         if (fhir.hasExtension()) {
-            for (Extension extension: fhir.getExtension()) {
+            for (Extension extension : fhir.getExtension()) {
 
                 if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_PATIENT_WAIT)) {
-                    Duration d = (Duration)extension.getValue();
+                    Duration d = (Duration) extension.getValue();
                     if (!d.getUnit().equalsIgnoreCase("minutes")) {
                         throw new TransformException("Unsupported patient wait unit [" + d.getUnit() + "] in " + fhir.getId());
                     }
@@ -127,7 +128,7 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
                     patientWait = Integer.valueOf(i);
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_PATIENT_DELAY)) {
-                    Duration d = (Duration)extension.getValue();
+                    Duration d = (Duration) extension.getValue();
                     if (!d.getUnit().equalsIgnoreCase("minutes")) {
                         throw new TransformException("Unsupported patient delay unit [" + d.getUnit() + "] in " + fhir.getId());
                     }
@@ -135,38 +136,37 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
                     patientDelay = Integer.valueOf(i);
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_SENT_IN)) {
-                    DateTimeType dt = (DateTimeType)extension.getValue();
+                    DateTimeType dt = (DateTimeType) extension.getValue();
                     sentIn = dt.getValue();
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_LEFT)) {
-                    DateTimeType dt = (DateTimeType)extension.getValue();
+                    DateTimeType dt = (DateTimeType) extension.getValue();
                     left = dt.getValue();
 
                 } else if (extension.getUrl().equals(FhirExtensionUri.APPOINTMENT_BOOKING_DATE)) {
-                    DateTimeType dt = (DateTimeType)extension.getValue();
+                    DateTimeType dt = (DateTimeType) extension.getValue();
                     bookedDate = dt.getValue();
                 }
             }
         }
 
-        org.endeavourhealth.transform.enterprise.outputModels.Appointment model = (org.endeavourhealth.transform.enterprise.outputModels.Appointment)csvWriter;
+        org.endeavourhealth.transform.enterprise.outputModels.Appointment model = (org.endeavourhealth.transform.enterprise.outputModels.Appointment) csvWriter;
         model.writeUpsert(id,
-            organisationId,
-            patientId,
-            personId,
-            practitionerId,
-            scheduleId,
-            startDate,
-            plannedDuration,
-            actualDuration,
-            statusId,
-            patientWait,
-            patientDelay,
-            sentIn,
-            left,
-            bookedDate);
+                organisationId,
+                patientId,
+                personId,
+                practitionerId,
+                scheduleId,
+                startDate,
+                plannedDuration,
+                actualDuration,
+                statusId,
+                patientWait,
+                patientDelay,
+                sentIn,
+                left,
+                bookedDate);
     }
-
 
 
 }

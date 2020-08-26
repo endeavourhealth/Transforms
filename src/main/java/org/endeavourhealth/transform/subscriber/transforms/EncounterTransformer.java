@@ -310,7 +310,6 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                                 CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
                                 String valueCode = parameterValue.getCoding().get(0).getCode();
                                 String valueScheme = parameterValue.getCoding().get(0).getSystem();
-
                                 //we need to look up DBids for both
                                 Integer propertyConceptDbid =
                                         IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);

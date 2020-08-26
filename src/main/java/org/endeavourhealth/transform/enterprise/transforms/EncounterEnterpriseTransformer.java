@@ -39,11 +39,11 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
     }
 
     protected void transformResource(Long enterpriseId,
-                          ResourceWrapper resourceWrapper,
-                          AbstractEnterpriseCsvWriter csvWriter,
-                          EnterpriseTransformHelper params) throws Exception {
+                                     ResourceWrapper resourceWrapper,
+                                     AbstractEnterpriseCsvWriter csvWriter,
+                                     EnterpriseTransformHelper params) throws Exception {
 
-        Encounter fhir = (Encounter)resourceWrapper.getResource(); //returns null if deleted
+        Encounter fhir = (Encounter) resourceWrapper.getResource(); //returns null if deleted
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
@@ -75,10 +75,10 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
 
         if (fhir.hasParticipant()) {
 
-            for (Encounter.EncounterParticipantComponent participantComponent: fhir.getParticipant()) {
+            for (Encounter.EncounterParticipantComponent participantComponent : fhir.getParticipant()) {
 
                 boolean primary = false;
-                for (CodeableConcept codeableConcept: participantComponent.getType()) {
+                for (CodeableConcept codeableConcept : participantComponent.getType()) {
                     for (Coding coding : codeableConcept.getCoding()) {
                         String typeCode = coding.getCode();
                         if (typeCode.equals(EncounterParticipantType.PRIMARY_PERFORMER.getCode()) //used for GP
@@ -119,7 +119,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
             //so it should be added here. But the IM was returning the code with the prefix
             //so check for the presence of it and only add if required
             if (!Strings.isNullOrEmpty(originalCode)
-                && !originalCode.startsWith("LE_")) {
+                    && !originalCode.startsWith("LE_")) {
                 originalCode = "LE_" + originalCode;
             }
 
@@ -146,7 +146,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         if (!fhir.hasPartOf()) {
 
             //if the FHIR Encounter is NOT part of another encounter, then write it to the regular encounter table
-            org.endeavourhealth.transform.enterprise.outputModels.Encounter model = (org.endeavourhealth.transform.enterprise.outputModels.Encounter)csvWriter;
+            org.endeavourhealth.transform.enterprise.outputModels.Encounter model = (org.endeavourhealth.transform.enterprise.outputModels.Encounter) csvWriter;
             model.setIncludeDateRecorded(params.isIncludeDateRecorded());
             model.writeUpsert(id,
                     organisationId,
@@ -220,7 +220,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
             return null;
         }
 
-        for (Encounter.EncounterLocationComponent loc: encounter.getLocation()) {
+        for (Encounter.EncounterLocationComponent loc : encounter.getLocation()) {
             if (loc.getStatus() == Encounter.EncounterLocationStatus.ACTIVE) {
                 Reference ref = loc.getLocation();
                 return transformOnDemandAndMapId(ref, params);
@@ -235,7 +235,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                                               Long episodeOfCareId, Date clinicalEffectiveDate, Integer datePrecisionId, Long appointmentId,
                                               Long serviceProviderOrganisationId) throws Exception {
 
-        Encounter fhir = (Encounter)resource;
+        Encounter fhir = (Encounter) resource;
 
         Long recordingPractitionerId = findRecordingPractitionerId(fhir, params);
         Date recordingDate = findRecordingDate(fhir);
@@ -272,53 +272,53 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
 
         EncounterDetail encounterDetail = outputContainer.getEncounterDetails();
         encounterDetail.writeUpsert(id,
-                        organisationId,
-                        patientId,
-                        personId,
-                        practitionerId,
-                        episodeOfCareId,
-                        clinicalEffectiveDate,
-                        datePrecisionId,
-                        recordingPractitionerId,
-                        recordingDate,
-                        appointmentId,
-                        serviceProviderOrganisationId,
-                        locationId,
-                        endDate,
-                        durationMins,
-                        completionStatusConceptId,
-                        healthcareServiceTypeConceptId,
-                        interactionModeConceptId,
-                        administrativeActionConceptId,
-                        purposeConceptId,
-                        dispositionConceptId,
-                        siteOfCareTypeConceptId,
-                        patientStatusConceptId);
+                organisationId,
+                patientId,
+                personId,
+                practitionerId,
+                episodeOfCareId,
+                clinicalEffectiveDate,
+                datePrecisionId,
+                recordingPractitionerId,
+                recordingDate,
+                appointmentId,
+                serviceProviderOrganisationId,
+                locationId,
+                endDate,
+                durationMins,
+                completionStatusConceptId,
+                healthcareServiceTypeConceptId,
+                interactionModeConceptId,
+                administrativeActionConceptId,
+                purposeConceptId,
+                dispositionConceptId,
+                siteOfCareTypeConceptId,
+                patientStatusConceptId);
 
 
         EncounterRaw encounterRaw = outputContainer.getEncounterRaws();
         encounterRaw.writeUpsert(id,
-                        organisationId,
-                        patientId,
-                        personId,
-                        practitionerId,
-                        episodeOfCareId,
-                        clinicalEffectiveDate,
-                        datePrecisionId,
-                        recordingPractitionerId,
-                        recordingDate,
-                        appointmentId,
-                        serviceProviderOrganisationId,
-                        locationId,
-                        endDate,
-                        durationMins,
-                        fhirAdtMessageCode,
-                        fhirClass,
-                        fhirType,
-                        fhirStatus,
-                        fhirSnomedConceptId,
-                        fhirOriginalCode,
-                        fhirOriginalTerm);
+                organisationId,
+                patientId,
+                personId,
+                practitionerId,
+                episodeOfCareId,
+                clinicalEffectiveDate,
+                datePrecisionId,
+                recordingPractitionerId,
+                recordingDate,
+                appointmentId,
+                serviceProviderOrganisationId,
+                locationId,
+                endDate,
+                durationMins,
+                fhirAdtMessageCode,
+                fhirClass,
+                fhirType,
+                fhirStatus,
+                fhirSnomedConceptId,
+                fhirOriginalCode,
+                fhirOriginalTerm);
     }
 
     private Integer findDuration(Date startDate, Date endDate) {
@@ -330,12 +330,12 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         long msDiff = endDate.getTime() - startDate.getTime();
         long secDiff = msDiff / 1000;
         long minDur = secDiff / 60;
-        return new Integer((int)minDur);
+        return new Integer((int) minDur);
     }
 
     private void transformEncounterAdditionals(Resource resource, EnterpriseTransformHelper params, long id) throws Exception {
 
-        Encounter fhir = (Encounter)resource;
+        Encounter fhir = (Encounter) resource;
 
         //if it has no extension data, then nothing further to do
         if (!fhir.hasExtension()) {
@@ -348,18 +348,18 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
 
         if (additionalExtension != null) {
 
-            Reference idReference = (Reference)additionalExtension.getValue();
+            Reference idReference = (Reference) additionalExtension.getValue();
             String idReferenceValue = idReference.getReference();
             idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
 
-            for (Resource containedResource: fhir.getContained()) {
+            for (Resource containedResource : fhir.getContained()) {
                 if (containedResource.getId().equals(idReferenceValue)) {
 
                     OutputContainer outputContainer = params.getOutputContainer();
                     EncounterAdditional encounterAdditional = outputContainer.getEncounterAdditional();
 
                     //additional extension data is stored as Parameter resources
-                    Parameters parameters = (Parameters)containedResource;
+                    Parameters parameters = (Parameters) containedResource;
 
                     //get all the entries in the parameters list
                     List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
@@ -372,20 +372,23 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
 
                             String propertyCode = parameter.getName();
                             if (!propertyCode.startsWith("JSON_")) {
-
                                 //these values are from IM API mapping so set as Discovery Code
                                 String propertyScheme = IMConstant.DISCOVERY_CODE;
+                                String type = parameter.getValue().getClass().getSimpleName();
+                                if (type.equalsIgnoreCase("CodeableConcept")) {
+                                    CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                                    String valueCode = parameterValue.getCoding().get(0).getCode();
+                                    String valueScheme = parameterValue.getCoding().get(0).getSystem();
 
-                                CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
-                                String valueCode = parameterValue.getCoding().get(0).getCode();
-                                String valueScheme = parameterValue.getCoding().get(0).getSystem();
-
-                                //we need to get the unique IM conceptId for the property and value
-                                String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
-                                String valueConceptId = IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
-
-                                //write the IM values to the encounter_additional table upsert
-                                encounterAdditional.writeUpsert(id, propertyConceptId, valueConceptId);
+                                    //we need to get the unique IM conceptId for the property and value
+                                    String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
+                                    String valueConceptId = IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
+                                    //write the IM values to the encounter_additional table upsert
+                                    encounterAdditional.writeUpsert(id, propertyConceptId, valueConceptId);
+                                } else if (type.equalsIgnoreCase("StringType")) {
+                                    //TODO handle StringType. They're used a lot. Focusing on Morbidity for BHRUT now
+                                    LOG.debug("Not handling StringType yet");
+                                }
                             } else {
                                 //TODO: Handle extended additional Json here
                             }
@@ -407,7 +410,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
             return null;
         }
 
-        return (CodeableConcept)extension.getValue();
+        return (CodeableConcept) extension.getValue();
     }
 
 
@@ -483,7 +486,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                 && fhir.hasClass_Element()
                 && fhir.getClass_Element().hasExtension()) {
 
-            for (Extension classExtension: fhir.getClass_Element().getExtension()) {
+            for (Extension classExtension : fhir.getClass_Element().getExtension()) {
                 if (classExtension.getUrl().equals(FhirExtensionUri.ENCOUNTER_CLASS)) {
                     return "" + classExtension.getValue();
                 }
@@ -522,7 +525,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
             return null;
         }
 
-        Reference reference = (Reference)extension.getValue();
+        Reference reference = (Reference) extension.getValue();
         return transformOnDemandAndMapId(reference, params);
     }
 
@@ -546,7 +549,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         Reference locationReference = null;
 
         //use an active location
-        for (Encounter.EncounterLocationComponent location: fhir.getLocation()) {
+        for (Encounter.EncounterLocationComponent location : fhir.getLocation()) {
             if (location.hasStatus()
                     && location.getStatus() == Encounter.EncounterLocationStatus.ACTIVE) {
 
@@ -556,7 +559,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
 
         //if no active location, use a completed one
         if (locationReference == null) {
-            for (Encounter.EncounterLocationComponent location: fhir.getLocation()) {
+            for (Encounter.EncounterLocationComponent location : fhir.getLocation()) {
                 if (location.hasStatus()
                         && location.getStatus() == Encounter.EncounterLocationStatus.COMPLETED) {
 
@@ -567,7 +570,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
 
         //if no completed or active location any
         if (locationReference == null) {
-            for (Encounter.EncounterLocationComponent location: fhir.getLocation()) {
+            for (Encounter.EncounterLocationComponent location : fhir.getLocation()) {
                 locationReference = location.getLocation();
             }
         }
@@ -584,7 +587,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
         if (fhir.hasExtension()) {
             Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
             if (extension != null) {
-                DateTimeType dtt = (DateTimeType)extension.getValue();
+                DateTimeType dtt = (DateTimeType) extension.getValue();
                 return dtt.getValue();
             }
         }
@@ -686,7 +689,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                 && fhir.hasClass_Element()
                 && fhir.getClass_Element().hasExtension()) {
 
-            for (Extension classExtension: fhir.getClass_Element().getExtension()) {
+            for (Extension classExtension : fhir.getClass_Element().getExtension()) {
                 if (classExtension.getUrl().equals(FhirExtensionUri.ENCOUNTER_CLASS)) {
                     //not 100% of the type of the value, so just append to a String
                     clsDesc = "" + classExtension.getValue();
@@ -696,7 +699,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
 
         //get type
         String typeDesc = null;
-        for (CodeableConcept typeCodeableConcept: fhir.getType()) {
+        for (CodeableConcept typeCodeableConcept : fhir.getType()) {
             //there should only be a single codeable concept, so just assign this
             typeDesc = typeCodeableConcept.getText();
         }

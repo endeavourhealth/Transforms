@@ -94,9 +94,9 @@ public class OutpatientsTransformer {
             return;
         }
 
-        //add the slot reference to the appointment
-        Reference slotRef = csvHelper.createSlotReference(apptUniqueId);
-        appointmentBuilder.addSlot(slotRef);
+//        //add the slot reference to the appointment
+//        Reference slotRef = csvHelper.createSlotReference(apptUniqueId);
+//        appointmentBuilder.addSlot(slotRef);
 
         //add the appointment ref to the encounter
         Reference appointmentRef = csvHelper.createAppointmentReference(apptUniqueId);
@@ -435,6 +435,7 @@ public class OutpatientsTransformer {
                 if (Strings.isNullOrEmpty(procTerm)) {
                     throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
                 }
+                codeableConceptBuilder.setCodingDisplay(procTerm);
                 Reference consultantReference4 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
                 procedureBuilder.addPerformer(consultantReference4, consultantCodeCell);
 

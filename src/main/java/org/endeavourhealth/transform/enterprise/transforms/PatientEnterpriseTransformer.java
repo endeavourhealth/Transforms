@@ -20,6 +20,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPerso
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.*;
@@ -139,6 +140,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         currentAddressId = transformAddresses(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
         transformTelecoms(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
 
+        transformPatientAdditionals(fhirPatient, params,id);
 
         //Calendar cal = Calendar.getInstance();
 
@@ -1007,4 +1009,61 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             }
         }
     }
+
+    private void transformPatientAdditionals(Patient fhir, EnterpriseTransformHelper params, long id) throws Exception {
+
+
+        //if it has no extension data, then nothing further to do
+        if (!fhir.hasExtension()) {
+            return;
+        }
+
+        //then for each additional extension parameter the additional data
+        Extension additionalExtension
+                = ExtensionConverter.findExtension(fhir, FhirExtensionUri.ADDITIONAL);
+
+        if (additionalExtension != null) {
+
+            Reference idReference = (Reference)additionalExtension.getValue();
+            String idReferenceValue = idReference.getReference();
+            idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
+
+            for (Resource containedResource: fhir.getContained()) {
+                if (containedResource.getId().equals(idReferenceValue)) {
+
+                    OutputContainer outputContainer = params.getOutputContainer();
+                    PatientAdditional patientAdditional = outputContainer.getPatientAdditional();
+
+                    //additional extension data is stored as Parameter resources
+                    Parameters parameters = (Parameters)containedResource;
+
+                    //get all the entries in the parameters list
+                    List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
+                    for (Parameters.ParametersParameterComponent parameter : entries) {
+
+                        //each parameter entry  will have a key value pair of name and CodeableConcept value
+                        if (parameter.hasName() && parameter.hasValue()) {
+
+                            //these values are from IM API mapping
+                            String propertyCode = parameter.getName();
+                            String propertyScheme = "CM_DiscoveryCode";
+
+                            CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                            String valueCode = parameterValue.getCoding().get(0).getCode();
+                            String valueScheme = parameterValue.getCoding().get(0).getSystem();
+
+                            //we need to get the unique IM conceptId for the property and value
+                            String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
+                            String valueConceptId =  IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
+
+                            //write the IM values to the encounter_additional table upsert
+                            patientAdditional.writeUpsert(id, propertyConceptId, valueConceptId);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
 }

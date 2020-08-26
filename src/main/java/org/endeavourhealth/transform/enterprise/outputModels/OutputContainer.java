@@ -266,4 +266,8 @@ public class OutputContainer {
     public PatientPseudoId getPatientPseudoId() {
         return findCsvWriter(PatientPseudoId.class);
     }
+    public PatientAdditional getPatientAdditional() {
+        return findCsvWriter(PatientAdditional.class);
+    }
+
 }
