@@ -497,7 +497,7 @@ public class InpatientCdsTargetTransformer {
                 existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
                 //only update the end date if it is after the existing date
-                if (existingEncounterBuilder.getPeriod() == null || dischargeDate.after(existingEncounterBuilder.getPeriod().getStart())) {
+                if (existingEncounterBuilder.getPeriod() == null || dischargeDate.after(existingEncounterBuilder.getPeriod().getEnd())) {
                     existingEncounterBuilder.setPeriodEnd(dischargeDate);
                 }
             }

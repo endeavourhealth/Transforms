@@ -553,7 +553,7 @@ public class EmergencyCdsTargetTransformer {
                 existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
             }
 
-            if (existingEncounterBuilder.getPeriod() == null || departureDate.after(existingEncounterBuilder.getPeriod().getStart())) {
+            if (existingEncounterBuilder.getPeriod() == null || departureDate.after(existingEncounterBuilder.getPeriod().getEnd())) {
 
                 existingEncounterBuilder.setPeriodEnd(departureDate);
             }
@@ -566,7 +566,7 @@ public class EmergencyCdsTargetTransformer {
 
                 existingEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
-                if (existingEncounterBuilder.getPeriod() == null || conclusionDate.after(existingEncounterBuilder.getPeriod().getStart())) {
+                if (existingEncounterBuilder.getPeriod() == null || conclusionDate.after(existingEncounterBuilder.getPeriod().getEnd())) {
                     existingEncounterBuilder.setPeriodEnd(conclusionDate);
                 }
 
