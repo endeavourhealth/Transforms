@@ -83,6 +83,7 @@ public abstract class FhirTransformer {
         Message hapiMsg = null;
         try {
             // The parse method performs the actual parsing
+            LOG.info("Shreekanth"+hl7Message);
             hapiMsg = pipeParser.parse(hl7Message);
         } catch (EncodingNotSupportedException e) {
             e.printStackTrace();
