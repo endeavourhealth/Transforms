@@ -81,11 +81,11 @@ public class UPRN {
 			Response response = get(baseUrl, "api/getcsv", params);
 
 			if (response.getStatus() == 200) {
-				Object o = response.getEntity();
+				/*Object o = response.getEntity();
 				LOG.trace("Entity = " + o);
 				LOG.trace("Cls " + o.getClass());
-				return (String)o;
-				//return response.readEntity(String.class);
+				return (String)o;*/
+				return response.readEntity(String.class);
 
 			} else {
 				throw new IOException(response.readEntity(String.class));
