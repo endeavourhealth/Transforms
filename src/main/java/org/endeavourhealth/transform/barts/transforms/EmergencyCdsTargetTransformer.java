@@ -114,7 +114,7 @@ public class EmergencyCdsTargetTransformer {
 
                 //find the patient UUID for the encounters we have just filed, so we can tidy up the
                 //HL7 encounters after doing all the saving of the DW encounters
-                deleteHL7ReceiverPatientEmergencyEncounters(targetEmergencyCds, fhirResourceFiler, csvHelper);
+                deleteHL7ReceiverPatientEmergencyEncounters(parentEncounterBuilder, targetEmergencyCds, fhirResourceFiler, csvHelper);
                 patientEmergencyEncounterDates.clear();
                 patientEmergencyEpisodesDeleted.clear();
 
@@ -599,7 +599,8 @@ public class EmergencyCdsTargetTransformer {
      * we match to some HL7 Receiver Encounters, basically taking them over
      * so we call this to tidy up (delete) any matching Encounters that have been taken over
      */
-    private static void deleteHL7ReceiverPatientEmergencyEncounters(StagingEmergencyCdsTarget targetEmergencyCds,
+    private static void deleteHL7ReceiverPatientEmergencyEncounters(EncounterBuilder existingDWParentEncounterBuilder,
+                                                                    StagingEmergencyCdsTarget targetEmergencyCds,
                                                                     FhirResourceFiler fhirResourceFiler,
                                                                     BartsCsvHelper csvHelper) throws Exception {
 
@@ -642,27 +643,37 @@ public class EmergencyCdsTargetTransformer {
                 }
 
                 String json = wrapper.getResourceData();
-                Encounter existingEncounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
+                Encounter existingHL7Encounter = (Encounter) FhirSerializationHelper.deserializeResource(json);
 
                 //if the HL7 Encounter is before our 12 hr cutoff, look to delete it
-                if (existingEncounter.hasPeriod()
-                        && existingEncounter.getPeriod().hasStart()
-                        && existingEncounter.getPeriod().getStart().before(cutoff)) {
+                if (existingHL7Encounter.hasPeriod()
+                        && existingHL7Encounter.getPeriod().hasStart()
+                        && existingHL7Encounter.getPeriod().getStart().before(cutoff)) {
 
                     //finally, check it is an Emergency encounter and has a matching start date to one just filed before deleting
-                    if (existingEncounter.getClass_().equals(Encounter.EncounterClass.EMERGENCY)) {
+                    if (existingHL7Encounter.getClass_().equals(Encounter.EncounterClass.EMERGENCY)) {
 
-                        if (patientEmergencyEncounterDates.contains(existingEncounter.getPeriod().getStart().getTime())) {
+                        if (patientEmergencyEncounterDates.contains(existingHL7Encounter.getPeriod().getStart().getTime())) {
 
-                            GenericBuilder builder = new GenericBuilder(existingEncounter);
+                            //first up, copy across location data from HL7 encounter as this is not provided for CDS
+                            //and will be a useful view of location / wards etc.
+                            Encounter existingDWParentEncounter
+                                    = (Encounter) existingDWParentEncounterBuilder.getResource();
+                            if (updateEncounterLocation(existingDWParentEncounter, existingHL7Encounter)) {
+
+                                //save the parent encounter updated with the location inform from hl7
+                                fhirResourceFiler.savePatientResource (null, existingDWParentEncounterBuilder);
+                            }
+
+                            GenericBuilder builder = new GenericBuilder(existingHL7Encounter);
                             //we have no audit for deleting these encounters, since it's not triggered by a specific piece of data
                             //builder.setDeletedAudit(...);
-                            LOG.debug("Existing Emergency ADT encounterId: " + existingEncounter.getId() + " deleted as matched type and date to DW");
+                            LOG.debug("Existing Emergency ADT encounterId: " + existingHL7Encounter.getId() + " deleted as matched type and date to DW");
                             fhirResourceFiler.deletePatientResource(null, false, builder);
 
                             //get the linked episode of care reference and delete the resource so duplication does not occur between DW and ADT
-                            if (existingEncounter.hasEpisodeOfCare()) {
-                                Reference episodeReference = existingEncounter.getEpisodeOfCare().get(0);
+                            if (existingHL7Encounter.hasEpisodeOfCare()) {
+                                Reference episodeReference = existingHL7Encounter.getEpisodeOfCare().get(0);
                                 String episodeUuid = ReferenceHelper.getReferenceId(episodeReference);
 
                                 //add episode of care for deletion if not already deleted
@@ -685,6 +696,27 @@ public class EmergencyCdsTargetTransformer {
                 }
             }
         }
+    }
+
+    //copy across the location data from the matching HL7 Encounter to the parent CDS encounter as this detail is not provided by CDS
+    private static boolean updateEncounterLocation(Encounter existingDWParentEncounter, Encounter hl7Encounter) {
+
+        boolean locationAdded = false;
+
+        if (!hl7Encounter.hasLocation()) {
+            return false;
+        }
+        for (Encounter.EncounterLocationComponent hl7EncounterLocation: hl7Encounter.getLocation()) {
+
+            if (hl7EncounterLocation.hasStatus()) {
+
+                existingDWParentEncounter.getLocation().add(hl7EncounterLocation.copy());
+
+                locationAdded = true;
+            }
+        }
+
+        return locationAdded;
     }
 
     private static void setArrivalContainedParameters(EncounterBuilder encounterBuilder,
