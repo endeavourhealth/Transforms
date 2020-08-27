@@ -412,6 +412,7 @@ public abstract class TppCsvToFhirTransformer {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static AbstractCsvParser createParserForFile(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
 
         String fName = FilenameUtils.getBaseName(filePath);
@@ -523,7 +524,7 @@ public abstract class TppCsvToFhirTransformer {
             SRMappingTransformer.transform(parsers, fhirResourceFiler);
             SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
             SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            //SRCtv3ToSnomedTransformer.transform(parsers, fhirResourceFiler, csvHelper); //TODO - DREW to restore once tested
+            SRCtv3ToSnomedTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             //organisational admin data
             LOG.info("Starting admin transforms");

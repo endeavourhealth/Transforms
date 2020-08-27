@@ -117,6 +117,7 @@ public abstract class BhrutCsvToFhirTransformer {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static void findFileAndOpenParser(Class parserCls, UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> ret) throws Exception {
 
         String className = parserCls.getSimpleName();

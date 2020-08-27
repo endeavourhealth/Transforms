@@ -110,6 +110,7 @@ public abstract class VisionCsvToFhirTransformer {
         return name.contains("active_user_data") || name.contains("patient_check_sum_data");
     }
 
+    @SuppressWarnings("unchecked")
     public static void findFileAndOpenParser(Class parserCls, UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> ret) throws Exception {
 
         String name = parserCls.getSimpleName();

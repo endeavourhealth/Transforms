@@ -55,7 +55,7 @@ public class PseudoIdBuilder {
         }
 
         if (treeMap == null) {
-            treeMap = new TreeMap();
+            treeMap = new TreeMap<>();
         }
 
         treeMap.put(fieldName, fieldValue);

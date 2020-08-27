@@ -19,7 +19,6 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPerso
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
-import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.subscriber.*;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
@@ -43,7 +42,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
 
-    public static String uprnToken = "";
+    //public static String uprnToken = "";
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -326,39 +325,17 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void uprn(SubscriberTransformHelper params, Patient currentPatient, int i, ResourceWrapper resourceWrapper, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode, Long currentAddressId) throws Exception {
+    private void uprn(SubscriberTransformHelper params, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode, Long currentAddressId) throws Exception {
 
-        JsonNode config = ConfigManager.getConfigurationAsJson("UPRN", "db_subscriber");
-        if (config == null) {
+        if (!UPRN.isConfigured()) {
             return;
         }
-
-        //JsonNode enabled = config.get("enabled");
-        //if (enabled.asText().equals("0")) {return;}
 
         String configName = params.getSubscriberConfigName();
-
-        //removed as this ID was never used but was generating a ton of IDs in the DB
-        /*String uprn_sourceId = ReferenceHelper.createReferenceExternal(currentPatient).getReference() + PREFIX_ADDRESS_MATCH_ID + i;
-        SubscriberId uprn_subTableId = findOrCreateSubscriberId(params, SubscriberTableId.PATIENT_ADDRESS_MATCH, uprn_sourceId); // was sourceId*/
-
-        //params.setSubscriberIdTransformed(resourceWrapper, uprn_subTableId);
-
-        // call the UPRN API
-        JsonNode token_endpoint = config.get("token_endpoint");
-        JsonNode clientid = config.get("clientid");
-        JsonNode password = config.get("password");
-        JsonNode username = config.get("username");
-        JsonNode uprn_endpoint = config.get("uprn_endpoint");
-
-        JsonNode zs = config.get("subscribers");
-        Integer ok = UPRN.Activated(zs, configName);
-        if (ok.equals(0)) {
-            LOG.debug("subscriber " + configName + " not activated for UPRN, exiting");
+        if (!UPRN.isActivated(configName)) {
+            LOG.debug("subscriber " + configName + " not activated for UPRN");
             return;
         }
-
-        uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
 
         if (addressLine1 == null) {
             addressLine1 = "";
@@ -385,18 +362,12 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         // adrec="201,Darkes Lane,Potters Bar,EN6 1BX";
 
         String ids = Long.toString(subTableId.getSubscriberId()) + "`" + configName;
-        String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
-        // token time out?
-        if (csv.isEmpty()) {
-            UPRN.uprnToken = "";
-            // get another token
-            uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
-            csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
-            if (csv.isEmpty()) {
-                LOG.debug("Unable to get address from UPRN API");
-                return;
-            }
+        String csv = UPRN.getAdrec(adrec, ids);
+        if (Strings.isNullOrEmpty(csv)) {
+            LOG.debug("Unable to get address from UPRN API");
+            return;
         }
+        LOG.trace("Got UPRN result " + csv);
 
         PatientAddressMatch uprnwriter = params.getOutputContainer().getPatientAddressMatch();
 
@@ -443,9 +414,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             y = new BigDecimal(sY);
         }
 
-        Integer stati = 0;
+        Integer stati = new Integer(0);
         if (currentAddressId != null) {
-            stati = 1;
+            stati = new Integer(1);
         }
 
         String znumber = ss[1];
@@ -480,13 +451,12 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
             byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
 
-            String pseudoUprn = null;
             TreeMap<String, String> keys = new TreeMap<>();
             keys.put("UPRN", "" + sUprn);
 
             Crypto crypto = new Crypto();
             crypto.SetEncryptedSalt(saltBytes);
-            pseudoUprn = crypto.GetDigest(keys);
+            String pseudoUprn = crypto.GetDigest(keys);
             sUprn = pseudoUprn;
             // nullify fields
             znumber = null;
@@ -639,7 +609,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 city = address.getCity();
                 postcode = address.getPostalCode();
 
-                uprn(params, currentPatient, i, resourceWrapper, subTableId, addressLine1, addressLine2, addressLine3, addressLine4, city, postcode, currentAddressId);
+                uprn(params, subTableId, addressLine1, addressLine2, addressLine3, addressLine4, city, postcode, currentAddressId);
             }
         }
 
@@ -912,7 +882,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     }
 
 
-    private static final String findPostcodePrefix(String postcode) {
+    public static String findPostcodePrefix(String postcode) {
 
         if (Strings.isNullOrEmpty(postcode)) {
             return null;
@@ -960,7 +930,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     }
 
 
-    private static String convertJsonNodeToString(JsonNode jsonNode) throws Exception {
+    /*private static String convertJsonNodeToString(JsonNode jsonNode) throws Exception {
         try {
             ObjectMapper mapper = new ObjectMapper();
             Object json = mapper.readValue(jsonNode.toString(), Object.class);
@@ -968,7 +938,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         } catch (Exception e) {
             throw new Exception("Error parsing Link Distributor Config");
         }
-    }
+    }*/
 
     private void processChangesFromPreviousVersion(UUID serviceId, Patient current, Patient previous, SubscriberTransformHelper params) throws Exception {
 

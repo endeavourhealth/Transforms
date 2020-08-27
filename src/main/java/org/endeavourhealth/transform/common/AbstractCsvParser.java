@@ -137,13 +137,14 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         } else {
             LOG.info(action + " " + filePath + " (" + numLines + " lines)");
         }
-        InputStreamReader isr = null;
+        InputStreamReader isr;
         if (encoding != null) {
             isr = FileHelper.readFileReaderFromSharedStorage(filePath, encoding);
-        }
-        else {
+
+        } else {
             isr = FileHelper.readFileReaderFromSharedStorage(filePath);
         }
+
         this.csvReader = new CSVParser(isr, csvFormat);
         try {
             this.csvIterator = csvReader.iterator();
@@ -155,7 +156,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
                 LOG.info(e.getMessage());
                 if (filePath.toUpperCase().contains("TPP")) {
                     LOG.error("Retrying in case it's a TPP file with or without RemovedData ");
-                    ArrayList<String> headers = new ArrayList(Arrays.asList(expectedHeaders));
+                    ArrayList<String> headers = new ArrayList<>(Arrays.asList(expectedHeaders));
                     if (headers.contains(REMOVED_DATA_HEADER)) {
                         headers.remove(REMOVED_DATA_HEADER);
                     } else {
@@ -179,12 +180,8 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
     @Override
     public List<String> getColumnHeaders() {
-        List<String> ret = new ArrayList<>();
         String[] expectedHeaders = getCsvHeaders(version);
-        for (String s: expectedHeaders) {
-            ret.add(s);
-        }
-        return ret;
+        return new ArrayList<>(Arrays.asList(expectedHeaders));
     }
 
     /**
@@ -220,7 +217,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
         PublishedFileType publishedFileType = new PublishedFileType();
         publishedFileType.setFileType(getClass().getSimpleName());
-        publishedFileType.setVariableColumnDelimiter(csvFormat.getDelimiter());
+        publishedFileType.setVariableColumnDelimiter(new Character(csvFormat.getDelimiter()));
         publishedFileType.setVariableColumnEscape(csvFormat.getEscapeCharacter());
         publishedFileType.setVariableColumnQuote(csvFormat.getQuoteCharacter());
 
@@ -230,7 +227,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
             publishedFileType.getColumns().add(publishedFileColumn);
         }
 
-        this.fileAuditId = PublishedFileAuditHelper.auditPublishedFileRecord(this, firstRecordContainsHeaders, publishedFileType);
+        this.fileAuditId = new Integer(PublishedFileAuditHelper.auditPublishedFileRecord(this, firstRecordContainsHeaders, publishedFileType));
         return this.fileAuditId;
     }
 
@@ -291,7 +288,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         return ret;
     }
 
-    private List<String> reTestForValidVersionsForTpp(List<String> possibleVersions) throws Exception {
+    /*private List<String> reTestForValidVersionsForTpp(List<String> possibleVersions) throws Exception {
         // Handle tpp files where only difference is we may or may not have the RemovedData column
         // All TPP transforms should include a null check anyway
         List<String> ret = new ArrayList<>();
@@ -340,7 +337,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         }
 
         return ret;
-    }
+    }*/
 
     /*public void reset() throws Exception {
 
@@ -411,9 +408,9 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         return false;
     }
 
-    public Integer getNumLines() {
+    /*public Integer getNumLines() {
         return numLines;
-    }
+    }*/
 
     @Override
     public void setNumLines(Integer numLines) {
@@ -509,7 +506,7 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
 
     @Override
     public CsvCell getCell(String column) {
-        String value = null;
+        String value;
         try {
             value = csvRecord.get(column);
         } catch (IllegalArgumentException ex) {

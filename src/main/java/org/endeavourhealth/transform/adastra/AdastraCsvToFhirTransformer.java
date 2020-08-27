@@ -110,6 +110,7 @@ public abstract class AdastraCsvToFhirTransformer {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static void findFileAndOpenParser(Class parserCls, UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> ret) throws Exception {
 
         String name = parserCls.getSimpleName();
@@ -145,7 +146,7 @@ public abstract class AdastraCsvToFhirTransformer {
         throw new FileNotFoundException("Failed to find CSV file for " + name);
     }
 
-    public static String determineVersion(String[] files) throws Exception {
+    /*public static String determineVersion(String[] files) throws Exception {
 
         List<String> possibleVersions = new ArrayList<>();
         possibleVersions.add(VERSION_2);
@@ -178,7 +179,7 @@ public abstract class AdastraCsvToFhirTransformer {
         }
 
         throw new TransformException("Unable to determine version for Adastra CSV");
-    }
+    }*/
 
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,

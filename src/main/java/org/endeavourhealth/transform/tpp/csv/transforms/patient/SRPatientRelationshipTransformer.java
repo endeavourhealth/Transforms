@@ -184,7 +184,7 @@ public class SRPatientRelationshipTransformer {
         fhirName.setUse(HumanName.NameUse.USUAL);
         fhirName.setText(name);
         String[] tokens = name.split(" ");
-        ArrayList<String> list = new ArrayList(Arrays.asList(tokens));
+        ArrayList<String> list = new ArrayList<>(Arrays.asList(tokens));
         list.removeAll(Arrays.asList("", null));
         tokens = new String[list.size()];
         tokens = list.toArray(tokens);

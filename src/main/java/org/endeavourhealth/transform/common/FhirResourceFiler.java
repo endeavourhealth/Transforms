@@ -1,7 +1,5 @@
 package org.endeavourhealth.transform.common;
 
-import org.endeavourhealth.common.fhir.ReferenceComponents;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -9,9 +7,6 @@ import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
 import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.ExchangeBatch;
 import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
-import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
-import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
-import org.endeavourhealth.core.database.dal.eds.models.PatientSearch;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.SourceFileMappingDalI;
@@ -25,7 +20,6 @@ import org.endeavourhealth.core.xml.transformError.TransformError;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
 import org.endeavourhealth.transform.common.resourceValidators.ResourceValidatorBase;
-import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -54,7 +48,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
     //batch IDs
     private ReentrantLock batchIdLock = new ReentrantLock();
-    private ExchangeBatch adminBatch = null;
+    private ExchangeBatch currentAdminBatch = null;
+    private List<ExchangeBatch> allAdminBatches = new ArrayList<>();
     private Map<UUID, ExchangeBatch> patientBatchIdMap = new ConcurrentHashMap<>();
     private Map<String, UUID> sourcePatientIdMap = new ConcurrentHashMap<>();
 
@@ -307,15 +302,17 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
 
     private ExchangeBatch getAdminBatch() throws Exception {
-        if (adminBatch == null) {
+        if (currentAdminBatch == null) {
 
             try {
                 batchIdLock.lock();
 
                 //make sure to check if it's still null, as another thread may have created the ID while we were waiting to batchIdLock
-                if (adminBatch == null) {
-                    adminBatch = createAndSaveExchangeBatch(null);
+                if (currentAdminBatch == null) {
+                    currentAdminBatch = createAndSaveExchangeBatch(null);
+                    allAdminBatches.add(currentAdminBatch);
                 }
+
             } finally {
                 batchIdLock.unlock();
             }
@@ -323,7 +320,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         } else {
             //to prevent downstream queue readers having memory problems, limit the size of each admin batch
             //so generate a new admin batch ID when we hit the configured limit
-            AtomicInteger adminResourceSaved = countResourcesActuallySaved.get(adminBatch.getBatchId());
+            AtomicInteger adminResourceSaved = countResourcesActuallySaved.get(currentAdminBatch.getBatchId());
             int maxSize = TransformConfig.instance().getAdminBatchMaxSize();
             if (adminResourceSaved != null //we're not locked, so this may be null if the batch has just been created
                 && adminResourceSaved.get() >= maxSize) {
@@ -332,10 +329,11 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
                     batchIdLock.lock();
 
                     //now we're locked, check again, to prevent two threads doing this at the same time
-                    adminResourceSaved = countResourcesActuallySaved.get(adminBatch.getBatchId());
+                    adminResourceSaved = countResourcesActuallySaved.get(currentAdminBatch.getBatchId());
                     if (adminResourceSaved.get() >= maxSize) {
                         LOG.warn("Admin batch now over " + maxSize + " so creating new admin batch");
-                        adminBatch = createAndSaveExchangeBatch(null);
+                        currentAdminBatch = createAndSaveExchangeBatch(null);
+                        allAdminBatches.add(currentAdminBatch);
                     }
 
                 } finally {
@@ -345,7 +343,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
             }
         }
 
-        return adminBatch;
+        return currentAdminBatch;
     }
 
     private ExchangeBatch getPatientBatch(boolean mapIds, ResourceBuilderBase... resourceBuilders) throws Exception {
@@ -484,8 +482,8 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         handleErrors(errors);
 
         //work out which exchange batches have been used and delete ones that didn't result in any changes
-        if (adminBatch != null) {
-            checkIfBatchUsed(adminBatch);
+        for (ExchangeBatch exchangeBatch: allAdminBatches) {
+            checkIfBatchUsed(exchangeBatch);
         }
         for (ExchangeBatch exchangeBatch : patientBatchIdMap.values()) {
             checkIfBatchUsed(exchangeBatch);
@@ -584,8 +582,9 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         int adminTryDeleted = 0;
         int adminActuallySaved = 0;
         int adminActuallyDeleted = 0;
-        if (adminBatch != null) {
-            UUID batchId = adminBatch.getBatchId();
+
+        for (ExchangeBatch exchangeBatch: allAdminBatches) {
+            UUID batchId = exchangeBatch.getBatchId();
             adminTrySaved += countResourcesTrySaved.get(batchId).get();
             adminTryDeleted += countResourcesTryDeleted.get(batchId).get();
             adminActuallySaved += countResourcesActuallySaved.get(batchId).get();

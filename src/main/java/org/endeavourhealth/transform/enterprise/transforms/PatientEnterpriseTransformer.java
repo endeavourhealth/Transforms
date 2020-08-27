@@ -42,10 +42,7 @@ import java.util.*;
 public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PatientEnterpriseTransformer.class);
 
-
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
-
-    public static String uprnToken = "";
 
     @Override
     protected ResourceType getExpectedResourceType() {
@@ -172,7 +169,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         Address fhirAddress = AddressHelper.findHomeAddress(fhirPatient);
         if (fhirAddress != null) {
             postcode = fhirAddress.getPostalCode();
-            postcodePrefix = findPostcodePrefix(postcode);
+            postcodePrefix = PatientTransformer.findPostcodePrefix(postcode);
 
             /*HouseholdIdDalI householdIdDal = DalProvider.factoryHouseholdIdDal(params.getSubscriberConfigName());
             householdId = householdIdDal.findOrCreateHouseholdId(fhirAddress);*/
@@ -547,7 +544,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
                 } else {
                     //if pseudonymised, just carry over the first half of the postcode
-                    postcode = findPostcodePrefix(address.getPostalCode());
+                    postcode = PatientTransformer.findPostcodePrefix(address.getPostalCode());
                 }
 
                 Address.AddressUse use = address.getUse();
@@ -803,27 +800,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
     }*/
 
 
-    private static final String findPostcodePrefix(String postcode) {
-
-        if (Strings.isNullOrEmpty(postcode)) {
-            return null;
-        }
-
-        //if the postcode is already formatted with a space, use that
-        int spaceIndex = postcode.indexOf(" ");
-        if (spaceIndex > -1) {
-            return postcode.substring(0, spaceIndex);
-        }
-
-        //if no space, then drop the last three chars off, which works
-        //for older format postcodes (e.g. AN, ANN, AAN, AANN) and the newer London ones (e.g. ANA, AANA)
-        int len = postcode.length();
-        if (len <= 3) {
-            return null;
-        }
-
-        return postcode.substring(0, len - 3);
-    }
 
     private String pseudonymiseUsingConfig(EnterpriseTransformHelper params, Patient fhirPatient, long enterprisePatientId, LinkDistributorConfig config, boolean mainPseudoId) throws Exception {
 
@@ -845,67 +821,41 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
 
     public void uprn(EnterpriseTransformHelper params, Patient fhirPatient, long id, long personId, AbstractEnterpriseCsvWriter csvWriter, String configName) throws Exception {
+
         if (!fhirPatient.hasAddress()) {
             return;
         }
 
-        Iterator var2 = fhirPatient.getAddress().iterator();
-        String adrec = "";
-
-        JsonNode config = ConfigManager.getConfigurationAsJson("UPRN", "db_enterprise");
-        if (config == null) {
+        if (!UPRN.isConfigured()) {
             return;
         }
 
-        // call the UPRN API
-        JsonNode token_endpoint = config.get("token_endpoint");
-        JsonNode clientid = config.get("clientid");
-        JsonNode password = config.get("password");
-        JsonNode username = config.get("username");
-
-        JsonNode uprn_endpoint = config.get("uprn_endpoint");
-
-        JsonNode zs = config.get("subscribers");
-        Integer ok = UPRN.Activated(zs, configName);
-        if (ok.equals(0)) {
-            LOG.debug("subscriber " + configName + " not activated for UPRN, exiting");
+        if (!UPRN.isActivated(configName)) {
+            LOG.debug("subscriber " + configName + " not activated for UPRN");
             return;
         }
 
-        uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
+        PatientAddressMatch uprnWriter = (PatientAddressMatch) csvWriter;
 
-        org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch uprnWriter = (org.endeavourhealth.transform.enterprise.outputModels.PatientAddressMatch) csvWriter;
-
-        Integer stati = 0;
-
-        while (true) {
-            Address address;
-            if (!var2.hasNext()) {
-                break;
-            }
-            address = (Address) var2.next();
-            adrec = AddressHelper.generateDisplayText(address);
+        for (Address address: fhirPatient.getAddress()) {
+            String adrec = AddressHelper.generateDisplayText(address);
             //LOG.debug(adrec);
 
             boolean isActive = PeriodHelper.isActive(address.getPeriod());
-            stati = 0;
+            Integer stati = Integer.valueOf(0);
             if (isActive) {
-                stati = 1;
+                stati = Integer.valueOf(1);
             }
 
             String ids = Long.toString(id) + "`" + Long.toString(personId) + "`" + configName;
-            String csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
 
-            // token time out?
-            if (csv.isEmpty()) {
-                UPRN.uprnToken = "";
-                uprnToken = UPRN.getUPRNToken(password.asText(), username.asText(), clientid.asText(), LOG, token_endpoint.asText());
-                csv = UPRN.getAdrec(adrec, uprnToken, uprn_endpoint.asText(), ids);
-                if (csv.isEmpty()) {
-                    LOG.debug("Unable to get address from UPRN API");
-                    return;
-                }
+            String csv = UPRN.getAdrec(adrec, ids);
+
+            if (Strings.isNullOrEmpty(csv)) {
+                LOG.debug("Unable to get address from UPRN API");
+                return;
             }
+            LOG.trace("Got UPRN result " + csv);
 
             String[] ss = csv.split("\\~", -1);
             String sLat = ss[14];
@@ -916,14 +866,13 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             String sQualifier = ss[7];
 
             String sUprn = ss[20];
-            Long luprn = new Long(0);
 
             if (sUprn.isEmpty()) {
                 LOG.debug("UPRN = 0");
                 return;
             }
 
-            luprn = new Long(sUprn);
+            long luprn = Long.parseLong(sUprn);
 
             BigDecimal lat = new BigDecimal(0);
             if (!sLat.isEmpty()) {

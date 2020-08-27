@@ -187,6 +187,7 @@ public abstract class EmisCsvToFhirTransformer {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static AbstractCsvParser createParserForFile(UUID serviceId, UUID systemId, UUID exchangeId, String version, ExchangePayloadFile fileObj) throws Exception {
 
         String fileType = fileObj.getType();

@@ -1,71 +1,116 @@
 package org.endeavourhealth.transform.subscriber;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.endeavourhealth.common.config.ConfigManager;
+import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
+import org.endeavourhealth.common.utility.MetricsHelper;
+import org.endeavourhealth.common.utility.MetricsTimer;
+import org.endeavourhealth.im.client.IMClient;
+import org.glassfish.jersey.uri.UriComponent;
+import org.keycloak.representations.AccessTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
 import java.io.*;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.json.*;
 
 public class UPRN {
 	private static final Logger LOG = LoggerFactory.getLogger(UPRN.class);
 
+	//public static String uprnToken = "";
+	private static KeycloakClient kcClient = null;
 
-	public static String uprnToken = "";
-
-	public static Integer Activated(JsonNode zs, String configName)
-	{
-		ArrayNode arrNode = (ArrayNode) zs;
-		String zc = ""; Integer ok=0;
-		for (JsonNode objNode : arrNode) {
-			zc = objNode.asText();
-			if (zc.equals(configName)) {ok=1; break;}
-		}
-		return ok;
+	private static JsonNode getConfig() throws Exception {
+		return ConfigManager.getConfigurationAsJson("uprn");
 	}
 
-	public static String getAdrec(String adrec, String token, String token_endpoint, String ids) throws Exception {
-		String response = "";
+	public static boolean isConfigured() throws Exception {
+		return getConfig() != null;
+	}
 
-		String url = token_endpoint+"api/getcsv?adrec=" + URLEncoder.encode(adrec, "UTF-8")+"&delim=~&ids="+ids;
 
-		try {
-			URL obj = new URL(url);
+	public static String getAdrec(String adrec, String ids) throws Exception {
 
-			HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
+		//in case of any one-off error, give it a few attempts
+		int lives = 5;
 
-			con.setRequestMethod("GET");
-			con.setRequestProperty("Authorization", "Bearer " + token);
+		while (true) {
+			lives--;
+			try {
+				return tryGetAdrec(adrec, ids);
 
-			int responseCode = con.getResponseCode();
+			} catch (Exception ex) {
+				if (lives <= 0) {
+					throw ex;
+				}
 
-			String output;
-			BufferedReader in = new BufferedReader(
-					new InputStreamReader(con.getInputStream()));
-
-			while ((output = in.readLine()) != null) {
-				response = response + output;
+				LOG.warn("Exception " + ex.getMessage() + " calling into URPN API - will try " + lives + " more times");
+				Thread.sleep(2000); //small delay
 			}
-			in.close();
-
-
-		} catch (IOException e) {
-			//changed to log via the logging framework, so it's captured in log files
-			LOG.error("Error getting UPRN for IDs [" + ids + "]", e);
-			//e.printStackTrace();
 		}
-		return response;
 	}
 
-	public static String getToken(String password, String username, String clientid, String token_endpoint) {
+	private static String tryGetAdrec(String adrec, String ids) throws Exception {
+
+		JsonNode config = getConfig();
+		if (config == null) {
+			return null;
+		}
+
+		try (MetricsTimer timer = MetricsHelper.recordTime("UPRN.getcsv")) {
+
+			Map<String, String> params = new HashMap<>();
+			params.put("adrec", adrec);
+			params.put("delim", "~");
+			params.put("ids", ids);
+
+			String baseUrl = config.get("uprn_endpoint").asText();
+
+			Response response = get(baseUrl, "api/getcsv", params);
+
+			if (response.getStatus() == 200) {
+				return response.readEntity(String.class);
+
+			} else {
+				throw new IOException(response.readEntity(String.class));
+			}
+		}
+	}
+
+	private static Response get(String baseUrl, String path, Map<String, String> params) throws Exception {
+		Client client = ClientBuilder.newClient();
+		WebTarget target = client.target(baseUrl).path(path);
+
+		if (params != null && !params.isEmpty()) {
+			for (Map.Entry<String, String> entry: params.entrySet()) {
+				if (entry.getValue() != null) {
+					String encoded = UriComponent.encode(entry.getValue(), UriComponent.Type.QUERY_PARAM_SPACE_ENCODED);
+					target = target.queryParam(entry.getKey(), encoded);
+				}
+			}
+		}
+
+		return target
+				.request()
+				.header("Authorization", "Bearer " + getUPRNToken())
+				.get();
+	}
+
+	/*private static String getToken(String password, String username, String clientid, String token_endpoint) {
 		String token = "";
 
 		try {
-
 			String encoded = "password=" + password + "&username=" + username + "&client_id=" + clientid + "&grant_type=password";
 
 			// URL obj = new URL("https://www.discoverydataservice.net/auth/realms/endeavour-machine/protocol/openid-connect/token");
@@ -129,6 +174,44 @@ public class UPRN {
 			uprnToken = getToken(password, username, clientid, token_endpoint);
 		}
 		return uprnToken;
+	}*/
+
+	private static String getUPRNToken() throws Exception {
+		if (kcClient == null) {
+
+			JsonNode config = getConfig();
+			if (config == null) {
+				return null;
+			}
+
+			String url = config.get("auth_server_url").asText();
+			String clientId = config.get("client_id").asText();
+			String realm = config.get("realm").asText();
+			String password = config.get("password").asText();
+			String username = config.get("username").asText();
+			kcClient = new KeycloakClient(url, realm, username, password, clientId);
+		}
+
+		AccessTokenResponse token = kcClient.getToken();
+		return token.getToken();
+	}
+
+
+	public static boolean isActivated(String subscriberConfigName) throws Exception {
+
+		JsonNode config = getConfig();
+		if (config == null) {
+			return false;
+		}
+
+		ArrayNode arrNode = (ArrayNode)config.get("subscribers");
+		for (JsonNode objNode : arrNode) {
+			String zc = objNode.asText();
+			if (zc.equalsIgnoreCase(subscriberConfigName)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 

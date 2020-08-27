@@ -429,6 +429,7 @@ public abstract class BartsCsvToFhirTransformer {
         return ret;
     }
 
+    @SuppressWarnings("unchecked")
     private static ParserI createParser(String filePath, String type, BartsCsvHelper csvHelper) throws Exception {
 
         UUID serviceId = csvHelper.getServiceId();

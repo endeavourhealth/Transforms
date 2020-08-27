@@ -19,8 +19,8 @@ public class SusPatientCacheEntry {
     private CsvCell SecondaryProcedureOPCS;
     private CsvCell SecondaryProcedureDate;
     private CsvCell OtherSecondaryProceduresOPCS;
-    private List<String> otherCodes = new ArrayList();
-    private List<String> otherDates = new ArrayList();
+    private List<String> otherCodes = new ArrayList<>();
+    private List<String> otherDates = new ArrayList<>();
 
     public List<String> getOtherCodes() {
         return otherCodes;

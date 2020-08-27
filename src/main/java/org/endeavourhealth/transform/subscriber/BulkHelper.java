@@ -93,7 +93,7 @@ public class BulkHelper {
                 //params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.Patient.class), params);
 
         // take a copy of resources to avoid ConcurrentModificationException
-        List<ResourceWrapper> copy = new ArrayList(resources);
+        List<ResourceWrapper> copy = new ArrayList<>(resources);
         enterpriseTransformer.transformResources(copy,
                 params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.Patient.class), params);
 
@@ -165,7 +165,7 @@ public class BulkHelper {
         params.setEnterpriseOrganisationId(enterpriseOrgId);
 
         // take a copy of resources to avoid ConcurrentModificationException
-        List<ResourceWrapper> copy = new ArrayList(resources);
+        List<ResourceWrapper> copy = new ArrayList<>(resources);
 
         // // create a patient transformer and transform the Patient fhir resources
         AbstractEnterpriseTransformer enterprisePatientTransformer
@@ -208,11 +208,10 @@ public class BulkHelper {
         params.populatePatientAndPersonIds();
 
         // take a copy of resources to avoid ConcurrentModificationException
-        List<ResourceWrapper> copy = new ArrayList(resources);
+        List<ResourceWrapper> copy = new ArrayList<>(resources);
 
         // create a episode of care transformer and transform the fhir resources
-        AbstractEnterpriseTransformer enterpriseEpisodeOfCareTransformer
-                = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(ResourceType.EpisodeOfCare);
+        AbstractEnterpriseTransformer enterpriseEpisodeOfCareTransformer = FhirToEnterpriseCsvTransformer.createTransformerForResourceType(ResourceType.EpisodeOfCare);
         enterpriseEpisodeOfCareTransformer.transformResources(copy,
                 params.getOutputContainer().findCsvWriter(org.endeavourhealth.transform.enterprise.outputModels.EpisodeOfCare.class), params);
 
@@ -246,11 +245,10 @@ public class BulkHelper {
         params.setSubscriberOrganisationId(enterpriseOrgId);
 
         // take a copy of resources to avoid ConcurrentModificationException
-        List<ResourceWrapper> copy = new ArrayList(resources);
+        List<ResourceWrapper> copy = new ArrayList<>(resources);
 
         // // create a patient transformer and transform the Patient fhir resources
-        AbstractSubscriberTransformer subscriberTransformer =
-                FhirToSubscriberCsvTransformer.createTransformerForResourceType(ResourceType.Patient);
+        AbstractSubscriberTransformer subscriberTransformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(ResourceType.Patient);
         subscriberTransformer.transformResources(resources, params);
 
         List<SubscriberTableId> filesToKeep = new ArrayList<>();
@@ -288,11 +286,10 @@ public class BulkHelper {
         params.populatePatientAndPersonIds();
 
         // take a copy of resources to avoid ConcurrentModificationException
-        List<ResourceWrapper> copy = new ArrayList(resources);
+        List<ResourceWrapper> copy = new ArrayList<>(resources);
 
         // create a episode of care transformer and transform the fhir resources
-        AbstractSubscriberTransformer enterpriseEpisodeOfCareTransformer
-                = FhirToSubscriberCsvTransformer.createTransformerForResourceType(ResourceType.EpisodeOfCare);
+        AbstractSubscriberTransformer enterpriseEpisodeOfCareTransformer = FhirToSubscriberCsvTransformer.createTransformerForResourceType(ResourceType.EpisodeOfCare);
         enterpriseEpisodeOfCareTransformer.transformResources(copy, params);
 
         List<SubscriberTableId> filesToKeep = new ArrayList<>();
