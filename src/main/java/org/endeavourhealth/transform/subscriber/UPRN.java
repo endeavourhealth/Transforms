@@ -18,6 +18,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
@@ -62,7 +63,49 @@ public class UPRN {
 		}
 	}
 
-	private static String tryGetAdrec(String adrec, String ids) throws Exception {
+	public static String tryGetAdrec(String adrec, String ids) throws Exception {
+
+		JsonNode config = getConfig();
+		if (config == null) {
+			return null;
+		}
+
+		try (MetricsTimer timer = MetricsHelper.recordTime("UPRN.getcsv")) {
+
+			String baseUrl = config.get("uprn_endpoint").asText();
+			String url = baseUrl + "api/getcsv?adrec=" + URLEncoder.encode(adrec, "UTF-8")+"&delim=~&ids="+ids;
+
+			URL obj = new URL(url);
+
+			HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Authorization", "Bearer " + getUPRNToken());
+
+			int responseCode = con.getResponseCode();
+			if (responseCode != HttpURLConnection.HTTP_OK) {
+				throw new IOException("HTTP response " + responseCode + " returned for GET to " + url);
+			}
+
+			InputStream inputStream = con.getInputStream();
+			InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+			BufferedReader in = new BufferedReader(inputStreamReader);
+
+			String response = "";
+			while (true) {
+				String line = in.readLine();
+				if (line != null) {
+					response += line;
+				} else {
+					break;
+				}
+			}
+			in.close();
+
+			return response;
+		}
+	}
+
+	/*private static String tryGetAdrec(String adrec, String ids) throws Exception {
 
 		JsonNode config = getConfig();
 		if (config == null) {
@@ -80,11 +123,9 @@ public class UPRN {
 
 			Response response = get(baseUrl, "api/getcsv", params);
 
+			response.bufferEntity()
+
 			if (response.getStatus() == 200) {
-				/*Object o = response.getEntity();
-				LOG.trace("Entity = " + o);
-				LOG.trace("Cls " + o.getClass());
-				return (String)o;*/
 				return response.readEntity(String.class);
 
 			} else {
@@ -111,7 +152,9 @@ public class UPRN {
 				.accept(MediaType.TEXT_PLAIN_TYPE)
 				.header("Authorization", "Bearer " + getUPRNToken())
 				.get();
-	}
+	}*/
+
+
 
 	/*private static String getToken(String password, String username, String clientid, String token_endpoint) {
 		String token = "";
