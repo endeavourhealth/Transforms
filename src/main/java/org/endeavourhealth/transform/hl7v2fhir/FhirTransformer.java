@@ -28,15 +28,14 @@ public abstract class FhirTransformer {
      * @throws Exception
      */
     public static void transform(Exchange exchange, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
-        String HL7Message = null;
-        /*FileInputStream iS = new FileInputStream("C:\\Users\\USER\\Desktop\\Examples\\A01");
-        HL7Message = IOUtils.toString(iS);*/
+        String HL7Message = exchange.getBody();
         //get HL7 message from the table based on id
-        Connection connection = ConnectionManager.getHL7v2InboundConnection();
+        /*Connection connection = ConnectionManager.getHL7v2InboundConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT * from imperial where payload_id=?";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                exchange.getBody();
                 statement.setString(1, String.valueOf(exchange.getId()));
                 try (ResultSet resultSet = statement.executeQuery()) {
                     if(resultSet.next()) {
@@ -53,7 +52,7 @@ public abstract class FhirTransformer {
                 ps.close();
             }
             connection.close();
-        }
+        }*/
         //get HL7 message from the table based on id
 
         Message hapiMsg = parseHL7Message(HL7Message);
