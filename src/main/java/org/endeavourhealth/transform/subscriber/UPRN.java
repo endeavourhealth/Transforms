@@ -15,6 +15,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.*;
 import java.net.URL;
@@ -80,7 +81,11 @@ public class UPRN {
 			Response response = get(baseUrl, "api/getcsv", params);
 
 			if (response.getStatus() == 200) {
-				return response.readEntity(String.class);
+				Object o = response.getEntity();
+				LOG.trace("Entity = " + o);
+				LOG.trace("Cls " + o.getClass());
+				return (String)o;
+				//return response.readEntity(String.class);
 
 			} else {
 				throw new IOException(response.readEntity(String.class));
@@ -103,6 +108,7 @@ public class UPRN {
 
 		return target
 				.request()
+				.accept(MediaType.TEXT_PLAIN_TYPE)
 				.header("Authorization", "Bearer " + getUPRNToken())
 				.get();
 	}
