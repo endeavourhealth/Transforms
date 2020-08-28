@@ -28,7 +28,6 @@ public abstract class FhirTransformer {
      * @throws Exception
      */
     public static void transform(Exchange exchange, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
-        LOG.info("Shreekanth:"+exchange.getBody());
         String HL7Message = exchange.getBody();
         //get HL7 message from the table based on id
         /*Connection connection = ConnectionManager.getHL7v2InboundConnection();
