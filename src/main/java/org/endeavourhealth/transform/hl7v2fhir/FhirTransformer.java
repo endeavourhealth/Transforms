@@ -28,6 +28,7 @@ public abstract class FhirTransformer {
      * @throws Exception
      */
     public static void transform(Exchange exchange, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
+        LOG.info("Shreekanth:"+exchange.getBody());
         String HL7Message = exchange.getBody();
         //get HL7 message from the table based on id
         /*Connection connection = ConnectionManager.getHL7v2InboundConnection();
@@ -35,7 +36,6 @@ public abstract class FhirTransformer {
         try {
             String sql = "SELECT * from imperial where payload_id=?";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                exchange.getBody();
                 statement.setString(1, String.valueOf(exchange.getId()));
                 try (ResultSet resultSet = statement.executeQuery()) {
                     if(resultSet.next()) {
@@ -83,7 +83,6 @@ public abstract class FhirTransformer {
         Message hapiMsg = null;
         try {
             // The parse method performs the actual parsing
-            LOG.info("Shreekanth"+hl7Message);
             hapiMsg = pipeParser.parse(hl7Message);
         } catch (EncodingNotSupportedException e) {
             e.printStackTrace();
