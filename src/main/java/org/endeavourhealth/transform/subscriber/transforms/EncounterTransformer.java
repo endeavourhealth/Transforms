@@ -42,9 +42,10 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
     @Override
     protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
-        //two tables, Encounter and EncounterEvent, may be written to in this transform
+        //three tables, Encounter, EncounterEvent and EncounterAdditional may be written to in this transform
         org.endeavourhealth.transform.subscriber.targetTables.Encounter targetEncounterTable = params.getOutputContainer().getEncounters();
         org.endeavourhealth.transform.subscriber.targetTables.EncounterEvent targetEncounterEventTable = params.getOutputContainer().getEncounterEvents();
+        org.endeavourhealth.transform.subscriber.targetTables.EncounterAdditional targetEncounterAdditionalTable = params.getOutputContainer().getEncounterAdditional();
 
         Encounter fhir = (Encounter)resourceWrapper.getResource(); //returns null if deleted
 
@@ -54,6 +55,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 || params.getShouldPatientRecordBeDeleted()) {
             targetEncounterTable.writeDelete(subscriberId);
             targetEncounterEventTable.writeDelete(subscriberId);
+            targetEncounterAdditionalTable.writeDelete(subscriberId);
             return;
         }
 
