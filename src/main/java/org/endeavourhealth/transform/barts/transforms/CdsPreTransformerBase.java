@@ -1300,7 +1300,7 @@ public abstract class CdsPreTransformerBase {
         dataNumber = 1;
         while (dataNumber < 11) {
 
-            //get next data cell (range could be from 1-20)
+            //get next data cell (range could be from 1-10)
             String dataCode = parser.getSafeguardingConcern(dataNumber).getString();
             //if no more data break out of loop
             if (Strings.isNullOrEmpty(dataCode)) {

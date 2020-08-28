@@ -659,10 +659,14 @@ public class EmergencyCdsTargetTransformer {
                             //and will be a useful view of location / wards etc.
                             Encounter existingDWParentEncounter
                                     = (Encounter) existingDWParentEncounterBuilder.getResource();
+
+                            //LOG.debug("Emergency encounter matched to HL7.  Next is to check and copy location from HL7");
+
                             if (updateEncounterLocation(existingDWParentEncounter, existingHL7Encounter)) {
 
-                                //save the parent encounter updated with the location inform from hl7
-                                fhirResourceFiler.savePatientResource (null, existingDWParentEncounterBuilder);
+                                //save the parent encounter updated with the location information from the matched hl7 encounter
+                                fhirResourceFiler.savePatientResource (null, false, existingDWParentEncounterBuilder);
+                                //LOG.debug("Saved updated parent encounter builder, resource: "+existingDWParentEncounterBuilder.getResource().toString());
                             }
 
                             GenericBuilder builder = new GenericBuilder(existingHL7Encounter);
@@ -711,6 +715,7 @@ public class EmergencyCdsTargetTransformer {
             if (hl7EncounterLocation.hasStatus()) {
 
                 existingDWParentEncounter.getLocation().add(hl7EncounterLocation.copy());
+                //LOG.debug("existingDWParentEncounter updated with hl7 location ref: "+hl7EncounterLocation.getLocation().getReference());
 
                 locationAdded = true;
             }

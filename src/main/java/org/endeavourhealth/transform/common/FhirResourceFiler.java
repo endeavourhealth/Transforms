@@ -743,7 +743,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
 
         } else {
             //LOG.warn("Ignoring save of " + resourceBuilder.getResource().getResourceType() + " " + resourceBuilder.getResourceId() + " because patient resource is deleted");
-            TransformWarnings.log(LOG, this, "Ignoring save of {} {} because patient resource is deleted", resourceBuilder.getResource().getResourceType(), resourceBuilder.getResourceId());
+            TransformWarnings.log(LOG, this, "Ignoring save of {} {} because patient resource {} is deleted", resourceBuilder.getResource().getResourceType(), resourceBuilder.getResourceId(), patientId);
             return false;
         }
     }

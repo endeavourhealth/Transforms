@@ -451,7 +451,7 @@ public class OutpatientCdsTargetTransformer {
                             if (updateEncounterLocation(existingDWParentEncounter, existingHL7Encounter)) {
 
                                 //save the parent encounter updated with the location information from the matched hl7 encounter
-                                fhirResourceFiler.savePatientResource (null, existingDWParentEncounterBuilder);
+                                fhirResourceFiler.savePatientResource (null, false, existingDWParentEncounterBuilder);
                             }
 
                             GenericBuilder builder = new GenericBuilder(existingHL7Encounter);
