@@ -39,12 +39,12 @@ public class EncounterAdditional extends AbstractTargetTable {
         return SubscriberTableId.ENCOUNTER_ADDITIONAL;
     }
 
-    public void writeUpsert(SubscriberId id,
+    public void writeUpsert(SubscriberId subscriberId,
                             Integer propertyId,
                             Integer valueId ) throws Exception {
 
         super.printRecord(convertBoolean(false),
-                "" + id,
+                "" + subscriberId.getSubscriberId(),
                 "" + propertyId,
                 "" + valueId);   }
 }

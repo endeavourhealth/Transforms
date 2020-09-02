@@ -266,7 +266,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private void transformEncounterAdditionals(Resource resource, SubscriberTransformHelper params, SubscriberId id) throws Exception {
+    private void transformEncounterAdditionals(Resource resource, SubscriberTransformHelper params, SubscriberId subscriberId) throws Exception {
 
         Encounter fhir = (Encounter)resource;
 
@@ -319,7 +319,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                                         IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
 
                                 //transform the IM values to the encounter_additional table upsert
-                                encounterAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid);
+                                encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid);
                             } else {
                                 //TODO: Handle extended additional Json here
                             }
