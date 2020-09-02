@@ -207,8 +207,12 @@ public class SubscriberConfig {
 
         } else if (subscriberType == SubscriberType.CompassV2) {
 
-            this.v2HasEncounterEventTable = config.has("include_encounter_event")
-                    && config.get("include_encounter_event").asBoolean();
+            if (config.has("include_encounter_event")) {
+                this.v2HasEncounterEventTable = config.get("include_encounter_event").asBoolean();
+            } else {
+                //default to true unless explicitly set in the JSON
+                this.v2HasEncounterEventTable = true;
+            }
 
             this.isPseudonymised = config.has("pseudonymised")
                     && config.get("pseudonymised").asBoolean();
