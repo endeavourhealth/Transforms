@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
-import org.endeavourhealth.common.fhir.FhirProfileUri;
-import org.endeavourhealth.common.fhir.QuantityHelper;
-import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.hl7.fhir.instance.model.*;
@@ -143,6 +140,10 @@ public class ObservationBuilder extends ResourceBuilderBase
 
     public void setRecordedDate(Date recordedDate, CsvCell... sourceCells) {
         createOrUpdateRecordedDateExtension(recordedDate, sourceCells);
+    }
+
+    public void addPatientDelayDays(String uri, String value){
+        ExtensionConverter.createOrUpdateStringExtension(getResource(), uri, value);
     }
 
     public void addDocumentIdentifier(Identifier identifier, CsvCell... sourceCells) {

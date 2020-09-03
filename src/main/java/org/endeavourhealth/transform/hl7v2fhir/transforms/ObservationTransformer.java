@@ -5,20 +5,23 @@ import ca.uhn.hl7v2.model.v23.datatype.CX;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_ORDER_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
-import ca.uhn.hl7v2.model.v23.segment.OBX;
 import ca.uhn.hl7v2.model.v23.segment.PID;
-import org.endeavourhealth.common.fhir.FhirCodeUri;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
-import org.hl7.fhir.instance.model.DateTimeType;
-import org.hl7.fhir.instance.model.Observation;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.TemporalPrecisionEnum;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -28,7 +31,6 @@ public class ObservationTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ObservationTransformer.class);
 
     /**
-     *
      * @param pid
      * @param obr
      * @param orderObserv
@@ -56,7 +58,7 @@ public class ObservationTransformer {
         String observationDate = String.valueOf(orderObserv.getOBSERVATION().getOBX().getDateTimeOfTheObservation().getTimeOfAnEvent());
         if (observationDate != null) {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-            Date date = formatter.parse(observationDate.substring(0,4)+"-"+observationDate.substring(4,6)+"-"+observationDate.substring(6,8));
+            Date date = formatter.parse(observationDate.substring(0, 4) + "-" + observationDate.substring(4, 6) + "-" + observationDate.substring(6, 8));
 
             DateTimeType eventPerformedDateTime = new DateTimeType(date);
             observationBuilder.setEffectiveDate(eventPerformedDateTime);
@@ -64,11 +66,17 @@ public class ObservationTransformer {
 
         StringBuilder obxVal = new StringBuilder();
         List<ORU_R01_OBSERVATION> obserVals = orderObserv.getOBSERVATIONAll();
-        for(ORU_R01_OBSERVATION val : obserVals) {
+        String patientDelay = null;
+        for (ORU_R01_OBSERVATION val : obserVals) {
             Varies[] value = val.getOBX().getObservationValue();
-            if(value != null && value.length > 0) {
-                for(int resultCount=0; resultCount<value.length; resultCount++) {
-                    obxVal.append(value[resultCount].getData()+"\r\n");
+            String delayDays = val.getOBX().getUserDefinedAccessChecks().getValue();
+            if (delayDays != null && patientDelay == null) {
+                patientDelay = val.getOBX().getUserDefinedAccessChecks().getValue();
+                observationBuilder.addPatientDelayDays("http://endeavourhealth.org/fhir/StructureDefinition/acute-patient-delay-days-extension", patientDelay);
+            }
+            if (value != null && value.length > 0) {
+                for (int resultCount = 0; resultCount < value.length; resultCount++) {
+                    obxVal.append(value[resultCount].getData() + "\r\n");
                 }
             }
         }
@@ -89,5 +97,6 @@ public class ObservationTransformer {
         //save resource
         fhirResourceFiler.savePatientResource(null, observationBuilder);
     }
+
 
 }
