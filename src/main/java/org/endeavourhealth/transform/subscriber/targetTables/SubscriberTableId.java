@@ -42,7 +42,6 @@ public enum SubscriberTableId {
         return name;
     }
 
-
     SubscriberTableId(byte id, String name) {
         this.id = id;
         this.name = name;
