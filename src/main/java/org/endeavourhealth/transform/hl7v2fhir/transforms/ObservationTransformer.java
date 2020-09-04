@@ -6,22 +6,17 @@ import ca.uhn.hl7v2.model.v23.group.ORU_R01_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_ORDER_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
 import ca.uhn.hl7v2.model.v23.segment.PID;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.utility.SlackHelper;
-import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
-import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.Observation;
+import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -71,8 +66,7 @@ public class ObservationTransformer {
             Varies[] value = val.getOBX().getObservationValue();
             String delayDays = val.getOBX().getUserDefinedAccessChecks().getValue();
             if (delayDays != null && patientDelay == null) {
-                patientDelay = val.getOBX().getUserDefinedAccessChecks().getValue();
-                observationBuilder.addPatientDelayDays("http://endeavourhealth.org/fhir/StructureDefinition/acute-patient-delay-days-extension", patientDelay);
+                observationBuilder.addPatientDelayDays(FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS, patientDelay);
             }
             if (value != null && value.length > 0) {
                 for (int resultCount = 0; resultCount < value.length; resultCount++) {
