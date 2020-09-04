@@ -66,7 +66,7 @@ public class ObservationTransformer {
             Varies[] value = val.getOBX().getObservationValue();
             String delayDays = val.getOBX().getUserDefinedAccessChecks().getValue();
             if (delayDays != null && patientDelay == null) {
-                observationBuilder.addPatientDelayDays(FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS, patientDelay);
+                observationBuilder.addPatientDelayDays(patientDelay);
             }
             if (value != null && value.length > 0) {
                 for (int resultCount = 0; resultCount < value.length; resultCount++) {
