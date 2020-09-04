@@ -511,7 +511,7 @@ public abstract class TppCsvToFhirTransformer {
 //        }
 
         //hack to skip the SRCode file if it's a re-bulk. Audit in a table so we can come back.
-        boolean processSRCode = !shouldSkipSRCode(fhirResourceFiler);
+        //boolean processSRCode = !shouldSkipSRCode(fhirResourceFiler);
 
 
         //reference data
@@ -539,9 +539,9 @@ public abstract class TppCsvToFhirTransformer {
             SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above
             SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above two
-            if (processSRCode) {
-                SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //needs to be before the staffMemberCache stuff
-            }
+            //if (processSRCode) {
+            SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //needs to be before the staffMemberCache stuff
+            //}
             SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //needs to be before the staffMemberCache stuff
             SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             csvHelper.getStaffMemberCache().processChangedStaffMembers(csvHelper, fhirResourceFiler);
@@ -602,11 +602,11 @@ public abstract class TppCsvToFhirTransformer {
             csvHelper.getReferralStatusCache().processRemainingReferralStatuses(fhirResourceFiler); //handle any record statuses without registrations
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            if (processSRCode) {
-                SRProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //saves some mappings using multiple threads
-                SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper); //
-                SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            }
+            //if (processSRCode) {
+            SRProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //saves some mappings using multiple threads
+            SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper); //
+            SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            //}
             csvHelper.getConditionResourceCache().processRemainingProblems(fhirResourceFiler);
 
             SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -656,7 +656,7 @@ public abstract class TppCsvToFhirTransformer {
     }*/
 
 
-    private static boolean shouldSkipSRCode(FhirResourceFiler fhirResourceFiler) throws Exception {
+    /*private static boolean shouldSkipSRCode(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         UUID serviceId = fhirResourceFiler.getServiceId();
         UUID systemId = fhirResourceFiler.getSystemId();
@@ -724,6 +724,6 @@ public abstract class TppCsvToFhirTransformer {
             }
             connection.close();
         }
-    }
+    }*/
 
 }
