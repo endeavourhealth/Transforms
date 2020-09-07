@@ -142,8 +142,8 @@ public class ObservationBuilder extends ResourceBuilderBase
         createOrUpdateRecordedDateExtension(recordedDate, sourceCells);
     }
 
-    public void addPatientDelayDays(String value){
-        ExtensionConverter.createOrUpdateStringExtension(getResource(), FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS, value);
+    public void addPatientDelayDays(Date value){
+        ExtensionConverter.createOrUpdateDateTimeExtension(getResource(), FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS, value);
     }
 
     public void addDocumentIdentifier(Identifier identifier, CsvCell... sourceCells) {

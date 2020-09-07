@@ -6,7 +6,9 @@ import ca.uhn.hl7v2.model.v23.group.ORU_R01_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_ORDER_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
 import ca.uhn.hl7v2.model.v23.segment.PID;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
@@ -18,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -37,7 +40,7 @@ public class ObservationTransformer {
                                          ImperialHL7Helper imperialHL7Helper) throws Exception {
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
-        String uniqueId = String.valueOf(obr.getFillerOrderNumber()) + String.valueOf(orderObserv.getOBSERVATION().getOBX().getObservationIdentifier().getIdentifier());
+        String uniqueId = String.valueOf(obr.getFillerOrderNumber()) + orderObserv.getOBSERVATION().getOBX().getObservationIdentifier().getIdentifier();
         observationBuilder.setId(uniqueId);
 
         //patient reference
@@ -47,13 +50,14 @@ public class ObservationTransformer {
         String observationGuid = String.valueOf(obr.getFillerOrderNumber());
         ImperialHL7Helper.setUniqueId(observationBuilder, patientGuid, observationGuid);
 
-        Reference patientReference = imperialHL7Helper.createPatientReference(patientGuid);
+        Reference patientReference = ImperialHL7Helper.createPatientReference(patientGuid);
         observationBuilder.setPatient(patientReference);
 
         String observationDate = String.valueOf(orderObserv.getOBSERVATION().getOBX().getDateTimeOfTheObservation().getTimeOfAnEvent());
+        Date date = null;
         if (observationDate != null) {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-            Date date = formatter.parse(observationDate.substring(0, 4) + "-" + observationDate.substring(4, 6) + "-" + observationDate.substring(6, 8));
+            date = formatter.parse(observationDate.substring(0, 4) + "-" + observationDate.substring(4, 6) + "-" + observationDate.substring(6, 8));
 
             DateTimeType eventPerformedDateTime = new DateTimeType(date);
             observationBuilder.setEffectiveDate(eventPerformedDateTime);
@@ -65,8 +69,9 @@ public class ObservationTransformer {
         for (ORU_R01_OBSERVATION val : obserVals) {
             Varies[] value = val.getOBX().getObservationValue();
             String delayDays = val.getOBX().getUserDefinedAccessChecks().getValue();
-            if (delayDays != null && patientDelay == null) {
-                observationBuilder.addPatientDelayDays(patientDelay);
+            if (patientDelay== null && delayDays != null && date != null) {
+                patientDelay = delayDays;
+                observationBuilder.addPatientDelayDays(calculateDate(delayDays, date));
             }
             if (value != null && value.length > 0) {
                 for (int resultCount = 0; resultCount < value.length; resultCount++) {
@@ -90,6 +95,26 @@ public class ObservationTransformer {
 
         //save resource
         fhirResourceFiler.savePatientResource(null, observationBuilder);
+    }
+
+    private static Date calculateDate(String delayDays, Date observationDate) {
+        try {
+        JsonParser parser = new JsonParser();
+        JsonElement jsonTree = parser.parse(delayDays);
+        JsonObject jsonObject = jsonTree.getAsJsonObject();
+        String value = jsonObject.get("patientDelay").toString();
+        int days = 0;
+        if (value.length() > 2) {
+            days = Integer.parseInt(value.substring(1, 3));
+        }
+        Calendar c = Calendar.getInstance();
+        c.setTime(observationDate);
+        c.add(Calendar.DATE, days);
+        return c.getTime(); }
+        catch (Exception e) {
+            LOG.error("Problem in parsing ObservationDate :" + observationDate + " delay days:" + delayDays);
+            return null;
+        }
     }
 
 
