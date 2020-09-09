@@ -20,6 +20,7 @@ import org.endeavourhealth.transform.subscriber.targetTables.*;
 import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Observation;
 import org.hl7.fhir.instance.model.Patient;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -316,6 +317,33 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             //transform the IM values to the encounter_additional table upsert
             observationAdditional.writeUpsert(id, propertyConceptDbid,null,  reference);
             System.out.println("refRange : " + reference);
+        }
+    }
+
+    private void transformPatientDelays(Resource resource, SubscriberTransformHelper params, SubscriberId id) throws Exception {
+
+        Observation fhir = (Observation)resource;
+
+        DateType delayDateType
+                = ExtensionConverter.findExtensionValueDate(fhir, FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS);
+
+        if (delayDateType != null) {
+
+            Date delayDays = delayDateType.getValue();
+            OutputContainer outputContainer = params.getOutputContainer();
+            ObservationAdditional observationAdditional = outputContainer.getObservationAdditional();
+
+            Integer propertyConceptDbid = 0;
+            //TODO : Need to change
+            Integer valueConceptDbid = 54321;
+
+                propertyConceptDbid =
+                        IMClient.getConceptDbidForSchemeCode(IMConstant.DISCOVERY_CODE, "CM_PatientDelayDays");
+            String jsonString = new JSONObject()
+                    .put("date_value", delayDays).toString();
+
+            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  jsonString);
+
         }
     }
 
