@@ -324,12 +324,12 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
 
         Observation fhir = (Observation)resource;
 
-        DateType delayDateType
-                = ExtensionConverter.findExtensionValueDate(fhir, FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS);
+        StringType delayDaysStringType
+                = (StringType)ExtensionConverter.findExtensionValue(fhir, FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS);
 
-        if (delayDateType != null) {
+        if (delayDaysStringType != null) {
 
-            Date delayDays = delayDateType.getValue();
+            String delayDays = delayDaysStringType.getValue();
             OutputContainer outputContainer = params.getOutputContainer();
             ObservationAdditional observationAdditional = outputContainer.getObservationAdditional();
 
@@ -339,10 +339,8 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
 
                 propertyConceptDbid =
                         IMClient.getConceptDbidForSchemeCode(IMConstant.DISCOVERY_CODE, "CM_PatientDelayDays");
-            String jsonString = new JSONObject()
-                    .put("date_value", delayDays).toString();
 
-            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  jsonString);
+            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  delayDays);
 
         }
     }
