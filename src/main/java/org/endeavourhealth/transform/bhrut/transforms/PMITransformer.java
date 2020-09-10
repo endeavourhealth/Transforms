@@ -31,11 +31,8 @@ public class PMITransformer {
                                  BhrutCsvHelper csvHelper) throws Exception {
 
         AbstractCsvParser parser = parsers.get(PMI.class);
-        long count = 0;
-        long checkpoint = 5000;
         if (parser != null) {
             while (parser.nextRecord()) {
-                count++;
                 if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                     continue;
                 }
@@ -44,9 +41,6 @@ public class PMITransformer {
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
-                //if(count%checkpoint == 0){
-                //LOG.info("PMI processed " + count + " records.");
-                //}
             }
         }
 
@@ -247,16 +241,19 @@ public class PMITransformer {
         CsvCell givenName = parser.getForename();
         CsvCell surname = parser.getSurname();
 
-        if (!givenName.isEmpty()
-                || !surname.isEmpty()) {
+        if (patientBuilder.getNames().isEmpty()) {
 
-            NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-            nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
-            nameBuilder.addGiven(givenName.getString(), givenName);
-            nameBuilder.addFamily(surname.getString(), surname);
+            if (!givenName.isEmpty()
+                    || !surname.isEmpty()) {
+
+                NameBuilder nameBuilder = new NameBuilder(patientBuilder);
+                nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
+                nameBuilder.addGiven(givenName.getString(), givenName);
+                nameBuilder.addFamily(surname.getString(), surname);
 //            if (patientBuilder.getNames().size()>1) {
 //                NameBuilder.deDuplicateLastName(patientBuilder, fhirResourceFiler.getDataDate());
 //            }
+            }
         }
     }
 

@@ -466,12 +466,6 @@ public class AndEAttendanceTransformer {
             }
             existingEncounterList.addReference(childAssessmentRef);
 
-            //add in additional extended data as Parameters resource with additional extension
-//            ContainedParametersBuilder containedParametersBuilderAss
-//                    = new ContainedParametersBuilder(assessmentEncounterBuilder);
-//            containedParametersBuilderAss.removeContainedParameters();
-//TODO  Why is containedParametersBuilderAss created but not used? Commented out.
-            // Latest spec for assessment does not have fields supplied by this file.
             Date aeAssessmentEndDate
                     = ObjectUtils.firstNonNull(invAndTreatmentsDateCell.getDateTime(), arrivalDateCell.getDateTime(), conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
             if (aeAssessmentEndDate != null) {

@@ -57,7 +57,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Patient patientWriter = params.getOutputContainer().getPatients();
-
+        org.endeavourhealth.transform.subscriber.targetTables.PatientAdditional patientWriterAdditional = params.getOutputContainer().getPatientAdditional();
         Patient fhirPatient = (Patient) resourceWrapper.getResource(); //returns null if deleted
 
         //call this so we can audit which version of the patient we transformed last - must be done whether deleted or not
@@ -84,7 +84,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             //we'll need a previous instance to delete any dependent addresses and telecoms
             deleteAddresses(resourceWrapper, fullHistory, params);
             deleteTelecoms(resourceWrapper, fullHistory, params);
-
+            patientWriterAdditional.writeDelete(subscriberId);
             return;
         }
 

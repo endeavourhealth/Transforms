@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
+import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.Alerts;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -76,6 +77,14 @@ public class AlertsTransformer {
         //build up the flag text from what text is available in the alert record
         StringBuilder flagTextBuilder = new StringBuilder();
 
+        CsvCell alertDescriptionCell = parser.getAlertDescription();
+        if (!alertDescriptionCell.isEmpty()) {
+            flagTextBuilder.append(alertDescriptionCell.getString().trim()).append(".");
+        }
+        CsvCell alertCommentsCell = parser.getAlertComment();
+        if (!alertCommentsCell.isEmpty()) {
+            flagTextBuilder.append(alertCommentsCell.getString()).append(". ");
+        }
         //also use the end date as the active indicator
         CsvCell endDateTimeCell = parser.getClosedDttm();
         CsvCell closedNoteCell = parser.getClosedNote();
@@ -99,11 +108,7 @@ public class AlertsTransformer {
             flagBuilder.setCategory(alertTypeDescCell.getString(), alertTypeDescCell);
         }
 
-        CsvCell alertCommentsCell = parser.getAlertComment();
-        if (!alertCommentsCell.isEmpty()) {
 
-            flagTextBuilder.append("Comments: ").append(alertCommentsCell.getString()).append(". ");
-        }
 
         flagBuilder.setCode(flagTextBuilder.toString().trim(), closedNoteCell, alertCommentsCell);
 

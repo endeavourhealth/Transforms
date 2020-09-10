@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.targetTables.EncounterAdditional;
 import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.IMConstant;
@@ -308,18 +309,22 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
                                 //these values are from IM API mapping
                                 String propertyScheme = IMConstant.DISCOVERY_CODE;
+                                String type = parameter.getValue().getClass().getSimpleName();
+                                if (type.equalsIgnoreCase("CodeableConcept")) {
+                                    CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                                    String valueCode = parameterValue.getCoding().get(0).getCode();
+                                    String valueScheme = parameterValue.getCoding().get(0).getSystem();
+                                    //we need to look up DBids for both
+                                    Integer propertyConceptDbid =
+                                            IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
+                                    Integer valueConceptDbid =
+                                            IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
 
-                                CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
-                                String valueCode = parameterValue.getCoding().get(0).getCode();
-                                String valueScheme = parameterValue.getCoding().get(0).getSystem();
-                                //we need to look up DBids for both
-                                Integer propertyConceptDbid =
-                                        IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
-                                Integer valueConceptDbid =
-                                        IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
-
-                                //transform the IM values to the encounter_additional table upsert
-                                encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid);
+                                    //transform the IM values to the encounter_additional table upsert
+                                    encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid);
+                                } else {
+                                    //TODO handle String values
+                                }
                             } else {
                                 //TODO: Handle extended additional Json here
                             }

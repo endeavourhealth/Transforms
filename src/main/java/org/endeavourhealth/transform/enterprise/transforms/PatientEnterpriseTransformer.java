@@ -85,7 +85,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
             deleteAddresses(resourceWrapper, fullHistory, params);
             deleteTelecoms(resourceWrapper, fullHistory, params);
-
+            PatientAdditional patientAdditional = params.getOutputContainer().getPatientAdditional();
+            patientAdditional.writeDelete(enterpriseId);
             return;
         }
 
