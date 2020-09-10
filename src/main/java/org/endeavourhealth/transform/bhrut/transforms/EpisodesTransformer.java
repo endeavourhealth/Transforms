@@ -202,9 +202,7 @@ public class EpisodesTransformer {
                 Method method = Episodes.class.getDeclaredMethod("getDiag" + i);
                 CsvCell diagCode = (CsvCell) method.invoke(parser);
                 if (!diagCode.isEmpty()) {
-                    //ConditionBuilder cc = new ConditionBuilder((Condition) condition.getResource());
-                    ConditionBuilder cc = new ConditionBuilder((Condition) FhirSerializationHelper.deserializeResource(json));
-                    //LOG.debug("Retreived cond: "+ FhirSerializationHelper.serializeResource(condition.getResource()));
+                    ConditionBuilder cc = new ConditionBuilder();
                     cc.setId(idCell.getString() + "Condition:" + i);
                     cc.setAsProblem(false);
                     cc.setPatient(csvHelper.createPatientReference(patientIdCell), patientIdCell);
@@ -216,16 +214,16 @@ public class EpisodesTransformer {
                     CodeableConceptBuilder codeableConceptBuilder
                             = new CodeableConceptBuilder(cc, CodeableConceptBuilder.Tag.Condition_Main_Code);
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                    //icd10=TerminologyService.standardiseIcd10Code(diagCode.getString());
-                    if (icd10.endsWith("X") || icd10.endsWith("D") || icd10.endsWith("A")) {
-                        icd10 = icd10.substring(0, 3);
+                    String diagcodeString = diagCode.getString();
+                    if (diagcodeString.endsWith("X") || diagcodeString.endsWith("D") || diagcodeString.endsWith("A")) {
+                        diagcodeString = diagcodeString.substring(0, 3);
                     }
-                    diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
-                    if (Strings.isNullOrEmpty(diagTerm)) {
-                        throw new Exception("Failed to find diagnosis term for ICD 10 code " + icd10 + ".");
+                    String diagTerm2 = TerminologyService.lookupIcd10CodeDescription(diagcodeString);
+                    if (Strings.isNullOrEmpty(diagTerm2)) {
+                        throw new Exception("Failed to find diagnosis term for ICD 10 code " + diagcodeString + ".");
                     }
-                    codeableConceptBuilder.setCodingCode(icd10, diagCode);
-                    code.setCodingDisplay(diagTerm);
+                    codeableConceptBuilder.setCodingCode(diagcodeString, diagCode);
+                    codeableConceptBuilder.setCodingDisplay(diagTerm2);
                     cc.setCategory("diagnosis");
                     fhirResourceFiler.savePatientResource(parser.getCurrentState(), cc);
                 } else {
