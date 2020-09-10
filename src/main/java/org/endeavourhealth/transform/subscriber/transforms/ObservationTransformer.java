@@ -16,10 +16,10 @@ import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
-import org.endeavourhealth.transform.subscriber.targetTables.*;
+import org.endeavourhealth.transform.subscriber.targetTables.ObservationAdditional;
+import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
-import org.hl7.fhir.instance.model.Observation;
-import org.hl7.fhir.instance.model.Patient;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -324,12 +324,12 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
 
         Observation fhir = (Observation)resource;
 
-        StringType delayDaysStringType
-                = (StringType)ExtensionConverter.findExtensionValue(fhir, FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS);
+        DateTimeType delayDaysStringType
+                = (DateTimeType)ExtensionConverter.findExtensionValue(fhir, FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS);
 
         if (delayDaysStringType != null) {
 
-            String delayDays = delayDaysStringType.getValue();
+            String delayDays = delayDaysStringType.getValue().toString();
             OutputContainer outputContainer = params.getOutputContainer();
             ObservationAdditional observationAdditional = outputContainer.getObservationAdditional();
 
@@ -340,7 +340,9 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
                 propertyConceptDbid =
                         IMClient.getConceptDbidForSchemeCode(IMConstant.DISCOVERY_CODE, "CM_PatientDelayDays");
 
-            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  delayDays);
+            String jsonString = new JSONObject()
+                    .put("date_value", delayDays).toString();
+            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  jsonString);
 
         }
     }
