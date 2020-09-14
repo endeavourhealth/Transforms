@@ -366,5 +366,8 @@ public class ObservationBuilder extends ResourceBuilderBase
         this.observation.getIdentifier().remove(identifier);
     }
 
+    public void setIssued(Date issuedDate) {
+        this.observation.setIssued(issuedDate);
+    }
 
 }

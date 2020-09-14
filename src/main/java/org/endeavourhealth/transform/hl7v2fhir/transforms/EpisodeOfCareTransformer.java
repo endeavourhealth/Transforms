@@ -38,7 +38,7 @@ public class EpisodeOfCareTransformer {
         String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
         if(endDt != null) {
             Date dsDt = formatter.parse(endDt.substring(0,4)+"-"+endDt.substring(4,6)+"-"+endDt.substring(6,8));
-            episodeOfCare.getPeriod().setStart(dsDt);
+            episodeOfCare.getPeriod().setEnd(dsDt);
         }
 
         return episodeOfCare;
