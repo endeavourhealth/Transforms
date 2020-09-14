@@ -58,6 +58,7 @@ public class OutputContainer {
         csvWriters.add(new EncounterEvent("encounter_event.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EncounterAdditional("encounter_additional.csv", csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientPseudoId("patient_pseudo_id.csv", csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new PatientAdditional("patient_additional.csv", csvFormat, dateFormat, timeFormat));
 
     }
 

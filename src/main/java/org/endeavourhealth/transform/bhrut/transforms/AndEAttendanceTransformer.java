@@ -494,7 +494,7 @@ public class AndEAttendanceTransformer {
 
             CodeableConceptBuilder codeableConceptBuilderTreatments
                     = new CodeableConceptBuilder(treatmentsEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-            codeableConceptBuilderTreatments.setText("Emergency Investigations and Treatments");
+            codeableConceptBuilderTreatments.setText(CommonStrings.ENCOUNTER_EMERGENCY_TREATMENT);
 
             setCommonEncounterAttributes(treatmentsEncounterBuilder, parser, csvHelper, true);
 
@@ -534,7 +534,7 @@ public class AndEAttendanceTransformer {
 
             CodeableConceptBuilder codeableConceptBuilderDischarge
                     = new CodeableConceptBuilder(dischargeEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-            codeableConceptBuilderDischarge.setText("Emergency Discharge");
+            codeableConceptBuilderDischarge.setText(CommonStrings.ENCOUNTER_EMERGENCY_END);
 
             setCommonEncounterAttributes(dischargeEncounterBuilder, parser, csvHelper, true);
 
