@@ -137,6 +137,17 @@ public class EncounterTransformer {
             builder.setEpisodeOfCare(episodeReference);
         }
 
+        String loc[] = String.valueOf(pv1.getAssignedPatientLocation().getLocationType()).split(",");
+        if (!loc[0].isEmpty()) {
+            Reference patientAssignedLocReference
+                    = ReferenceHelper.createReference(ResourceType.Location, loc[0]);
+            if (builder.isIdMapped()) {
+                patientAssignedLocReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientAssignedLocReference, imperialHL7Helper);
+            }
+            builder.addLocation(patientAssignedLocReference);
+        }
+
         //Todo need to verify the practitioner code
         if (!consultingDoctorId.isEmpty()) {
             Reference practitionerReference

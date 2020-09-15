@@ -3,6 +3,8 @@ package org.endeavourhealth.transform.hl7v2fhir.transforms;
 import ca.uhn.hl7v2.model.Varies;
 import ca.uhn.hl7v2.model.v23.datatype.CX;
 import ca.uhn.hl7v2.model.v23.datatype.ID;
+import ca.uhn.hl7v2.model.v23.datatype.ST;
+import ca.uhn.hl7v2.model.v23.datatype.XCN;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_ORDER_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
 import ca.uhn.hl7v2.model.v23.segment.OBX;
@@ -49,6 +51,11 @@ public class DiagnosticReportTransformer {
 
         Reference patientReference = imperialHL7Helper.createPatientReference(patientGuid);
         diagnosticReportBuilder.setPatient(patientReference);
+
+        XCN[] orderingProvider = obr.getOrderingProvider();
+        ST idNumber = orderingProvider[0].getIDNumber();
+        Reference practitionerReference = imperialHL7Helper.createPractitionerReference(idNumber.toString());
+        diagnosticReportBuilder.setRecordedBy(practitionerReference);
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         /*if (deletedCell.getBoolean()) {

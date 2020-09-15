@@ -1,9 +1,11 @@
 package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
 import ca.uhn.hl7v2.model.Varies;
+import ca.uhn.hl7v2.model.v23.datatype.CE;
 import ca.uhn.hl7v2.model.v23.datatype.CX;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_ORDER_OBSERVATION;
+import ca.uhn.hl7v2.model.v23.segment.MSH;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
 import ca.uhn.hl7v2.model.v23.segment.PID;
 import com.google.gson.JsonElement;
@@ -36,7 +38,7 @@ public class ObservationTransformer {
      * @param imperialHL7Helper
      * @throws Exception
      */
-    public static void createObservation(PID pid, OBR obr, ORU_R01_ORDER_OBSERVATION orderObserv, FhirResourceFiler fhirResourceFiler,
+    public static void createObservation(PID pid, MSH msh, OBR obr, ORU_R01_ORDER_OBSERVATION orderObserv, FhirResourceFiler fhirResourceFiler,
                                          ImperialHL7Helper imperialHL7Helper) throws Exception {
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
@@ -53,14 +55,21 @@ public class ObservationTransformer {
         Reference patientReference = ImperialHL7Helper.createPatientReference(patientGuid);
         observationBuilder.setPatient(patientReference);
 
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         String observationDate = String.valueOf(orderObserv.getOBSERVATION().getOBX().getDateTimeOfTheObservation().getTimeOfAnEvent());
         Date date = null;
         if (observationDate != null) {
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
             date = formatter.parse(observationDate.substring(0, 4) + "-" + observationDate.substring(4, 6) + "-" + observationDate.substring(6, 8));
 
             DateTimeType eventPerformedDateTime = new DateTimeType(date);
             observationBuilder.setEffectiveDate(eventPerformedDateTime);
+        }
+
+        String issued = String.valueOf(msh.getDateTimeOfMessage().getTimeOfAnEvent());
+        Date issuedDate = null;
+        if (issued != null) {
+            issuedDate = formatter.parse(issued.substring(0, 4) + "-" + issued.substring(4, 6) + "-" + issued.substring(6, 8));
+            observationBuilder.setIssued(issuedDate);
         }
 
         StringBuilder obxVal = new StringBuilder();
@@ -77,6 +86,20 @@ public class ObservationTransformer {
                 for (int resultCount = 0; resultCount < value.length; resultCount++) {
                     obxVal.append(value[resultCount].getData() + "\r\n");
                 }
+            }
+
+            String sendingApplication = msh.getSendingApplication().getNamespaceID().getValue();
+            if("RYJ_PATH".equalsIgnoreCase(sendingApplication)) {
+                Varies[] valQuantityVal = val.getOBX().getObservationValue();
+                if (valQuantityVal != null && valQuantityVal.length > 0) {
+                    for (int count = 0; count < value.length; count++) {
+                        observationBuilder.setValueNumber(Double.valueOf(String.valueOf(valQuantityVal[count].getData())));
+                    }
+                }
+
+                CE valQuantityUnit = val.getOBX().getUnits();
+                observationBuilder.setValueNumberUnits(String.valueOf(valQuantityUnit.getIdentifier()));
+
             }
         }
         observationBuilder.setValueString(obxVal.toString());
