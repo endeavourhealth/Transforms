@@ -25,7 +25,7 @@ public abstract class ImperialHL7FhirADTTransformer {
      * @throws Exception
      */
     public static void transform(FhirResourceFiler fhirResourceFiler, String version, Message hapiMsg) throws Exception {
-
+        LOG.info(hapiMsg+"Shreekanth");
         String msgType = (hapiMsg.printStructure()).substring(0,7);
         ImperialHL7Helper imperialHL7Helper = new ImperialHL7Helper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(),
                 fhirResourceFiler.getExchangeId(), null, null);
