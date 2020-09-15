@@ -357,10 +357,10 @@ public class AndEAttendanceTransformer {
         if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-            if (builder.isIdMapped()) {
+           // if (builder.isIdMapped()) {
                 parentEncounter
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            }
+            //}
             builder.setPartOf(parentEncounter);
         }
 
