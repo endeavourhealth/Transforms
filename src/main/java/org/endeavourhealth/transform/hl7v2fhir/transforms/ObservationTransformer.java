@@ -99,7 +99,7 @@ public class ObservationTransformer {
 
                 CE valQuantityUnit = val.getOBX().getUnits();
                 observationBuilder.setValueNumberUnits(String.valueOf(valQuantityUnit.getIdentifier()));
-
+                fhirResourceFiler.savePatientResource(null, observationBuilder);
             }
         }
         observationBuilder.setValueString(obxVal.toString());
