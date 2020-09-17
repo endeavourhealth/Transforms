@@ -6,9 +6,13 @@ import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.reference.CernerClinicalEventMappingDalI;
 import org.endeavourhealth.core.database.dal.reference.models.CernerClinicalEventMap;
+import org.endeavourhealth.core.terminology.Read2Code;
+import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.hl7.fhir.instance.model.CodeableConcept;
 import org.hl7.fhir.instance.model.Coding;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.crypto.dsig.TransformException;
 import java.util.HashMap;
@@ -19,6 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * utility object for passing around values for the three code-related fields on the subscriber Observation table
  */
 public class ObservationCodeHelper {
+    private static final Logger LOG = LoggerFactory.getLogger(ObservationCodeHelper.class);
 
     private static CernerClinicalEventMappingDalI referenceDal = DalProvider.factoryCernerClinicalEventMappingDal();
     private static Map<Long, Long> hmCernerSnomedMapCache = new HashMap<>();
@@ -53,7 +58,25 @@ public class ObservationCodeHelper {
     }
 
     public static Coding findOriginalCoding(CodeableConcept codeableConcept) throws Exception {
-        return CodeableConceptHelper.findOriginalCoding(codeableConcept);
+        Coding ret = CodeableConceptHelper.findOriginalCoding(codeableConcept);
+
+        //https://endeavourhealth.atlassian.net/browse/SD-130
+        //massive hack to get around incomplete FHIR data - if it's a Read2 code missing its display
+        //term then look it up
+        if (ret != null
+                && ret.getSystem().equals(FhirCodeUri.CODE_SYSTEM_READ2)
+                && ret.hasCode()
+                && !ret.hasDisplay()) {
+            String code = ret.getCode();
+            Read2Code lookup = TerminologyService.lookupRead2Code(code);
+            if (lookup != null) {
+                String term = lookup.getPreferredTerm();
+                ret.setDisplay(term);
+                LOG.debug("Had to look up " + term + " for Read2 code " + code + " (see SD-130)");
+            }
+        }
+
+        return ret;
     }
 
     public static ObservationCodeHelper extractCodeFields(CodeableConcept codeableConcept) throws Exception {

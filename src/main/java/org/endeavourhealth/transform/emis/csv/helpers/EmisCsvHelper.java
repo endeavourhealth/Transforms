@@ -1449,8 +1449,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }*/
 
         //use a slightly different URL now so that we can use a user from the machine realm in Keycloak
-        //WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/postToExchange");
-        WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/PostToExchangeApi");
+        //TODO - finish tesitng this and get it using the new Keycloak user and different API
+        WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/postToExchange");
+        //WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/PostToExchangeApi");
 
 
         Response response = target
