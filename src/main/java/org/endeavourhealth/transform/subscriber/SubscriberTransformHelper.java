@@ -125,10 +125,6 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return config.isIncludeDateRecorded();
     }
 
-    public boolean isHasEncounterEventTable() {
-        return config.isV2HasEncounterEventTable();
-    }
-
     public boolean isBulkDeleteFromSubscriber() {
         return isBulkDeleteFromSubscriber;
     }

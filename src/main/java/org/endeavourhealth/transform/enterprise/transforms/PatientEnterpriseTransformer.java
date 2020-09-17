@@ -18,6 +18,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.EnterpriseAgeUp
 import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.EnterpriseAge;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.PseudoIdAudit;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.im.client.IMClient;
@@ -86,7 +87,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
             deleteAddresses(resourceWrapper, fullHistory, params);
             deleteTelecoms(resourceWrapper, fullHistory, params);
             PatientAdditional patientAdditional = params.getOutputContainer().getPatientAdditional();
-            patientAdditional.writeDelete(enterpriseId);
+            patientAdditional.writeDelete(enterpriseId.longValue());
             return;
         }
 
@@ -107,7 +108,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         long organizationId;
         long personId;
         int patientGenderId;
-        String pseudoId = null;
+        String mainPseudoId = null;
         String nhsNumber = null;
         Integer ageYears = null;
         Integer ageMonths = null;
@@ -133,7 +134,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         organizationId = params.getEnterpriseOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
 
-        transformPseudoIds(organizationId, id, personId, fhirPatient, resourceWrapper, params);
+        mainPseudoId = transformPseudoIds(organizationId, id, personId, fhirPatient, resourceWrapper, params);
 
         currentAddressId = transformAddresses(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
         transformTelecoms(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
@@ -227,28 +228,13 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                 patientGenderId = Enumerations.AdministrativeGender.FEMALE.ordinal();
             }*/
 
-            List<LinkDistributorConfig> salts = params.getConfig().getPseudoSalts();
-            if (!salts.isEmpty()) {
-                LinkDistributorConfig mainPseudoSalt = salts.get(0);
-                LOG.trace("Generating enteprrise pseudo ID using salt " + mainPseudoSalt.getSaltKeyName());
-                pseudoId = pseudonymiseUsingConfig(params, fhirPatient, id, mainPseudoSalt, true);
-
-                /*if (pseudoId != null) {
-
-                    //generate any other pseudo mappings - the table uses the main pseudo ID as the source key, so this
-                    //can only be done if we've successfully generated a main pseudo ID
-                    for (int i = 1; i < salts.size(); i++) { //start at 1, because we've done the first one above
-                        LinkDistributorConfig ldConfig = salts.get(i);
-                        targetSaltKeyName = ldConfig.getSaltKeyName();
-                        targetSkid = pseudonymiseUsingConfig(params, fhirPatient, id, ldConfig, false);
-
-                        linkDistributorWriter.writeUpsert(pseudoId,
-                                targetSaltKeyName,
-                                targetSkid);
-                    }
-                }*/
+            //if we've generated a "main" pseudo ID, then make sure to audit it in the old-style
+            //audit table used for some old extracts (the function that generated the pseudo IDs
+            //already has audited in the newer way)
+            if (!Strings.isNullOrEmpty(mainPseudoId)) {
+                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
+                pseudoIdDal.storePseudoIdOldWay(fhirPatient.getId(), mainPseudoId);
             }
-
 
             EnterpriseAgeUpdaterlDalI enterpriseAgeUpdaterlDal = DalProvider.factoryEnterpriseAgeUpdaterlDal(params.getEnterpriseConfigName());
             Integer[] ageValues = enterpriseAgeUpdaterlDal.calculateAgeValuesAndUpdateTable(id, dateOfBirth, dateOfDeath);
@@ -260,7 +246,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                     organizationId,
                     personId,
                     patientGenderId,
-                    pseudoId,
+                    mainPseudoId,
                     ageYears,
                     ageMonths,
                     ageWeeks,
@@ -329,14 +315,18 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
     }
 
-    public void transformPseudoIds(long organizationId, long subscriberPatientId, long personId,
+    /**
+     * generates the content for patient_pseudo_id table and returns the pseudo_id generated
+     * for the first salt, which is later used for the field on the patient table itself
+     */
+    public String transformPseudoIds(long organizationId, long subscriberPatientId, long personId,
                                     Patient fhirPatient, ResourceWrapper resourceWrapper, EnterpriseTransformHelper params) throws Exception {
 
         PatientPseudoId pseudoIdWriter = params.getOutputContainer().getPatientPseudoId();
 
         List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getPseudoSalts();
         if (linkDistributorConfigs.isEmpty()) {
-            return;
+            return null;
         }
 
         String nhsNumber = IdentifierHelper.findNhsNumber(fhirPatient);
@@ -348,14 +338,20 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
         Map<LinkDistributorConfig, SubscriberId> hmIds = PatientTransformer.findPseudoIdIds(linkDistributorConfigs, params.getEnterpriseConfigName(), resourceWrapper, true);
 
+        Map<LinkDistributorConfig, PseudoIdAudit> hmIdsGenerated = PseudoIdBuilder.generatePsuedoIdsFromConfigs(fhirPatient, params.getEnterpriseConfigName(), linkDistributorConfigs);
+
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
             String saltKeyName = ldConfig.getSaltKeyName();
 
-            String pseudoId = PseudoIdBuilder.generatePsuedoIdFromConfig(params.getEnterpriseConfigName(), ldConfig, fhirPatient);
+            //get the actual pseudo ID generated
+            PseudoIdAudit idGenerated = hmIdsGenerated.get(ldConfig);
 
+            //get the table unique ID generated
             SubscriberId subTableId = hmIds.get(ldConfig);
 
-            if (!Strings.isNullOrEmpty(pseudoId)) {
+            if (idGenerated != null) {
+
+                String pseudoId = idGenerated.getPseudoId();
 
                 pseudoIdWriter.writeUpsert(subTableId.getSubscriberId(),
                         organizationId,
@@ -366,14 +362,24 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                         isNhsNumberValid,
                         isNhsNumberVerifiedByPublisher);
 
-                //only persist the pseudo ID if it's non-null
-                PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
-                pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), subscriberPatientId, saltKeyName, pseudoId);
-
             } else {
                 pseudoIdWriter.writeDelete(subTableId.getSubscriberId());
 
             }
+        }
+
+        //update the master table of patient UUID -> pseudo ID
+        List<PseudoIdAudit> audits = new ArrayList<>(hmIdsGenerated.values());
+        PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
+        pseudoIdDal.saveSubscriberPseudoIds(UUID.fromString(fhirPatient.getId()), subscriberPatientId, audits);
+
+        //find the pseudo ID generated for the first salt and return it
+        LinkDistributorConfig firstConfig = linkDistributorConfigs.get(0);
+        PseudoIdAudit firstIdGenerated = hmIdsGenerated.get(firstConfig);
+        if (firstIdGenerated == null) {
+            return null;
+        } else {
+            return firstIdGenerated.getPseudoId();
         }
     }
 
@@ -756,69 +762,6 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
     }
 
-    /*private boolean shouldWritePersonRecord(Patient fhirPatient, String discoveryPersonId, UUID protocolId) throws Exception {
-
-        //find all service IDs publishing into the protocol
-        LibraryItem libraryItem = LibraryRepositoryHelper.getLibraryItemUsingCache(protocolId);
-        Protocol protocol = libraryItem.getProtocol();
-        Set<String> serviceIdsInProtocol = new HashSet<>();
-
-        for (ServiceContract serviceContract: protocol.getServiceContract()) {
-            if (serviceContract.getType().equals(ServiceContractType.PUBLISHER)
-                    && serviceContract.getActive() == ServiceContractActive.TRUE) {
-
-                serviceIdsInProtocol.add(serviceContract.getService().getUuid());
-            }
-        }
-
-        //find all patient IDs that match to our person and are from publishing services
-        List<UUID> possiblePatients = new ArrayList<>();
-
-        Map<String, String> allPatientIdMap = patientLinkDal.getPatientAndServiceIdsForPerson(discoveryPersonId);
-        for (String otherPatientId: allPatientIdMap.keySet()) {
-
-            //if this patient search record isn't in our protocol, skip it
-            String serviceId = allPatientIdMap.get(otherPatientId);
-            if (!serviceIdsInProtocol.contains(serviceId)) {
-                //LOG.trace("Patient record is not part of protocol, so skipping");
-                continue;
-            }
-
-            possiblePatients.add(UUID.fromString(otherPatientId));
-        }
-
-        //if the service has been disabled in its publishing protocol, we can end up in a situation where
-        //we have no potential patient IDs, which causes the below fn to fail. So always ensure there's at least one.
-        if (possiblePatients.isEmpty()) {
-            UUID thisPatientId = UUID.fromString(fhirPatient.getId());
-            possiblePatients.add(thisPatientId);
-        }
-
-        //find the "best" patient UUI from the patient search table
-        UUID bestPatientId = patientSearchDal.findBestPatientRecord(possiblePatients);
-        UUID patientId = UUID.fromString(fhirPatient.getId());
-        return patientId.equals(bestPatientId);
-    }*/
-
-
-
-    private String pseudonymiseUsingConfig(EnterpriseTransformHelper params, Patient fhirPatient, long enterprisePatientId, LinkDistributorConfig config, boolean mainPseudoId) throws Exception {
-
-        String pseudoId = PseudoIdBuilder.generatePsuedoIdFromConfig(params.getEnterpriseConfigName(), config, fhirPatient);
-
-        //save the mapping to the new-style table
-        if (pseudoId != null) {
-            PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getEnterpriseConfigName());
-            pseudoIdDal.saveSubscriberPseudoId(UUID.fromString(fhirPatient.getId()), enterprisePatientId, config.getSaltKeyName(), pseudoId);
-
-            //the frailty API still uses the old pseudo ID map table to find pseudo ID from NHS number, so continue to populate that
-            if (mainPseudoId) {
-                pseudoIdDal.storePseudoIdOldWay(fhirPatient.getId(), pseudoId);
-            }
-        }
-
-        return pseudoId;
-    }
 
 
     public void uprn(EnterpriseTransformHelper params, Patient fhirPatient, long id, long personId, AbstractEnterpriseCsvWriter csvWriter, String configName) throws Exception {

@@ -43,7 +43,6 @@ public class SubscriberConfig {
     //compass v1 properties
 
     //compass v2 properties
-    private boolean v2HasEncounterEventTable;
 
     public SubscriberConfig(String subscriberConfigName) {
         this.subscriberConfigName = subscriberConfigName;
@@ -56,10 +55,6 @@ public class SubscriberConfig {
 
     public boolean isIncludeDateRecorded() {
         return includeDateRecorded;
-    }
-
-    public boolean isV2HasEncounterEventTable() {
-        return v2HasEncounterEventTable;
     }
 
     public int getBatchSize() {
@@ -207,13 +202,6 @@ public class SubscriberConfig {
 
         } else if (subscriberType == SubscriberType.CompassV2) {
 
-            if (config.has("include_encounter_event")) {
-                this.v2HasEncounterEventTable = config.get("include_encounter_event").asBoolean();
-            } else {
-                //default to true unless explicitly set in the JSON
-                this.v2HasEncounterEventTable = true;
-            }
-
             this.isPseudonymised = config.has("pseudonymised")
                     && config.get("pseudonymised").asBoolean();
 
@@ -291,7 +279,6 @@ public class SubscriberConfig {
         sb.append("remoteSubscriberId = [" + remoteSubscriberId + "],\r\n");
         sb.append("includeDateRecorded = [" + includeDateRecorded + "],\r\n");
         sb.append("batchSize = [" + batchSize + "],\r\n");
-        sb.append("v2HasEncounterEventTable = [" + v2HasEncounterEventTable + "],\r\n");
         sb.append("enterpriseServerUrl = [" + enterpriseServerUrl + "]");
         return sb.toString();
     }

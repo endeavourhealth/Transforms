@@ -225,45 +225,41 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         } else {
             //if the FHIR Encounter IS part of another encounter, then write it to the encounter event table
             //but ONLY if we know the target DB has the encounter event table
-            if (params.isHasEncounterEventTable()) {
+            Reference partOfReference = fhir.getPartOf();
+            Long parentEncounterId = transformOnDemandAndMapId(partOfReference, SubscriberTableId.ENCOUNTER, params);
 
-                Reference partOfReference = fhir.getPartOf();
-                Long parentEncounterId = transformOnDemandAndMapId(partOfReference, SubscriberTableId.ENCOUNTER, params);
-
-                //if the parent encounter has been deleted, don't transform this
-                if (parentEncounterId == null) {
-                    return;
-                }
-
-                boolean isFinished = fhir.hasStatus() && fhir.getStatus() == Encounter.EncounterState.FINISHED;
-
-                targetEncounterEventTable.writeUpsert(
-                        subscriberId,
-                        organizationId,
-                        patientId,
-                        personId,
-                        parentEncounterId.longValue(),
-                        practitionerId,
-                        appointmentId,
-                        clinicalEffectiveDate,
-                        datePrecisionConceptId,
-                        episodeOfCareId,
-                        serviceProviderOrganisationId,
-                        coreConceptId,
-                        nonCoreConceptId,
-                        ageAtEvent,
-                        type,
-                        subtype,
-                        admissionMethod,
-                        endDate,
-                        institutionLocationId,
-                        dateRecorded,
-                        isFinished);
-
-                //we also need to populate the encounter_additional table with encounter extension data
-                transformEncounterAdditionals(fhir, params, subscriberId);
-
+            //if the parent encounter has been deleted, don't transform this
+            if (parentEncounterId == null) {
+                return;
             }
+
+            boolean isFinished = fhir.hasStatus() && fhir.getStatus() == Encounter.EncounterState.FINISHED;
+
+            targetEncounterEventTable.writeUpsert(
+                    subscriberId,
+                    organizationId,
+                    patientId,
+                    personId,
+                    parentEncounterId.longValue(),
+                    practitionerId,
+                    appointmentId,
+                    clinicalEffectiveDate,
+                    datePrecisionConceptId,
+                    episodeOfCareId,
+                    serviceProviderOrganisationId,
+                    coreConceptId,
+                    nonCoreConceptId,
+                    ageAtEvent,
+                    type,
+                    subtype,
+                    admissionMethod,
+                    endDate,
+                    institutionLocationId,
+                    dateRecorded,
+                    isFinished);
+
+            //we also need to populate the encounter_additional table with encounter extension data
+            transformEncounterAdditionals(fhir, params, subscriberId);
         }
     }
 
