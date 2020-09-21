@@ -104,8 +104,8 @@ public class PatientTransformer {
     public static void performA34PatientMerge(FhirHl7v2Filer.AdtResourceFiler filer, PID pid, MRG mrg) throws Exception {
 
         CX[] patientIdList = pid.getPatientIDInternalID();
-        String majorPId = String.valueOf((mrg.getPriorPatientIDInternal())[0].getID());
-        String minorPId = String.valueOf(patientIdList[0].getID());
+        String majorPId = String.valueOf(patientIdList[0].getID());
+        String minorPId = String.valueOf((mrg.getPriorPatientIDInternal())[0].getID());
 
         UUID majPatientId = IdHelper.getEdsResourceId(filer.getServiceId(), ResourceType.Patient, majorPId);
         String majorPatientId = String.valueOf(majPatientId);
