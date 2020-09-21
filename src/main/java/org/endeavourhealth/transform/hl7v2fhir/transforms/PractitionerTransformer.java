@@ -23,59 +23,29 @@ public class PractitionerTransformer {
 
     /**
      *
-     * @param pv1
+     * @param doctor
      * @param practitioner
      * @return
      * @throws Exception
      */
-    public static Practitioner transformPV1ToPractitioner(PV1 pv1, Practitioner practitioner) throws Exception {
+    public static Practitioner transformPV1ToPractitioner(XCN[] doctor, Practitioner practitioner) throws Exception {
         practitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
         practitioner.setActive(true);
 
-        /*XCN[] referringDoctor = pv1.getReferringDoctor();
-        if(referringDoctor != null && referringDoctor.length > 0) {
-            ST idNumRd = referringDoctor[0].getIDNumber();
-            FN familyNameRd = referringDoctor[0].getFamilyName();
-            ST givenNameRd = referringDoctor[0].getGivenName();
-            HD assigningAuthorityRd = referringDoctor[0].getAssigningAuthority();
+        if(doctor != null && doctor.length > 0) {
+            ST idNum = doctor[0].getIDNumber();
+            ST familyName = doctor[0].getFamilyName();
+            ST givenName = doctor[0].getGivenName();
+            HD assigningAuthority = doctor[0].getAssigningAuthority();
 
-            Identifier identifierRd = new Identifier();
-            identifierRd.setValue(String.valueOf(idNumRd));
-            identifierRd.setSystem(String.valueOf(assigningAuthorityRd.getNamespaceID()));
-            practitioner.addIdentifier(identifierRd);
+            Identifier identifier = new Identifier();
+            identifier.setValue(String.valueOf(idNum));
+            identifier.setSystem("http://endeavourhealth.org/fhir/Identifier/gmc-number");
+            practitioner.addIdentifier(identifier);
 
-            HumanName name = practitioner.getName();
-            name.setUse(HumanName.NameUse.USUAL);
-            name.setText(String.valueOf(givenNameRd));
-            practitioner.setName(name);
-        }
-
-        XCN[] attendingDoctor = pv1.getAttendingDoctor();
-        if(attendingDoctor != null && attendingDoctor.length > 0) {
-            ST idNumAd = attendingDoctor[0].getIDNumber();
-            FN familyNameAd = attendingDoctor[0].getFamilyName();
-            ST givenNameAd = attendingDoctor[0].getGivenName();
-            HD assigningAuthorityAd = attendingDoctor[0].getAssigningAuthority();
-
-            Identifier identifierAd = new Identifier();
-            identifierAd.setValue(String.valueOf(idNumAd));
-            identifierAd.setSystem(String.valueOf(assigningAuthorityAd.getNamespaceID()));
-            practitioner.addIdentifier(identifierAd);
-        }*/
-
-        XCN[] consultingDoctor = pv1.getConsultingDoctor();
-        if(consultingDoctor != null && consultingDoctor.length > 0) {
-            ST idNumCd = consultingDoctor[0].getIDNumber();
-            ST familyName = consultingDoctor[0].getFamilyName();
-            ST givenName = consultingDoctor[0].getGivenName();
-            HD assigningAuthorityCd = consultingDoctor[0].getAssigningAuthority();
-
-            Identifier identifierCd = new Identifier();
-            identifierCd.setValue(String.valueOf(idNumCd));
-            identifierCd.setSystem("http://endeavourhealth.org/fhir/Identifier/gmc-number");
-            practitioner.addIdentifier(identifierCd);
-            practitioner.setId(String.valueOf(idNumCd));
+            practitioner.setId(String.valueOf(idNum));
             HumanName humanName = new HumanName();
+            humanName.setUse(HumanName.NameUse.USUAL);
             humanName.setText(String.valueOf(familyName)+" "+String.valueOf(givenName));
             practitioner.setName(humanName);
         }

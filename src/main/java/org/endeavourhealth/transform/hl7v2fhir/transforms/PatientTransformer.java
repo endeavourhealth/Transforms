@@ -9,6 +9,8 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
@@ -70,6 +72,22 @@ public class PatientTransformer {
         VocSex sexEnum = VocSex.fromValue(String.valueOf(sex));
         Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
         patientBuilder.setGender(gender);
+
+        XTN[] phones = pid.getPhoneNumberHome();
+        for(XTN phone : phones) {
+            ID useCd = phone.getTelecommunicationUseCode();
+            String phoneNumber = (String.valueOf(phone).split("^"))[0].substring(4,15);
+            if("PRN".equalsIgnoreCase(String.valueOf(useCd))) {
+                if (!phoneNumber.isEmpty()) {
+                    createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
+                }
+
+            } else if("PRS".equalsIgnoreCase(String.valueOf(useCd))) {
+                if (!phoneNumber.isEmpty()) {
+                    createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
+                }
+            }
+        }
 
         createName(patientBuilder, pid, fhirResourceFiler);
         createAddress(patientBuilder, pid, fhirResourceFiler);
@@ -286,4 +304,31 @@ public class PatientTransformer {
             NameBuilder.endNames(patientBuilder, fhirResourceFiler.getDataDate(), HumanName.NameUse.OFFICIAL);
         }
     }
+
+    /**
+     *
+     * @param patientBuilder
+     * @param fhirResourceFiler
+     * @param imperialHL7Helper
+     * @param cell
+     * @param use
+     * @param system
+     * @throws Exception
+     */
+    private static void createContact(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String cell,
+                                      ContactPoint.ContactPointUse use, ContactPoint.ContactPointSystem system) throws Exception {
+
+        if (!cell.isEmpty()) {
+            for (ContactPoint cp :patientBuilder.getContactPoint()) {
+                if  (cell.equalsIgnoreCase(cp.getValue())) {
+                    return;
+                }
+            }
+            ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+            contactPointBuilder.setUse(use);
+            contactPointBuilder.setSystem(system);
+            contactPointBuilder.setValue(cell);
+        }
+    }
+
 }
