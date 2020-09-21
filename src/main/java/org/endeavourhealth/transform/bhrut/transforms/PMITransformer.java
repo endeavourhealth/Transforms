@@ -212,17 +212,18 @@ public class PMITransformer {
     }
 
 
-    private static void createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
+    private static void     createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
         if (!cell.isEmpty()) {
             if (use.equals(Identifier.IdentifierUse.OFFICIAL)) { //remove previous
                 Iterator<Identifier> ids = patientBuilder.getIdentifiers().iterator();
                 while (ids.hasNext()) {
                     Identifier i = ids.next();
-                    if (use.equals(Identifier.IdentifierUse.OFFICIAL) && i.getUse().equals(Identifier.IdentifierUse.OFFICIAL)) {
-                        patientBuilder.removeIdentifier(i);
-                    }
                     if (i.getSystem().equalsIgnoreCase(system) && i.getValue().equalsIgnoreCase(cell.getString())) {
                         return;
+                    }
+                    if (use.equals(Identifier.IdentifierUse.OFFICIAL) && i.getUse().equals(Identifier.IdentifierUse.OFFICIAL)) {
+                        patientBuilder.removeIdentifier(i);
+                        break;
                     }
                 }
             }
