@@ -4,14 +4,11 @@ import ca.uhn.hl7v2.model.v23.datatype.HD;
 import ca.uhn.hl7v2.model.v23.datatype.ST;
 import ca.uhn.hl7v2.model.v23.datatype.XCN;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
-import ca.uhn.hl7v2.model.v23.segment.PV1;
-import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
 import org.hl7.fhir.instance.model.HumanName;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Meta;
 import org.hl7.fhir.instance.model.Practitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +16,6 @@ import org.slf4j.LoggerFactory;
 public class PractitionerTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransformer.class);
-    public static final String APPT_ID_SUFFIX = ":Appointment";
 
     /**
      *
@@ -28,8 +24,8 @@ public class PractitionerTransformer {
      * @return
      * @throws Exception
      */
-    public static Practitioner transformPV1ToPractitioner(XCN[] doctor, Practitioner practitioner) throws Exception {
-        practitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
+    public static PractitionerBuilder transformPV1ToPractitioner(XCN[] doctor, PractitionerBuilder practitioner) throws Exception {
+        //practitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
         practitioner.setActive(true);
 
         if(doctor != null && doctor.length > 0) {
@@ -38,18 +34,16 @@ public class PractitionerTransformer {
             ST givenName = doctor[0].getGivenName();
             HD assigningAuthority = doctor[0].getAssigningAuthority();
 
-            Identifier identifier = new Identifier();
-            identifier.setValue(String.valueOf(idNum));
-            identifier.setSystem("http://endeavourhealth.org/fhir/Identifier/gmc-number");
-            practitioner.addIdentifier(identifier);
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitioner);
+            identifierBuilder.setSystem("http://endeavourhealth.org/fhir/Identifier/gmc-number");
+            identifierBuilder.setValue(String.valueOf(idNum));
 
             practitioner.setId(String.valueOf(idNum));
-            HumanName humanName = new HumanName();
-            humanName.setUse(HumanName.NameUse.USUAL);
-            humanName.setText(String.valueOf(familyName)+" "+String.valueOf(givenName));
-            practitioner.setName(humanName);
+            NameBuilder nameBuilder = new NameBuilder(practitioner);
+            nameBuilder.setUse(HumanName.NameUse.USUAL);
+            nameBuilder.addGiven(String.valueOf(givenName));
+            nameBuilder.addFamily(String.valueOf(familyName));
         }
-
         return practitioner;
     }
 

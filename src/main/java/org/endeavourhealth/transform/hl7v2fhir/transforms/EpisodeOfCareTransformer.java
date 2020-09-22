@@ -2,10 +2,8 @@ package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
 import ca.uhn.hl7v2.model.v23.datatype.TS;
 import ca.uhn.hl7v2.model.v23.segment.PV1;
-import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.hl7.fhir.instance.model.EpisodeOfCare;
-import org.hl7.fhir.instance.model.Meta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,9 +22,7 @@ public class EpisodeOfCareTransformer {
      * @throws Exception
      */
     public static EpisodeOfCareBuilder transformPV1ToEpisodeOfCare(PV1 pv1, EpisodeOfCareBuilder episodeOfCare) throws Exception {
-
-
-
+        
        // episodeOfCare.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_EPISODE_OF_CARE));
         episodeOfCare.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");

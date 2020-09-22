@@ -15,7 +15,9 @@ import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
 import org.endeavourhealth.transform.hl7v2fhir.transforms.*;
-import org.hl7.fhir.instance.model.*;
+import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.Practitioner;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,25 +41,23 @@ public abstract class ImperialHL7FhirORUTransformer {
             ORU_R01 oruMsg = (ORU_R01) hapiMsg;
 
             //Organization
-            Organization fhirOrganization = null;
-            fhirOrganization = new Organization();
-            fhirOrganization = OrganizationTransformer.transformPV1ToOrganization(fhirOrganization);
+            OrganizationBuilder organizationBuilder = null;
+            organizationBuilder = new OrganizationBuilder();
+            organizationBuilder = OrganizationTransformer.transformPV1ToOrganization(organizationBuilder);
             //Organization
 
             //LocationOrg
-            Location fhirLocationOrg = null;
-            fhirLocationOrg = new Location();
-            fhirLocationOrg = LocationTransformer.transformPV1ToOrgLocation(fhirLocationOrg);
-            fhirLocationOrg.setManagingOrganization(ImperialHL7Helper.createReference(ResourceType.Organization, fhirOrganization.getId()));
+            LocationBuilder locationBuilderOrg = null;
+            locationBuilderOrg = new LocationBuilder();
+            locationBuilderOrg = LocationTransformer.transformPV1ToOrgLocation(locationBuilderOrg);
+            locationBuilderOrg.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
 
-            LocationBuilder locationBuilderOrg = new LocationBuilder(fhirLocationOrg);
             fhirResourceFiler.saveAdminResource(null, locationBuilderOrg);
             //LocationOrg
 
             //Organization
-            fhirOrganization.addExtension().setValue(ImperialHL7Helper.createReference(ResourceType.Location, fhirLocationOrg.getId()));
+            organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
 
-            OrganizationBuilder organizationBuilder = new OrganizationBuilder(fhirOrganization);
             fhirResourceFiler.saveAdminResource(null, organizationBuilder);
             //Organization
 

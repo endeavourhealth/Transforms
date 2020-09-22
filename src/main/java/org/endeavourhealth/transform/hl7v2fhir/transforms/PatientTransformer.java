@@ -9,8 +9,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
-import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
@@ -287,6 +285,7 @@ public class PatientTransformer {
     private static void createName(PatientBuilder patientBuilder, PID pid, FhirResourceFiler fhirResourceFiler) throws Exception {
         XPN[] patientName = pid.getPatientName();
         ST familyName = patientName[0].getFamilyName();
+        ST middleName = patientName[0].getMiddleInitialOrName();
         ST givenName = patientName[0].getGivenName();
         ID nameTypeCode = patientName[0].getNameTypeCode();
         ST prefix = patientName[0].getPrefixEgDR();
