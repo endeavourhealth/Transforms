@@ -46,22 +46,23 @@ public class LocationTransformer {
      */
     public static LocationBuilder transformPV1ToPatientAssignedLocation(PV1 pv1, LocationBuilder location) throws Exception {
         ST assignedPatientLoc = pv1.getAssignedPatientLocation().getLocationType();
-        String loc[] = String.valueOf(pv1.getAssignedPatientLocation().getLocationType()).split(",");
-        location.setId(loc[0]);
-        //location.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
-        location.setStatus(Location.LocationStatus.ACTIVE);
-        location.setName(loc[0]);
-        //location.setDescription(loc[1]+","+loc[2]);
-        location.setMode(Location.LocationMode.INSTANCE);
+        if(assignedPatientLoc.getValue() != null) {
+            String loc[] = String.valueOf(assignedPatientLoc).split(",");
+            location.setId(loc[0]);
+            //location.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
+            location.setStatus(Location.LocationStatus.ACTIVE);
+            location.setName(loc[0]);
+            //location.setDescription(loc[1]+","+loc[2]);
+            location.setMode(Location.LocationMode.INSTANCE);
 
-        AddressBuilder addressBuilder = new AddressBuilder(location);
-        addressBuilder.setUse(Address.AddressUse.WORK);
-        addressBuilder.addLine(String.valueOf(pv1.getAssignedPatientLocation().getLocationType()));
+            AddressBuilder addressBuilder = new AddressBuilder(location);
+            addressBuilder.setUse(Address.AddressUse.WORK);
+            addressBuilder.addLine(String.valueOf(assignedPatientLoc));
 
-        /*addressBuilder.setCity(nameOfTownCell.getString());
-        addressBuilder.setDistrict(nameOfCountyCell.getString());
-        addressBuilder.setPostcode(fullPostCodeCell.getString());*/
-
+            /*addressBuilder.setCity(nameOfTownCell.getString());
+            addressBuilder.setDistrict(nameOfCountyCell.getString());
+            addressBuilder.setPostcode(fullPostCodeCell.getString());*/
+        }
         return location;
     }
 

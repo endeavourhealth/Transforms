@@ -252,6 +252,8 @@ public class PatientTransformer {
             ST state = patientAddress[0].getStateOrProvince();
             ST postcode = patientAddress[0].getZipOrPostalCode();
             ID country = patientAddress[0].getCountry();
+            ST otherdesignation = patientAddress[0].getOtherDesignation();
+            ST otherGeoDesignation = patientAddress[0].getOtherGeographicDesignation();
 
             if (!streetAddress.isEmpty()
                     || !city.isEmpty()
@@ -261,10 +263,12 @@ public class PatientTransformer {
 
                 AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
                 addressBuilder.setUse(Address.AddressUse.HOME);
-                addressBuilder.addLine(String.valueOf(streetAddress));
+                addressBuilder.addLine(String.valueOf(streetAddress)+","+String.valueOf(otherdesignation)+","+String.valueOf(otherGeoDesignation));
                 addressBuilder.addLine(String.valueOf(country));
                 addressBuilder.setCity(String.valueOf(city));
-                addressBuilder.setDistrict(String.valueOf(state));
+                if(!String.valueOf(state).isEmpty()) {
+                    addressBuilder.setDistrict(String.valueOf(state));
+                }
                 addressBuilder.setPostcode(String.valueOf(postcode));
 
                 AddressBuilder.deDuplicateLastAddress(patientBuilder, fhirResourceFiler.getDataDate());
