@@ -11,12 +11,11 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.subscriber.targetTables.EncounterAdditional;
-import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+import org.endeavourhealth.transform.subscriber.targetTables.EncounterAdditional;
+import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -317,12 +316,22 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                                             IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
 
                                     //transform the IM values to the encounter_additional table upsert
-                                    encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid);
+                                    encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid, null);
                                 } else {
                                     //TODO handle String values
                                 }
                             } else {
-                                //TODO: Handle extended additional Json here
+                                //Handle JSON blobs
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
+
+                                //get the IM concept code
+                                propertyCode = propertyCode.replace("JSON_", "");
+                                Integer propertyConceptDbid =
+                                        IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
+
+                                //the value is a StringType storing JSON
+                                StringType jsonValue = (StringType) parameter.getValue();
+                                encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, null, jsonValue.getValue());
                             }
                         }
                     }

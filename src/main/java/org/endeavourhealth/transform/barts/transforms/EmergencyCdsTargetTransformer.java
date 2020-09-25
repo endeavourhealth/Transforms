@@ -827,9 +827,18 @@ public class EmergencyCdsTargetTransformer {
         String ambulanceNo = targetEmergencyCds.getAmbulanceNo();
         if (!Strings.isNullOrEmpty(ambulanceNo)) {
 
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
+                    "ambulance_number"
+            );
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+            String propertyCode = propertyResponse.getConcept().getCode();
+            String propertyName = "JSON_"+propertyCode;
+
             JsonObject arrivalObjs = new JsonObject();
             arrivalObjs.addProperty("ambulance_number", ambulanceNo);
-            parametersBuilder.addParameter("JSON_arrival", arrivalObjs.toString());
+
+            parametersBuilder.addParameter(propertyName, arrivalObjs.toString());
         }
     }
 

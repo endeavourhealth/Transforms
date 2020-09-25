@@ -415,7 +415,15 @@ public class CriticalCareCdsTargetTransformer {
 
         //add if any elements in the set
         if (!criticalCareObjs.entrySet().isEmpty()) {
-            parametersBuilder.addParameter("JSON_critical_care", criticalCareObjs.toString());
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "critical",
+                    "critical_care"
+            );
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+            String propertyCode = propertyResponse.getConcept().getCode();
+            String propertyName = "JSON_"+propertyCode;
+            parametersBuilder.addParameter(propertyName, criticalCareObjs.toString());
         }
     }
 }

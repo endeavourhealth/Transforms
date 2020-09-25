@@ -384,13 +384,23 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                                     String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
                                     String valueConceptId = IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
                                     //write the IM values to the encounter_additional table upsert
-                                    encounterAdditional.writeUpsert(id, propertyConceptId, valueConceptId);
+                                    encounterAdditional.writeUpsert(id, propertyConceptId, valueConceptId, null);
                                 } else if (type.equalsIgnoreCase("StringType")) {
                                     //TODO handle StringType. They're used a lot. Focusing on Morbidity for BHRUT now
                                     LOG.debug("Not handling StringType yet");
                                 }
                             } else {
-                                //TODO: Handle extended additional Json here
+                                //Handle JSON blobs
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
+
+                                //get the IM concept code
+                                propertyCode = propertyCode.replace("JSON_", "");
+                                String propertyConceptId
+                                        = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
+
+                                //the value is a StringType storing JSON
+                                StringType jsonValue = (StringType) parameter.getValue();
+                                encounterAdditional.writeUpsert(id, propertyConceptId, null, jsonValue.getValue());
                             }
                         }
                     }
