@@ -23,8 +23,8 @@ public class EncounterAdditional extends AbstractEnterpriseCsvWriter {
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
                 "" + propertyId,
-                "" + valueId,
-                "" + jsonValue);   }
+                valueId,
+                jsonValue);   }
 
 
     @Override
