@@ -172,22 +172,35 @@ public class EmisCodeHelper {
 
     /**
      * finds the code for the code ID but if it's an Emis code works up the hierarchy until it finds a Read 2 code
+     * Emis support codes having multiple parents as of mid-2020 so this may return multiple parents - if the
+     * code is an Emis code, it will return the first non-Emis code parent for each parent branch
      */
-    public static EmisClinicalCode findClinicalCodeOrParentRead2Code(CsvCell codeIdCell) throws Exception {
+    public static List<EmisClinicalCode> findClinicalCodeOrParentRead2Code(CsvCell codeIdCell) throws Exception {
+        List<EmisClinicalCode> ret = new ArrayList<>();
+        findClinicalCodeOrParentRead2Code(codeIdCell.getLong(), ret);
+        return ret;
+    }
 
-        EmisClinicalCode codeMapping = findClinicalCode(codeIdCell);
+    private static void findClinicalCodeOrParentRead2Code(Long codeId, List<EmisClinicalCode> parents) throws Exception {
 
-        //if an Emis code, step up the hierarchy until we find a Read2 code
-        while (codeMapping.isEmisCode()) {
-            Long parentId = codeMapping.getParentCode();
-            if (parentId == null) {
-                //some Emis codes simply don't have parents
-                return null;
-            }
-            codeMapping = EmisCodeHelper.findClinicalCode(parentId);
+        EmisClinicalCode codeMapping = findClinicalCode(codeId);
+
+        //if it's a true Read2 code, then just add to the list and return out
+        if (!codeMapping.isEmisCode()) {
+            parents.add(codeMapping);
+            return;
         }
 
-        return codeMapping;
+        //if it's not a Read2 code, then we need to find the true-Read2 parents
+        List<Long> parentCodes = codeMapping.getParentCodes();
+        if (parentCodes == null || parentCodes.isEmpty()) {
+            return;
+        }
+
+        //recurse to find all Read2 codes for all parents
+        for (Long parentCode: parentCodes) {
+            findClinicalCodeOrParentRead2Code(parentCode, parents);
+        }
     }
 
     public static EmisClinicalCode findClinicalCode(CsvCell codeIdCell) throws Exception {
