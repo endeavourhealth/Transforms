@@ -47,9 +47,11 @@ public class DiagnosticReportTransformer {
         diagnosticReportBuilder.setPatient(patientReference);
 
         XCN[] orderingProvider = obr.getOrderingProvider();
-        ST idNumber = orderingProvider[0].getIDNumber();
-        Reference practitionerReference = imperialHL7Helper.createPractitionerReference(idNumber.toString());
-        diagnosticReportBuilder.setRecordedBy(practitionerReference);
+        if(orderingProvider != null && orderingProvider.length > 0) {
+            ST idNumber = orderingProvider[0].getIDNumber();
+            Reference practitionerReference = imperialHL7Helper.createPractitionerReference(idNumber.toString());
+            diagnosticReportBuilder.setRecordedBy(practitionerReference);
+        }
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
         /*if (deletedCell.getBoolean()) {

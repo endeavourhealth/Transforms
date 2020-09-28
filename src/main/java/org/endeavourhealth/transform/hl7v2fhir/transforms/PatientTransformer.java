@@ -299,6 +299,7 @@ public class PatientTransformer {
             nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
             nameBuilder.addPrefix(String.valueOf(prefix));
             nameBuilder.addGiven(String.valueOf(givenName));
+            nameBuilder.addGiven(String.valueOf(middleName));
             nameBuilder.addFamily(String.valueOf(familyName));
 
             NameBuilder.deDuplicateLastName(patientBuilder, fhirResourceFiler.getDataDate());

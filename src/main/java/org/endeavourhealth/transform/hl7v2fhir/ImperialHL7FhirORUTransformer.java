@@ -10,13 +10,13 @@ import ca.uhn.hl7v2.model.v23.segment.OBR;
 import ca.uhn.hl7v2.model.v23.segment.ORC;
 import ca.uhn.hl7v2.model.v23.segment.PID;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
 import org.endeavourhealth.transform.hl7v2fhir.transforms.*;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Practitioner;
+import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +62,8 @@ public abstract class ImperialHL7FhirORUTransformer {
             //Organization
 
             //Patient
-            PID pid = oruMsg.getRESPONSE().getPATIENT().getPID();
             PatientBuilder patientBuilder = null;
+            PID pid = oruMsg.getRESPONSE().getPATIENT().getPID();
             CX[] patientIdList = pid.getPatientIDInternalID();
             String patientGuid = String.valueOf(patientIdList[0].getID());
             boolean newPatient = false;
@@ -73,13 +73,23 @@ public abstract class ImperialHL7FhirORUTransformer {
                 patientBuilder = new PatientBuilder(existingPatient);
             } else {
                 patientBuilder = new PatientBuilder();
+                imperialHL7Helper.setUniqueId(patientBuilder, patientGuid, null);
                 newPatient = true;
             }
+
             patientBuilder = PatientTransformer.transformPIDToPatient(pid, patientBuilder, fhirResourceFiler, imperialHL7Helper);
 
             if(newPatient) {
+                patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
+                patientBuilder.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
+
                 fhirResourceFiler.savePatientResource(null, true, patientBuilder);
             } else {
+                Reference organisationReference = imperialHL7Helper.createOrganizationReference(organizationBuilder.getResourceId());
+                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
+                patientBuilder.setManagingOrganisation(organisationReference);
+                patientBuilder.addCareProvider(organisationReference);
+
                 fhirResourceFiler.savePatientResource(null, false, patientBuilder);
             }
             //Patient
