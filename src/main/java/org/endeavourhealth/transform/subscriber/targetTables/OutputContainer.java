@@ -60,6 +60,9 @@ public class OutputContainer {
         csvWriters.add(new ObservationAdditional(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientPseudoId(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAdditional(csvFormat, dateFormat, timeFormat));
+        // TODO Uncomment when required
+        // csvWriters.add(new PatientAddressRalf(csvFormat, dateFormat, timeFormat));
+
     }
 
     public byte[] writeToZip() throws Exception {
@@ -266,7 +269,13 @@ public class OutputContainer {
     public PatientPseudoId getPatientPseudoId() {
         return findCsvWriter(PatientPseudoId.class);
     }
+
     public PatientAdditional getPatientAdditional() {
         return findCsvWriter(PatientAdditional.class);
     }
+
+    public PatientAddressRalf getPatientAddressRalf() {
+        return findCsvWriter(PatientAddressRalf.class);
+    }
+
 }

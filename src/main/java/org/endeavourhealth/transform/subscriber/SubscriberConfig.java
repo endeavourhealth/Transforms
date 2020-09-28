@@ -35,6 +35,7 @@ public class SubscriberConfig {
     private boolean excludeTestPatients;
     private boolean isPseudonymised;
     private List<LinkDistributorConfig> pseudoSalts = new ArrayList<>();
+    private List<LinkDistributorConfig> ralfSalts = new ArrayList<>();
     private CohortType cohortType;
     private Set<String> cohortGpServices = new HashSet<>(); //if cohort is GpRegisteredAt, this gives the ODS codes the patients should be registered at
     private Integer remoteSubscriberId;
@@ -75,6 +76,10 @@ public class SubscriberConfig {
 
     public List<LinkDistributorConfig> getPseudoSalts() {
         return pseudoSalts;
+    }
+
+    public List<LinkDistributorConfig> getRalfSalts() {
+        return ralfSalts;
     }
 
     public Integer getRemoteSubscriberId() {
@@ -154,6 +159,19 @@ public class SubscriberConfig {
             }
         }
 
+        if (config.has("ralf_salts")) {
+
+            JsonNode linkDistributorsNode = config.get("ralf_salts");
+
+            if (linkDistributorsNode != null) {
+                String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
+                LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
+
+                for (LinkDistributorConfig l : arr) {
+                    this.ralfSalts.add(l);
+                }
+            }
+        }
 
         //compass v1-specific config
         if (subscriberType == SubscriberType.CompassV1) {
@@ -274,6 +292,7 @@ public class SubscriberConfig {
         sb.append("cohortType = [" + cohortType + "],\r\n");
         sb.append("cohortGpServices = [" + cohortGpServices.size() + "],\r\n");
         sb.append("pseudoSalts = [" + pseudoSalts.size() + "],\r\n");
+        sb.append("ralfSalts = [" + ralfSalts.size() + "],\r\n");
         sb.append("excludeNhsNumberRegex = [" + excludeNhsNumberRegex + "],\r\n");
         sb.append("excludeTestPatients = [" + excludeTestPatients + "],\r\n");
         sb.append("remoteSubscriberId = [" + remoteSubscriberId + "],\r\n");

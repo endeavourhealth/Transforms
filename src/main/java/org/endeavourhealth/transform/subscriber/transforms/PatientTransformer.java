@@ -39,6 +39,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     public static final String PREFIX_PSEUDO_ID = "-PSEUDO-";
     private static final String PREFIX_ADDRESS_ID = "-ADDR-";
     private static final String PREFIX_TELECOM_ID = "-TELECOM-";
+    private static final String PREFIX_RALF_ID = "-RALF-";
     //private static final String PREFIX_ADDRESS_MATCH_ID = "-ADDRMATCH-";
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
@@ -1095,5 +1096,80 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
     }
 
+    private void deleteRalfs(ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
+        PatientAddressRalf writer = params.getOutputContainer().getPatientAddressRalf();
+
+        List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getRalfSalts();
+
+        Map<LinkDistributorConfig, SubscriberId> hmIds = findRalfIds(linkDistributorConfigs, params.getSubscriberConfigName(), resourceWrapper, false);
+
+        for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+
+            //create a unique source ID from the patient UUID plus the salt key name
+            SubscriberId subTableId = hmIds.get(ldConfig);
+            if (subTableId != null) {
+                writer.writeDelete(subTableId);
+            }
+        }
+
+    }
+
+    public void transformRalfs(long organizationId,
+                               long subscriberPatientId,
+                               long personId,
+                               Patient fhirPatient,
+                               ResourceWrapper resourceWrapper,
+                               SubscriberTransformHelper params) throws Exception {
+
+        List<LinkDistributorConfig> linkDistributorConfigs = params.getConfig().getRalfSalts();
+
+        if (linkDistributorConfigs.isEmpty()) {
+            return;
+        }
+
+        String uprn = "12345";
+
+        PatientAddressRalf writer = params.getOutputContainer().getPatientAddressRalf();
+
+        Map<LinkDistributorConfig, SubscriberId> hmIds = findRalfIds(linkDistributorConfigs, params.getSubscriberConfigName(), resourceWrapper, true);
+
+        // TODO Complete
+
+    }
+
+    /**
+     * finds (and creates) mapped IDs for each ralf
+     */
+    public static Map<LinkDistributorConfig, SubscriberId> findRalfIds(List<LinkDistributorConfig> linkDistributorConfigs,
+                                                                           String subscriberConfigName,
+                                                                           ResourceWrapper patientWrapper,
+                                                                           boolean createIfMissing) throws Exception {
+
+        if (linkDistributorConfigs.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        //pre-prepare a list of all source IDs that need mapping
+        Map<String, LinkDistributorConfig> hmBySourceId = new HashMap<>();
+        List<String> sourceIds = new ArrayList<>();
+        for (LinkDistributorConfig linkDistributorConfig : linkDistributorConfigs) {
+            String sourceId = patientWrapper.getReferenceString() + PREFIX_RALF_ID + linkDistributorConfig.getSaltKeyName();
+            sourceIds.add(sourceId);
+            hmBySourceId.put(sourceId, linkDistributorConfig);
+        }
+
+        //map all in one go
+        Map<String, SubscriberId> hmIds = findOrCreateSubscriberIds(subscriberConfigName, SubscriberTableId.PATIENT_ADDRESS_RALF, sourceIds, createIfMissing);
+
+        //reverse look up to return an ID for each status
+        Map<LinkDistributorConfig, SubscriberId> ret = new HashMap<>();
+        for (String sourceId : hmIds.keySet()) {
+            SubscriberId id = hmIds.get(sourceId);
+            LinkDistributorConfig linkDistributorConfig = hmBySourceId.get(sourceId);
+            ret.put(linkDistributorConfig, id);
+        }
+
+        return ret;
+    }
 }
