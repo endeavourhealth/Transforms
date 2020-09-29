@@ -6,6 +6,7 @@ import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
@@ -39,6 +40,8 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
 
         org.endeavourhealth.transform.subscriber.targetTables.Observation model = params.getOutputContainer().getObservations();
 
+        org.endeavourhealth.transform.subscriber.targetTables.ObservationAdditional additionalModel = params.getOutputContainer().getObservationAdditional();
+
         Condition fhir = (Condition)resourceWrapper.getResource(); //returns null if deleted
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
@@ -46,6 +49,10 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()
                 || params.shouldClinicalConceptBeDeleted(fhir.getCode())) {
+
+            if (!TransformConfig.instance().isLive()) {
+                additionalModel.writeDelete(subscriberId);
+            }
             model.writeDelete(subscriberId);
             return;
         }
@@ -180,7 +187,10 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
                 dateRecorded);
 
         //we also need to populate the observation additional table with observation extension data
-        // transformAdditionals(fhir, params, subscriberId);
+
+        if (!TransformConfig.instance().isLive()) {
+            transformAdditionals(fhir, params, subscriberId);
+        }
 
     }
 
