@@ -1149,16 +1149,22 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         Map<LinkDistributorConfig, SubscriberId> hmIds = findRalfIds(linkDistributorConfigs, params.getSubscriberConfigName(), resourceWrapper, true);
 
-        // TODO Check the below
-        Map<LinkDistributorConfig, String> hmIdsGenerated  = RalfBuilder.generateRalfsFromConfigs(uprn, params.getSubscriberConfigName(), linkDistributorConfigs);
+        // TODO Finalise the below after testing
+        Map<LinkDistributorConfig, PseudoIdAudit> hmIdsGenerated = RalfBuilder.generateRalfsFromConfigs(uprn, params.getSubscriberConfigName(), linkDistributorConfigs);
 
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
 
             String saltKeyName = ldConfig.getSaltKeyName();
-            String ralfGenerated = hmIdsGenerated.get(ldConfig);
+
+            // get the pseudo data generated (containing ralfs here)
+            PseudoIdAudit idGenerated = hmIdsGenerated.get(ldConfig);
+
+            // get the table unique id generated
             SubscriberId subTableId = hmIds.get(ldConfig);
 
-            if (ralfGenerated != null) {
+            if (idGenerated != null) {
+
+                String ralfGenerated = idGenerated.getPseudoId();
 
                 writer.writeUpsert(subTableId,
                         organizationId,
@@ -1168,6 +1174,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         saltKeyName,
                         ralfGenerated
                         );
+            } else {
+                writer.writeDelete(subTableId);
             }
         }
     }

@@ -2,14 +2,10 @@ package org.endeavourhealth.transform.common;
 
 import OpenPseudonymiser.Crypto;
 import com.google.common.base.Strings;
-// import org.endeavourhealth.common.fhir.IdentifierHelper;
-// import org.endeavourhealth.core.database.dal.DalProvider;
-// import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
-// import org.endeavourhealth.core.database.dal.subscriberTransform.models.PseudoIdAudit;
-// import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.PseudoIdAudit;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
-// import org.hl7.fhir.instance.model.Patient;
-// import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class RalfBuilder {
@@ -80,20 +76,28 @@ public class RalfBuilder {
         return treeMap;
     }
 
-    public static Map<LinkDistributorConfig,String> generateRalfsFromConfigs(String uprn, String subscriberConfigName, List<LinkDistributorConfig> configs) throws Exception {
+    public static Map<LinkDistributorConfig, PseudoIdAudit> generateRalfsFromConfigs(String uprn, String subscriberConfigName, List<LinkDistributorConfig> configs) throws Exception {
 
-        Map<LinkDistributorConfig,String> ret = new HashMap<>();
+        Map<LinkDistributorConfig, PseudoIdAudit> ret = new HashMap<>();
+        List<PseudoIdAudit> toAudit = new ArrayList<>();
 
         for (LinkDistributorConfig config: configs) {
 
             RalfBuilder ralfBuilder = new RalfBuilder(uprn, subscriberConfigName, config.getSaltKeyName(), config.getSalt());
-
             ralfBuilder.addValue(PATIENT_FIELD_UPRN, uprn);
 
             String ralf = ralfBuilder.createRalf();
             if (!Strings.isNullOrEmpty(ralf)) {
-                ret.put(config,ralf);
+                PseudoIdAudit audit =  new PseudoIdAudit(config.getSaltKeyName(), ralfBuilder.getKeys(), ralf);
+                ret.put(config, audit);
+                toAudit.add(audit);
             }
+        }
+
+        // audit everything that has been generated
+        if (!(toAudit.isEmpty())) {
+            PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(subscriberConfigName);
+            pseudoIdDal.auditPseudoIds(toAudit);
         }
         return ret;
     }
