@@ -20,6 +20,8 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.PseudoId
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
+import org.endeavourhealth.transform.common.RalfBuilder;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.subscriber.*;
 import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
@@ -325,18 +327,20 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 writer.writeDelete(subTableId);
             }
         }
+
+        //TODO RALF deletion
     }
 
-    private void uprn(SubscriberTransformHelper params, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode, Long currentAddressId) throws Exception {
+    private String uprn(SubscriberTransformHelper params, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode, Long currentAddressId) throws Exception {
 
         if (!UPRN.isConfigured()) {
-            return;
+            return null;
         }
 
         String configName = params.getSubscriberConfigName();
         if (!UPRN.isActivated(configName)) {
             LOG.debug("subscriber " + configName + " not activated for UPRN");
-            return;
+            return null;
         }
 
         if (addressLine1 == null) {
@@ -367,7 +371,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         String csv = UPRN.getAdrec(adrec, ids);
         if (Strings.isNullOrEmpty(csv)) {
             LOG.debug("Unable to get address from UPRN API");
-            return;
+            return null;
         }
         LOG.trace("Got UPRN result " + csv);
 
@@ -393,8 +397,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         if (sUprn.isEmpty()) {
             LOG.debug("UPRN = 0");
-            return;
+            return null;
         }
+
+        String uprnRet = ss[20];
 
         BigDecimal lat = new BigDecimal(0);
         if (!sLat.isEmpty()) {
@@ -500,6 +506,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 match_flat, // match flat [9]
                 "", // alg version ** TO DO
                 ""); // epoc ** TO DO
+
+        return uprnRet;
     }
 
     private Long transformAddresses(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
@@ -611,7 +619,14 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 city = address.getCity();
                 postcode = address.getPostalCode();
 
-                uprn(params, subTableId, addressLine1, addressLine2, addressLine3, addressLine4, city, postcode, currentAddressId);
+                String uprn = uprn(params, subTableId, addressLine1, addressLine2, addressLine3, addressLine4, city, postcode, currentAddressId);
+
+                //TODO Remove check for live deployment
+                if (!TransformConfig.instance().isLive()) {
+                    if (!(Strings.isNullOrEmpty(uprn))) {
+                        transformRalfs(uprn, organisationId, subscriberPatientId, subscriberPersonId, subTableId.getSubscriberId(), resourceWrapper, params);
+                    }
+                }
             }
         }
 
@@ -631,6 +646,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 writer.writeDelete(subTableId);
             }
         }
+        //TODO RALF deletion
 
         return currentAddressId;
     }
@@ -1115,10 +1131,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
     }
 
-    public void transformRalfs(long organizationId,
+    public void transformRalfs(String uprn,
+                               long organizationId,
                                long subscriberPatientId,
                                long personId,
-                               Patient fhirPatient,
+                               long patientAddressId,
                                ResourceWrapper resourceWrapper,
                                SubscriberTransformHelper params) throws Exception {
 
@@ -1128,14 +1145,31 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             return;
         }
 
-        String uprn = "12345";
-
         PatientAddressRalf writer = params.getOutputContainer().getPatientAddressRalf();
 
         Map<LinkDistributorConfig, SubscriberId> hmIds = findRalfIds(linkDistributorConfigs, params.getSubscriberConfigName(), resourceWrapper, true);
 
-        // TODO Complete
+        // TODO Check the below
+        Map<LinkDistributorConfig, String> hmIdsGenerated  = RalfBuilder.generateRalfsFromConfigs(uprn, params.getSubscriberConfigName(), linkDistributorConfigs);
 
+        for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
+
+            String saltKeyName = ldConfig.getSaltKeyName();
+            String ralfGenerated = hmIdsGenerated.get(ldConfig);
+            SubscriberId subTableId = hmIds.get(ldConfig);
+
+            if (ralfGenerated != null) {
+
+                writer.writeUpsert(subTableId,
+                        organizationId,
+                        subscriberPatientId,
+                        personId,
+                        patientAddressId,
+                        saltKeyName,
+                        ralfGenerated
+                        );
+            }
+        }
     }
 
     /**
