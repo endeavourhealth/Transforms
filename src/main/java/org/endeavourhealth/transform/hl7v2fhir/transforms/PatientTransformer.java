@@ -43,7 +43,7 @@ public class PatientTransformer {
         CX[] patientIdList = pid.getPatientIDInternalID();
         String id = String.valueOf(patientIdList[0].getID());
         String nhsNumber = String.valueOf(patientIdList[1].getID());
-        createIdentifier(patientBuilder, fhirResourceFiler, nhsNumber, Identifier.IdentifierUse.OFFICIAL, "https://fhir.hl7.org.uk/Id/nhs-number");
+        createIdentifier(patientBuilder, fhirResourceFiler, nhsNumber, Identifier.IdentifierUse.OFFICIAL, "http://fhir.nhs.net/Id/nhs-number");
 
         //store the patient ID to the patient resource
         createIdentifier(patientBuilder, fhirResourceFiler, id, Identifier.IdentifierUse.SECONDARY, "https://fhir.hl7.org.uk/Id/ryj");
