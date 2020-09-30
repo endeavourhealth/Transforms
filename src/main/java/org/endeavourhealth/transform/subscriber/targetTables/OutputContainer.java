@@ -60,8 +60,7 @@ public class OutputContainer {
         csvWriters.add(new ObservationAdditional(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientPseudoId(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAdditional(csvFormat, dateFormat, timeFormat));
-        // TODO Uncomment when required
-        // csvWriters.add(new PatientAddressRalf(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new PatientAddressRalf(csvFormat, dateFormat, timeFormat));
 
     }
 
