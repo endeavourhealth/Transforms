@@ -1145,11 +1145,41 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             return;
         }
 
+        // generate patientAddressMatchUprnRalf00
+        SubscriberConfig c = params.getConfig();
+
+        List<LinkDistributorConfig> salts = c.getPseudoSalts(); // Could be done either way
+        // List<LinkDistributorConfig> salts = c.getRalfSalts();
+        LinkDistributorConfig firstSalt = salts.get(0);
+        String base64Salt = firstSalt.getSalt();
+
+        byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
+
+        TreeMap<String, String> keys = new TreeMap<>();
+        keys.put("UPRN", "" + uprn);
+
+        Crypto crypto = new Crypto();
+        crypto.SetEncryptedSalt(saltBytes);
+        String patientAddressMatchUprnRalf00 = crypto.GetDigest(keys);
+
+        List<PseudoIdAudit> toAudit = new ArrayList<>();
+
+        if (!Strings.isNullOrEmpty(patientAddressMatchUprnRalf00)) {
+            PseudoIdAudit audit =  new PseudoIdAudit(firstSalt.getSaltKeyName(), keys, patientAddressMatchUprnRalf00);
+            toAudit.add(audit);
+        }
+
+        if (!(toAudit.isEmpty())) {
+            PseudoIdDalI pseudoIdDal = DalProvider.factoryPseudoIdDal(params.getSubscriberConfigName());
+            pseudoIdDal.auditPseudoIds(toAudit);
+        }
+
+        // build the PatientAddressRalf writer
         PatientAddressRalf writer = params.getOutputContainer().getPatientAddressRalf();
 
         Map<LinkDistributorConfig, SubscriberId> hmIds = findRalfIds(linkDistributorConfigs, params.getSubscriberConfigName(), resourceWrapper, true);
 
-        // TODO Finalise the below after testing
+        // generate ralfs from configs
         Map<LinkDistributorConfig, PseudoIdAudit> hmIdsGenerated = RalfBuilder.generateRalfsFromConfigs(uprn, params.getSubscriberConfigName(), linkDistributorConfigs);
 
         for (LinkDistributorConfig ldConfig : linkDistributorConfigs) {
@@ -1171,6 +1201,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         subscriberPatientId,
                         personId,
                         patientAddressId,
+                        patientAddressMatchUprnRalf00,
                         saltKeyName,
                         ralfGenerated
                         );

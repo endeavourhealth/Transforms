@@ -18,7 +18,7 @@ public class PatientAddressRalf extends AbstractTargetTable {
                 Long.TYPE, // patient_id
                 Long.TYPE, // person_id
                 Long.TYPE, // patient_address_id
-                // String.class, // patient_address_match_uprn_ralf00
+                String.class, // patient_address_match_uprn_ralf00
                 String.class, // salt_name
                 String.class, // skid
         };
@@ -33,7 +33,7 @@ public class PatientAddressRalf extends AbstractTargetTable {
                 "patient_id",
                 "person_id",
                 "patient_address_id",
-                // "patient_address_match_uprn_ralf00",
+                "patient_address_match_uprn_ralf00",
                 "salt_name",
                 "skid"
         };
@@ -56,7 +56,7 @@ public class PatientAddressRalf extends AbstractTargetTable {
                             long patientId,
                             long personId,
                             long patientAddressId,
-                            // String ralf00,
+                            String patientAddressMatchUprnRalf00,
                             String saltKeyName,
                             String ralf) throws Exception {
 
@@ -67,7 +67,7 @@ public class PatientAddressRalf extends AbstractTargetTable {
                 "" + patientId,
                 "" + personId,
                 "" + patientAddressId,
-                // ralf00,
+                "" + patientAddressMatchUprnRalf00,
                 saltKeyName,
                 ralf
         );
