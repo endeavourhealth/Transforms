@@ -8,6 +8,7 @@ import ca.uhn.hl7v2.model.v23.segment.OBR;
 import ca.uhn.hl7v2.model.v23.segment.ORC;
 import ca.uhn.hl7v2.model.v23.segment.PID;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.DiagnosticReportBuilder;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -36,7 +37,7 @@ public class DiagnosticReportTransformer {
                                               ImperialHL7Helper imperialHL7Helper) throws Exception {
         DiagnosticReportBuilder diagnosticReportBuilder = new DiagnosticReportBuilder();
 
-        String observationGuid = String.valueOf(obr.getFillerOrderNumber());
+        String observationGuid = String.valueOf(obr.getFillerOrderNumber().getEntityIdentifier());
 
         CX[] patientIdList = pid.getPatientIDInternalID();
         String patientGuid = String.valueOf(patientIdList[0].getID());
@@ -53,31 +54,10 @@ public class DiagnosticReportTransformer {
             diagnosticReportBuilder.setRecordedBy(practitionerReference);
         }
 
-        //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        /*if (deletedCell.getBoolean()) {
-            diagnosticReportBuilder.setDeletedAudit(deletedCell);
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), diagnosticReportBuilder);
-            return;
-        }*/
-
         //assume that any report already filed into Imperial HL7 is a final report
         diagnosticReportBuilder.setStatus(DiagnosticReport.DiagnosticReportStatus.FINAL);
 
-        /*ID codeId = obr.getUniversalServiceIdentifier().getIdentifier();
-        CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(diagnosticReportBuilder, false, codeId, CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code, csvHelper);*/
-
-        /*ReferenceList childObservations = imperialHL7Helper.getAndRemoveObservationParentRelationships(diagnosticReportBuilder.getResourceId());
-        if (childObservations != null) {
-            for (int i=0; i<childObservations.size(); i++) {
-                Reference reference = childObservations.getReference(i);
-                CsvCell[] sourceCells = childObservations.getSourceCells(i);
-                diagnosticReportBuilder.addResult(reference, sourceCells);
-            }
-        }*/
-
-        /*Reference reference = childObservations.getReference(i);
-        diag*/
-        String uniqueId = String.valueOf(obr.getFillerOrderNumber()) + String.valueOf(orderObserv.getOBSERVATION().getOBX().getObservationIdentifier().getIdentifier());
+        String uniqueId = String.valueOf(obr.getFillerOrderNumber().getEntityIdentifier()) + orderObserv.getOBSERVATION().getOBX().getObservationIdentifier().getIdentifier();
         Reference observationReference = imperialHL7Helper.createObservationReference(uniqueId);
         diagnosticReportBuilder.addResult(observationReference);
 
@@ -90,6 +70,14 @@ public class DiagnosticReportTransformer {
             diagnosticReportBuilder.setEffectiveDate(dateTimeType);
             diagnosticReportBuilder.setRecordedDate(date);
         }
+
+        // coded concept
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(diagnosticReportBuilder, CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code);
+
+        codeableConceptBuilder.addCoding("http://loinc.org");
+        codeableConceptBuilder.setCodingCode(String.valueOf(obr.getUniversalServiceIdentifier().getIdentifier()));
+        codeableConceptBuilder.setText(String.valueOf(obr.getUniversalServiceIdentifier().getText()));
+        codeableConceptBuilder.setCodingDisplay(String.valueOf(obr.getUniversalServiceIdentifier().getText()));
 
         fhirResourceFiler.savePatientResource(null, diagnosticReportBuilder);
     }

@@ -13,6 +13,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -42,8 +43,12 @@ public class ObservationTransformer {
                                          ImperialHL7Helper imperialHL7Helper) throws Exception {
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
-        String uniqueId = String.valueOf(obr.getFillerOrderNumber()) + orderObserv.getOBSERVATION().getOBX().getObservationIdentifier().getIdentifier();
+        String uniqueId = String.valueOf(obr.getFillerOrderNumber().getEntityIdentifier()) + orderObserv.getOBSERVATION().getOBX().getObservationIdentifier().getIdentifier();
         observationBuilder.setId(uniqueId);
+
+        IdentifierBuilder identifierBuilder = new IdentifierBuilder(observationBuilder);
+        identifierBuilder.setSystem("https://fhir.hl7.org.uk/rad/id/ryj");
+        identifierBuilder.setValue(uniqueId);
 
         //patient reference
         CX[] patientIdList = pid.getPatientIDInternalID();
