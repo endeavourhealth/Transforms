@@ -735,7 +735,7 @@ public class OutpatientsTransformer {
         }
 
         csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(id, episodeBuilder);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(),episodeBuilder.isIdMapped(),episodeBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(),!episodeBuilder.isIdMapped(),episodeBuilder);
     }
 
 }
