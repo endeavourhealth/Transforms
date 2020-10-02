@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.Outpatients;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -501,19 +502,23 @@ public class OutpatientsTransformer {
 
         CsvCell adminCategoryCodeCell = parser.getAdminCategoryCode();
         if (!adminCategoryCodeCell.isEmpty()) {
-            containedParametersBuilder.addParameter("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCodeCell.getString());
+            csvHelper.addParmIfNotNull("DM_hasAdministrativeCategoryCode",
+                    "CM_AdminCat" + adminCategoryCodeCell.getString(), containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
         CsvCell referralExternalIdCell = parser.getReferralExternalId();
         if (!referralExternalIdCell.isEmpty()) {
-            containedParametersBuilder.addParameter("referral_source", "" + referralExternalIdCell.getString());
+            csvHelper.addParmIfNotNull("referral_source", "" + referralExternalIdCell.getString(),
+                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
         CsvCell apptTypeCodeCell = parser.getApptTypeCode();
         if (!apptTypeCodeCell.isEmpty()) {
-            containedParametersBuilder.addParameter("appt_attended_code", "" + apptTypeCodeCell.getString());
+            csvHelper.addParmIfNotNull("appt_attended_code", "" + apptTypeCodeCell.getString(),
+                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
         CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
         if (!appointmentOutcomeCodeCell.isEmpty()) {
-            containedParametersBuilder.addParameter("appt_outcome_code", "" + appointmentOutcomeCodeCell);
+            csvHelper.addParmIfNotNull("appt_outcome_code", "" + appointmentOutcomeCodeCell,
+                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
 
         return outpatientEncounterBuilder;
@@ -532,6 +537,7 @@ public class OutpatientsTransformer {
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Outpatient");
+
 
         setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
@@ -583,26 +589,33 @@ public class OutpatientsTransformer {
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
 
-        CsvCell hospitalOdsCodeCell = parser.getHospitalCode();
-        if (!hospitalOdsCodeCell.isEmpty()) {
-            Reference organizationReference
-                    = ReferenceHelper.createReference(ResourceType.Organization, hospitalOdsCodeCell.getString());
-            if (builder.isIdMapped()) {
-                organizationReference
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
+        CsvCell hospitalCodeCell = parser.getHospitalCode();
+        Reference organizationReference;
+        String hospitalCode = null;
+        if (!hospitalCodeCell.isEmpty()) {
+            // Test if the hospital code is a local code that we can map to ODS
+            if (Strings.isNullOrEmpty(csvHelper.findOdsCode(hospitalCodeCell.getString()))) {
+                hospitalCode = hospitalCodeCell.getString();
+            } else {
+                hospitalCode = csvHelper.findOdsCode(hospitalCodeCell.getString());
             }
-            builder.setServiceProvider(organizationReference);
+
+            Reference providerReference = ReferenceHelper.createReference(ResourceType.Organization, hospitalCode);
+            if (builder.isIdMapped()) {
+                providerReference
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(providerReference, csvHelper);
+            }
+            builder.setServiceProvider(providerReference);
+            if (isChildEncounter) {
+                Reference parentEncounter
+                        = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
+
+                parentEncounter
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+
+                builder.setPartOf(parentEncounter);
+            }
         }
-        if (isChildEncounter) {
-            Reference parentEncounter
-                    = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-
-//            parentEncounter
-//                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-
-            builder.setPartOf(parentEncounter);
-        }
-
     }
 
     private static void deleteChildResources(Outpatients parser,
@@ -722,6 +735,7 @@ public class OutpatientsTransformer {
         }
 
         csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(id, episodeBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(),episodeBuilder.isIdMapped(),episodeBuilder);
     }
 
 }

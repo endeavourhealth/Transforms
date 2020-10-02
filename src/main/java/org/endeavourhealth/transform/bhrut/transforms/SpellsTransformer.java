@@ -9,6 +9,7 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
+import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.Spells;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
@@ -94,13 +95,21 @@ public class SpellsTransformer {
         encounterBuilder.setPatient(patientReference2, patientIdCell);
 
         CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
+        Reference organisationReference;
         if (!admissionHospitalCodeCell.isEmpty()) {
-            Reference organisationReference = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
-            if (encounterBuilder.isIdMapped()) {
-                organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+            if (Strings.isNullOrEmpty(csvHelper.findOdsCode(admissionHospitalCodeCell.getString()) )) {
+                organisationReference = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
+            } else {
+                organisationReference = csvHelper.createOrganisationReference(csvHelper.findOdsCode(admissionHospitalCodeCell.getString()));
             }
-            encounterBuilder.setServiceProvider(organisationReference);
+        } else {
+            organisationReference =csvHelper.createOrganisationReference(BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE);
         }
+        if (encounterBuilder.isIdMapped()) {
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
+        }
+        encounterBuilder.setServiceProvider(organisationReference);
+
 
         CsvCell admissionConsultantCodeCell = parser.getAdmissionConsultantCode();
         Reference practitionerReference = null;
@@ -301,8 +310,13 @@ public class SpellsTransformer {
             episodeOfCareBuilder.setRegistrationEndDate(endDateTime.getDateTime(), endDateTime);
         }
         CsvCell odsCodeCell = parser.getAdmissionHospitalCode();
+        Reference organisationReference;
         if (!odsCodeCell.isEmpty()) {
-            Reference organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
+            if (Strings.isNullOrEmpty(csvHelper.findOdsCode(odsCodeCell.getString()) )) {
+                organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
+            } else {
+                organisationReference = csvHelper.createOrganisationReference(csvHelper.findOdsCode(odsCodeCell.getString()));
+            }
             // if episode already ID mapped, get the mapped ID for the org
             if (episodeOfCareBuilder.isIdMapped()) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
@@ -311,7 +325,7 @@ public class SpellsTransformer {
         } else {
             //v1 uses service details
             UUID serviceId = parser.getServiceId();
-            Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+            organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
             // if episode already ID mapped, get the mapped ID for the org
             if (episodeOfCareBuilder.isIdMapped()) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
@@ -451,9 +465,15 @@ public class SpellsTransformer {
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
         CsvCell admissionHospitalCode = parser.getAdmissionHospitalCode();
+        Reference organizationReference;
         if (!admissionHospitalCode.isEmpty()) {
-            Reference organizationReference
-                    = ReferenceHelper.createReference(ResourceType.Organization, admissionHospitalCode.getString());
+            if (Strings.isNullOrEmpty(csvHelper.findOdsCode(admissionHospitalCode.getString()) )) {
+                organizationReference
+                        = ReferenceHelper.createReference(ResourceType.Organization, admissionHospitalCode.getString());
+            } else {
+                organizationReference
+                        = ReferenceHelper.createReference(ResourceType.Organization, csvHelper.findOdsCode(admissionHospitalCode.getString()));
+            }
             if (builder.isIdMapped()) {
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);

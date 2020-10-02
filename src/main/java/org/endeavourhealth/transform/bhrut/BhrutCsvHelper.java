@@ -14,7 +14,6 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.mapping.MapColumnRequest;
 import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
 import org.endeavourhealth.im.models.mapping.MapResponse;
@@ -45,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BhrutCsvHelper.class);
     public static final SimpleDateFormat DATE_TIME_FORMAT_BHRUT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-    private static Map<String, String> localOdsCodesMap;
+    private static Map<String, String> localToOdsMap;
 
 
 
@@ -844,20 +843,22 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return personIdsToFilterOn.contains(personId);
     }
 
-    public static String findBhrutLocalOdsCode(String orgCode) throws Exception {
+    public static String findOdsCode(String orgCode) throws Exception {
 
-        if (localOdsCodesMap == null) {
-            localOdsCodesMap = ResourceParser.readCsvResourceIntoMap("BhrutLocalOdsCodesMap.csv", "LocalOdsCode", "OrganisationName", CSVFormat.DEFAULT.withHeader());
+        if (localToOdsMap == null) {
+            localToOdsMap = ResourceParser.readCsvResourceIntoMap("BhrutLocalCodesToOdsMap.csv", "LocalCode", "ODS", CSVFormat.DEFAULT.withHeader());
         }
 
-        String code = localOdsCodesMap.get(orgCode);
+        String code = localToOdsMap.get(orgCode);
         if (!Strings.isNullOrEmpty(code)) {
-            return code;
+             return code; //BHRUT ODS code.
 
         } else {
             return null;
         }
     }
+
+
     public static void addParmIfNotNull(String propertyName, String columnName, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(propertyName, tablename);
         MapResponse valueResponse = getColumnValue(columnName, propertyName, tablename);

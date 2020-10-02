@@ -126,7 +126,9 @@ public class PMITransformer {
         createName(patientBuilder, fhirResourceFiler,parser, csvHelper);
         createAddress(patientBuilder, fhirResourceFiler,parser, csvHelper);
 
-        addCausesOfDeath(parser, patientBuilder,csvHelper);
+        if (!parser.getCauseOfDeath().isEmpty()) {
+            addCausesOfDeath(parser, patientBuilder, csvHelper);
+        }
 
         CsvCell homePhone = parser.getHomePhoneNumber();
         if (!homePhone.isEmpty()) {

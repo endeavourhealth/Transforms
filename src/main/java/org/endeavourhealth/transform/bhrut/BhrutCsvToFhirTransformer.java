@@ -38,6 +38,7 @@ public abstract class BhrutCsvToFhirTransformer {
     public final static  String  IM_PMI_TABLE_NAME ="PMI";
     public final static  String  IM_AEATTENDANCE_TABLE_NAME  ="AandeAttendances";
     public final static  String  IM_EPISODES_TABLE_NAME  ="Episodes";
+    public final static  String  IM_OUTPATIENTS_TABLE_NAME  ="Outpatients";
     //
     public final static  String  IM_CAUSE_OF_DEATH = "CAUSEOFDEATH";
     public final static  String  IM_CAUSE_OF_DEATH_1B = "CAUSEOFDEATH 1B";

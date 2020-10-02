@@ -81,7 +81,6 @@ public class PMIPreTransformer {
                                           String orgId) throws Exception {
 
 
-        String orgName = null;
 
         OrganizationBuilder organizationBuilder
                 = csvHelper.getOrgCache().getOrCreateOrganizationBuilder(orgId, csvHelper);
@@ -90,12 +89,12 @@ public class PMIPreTransformer {
             TransformWarnings.log(LOG, parser, "Error creating Organization resource for ODS: {}", orgId);
             return;
         }
-        //verify if it matches with the localOdsCodes else verify from the REST
-        orgName = csvHelper.findBhrutLocalOdsCode(orgId);
+        //Check if it's local code that maps to an ODS code
+        if (csvHelper.findOdsCode(orgId) != null) {
+            orgId=csvHelper.findOdsCode(orgId);
+        }
 
-        if (!Strings.isNullOrEmpty(orgName)) {
-            organizationBuilder.setName(orgName);
-        } else {
+
             OdsOrganisation org = new OdsOrganisation();
             try {
                 org = OdsWebService.lookupOrganisationViaRest(orgId);
@@ -112,7 +111,7 @@ public class PMIPreTransformer {
                 return;
 
             }
-        }
+
 
         //set the ods identifier
         organizationBuilder.getIdentifiers().clear();

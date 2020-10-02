@@ -57,15 +57,15 @@ public class OutpatientsPreTransformer {
 
 
         //for each unique ods code in the outpatient file, check, file and cache the resource
-        CsvCell odsCodeCell = parser.getHospitalCode();
+        CsvCell hospitalCodeCell = parser.getHospitalCode();
         CsvCell consultantCell = parser.getConsultant();
         CsvCell consultantCodeCell = parser.getConsultantCode();
 
-        if (!odsCodeCell.isEmpty()) {
-            boolean orgInCache = csvHelper.getOrgCache().organizationInCache(odsCodeCell.getString());
+        if (!hospitalCodeCell.isEmpty()) {
+            boolean orgInCache = csvHelper.getOrgCache().organizationInCache(hospitalCodeCell.getString());
             if (!orgInCache) {
                 boolean orgResourceAlreadyFiled
-                        = csvHelper.getOrgCache().organizationInDB(odsCodeCell.getString(), csvHelper);
+                        = csvHelper.getOrgCache().organizationInDB(hospitalCodeCell.getString(), csvHelper);
                 if (!orgResourceAlreadyFiled) {
                     createOrganisation(parser, fhirResourceFiler, csvHelper);
                 }
