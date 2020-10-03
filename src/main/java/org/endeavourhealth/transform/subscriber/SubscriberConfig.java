@@ -173,6 +173,7 @@ public class SubscriberConfig {
             }
         }
 
+        //TODO Should this go inside the else if (subscriberType == SubscriberType.CompassV2) block below?
         if (config.has("ralf_salts")) {
 
             JsonNode arrayNode = config.get("ralf_salts");

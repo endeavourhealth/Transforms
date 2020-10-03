@@ -621,7 +621,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 String uprn = uprn(params, subTableId, addressLine1, addressLine2, addressLine3, addressLine4, city, postcode, currentAddressId);
 
-                //TODO Remove check for live deployment
+                //TODO Remove check for live patient_address_ralf deployment
                 if (!TransformConfig.instance().isLive()) {
                     if (!(Strings.isNullOrEmpty(uprn))) {
                         transformRalfs(uprn, organisationId, subscriberPatientId, subscriberPersonId, subTableId.getSubscriberId(), resourceWrapper, params);
