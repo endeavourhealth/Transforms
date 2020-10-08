@@ -137,8 +137,8 @@ public class EncounterTransformer {
 
                 return;
 
-            } else if (status == Encounter.EncounterState.INPROGRESS) {
-                //if the Encounter is still in progress, just delete this specific event
+            } else if (status == Encounter.EncounterState.INPROGRESS || status == Encounter.EncounterState.FINISHED) {
+                //if the Encounter is still in progress or finished, just delete this specific event
                 LOG.debug("Message is A23, so deleting child encounter " + childEncounterBuilder.getResourceId());
                 filer.deletePatientResource(childEncounterBuilder);
                 return;
