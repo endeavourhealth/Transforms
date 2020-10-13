@@ -73,6 +73,10 @@ public class AndEAttendanceTransformer {
         EncounterBuilder encounterBuilder = new EncounterBuilder();
         encounterBuilder.setId(parser.getId().getString());
         CsvCell patientIdCell = parser.getPasId();
+        if (patientIdCell.isEmpty()) {
+            TransformWarnings.log(LOG, csvHelper, "Patient id cell is empty for externalId {}.  Line ignored.", parser.getId());
+            return;
+        }
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
         CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
@@ -88,6 +92,10 @@ public class AndEAttendanceTransformer {
 
         CsvCell idCell = parser.getId();
         CsvCell patientIdCell = parser.getPasId();
+        if (patientIdCell.isEmpty()) {
+            TransformWarnings.log(LOG, csvHelper, "Patient id cell is empty for externalId {}.  Line ignored.", parser.getId());
+            return;
+        }
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
 
         //Create EncounterBuilder object
@@ -159,11 +167,14 @@ public class AndEAttendanceTransformer {
         }
 
         //TODO - analysis data to see if there are sub-encounters possible to model, i.e. treatments
-
+        ObservationBuilder observationBuilder = new ObservationBuilder();
         //the chief complaint needs capturing - it's not coded, so set as the reason for the encounter
         CsvCell complaintCell = parser.getComplaint();
         if (!complaintCell.isEmpty()) {
             encounterBuilder.addReason(complaintCell.getString(), complaintCell);
+            Reference encounterRef = csvHelper.createEncounterReference(parser.getId().getString(),patientIdCell.getString() );
+            observationBuilder = createLinkedObservationbuilder(parser, csvHelper, encounterRef,encounterBuilder.isIdMapped());
+//
         }
 
         //use RECORDED_OUTCOME to populate the discharge disposition
@@ -174,7 +185,7 @@ public class AndEAttendanceTransformer {
 
         //List<ResourceBuilderBase> bases =
         createEmergencyEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), encounterBuilder, observationBuilder);
 
     }
 
@@ -406,21 +417,29 @@ public class AndEAttendanceTransformer {
 
         CsvCell attendanceSourceCell = parser.getReferralSource();
         if (!attendanceSourceCell.isEmpty()) {
-            addParmIfNotNull("ae_attendance_source", "" + attendanceSourceCell.getString(),
+            String code =convertReferralSourceText(attendanceSourceCell.getString());
+            addParmIfNotNull("ae_attendance_source", "" + code,
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
-
         CsvCell arrivalModeCell = parser.getArrivalMode();
         if (!arrivalModeCell.isEmpty()) {
-            addParmIfNotNull("ae_arrival_mode", "" + arrivalModeCell.getString(),
+            int mode;
+            if (arrivalModeCell.getString().toLowerCase().contains("ambulance")) {
+                mode = 1;
+            } else {
+                mode = 0;
+            }
+            addParmIfNotNull("ae_arrival_mode", "" + mode,
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
-
-        CsvCell complaintCell = parser.getComplaint();
-        if (!complaintCell.isEmpty()) {
-            addParmIfNotNull("ae_chief_complaint", "" + complaintCell.getString(),
-                    containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
-        }
+//
+//        CsvCell complaintCell = parser.getComplaint();
+//        ObservationBuilder observationBuilder = null;
+//        if (!complaintCell.isEmpty()) {
+//            observationBuilder = createLinkedObservationbuilder(parser, csvHelper, childArrivalRef,existingParentEncounterBuilder.isIdMapped());
+////            addParmIfNotNull("ae_chief_complaint", "" + complaintCell.getString(),
+////                    containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
+       // }
         //Todo verify CAU_BED_REQUEST_DTTM is same as AssessmentDate
         CsvCell assessmentDateCell = parser.getCauBedRequestDttm();
         CsvCell invAndTreatmentsDateCell = parser.getSeenByAeDoctorDttm();
@@ -438,8 +457,9 @@ public class AndEAttendanceTransformer {
         }
         ret.add(arrivalEncounterBuilder);
         //save the A&E arrival encounter
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), arrivalEncounterBuilder);
-        //Is there an initial assessment encounter?
+
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), arrivalEncounterBuilder);
+              //Is there an initial assessment encounter?
         EncounterBuilder assessmentEncounterBuilder = null;
         if (!assessmentDateCell.isEmpty()) {
 
@@ -571,6 +591,24 @@ public class AndEAttendanceTransformer {
 
         return ret;
     }
-
+    private static ObservationBuilder createLinkedObservationbuilder(AandeAttendances parser, BhrutCsvHelper csvHelper,
+                                                                     Reference encounterRef,
+                                                                     boolean idMapped) throws Exception {
+        ObservationBuilder observationBuilder = new ObservationBuilder();
+        //Same id as parent Encounter but different ResourceType
+        observationBuilder.setId(parser.getId().getString() + ":01:EM", parser.getId() );
+        observationBuilder.setNotes(parser.getComplaint().getString());
+        Reference patientReference
+                = ReferenceHelper.createReference(ResourceType.Patient, parser.getPasId().getString());
+        if (idMapped) {
+            patientReference =
+                IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference,csvHelper);
+        }
+        observationBuilder.setPatient(patientReference);
+        DateTimeType dtt = new DateTimeType(parser.getArrivalDttm().getDateTime());
+        observationBuilder.setEffectiveDate(dtt,parser.getArrivalDttm());
+        observationBuilder.setEncounter(encounterRef);
+        return observationBuilder;
+    }
 
 }

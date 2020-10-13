@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
 import com.google.common.base.Strings;
+import com.google.gson.JsonObject;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -9,11 +10,14 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.Episodes;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -324,7 +328,7 @@ public class EpisodesTransformer {
 
             CsvCell adminCategoryCodeCe = parser.getAdministrativeCategoryCode();
             if (!adminCategoryCodeCe.isEmpty()) {
-               csvHelper.addParmIfNotNull("DM_hasAdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCodeCe.getString(), containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
+               csvHelper.addParmIfNotNull("AdministrativeCategoryCode", "CM_AdminCat" + adminCategoryCodeCe.getString(), containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell admissionMethodCodeCell = parser.getAdmissionMethodCode();
             if (!admissionMethodCodeCell.isEmpty()) {
@@ -332,7 +336,7 @@ public class EpisodesTransformer {
             }
             CsvCell admissionSourceCodeCell = parser.getAdmissionSourceCode();
             if (!admissionSourceCodeCell.isEmpty()) {
-                csvHelper.addParmIfNotNull("ip_admission_source", "" + admissionSourceCodeCell, containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
+                csvHelper.addParmIfNotNull("ip_admission_source", "" + admissionSourceCodeCell.getString(), containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell patientClassCodeCell = parser.getPatientClassCode();
             if (!patientClassCodeCell.isEmpty()) {
@@ -371,7 +375,7 @@ public class EpisodesTransformer {
                         = new ContainedParametersBuilder(dischargeEncounterBuilder);
                 containedParametersBuilderDischarge.removeContainedParameters();
 
-                CsvCell dischargeMethodCodeCell = parser.getDischargeMethod();
+                CsvCell dischargeMethodCodeCell = parser.getDischargeMethodCode();
                 if (!dischargeMethodCodeCell.isEmpty()) {
                     csvHelper.addParmIfNotNull("ip_discharge_method", "" + dischargeMethodCodeCell.getString(),containedParametersBuilderDischarge,BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
                 }
@@ -421,6 +425,44 @@ public class EpisodesTransformer {
         if (!episodeEndWardCodeCell.isEmpty()) {
             csvHelper.addParmIfNotNull("ip_episode_end_ward", "" + episodeEndWardCodeCell.getString(), containedParametersBuilder, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
         }
+        String episodeStartWardCode = parser.getEpisodeStartWardCode().getString();
+        String episodeEndWardCode = parser.getEpisodeEndWardCode().getString();
+        if (!Strings.isNullOrEmpty(episodeStartWardCode) || !Strings.isNullOrEmpty(episodeEndWardCode)) {
+
+            JsonObject episodeWardsObjs = new JsonObject();
+            if (!Strings.isNullOrEmpty(episodeStartWardCode)) {
+
+                episodeWardsObjs.addProperty("start_ward", episodeStartWardCode);
+            }
+            if (!Strings.isNullOrEmpty(episodeEndWardCode)) {
+
+                episodeWardsObjs.addProperty("end_ward", episodeEndWardCode);
+            }
+
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                    BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                    BhrutCsvToFhirTransformer.IM_SCHEMA,
+                    "inpatient",
+                    "wards"
+            );
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+            String propertyCode = propertyResponse.getConcept().getCode();
+            String propertyName = "JSON_"+propertyCode;
+            containedParametersBuilder.addParameter(propertyName, episodeWardsObjs.toString());
+        }
+
+
+
+
+
+
+
+
+
+
+
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, existingParentEncounterBuilder);
 

@@ -502,7 +502,7 @@ public class OutpatientsTransformer {
 
         CsvCell adminCategoryCodeCell = parser.getAdminCategoryCode();
         if (!adminCategoryCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("DM_hasAdministrativeCategoryCode",
+            csvHelper.addParmIfNotNull("AdministrativeCategoryCode",
                     "CM_AdminCat" + adminCategoryCodeCell.getString(), containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
         CsvCell referralExternalIdCell = parser.getReferralExternalId();
@@ -517,7 +517,7 @@ public class OutpatientsTransformer {
         }
         CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
         if (!appointmentOutcomeCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("appt_outcome_code", "" + appointmentOutcomeCodeCell,
+            csvHelper.addParmIfNotNull("appt_outcome_code", "" + appointmentOutcomeCodeCell.getString(),
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
 

@@ -44,7 +44,7 @@ public class PatientAdditional extends AbstractTargetTable {
                             Integer valueId ) throws Exception {
 
         super.printRecord(convertBoolean(false),
-                "" + id,
-                "" + propertyId,
-                "" + valueId);   }
+                "" + id.getSubscriberId(),
+                convertInt(propertyId),
+                convertInt(valueId));   }
 }

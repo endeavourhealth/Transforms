@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -312,9 +313,13 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                                     //we need to look up DBids for both
                                     Integer propertyConceptDbid =
                                             IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
+                                    if (propertyConceptDbid == null) {
+                                        LOG.debug("No property found for scheme: " + propertyScheme + ":code:" + propertyCode + ".");
+                                        LOG.debug("Skipping problem parameter: " + fhir.getId() + ":" + fhir.getResourceType().toString());
+                                        break;
+                                    }
                                     Integer valueConceptDbid =
                                             IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
-
                                     //transform the IM values to the encounter_additional table upsert
                                     encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid, null);
                                 } else {
