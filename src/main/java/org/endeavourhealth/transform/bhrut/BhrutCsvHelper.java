@@ -859,16 +859,16 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-    public static void addParmIfNotNull(String propertyName, String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
+    public static void addParmIfNotNull(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(columnName, tablename);
-        MapResponse valueResponse = getColumnValue(columnName, propertyName, tablename);
+        MapResponse valueResponse = getColumnValue(value, columnName, tablename);
         CodeableConcept ccValue = new CodeableConcept();
         ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                 .setSystem(valueResponse.getConcept().getScheme());
         parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
     }
 
-    public static void addParmIfNotNullJson(String propertyName, String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
+    public static void addParmIfNotNullJson(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(columnName, tablename);
         String propertyCode = "JSON_" + propertyResponse.getConcept().getCode();
         //String jsonPropertyName = "JSON_"+propertyCode;
@@ -891,14 +891,14 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return propertyResponse;
     }
 
-    private static MapResponse getColumnValue(String cause, String column, String tablename) throws Exception {
+    private static MapResponse getColumnValue(String value, String column, String tablename) throws Exception {
         MapColumnValueRequest request = new MapColumnValueRequest(
                 BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
                 BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
                 BhrutCsvToFhirTransformer.IM_SCHEMA,
                 tablename,
                 column,
-                cause
+                value
         );
         MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(request);
         return valueResponse;

@@ -502,7 +502,7 @@ public class OutpatientsTransformer {
 
         CsvCell adminCategoryCodeCell = parser.getAdminCategoryCode();
         if (!adminCategoryCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("AdministrativeCategoryCode","ADMIN_CATEGORY_CODE",
+            csvHelper.addParmIfNotNull("ADMIN_CATEGORY_CODE",
                     adminCategoryCodeCell.getString(), adminCategoryCodeCell,
                      containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
@@ -514,13 +514,13 @@ public class OutpatientsTransformer {
 //        }
         CsvCell apptTypeCodeCell = parser.getApptTypeCode();
         if (!apptTypeCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("appt_type_code",    "APPT_TYPE_CODE",
+            csvHelper.addParmIfNotNull("PPT_TYPE_CODE",
                     apptTypeCodeCell.getString(), apptTypeCodeCell,
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
         CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
         if (!appointmentOutcomeCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("appt_outcome_code",   "APPOINTMENT_OUTCOME_CODE",
+            csvHelper.addParmIfNotNull(  "APPOINTMENT_OUTCOME_CODE",
                     appointmentOutcomeCodeCell.getString(), appointmentOutcomeCodeCell,
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }

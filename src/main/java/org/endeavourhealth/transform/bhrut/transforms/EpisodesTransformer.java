@@ -328,22 +328,22 @@ public class EpisodesTransformer {
 
             CsvCell adminCategoryCodeCe = parser.getAdministrativeCategoryCode();
             if (!adminCategoryCodeCe.isEmpty()) {
-               csvHelper.addParmIfNotNull("AdministrativeCategoryCode", "ADMINISTRATIVE_CATEGORY_CODE",
+               csvHelper.addParmIfNotNull( "ADMINISTRATIVE_CATEGORY_CODE",
                       adminCategoryCodeCe.getString(), adminCategoryCodeCe, containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell admissionMethodCodeCell = parser.getAdmissionMethodCode();
             if (!admissionMethodCodeCell.isEmpty()) {
-                csvHelper.addParmIfNotNull("ip_admission_method", "ADMISSION_METHOD_CODE",
+                csvHelper.addParmIfNotNull("ADMISSION_METHOD_CODE",
                         admissionMethodCodeCell.getString(), admissionMethodCodeCell, containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell admissionSourceCodeCell = parser.getAdmissionSourceCode();
             if (!admissionSourceCodeCell.isEmpty()) {
-                csvHelper.addParmIfNotNull("ip_admission_source", "ADMISSION_SOURCE_CODE",
+                csvHelper.addParmIfNotNull("ADMISSION_SOURCE_CODE",
                         admissionSourceCodeCell.getString(), admissionSourceCodeCell,containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell patientClassCodeCell = parser.getPatientClassCode();
             if (!patientClassCodeCell.isEmpty()) {
-                csvHelper.addParmIfNotNull("patient_classification", "PATIENT_CLASS_CODE",
+                csvHelper.addParmIfNotNull( "PATIENT_CLASS_CODE",
                         patientClassCodeCell.getString(), patientClassCodeCell, containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             //if the 01 episode has an episode end date, set the admission end date
@@ -381,12 +381,12 @@ public class EpisodesTransformer {
 
                 CsvCell dischargeMethodCodeCell = parser.getDischargeMethodCode();
                 if (!dischargeMethodCodeCell.isEmpty()) {
-                    csvHelper.addParmIfNotNull("ip_discharge_method", "DISCHARGE_METHOD_CODE",
+                    csvHelper.addParmIfNotNull("DISCHARGE_METHOD_CODE",
                             dischargeMethodCodeCell.getString(), dischargeMethodCodeCell, containedParametersBuilderDischarge,BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
                 }
                 CsvCell dischargeDestinationCodeCell = parser.getDischargeDestinationCode();
                 if (!dischargeDestinationCodeCell.isEmpty()) {
-                    csvHelper.addParmIfNotNull("ip_discharge_destination", "DISCHARGE_DESINATION_CODE",
+                    csvHelper.addParmIfNotNull("DISCHARGE_DESINATION_CODE",
                             dischargeDestinationCodeCell.getString(), dischargeDestinationCodeCell, containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
                 }
                 //and link the parent to this new child encounter
@@ -425,12 +425,12 @@ public class EpisodesTransformer {
 
         CsvCell episodeStartWardCodeCell = parser.getEpisodeStartWardCode();
         if (!episodeStartWardCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("ip_episode_start_ward", "EPISODE_START_WARD_CODE",
+            csvHelper.addParmIfNotNull( "EPISODE_START_WARD_CODE",
                     episodeStartWardCodeCell.getString(), episodeStartWardCodeCell,containedParametersBuilder, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
         }
         CsvCell episodeEndWardCodeCell = parser.getEpisodeEndWardCode();
         if (!episodeEndWardCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("ip_episode_end_ward",  "EPISODE_END_WARD_CODE",
+            csvHelper.addParmIfNotNull(  "EPISODE_END_WARD_CODE",
                     episodeEndWardCodeCell.getString(), episodeEndWardCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
         }
         String episodeStartWardCode = parser.getEpisodeStartWardCode().getString();

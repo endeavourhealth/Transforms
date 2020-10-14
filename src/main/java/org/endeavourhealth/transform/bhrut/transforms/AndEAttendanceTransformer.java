@@ -411,7 +411,7 @@ public class AndEAttendanceTransformer {
 
         CsvCell attendanceTypeCell = parser.getAttendanceType();
         if (!attendanceTypeCell.isEmpty()) {
-          addParmIfNotNull("ae_attendance_type",  "ATTENDANCE_TYPE", attendanceTypeCell.getString(),
+          addParmIfNotNull( "ATTENDANCE_TYPE", attendanceTypeCell.getString(),
                   attendanceTypeCell,
                   containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
@@ -419,7 +419,7 @@ public class AndEAttendanceTransformer {
         CsvCell attendanceSourceCell = parser.getReferralSource();
         if (!attendanceSourceCell.isEmpty()) {
             String code =convertReferralSourceText(attendanceSourceCell.getString());
-            addParmIfNotNull("ae_attendance_source", "REFERRAL_SOURCE",
+            addParmIfNotNull( "REFERRAL_SOURCE",
                     attendanceSourceCell.getString(), attendanceSourceCell,
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
@@ -431,7 +431,7 @@ public class AndEAttendanceTransformer {
             } else {
                 mode = 0;
             }
-            addParmIfNotNull("ae_arrival_mode", "ARRIVAL_MODE",
+            addParmIfNotNull( "ARRIVAL_MODE",
                     arrivalModeCell.getString(), arrivalModeCell,
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
@@ -568,7 +568,7 @@ public class AndEAttendanceTransformer {
             ContainedParametersBuilder containedParametersBuilderDischarge
                     = new ContainedParametersBuilder(dischargeEncounterBuilder);
             containedParametersBuilderDischarge.removeContainedParameters();
-                csvHelper.addParmIfNotNullJson("ae_discharge_destination", "DISCHARGE_DESTINATION",
+                csvHelper.addParmIfNotNullJson( "DISCHARGE_DESTINATION",
                         dischargeDestinationCell.getString(),dischargeDestinationCell,
                         containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
             }
