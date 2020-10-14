@@ -139,7 +139,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         currentAddressId = transformAddresses(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
         transformTelecoms(enterpriseId.longValue(), personId, fhirPatient, fullHistory, resourceWrapper, params);
 
-        transformPatientAdditionals(fhirPatient, params,id);
+        transformPatientAdditionals(fhirPatient, params, enterpriseId.longValue());
 
         //Calendar cal = Calendar.getInstance();
 
@@ -936,21 +936,37 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
                         //each parameter entry  will have a key value pair of name and CodeableConcept value
                         if (parameter.hasName() && parameter.hasValue()) {
-
-                            //these values are from IM API mapping
                             String propertyCode = parameter.getName();
-                            String propertyScheme = IMConstant.DISCOVERY_CODE;
+                            if (!propertyCode.startsWith("JSON_")) {
+                                //these values are from IM API mapping so set as Discovery Code
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
+                                String type = parameter.getValue().getClass().getSimpleName();
+                                if (type.equalsIgnoreCase("CodeableConcept")) {
+                                    CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                                    String valueCode = parameterValue.getCoding().get(0).getCode();
+                                    String valueScheme = parameterValue.getCoding().get(0).getSystem();
 
-                            CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
-                            String valueCode = parameterValue.getCoding().get(0).getCode();
-                            String valueScheme = parameterValue.getCoding().get(0).getSystem();
+                                    //we need to get the unique IM conceptId for the property and value
+                                    String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
+                                    String valueConceptId = IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
+                                    //write the IM values to the encounter_additional table upsert
+                                    patientAdditional.writeUpsert(id, propertyConceptId, valueConceptId,null);
+                                } else if (type.equalsIgnoreCase("StringType")) {
+                                    LOG.debug("Non json string found:" + propertyCode);
+                                }
+                            } else {
+                                //Handle JSON blobs
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
 
-                            //we need to get the unique IM conceptId for the property and value
-                            String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
-                            String valueConceptId =  IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
+                                //get the IM concept code
+                                propertyCode = propertyCode.replace("JSON_", "");
+                                String propertyConceptId
+                                        = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
 
-                            //write the IM values to the encounter_additional table upsert
-                            patientAdditional.writeUpsert(id, propertyConceptId, valueConceptId);
+                                //the value is a StringType storing JSON
+                                StringType jsonValue = (StringType) parameter.getValue();
+                                patientAdditional.writeUpsert(id, propertyConceptId, null, jsonValue.getValue());
+                            }
                         }
                     }
                     break;

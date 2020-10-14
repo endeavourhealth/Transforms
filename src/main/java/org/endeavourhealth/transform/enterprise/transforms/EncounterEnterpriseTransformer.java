@@ -386,8 +386,7 @@ public class EncounterEnterpriseTransformer extends AbstractEnterpriseTransforme
                                     //write the IM values to the encounter_additional table upsert
                                     encounterAdditional.writeUpsert(id, propertyConceptId, valueConceptId, null);
                                 } else if (type.equalsIgnoreCase("StringType")) {
-                                    //TODO handle StringType. They're used a lot. Focusing on Morbidity for BHRUT now
-                                    LOG.debug("Not handling StringType yet");
+                                    LOG.debug("Unexpected StringType: " + propertyCode);
                                 }
                             } else {
                                 //Handle JSON blobs

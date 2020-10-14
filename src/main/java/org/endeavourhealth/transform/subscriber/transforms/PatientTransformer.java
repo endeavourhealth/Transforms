@@ -1103,7 +1103,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                             Integer valueConceptDbid =
                                     IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
                             //write the IM values to the patient_additional table upsert
-                            patientAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid);
+                            patientAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null);
                         }
                     }
                     break;

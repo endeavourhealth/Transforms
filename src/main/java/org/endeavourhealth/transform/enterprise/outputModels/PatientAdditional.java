@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.enterprise.outputModels;
 
 import org.apache.commons.csv.CSVFormat;
+import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 
 public class PatientAdditional extends AbstractEnterpriseCsvWriter {
 
@@ -16,13 +17,15 @@ public class PatientAdditional extends AbstractEnterpriseCsvWriter {
 
     public void writeUpsert(long id,
                             String propertyId,
-                            String valueId
+                            String valueId,
+                            String jsonValue
                             ) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
-                "" + propertyId,
-                "" + valueId);   }
+                propertyId,
+                valueId,
+                jsonValue);   }
 
 
     @Override
@@ -32,6 +35,7 @@ public class PatientAdditional extends AbstractEnterpriseCsvWriter {
                 "id",
                 "property_id",
                 "value_id",
+                "json_value"
         };
     }
 
@@ -40,6 +44,7 @@ public class PatientAdditional extends AbstractEnterpriseCsvWriter {
         return new Class[] {
                 String.class,
                 Long.TYPE,
+                String.class,
                 String.class,
                 String.class
         };

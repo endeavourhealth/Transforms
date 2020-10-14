@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.bhrut;
 
 import com.google.common.base.Strings;
+import com.google.gson.JsonObject;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
@@ -45,7 +46,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BhrutCsvHelper.class);
     public static final SimpleDateFormat DATE_TIME_FORMAT_BHRUT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static Map<String, String> localToOdsMap;
-
 
 
     //
@@ -851,7 +851,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         String code = localToOdsMap.get(orgCode);
         if (!Strings.isNullOrEmpty(code)) {
-             return code; //BHRUT ODS code.
+            return code; //BHRUT ODS code.
 
         } else {
             return null;
@@ -859,14 +859,24 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-    public static void addParmIfNotNull(String propertyName, String columnName, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
-        MapResponse propertyResponse = getProperty(propertyName, tablename);
+    public static void addParmIfNotNull(String propertyName, String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
+        MapResponse propertyResponse = getProperty(columnName, tablename);
         MapResponse valueResponse = getColumnValue(columnName, propertyName, tablename);
         CodeableConcept ccValue = new CodeableConcept();
         ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                 .setSystem(valueResponse.getConcept().getScheme());
         parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
     }
+
+    public static void addParmIfNotNullJson(String propertyName, String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
+        MapResponse propertyResponse = getProperty(columnName, tablename);
+        String propertyCode = "JSON_" + propertyResponse.getConcept().getCode();
+        //String jsonPropertyName = "JSON_"+propertyCode;
+        JsonObject arrivalObjs = new JsonObject();
+        arrivalObjs.addProperty(columnName, value);
+        parametersBuilder.addParameter(propertyCode, arrivalObjs.toString(), cell);
+    }
+
 
     private static MapResponse getProperty(String column, String tablename) throws Exception {
         MapColumnRequest propertyRequest = new MapColumnRequest(
@@ -878,8 +888,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         );
 
         MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
-//        MapResponse propertyResponse = IMClient.getMapProperty(propertyRequest);
-
         return propertyResponse;
     }
 

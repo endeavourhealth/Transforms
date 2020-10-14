@@ -411,14 +411,16 @@ public class AndEAttendanceTransformer {
 
         CsvCell attendanceTypeCell = parser.getAttendanceType();
         if (!attendanceTypeCell.isEmpty()) {
-          addParmIfNotNull("ae_attendance_category", "" + attendanceTypeCell.getString(),
+          addParmIfNotNull("ae_attendance_type",  "ATTENDANCE_TYPE", attendanceTypeCell.getString(),
+                  attendanceTypeCell,
                   containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
         CsvCell attendanceSourceCell = parser.getReferralSource();
         if (!attendanceSourceCell.isEmpty()) {
             String code =convertReferralSourceText(attendanceSourceCell.getString());
-            addParmIfNotNull("ae_attendance_source", "" + code,
+            addParmIfNotNull("ae_attendance_source", "REFERRAL_SOURCE",
+                    attendanceSourceCell.getString(), attendanceSourceCell,
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
         CsvCell arrivalModeCell = parser.getArrivalMode();
@@ -429,17 +431,11 @@ public class AndEAttendanceTransformer {
             } else {
                 mode = 0;
             }
-            addParmIfNotNull("ae_arrival_mode", "" + mode,
+            addParmIfNotNull("ae_arrival_mode", "ARRIVAL_MODE",
+                    arrivalModeCell.getString(), arrivalModeCell,
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
-//
-//        CsvCell complaintCell = parser.getComplaint();
-//        ObservationBuilder observationBuilder = null;
-//        if (!complaintCell.isEmpty()) {
-//            observationBuilder = createLinkedObservationbuilder(parser, csvHelper, childArrivalRef,existingParentEncounterBuilder.isIdMapped());
-////            addParmIfNotNull("ae_chief_complaint", "" + complaintCell.getString(),
-////                    containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
-       // }
+
         //Todo verify CAU_BED_REQUEST_DTTM is same as AssessmentDate
         CsvCell assessmentDateCell = parser.getCauBedRequestDttm();
         CsvCell invAndTreatmentsDateCell = parser.getSeenByAeDoctorDttm();
@@ -572,7 +568,8 @@ public class AndEAttendanceTransformer {
             ContainedParametersBuilder containedParametersBuilderDischarge
                     = new ContainedParametersBuilder(dischargeEncounterBuilder);
             containedParametersBuilderDischarge.removeContainedParameters();
-                csvHelper.addParmIfNotNull("ae_discharge_destination", "" + dischargeDestinationCell.getString(),
+                csvHelper.addParmIfNotNullJson("ae_discharge_destination", "DISCHARGE_DESTINATION",
+                        dischargeDestinationCell.getString(),dischargeDestinationCell,
                         containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
             }
 

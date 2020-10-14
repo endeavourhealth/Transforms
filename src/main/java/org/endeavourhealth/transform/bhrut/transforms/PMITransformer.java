@@ -337,23 +337,28 @@ public class PMITransformer {
         parametersBuilder.removeContainedParameters();
         CsvCell cause = parser.getCauseOfDeath();
         if (!cause.isEmpty()) {
-            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH, cause.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
+            csvHelper.addParmIfNotNull("cause_of_death",BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH, cause.getString(),
+                    cause, parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
             }
         CsvCell cause1B = parser.getCauseOfDeath1B();
         if (!cause1B.isEmpty()) {
-            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1B, cause1B.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
+            csvHelper.addParmIfNotNull("cause_of_death_1B",BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1B,
+                    cause1B.getString(), cause1B,parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
         }
         CsvCell cause1C = parser.getCauseOfDeath1C();
         if (!cause1C.isEmpty()) {
-            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1C, cause1C.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
+            csvHelper.addParmIfNotNull("cause_of_death_1c",BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_1C,
+                    cause1C.getString(), cause1C, parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
         }
         CsvCell cause2 = parser.getCauseOfDeath2();
         if (!cause2.isEmpty()) {
-            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_2, cause2.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
+            csvHelper.addParmIfNotNull("cause_of_death_2",BhrutCsvToFhirTransformer.IM_CAUSE_OF_DEATH_2,
+                    cause2.getString(), cause2, parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
         }
         CsvCell infectionStatus = parser.getInfectionStatus();
         if (!infectionStatus.isEmpty()) {
-            csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_INFECTION_STATUS, infectionStatus.getString(), parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
+            csvHelper.addParmIfNotNull("infection_status",BhrutCsvToFhirTransformer.IM_INFECTION_STATUS,
+                    infectionStatus.getString(),infectionStatus, parametersBuilder, BhrutCsvToFhirTransformer.IM_PMI_TABLE_NAME);
         }
 
     }

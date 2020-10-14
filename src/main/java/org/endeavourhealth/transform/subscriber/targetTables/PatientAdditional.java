@@ -20,7 +20,8 @@ public class PatientAdditional extends AbstractTargetTable {
                 Byte.TYPE,
                 Long.TYPE,
                 Integer.class,
-                Integer.class
+                Integer.class,
+                String.class
         };
     }
 
@@ -31,6 +32,7 @@ public class PatientAdditional extends AbstractTargetTable {
                 "id",
                 "property_id",
                 "value_id",
+                "json_value"
         };
     }
 
@@ -41,10 +43,12 @@ public class PatientAdditional extends AbstractTargetTable {
 
     public void writeUpsert(SubscriberId id,
                             Integer propertyId,
-                            Integer valueId ) throws Exception {
+                            Integer valueId,
+                            String jsonValue) throws Exception {
 
         super.printRecord(convertBoolean(false),
                 "" + id.getSubscriberId(),
                 convertInt(propertyId),
-                convertInt(valueId));   }
+                convertInt(valueId),
+                jsonValue);   }
 }

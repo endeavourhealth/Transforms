@@ -502,22 +502,26 @@ public class OutpatientsTransformer {
 
         CsvCell adminCategoryCodeCell = parser.getAdminCategoryCode();
         if (!adminCategoryCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("AdministrativeCategoryCode",
-                    "CM_AdminCat" + adminCategoryCodeCell.getString(), containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+            csvHelper.addParmIfNotNull("AdministrativeCategoryCode","ADMIN_CATEGORY_CODE",
+                    adminCategoryCodeCell.getString(), adminCategoryCodeCell,
+                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
-        CsvCell referralExternalIdCell = parser.getReferralExternalId();
-        if (!referralExternalIdCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("referral_source", "" + referralExternalIdCell.getString(),
-                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-        }
+        // ReferralExternalId not in the supplied data.
+//        CsvCell referralExternalIdCell = parser.getReferralExternalId();
+//        if (!referralExternalIdCell.isEmpty()) {
+//            csvHelper.addParmIfNotNull("referral_source", "" + referralExternalIdCell.getString(),
+//                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+//        }
         CsvCell apptTypeCodeCell = parser.getApptTypeCode();
         if (!apptTypeCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("appt_attended_code", "" + apptTypeCodeCell.getString(),
+            csvHelper.addParmIfNotNull("appt_type_code",    "APPT_TYPE_CODE",
+                    apptTypeCodeCell.getString(), apptTypeCodeCell,
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
         CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
         if (!appointmentOutcomeCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("appt_outcome_code", "" + appointmentOutcomeCodeCell.getString(),
+            csvHelper.addParmIfNotNull("appt_outcome_code",   "APPOINTMENT_OUTCOME_CODE",
+                    appointmentOutcomeCodeCell.getString(), appointmentOutcomeCodeCell,
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
 
