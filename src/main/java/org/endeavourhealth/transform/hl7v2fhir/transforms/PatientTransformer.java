@@ -266,7 +266,7 @@ public class PatientTransformer {
                 addressBuilder.addLine(String.valueOf(streetAddress)+","+String.valueOf(otherdesignation)+","+String.valueOf(otherGeoDesignation));
                 addressBuilder.addLine(String.valueOf(country));
                 addressBuilder.setCity(String.valueOf(city));
-                if(!String.valueOf(state).isEmpty()) {
+                if(state != null && !state.isEmpty()) {
                     addressBuilder.setDistrict(String.valueOf(state));
                 }
                 addressBuilder.setPostcode(String.valueOf(postcode));
