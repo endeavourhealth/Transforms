@@ -865,16 +865,16 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         CodeableConcept ccValue = new CodeableConcept();
         ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                 .setSystem(valueResponse.getConcept().getScheme());
-        parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+        parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, cell);
     }
 
     public static void addParmIfNotNullJson(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(columnName, tablename);
         String propertyCode = "JSON_" + propertyResponse.getConcept().getCode();
         //String jsonPropertyName = "JSON_"+propertyCode;
-        JsonObject arrivalObjs = new JsonObject();
-        arrivalObjs.addProperty(columnName, value);
-        parametersBuilder.addParameter(propertyCode, arrivalObjs.toString(), cell);
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty(columnName, value);
+        parametersBuilder.addParameter(propertyCode, jsonObject.toString(), cell);
     }
 
 

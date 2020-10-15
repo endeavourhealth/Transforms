@@ -425,12 +425,7 @@ public class AndEAttendanceTransformer {
         }
         CsvCell arrivalModeCell = parser.getArrivalMode();
         if (!arrivalModeCell.isEmpty()) {
-            int mode;
-            if (arrivalModeCell.getString().toLowerCase().contains("ambulance")) {
-                mode = 1;
-            } else {
-                mode = 0;
-            }
+
             addParmIfNotNull( "ARRIVAL_MODE",
                     arrivalModeCell.getString(), arrivalModeCell,
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
@@ -469,7 +464,7 @@ public class AndEAttendanceTransformer {
 
             CodeableConceptBuilder codeableConceptBuilderAssessment
                     = new CodeableConceptBuilder(assessmentEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-            codeableConceptBuilderAssessment.setText("Emergency Initial Assessment");
+            codeableConceptBuilderAssessment.setText("Emergency Assessment");
 
             setCommonEncounterAttributes(assessmentEncounterBuilder, parser, csvHelper, true);
 

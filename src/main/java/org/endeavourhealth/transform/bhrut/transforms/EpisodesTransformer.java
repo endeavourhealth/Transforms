@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME;
+
 public class EpisodesTransformer {
 
 
@@ -436,29 +438,41 @@ public class EpisodesTransformer {
         String episodeStartWardCode = parser.getEpisodeStartWardCode().getString();
         String episodeEndWardCode = parser.getEpisodeEndWardCode().getString();
         if (!Strings.isNullOrEmpty(episodeStartWardCode) || !Strings.isNullOrEmpty(episodeEndWardCode)) {
-
             JsonObject episodeWardsObjs = new JsonObject();
             if (!Strings.isNullOrEmpty(episodeStartWardCode)) {
-
-                episodeWardsObjs.addProperty("start_ward", episodeStartWardCode);
+                String columnName =  "EPISODE_START_WARD_CODE";
+                episodeWardsObjs.addProperty(columnName, episodeStartWardCode);
+                MapColumnRequest propertyRequest = new MapColumnRequest(
+                        BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                        BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                        BhrutCsvToFhirTransformer.IM_SCHEMA,
+                        BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME,
+                        columnName
+                );
+                MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                String propertyCode = propertyResponse.getConcept().getCode();
+                String propertyName = "JSON_"+propertyCode;
+                containedParametersBuilder.addParameter(propertyName, episodeWardsObjs.toString());
             }
             if (!Strings.isNullOrEmpty(episodeEndWardCode)) {
+                String columnName =  "EPISODE_END_WARD_CODE";
+                episodeWardsObjs.addProperty(columnName, episodeEndWardCode);
 
-                episodeWardsObjs.addProperty("end_ward", episodeEndWardCode);
+                MapColumnRequest propertyRequest = new MapColumnRequest(
+                        BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                        BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                        BhrutCsvToFhirTransformer.IM_SCHEMA,
+                        BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME,
+                        columnName
+                );
+                MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                String propertyCode = propertyResponse.getConcept().getCode();
+                String propertyName = "JSON_"+propertyCode;
+                containedParametersBuilder.addParameter(propertyName, episodeWardsObjs.toString());
             }
 
 
-            MapColumnRequest propertyRequest = new MapColumnRequest(
-                    BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
-                    BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
-                    BhrutCsvToFhirTransformer.IM_SCHEMA,
-                    "inpatient",
-                    "wards"
-            );
-            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
-            String propertyCode = propertyResponse.getConcept().getCode();
-            String propertyName = "JSON_"+propertyCode;
-            containedParametersBuilder.addParameter(propertyName, episodeWardsObjs.toString());
+
         }
 
 

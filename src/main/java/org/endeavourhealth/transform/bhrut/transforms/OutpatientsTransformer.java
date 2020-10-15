@@ -514,7 +514,7 @@ public class OutpatientsTransformer {
 //        }
         CsvCell apptTypeCodeCell = parser.getApptTypeCode();
         if (!apptTypeCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("PPT_TYPE_CODE",
+            csvHelper.addParmIfNotNull("APPT_TYPE_CODE",
                     apptTypeCodeCell.getString(), apptTypeCodeCell,
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
