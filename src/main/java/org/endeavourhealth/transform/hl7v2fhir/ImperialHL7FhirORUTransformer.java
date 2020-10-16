@@ -4,6 +4,7 @@ import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.model.v23.datatype.CX;
 import ca.uhn.hl7v2.model.v23.datatype.ST;
 import ca.uhn.hl7v2.model.v23.datatype.XCN;
+import ca.uhn.hl7v2.model.v23.group.ORU_R01_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_ORDER_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.message.ORU_R01;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
@@ -20,6 +21,8 @@ import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public abstract class ImperialHL7FhirORUTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ImperialHL7FhirADTTransformer.class);
@@ -99,7 +102,10 @@ public abstract class ImperialHL7FhirORUTransformer {
             ORU_R01_ORDER_OBSERVATION orderObserv = oruMsg.getRESPONSE().getORDER_OBSERVATION();
 
             //Observation
-            ObservationTransformer.createObservation(pid, oruMsg.getMSH(), obr, orderObserv, fhirResourceFiler, imperialHL7Helper);
+            List<ORU_R01_OBSERVATION> obserVals = orderObserv.getOBSERVATIONAll();
+            for (ORU_R01_OBSERVATION val : obserVals) {
+                ObservationTransformer.createObservation(pid, oruMsg.getMSH(), obr, orderObserv, fhirResourceFiler, imperialHL7Helper, val);
+            }
             //Observation
 
             //Pathology
@@ -116,7 +122,7 @@ public abstract class ImperialHL7FhirORUTransformer {
             //Pathology
 
             //Diagnostic Report
-            DiagnosticReportTransformer.createDiagnosticReport(pid, orc, obr, orderObserv, fhirResourceFiler, imperialHL7Helper);
+            DiagnosticReportTransformer.createDiagnosticReport(pid, orc, obr, orderObserv, fhirResourceFiler, imperialHL7Helper, oruMsg.getMSH());
             //Diagnostic Report
 
         }
