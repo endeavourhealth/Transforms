@@ -9,7 +9,6 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
@@ -25,6 +24,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.addParmIfNotNullNhsdd;
 
 
 public class OutpatientsTransformer {
@@ -209,45 +210,7 @@ public class OutpatientsTransformer {
             appointmentBuilder.setMinutesActualDuration(new Integer((int) minDiff));
         }
 
-        // from the NHS data dictionary ATTENDED OR DID NOT ATTEND
-        // 5	Attended on time or, if late, before the relevant CARE PROFESSIONAL was ready to see the PATIENT
-        // 6	Arrived late, after the relevant CARE PROFESSIONAL was ready to see the PATIENT, but was seen
-        // 7	PATIENT arrived late and could not be seen
-        // 2	APPOINTMENT cancelled by, or on behalf of, the PATIENT
-        // 3	Did not attend - no advance warning given
-        // 4	APPOINTMENT cancelled or postponed by the Health Care Provider
-        // 0   Not applicable - APPOINTMENT occurs in the future
-        CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
-        if (!appointmentStatusCode.isEmpty()) {
-            try {
-                int statusCode = Integer.parseInt(appointmentStatusCode.getString());
-                switch (statusCode) { //Ostensibly an int but there's garbage in the field
-                    case 2:
-                    case 4:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
-                        break;
-                    case 3:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
-                        break;
-                    case 5:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
-                        break;
-                    case 6:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
-                        break;
-                    case 7:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
-                        break;
-                    case 0:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
-                        break;
-                    default:
-                        TransformWarnings.log(LOG, csvHelper, "Unknown appointment status code integer {} for id {} ", statusCode, idCell.getString());
-                }
-            } catch (NumberFormatException ex) {
-                TransformWarnings.log(LOG, csvHelper, "Invalid appointment status code - not integer {} ", appointmentStatusCode.getString());
-            }
-        }
+
 
         //this is just free text from the outcome
         CsvCell followUpDetails = parser.getAppointmentOutcome();
@@ -256,35 +219,24 @@ public class OutpatientsTransformer {
         }
 
         //add the three Encounter extensions
+        ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(encounterBuilder);
         if (!parser.getAdminCategoryCode().isEmpty()) {
             CsvCell adminCategoryCode = parser.getAdminCategoryCode();
-            CsvCell adminCategory = parser.getAdminCategory();
-            CodeableConceptBuilder cc
-                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Admin_Category);
-            cc.setText(adminCategory.getString(), adminCategory);
-            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
-            cc.setCodingCode(adminCategoryCode.getString(), adminCategoryCode);
-            cc.setCodingDisplay(adminCategory.getString(), adminCategory);
-        }
-        if (!appointmentStatusCode.isEmpty()) {
-            CsvCell appointmentStatus = parser.getAppointmentStatus();
-            CodeableConceptBuilder cc
-                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Attended);
-            cc.setText(appointmentStatus.getString(), appointmentStatus);
-            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
-            cc.setCodingCode(appointmentStatusCode.getString(), appointmentStatusCode);
-            cc.setCodingDisplay(appointmentStatus.getString(), appointmentStatus);
+            addParmIfNotNullNhsdd("ADMIN_CATEGORY_CODE", adminCategoryCode.getString(),
+                    adminCategoryCode, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+           }
+        if (!parser.getAppointmentStatusCode().isEmpty()) {
+            CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
+            addParmIfNotNullNhsdd("APPOINTMENT_STATUS_CODE", appointmentStatusCode.getString(),
+                    appointmentStatusCode, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+            translateAppointmentStatusCode(appointmentStatusCode,appointmentBuilder,csvHelper,idCell);
         }
         if (!parser.getAppointmentOutcomeCode().isEmpty()) {
             CsvCell appointmentOutcomeCode = parser.getAppointmentOutcomeCode();
-            CsvCell appointmentOutcome = parser.getAppointmentOutcome();
-            CodeableConceptBuilder cc
-                    = new CodeableConceptBuilder(encounterBuilder, CodeableConceptBuilder.Tag.Encounter_Appointment_Outcome);
-            cc.setText(appointmentOutcome.getString(), appointmentOutcome);
-            cc.addCoding(FhirCodeUri.CODE_SYSTEM_NHS_DD);
-            cc.setCodingCode(appointmentOutcomeCode.getString(), appointmentOutcomeCode);
-            cc.setCodingDisplay(appointmentOutcome.getString(), appointmentOutcome);
-        }
+
+            addParmIfNotNullNhsdd("APPOINTMENT_OUTCOME_CODE", appointmentOutcomeCode.getString(),
+                    appointmentOutcomeCode, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+            }
 
         //save the Encounter, Appointment and Slot
 
@@ -741,5 +693,45 @@ public class OutpatientsTransformer {
         csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(id, episodeBuilder);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),!episodeBuilder.isIdMapped(),episodeBuilder);
     }
-
+    private static void translateAppointmentStatusCode(CsvCell appointmentStatusCode, AppointmentBuilder appointmentBuilder, BhrutCsvHelper csvHelper,CsvCell idCell) throws Exception {
+        // from the NHS data dictionary ATTENDED OR DID NOT ATTEND
+        // 5	Attended on time or, if late, before the relevant CARE PROFESSIONAL was ready to see the PATIENT
+        // 6	Arrived late, after the relevant CARE PROFESSIONAL was ready to see the PATIENT, but was seen
+        // 7	PATIENT arrived late and could not be seen
+        // 2	APPOINTMENT cancelled by, or on behalf of, the PATIENT
+        // 3	Did not attend - no advance warning given
+        // 4	APPOINTMENT cancelled or postponed by the Health Care Provider
+        // 0   Not applicable - APPOINTMENT occurs in the future
+        if (!appointmentStatusCode.isEmpty()) {
+            if (appointmentStatusCode.getString().toLowerCase().contains("x")) {return;} //Indicates missing data
+            try {
+                int statusCode = Integer.parseInt(appointmentStatusCode.getString());
+                switch (statusCode) { //Ostensibly an int but there's garbage in the field
+                    case 2:
+                    case 4:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
+                        break;
+                    case 3:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
+                        break;
+                    case 5:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+                        break;
+                    case 6:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+                        break;
+                    case 7:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
+                        break;
+                    case 0:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
+                        break;
+                    default:
+                        TransformWarnings.log(LOG, csvHelper, "Unknown appointment status code integer {} for id {} ", statusCode, idCell.getString());
+                }
+            } catch (NumberFormatException ex) {
+                TransformWarnings.log(LOG, csvHelper, "Invalid appointment status code - not integer {} ", appointmentStatusCode.getString());
+            }
+        }
+    }
 }

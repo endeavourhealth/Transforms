@@ -219,21 +219,21 @@ public class SpellsTransformer {
             CsvCell patientClassCode = parser.getPatientClassCode();
             CsvCell patientClass = parser.getPatientClass();
             if (!patientClass.isEmpty()) {
-                csvHelper.addParmIfNotNull(BhrutCsvToFhirTransformer.IM_PATIENT_CLASS,
+                csvHelper.addParmIfNotNullNhsdd(BhrutCsvToFhirTransformer.IM_PATIENT_CLASS,
                         patientClass.getString(),patientClass,parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         }
         if (!parser.getAdmissionSourceCode().isEmpty()) {
             CsvCell adminSourceCode = parser.getAdmissionSourceCode();
             if (!adminSourceCode.isEmpty()) {
-                csvHelper.addParmIfNotNull( BhrutCsvToFhirTransformer.IM_ADMIN_SOURCE_CODE,
+                csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMIN_SOURCE_CODE,
                         adminSourceCode.getString(), adminSourceCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         }
         if (!parser.getAdmissionMethodCode().isEmpty()) {
             CsvCell admissionMethodCode = parser.getAdmissionMethodCode();
             if (!admissionMethodCode.isEmpty()) {
-                csvHelper.addParmIfNotNull( BhrutCsvToFhirTransformer.IM_ADMIN_METHOD_CODE,
+                csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMIN_METHOD_CODE,
                         admissionMethodCode.getString(), admissionMethodCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         }
@@ -249,13 +249,13 @@ public class SpellsTransformer {
             }
         if (!parser.getDischargeMethodCode().isEmpty()) {
             CsvCell dischargeMethodCode = parser.getDischargeMethodCode();
-            csvHelper.addParmIfNotNull( BhrutCsvToFhirTransformer.IM_DISCHARGE_METHOD_CODE,
+            csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_DISCHARGE_METHOD_CODE,
                     dischargeMethodCode.getString(), dischargeMethodCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
 
         }
         if (!parser.getDischargeDestinationCode().isEmpty()) {
             CsvCell dischargeDestCode = parser.getDischargeDestinationCode();
-            csvHelper.addParmIfNotNull( BhrutCsvToFhirTransformer.IM_DISCHARGE_DEST_CODE,
+            csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_DISCHARGE_DEST_CODE,
                     dischargeDestCode.getString(), dischargeDestCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
 
