@@ -30,6 +30,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedParameters
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -867,6 +868,14 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                 .setSystem(valueResponse.getConcept().getScheme());
         parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, cell);
     }
+    public static void addParmIfNotNullNhsdd(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
+        MapResponse propertyResponse = getProperty(columnName, tablename);
+        MapResponse valueResponse = getColumnValue(value, columnName, tablename);
+        CodeableConcept ccValue = new CodeableConcept();
+        ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                .setSystem(valueResponse.getConcept().getScheme());
+        parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, cell);
+    }
 
     public static void addParmIfNotNullJson(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(columnName, tablename);
@@ -904,4 +913,16 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return valueResponse;
     }
 
+    private static MapResponse getColumnValueNhsdd(String value, String column, String tablename) throws Exception {
+        MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                BhrutCsvToFhirTransformer.IM_SCHEMA, tablename,
+                tablename,
+                column,
+                IMConstant.NHS_DATA_DICTIONARY);
+
+        MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+        return valueResponse;
+    }
 }
