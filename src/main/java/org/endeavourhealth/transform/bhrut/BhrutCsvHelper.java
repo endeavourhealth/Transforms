@@ -917,7 +917,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                 BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
                 BhrutCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
-                BhrutCsvToFhirTransformer.IM_SCHEMA, tablename,
+                BhrutCsvToFhirTransformer.IM_SCHEMA,
                 tablename,
                 column,
                 IMConstant.NHS_DATA_DICTIONARY);

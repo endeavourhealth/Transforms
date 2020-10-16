@@ -137,7 +137,7 @@ public class AndEAttendanceTransformer {
 
         CsvCell referralSourceCell = parser.getReferralSource();
         if (!referralSourceCell.isEmpty()) {
-            addParmIfNotNullNhsdd("REFERRAL_SOURCE", referralSourceCell.getString(), referralSourceCell,
+            addParmIfNotNull("REFERRAL_SOURCE", referralSourceCell.getString(), referralSourceCell,
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
