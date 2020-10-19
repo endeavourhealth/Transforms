@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.homertonrf.transforms;
+package org.endeavourhealth.transform.homertonhi.transforms;
 
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -8,9 +8,9 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCodeableConceptHelper;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCsvHelper;
-import org.endeavourhealth.transform.homertonrf.schema.PersonPhone;
+import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
+import org.endeavourhealth.transform.homertonhi.schema.PersonPhone;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +22,7 @@ public class PersonPhoneTransformer extends HomertonBasisTransformer {
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonRfCsvHelper csvHelper) throws Exception {
+                                 HomertonHiCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             if (parser != null) {
@@ -42,7 +42,7 @@ public class PersonPhoneTransformer extends HomertonBasisTransformer {
 
     public static void transform(PersonPhone parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonRfCsvHelper csvHelper) throws Exception {
+                                 HomertonHiCsvHelper csvHelper) throws Exception {
 
         CsvCell personEmpiCell = parser.getPersonEmpiId();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiCell, csvHelper);

@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.homertonrf.transforms;
+package org.endeavourhealth.transform.homertonhi.transforms;
 
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -7,9 +7,9 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCodeableConceptHelper;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCsvHelper;
-import org.endeavourhealth.transform.homertonrf.schema.PersonLanguage;
+import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
+import org.endeavourhealth.transform.homertonhi.schema.PersonLanguage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ public class PersonLanguageTransformer extends HomertonBasisTransformer {
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonRfCsvHelper csvHelper) throws Exception {
+                                 HomertonHiCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             if (parser != null) {
@@ -40,7 +40,7 @@ public class PersonLanguageTransformer extends HomertonBasisTransformer {
 
     public static void transform(PersonLanguage parser,
                                              FhirResourceFiler fhirResourceFiler,
-                                             HomertonRfCsvHelper csvHelper) throws Exception {
+                                             HomertonHiCsvHelper csvHelper) throws Exception {
 
         //if there is a sequence number and it is not 1 then return out as we only currently support one language
         CsvCell languageSeqCell = parser.getLanguageSequence();

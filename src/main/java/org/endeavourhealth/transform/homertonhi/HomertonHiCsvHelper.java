@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.homertonrf;
+package org.endeavourhealth.transform.homertonhi;
 
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -10,7 +10,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.homertonrf.cache.PatientResourceCache;
+import org.endeavourhealth.transform.homertonhi.cache.PatientResourceCache;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -20,8 +20,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class HomertonRfCsvHelper implements HasServiceSystemAndExchangeIdI {
-    private static final Logger LOG = LoggerFactory.getLogger(HomertonRfCsvHelper.class);
+public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
+    private static final Logger LOG = LoggerFactory.getLogger(HomertonHiCsvHelper.class);
 
     //    public static final String CODE_TYPE_SNOMED = "SNOMED CT";
 //    public static final String CODE_TYPE_ICD_10 = "ICD-10";
@@ -57,7 +57,7 @@ public class HomertonRfCsvHelper implements HasServiceSystemAndExchangeIdI {
     private UUID exchangeId = null;
     private String version = null;
 
-    public HomertonRfCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String version) {
+    public HomertonHiCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String version) {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;

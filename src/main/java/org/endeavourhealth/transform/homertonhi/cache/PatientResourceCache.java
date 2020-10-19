@@ -1,11 +1,11 @@
-package org.endeavourhealth.transform.homertonrf.cache;
+package org.endeavourhealth.transform.homertonhi.cache;
 
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.CsvCurrentState;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ResourceCache;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCsvHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -16,7 +16,7 @@ public class PatientResourceCache {
 
     private ResourceCache<String, PatientBuilder> patientBuildersByPersonEmpiId = new ResourceCache<>();
 
-    public PatientBuilder getPatientBuilder(CsvCell personEmpiIdCell, HomertonRfCsvHelper csvHelper) throws Exception {
+    public PatientBuilder getPatientBuilder(CsvCell personEmpiIdCell, HomertonHiCsvHelper csvHelper) throws Exception {
 
         String personEmpiId = personEmpiIdCell.getString();
 

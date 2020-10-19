@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.homertonrf.transforms;
+package org.endeavourhealth.transform.homertonhi.transforms;
 
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.CodeValueSet;
@@ -10,9 +10,9 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCodeableConceptHelper;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCsvHelper;
-import org.endeavourhealth.transform.homertonrf.schema.Person;
+import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
+import org.endeavourhealth.transform.homertonhi.schema.Person;
 import org.hl7.fhir.instance.model.Address;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.Enumerations;
@@ -27,7 +27,7 @@ public class PersonTransformer extends HomertonBasisTransformer {
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonRfCsvHelper csvHelper) throws Exception {
+                                 HomertonHiCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             if (parser != null) {
@@ -47,7 +47,7 @@ public class PersonTransformer extends HomertonBasisTransformer {
 
     public static void transform(Person parser,
                                              FhirResourceFiler fhirResourceFiler,
-                                             HomertonRfCsvHelper csvHelper) throws Exception {
+                                             HomertonHiCsvHelper csvHelper) throws Exception {
 
         //TODO: split files by org or create on fly?
         // first up, get or create the Homerton organisation

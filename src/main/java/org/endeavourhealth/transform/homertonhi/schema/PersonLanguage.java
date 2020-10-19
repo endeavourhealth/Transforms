@@ -1,8 +1,8 @@
-package org.endeavourhealth.transform.homertonrf.schema;
+package org.endeavourhealth.transform.homertonhi.schema;
 
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCsvToFhirTransformer;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCsvToFhirTransformer;
 
 import java.util.UUID;
 
@@ -10,9 +10,9 @@ public class PersonLanguage extends AbstractCsvParser {
 
     public PersonLanguage(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
-        HomertonRfCsvToFhirTransformer.CSV_FORMAT,
-        HomertonRfCsvToFhirTransformer.DATE_FORMAT,
-        HomertonRfCsvToFhirTransformer.TIME_FORMAT);
+        HomertonHiCsvToFhirTransformer.CSV_FORMAT,
+        HomertonHiCsvToFhirTransformer.DATE_FORMAT,
+        HomertonHiCsvToFhirTransformer.TIME_FORMAT);
     }
 
     //@Override

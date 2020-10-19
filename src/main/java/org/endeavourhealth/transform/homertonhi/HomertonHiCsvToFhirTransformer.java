@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.homertonrf;
+package org.endeavourhealth.transform.homertonhi;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
@@ -7,15 +7,15 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.homertonrf.schema.Person;
+import org.endeavourhealth.transform.homertonhi.schema.Person;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public abstract class HomertonRfCsvToFhirTransformer {
+public abstract class HomertonHiCsvToFhirTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HomertonRfCsvToFhirTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HomertonHiCsvToFhirTransformer.class);
 
     public static final String VERSION_1_0 = "1.0"; //initial version
     public static final String DATE_FORMAT = "yyyy-MM-dd";
@@ -32,8 +32,8 @@ public abstract class HomertonRfCsvToFhirTransformer {
         String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
 
         //the processor is responsible for saving FHIR resources
-        HomertonRfCsvHelper csvHelper
-                = new HomertonRfCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), version);
+        HomertonHiCsvHelper csvHelper
+                = new HomertonHiCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), version);
 
         LOG.trace("Transforming HomertonRf CSV content in {}", orgDirectory);
 
@@ -94,7 +94,7 @@ public abstract class HomertonRfCsvToFhirTransformer {
         return ret;
     }
 
-    private static List<ParserI> createParsers(Map<String, List<String>> fileMap, Map<String, List<ParserI>> parserMap, String type, HomertonRfCsvHelper csvHelper) throws Exception {
+    private static List<ParserI> createParsers(Map<String, List<String>> fileMap, Map<String, List<ParserI>> parserMap, String type, HomertonHiCsvHelper csvHelper) throws Exception {
         List<ParserI> ret = parserMap.get(type);
         if (ret == null) {
             ret = new ArrayList<>();
@@ -112,7 +112,7 @@ public abstract class HomertonRfCsvToFhirTransformer {
         return ret;
     }
 
-    private static ParserI createParser(String file, String type, HomertonRfCsvHelper csvHelper) throws Exception {
+    private static ParserI createParser(String file, String type, HomertonHiCsvHelper csvHelper) throws Exception {
 
         UUID serviceId = csvHelper.getServiceId();
         UUID systemId = csvHelper.getSystemId();
@@ -129,7 +129,7 @@ public abstract class HomertonRfCsvToFhirTransformer {
     }
 
     private static CSVFormat getFormatType(String file) throws Exception {
-        return HomertonRfCsvToFhirTransformer.CSV_FORMAT;
+        return HomertonHiCsvToFhirTransformer.CSV_FORMAT;
     }
 
     //TODO: from file name structure

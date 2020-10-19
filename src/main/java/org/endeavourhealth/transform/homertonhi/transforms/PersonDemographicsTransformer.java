@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.homertonrf.transforms;
+package org.endeavourhealth.transform.homertonhi.transforms;
 
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
@@ -16,9 +16,9 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCodeableConceptHelper;
-import org.endeavourhealth.transform.homertonrf.HomertonRfCsvHelper;
-import org.endeavourhealth.transform.homertonrf.schema.PersonDemographics;
+import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
+import org.endeavourhealth.transform.homertonhi.schema.PersonDemographics;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.CodeableConcept;
@@ -32,7 +32,7 @@ public class PersonDemographicsTransformer extends HomertonBasisTransformer {
 
     public static void transform(List<ParserI> parsers,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonRfCsvHelper csvHelper) throws Exception {
+                                 HomertonHiCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             if (parser != null) {
@@ -52,7 +52,7 @@ public class PersonDemographicsTransformer extends HomertonBasisTransformer {
 
     public static void transform(PersonDemographics parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 HomertonRfCsvHelper csvHelper) throws Exception {
+                                 HomertonHiCsvHelper csvHelper) throws Exception {
 
         // Note: This transform adds any additional patient related demographics information to
         // the Patient resource which is not collected during the Person transformer such as

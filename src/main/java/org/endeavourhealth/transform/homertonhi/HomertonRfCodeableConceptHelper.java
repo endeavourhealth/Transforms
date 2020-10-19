@@ -1,4 +1,4 @@
-package org.endeavourhealth.transform.homertonrf;
+package org.endeavourhealth.transform.homertonhi;
 
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
@@ -18,21 +18,21 @@ public class HomertonRfCodeableConceptHelper {
     public static final String ALIAS_TXT = "Alias";
 
 
-    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonRfCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonHiCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(DESC_TXT, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonRfCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonHiCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(DISP_TXT, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonRfCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonHiCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(MEANING_TXT, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
     private static CodeableConceptBuilder applyCodeMeaningTxt(String elementToApply, CsvCell codeCell,
                                                               Long codeSet, HasCodeableConceptI resourceBuilder,
-                                                              CodeableConceptBuilder.Tag resourceBuilderTag, HomertonRfCsvHelper csvHelper) throws Exception {
+                                                              CodeableConceptBuilder.Tag resourceBuilderTag, HomertonHiCsvHelper csvHelper) throws Exception {
 
         if (codeCell == null
             || BartsCsvHelper.isEmptyOrIsZero(codeCell)) {
@@ -98,7 +98,7 @@ public class HomertonRfCodeableConceptHelper {
         return CsvCell.factoryDummyWrapper(value);
     }
 
-    public static CsvCell getCellDesc(HomertonRfCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+    public static CsvCell getCellDesc(HomertonHiCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
         CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
         if (mapping != null) {
             return createCsvCell(mapping, DESC_TXT);
@@ -107,7 +107,7 @@ public class HomertonRfCodeableConceptHelper {
         }
     }
 
-    public static CsvCell getCellDisp(HomertonRfCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+    public static CsvCell getCellDisp(HomertonHiCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
         CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
         if (mapping != null) {
             return createCsvCell(mapping, DISP_TXT);
@@ -116,7 +116,7 @@ public class HomertonRfCodeableConceptHelper {
         }
     }
 
-    public static CsvCell getCellMeaning(HomertonRfCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+    public static CsvCell getCellMeaning(HomertonHiCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
         CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
         if (mapping != null) {
             return createCsvCell(mapping, MEANING_TXT);
@@ -125,7 +125,7 @@ public class HomertonRfCodeableConceptHelper {
         }
     }
 
-    public static CsvCell getCellAlias(HomertonRfCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+    public static CsvCell getCellAlias(HomertonHiCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
         CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
         if (mapping != null) {
             return createCsvCell(mapping, ALIAS_TXT);
