@@ -864,7 +864,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
     public static void addParmIfNotNullNhsdd(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(columnName, tablename);
-        MapResponse valueResponse = getColumnValue(value, columnName, tablename);
+        MapResponse valueResponse = getColumnValueNhsdd(value, columnName, tablename);
         CodeableConcept ccValue = new CodeableConcept();
         ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                 .setSystem(valueResponse.getConcept().getScheme());
@@ -914,6 +914,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                 BhrutCsvToFhirTransformer.IM_SCHEMA,
                 tablename,
                 column,
+                value,
                 IMConstant.NHS_DATA_DICTIONARY);
 
         MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);

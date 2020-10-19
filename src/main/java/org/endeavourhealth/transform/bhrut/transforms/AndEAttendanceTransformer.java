@@ -342,14 +342,15 @@ public class AndEAttendanceTransformer {
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
-        CsvCell assessmentDateCell = parser.getCauBedRequestDttm();
+        CsvCell triageDateCell = parser.getTriageDttm();
         CsvCell invAndTreatmentsDateCell = parser.getSeenByAeDoctorDttm();
         CsvCell arrivalDateCell = parser.getArrivalDttm();
         CsvCell conclusionDate = parser.getLeftDepartmentDttm();
         CsvCell dischargeDateCell = parser.getDischargedDttm();
 
         Date aeEndDate
-                = ObjectUtils.firstNonNull(assessmentDateCell.getDateTime(), invAndTreatmentsDateCell.getDateTime(), arrivalDateCell.getDateTime(), conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
+                = ObjectUtils.firstNonNull(triageDateCell.getDateTime(), invAndTreatmentsDateCell.getDateTime(),
+                arrivalDateCell.getDateTime(), conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
         if (aeEndDate != null) {
 
             arrivalEncounterBuilder.setPeriodEnd(aeEndDate);
@@ -361,15 +362,14 @@ public class AndEAttendanceTransformer {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), arrivalEncounterBuilder);
               //Is there an initial assessment encounter?
         EncounterBuilder assessmentEncounterBuilder = null;
-        CsvCell triagedateCell = parser.getTriageDttm();
-        if (!triagedateCell.isEmpty()) {
+        if (!triageDateCell.isEmpty()) {
 
             assessmentEncounterBuilder = new EncounterBuilder();
             assessmentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String assessmentEncounterId = parser.getId().getString() + ":02:EM";
             assessmentEncounterBuilder.setId(assessmentEncounterId);
-            assessmentEncounterBuilder.setPeriodStart(triagedateCell.getDateTime());
+            assessmentEncounterBuilder.setPeriodStart(triageDateCell.getDateTime());
             assessmentEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderAssessment
@@ -429,7 +429,7 @@ public class AndEAttendanceTransformer {
             existingEncounterList.addReference(childTreatmentsRef);
 
             Date aeTreatmentsEndDate
-                    = ObjectUtils.firstNonNull(arrivalDateCell.getDateTime(), conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
+                    = ObjectUtils.firstNonNull(conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
             if (aeTreatmentsEndDate != null) {
 
                 treatmentsEncounterBuilder.setPeriodEnd(aeTreatmentsEndDate);
