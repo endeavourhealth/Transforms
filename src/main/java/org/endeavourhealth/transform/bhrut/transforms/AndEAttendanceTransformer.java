@@ -342,11 +342,9 @@ public class AndEAttendanceTransformer {
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
-        //Todo verify CAU_BED_REQUEST_DTTM is same as AssessmentDate
         CsvCell assessmentDateCell = parser.getCauBedRequestDttm();
         CsvCell invAndTreatmentsDateCell = parser.getSeenByAeDoctorDttm();
         CsvCell arrivalDateCell = parser.getArrivalDttm();
-        //Todo verify leftDepartmentDate is same as ConclusionDate
         CsvCell conclusionDate = parser.getLeftDepartmentDttm();
         CsvCell dischargeDateCell = parser.getDischargedDttm();
 
@@ -363,14 +361,15 @@ public class AndEAttendanceTransformer {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), arrivalEncounterBuilder);
               //Is there an initial assessment encounter?
         EncounterBuilder assessmentEncounterBuilder = null;
-        if (!assessmentDateCell.isEmpty()) {
+        CsvCell triagedateCell = parser.getTriageDttm();
+        if (!triagedateCell.isEmpty()) {
 
             assessmentEncounterBuilder = new EncounterBuilder();
             assessmentEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String assessmentEncounterId = parser.getId().getString() + ":02:EM";
             assessmentEncounterBuilder.setId(assessmentEncounterId);
-            assessmentEncounterBuilder.setPeriodStart(assessmentDateCell.getDateTime());
+            assessmentEncounterBuilder.setPeriodStart(triagedateCell.getDateTime());
             assessmentEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderAssessment
@@ -444,14 +443,15 @@ public class AndEAttendanceTransformer {
 
         //Is there a dischargeEncounter ?
         EncounterBuilder dischargeEncounterBuilder = null;
-        if (!dischargeDateCell.isEmpty()) {
+        CsvCell leftDeptDate = parser.getLeftDepartmentDttm();
+        if ((!dischargeDateCell.isEmpty()) || (!leftDeptDate.isEmpty())) {
 
             dischargeEncounterBuilder = new EncounterBuilder();
             dischargeEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
 
             String dischargeEncounterId = parser.getId().getString() + ":04:EM";
             dischargeEncounterBuilder.setId(dischargeEncounterId);
-            dischargeEncounterBuilder.setPeriodStart(dischargeDateCell.getDateTime());
+            dischargeEncounterBuilder.setPeriodStart(ObjectUtils.firstNonNull(dischargeDateCell.getDateTime(), leftDeptDate.getDateTime()));
             dischargeEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderDischarge

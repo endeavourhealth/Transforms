@@ -92,8 +92,6 @@ public class PMITransformer {
             patientBuilder.clearDateOfDeath();
         }
 
-
-        //Todo Need to verify the InfectionStatus
         CsvCell infectionStatusCell = parser.getInfectionStatus();
         if (!infectionStatusCell.isEmpty()) {
             ObservationBuilder observationBuilder = new ObservationBuilder();
