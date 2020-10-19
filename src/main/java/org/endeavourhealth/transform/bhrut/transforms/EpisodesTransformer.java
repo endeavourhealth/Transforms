@@ -425,16 +425,7 @@ public class EpisodesTransformer {
                 = new ContainedParametersBuilder(episodeEncounterBuilder);
         containedParametersBuilder.removeContainedParameters();
 
-        CsvCell episodeStartWardCodeCell = parser.getEpisodeStartWardCode();
-        if (!episodeStartWardCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull( "EPISODE_START_WARD_CODE",
-                    episodeStartWardCodeCell.getString(), episodeStartWardCodeCell,containedParametersBuilder, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
-        }
-        CsvCell episodeEndWardCodeCell = parser.getEpisodeEndWardCode();
-        if (!episodeEndWardCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull(  "EPISODE_END_WARD_CODE",
-                    episodeEndWardCodeCell.getString(), episodeEndWardCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
-        }
+
         String episodeStartWardCode = parser.getEpisodeStartWardCode().getString();
         String episodeEndWardCode = parser.getEpisodeEndWardCode().getString();
         if (!Strings.isNullOrEmpty(episodeStartWardCode) || !Strings.isNullOrEmpty(episodeEndWardCode)) {
@@ -470,26 +461,11 @@ public class EpisodesTransformer {
                 String propertyName = "JSON_"+propertyCode;
                 containedParametersBuilder.addParameter(propertyName, episodeWardsObjs.toString());
             }
-
-
-
         }
-
-
-
-
-
-
-
-
-
-
 
         //save the existing parent encounter here with the updated child refs added during this method, then the sub encounters
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, existingParentEncounterBuilder);
-
         //then save the child encounter builders if they are set
-
         if (admissionEncounterBuilder != null) {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
         }
@@ -498,8 +474,6 @@ public class EpisodesTransformer {
         }
 //        //finally, save the episode encounter which always exists
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);
-
-
      }
 
     private static EncounterBuilder createEncountersParentMinimum(Episodes parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
