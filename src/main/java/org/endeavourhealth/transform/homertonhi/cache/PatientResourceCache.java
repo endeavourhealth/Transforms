@@ -28,7 +28,8 @@ public class PatientResourceCache {
 
         PatientBuilder patientBuilder = null;
 
-        //each of the patient transforms only updates part of the FHIR resource, so we need to retrieve any existing instance to update
+        // each of the patient transforms only updates part of the FHIR resource, so we need to retrieve
+        // any existing instance to update and save to that
         Patient patient = (Patient)csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personEmpiId);
         if (patient == null) {
             //if the patient doesn't exist yet, create a new one

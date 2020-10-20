@@ -8,9 +8,8 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
-import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonAlias;
 import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
@@ -18,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class PersonAliasTransformer extends HomertonBasisTransformer {
+public class PersonAliasTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonAliasTransformer.class);
 
     public static void transform(List<ParserI> parsers,
