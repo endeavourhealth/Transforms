@@ -99,7 +99,7 @@ public class PatientTransformer {
     /**
      * A34 messages merge all content from one patient (minor patient) to another (the major patient)
      */
-    public static void performA34PatientMerge(FhirHl7v2Filer.AdtResourceFiler filer, PID pid, MRG mrg) throws Exception {
+    public static void performA34PatientMerge(FhirHl7v2Filer.AdtResourceFiler filer, PID pid, MRG mrg, ImperialHL7Helper imperialHL7Helper) throws Exception {
 
         CX[] patientIdList = pid.getPatientIDInternalID();
         String majorPId = String.valueOf(patientIdList[0].getID());
@@ -120,41 +120,49 @@ public class PatientTransformer {
         String minorPatientReference = ReferenceHelper.createResourceReference(ResourceType.Patient, minorPatientId);
         idMappings.put(minorPatientReference, majorPatientReference);
 
-        List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(filer.getServiceId(), UUID.fromString(minorPatientId));
+        Patient existingMajorPatient = null;
+        existingMajorPatient = (Patient) imperialHL7Helper.retrieveResource(majorPId, ResourceType.Patient);
 
-        //copy the resources to the major patient
-        for (ResourceWrapper minorPatientResource: minorPatientResources) {
+        Patient existingMinorPatient = null;
+        existingMinorPatient = (Patient) imperialHL7Helper.retrieveResource(minorPId, ResourceType.Patient);
 
-            String json = minorPatientResource.getResourceData();
-            Resource fhirOriginal = ParserPool.getInstance().parse(json);
+        if(existingMajorPatient != null && existingMinorPatient != null) {
+            List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(filer.getServiceId(), UUID.fromString(minorPatientId));
 
-            if (fhirOriginal instanceof Patient) {
-                //we don't want to move patient resources, so just delete it
-                filer.deletePatientResource(new GenericBuilder(fhirOriginal));
+            //copy the resources to the major patient
+            for (ResourceWrapper minorPatientResource: minorPatientResources) {
 
-            } else {
-                //for all other resources, re-map the IDs and save to the DB
-                try {
-                    //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
-                    IdHelper.applyExternalReferenceMappings(fhirOriginal, idMappings, false);
-                    filer.savePatientResource(new GenericBuilder(fhirOriginal));
+                String json = minorPatientResource.getResourceData();
+                Resource fhirOriginal = ParserPool.getInstance().parse(json);
 
-                } catch (Exception ex) {
-                    throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + minorPatientResource.getResourceId() + " and now has " + fhirOriginal.getId(), ex);
+                if (fhirOriginal instanceof Patient) {
+                    //we don't want to move patient resources, so just delete it
+                    filer.deletePatientResource(new GenericBuilder(fhirOriginal));
+
+                } else {
+                    //for all other resources, re-map the IDs and save to the DB
+                    try {
+                        //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
+                        IdHelper.applyExternalReferenceMappings(fhirOriginal, idMappings, false);
+                        filer.savePatientResource(new GenericBuilder(fhirOriginal));
+
+                    } catch (Exception ex) {
+                        throw new Exception("Failed to save amended " + minorPatientResource.getResourceType() + " which originally had ID " + minorPatientResource.getResourceId() + " and now has " + fhirOriginal.getId(), ex);
+                    }
+
+                    LOG.debug("Moved " + fhirOriginal.getResourceType() + " " + fhirOriginal.getId());
                 }
-
-                LOG.debug("Moved " + fhirOriginal.getResourceType() + " " + fhirOriginal.getId());
             }
+
+            //need to wait here until all resources have been saved, otherwise if we let the below fn save the resource
+            //mappings (of old patient to new patient) then the mapping gets applied when deleting the old patient (since
+            //the delete is in a different thread). End result is that we end up KEEPING the minor patient and DELETING
+            //the one we want to keep!
+            filer.waitUntilEverythingIsSaved();
+
+            //save these resource mappings for the future
+            ResourceMergeMapHelper.saveResourceMergeMapping(filer.getServiceId(), idMappings);
         }
-
-        //need to wait here until all resources have been saved, otherwise if we let the below fn save the resource
-        //mappings (of old patient to new patient) then the mapping gets applied when deleting the old patient (since
-        //the delete is in a different thread). End result is that we end up KEEPING the minor patient and DELETING
-        //the one we want to keep!
-        filer.waitUntilEverythingIsSaved();
-
-        //save these resource mappings for the future
-        ResourceMergeMapHelper.saveResourceMergeMapping(filer.getServiceId(), idMappings);
     }
 
     private static Parameters findParameters(Bundle bundle) throws Exception {
