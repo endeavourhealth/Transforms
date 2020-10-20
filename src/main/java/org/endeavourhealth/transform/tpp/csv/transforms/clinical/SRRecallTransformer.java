@@ -4,6 +4,7 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRe
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureRequestBuilder;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
@@ -96,17 +97,18 @@ public class SRRecallTransformer {
             codeableConceptBuilder.setText(recallType.getString());
         }
 
-        CsvCell recallStatus = parser.getRecallStatus();
+        CsvCell recallStatusCell = parser.getRecallStatus();
         // these are locally configured statues not mapped
-        if (!recallStatus.isEmpty()) {
+        if (!recallStatusCell.isEmpty()) {
 
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recallStatus);
+            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(recallStatusCell);
             if (tppMappingRef != null) {
                 String mappedTerm = tppMappingRef.getMappedTerm();
                 if (!mappedTerm.isEmpty()) {
 
                     // use the term to derive the resource status
-                    procedureRequestBuilder.setStatus(convertRecallStatus(mappedTerm));
+                    ProcedureRequest.ProcedureRequestStatus fhirStatus = convertRecallStatus(mappedTerm);
+                    procedureRequestBuilder.setStatus(fhirStatus, recallStatusCell);
 
                     // add the status date and details to the notes
                     CsvCell statusDate = parser.getRecallStatusDate();
@@ -131,17 +133,32 @@ public class SRRecallTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureRequestBuilder);
     }
 
-    private static ProcedureRequest.ProcedureRequestStatus convertRecallStatus(String recallStatusDisplay) {
+    /**
+     * to get a full list of TPP options in this value set, run this on publisher_common:
+             select *
+             from tpp_mapping_ref_2
+             where group_id = 15777;
+     * This list hasn't changed in years, so the mapping is just a hard-coded lookup
+     */
+    private static ProcedureRequest.ProcedureRequestStatus convertRecallStatus(String str) throws Exception {
 
-        if (recallStatusDisplay.toLowerCase().contains("seen")) {
+        if (str.equalsIgnoreCase("Pending")) {
+            return ProcedureRequest.ProcedureRequestStatus.PROPOSED;
+        } else if (str.equalsIgnoreCase("Seen")
+                || str.equalsIgnoreCase("Awaiting Result")) {
             return ProcedureRequest.ProcedureRequestStatus.COMPLETED;
-        } else if (recallStatusDisplay.toLowerCase().contains("waiting")
-                || recallStatusDisplay.toLowerCase().contains("recall")) {
+        } else if (str.equalsIgnoreCase("Cancelled by clinician")
+                || str.equalsIgnoreCase("Cancelled by patient")
+                || str.equalsIgnoreCase("Cancelled during import")
+                || str.equalsIgnoreCase("Superseded")
+                || str.equalsIgnoreCase("Suspended")) {
+            return ProcedureRequest.ProcedureRequestStatus.REJECTED;
+        } else if (str.equalsIgnoreCase("1st Recall")
+                || str.equalsIgnoreCase("2nd Recall")
+                || str.equalsIgnoreCase("3rd Recall")) {
             return ProcedureRequest.ProcedureRequestStatus.REQUESTED;
-        } else if (recallStatusDisplay.toLowerCase().contains("cancelled")) {
-            return ProcedureRequest.ProcedureRequestStatus.ABORTED;
         } else {
-            return ProcedureRequest.ProcedureRequestStatus.NULL;
+            throw new Exception("Unmapped TPP SRRecall status [" + str + "]");
         }
     }
 
