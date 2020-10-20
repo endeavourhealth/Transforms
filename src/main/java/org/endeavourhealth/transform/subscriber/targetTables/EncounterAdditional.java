@@ -48,7 +48,7 @@ public class EncounterAdditional extends AbstractTargetTable {
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
-                "" + propertyId,
+                convertInt(propertyId),
                 convertInt(valueId),
                 jsonValue);
     }
