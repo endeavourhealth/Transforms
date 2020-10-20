@@ -71,21 +71,22 @@ public class SRDrugSensitivityTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         allergyIntoleranceBuilder.setPatient(patientReference);
 
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
-            allergyIntoleranceBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            allergyIntoleranceBuilder.setRecordedBy(recordedByReference, profileIdRecordedByCell);
         }
 
-        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-        if (staffReference != null) {
-            allergyIntoleranceBuilder.setClinician(staffReference, staffMemberIdDoneBy);
+        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
+        CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
+        Reference doneByReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneByCell, orgDoneAtCell);
+        if (doneByReference != null) {
+            allergyIntoleranceBuilder.setClinician(doneByReference, staffMemberIdDoneByCell, orgDoneAtCell);
         }
 
-        CsvCell dateRecored = parser.getDateEventRecorded();
-        if (!dateRecored.isEmpty()) {
-            allergyIntoleranceBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
+        CsvCell dateRecorded = parser.getDateEventRecorded();
+        if (!dateRecorded.isEmpty()) {
+            allergyIntoleranceBuilder.setRecordedDate(dateRecorded.getDateTime(), dateRecorded);
         }
 
         CsvCell effectiveDate = parser.getDateStarted();

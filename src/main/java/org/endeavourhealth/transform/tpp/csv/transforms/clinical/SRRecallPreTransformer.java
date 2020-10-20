@@ -42,7 +42,6 @@ public class SRRecallPreTransformer {
         }
 
         CsvCell id = parser.getRowIdentifier();
-        CsvCell patientId = parser.getIDPatient();
 
         CsvCell eventLinkId = parser.getIDEvent();
         if (!eventLinkId.isEmpty()) {

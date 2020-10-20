@@ -79,9 +79,9 @@ public class SRImmunisationTransformer {
             immunizationBuilder.setEncounter(eventReference, eventId);
         }
 
-        CsvCell dateRecored = parser.getDateEventRecorded();
-        if (!dateRecored.isEmpty()) {
-            immunizationBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
+        CsvCell dateRecorded = parser.getDateEventRecorded();
+        if (!dateRecorded.isEmpty()) {
+            immunizationBuilder.setRecordedDate(dateRecorded.getDateTime(), dateRecorded);
         }
 
         CsvCell eventDate = parser.getDateEvent();
@@ -91,16 +91,17 @@ public class SRImmunisationTransformer {
             immunizationBuilder.setPerformedDate(dateTimeType, eventDate);
         }
 
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
-            immunizationBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            immunizationBuilder.setRecordedBy(recordedByReference, profileIdRecordedByCell);
         }
 
-        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-        if (staffReference != null) {
-            immunizationBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
+        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
+        CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
+        Reference doneByReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneByCell, orgDoneAtCell);
+        if (doneByReference != null) {
+            immunizationBuilder.setPerformer(doneByReference, staffMemberIdDoneByCell, orgDoneAtCell);
         }
 
         CsvCell dose = parser.getDose();

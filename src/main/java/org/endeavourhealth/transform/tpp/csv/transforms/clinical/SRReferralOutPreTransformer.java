@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public class SRReferralOutPreTransformer {
-    private static final Logger LOG = LoggerFactory.getLogger(SRDrugSensitivityPreTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SRReferralOutPreTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -40,20 +40,6 @@ public class SRReferralOutPreTransformer {
         if (removedCell != null && removedCell.getIntAsBoolean()) {
             return;
         }
-
-
-        //we don't transform Practitioners until we need them, and these ensure it happens
-        CsvCell profileIdEnteredByCell = parser.getIDProfileEnteredBy();
-        csvHelper.getStaffMemberCache().addRequiredProfileId(profileIdEnteredByCell);
-
-        //ReferralOut file is unique in that it has a second profile ID column
-        CsvCell profileReferredByCell = parser.getIDProfileReferrer();
-        csvHelper.getStaffMemberCache().addRequiredProfileId(profileReferredByCell);
-
-        CsvCell staffIdDoneByCell = parser.getIDDoneBy();
-        CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
-        csvHelper.getStaffMemberCache().addRequiredStaffId(staffIdDoneByCell, orgDoneAtCell);
-
 
         CsvCell id = parser.getRowIdentifier();
 

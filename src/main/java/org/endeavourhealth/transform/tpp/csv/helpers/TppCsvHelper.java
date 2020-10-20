@@ -116,12 +116,16 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Patient, patientGuid.getString());
     }
 
-    public Reference createPractitionerReferenceForProfileId(CsvCell profileIdCell) {
-        return ReferenceHelper.createReference(ResourceType.Practitioner, profileIdCell.getString());
+    public Reference createPractitionerReferenceForProfileId(CsvCell profileIdCell) throws Exception {
+        Object profileId = getStaffMemberCache().findProfileId(serviceId, profileIdCell);
+        if (profileId == null) {
+            return null;
+        }
+        return ReferenceHelper.createReference(ResourceType.Practitioner, profileId.toString());
     }
 
     public Reference createPractitionerReferenceForStaffMemberId(CsvCell staffMemberIdCell, CsvCell organisationDoneAtCell) throws Exception {
-        Object profileId = getStaffMemberCache().findProfileIdForStaffMemberAndOrg(staffMemberIdCell, organisationDoneAtCell);
+        Object profileId = getStaffMemberCache().findProfileIdForStaffMemberAndOrg(serviceId, staffMemberIdCell, organisationDoneAtCell);
         if (profileId == null) {
             return null;
         }

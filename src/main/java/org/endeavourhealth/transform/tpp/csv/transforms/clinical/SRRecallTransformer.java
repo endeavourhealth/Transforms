@@ -76,16 +76,17 @@ public class SRRecallTransformer {
             procedureRequestBuilder.setScheduledDate(dateTimeType, recallDate);
         }
 
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
-            procedureRequestBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            procedureRequestBuilder.setRecordedBy(recordedByReference, profileIdRecordedByCell);
         }
 
-        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-        if (staffReference != null) {
-            procedureRequestBuilder.setPerformer(staffReference, staffMemberIdDoneBy);
+        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
+        CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
+        Reference doneByReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneByCell, orgDoneAtCell);
+        if (doneByReference != null) {
+            procedureRequestBuilder.setPerformer(doneByReference, staffMemberIdDoneByCell, orgDoneAtCell);
         }
 
         CsvCell recallType = parser.getRecallType();

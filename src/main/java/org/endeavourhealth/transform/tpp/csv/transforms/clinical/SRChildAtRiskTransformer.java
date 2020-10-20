@@ -73,10 +73,10 @@ public class SRChildAtRiskTransformer {
             flagBuilder.setEndDate(dateRemoved.getDate(), dateRemoved);
         }
 
-        CsvCell profieIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profieIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profieIdRecordedBy);
-            flagBuilder.setAuthor(staffReference, profieIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            flagBuilder.setAuthor(recordedByReference, profileIdRecordedByCell);
         }
 
         CsvCell onPlan = parser.getChildProtectionPlan();

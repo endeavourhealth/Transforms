@@ -52,7 +52,7 @@ public class SRRotaTransformer {
         }
 
         CsvCell locationBranchId = parser.getIDBranch();
-        if (!locationBranchId.isEmpty() && locationBranchId.getLong() > 0) {
+        if (!locationBranchId.isEmpty() && locationBranchId.getLong().longValue() > 0) {
             Reference fhirReference = csvHelper.createLocationReference(locationBranchId);
             scheduleBuilder.setLocation(fhirReference, locationBranchId);
         }
@@ -69,19 +69,19 @@ public class SRRotaTransformer {
             scheduleBuilder.setScheduleName(sessionName.getString(), sessionName);
         }
 
-        CsvCell profileIdOwner = parser.getIDProfileOwner();
-        if (!profileIdOwner.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(profileIdOwner);
-            scheduleBuilder.addActor(practitionerReference, profileIdOwner);
+        CsvCell profileIdOwnerCell = parser.getIDProfileOwner();
+        Reference ownerReference = csvHelper.createPractitionerReferenceForProfileId(profileIdOwnerCell);
+        if (ownerReference != null) {
+            scheduleBuilder.addActor(ownerReference, profileIdOwnerCell);
         }
 
         //added missing transforms
         CsvCell locationTypeIdCell = parser.getLocation();
         if (!locationTypeIdCell.isEmpty()
-                && locationTypeIdCell.getLong() > 0) {
+                && locationTypeIdCell.getLong().longValue() > 0) {
 
             //the location type links to a configured list item
-            TppConfigListOption configuredListItem = csvHelper.lookUpTppConfigListOption(locationTypeIdCell);
+            TppConfigListOption configuredListItem = TppCsvHelper.lookUpTppConfigListOption(locationTypeIdCell);
             String locationTypeDesc = configuredListItem.getListOptionName();
             scheduleBuilder.setLocationType(locationTypeDesc, locationTypeIdCell);
         }
@@ -93,9 +93,9 @@ public class SRRotaTransformer {
         }
 
         CsvCell createdByCell = parser.getIDProfileCreatedBy();
-        if (!createdByCell.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(profileIdOwner);
-            scheduleBuilder.setRecordedBy(practitionerReference, profileIdOwner);
+        Reference createdByReference = csvHelper.createPractitionerReferenceForProfileId(createdByCell);
+        if (createdByReference != null) {
+            scheduleBuilder.setRecordedBy(createdByReference, createdByCell);
         }
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), scheduleBuilder);

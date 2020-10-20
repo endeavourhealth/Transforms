@@ -21,10 +21,7 @@ import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationBranchTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SROrganisationTransformer;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRTrustTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentFlagsTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRAppointmentTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRRotaTransformer;
-import org.endeavourhealth.transform.tpp.csv.transforms.appointment.SRVisitTransformer;
+import org.endeavourhealth.transform.tpp.csv.transforms.appointment.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.clinical.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.codes.*;
 import org.endeavourhealth.transform.tpp.csv.transforms.patient.*;
@@ -502,8 +499,6 @@ public abstract class TppCsvToFhirTransformer {
         TppCsvHelper csvHelper = new TppCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
         boolean processPatientData = shouldProcessPatientData(fhirResourceFiler);
 
-        boolean processAdminData = true;
-
         //massive hack to allow the clinical observations to be processed faster - audit skipping it so we can come back later
 //        if (true) {
 //            auditSkippingAdminData(fhirResourceFiler);
@@ -515,40 +510,38 @@ public abstract class TppCsvToFhirTransformer {
 
 
         //reference data
-        if (processAdminData) {
+        LOG.info("Starting reference data transforms");
+        SRCtv3Transformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
+        SRMappingTransformer.transform(parsers, fhirResourceFiler);
+        SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
+        SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRCtv3ToSnomedTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-            LOG.info("Starting reference data transforms");
-            SRCtv3Transformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRCtv3HierarchyTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRImmunisationContentTransformer.transform(parsers, fhirResourceFiler);
-            SRMappingTransformer.transform(parsers, fhirResourceFiler);
-            SRConfiguredListOptionTransformer.transform(parsers, fhirResourceFiler);
-            SRMedicationReadCodeDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRCtv3ToSnomedTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        //organisational admin data
+        LOG.info("Starting admin transforms");
+        SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-            //organisational admin data
-            LOG.info("Starting admin transforms");
-            SRCcgTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRTrustTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SROrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SROrganisationBranchTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            fhirResourceFiler.waitUntilEverythingIsSaved();
+        LOG.info("Starting practitioners transforms");
+        SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above
 
-            LOG.info("Starting practitioners transforms");
-            SRStaffMemberProfileTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above
-            SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above two
-            //if (processSRCode) {
-            SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //needs to be before the staffMemberCache stuff
-            //}
-            SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //needs to be before the staffMemberCache stuff
-            SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            csvHelper.getStaffMemberCache().processChangedStaffMembers(csvHelper, fhirResourceFiler);
+        LOG.info("Starting pre-transforms to cache patient data");
+        SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRPrimaryCareMedicationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRRecallPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SRRepeatTemplatePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-            //make sure all practitioners are saved to the DB before doing anything clinical
-            fhirResourceFiler.waitUntilEverythingIsSaved();
-        }
 
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
@@ -584,11 +577,6 @@ public abstract class TppCsvToFhirTransformer {
 
             LOG.info("Starting clinical transforms");
             SREventLinkTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRRecallPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRRepeatTemplatePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            SRPrimaryCareMedicationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             SREventTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -602,24 +590,23 @@ public abstract class TppCsvToFhirTransformer {
             csvHelper.getReferralStatusCache().processRemainingReferralStatuses(fhirResourceFiler); //handle any record statuses without registrations
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            //if (processSRCode) {
+            //SRCode and problems
             SRProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //saves some mappings using multiple threads
             SRProblemTransformer.transform(parsers, fhirResourceFiler, csvHelper); //
             SRCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            //}
             csvHelper.getConditionResourceCache().processRemainingProblems(fhirResourceFiler);
 
             SRDrugSensitivityTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
             SRImmunisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
-            //TODO - remove once no longer receiving past 21st Nov 2019
-            SRChildAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            //This replaces the above.
-            SRPersonAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-
+            SRChildAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper); //no longer being received as of 2019-11-21 (but keep because we may reprocess old data)
+            SRPersonAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper); //added to replace the above
             SRSpecialNotesTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SRRecallTransformer.transform(parsers, fhirResourceFiler, csvHelper); //was missing SD-159
         }
+
+        //only after processing all the above files do we know what staff members we're actually interested in transforming
+        csvHelper.getStaffMemberCache().processChangedStaffMembers(csvHelper, fhirResourceFiler);
+        fhirResourceFiler.waitUntilEverythingIsSaved();
 
         //close down the utility thread pool
         csvHelper.stopThreadPool();
