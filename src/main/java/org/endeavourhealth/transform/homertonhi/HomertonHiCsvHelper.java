@@ -1,7 +1,10 @@
 package org.endeavourhealth.transform.homertonhi;
 
 import org.endeavourhealth.common.cache.ParserPool;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
@@ -10,7 +13,9 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.homertonhi.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.homertonhi.cache.PatientResourceCache;
+import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
@@ -45,12 +50,12 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
     private PatientResourceCache patientCache = new PatientResourceCache();
 //    private EncounterResourceCache encounterCache = new EncounterResourceCache();
 //    private LocationResourceCache locationCache = new LocationResourceCache();
-//    private OrganisationResourceCache organisationCache = new OrganisationResourceCache();
+    private OrganisationResourceCache organisationCache = new OrganisationResourceCache();
 //
 //    private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private CernerCodeValueRefDalI cernerCodeValueRefDal = DalProvider.factoryCernerCodeValueRefDal();
-//    private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
+    private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
 
     private UUID serviceId = null;
     private UUID systemId = null;
@@ -85,25 +90,25 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
         return patientCache;
     }
 
-    //
+
 //    public EncounterResourceCache getEncounterCache() { return encounterCache; }
-//
+
 //    public LocationResourceCache getLocationCache() { return locationCache; }
-//
-//    public OrganisationResourceCache getOrganisationCache() { return organisationCache; }
-//
-//    public Service getService (UUID id) throws Exception { return serviceRepository.getById(id);}
+
+    public OrganisationResourceCache getOrganisationCache() { return organisationCache; }
+
+    public Service getService (UUID id) throws Exception { return serviceRepository.getById(id);}
 //
 //    // if the resource is already filed and has been retrieved from the DB, the sourceId will differ from the
 //    // saved (mapped) resource Id
 //    public boolean isResourceIdMapped (String sourceId, DomainResource resource) {
 //        return !resource.getId().equals(sourceId);
 //    }
-//
-//    public Reference createOrganisationReference(String organizationGuid) throws Exception {
-//        return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
-//    }
-//
+
+    public Reference createOrganisationReference(String organizationGuid) throws Exception {
+        return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
+    }
+
 //    public Reference createLocationReference(String locationGuid) throws Exception {
 //        return ReferenceHelper.createReference(ResourceType.Location, locationGuid);
 //    }

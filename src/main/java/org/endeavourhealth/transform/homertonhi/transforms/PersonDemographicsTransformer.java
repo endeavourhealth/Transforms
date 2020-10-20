@@ -15,9 +15,8 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
-import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonDemographics;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
@@ -27,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class PersonDemographicsTransformer extends HomertonBasisTransformer {
+public class PersonDemographicsTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonDemographicsTransformer.class);
 
     public static void transform(List<ParserI> parsers,

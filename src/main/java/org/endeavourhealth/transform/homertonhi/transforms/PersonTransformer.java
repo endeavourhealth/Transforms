@@ -2,27 +2,19 @@ package org.endeavourhealth.transform.homertonhi.transforms;
 
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
-import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
+import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.Person;
-import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.ContactPoint;
-import org.hl7.fhir.instance.model.Enumerations;
-import org.hl7.fhir.instance.model.HumanName;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.UUID;
 
-public class PersonTransformer extends HomertonBasisTransformer {
+public class PersonTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonTransformer.class);
 
     public static void transform(List<ParserI> parsers,
@@ -49,16 +41,15 @@ public class PersonTransformer extends HomertonBasisTransformer {
                                              FhirResourceFiler fhirResourceFiler,
                                              HomertonHiCsvHelper csvHelper) throws Exception {
 
-        //TODO: split files by org or create on fly?
-        // first up, get or create the Homerton organisation
-//        UUID serviceId = parser.getServiceId();
-//        OrganizationBuilder organizationBuilder
-//                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(serviceId, csvHelper, fhirResourceFiler, parser);
-//        if (organizationBuilder == null) {
-//            TransformWarnings.log(LOG, parser, "Error creating Organization resource for ServiceId: {}",
-//                    serviceId.toString());
-//            return;
-//        }
+        // first up, get or create the Homerton organisation from the service
+        UUID serviceId = parser.getServiceId();
+        OrganizationBuilder organizationBuilder
+                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(serviceId, csvHelper, fhirResourceFiler, parser);
+        if (organizationBuilder == null) {
+            TransformWarnings.log(LOG, parser, "Error creating Organization resource for ServiceId: {}",
+                    serviceId.toString());
+            return;
+        }
 
         CsvCell personEmpiCell = parser.getPersonEmpiId();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiCell, csvHelper);
@@ -68,23 +59,21 @@ public class PersonTransformer extends HomertonBasisTransformer {
 
         //NOTE:deletions are checked by comparing the deletion hash values set up in the deletion pre-transform
         CsvCell hashValueCell = parser.getHashValue();
-        boolean deleted = false;  //TODO: requires pre-transform per file
+        boolean deleted = false;  //TODO: requires pre-transform per file to establish deletions
         if (deleted) {
             patientBuilder.setDeletedAudit(hashValueCell);
             csvHelper.getPatientCache().deletePatient(patientBuilder, personEmpiCell, fhirResourceFiler, parser.getCurrentState());
             return;
         }
-
         patientBuilder.setActive(true);
 
-        // TODO:  establish the organisation relationship
-//        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
-//        boolean isResourceMapped = patientBuilder.isIdMapped();
-//        if (isResourceMapped) {
-//            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
-//        }
-//        patientBuilder.setManagingOrganisation(organisationReference);
-//        csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId, organizationBuilder);
+        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+        if (patientBuilder.isIdMapped()) {
+            organisationReference
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
+        }
+        patientBuilder.setManagingOrganisation(organisationReference);
+        csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId, organizationBuilder);
 
         //remove existing name if set - this is the first place names are set and are added to using PersonName transformers
         NameBuilder.removeExistingNameById(patientBuilder, personEmpiCell.getString());

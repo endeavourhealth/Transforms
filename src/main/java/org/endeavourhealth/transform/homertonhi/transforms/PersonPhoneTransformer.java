@@ -7,9 +7,8 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
-import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonPhone;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.slf4j.Logger;
@@ -17,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class PersonPhoneTransformer extends HomertonBasisTransformer {
+public class PersonPhoneTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonPhoneTransformer.class);
 
     public static void transform(List<ParserI> parsers,

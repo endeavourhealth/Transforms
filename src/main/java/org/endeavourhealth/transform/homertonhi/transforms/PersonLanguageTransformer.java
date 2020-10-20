@@ -6,16 +6,15 @@ import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homerton.transforms.HomertonBasisTransformer;
-import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonLanguage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class PersonLanguageTransformer extends HomertonBasisTransformer {
+public class PersonLanguageTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonLanguageTransformer.class);
 
     public static void transform(List<ParserI> parsers,
