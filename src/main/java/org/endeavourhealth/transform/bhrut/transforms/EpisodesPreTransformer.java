@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+import static org.endeavourhealth.common.ods.OdsWebService.lookupOrganisationViaRest;
+
 public class EpisodesPreTransformer {
 
 
@@ -79,9 +81,14 @@ public class EpisodesPreTransformer {
         }
 
         if (!parser.getAdmissionHospitalCode().isEmpty()) {
-            String name = csvHelper.getOrgCache().getNameForOrgCode(parser.getAdmissionHospitalCode().getString());
+            CsvCell addmissionHospitalCode = parser.getAdmissionHospitalCode();
+            String code = addmissionHospitalCode.getString();
+            String name = csvHelper.getOrgCache().getNameForOrgCode(code);
             if (Strings.isNullOrEmpty(name)) {
-                csvHelper.getOrgCache().addOrgCode(parser.getAdmissionHospitalCode(), parser.getAdmissionHospitalName());
+                OdsOrganisation or = lookupOrganisationViaRest(code);
+                if (or != null) { //Ignore non-ODS codes.  Bhrut sometimes uses ePact codes.
+                    csvHelper.getOrgCache().addOrgCode(addmissionHospitalCode, parser.getAdmissionHospitalName());
+                }
             }
         }
     }
@@ -131,7 +138,7 @@ public class EpisodesPreTransformer {
         NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
         nameBuilder.setText(episodeConsultant.getString(), episodeConsultant);
         fhirResourceFiler.saveAdminResource(episodesParser.getCurrentState(), practitionerBuilder);
-        csvHelper.getStaffCache().returnPractitionerBuilder(episodeConsultantCode, practitionerBuilder);
+        csvHelper.getStaffCache().cachePractitionerBuilder(episodeConsultantCode, practitionerBuilder);
     }
 
 
@@ -167,7 +174,7 @@ public class EpisodesPreTransformer {
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
 
         //add to cache
-        csvHelper.getOrgCache().returnOrganizationBuilder(orgId, organizationBuilder);
+        csvHelper.getOrgCache().cacheOrganizationBuilder(orgId, organizationBuilder);
     }
 
 }

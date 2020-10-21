@@ -49,11 +49,11 @@ public class EpisodeOfCareCache {
         }
     }
 
-    public void returnEpisodeOfCareBuilder(CsvCell caseIdCell, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
-        returnEpisodeOfCareBuilder(caseIdCell.getString(), episodeOfCareBuilder);
+    public void cacheEpisodeOfCareBuilder(CsvCell caseIdCell, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
+        cacheEpisodeOfCareBuilder(caseIdCell.getString(), episodeOfCareBuilder);
     }
 
-    public void returnEpisodeOfCareBuilder(String caseId, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
+    public void cacheEpisodeOfCareBuilder(String caseId, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
         episodeOfCareBuildersByCaseId.addToCache(caseId, episodeOfCareBuilder);
     }
 }

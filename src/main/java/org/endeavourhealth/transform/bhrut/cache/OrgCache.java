@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.bhrut.cache;
 
+import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.ResourceCache;
@@ -12,19 +13,27 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.endeavourhealth.common.ods.OdsWebService.lookupOrganisationViaRest;
+
 public class OrgCache {
     // Basic org code or org name cache
     private static final Logger LOG = LoggerFactory.getLogger(StaffCache.class);
+    private static final String NON_ODS_CODE= "NON ODS CODE";
 
     private ResourceCache<String, OrganizationBuilder> organizationBuildersByLocationID = new ResourceCache<>();
 
     private Map<String, String> orgCodeToName = new ConcurrentHashMap<>();
 
-    public void addOrgCode(CsvCell orgCodeCell, CsvCell orgNameCell) {
+    public void addOrgCode(CsvCell orgCodeCell, CsvCell orgNameCell) throws Exception {
 
         String cCode = orgCodeCell.getString();
         String name = orgNameCell.getString();
         if (!orgCodeToName.containsKey(cCode)) {
+            OdsOrganisation or = lookupOrganisationViaRest(cCode);
+            if (or == null) {
+                orgCodeToName.put(cCode, NON_ODS_CODE);
+                return;
+            }  // BHRUT sometimes ePact codes instead of ODS. Ignore them
             orgCodeToName.put(cCode, name);
         }
     }
@@ -84,7 +93,7 @@ public class OrgCache {
         return organizationBuilder;
     }
 
-    public void returnOrganizationBuilder(String orgId, OrganizationBuilder organizationBuilder) throws Exception {
+    public void cacheOrganizationBuilder(String orgId, OrganizationBuilder organizationBuilder) throws Exception {
         organizationBuildersByLocationID.addToCache(orgId, organizationBuilder);
     }
 }

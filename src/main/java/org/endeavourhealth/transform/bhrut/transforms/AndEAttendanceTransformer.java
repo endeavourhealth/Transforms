@@ -1,17 +1,12 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.im.models.mapping.MapColumnRequest;
-import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
-import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.AandeAttendances;
@@ -44,7 +39,7 @@ public class AndEAttendanceTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId(parser)) {
                     continue;
                 }
                 try {
@@ -268,7 +263,7 @@ public class AndEAttendanceTransformer {
         CsvCell admissionHospitalCode = parser.getHospitalCode();
         if (!admissionHospitalCode.isEmpty()) {
             Reference organizationReference
-                    = ReferenceHelper.createReference(ResourceType.Organization, admissionHospitalCode.getString());
+                    = csvHelper.createOrganisationReference(admissionHospitalCode.getString());
             if (builder.isIdMapped()) {
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
@@ -474,7 +469,7 @@ public class AndEAttendanceTransformer {
             ContainedParametersBuilder containedParametersBuilderDischarge
                     = new ContainedParametersBuilder(dischargeEncounterBuilder);
             containedParametersBuilderDischarge.removeContainedParameters();
-                csvHelper.addParmIfNotNullJson( "DISCHARGE_DESTINATION",
+                BhrutCsvHelper.addParmIfNotNullJson( "DISCHARGE_DESTINATION",
                         dischargeDestinationCell.getString(),dischargeDestinationCell,
                         containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
             }

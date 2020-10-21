@@ -3,12 +3,14 @@ package org.endeavourhealth.transform.bhrut;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.lang3.ArrayUtils;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
+import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
@@ -36,12 +38,17 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE;
 
 public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(BhrutCsvHelper.class);
@@ -57,6 +64,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private final UUID systemId;
     private final UUID exchangeId;
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+    public static final String[] V_CODES = {"V81997", "V81998", "V81999"};
 
 
     //some resources are referred to by others, so we cache them here for when we need them
@@ -164,6 +172,15 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public Reference createOrganisationReference(String organizationGuid) throws Exception {
+        if ((OdsWebService.lookupOrganisationViaRest(organizationGuid) == null)
+                && (!ArrayUtils.contains(V_CODES, organizationGuid))) {
+            if (BhrutCsvHelper.isRF4Child(organizationGuid)) {
+                LOG.trace("RF4Child: RF4 child " + organizationGuid + " mapped to RF4");
+            } else {
+                LOG.debug("RF4Child: NON RF4 code " + organizationGuid + " mapped to RF4.");
+            }
+            return ReferenceHelper.createReference(ResourceType.Organization, BHRUT_ORG_ODS_CODE);
+        }
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
     }
 
@@ -838,20 +855,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return personIdsToFilterOn.contains(personId);
     }
 
-    public static String findOdsCode(String orgCode) throws Exception {
-
-        if (localToOdsMap == null) {
-            localToOdsMap = ResourceParser.readCsvResourceIntoMap("BhrutLocalCodesToOdsMap.csv", "LocalCode", "ODS", CSVFormat.DEFAULT.withHeader());
-        }
-
-        String code = localToOdsMap.get(orgCode);
-        if (!Strings.isNullOrEmpty(code)) {
-            return code; //BHRUT ODS code.
-
-        } else {
-            return null;
-        }
-    }
 
 
     public static void addParmIfNotNull(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
@@ -919,5 +922,24 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
         return valueResponse;
+    }
+
+
+    public static Boolean isRF4Child(String code) throws Exception {
+        //No API for this webpage so using a simple URL call to test if an Org id exists as a child
+        // See the  odsPortalChildren website for details.
+        // JSoup might be better but this works well enough for this.
+        String target = "/Organisation/Details/";
+        URL odsportalChildren = new URL("https://odsportal.hscic.gov.uk/Organisation/Details/RF4#children");
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(odsportalChildren.openStream()));
+
+        String inputLine;
+        String wanted = target + code;
+        while ((inputLine = in.readLine()) != null)
+            if (inputLine.contains(wanted))
+                return true;
+        in.close();
+        return false;
     }
 }

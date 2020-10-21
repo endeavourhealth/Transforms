@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.endeavourhealth.common.ods.OdsWebService.lookupOrganisationViaRest;
 import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.addParmIfNotNullNhsdd;
 
 
@@ -550,13 +551,13 @@ public class OutpatientsTransformer {
         String hospitalCode = null;
         if (!hospitalCodeCell.isEmpty()) {
             // Test if the hospital code is a local code that we can map to ODS
-            if (Strings.isNullOrEmpty(csvHelper.findOdsCode(hospitalCodeCell.getString()))) {
+            if (lookupOrganisationViaRest(hospitalCodeCell.getString()) == null) {
                 hospitalCode = hospitalCodeCell.getString();
             } else {
-                hospitalCode = csvHelper.findOdsCode(hospitalCodeCell.getString());
+                hospitalCode = BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE;
             }
 
-            Reference providerReference = ReferenceHelper.createReference(ResourceType.Organization, hospitalCode);
+            Reference providerReference = csvHelper.createOrganisationReference(hospitalCode);
             if (builder.isIdMapped()) {
                 providerReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(providerReference, csvHelper);
@@ -690,7 +691,7 @@ public class OutpatientsTransformer {
             episodeBuilder.setPriority(priority.getString(), priority);
         }
 
-        csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(id, episodeBuilder);
+        csvHelper.getEpisodeOfCareCache().cacheEpisodeOfCareBuilder(id, episodeBuilder);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),!episodeBuilder.isIdMapped(),episodeBuilder);
     }
     private static void translateAppointmentStatusCode(CsvCell appointmentStatusCode, AppointmentBuilder appointmentBuilder, BhrutCsvHelper csvHelper,CsvCell idCell) throws Exception {

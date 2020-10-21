@@ -96,15 +96,8 @@ public class SpellsTransformer {
 
         CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
         Reference organisationReference;
-        if (!admissionHospitalCodeCell.isEmpty()) {
-            if (Strings.isNullOrEmpty(csvHelper.findOdsCode(admissionHospitalCodeCell.getString()) )) {
                 organisationReference = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
-            } else {
-                organisationReference = csvHelper.createOrganisationReference(csvHelper.findOdsCode(admissionHospitalCodeCell.getString()));
-            }
-        } else {
-            organisationReference =csvHelper.createOrganisationReference(BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE);
-        }
+
         if (encounterBuilder.isIdMapped()) {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
         }
@@ -287,12 +280,8 @@ public class SpellsTransformer {
         CsvCell odsCodeCell = parser.getAdmissionHospitalCode();
         Reference organisationReference;
         if (!odsCodeCell.isEmpty()) {
-            if (Strings.isNullOrEmpty(csvHelper.findOdsCode(odsCodeCell.getString()) )) {
                 organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
-            } else {
-                organisationReference = csvHelper.createOrganisationReference(csvHelper.findOdsCode(odsCodeCell.getString()));
-            }
-            // if episode already ID mapped, get the mapped ID for the org
+                     // if episode already ID mapped, get the mapped ID for the org
             if (episodeOfCareBuilder.isIdMapped()) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
@@ -316,7 +305,7 @@ public class SpellsTransformer {
             episodeOfCareBuilder.setCareManager(practitionerReference, consultantCodeCell);
         }
 
-        csvHelper.getEpisodeOfCareCache().returnEpisodeOfCareBuilder(id, episodeOfCareBuilder);
+        csvHelper.getEpisodeOfCareCache().cacheEpisodeOfCareBuilder(id, episodeOfCareBuilder);
 
     }
 
@@ -430,13 +419,9 @@ public class SpellsTransformer {
         CsvCell admissionHospitalCode = parser.getAdmissionHospitalCode();
         Reference organizationReference;
         if (!admissionHospitalCode.isEmpty()) {
-            if (Strings.isNullOrEmpty(csvHelper.findOdsCode(admissionHospitalCode.getString()) )) {
                 organizationReference
-                        = ReferenceHelper.createReference(ResourceType.Organization, admissionHospitalCode.getString());
-            } else {
-                organizationReference
-                        = ReferenceHelper.createReference(ResourceType.Organization, csvHelper.findOdsCode(admissionHospitalCode.getString()));
-            }
+                        = csvHelper.createOrganisationReference(admissionHospitalCode.getString());
+
             if (builder.isIdMapped()) {
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);

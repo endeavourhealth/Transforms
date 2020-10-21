@@ -4,9 +4,7 @@ import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
-import org.endeavourhealth.transform.bhrut.cache.StaffCache;
 import org.endeavourhealth.transform.bhrut.schema.Outpatients;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
@@ -16,7 +14,6 @@ import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
-import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +79,7 @@ public class OutpatientsPreTransformer {
                     //nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
                     nameBuilder.setText(consultantCell.getString(), consultantCell);
                 }
-                csvHelper.getStaffCache().returnPractitionerBuilder(practitionerBuilder.getResourceId(), practitionerBuilder);
+                csvHelper.getStaffCache().cachePractitionerBuilder(practitionerBuilder.getResourceId(), practitionerBuilder);
                 fhirResourceFiler.saveAdminResource(parser.getCurrentState(), !practitionerBuilder.isIdMapped(),practitionerBuilder);
             }
         }
@@ -120,6 +117,6 @@ public class OutpatientsPreTransformer {
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
 
         //add to cache
-        csvHelper.getOrgCache().returnOrganizationBuilder(odsCodeCell.getString(), organizationBuilder);
+        csvHelper.getOrgCache().cacheOrganizationBuilder(odsCodeCell.getString(), organizationBuilder);
     }
 }

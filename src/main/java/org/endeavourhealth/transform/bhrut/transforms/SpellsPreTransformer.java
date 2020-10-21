@@ -137,7 +137,7 @@ public class SpellsPreTransformer {
         NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
         nameBuilder.setText(admissionConsultant.getString(), admissionConsultant);
         fhirResourceFiler.saveAdminResource(spellsParser.getCurrentState(), practitionerBuilder);
-        csvHelper.getStaffCache().returnPractitionerBuilder(admissionConsultantCode, practitionerBuilder);
+        csvHelper.getStaffCache().cachePractitionerBuilder(admissionConsultantCode, practitionerBuilder);
 
     }
 
@@ -190,7 +190,7 @@ public class SpellsPreTransformer {
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
 
         //add to cache
-        csvHelper.getOrgCache().returnOrganizationBuilder(orgId, organizationBuilder);
+        csvHelper.getOrgCache().cacheOrganizationBuilder(orgId, organizationBuilder);
     }
 
 }

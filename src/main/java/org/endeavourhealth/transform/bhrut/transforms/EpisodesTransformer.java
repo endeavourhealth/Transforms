@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE;
 import static org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME;
 
 public class EpisodesTransformer {
@@ -83,17 +84,15 @@ public class EpisodesTransformer {
         createSubEncounters(parser, spellEncounterBuilder, fhirResourceFiler, csvHelper);
 
         CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
-        Reference organisationReference;
+        Reference organisationReference = null;
         if (!admissionHospitalCodeCell.isEmpty()) {
-            if (Strings.isNullOrEmpty(csvHelper.findOdsCode(admissionHospitalCodeCell.getString()))) {
                 organisationReference = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
-               } else {
-                organisationReference = csvHelper.createOrganisationReference(csvHelper.findOdsCode(admissionHospitalCodeCell.getString()));
             }
 
-        } else {  //Default to BHRUT
+        if (organisationReference == null) {
             organisationReference = csvHelper.createOrganisationReference(BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE);
         }
+
         organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
         spellEncounterBuilder.setServiceProvider(organisationReference);
         createConditions(parser, fhirResourceFiler, csvHelper);
@@ -550,7 +549,7 @@ public class EpisodesTransformer {
         CsvCell admissionHospitalCode = parser.getAdmissionHospitalCode();
         if (!admissionHospitalCode.isEmpty()) {
             Reference organizationReference
-                    = ReferenceHelper.createReference(ResourceType.Organization, admissionHospitalCode.getString());
+                    = csvHelper.createOrganisationReference(admissionHospitalCode.getString());
             if (builder.isIdMapped()) {
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);

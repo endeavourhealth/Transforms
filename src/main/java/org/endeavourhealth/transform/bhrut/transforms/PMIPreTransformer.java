@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
-import com.google.common.base.Strings;
 import org.apache.commons.lang3.ArrayUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.ods.OdsOrganisation;
@@ -21,10 +20,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+import static org.endeavourhealth.common.ods.OdsWebService.lookupOrganisationViaRest;
+import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.V_CODES;
+
 public class PMIPreTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(PMIPreTransformer.class);
-    private static final String[] V_CODES = {"V81997", "V81998", "V81999"};
 
     public static void transform(String version,
                                  Map<Class, AbstractCsvParser> parsers,
@@ -80,7 +81,11 @@ public class PMIPreTransformer {
                                           BhrutCsvHelper csvHelper,
                                           String orgId) throws Exception {
 
-
+        OdsOrganisation org = lookupOrganisationViaRest(orgId);
+        if (org == null) { //Non ODS code meaning it's probably a misuses ePact code so use Barts RF4 ODS code
+            orgId = BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE;
+            org = lookupOrganisationViaRest(orgId);
+        }
 
         OrganizationBuilder organizationBuilder
                 = csvHelper.getOrgCache().getOrCreateOrganizationBuilder(orgId, csvHelper);
@@ -89,40 +94,24 @@ public class PMIPreTransformer {
             TransformWarnings.log(LOG, parser, "Error creating Organization resource for ODS: {}", orgId);
             return;
         }
-        //Check if it's local code that maps to an ODS code
-        if (csvHelper.findOdsCode(orgId) != null) {
-            orgId=csvHelper.findOdsCode(orgId);
+
+        if (org != null) {
+            organizationBuilder.setName(org.getOrganisationName());
+        } else {
+            if (!ArrayUtils.contains(V_CODES, orgId)) {
+                TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {} ID  {}", orgId, parser.getId().getString());
+            }
+            return;
+
         }
-
-
-            OdsOrganisation org = new OdsOrganisation();
-            try {
-                org = OdsWebService.lookupOrganisationViaRest(orgId);
-            } catch (Exception e) {
-                TransformWarnings.log(LOG, parser, "Exception looking up Organization for ODS: {} Exception : {} Line {}", orgId, e.getMessage());
-                return;
-            }
-            if (org != null) {
-                organizationBuilder.setName(org.getOrganisationName());
-            } else {
-                if (!ArrayUtils.contains(V_CODES, orgId)) {
-                    TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {} ID  {}", orgId, parser.getId().getString());
-                }
-                return;
-
-            }
-
-
         //set the ods identifier
         organizationBuilder.getIdentifiers().clear();
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
         identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
         identifierBuilder.setValue(orgId);
-
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
-
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), !organizationBuilder.isIdMapped() ,organizationBuilder);
         //add to cache
-        csvHelper.getOrgCache().returnOrganizationBuilder(orgId, organizationBuilder);
+        csvHelper.getOrgCache().cacheOrganizationBuilder(orgId, organizationBuilder);
     }
 }
