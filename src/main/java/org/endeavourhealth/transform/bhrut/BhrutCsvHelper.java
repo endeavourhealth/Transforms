@@ -931,7 +931,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         // See the  odsPortalChildren website for details.
         // JSoup might be better but this works well enough for this.
         if (rf4ChildList.containsKey(code)) {
-            System.out.println("Used cache");
             return rf4ChildList.get(code);
         }
         String target = "/Organisation/Details/";
