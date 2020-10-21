@@ -1,13 +1,15 @@
 package org.endeavourhealth.transform.homertonhi;
 
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.io.FilenameUtils;
-import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.ExchangeHelper;
+import org.endeavourhealth.transform.common.ExchangePayloadFile;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.homertonhi.schema.Person;
+import org.endeavourhealth.transform.homertonhi.schema.*;
+import org.endeavourhealth.transform.homertonhi.transforms.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,52 +19,50 @@ public abstract class HomertonHiCsvToFhirTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(HomertonHiCsvToFhirTransformer.class);
 
-    public static final String VERSION_1_0 = "1.0"; //initial version
     public static final String DATE_FORMAT = "yyyy-MM-dd";
-    public static final String TIME_FORMAT = "hh:mm:ss.SSSSSSS";
+    public static final String TIME_FORMAT = "HH:mm:ss";
     public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withHeader();  //TODO check files
-    public static final String PRIMARY_ORG_ODS_CODE = "RQX";
 
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
-        String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
-        LOG.info("Invoking HomertonRf CSV transformer for " + files.length + " files using and service " + fhirResourceFiler.getServiceId());
+        List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
+        UUID serviceId = fhirResourceFiler.getServiceId();
+        Service service = DalProvider.factoryServiceDal().getById(serviceId);
+        //ExchangeHelper.filterFileTypes(files, service, fhirResourceFiler.getExchangeId());   //TODO: potential file filtering
+
+        LOG.info("Invoking HomertonHi CSV transformer for " + files.size() + " files for service " + service.getName() + " " + service.getId());
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
-        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
+        String exchangeDirectory = ExchangePayloadFile.validateFilesAreInSameDirectory(files);
+        LOG.trace("Transforming HomertonHi CSV content in " + exchangeDirectory);
 
-        //the processor is responsible for saving FHIR resources
         HomertonHiCsvHelper csvHelper
                 = new HomertonHiCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), version);
 
-        LOG.trace("Transforming HomertonRf CSV content in {}", orgDirectory);
-
-        Map<String, List<String>> fileMap = hashFilesByType(files);
-        Map<String, List<ParserI>> parserMap = new HashMap<>();
+        Map<String, List<ParserI>> parserMap = hashFilesByType(files, exchangeDirectory, csvHelper);
 
         try {
-            // non-patient transforms
+            // non-patient transforms here
 
-            //process the deletions first by extracting all the deletion hash values to use in each transform
+            // process any deletions first by extracting all the deletion hash values to use in each transform
 
             // process the patient files first, using the Resource caching to collect data from all file before filing
-            //PersonTransformer.transform(createParser());.......
-            //PersonDemographicsTransformer.transform(createParser());.......
-            //PersonAliasTransformer.transform(createParser());.......
-            //PersonLanguageTransformer.transform(createParser());.......
-            //PersonPhoneTransformer.transform(createParser());.......
+            PersonTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person", true), fhirResourceFiler, csvHelper);
+            PersonDemographicsTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_demographics", true), fhirResourceFiler, csvHelper);
+            PersonAliasTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_alias", true), fhirResourceFiler, csvHelper);
+            PersonLanguageTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_language", true), fhirResourceFiler, csvHelper);
+            PersonPhoneTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_phone", true), fhirResourceFiler, csvHelper);
             csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
-            //subsequent transforms may refer to Patient resources, so ensure they're all on the DB before continuing
+            // clinical pre-transformers
+            ProcedureCommentTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure_comment", true), fhirResourceFiler, csvHelper);
+
+            // subsequent transforms may refer to Patient resources and pre-transforms, so ensure they're all on the DB before continuing
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
-            // clinical pre-transformers
-
             // clinical transformers
-
-            // if we've got any updates to existing resources that haven't been handled in an above transform,
-            // apply them now, i.e. encounter items for previous created encounters
-
+            ProcedureTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure", true), fhirResourceFiler, csvHelper);
+            ConditionTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition", true), fhirResourceFiler, csvHelper);
 
         } finally {
             //if we had any exception that caused us to bomb out of the transform, we'll have
@@ -71,44 +71,51 @@ public abstract class HomertonHiCsvToFhirTransformer {
         }
     }
 
-    private static Map<String, List<String>> hashFilesByType(String[] files) throws TransformException {
-        Map<String, List<String>> ret = new HashMap<>();
+    private static Map<String, List<ParserI>> hashFilesByType(List<ExchangePayloadFile> files, String exchangeDirectory, HomertonHiCsvHelper csvHelper) throws Exception {
 
-        for (String file: files) {
-            String fileName = FilenameUtils.getBaseName(file);
-            String type = identifyFileType(fileName);
+        Map<String, List<ParserI>> ret = new HashMap<>();
 
-            //always force into upper case, just in case
-            type = type.toUpperCase();
+        for (ExchangePayloadFile fileObj: files) {
 
-            LOG.trace("Identifying file " + file + " baseName is " + fileName + " type is " + type);
+            String file = fileObj.getPath();
+            String type = fileObj.getType();  //this is set during sftpReader processing
 
-            List<String> list = ret.get(type);
+            ParserI parser = createParser(file, type, csvHelper);
+
+            List<ParserI> list = ret.get(type);
             if (list == null) {
                 list = new ArrayList<>();
                 ret.put(type, list);
             }
-            list.add(file);
+            list.add(parser);
         }
 
         return ret;
     }
 
-    private static List<ParserI> createParsers(Map<String, List<String>> fileMap, Map<String, List<ParserI>> parserMap, String type, HomertonHiCsvHelper csvHelper) throws Exception {
-        List<ParserI> ret = parserMap.get(type);
+    /**
+     * finds parsers for the given file type on any matching files
+     */
+    private static List<ParserI> getParsers(Map<String, List<ParserI>> parserMap, HomertonHiCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, String type, boolean removeFromMap) throws Exception {
+
+        //if we had any errors on the previous file, we should bomb out now
+        fhirResourceFiler.failIfAnyErrors();
+
+        List<ParserI> ret = null;
+
+        if (removeFromMap) {
+            //if removeFromMap is true, it means that this is the last time
+            //we'll need the parsers, to remove from the map and allow them to be garbage collected when we're done
+            ret = parserMap.remove(type);
+
+        } else {
+            ret = parserMap.get(type);
+        }
+
         if (ret == null) {
             ret = new ArrayList<>();
-
-            List<String> files = fileMap.get(type);
-            if (files != null) {
-                for (String file: files) {
-                    ParserI parser = createParser(file, type, csvHelper);
-                    ret.add(parser);
-                }
-            }
-
-            parserMap.put(type, ret);
         }
+
         return ret;
     }
 
@@ -121,19 +128,22 @@ public abstract class HomertonHiCsvToFhirTransformer {
 
         if (type.equalsIgnoreCase("person")) {
             return new Person(serviceId, systemId, exchangeId, version, file);
-
-
+        } else if (type.equalsIgnoreCase("person_demographics")) {
+            return new PersonDemographics(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_alias")) {
+            return new PersonAlias(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_language")) {
+            return new PersonLanguage(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_phone")) {
+            return new PersonPhone(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("procedure")) {
+            return new Procedure(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("procedure_comment")) {
+            return new ProcedureComment(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("condition")) {
+            return new Condition(serviceId, systemId, exchangeId, version, file);
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
         }
-    }
-
-    private static CSVFormat getFormatType(String file) throws Exception {
-        return HomertonHiCsvToFhirTransformer.CSV_FORMAT;
-    }
-
-    //TODO: from file name structure
-    private static String identifyFileType(String filename) {
-        return  filename.split("_")[0].toUpperCase();
     }
 }

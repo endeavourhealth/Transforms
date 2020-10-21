@@ -46,6 +46,7 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
 //    private Map<String, CsvCell> codeValueNHSAlias = new HashMap<>();
 //
     private Map<String, CernerCodeValueRef> cernerCodes = new ConcurrentHashMap<>();
+    private Map<String, CsvCell> procedureComments = new ConcurrentHashMap<>();
 
     private PatientResourceCache patientCache = new PatientResourceCache();
 //    private EncounterResourceCache encounterCache = new EncounterResourceCache();
@@ -155,6 +156,18 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
         String json = resourceHistory.getResourceData();
         return ParserPool.getInstance().parse(json);
     }
+
+    public void cacheProcedureCommentText(CsvCell procedureIdCell, CsvCell procedureCommentTextCell) {
+
+        procedureComments.put(procedureIdCell.getString(), procedureCommentTextCell);
+    }
+
+    public CsvCell findProcedureCommentText(CsvCell procedureIdCell) {
+
+        return procedureComments.get(procedureIdCell.getString());
+    }
+
+
 //
 //    public void cacheNewConsultationChildRelationship(CsvCell encounterIdCell,
 //                                                      CsvCell childIdCell,

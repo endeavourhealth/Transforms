@@ -24,7 +24,7 @@ public class ConditionTransformer  {
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
                 try {
-                    createDiagnosis((Condition) parser, fhirResourceFiler, csvHelper);
+                    createCondition((Condition) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -35,7 +35,7 @@ public class ConditionTransformer  {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    public static void createDiagnosis(Condition parser,
+    public static void createCondition(Condition parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonHiCsvHelper csvHelper) throws Exception {
 
