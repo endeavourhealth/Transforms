@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.endeavourhealth.common.ods.OdsWebService.lookupOrganisationViaRest;
-import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.isRF4Child;
 //import com.univocity.parsers.csv.CsvParser;
 //import com.univocity.parsers.csv.CsvParserSettings;
 //import ca.uhn.fhir.context.FhirContext;
@@ -148,21 +147,28 @@ class PMITest {
 //    }
 
     public static void main(String[] args) throws Exception {
+        BhrutCsvHelper csvHelper = new BhrutCsvHelper(null,null,null);
         String code = "RF4MW";
-        if (isRF4Child(code)) {
+        if (csvHelper.isRF4Child(code)) {
             System.out.println("Yes to " + code);
         } else {
             System.out.println("No to " + code);
         }
         code = "error";
-        if (isRF4Child(code)) {
+        if (csvHelper.isRF4Child(code)) {
             System.out.println("Yes to " + code);
         } else {
             System.out.println("No to " + code);
         }
 
                 code = "V81997";
-        if (isRF4Child(code)) {
+        if (csvHelper.isRF4Child(code)) {
+            System.out.println("Yes to " + code);
+        } else {
+            System.out.println("No to " + code);
+        }
+        code = "RF4MW";
+        if (csvHelper.isRF4Child(code)) {
             System.out.println("Yes to " + code);
         } else {
             System.out.println("No to " + code);

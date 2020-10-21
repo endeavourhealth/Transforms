@@ -71,7 +71,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private OrgCache orgCache = new OrgCache();
     private StaffCache staffCache = new StaffCache();
     private PasIdtoGPCache pasIdtoGPCache = new PasIdtoGPCache();
-   // private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
+    // private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
 
     private Map<String, List<String>> observationChildMap = new HashMap<>();
     private Map<String, ReferenceList> newProblemChildren = new HashMap<>();
@@ -85,6 +85,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, String> problemReadCodes = new HashMap<>();
     private Set<String> drugRecords = new HashSet<>();
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
+    private Map<String, Boolean> rf4ChildList = new HashMap<>();
 
     private EpisodeOfCareCache episodeOfCareCache = new EpisodeOfCareCache();
     private Set<String> personIdsToFilterOn = null;
@@ -174,7 +175,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createOrganisationReference(String organizationGuid) throws Exception {
         if ((OdsWebService.lookupOrganisationViaRest(organizationGuid) == null)
                 && (!ArrayUtils.contains(V_CODES, organizationGuid))) {
-            if (BhrutCsvHelper.isRF4Child(organizationGuid)) {
+            if (isRF4Child(organizationGuid)) {
                 LOG.trace("RF4Child: RF4 child " + organizationGuid + " mapped to RF4");
             } else {
                 LOG.debug("RF4Child: NON RF4 code " + organizationGuid + " mapped to RF4.");
@@ -856,7 +857,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-
     public static void addParmIfNotNull(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(columnName, tablename);
         MapResponse valueResponse = getColumnValue(value, columnName, tablename);
@@ -865,6 +865,7 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                 .setSystem(valueResponse.getConcept().getScheme());
         parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, cell);
     }
+
     public static void addParmIfNotNullNhsdd(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(columnName, tablename);
         MapResponse valueResponse = getColumnValueNhsdd(value, columnName, tablename);
@@ -925,10 +926,14 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-    public static Boolean isRF4Child(String code) throws Exception {
+    public Boolean isRF4Child(String code) throws Exception {
         //No API for this webpage so using a simple URL call to test if an Org id exists as a child
         // See the  odsPortalChildren website for details.
         // JSoup might be better but this works well enough for this.
+        if (rf4ChildList.containsKey(code)) {
+            System.out.println("Used cache");
+            return rf4ChildList.get(code);
+        }
         String target = "/Organisation/Details/";
         URL odsportalChildren = new URL("https://odsportal.hscic.gov.uk/Organisation/Details/RF4#children");
         BufferedReader in = new BufferedReader(
@@ -936,10 +941,15 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         String inputLine;
         String wanted = target + code;
-        while ((inputLine = in.readLine()) != null)
-            if (inputLine.contains(wanted))
+        while ((inputLine = in.readLine()) != null) {
+            if (inputLine.contains(wanted)) {
+                rf4ChildList.put(code, true);
                 return true;
+            }
+        }
         in.close();
+
+        rf4ChildList.put(code, false);
         return false;
+        }
     }
-}
