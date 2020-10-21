@@ -16,7 +16,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
-import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonDemographics;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
@@ -68,7 +68,7 @@ public class PersonDemographicsTransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(maritalStatusCode)) {
 
             CsvCell maritalMeaningCell
-                    = HomertonRfCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.MARITAL_STATUS, maritalStatusCode);
+                    = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.MARITAL_STATUS, maritalStatusCode);
             if (maritalMeaningCell == null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner marital status {} not found", maritalStatusCode);
 
@@ -86,7 +86,7 @@ public class PersonDemographicsTransformer {
         if (!BartsCsvHelper.isEmptyOrIsZero(ethnicityCode)) {
 
             CsvCell ehtnicityCell
-                    = HomertonRfCodeableConceptHelper.getCellAlias(csvHelper, CodeValueSet.ETHNIC_GROUP, ethnicityCode);
+                    = HomertonHiCodeableConceptHelper.getCellAlias(csvHelper, CodeValueSet.ETHNIC_GROUP, ethnicityCode);
             if (ehtnicityCell == null) {
                 TransformWarnings.log(LOG, parser, "ERROR: cerner ethnicity {} not found", ethnicityCode);
 

@@ -8,7 +8,7 @@ import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
-import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonPhone;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class PersonPhoneTransformer {
 
         CsvCell phoneTypeCell = parser.getPhoneTypeCode();
         CsvCell phoneTypeDescCell
-                = HomertonRfCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, phoneTypeCell);
+                = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, phoneTypeCell);
         String phoneTypeDesc = phoneTypeDescCell.getString();
         ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc);
         contactPointBuilder.setUse(use, phoneTypeCell, phoneTypeDescCell);

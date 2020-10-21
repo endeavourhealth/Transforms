@@ -78,8 +78,8 @@ public class PatientResourceCache {
         //remove from the cache
         patientBuildersByPersonEmpiId.removeFromCache(personEmpiIdCell.getString());
 
-        boolean mapIds = !patientBuilder.isIdMapped();
-        fhirResourceFiler.deletePatientResource(parserState, mapIds, patientBuilder);
+        //delete the patient resource. mapids is always false for deletions
+        fhirResourceFiler.deletePatientResource(parserState, false, patientBuilder);
     }
 
     /**

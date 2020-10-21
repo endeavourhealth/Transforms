@@ -5,7 +5,7 @@ import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
-import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.Person;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -83,7 +83,7 @@ public class PersonTransformer {
 
         CsvCell nameTypeCernerCodeCell = parser.getPersonNameTypeCernerCode();
         CsvCell codeMeaningCell
-                = HomertonRfCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCernerCodeCell);
+                = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCernerCodeCell);
         HumanName.NameUse nameUse
                 = convertNameUse(codeMeaningCell.getString(), true);  //this name is their active name
         nameBuilder.setUse(nameUse, nameTypeCernerCodeCell, codeMeaningCell);
@@ -113,7 +113,7 @@ public class PersonTransformer {
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);   //this is always a phone
             CsvCell getPhoneTypeCodeCell = parser.getPhoneTypeCode();
             CsvCell phoneTypeDescCell
-                    = HomertonRfCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, getPhoneTypeCodeCell);
+                    = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, getPhoneTypeCodeCell);
             ContactPoint.ContactPointUse use
                     = convertPhoneType(phoneTypeDescCell.getString(), true);  //their active phone type
             contactPointBuilder.setUse(use, getPhoneTypeCodeCell, phoneTypeDescCell);
@@ -140,20 +140,20 @@ public class PersonTransformer {
             patientBuilder.setDateOfBirth(dobCell.getDateTime(), dobCell);
         }
 
-        //deceased date if present
+        // Deceased date if present
         CsvCell dodCell = parser.getDeceasedDtTm();
         if (!dodCell.isEmpty()) {
             patientBuilder.setDateOfDeath(dodCell.getDateTime(), dobCell);
         }
 
-        //remove existing address if set
+        // remove existing address if set
         AddressBuilder.removeExistingAddressById(patientBuilder, personEmpiCell.getString());
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
 
         CsvCell typeCell = parser.getAddressTypeCernerCode();
         CsvCell typeDescCell
-                = HomertonRfCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.ADDRESS_TYPE, typeCell);
+                = HomertonHiCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.ADDRESS_TYPE, typeCell);
         String typeDesc = typeDescCell.getString();
 
         Address.AddressUse use = convertAddressUse(typeDesc, true);   //their active address

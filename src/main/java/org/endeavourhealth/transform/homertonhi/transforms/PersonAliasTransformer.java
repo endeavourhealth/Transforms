@@ -9,7 +9,7 @@ import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
-import org.endeavourhealth.transform.homertonhi.HomertonRfCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonAlias;
 import org.hl7.fhir.instance.model.Identifier;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class PersonAliasTransformer {
         //work out the system for the alias
         CsvCell aliasTypeCodeCell = parser.getAliasTypeCernerCode();
         CsvCell aliasMeaningCell
-                = HomertonRfCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.ALIAS_TYPE, aliasTypeCodeCell);
+                = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.ALIAS_TYPE, aliasTypeCodeCell);
         String aliasSystem = convertAliasCode(aliasMeaningCell.getString());
 
         if (aliasSystem == null) {

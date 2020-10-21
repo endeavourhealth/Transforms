@@ -8,7 +8,7 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
 
-public class HomertonRfCodeableConceptHelper {
+public class HomertonHiCodeableConceptHelper {
 
     public static final String CODE_VALUE = "Codeval";
     public static final String CODE_SET_NBR = "CodeSetNr";
