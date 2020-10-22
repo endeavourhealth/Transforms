@@ -108,7 +108,7 @@ public class SRPatientRegistrationTransformer {
         RegistrationType regType = null;
         if (!regTypeCell.isEmpty()) {
             regType = mapToFhirRegistrationType(regTypeCell);
-            episodeBuilder.setRegistrationType(regType, regEndDateCell);
+            episodeBuilder.setRegistrationType(regType, regTypeCell);
         }
 
         //for GMS registrations we also may have
