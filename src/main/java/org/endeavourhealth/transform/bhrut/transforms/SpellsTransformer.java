@@ -136,6 +136,7 @@ public class SpellsTransformer {
             conditionBuilder.setId(idCell.getString() + ":Condition:0", idCell);
             Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
             conditionBuilder.setPatient(newPatientReference, patientIdCell);
+            conditionBuilder.setAsProblem(false);
             conditionBuilder.setEncounter(thisEncounter, idCell);
             if (!admissionConsultantCodeCell.isEmpty()) {
                 Reference practitionerReference2 = csvHelper.createPractitionerReference(admissionConsultantCodeCell.getString());
@@ -326,6 +327,7 @@ public class SpellsTransformer {
             Reference patientReference = csvHelper.createPatientReference(patientIdCell);
             conditionBuilder.setPatient(patientReference, patientIdCell);
             conditionBuilder.setDeletedAudit(dataUpdateStatusCell);
+            conditionBuilder.setAsProblem(false);
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
         }

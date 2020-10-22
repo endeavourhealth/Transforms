@@ -590,6 +590,7 @@ public class OutpatientsTransformer {
             condition.setId(idCell.getString() + "Condition:0");
             condition.setPatient(patientReference, patientIdCell);
             condition.setDeletedAudit(dataUpdateStatusCell);
+            condition.setAsProblem(false);
 
             fhirResourceFiler.deletePatientResource(parser.getCurrentState(), condition);
 
@@ -601,6 +602,7 @@ public class OutpatientsTransformer {
                     conditionBuilder.setId(idCell.getString() + "Condition:" + i);
                     conditionBuilder.setPatient(patientReference, patientIdCell);
                     conditionBuilder.setDeletedAudit(dataUpdateStatusCell);
+                    conditionBuilder.setAsProblem(false);
 
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
                 } else {

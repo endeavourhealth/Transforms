@@ -179,6 +179,7 @@ public class PMITransformer {
         ConditionBuilder conditionBuilder = new ConditionBuilder();
         conditionBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
         conditionBuilder.setOnset(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
+        conditionBuilder.setAsProblem(false);
         return conditionBuilder;
     }
 

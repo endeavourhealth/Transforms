@@ -595,6 +595,7 @@ public class EpisodesTransformer {
                     conditionBuilder.setId(idCell.getString() + "Condition:" + i);
                     conditionBuilder.setPatient(patientReference, patientIdCell);
                     conditionBuilder.setDeletedAudit(dataUpdateStatusCell);
+                    conditionBuilder.setAsProblem(false);
 
                     fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
                 } else {
