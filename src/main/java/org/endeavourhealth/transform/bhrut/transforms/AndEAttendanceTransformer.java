@@ -103,17 +103,9 @@ public class AndEAttendanceTransformer {
         encounterBuilder.setServiceProvider(orgReference);
 
         //set the encounter extensions
-        ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(encounterBuilder);
+       ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(encounterBuilder);
 
-        CsvCell arrivalModeCell = parser.getArrivalMode();
-        if (!arrivalModeCell.isEmpty()) {
-            String arrivalMode="2"; //Default i.e "Other"
-            if (arrivalModeCell.getString().toLowerCase().contains("ambulance")) {
-                arrivalMode="1";
-            }
-            addParmIfNotNullNhsdd("ARRIVAL_MODE", arrivalMode,
-                    arrivalModeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
-        }
+
         CsvCell attendanceTypeCell = parser.getAttendanceType();
         if (!attendanceTypeCell.isEmpty()) {
             if (attendanceTypeCell.getString().equalsIgnoreCase("1")) {
@@ -291,6 +283,16 @@ public class AndEAttendanceTransformer {
         ret.add(existingParentEncounterBuilder);
         EncounterBuilder arrivalEncounterBuilder = new EncounterBuilder();
         arrivalEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
+        CsvCell arrivalModeCell = parser.getArrivalMode();
+        ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(arrivalEncounterBuilder);
+        if (!arrivalModeCell.isEmpty()) {
+            String arrivalMode="2"; //Default i.e "Other"
+            if (arrivalModeCell.getString().toLowerCase().contains("ambulance")) {
+                arrivalMode="1";
+            }
+            addParmIfNotNullNhsdd("ARRIVAL_MODE", arrivalMode,
+                    arrivalModeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
+        }
 
         String arrivalEncounterId = parser.getId().getString() + ":01:EM";
         arrivalEncounterBuilder.setId(arrivalEncounterId);
@@ -327,13 +329,6 @@ public class AndEAttendanceTransformer {
         if (!attendanceSourceCell.isEmpty()) {
             addParmIfNotNull( "REFERRAL_SOURCE",
                     attendanceSourceCell.getString(), attendanceSourceCell,
-                    containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
-        }
-        CsvCell arrivalModeCell = parser.getArrivalMode();
-        if (!arrivalModeCell.isEmpty()) {
-
-            addParmIfNotNull( "ARRIVAL_MODE",
-                    arrivalModeCell.getString(), arrivalModeCell,
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
