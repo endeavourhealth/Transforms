@@ -175,11 +175,11 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     public Reference createOrganisationReference(String organizationGuid) throws Exception {
         if ((OdsWebService.lookupOrganisationViaRest(organizationGuid) == null)
                 && (!ArrayUtils.contains(V_CODES, organizationGuid))) {
-            if (isRF4Child(organizationGuid)) {
-                LOG.trace("RF4Child: RF4 child " + organizationGuid + " mapped to RF4");
-            } else {
-                LOG.debug("RF4Child: NON RF4 code " + organizationGuid + " mapped to RF4.");
-            }
+//            if (isRF4Child(organizationGuid)) {
+//                LOG.trace("RF4Child: RF4 child " + organizationGuid + " mapped to RF4");
+//            } else {
+//                LOG.debug("RF4Child: NON RF4 code " + organizationGuid + " mapped to RF4.");
+//            }
             return ReferenceHelper.createReference(ResourceType.Organization, BHRUT_ORG_ODS_CODE);
         }
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
@@ -926,29 +926,30 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-    public Boolean isRF4Child(String code) throws Exception {
-        //No API for this webpage so using a simple URL call to test if an Org id exists as a child
-        // See the  odsPortalChildren website for details.
-        // JSoup might be better but this works well enough for this.
-        if (rf4ChildList.containsKey(code)) {
-            return rf4ChildList.get(code);
-        }
-        String target = "/Organisation/Details/";
-        URL odsportalChildren = new URL("https://odsportal.hscic.gov.uk/Organisation/Details/RF4#children");
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(odsportalChildren.openStream()));
-
-        String inputLine;
-        String wanted = target + code;
-        while ((inputLine = in.readLine()) != null) {
-            if (inputLine.contains(wanted)) {
-                rf4ChildList.put(code, true);
-                return true;
-            }
-        }
-        in.close();
-
-        rf4ChildList.put(code, false);
-        return false;
-        }
+//    public Boolean isRF4Child(String code) throws Exception {
+//        //No API for this webpage so using a simple URL call to test if an Org id exists as a child
+//        // See the  odsPortalChildren website for details.
+//        // JSoup might be better but this works well enough for this.
+//        // Demised per Jira DIBIO-67
+//        if (rf4ChildList.containsKey(code)) {
+//            return rf4ChildList.get(code);
+//        }
+//        String target = "/Organisation/Details/";
+//        URL odsportalChildren = new URL("https://odsportal.hscic.gov.uk/Organisation/Details/RF4#children");
+//        BufferedReader in = new BufferedReader(
+//                new InputStreamReader(odsportalChildren.openStream()));
+//
+//        String inputLine;
+//        String wanted = target + code;
+//        while ((inputLine = in.readLine()) != null) {
+//            if (inputLine.contains(wanted)) {
+//                rf4ChildList.put(code, true);
+//                return true;
+//            }
+//        }
+//        in.close();
+//
+//        rf4ChildList.put(code, false);
+//        return false;
+//        }
     }

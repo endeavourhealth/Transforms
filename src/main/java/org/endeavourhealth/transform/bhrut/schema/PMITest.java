@@ -148,31 +148,31 @@ class PMITest {
 
     public static void main(String[] args) throws Exception {
         BhrutCsvHelper csvHelper = new BhrutCsvHelper(null,null,null);
-        String code = "RF4MW";
-        if (csvHelper.isRF4Child(code)) {
-            System.out.println("Yes to " + code);
-        } else {
-            System.out.println("No to " + code);
-        }
-        code = "error";
-        if (csvHelper.isRF4Child(code)) {
-            System.out.println("Yes to " + code);
-        } else {
-            System.out.println("No to " + code);
-        }
-
-                code = "V81997";
-        if (csvHelper.isRF4Child(code)) {
-            System.out.println("Yes to " + code);
-        } else {
-            System.out.println("No to " + code);
-        }
-        code = "RF4MW";
-        if (csvHelper.isRF4Child(code)) {
-            System.out.println("Yes to " + code);
-        } else {
-            System.out.println("No to " + code);
-        }
+//        String code = "RF4MW";
+//        if (csvHelper.isRF4Child(code)) {
+//            System.out.println("Yes to " + code);
+//        } else {
+//            System.out.println("No to " + code);
+//        }
+//        code = "error";
+//        if (csvHelper.isRF4Child(code)) {
+//            System.out.println("Yes to " + code);
+//        } else {
+//            System.out.println("No to " + code);
+//        }
+//
+//                code = "V81997";
+//        if (csvHelper.isRF4Child(code)) {
+//            System.out.println("Yes to " + code);
+//        } else {
+//            System.out.println("No to " + code);
+//        }
+//        code = "RF4MW";
+//        if (csvHelper.isRF4Child(code)) {
+//            System.out.println("Yes to " + code);
+//        } else {
+//            System.out.println("No to " + code);
+//        }
     }
 
 
