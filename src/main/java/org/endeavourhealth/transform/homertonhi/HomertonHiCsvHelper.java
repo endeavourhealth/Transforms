@@ -28,7 +28,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonHiCsvHelper.class);
 
-    //    public static final String CODE_TYPE_SNOMED = "SNOMED CT";
+    public static final String CODE_TYPE_SNOMED_URN = "2.16.840.1.113883.6.96";
+    public static final String CODE_TYPE_FREETEXT = "freetext";
+    public static final String CODE_TYPE_ICD10_URN = "2.16.840.1.113883.6.90";
+
+    public static final String CODE_TYPE_CONDITION_PROBLEM   = "55607006";
+    public static final String CODE_TYPE_CONDITION_DIAGNOSIS = "282291009";
+
 //    public static final String CODE_TYPE_ICD_10 = "ICD-10";
 //    public static final String CODE_TYPE_OPCS_4 = "OPCS4";
 //

@@ -1,14 +1,16 @@
 package org.endeavourhealth.transform.homertonhi.transforms;
 
+import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.Condition;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,117 +60,120 @@ public class ConditionTransformer  {
             return;
         }
 
-        //TODO: get confirmation status and ignore those that are not confirmed at this point
+        CsvCell confirmationCell = parser.getConditionConfirmationStatusDisplay();
+        if (!confirmationCell.isEmpty()) {
+                String confirmation = confirmationCell.getString();
+            if (confirmation.equalsIgnoreCase("confirmed")) {
+                conditionBuilder.setVerificationStatus(org.hl7.fhir.instance.model.Condition.ConditionVerificationStatus.CONFIRMED, confirmationCell);
 
+            } else {
+
+                //only interested in Confirmed conditions
+                return;
+            }
+        } else {
+
+            //only interested in Confirmed conditions
+            return;
+        }
 
         //is it a problem or a diagnosis?
         CsvCell conditionTypeCodeCell = parser.getConditionTypeCode();
-        if (conditionTypeCodeCell.getString().equalsIgnoreCase("55607006")) {
+        if (conditionTypeCodeCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_CONDITION_PROBLEM)) {
 
             conditionBuilder.setAsProblem(true);
             conditionBuilder.setCategory("complaint", conditionTypeCodeCell);
-        } else {
+
+            CsvCell problemStatusDisplayCell = parser.getProblemStatusDisplay();
+            String problemStatus = problemStatusDisplayCell.getString();
+            if (problemStatus.equalsIgnoreCase("active")) {
+
+                conditionBuilder.setEndDateOrBoolean(null);
+
+            } else if (problemStatus.equalsIgnoreCase("resolved")
+                    || problemStatus.equalsIgnoreCase("inactive")
+                    || problemStatus.equalsIgnoreCase("cancelled")) {
+
+                //Status date confirmed as problem changed to Resolved/Inactive date for example
+                CsvCell statusDateTimeCell = parser.getProblemStatusDtm();
+                if (!statusDateTimeCell.isEmpty()) {
+
+                    DateType dt = new DateType(statusDateTimeCell.getDateTime());
+                    conditionBuilder.setEndDateOrBoolean(dt);
+
+                } else {
+
+                    //if we don't have a status date, use a boolean to indicate the end
+                    conditionBuilder.setEndDateOrBoolean(new BooleanType(true));
+                }
+            }
+        } else if (conditionTypeCodeCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_CONDITION_DIAGNOSIS)) {
+
             conditionBuilder.setAsProblem(false);
             conditionBuilder.setCategory("diagnosis", conditionTypeCodeCell);
+
+            //an active Diagnosis
+            conditionBuilder.setEndDateOrBoolean(null);
+
+        } else {
+
+            throw new TransformException("Unknown Condition type [" + conditionTypeCodeCell.getString() + "]");
         }
 
+        CsvCell encounterIdCell = parser.getEncounterId();
+        if (!encounterIdCell.isEmpty()) {
+            Reference encounterReference
+                    = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
+            conditionBuilder.setEncounter(encounterReference, encounterIdCell);
+        }
 
-//        CsvCell encounterIdCell = parser.getEncounterID();
-//        if (!encounterIdCell.isEmpty()) {
-//            Reference encounterReference
-//                    = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
-//            conditionBuilder.setEncounter(encounterReference, encounterIdCell);
-//        }
-//
-//        CsvCell diagnosisDateTimeCell = parser.getDiagnosisDateTime();
-//        if (!BartsCsvHelper.isEmptyOrIsEndOfTime(diagnosisDateTimeCell)) {
-//
-//            Date d = diagnosisDateTimeCell.getDateTime();
-//            DateTimeType dateTimeType = new DateTimeType(d);
-//            conditionBuilder.setOnset(dateTimeType, diagnosisDateTimeCell);
-//        }
-//
-//        CsvCell confirmation = parser.getConfirmation();
-//        if (!confirmation.isEmpty()) {
-//            String confirmationDesc = confirmation.getString();
-//            if (confirmationDesc.equalsIgnoreCase("Confirmed")) {
-//                conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED, confirmation);
-//
-//            } else {
-//                conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.PROVISIONAL, confirmation);
-//            }
-//        } else {
-//            conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.UNKNOWN, confirmation);
-//        }
-//
-//        CsvCell encounterSliceIdCell = parser.getEncounterSliceID();
-//        if (!HomertonCsvHelper.isEmptyOrIsZero(encounterSliceIdCell)) {
-//
-//            IdentifierBuilder identifierBuilder = new IdentifierBuilder(conditionBuilder);
-//            identifierBuilder.setUse(Identifier.IdentifierUse.SECONDARY);
-//            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CERNER_ENCOUNTER_SLICE_ID);
-//            identifierBuilder.setValue(encounterSliceIdCell.getString(), encounterSliceIdCell);
-//        }
-//
-//        // Condition(Diagnosis) is coded either as Snomed or ICD10
-//        CsvCell conceptCodeCell = parser.getConceptCode();
-//        if (!conceptCodeCell.isEmpty()) {
-//
-//            String conceptCode = conceptCodeCell.getString();
-//            CsvCell conceptCodeTypeCell = parser.getConceptCodeType();
-//
-//            CodeableConceptBuilder codeableConceptBuilder
-//                    = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
-//
-//            if (!conceptCodeTypeCell.isEmpty()) {
-//
-//                String conceptCodeType = conceptCodeTypeCell.getString();
-//                if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_SNOMED)) {
-//
-//                    // Homerton use Snomed descriptionId instead of conceptId
-//                    SnomedCode snomedCode = TerminologyService.lookupSnomedConceptForDescriptionId(conceptCode);
-//                    if (snomedCode == null) {
-//                        TransformWarnings.log(LOG, parser, "Failed to find Snomed term for DescriptionId {}", conceptCodeCell.getString());
-//
-//                        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_DESCRIPTION_ID, conceptCodeTypeCell);
-//                        codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
-//                    } else {
-//                        codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conceptCodeTypeCell);
-//                        codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode(), conceptCodeCell);
-//                        codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm()); //don't pass in the cell as this is derived
-//
-//                        CsvCell term = parser.getDiagnosisDisplay();
-//                        if (!term.isEmpty()) {
-//                            codeableConceptBuilder.setText(term.getString(), term);
-//                        }
-//                    }
-//                } else if (conceptCodeType.equalsIgnoreCase(HomertonCsvHelper.CODE_TYPE_ICD_10)) {
-//                    String term = TerminologyService.lookupIcd10CodeDescription(conceptCode);
-//                    if (Strings.isNullOrEmpty(term)) {
-//                        TransformWarnings.log(LOG, parser, "Failed to find ICD-10 term for {}", conceptCodeCell.getString());
-//                    }
-//
-//                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conceptCodeTypeCell);
-//                    codeableConceptBuilder.setCodingCode(conceptCode, conceptCodeCell);
-//                    codeableConceptBuilder.setCodingDisplay(term); //don't pass in the cell as this is derived
-//
-//                    CsvCell origTerm = parser.getDiagnosisDisplay();
-//                    if (!origTerm.isEmpty()) {
-//                        codeableConceptBuilder.setText(origTerm.getString(), origTerm);
-//                    }
-//
-//                } else {
-//                    throw new TransformException("Unknown Diagnosis code type [" + conceptCodeType + "]");
-//                }
-//            }
-//        } else {
-//            //if there's no code, create a non coded code so we retain the text from the non code element
-//            CsvCell term = parser.getDiagnosisDisplayNonCoded();
-//
-//            CodeableConceptBuilder codeableConceptBuilder
-//                    = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
-//            codeableConceptBuilder.setText(term.getString());
-//        }
+        CsvCell effectiveDateTimeCell = parser.getEffectiveDtm();
+        if (!effectiveDateTimeCell.isEmpty()) {
+
+            DateTimeType dateTimeType = new DateTimeType(effectiveDateTimeCell.getDateTime());
+            conditionBuilder.setOnset(dateTimeType, effectiveDateTimeCell);
+        }
+
+        // Conditions are coded either as Snomed or ICD10
+        CsvCell conditionCodeCell = parser.getConditionRawCode();
+        if (!conditionCodeCell.isEmpty()) {
+
+            String conditionCode = conditionCodeCell.getString();
+            CsvCell conditionCodeSystemCell = parser.getConditionCodingSystemId();
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
+
+            if (!conditionCodeSystemCell.isEmpty()) {
+
+                String conceptCodeSystem = conditionCodeSystemCell.getString();
+                if (conceptCodeSystem.equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_SNOMED_URN)) {
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conditionCodeSystemCell);
+
+                } else if (conceptCodeSystem.equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_ICD10_URN)) {
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conditionCodeSystemCell);
+
+                } else {
+
+                    throw new TransformException("Unknown Condition code system [" + conceptCodeSystem + "]");
+                }
+
+                codeableConceptBuilder.setCodingCode(conditionCode, conditionCodeCell);
+                CsvCell conditionCodeDisplayCell = parser.getConditionDisplay();
+                codeableConceptBuilder.setCodingDisplay(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
+                codeableConceptBuilder.setText(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
+            }
+        } else {
+            //if there's no code, create a non coded code so we retain the text from the non code element
+            CsvCell term = parser.getConditionDescription();
+
+            CodeableConceptBuilder codeableConceptBuilder
+                    = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
+            codeableConceptBuilder.setText(term.getString());
+        }
+
 //
 //        CsvCell notes = parser.getDiagnosisNotes();
 //        if (!notes.isEmpty()) {

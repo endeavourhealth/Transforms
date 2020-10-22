@@ -110,11 +110,25 @@ public class Condition extends AbstractCsvParser {
         return super.getCell("EMPI_ID");
     }
 
-    public CsvCell getConditionTypeCode() { return super.getCell("CONDITION_TYPE_CODE");
-    }
+    public CsvCell getConditionTypeCode() { return super.getCell("CONDITION_TYPE_CODE"); }
 
-    //TODO: create transform functions to extract fields
+    public CsvCell getConditionRawCode() { return super.getCell("CONDITION_RAW_CODE"); }
 
+    public CsvCell getConditionCodingSystemId() { return super.getCell("CONDITION_CODING_SYSTEM_ID"); }
+
+    public CsvCell getConditionConfirmationStatusDisplay() { return super.getCell("CONFIRMATION_STATUS_DISPLAY"); }
+
+    public CsvCell getConditionDisplay() { return super.getCell("CONDITION_DISPLAY"); }
+
+    public CsvCell getProblemStatusDisplay() { return super.getCell("STATUS_DISPLAY"); }
+
+    public CsvCell getProblemStatusDtm() { return super.getCell("STATUS_DT_TM"); }
+
+    public CsvCell getConditionDescription() { return super.getCell("DESCRIPTION"); }
+
+    public CsvCell getEncounterId() { return super.getCell("ENCOUNTER_ID");  }
+
+    public CsvCell getEffectiveDtm() { return super.getCell("EFFECTIVE_DT_TM"); }
 
     public CsvCell getHashValue() { return super.getCell("HASH_VALUE"); }
 }
