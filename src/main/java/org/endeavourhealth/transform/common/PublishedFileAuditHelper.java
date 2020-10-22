@@ -10,10 +10,12 @@ import org.endeavourhealth.core.database.dal.audit.PublishedFileDalI;
 import org.endeavourhealth.core.database.dal.audit.models.PublishedFileRecord;
 import org.endeavourhealth.core.database.dal.audit.models.PublishedFileType;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.core.database.rdbms.DeadlockHandler;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,14 +67,48 @@ public class PublishedFileAuditHelper {
             fileAuditId = dal.auditFile(serviceId, systemId, exchangeId, fileTypeId, filePath);
         }
 
-        //use the threadpool for saving these record audit objects, so we can get better throughput
+        //then actually audit the records
+        auditRecords(filePath, fileAuditId, firstRecordContainsHeaders, parser);
+
+        return fileAuditId;
+    }
+
+    private static void auditRecords(String filePath, int fileAuditId, boolean firstRecordContainsHeaders, ParserI parser) throws Exception {
+
+        //use the thread pool for saving these record audit objects, so we can get better throughput
         int threadPoolSize = ConnectionManager.getPublisherCommonConnectionPoolMaxSize();
         ThreadPool threadPool = new ThreadPool(threadPoolSize, 1000, "FileAuditHelper"); //lower from 50k to save memory
+        try {
+
+            //SD-160 getting lots of S3 connection failures here, so add a retry
+            //the deadlock handler class should be fine for dealing with any exception-and-retry pattern so long
+            //as we give it the specific error message we're looking for
+            DeadlockHandler h = new DeadlockHandler();
+            h.addErrorMessageToHandler("Connection reset");
+
+            while (true) {
+                try {
+                    auditRecordsImpl(filePath, fileAuditId, firstRecordContainsHeaders, threadPool, parser);
+                    return;
+
+                } catch (Exception ex) {
+                    h.handleError(ex);
+                }
+            }
+
+        } finally {
+            List<ThreadPoolError> errors = threadPool.waitAndStop();
+            handleErrors(errors);
+        }
+    }
+
+
+    private static void auditRecordsImpl(String filePath, int fileAuditId, boolean firstRecordContainsHeaders, ThreadPool threadPool, ParserI parser) throws Exception {
 
         InputStream inputStream = FileHelper.readFileFromSharedStorage(filePath);
         try {
 
-            AuditRowTask nextTask = new AuditRowTask(parser, fileAuditId);
+            AuditRowTask nextTask = new AuditRowTask();
 
             //loop through the file
             long currentRecordStart = 0;
@@ -109,7 +145,7 @@ public class PublishedFileAuditHelper {
                             if (nextTask.isFull()) {
                                 List<ThreadPoolError> errors = threadPool.submit(nextTask);
                                 handleErrors(errors);
-                                nextTask = new AuditRowTask(parser, fileAuditId);
+                                nextTask = new AuditRowTask();
                             }
                         }
 
@@ -134,7 +170,7 @@ public class PublishedFileAuditHelper {
                     if (nextTask.isFull()) {
                         List<ThreadPoolError> errors = threadPool.submit(nextTask);
                         handleErrors(errors);
-                        nextTask = new AuditRowTask(parser, fileAuditId);
+                        nextTask = new AuditRowTask();
                     }
                 }
             }
@@ -149,12 +185,7 @@ public class PublishedFileAuditHelper {
 
         } finally {
             inputStream.close();
-
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
         }
-
-        return fileAuditId;
     }
 
     private static long findFileLength(String filePath) throws Exception {
@@ -190,13 +221,9 @@ public class PublishedFileAuditHelper {
 
     static class AuditRowTask implements Callable {
 
-        private final ParserI parser;
-        private final int fileAuditId;
         private List<PublishedFileRecord> records = new ArrayList<>();
 
-        public AuditRowTask(ParserI parser, int fileAuditId) {
-            this.parser = parser;
-            this.fileAuditId = fileAuditId;
+        public AuditRowTask() {
         }
 
         @Override
