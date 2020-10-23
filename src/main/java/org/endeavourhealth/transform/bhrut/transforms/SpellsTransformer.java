@@ -226,7 +226,7 @@ public class SpellsTransformer {
         if (!parser.getAdmissionMethodCode().isEmpty()) {
             CsvCell admissionMethodCode = parser.getAdmissionMethodCode();
             if (!admissionMethodCode.isEmpty()) {
-                csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMIN_METHOD_CODE,
+                csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMISSION_METHOD_CODE,
                         admissionMethodCode.getString(), admissionMethodCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         }
