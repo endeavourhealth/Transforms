@@ -365,7 +365,7 @@ public class SpellsTransformer {
 
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-        codeableConceptBuilder.setText("Inpatient Spell");
+        codeableConceptBuilder.setText("Inpatient");
 
         setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
