@@ -30,6 +30,7 @@ public class IMConstant {
     public static final String FHIR_CONDITION_EPISODICITY = "FHIR_CEP";
     public static final String EMIS_LOCAL = "EMIS_LOCAL";
     public static final String TPP_LOCAL = "TPP_LOCAL";
+    public static final String VISION_LOCAL = "VISION_LOCAL";
     public static final String ENCOUNTER_LEGACY = "LE_TYPE";
 
 }
