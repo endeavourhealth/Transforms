@@ -226,18 +226,6 @@ public class OutpatientsTransformer {
             addParmIfNotNullNhsdd("ADMIN_CATEGORY_CODE", adminCategoryCode.getString(),
                     adminCategoryCode, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
            }
-        if (!parser.getAppointmentStatusCode().isEmpty()) {
-            CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
-            addParmIfNotNullNhsdd("APPOINTMENT_STATUS_CODE", appointmentStatusCode.getString(),
-                    appointmentStatusCode, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-            translateAppointmentStatusCode(appointmentStatusCode,appointmentBuilder,csvHelper,idCell);
-        }
-        if (!parser.getAppointmentOutcomeCode().isEmpty()) {
-            CsvCell appointmentOutcomeCode = parser.getAppointmentOutcomeCode();
-
-            addParmIfNotNullNhsdd("APPOINTMENT_OUTCOME_CODE", appointmentOutcomeCode.getString(),
-                    appointmentOutcomeCode, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-            }
 
         //save the Encounter, Appointment and Slot
 
@@ -455,25 +443,20 @@ public class OutpatientsTransformer {
 
         CsvCell adminCategoryCodeCell = parser.getAdminCategoryCode();
         if (!adminCategoryCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("ADMIN_CATEGORY_CODE",
+            csvHelper.addParmIfNotNullNhsdd("ADMIN_CATEGORY_CODE",
                     adminCategoryCodeCell.getString(), adminCategoryCodeCell,
                      containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
-        // ReferralExternalId not in the supplied data.
-//        CsvCell referralExternalIdCell = parser.getReferralExternalId();
-//        if (!referralExternalIdCell.isEmpty()) {
-//            csvHelper.addParmIfNotNull("referral_source", "" + referralExternalIdCell.getString(),
-//                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-//        }
+
         CsvCell apptTypeCodeCell = parser.getApptTypeCode();
         if (!apptTypeCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull("APPT_TYPE_CODE",
+            csvHelper.addParmIfNotNullNhsdd("APPT_TYPE_CODE",
                     apptTypeCodeCell.getString(), apptTypeCodeCell,
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
         CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
         if (!appointmentOutcomeCodeCell.isEmpty()) {
-            csvHelper.addParmIfNotNull(  "APPOINTMENT_OUTCOME_CODE",
+            csvHelper.addParmIfNotNullNhsdd(  "APPOINTMENT_OUTCOME_CODE",
                     appointmentOutcomeCodeCell.getString(), appointmentOutcomeCodeCell,
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
@@ -706,7 +689,9 @@ public class OutpatientsTransformer {
         // 4	APPOINTMENT cancelled or postponed by the Health Care Provider
         // 0   Not applicable - APPOINTMENT occurs in the future
         if (!appointmentStatusCode.isEmpty()) {
-            if (appointmentStatusCode.getString().toLowerCase().contains("x")) {return;} //Indicates missing data
+            if (appointmentStatusCode.getString().toLowerCase().contains("x")) {
+                appointmentBuilder.setStatus(Appointment.AppointmentStatus.NULL);
+                return;} //Indicates missing data
             try {
                 int statusCode = Integer.parseInt(appointmentStatusCode.getString());
                 switch (statusCode) { //Ostensibly an int but there's garbage in the field

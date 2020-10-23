@@ -106,27 +106,6 @@ public class AndEAttendanceTransformer {
        ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(encounterBuilder);
 
 
-        CsvCell attendanceTypeCell = parser.getAttendanceType();
-        if (!attendanceTypeCell.isEmpty()) {
-            if (attendanceTypeCell.getString().equalsIgnoreCase("1")) {
-                addParmIfNotNullNhsdd("ATTENDANCE_TYPE", "1", attendanceTypeCell,
-                        containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
-            } else if (attendanceTypeCell.getString().equalsIgnoreCase("2")) {
-                addParmIfNotNullNhsdd("ATTENDANCE_TYPE", "2", attendanceTypeCell,
-                        containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
-            } else if (attendanceTypeCell.getString().equalsIgnoreCase("3")) {
-                addParmIfNotNullNhsdd("ATTENDANCE_TYPE", "3", attendanceTypeCell,
-                        containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
-            } else {
-                throw new TransformException("Unexpected attendance type/category code: [" + attendanceTypeCell.getString() + "]");
-            }
-        }
-
-        CsvCell referralSourceCell = parser.getReferralSource();
-        if (!referralSourceCell.isEmpty()) {
-            addParmIfNotNull("REFERRAL_SOURCE", referralSourceCell.getString(), referralSourceCell,
-                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
-        }
 
         //the chief complaint needs capturing - it's not coded, so set as the reason for the encounter
         CsvCell complaintCell = parser.getComplaint();
@@ -320,17 +299,26 @@ public class AndEAttendanceTransformer {
 
         CsvCell attendanceTypeCell = parser.getAttendanceType();
         if (!attendanceTypeCell.isEmpty()) {
-          addParmIfNotNull( "ATTENDANCE_TYPE", attendanceTypeCell.getString(),
-                  attendanceTypeCell,
-                  containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
+            if (attendanceTypeCell.getString().equalsIgnoreCase("1")) {
+                addParmIfNotNullNhsdd("ATTENDANCE_TYPE", "1", attendanceTypeCell,
+                        containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
+            } else if (attendanceTypeCell.getString().equalsIgnoreCase("2")) {
+                addParmIfNotNullNhsdd("ATTENDANCE_TYPE", "2", attendanceTypeCell,
+                        containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
+            } else if (attendanceTypeCell.getString().equalsIgnoreCase("3")) {
+                addParmIfNotNullNhsdd("ATTENDANCE_TYPE", "3", attendanceTypeCell,
+                        containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
+            } else {
+                throw new TransformException("Unexpected attendance type/category code: [" + attendanceTypeCell.getString() + "]");
+            }
         }
 
-        CsvCell attendanceSourceCell = parser.getReferralSource();
-        if (!attendanceSourceCell.isEmpty()) {
-            addParmIfNotNull( "REFERRAL_SOURCE",
-                    attendanceSourceCell.getString(), attendanceSourceCell,
-                    containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
+        CsvCell referralSourceCell = parser.getReferralSource();
+        if (!referralSourceCell.isEmpty()) {
+            addParmIfNotNullNhsdd("REFERRAL_SOURCE", referralSourceCell.getString(), referralSourceCell,
+                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
+
 
         CsvCell triageDateCell = parser.getTriageDttm();
         CsvCell invAndTreatmentsDateCell = parser.getSeenByAeDoctorDttm();

@@ -233,12 +233,12 @@ public class SpellsTransformer {
         }
         if (!parser.getAdmissionWardCode().isEmpty()) {
             CsvCell admissionWardCode = parser.getAdmissionWardCode();
-            csvHelper.addParmIfNotNull( BhrutCsvToFhirTransformer.IM_ADMISSION_WARD_CODE,
+            csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMISSION_WARD_CODE,
                     admissionWardCode.getString(), admissionWardCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         if (!parser.getDischargeWardCode().isEmpty()) {
             CsvCell dischargeWardCode = parser.getDischargeWardCode();
-            csvHelper.addParmIfNotNull( BhrutCsvToFhirTransformer.IM_DISCHARGE_WARD_CODE,
+            csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_DISCHARGE_WARD_CODE,
                     dischargeWardCode.getString(), dischargeWardCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         if (!parser.getDischargeMethodCode().isEmpty()) {

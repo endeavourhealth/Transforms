@@ -329,22 +329,22 @@ public class EpisodesTransformer {
 
             CsvCell adminCategoryCodeCe = parser.getAdministrativeCategoryCode();
             if (!adminCategoryCodeCe.isEmpty()) {
-               csvHelper.addParmIfNotNull( "ADMINISTRATIVE_CATEGORY_CODE",
+               csvHelper.addParmIfNotNullNhsdd( "ADMINISTRATIVE_CATEGORY_CODE",
                       adminCategoryCodeCe.getString(), adminCategoryCodeCe, containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell admissionMethodCodeCell = parser.getAdmissionMethodCode();
             if (!admissionMethodCodeCell.isEmpty()) {
-                csvHelper.addParmIfNotNull("ADMISSION_METHOD_CODE",
+                csvHelper.addParmIfNotNullNhsdd("ADMISSION_METHOD_CODE",
                         admissionMethodCodeCell.getString(), admissionMethodCodeCell, containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell admissionSourceCodeCell = parser.getAdmissionSourceCode();
             if (!admissionSourceCodeCell.isEmpty()) {
-                csvHelper.addParmIfNotNull("ADMISSION_SOURCE_CODE",
+                csvHelper.addParmIfNotNullNhsdd("ADMISSION_SOURCE_CODE",
                         admissionSourceCodeCell.getString(), admissionSourceCodeCell,containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             CsvCell patientClassCodeCell = parser.getPatientClassCode();
             if (!patientClassCodeCell.isEmpty()) {
-                csvHelper.addParmIfNotNull( "PATIENT_CLASS_CODE",
+                csvHelper.addParmIfNotNullNhsdd( "PATIENT_CLASS_CODE",
                         patientClassCodeCell.getString(), patientClassCodeCell, containedParametersBuilderAdmission, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
             }
             //if the 01 episode has an episode end date, set the admission end date
@@ -382,12 +382,12 @@ public class EpisodesTransformer {
 
                 CsvCell dischargeMethodCodeCell = parser.getDischargeMethodCode();
                 if (!dischargeMethodCodeCell.isEmpty()) {
-                    csvHelper.addParmIfNotNull("DISCHARGE_METHOD_CODE",
+                    csvHelper.addParmIfNotNullNhsdd("DISCHARGE_METHOD_CODE",
                             dischargeMethodCodeCell.getString(), dischargeMethodCodeCell, containedParametersBuilderDischarge,BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
                 }
                 CsvCell dischargeDestinationCodeCell = parser.getDischargeDestinationCode();
                 if (!dischargeDestinationCodeCell.isEmpty()) {
-                    csvHelper.addParmIfNotNull("DISCHARGE_DESINATION_CODE",
+                    csvHelper.addParmIfNotNullNhsdd("DISCHARGE_DESINATION_CODE",
                             dischargeDestinationCodeCell.getString(), dischargeDestinationCodeCell, containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
                 }
                 //and link the parent to this new child encounter
