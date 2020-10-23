@@ -856,7 +856,9 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         return personIdsToFilterOn.contains(personId);
     }
 
-
+    /*
+    Ths method adds an IM-coded parameter
+     */
     public static void addParmIfNotNull(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(columnName, tablename);
         MapResponse valueResponse = getColumnValue(value, columnName, tablename);
@@ -866,6 +868,9 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, cell);
     }
 
+    /*
+    This method adds a JSON parameter with scheme NHS_DD
+     */
     public static void addParmIfNotNullNhsdd(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
         MapResponse propertyResponse = getProperty(columnName, tablename);
         MapResponse valueResponse = getColumnValueNhsdd(value, columnName, tablename);
@@ -874,16 +879,6 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
                 .setSystem(valueResponse.getConcept().getScheme());
         parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, cell);
     }
-
-    public static void addParmIfNotNullJson(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
-        MapResponse propertyResponse = getProperty(columnName, tablename);
-        String propertyCode = "JSON_" + propertyResponse.getConcept().getCode();
-        //String jsonPropertyName = "JSON_"+propertyCode;
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty(columnName, value);
-        parametersBuilder.addParameter(propertyCode, jsonObject.toString(), cell);
-    }
-
 
     private static MapResponse getProperty(String column, String tablename) throws Exception {
         MapColumnRequest propertyRequest = new MapColumnRequest(

@@ -452,7 +452,7 @@ public class AndEAttendanceTransformer {
             ContainedParametersBuilder containedParametersBuilderDischarge
                     = new ContainedParametersBuilder(dischargeEncounterBuilder);
             containedParametersBuilderDischarge.removeContainedParameters();
-                BhrutCsvHelper.addParmIfNotNullJson( "DISCHARGE_DESTINATION",
+                BhrutCsvHelper.addParmIfNotNullNhsdd( "DISCHARGE_DESTINATION",
                         dischargeDestinationCell.getString(),dischargeDestinationCell,
                         containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
             }
