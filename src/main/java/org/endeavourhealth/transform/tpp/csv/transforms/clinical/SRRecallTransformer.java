@@ -13,6 +13,9 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 
 public class SRRecallTransformer {
@@ -43,38 +46,39 @@ public class SRRecallTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell recallId = parser.getRowIdentifier();
-        CsvCell patientId = parser.getIDPatient();
-        CsvCell deleteData = parser.getRemovedData();
+        CsvCell recallIdCell = parser.getRowIdentifier();
+        CsvCell patientIdCell = parser.getIDPatient();
+        CsvCell deletedDataCell = parser.getRemovedData();
 
-        if (deleteData != null && deleteData.getIntAsBoolean()) { //null check required as the column didn't always exist
+        if (deletedDataCell != null //null check required as the column didn't always exist
+                && deletedDataCell.getIntAsBoolean()) {
 
             // get previously filed resource for deletion
-            ProcedureRequest procedureRequest = (ProcedureRequest)csvHelper.retrieveResource(recallId.getString(), ResourceType.ProcedureRequest);
+            ProcedureRequest procedureRequest = (ProcedureRequest)csvHelper.retrieveResource(recallIdCell.getString(), ResourceType.ProcedureRequest);
 
             if (procedureRequest != null) {
                 ProcedureRequestBuilder procedureRequestBuilder = new ProcedureRequestBuilder(procedureRequest);
-                procedureRequestBuilder.setDeletedAudit(deleteData);
+                procedureRequestBuilder.setDeletedAudit(deletedDataCell);
                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, procedureRequestBuilder);
             }
             return;
         }
 
         ProcedureRequestBuilder procedureRequestBuilder = new ProcedureRequestBuilder();
-        procedureRequestBuilder.setId(recallId.getString(), recallId);
+        procedureRequestBuilder.setId(recallIdCell.getString(), recallIdCell);
 
-        Reference patientReference = csvHelper.createPatientReference(patientId);
-        procedureRequestBuilder.setPatient(patientReference, patientId);
+        Reference patientReference = csvHelper.createPatientReference(patientIdCell);
+        procedureRequestBuilder.setPatient(patientReference, patientIdCell);
 
-        CsvCell dateRecored = parser.getDateEventRecorded();
-        if (!dateRecored.isEmpty()) {
-            procedureRequestBuilder.setRecordedDateTime(dateRecored.getDateTime(), dateRecored);
+        CsvCell dateRecordedCell = parser.getDateEventRecorded();
+        if (!dateRecordedCell.isEmpty()) {
+            procedureRequestBuilder.setRecordedDateTime(dateRecordedCell.getDateTime(), dateRecordedCell);
         }
 
-        CsvCell recallDate = parser.getDateRecall();
-        if (!recallDate.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(recallDate.getDate());
-            procedureRequestBuilder.setScheduledDate(dateTimeType, recallDate);
+        CsvCell recallDateCell = parser.getDateRecall();
+        if (!recallDateCell.isEmpty()) {
+            DateTimeType dateTimeType = new DateTimeType(recallDateCell.getDate());
+            procedureRequestBuilder.setScheduledDate(dateTimeType, recallDateCell);
         }
 
         CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
@@ -90,11 +94,11 @@ public class SRRecallTransformer {
             procedureRequestBuilder.setPerformer(doneByReference, staffMemberIdDoneByCell, orgDoneAtCell);
         }
 
-        CsvCell recallType = parser.getRecallType();
+        CsvCell recallTypeCell = parser.getRecallType();
         // this is free text only with no code
-        if (!recallType.isEmpty()) {
+        if (!recallTypeCell.isEmpty()) {
             CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureRequestBuilder, CodeableConceptBuilder.Tag.Procedure_Request_Main_Code);
-            codeableConceptBuilder.setText(recallType.getString());
+            codeableConceptBuilder.setText(recallTypeCell.getString());
         }
 
         CsvCell recallStatusCell = parser.getRecallStatus();
@@ -111,11 +115,12 @@ public class SRRecallTransformer {
                     procedureRequestBuilder.setStatus(fhirStatus, recallStatusCell);
 
                     // add the status date and details to the notes
-                    CsvCell statusDate = parser.getRecallStatusDate();
-                    DateType dateType = new DateType(statusDate.getDate());
-                    if (dateType != null) {
-                        String displayDate = dateType.toHumanDisplay();
-                        String statusNote = "Status: " + displayDate + " - " + mappedTerm;
+                    CsvCell statusDateCell = parser.getRecallStatusDate();
+                    if (!statusDateCell.isEmpty()) {
+                        Date d = statusDateCell.getDate();
+                        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+                        String dateStr = df.format(d);
+                        String statusNote = "Status: " + dateStr + " - " + mappedTerm;
                         procedureRequestBuilder.addNotes(statusNote);
                     }
                 }
@@ -123,11 +128,11 @@ public class SRRecallTransformer {
         }
 
         // set consultation/encounter reference
-        CsvCell eventId = parser.getIDEvent();
-        if (!eventId.isEmpty()) {
+        CsvCell eventIdCell = parser.getIDEvent();
+        if (!eventIdCell.isEmpty()) {
 
-            Reference eventReference = csvHelper.createEncounterReference(eventId);
-            procedureRequestBuilder.setEncounter(eventReference, eventId);
+            Reference eventReference = csvHelper.createEncounterReference(eventIdCell);
+            procedureRequestBuilder.setEncounter(eventReference, eventIdCell);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureRequestBuilder);
