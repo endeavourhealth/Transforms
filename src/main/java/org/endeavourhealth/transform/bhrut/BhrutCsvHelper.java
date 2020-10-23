@@ -880,6 +880,16 @@ public class BhrutCsvHelper implements HasServiceSystemAndExchangeIdI {
         parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, cell);
     }
 
+    public static void addParmIfNotNullJson(String columnName, String value, CsvCell cell, ContainedParametersBuilder parametersBuilder, String tablename) throws Exception {
+        MapResponse propertyResponse = getProperty(columnName, tablename);
+        String propertyCode = "JSON_" + propertyResponse.getConcept().getCode();
+        //String jsonPropertyName = "JSON_"+propertyCode;
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty(columnName, value);
+        parametersBuilder.addParameter(propertyCode, jsonObject.toString(), cell);
+    }
+
+
     private static MapResponse getProperty(String column, String tablename) throws Exception {
         MapColumnRequest propertyRequest = new MapColumnRequest(
                 BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,

@@ -211,16 +211,15 @@ public class SpellsTransformer {
         //set the extensions
         if (!parser.getPatientClassCode().isEmpty()) {
             CsvCell patientClassCode = parser.getPatientClassCode();
-            CsvCell patientClass = parser.getPatientClass();
-            if (!patientClass.isEmpty()) {
+            if (!patientClassCode.isEmpty()) {
                 csvHelper.addParmIfNotNullNhsdd(BhrutCsvToFhirTransformer.IM_PATIENT_CLASS,
-                        patientClass.getString(),patientClass,parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
+                        patientClassCode.getString(),patientClassCode,parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         }
         if (!parser.getAdmissionSourceCode().isEmpty()) {
             CsvCell adminSourceCode = parser.getAdmissionSourceCode();
             if (!adminSourceCode.isEmpty()) {
-                csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMIN_SOURCE_CODE,
+                csvHelper.addParmIfNotNullJson( BhrutCsvToFhirTransformer.IM_ADMIN_SOURCE_CODE,
                         adminSourceCode.getString(), adminSourceCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         }
@@ -233,12 +232,12 @@ public class SpellsTransformer {
         }
         if (!parser.getAdmissionWardCode().isEmpty()) {
             CsvCell admissionWardCode = parser.getAdmissionWardCode();
-            csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMISSION_WARD_CODE,
+            csvHelper.addParmIfNotNullJson( BhrutCsvToFhirTransformer.IM_ADMISSION_WARD_CODE,
                     admissionWardCode.getString(), admissionWardCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         if (!parser.getDischargeWardCode().isEmpty()) {
             CsvCell dischargeWardCode = parser.getDischargeWardCode();
-            csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_DISCHARGE_WARD_CODE,
+            csvHelper.addParmIfNotNullJson( BhrutCsvToFhirTransformer.IM_DISCHARGE_WARD_CODE,
                     dischargeWardCode.getString(), dischargeWardCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         if (!parser.getDischargeMethodCode().isEmpty()) {

@@ -21,8 +21,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.addParmIfNotNull;
-import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.addParmIfNotNullNhsdd;
+import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.*;
 
 
 public class AndEAttendanceTransformer {
@@ -315,7 +314,7 @@ public class AndEAttendanceTransformer {
 
         CsvCell referralSourceCell = parser.getReferralSource();
         if (!referralSourceCell.isEmpty()) {
-            addParmIfNotNullNhsdd("REFERRAL_SOURCE", referralSourceCell.getString(), referralSourceCell,
+            addParmIfNotNullJson("REFERRAL_SOURCE", referralSourceCell.getString(), referralSourceCell,
                     containedParametersBuilder, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
