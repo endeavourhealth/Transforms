@@ -217,10 +217,10 @@ public class SpellsTransformer {
             }
         }
         if (!parser.getAdmissionSourceCode().isEmpty()) {
-            CsvCell adminSourceCode = parser.getAdmissionSourceCode();
-            if (!adminSourceCode.isEmpty()) {
-                csvHelper.addParmIfNotNullJson( BhrutCsvToFhirTransformer.IM_ADMIN_SOURCE_CODE,
-                        adminSourceCode.getString(), adminSourceCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
+            CsvCell admissSourceCode = parser.getAdmissionSourceCode();
+            if (!admissSourceCode.isEmpty()) {
+                csvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMISSION_SOURCE_CODE,
+                        admissSourceCode.getString(), admissSourceCode, parametersBuilder, BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
             }
         }
         if (!parser.getAdmissionMethodCode().isEmpty()) {

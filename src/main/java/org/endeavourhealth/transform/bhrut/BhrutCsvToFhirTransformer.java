@@ -47,7 +47,7 @@ public abstract class BhrutCsvToFhirTransformer {
     public final static  String  IM_CAUSE_OF_DEATH_2 = "CAUSEOFDEATH 2";
     public final static  String  IM_INFECTION_STATUS = "INFECTION_STATUS";
     public final static  String  IM_PATIENT_CLASS = "PATIENT_CLASS";
-    public final static  String  IM_ADMIN_SOURCE_CODE = "ADMIN_SOURCE_CODE";
+    public final static  String  IM_ADMISSION_SOURCE_CODE = "ADMISSION_SOURCE_CODE";
     public final static  String  IM_ADMIN_METHOD_CODE = "ADMIN_METHOD_CODE";
     public final static  String  IM_ADMISSION_WARD_CODE = "ADMISSION_WARD_CODE";
     public final static  String  IM_DISCHARGE_WARD_CODE = "DISCHARGE_WARD_CODE";

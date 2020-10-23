@@ -450,9 +450,17 @@ public class AndEAttendanceTransformer {
                 //add in additional extended data as Parameters resource with additional extension
             ContainedParametersBuilder containedParametersBuilderDischarge
                     = new ContainedParametersBuilder(dischargeEncounterBuilder);
-            containedParametersBuilderDischarge.removeContainedParameters();
-                BhrutCsvHelper.addParmIfNotNullNhsdd( "DISCHARGE_DESTINATION",
+                BhrutCsvHelper.addParmIfNotNullJson( "DISCHARGE_DESTINATION",
                         dischargeDestinationCell.getString(),dischargeDestinationCell,
+                        containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
+            }
+            CsvCell recordedOutComeCell = parser.getRecordedOutcome();
+            if (!recordedOutComeCell.isEmpty()) {
+                //add in additional extended data as Parameters resource with additional extension
+                ContainedParametersBuilder containedParametersBuilderDischarge
+                        = new ContainedParametersBuilder(dischargeEncounterBuilder);
+                BhrutCsvHelper.addParmIfNotNullJson( "RECORDED_OUTCOME",
+                        recordedOutComeCell.getString(),recordedOutComeCell,
                         containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
             }
 
