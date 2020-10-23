@@ -316,7 +316,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                                     if (propertyConceptDbid == null) {
                                         LOG.debug("No property found for scheme: " + propertyScheme + ":code:" + propertyCode + ".");
                                         LOG.debug("Skipping problem parameter: " + fhir.getId() + ":" + fhir.getResourceType().toString());
-                                        break;
+                                        continue;
                                     }
                                     Integer valueConceptDbid =
                                             IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
@@ -333,7 +333,9 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                                 propertyCode = propertyCode.replace("JSON_", "");
                                 Integer propertyConceptDbid =
                                         IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
-
+                                if (propertyConceptDbid == null) {
+                                    LOG.debug("Null value for propertyCode " + propertyCode);
+                                }
                                 //the value is a StringType storing JSON
                                 StringType jsonValue = (StringType) parameter.getValue();
                                 encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, null, jsonValue.getValue());

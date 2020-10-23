@@ -428,9 +428,10 @@ public class EpisodesTransformer {
         String episodeStartWardCode = parser.getEpisodeStartWardCode().getString();
         String episodeEndWardCode = parser.getEpisodeEndWardCode().getString();
         if (!Strings.isNullOrEmpty(episodeStartWardCode) || !Strings.isNullOrEmpty(episodeEndWardCode)) {
-            JsonObject episodeWardsObjs = new JsonObject();
+            // JsonObject episodeWardsObjs = new JsonObject();
             if (!Strings.isNullOrEmpty(episodeStartWardCode)) {
                 String columnName =  "EPISODE_START_WARD_CODE";
+                JsonObject episodeWardsObjs = new JsonObject();
                 episodeWardsObjs.addProperty(columnName, episodeStartWardCode);
                 MapColumnRequest propertyRequest = new MapColumnRequest(
                         BhrutCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
@@ -446,6 +447,7 @@ public class EpisodesTransformer {
             }
             if (!Strings.isNullOrEmpty(episodeEndWardCode)) {
                 String columnName =  "EPISODE_END_WARD_CODE";
+                JsonObject episodeWardsObjs = new JsonObject();
                 episodeWardsObjs.addProperty(columnName, episodeEndWardCode);
 
                 MapColumnRequest propertyRequest = new MapColumnRequest(

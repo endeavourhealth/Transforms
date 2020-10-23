@@ -86,8 +86,17 @@ public class Procedure extends AbstractCsvParser {
 
     public CsvCell getProcedureRawCode() { return super.getCell("PROCEDURE_RAW_CODE");  }
 
-    //TODO: create transform functions to extract fields
+    public CsvCell getProcedureDisplayTerm() { return super.getCell("PROCEDURE_DISPLAY");  }
 
+    public CsvCell getProcedureCodingSystem() { return super.getCell("PROCEDURE_CODING_SYSTEM_ID"); }
+
+    public CsvCell getProcedureDescription() { return super.getCell("DESCRIPTION");  }
+
+    public CsvCell getProcedureStartDate() { return super.getCell("SERVICE_START_DT_TM");  }
+
+    public CsvCell getProcedureEndDate() { return super.getCell("SERVICE_END_DT_TM");  }
+
+    public CsvCell getEncounterId() { return super.getCell("ENCOUNTER_ID");  }
 
     public CsvCell getHashValue() { return super.getCell("HASH_VALUE"); }
 }
