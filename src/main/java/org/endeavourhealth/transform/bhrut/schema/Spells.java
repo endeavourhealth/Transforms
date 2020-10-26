@@ -14,7 +14,7 @@ public class Spells extends AbstractCsvParser {
 
     public Spells(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
         super(serviceId, systemId, exchangeId, version, filePath,
-                BhrutCsvToFhirTransformer.CSV_FORMAT.withHeader(getHeaders(version)),
+                BhrutCsvToFhirTransformer.CSV_FORMAT,  //.withHeader(getHeaders(version)),
                 BhrutCsvToFhirTransformer.DATE_FORMAT,
                 BhrutCsvToFhirTransformer.TIME_FORMAT);
     }
