@@ -101,9 +101,9 @@ public class OutpatientsPreTransformer {
 
             organizationBuilder.setName(org.getOrganisationName());
         } else {
-
-            TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {}",
-                    odsCodeCell.getString());
+        // The warnings were too many. Hard to find real problems
+//            TransformWarnings.log(LOG, parser, "Error looking up Organization for ODS: {}",
+//                    odsCodeCell.getString());
             return;
         }
 

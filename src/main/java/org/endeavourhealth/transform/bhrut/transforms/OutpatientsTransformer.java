@@ -472,8 +472,23 @@ public class OutpatientsTransformer {
         parentTopEncounterBuilder.setId(parser.getId().getString());
         parentTopEncounterBuilder.setPeriodStart(parser.getAppointmentDttm().getDateTime(), parser.getAppointmentDttm());
         parentTopEncounterBuilder.setPeriodEnd(parser.getAppointmentDttm().getDateTime(), parser.getAppointmentDttm());
-        parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
-
+        //parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
+//work out the Encounter status
+        CsvCell outcomeCell = parser.getAppointmentStatusCode();
+        if (!outcomeCell.isEmpty() && !outcomeCell.getString().equalsIgnoreCase("xxxx")) {
+            //if we have an outcome, we know the encounter has ended
+            parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED, outcomeCell);
+        } else {
+            //if we don't have an outcome, the Encounter is either in progress or in the future
+            CsvCell beginDateCell = parser.getAppointmentDttm();
+            Date beginDate = beginDateCell.getDateTime();
+            if (beginDate == null
+                    || beginDate.after(new Date())) {
+                parentTopEncounterBuilder.setStatus(Encounter.EncounterState.PLANNED, beginDateCell);
+            } else {
+                parentTopEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS, beginDateCell);
+            }
+        }
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Outpatient");
