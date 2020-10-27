@@ -67,8 +67,7 @@ public class OutpatientsTransformer {
         CsvCell patientIdCell = parser.getPasId();
 
         //Create ParentEncounterBuilder
-        EpisodeOfCareBuilder episodeOfCareBuilder = createEpisodeOfcare(parser, fhirResourceFiler, csvHelper, version);
-        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, episodeOfCareBuilder, csvHelper, false);
+        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper, false);
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         encounterBuilder.setPatient(patientReference, patientIdCell);
 
@@ -124,6 +123,7 @@ public class OutpatientsTransformer {
         Reference consultantReference2 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
         encounterBuilder.addParticipant(consultantReference2, EncounterParticipantType.CONSULTANT, consultantCodeCell);
 
+        createEpisodeOfcare(parser, fhirResourceFiler, csvHelper, version);
 
         //we have no status field in the source data, but will only receive completed encounters, so we can infer this
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
@@ -229,7 +229,7 @@ public class OutpatientsTransformer {
 
         //save the Encounter, Appointment and Slot
 
-        EncounterBuilder subEncounter = createSubEncounters(parser, episodeOfCareBuilder, fhirResourceFiler, csvHelper);
+        EncounterBuilder subEncounter = createSubEncounters(parser, encounterBuilder, fhirResourceFiler, csvHelper);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !subEncounter.isIdMapped(), subEncounter);
 
@@ -422,7 +422,7 @@ public class OutpatientsTransformer {
         }
     }
 
-    private static EncounterBuilder createSubEncounters(Outpatients parser, EpisodeOfCareBuilder episodeOfCareBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static EncounterBuilder createSubEncounters(Outpatients parser, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
 
 
         EncounterBuilder outpatientEncounterBuilder = new EncounterBuilder();
@@ -435,7 +435,7 @@ public class OutpatientsTransformer {
                 = new CodeableConceptBuilder(outpatientEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Outpatient Attendance");
 
-        setCommonEncounterAttributes(outpatientEncounterBuilder, parser, episodeOfCareBuilder, csvHelper, true);
+        setCommonEncounterAttributes(outpatientEncounterBuilder, parser, csvHelper, true);
 
         //add in additional extended data as Parameters resource with additional extension
         ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(outpatientEncounterBuilder);
@@ -464,7 +464,7 @@ public class OutpatientsTransformer {
         return outpatientEncounterBuilder;
     }
 
-    private static EncounterBuilder createEncountersParentMinimum(Outpatients parser, EpisodeOfCareBuilder episodeOfCareBuilder, BhrutCsvHelper csvHelper, boolean isChild) throws Exception {
+    private static EncounterBuilder createEncountersParentMinimum(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, boolean isChild) throws Exception {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.OUTPATIENT);
@@ -494,14 +494,13 @@ public class OutpatientsTransformer {
         codeableConceptBuilder.setText("Outpatient");
 
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, parser,episodeOfCareBuilder, csvHelper, false);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
 
         return parentTopEncounterBuilder;
 
     }
 
-    private static void setCommonEncounterAttributes(EncounterBuilder builder, Outpatients parser,
-                                                     EpisodeOfCareBuilder episodeOfCareBuilder, BhrutCsvHelper csvHelper, boolean isChildEncounter) throws Exception {
+    private static void setCommonEncounterAttributes(EncounterBuilder builder, Outpatients parser, BhrutCsvHelper csvHelper, boolean isChildEncounter) throws Exception {
 
         //every encounter has the following common attributes
         CsvCell patientIdCell = parser.getPasId();
@@ -523,13 +522,15 @@ public class OutpatientsTransformer {
             builder.setPeriodEnd(parser.getApptDepartureDttm().getDateTime(),parser.getApptDepartureDttm());
         }
 
-                   Reference episodeReference
-                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId());
+        if (!idCell.isEmpty()) {
+            Reference episodeReference
+                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, idCell.getString());
             if (builder.isIdMapped()) {
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
             }
             builder.setEpisodeOfCare(episodeReference);
+        }
 
         CsvCell admissionConsultantCodeCell = parser.getConsultantCode();
         if (!admissionConsultantCodeCell.isEmpty()) {
@@ -633,7 +634,7 @@ public class OutpatientsTransformer {
         }
     }
 
-    private static EpisodeOfCareBuilder createEpisodeOfcare(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version) throws Exception {
+    private static void createEpisodeOfcare(Outpatients parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version) throws Exception {
 
         CsvCell patientIdCell = parser.getPasId();
         CsvCell id = parser.getId();
@@ -692,7 +693,6 @@ public class OutpatientsTransformer {
 
         csvHelper.getEpisodeOfCareCache().cacheEpisodeOfCareBuilder(id, episodeBuilder);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),!episodeBuilder.isIdMapped(),episodeBuilder);
-        return episodeBuilder;
     }
     private static void translateAppointmentStatusCode(CsvCell appointmentStatusCode, AppointmentBuilder appointmentBuilder, BhrutCsvHelper csvHelper,CsvCell idCell) throws Exception {
         // from the NHS data dictionary ATTENDED OR DID NOT ATTEND
