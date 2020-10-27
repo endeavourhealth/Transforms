@@ -22,6 +22,7 @@ public class IMConstant {
     public static final String FHIR_REFERRAL_PRIORITY = "FHIR_RFP";
     public static final String FHIR_REFERRAL_TYPE = "FHIR_RFT";
     public static final String BARTS_CERNER = "BartsCerner";
+    public static final String IMPERIAL_CERNER = "ImperialCerner";
     public static final String FHIR_ADDRESS_USE = "FHIR_AU";
     public static final String FHIR_TELECOM_SYSTEM = "FHIR_CPS";
     public static final String FHIR_TELECOM_USE = "FHIR_CPU";
