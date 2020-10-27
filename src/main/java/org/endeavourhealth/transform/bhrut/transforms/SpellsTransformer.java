@@ -87,7 +87,7 @@ public class SpellsTransformer {
         CsvCell patientIdCell = parser.getPasId();
 
         //Create ParentEncounterBuilder
-        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
+        EncounterBuilder encounterBuilder = createEncountersParentMinimum(parser, episodeOfCareBuilder, csvHelper);
         Reference patientReference2 = csvHelper.createPatientReference(patientIdCell);
         if (encounterBuilder.isIdMapped()) {
             IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference2, fhirResourceFiler);
@@ -342,7 +342,7 @@ public class SpellsTransformer {
         }
     }
 
-    private static EncounterBuilder createEncountersParentMinimum(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+    private static EncounterBuilder createEncountersParentMinimum(Spells parser, EpisodeOfCareBuilder episodeOfCareBuilder, BhrutCsvHelper csvHelper) throws Exception {
 
         EncounterBuilder parentTopEncounterBuilder = new EncounterBuilder();
         parentTopEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
@@ -367,7 +367,7 @@ public class SpellsTransformer {
                 = new CodeableConceptBuilder(parentTopEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
         codeableConceptBuilder.setText("Inpatient");
 
-        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, csvHelper, false);
+        setCommonEncounterAttributes(parentTopEncounterBuilder, parser, episodeOfCareBuilder, csvHelper, false);
 
         return parentTopEncounterBuilder;
 
@@ -375,6 +375,7 @@ public class SpellsTransformer {
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      Spells parser,
+                                                     EpisodeOfCareBuilder episodeOfCareBuilder,
                                                      BhrutCsvHelper csvHelper, boolean isChildEncounter) throws Exception {
 
         //every encounter has the following common attributes
@@ -393,17 +394,17 @@ public class SpellsTransformer {
         }
 
 
-        if (!idCell.isEmpty()) {
+
 
             Reference episodeReference
-                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, idCell.getString());
+                    = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, episodeOfCareBuilder.getResourceId());
             if (builder.isIdMapped()) {
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
             }
 
             builder.setEpisodeOfCare(episodeReference);
-        }
+
 
         CsvCell admissionConsultantCodeCell = parser.getAdmissionConsultantCode();
         if (!admissionConsultantCodeCell.isEmpty()) {
