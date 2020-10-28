@@ -1023,6 +1023,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             patientBuilder = new PatientBuilder(existingPatient);
         } else {
             patientBuilder = new PatientBuilder();
+            imperialHL7Helper.setUniqueId(patientBuilder, patientGuid, null);
             newPatient = true;
         }
 
@@ -1173,6 +1174,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             patientBuilder = new PatientBuilder(existingPatient);
         } else {
             patientBuilder = new PatientBuilder();
+            imperialHL7Helper.setUniqueId(patientBuilder, patientGuid, null);
             newPatient = true;
         }
 
