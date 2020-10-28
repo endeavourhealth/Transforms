@@ -2,6 +2,8 @@ package org.endeavourhealth.transform.homertonhi;
 
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.utility.ThreadPool;
+import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
@@ -9,10 +11,8 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
-import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.homertonhi.cache.OrganisationResourceCache;
 import org.endeavourhealth.transform.homertonhi.cache.PatientResourceCache;
 import org.hl7.fhir.instance.model.Reference;
@@ -21,8 +21,10 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
@@ -63,6 +65,8 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private CernerCodeValueRefDalI cernerCodeValueRefDal = DalProvider.factoryCernerCodeValueRefDal();
     private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
+
+    private ThreadPool utilityThreadPool = null;
 
     private UUID serviceId = null;
     private UUID systemId = null;
@@ -171,6 +175,30 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
     public CsvCell findProcedureCommentText(CsvCell procedureIdCell) {
 
         return procedureComments.get(procedureIdCell.getString());
+    }
+
+    public void submitToThreadPool(Callable callable) throws Exception {
+        if (this.utilityThreadPool == null) {
+            int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
+            this.utilityThreadPool = new ThreadPool(threadPoolSize, 1000, "HomertonHiCsvHelper"); //lower from 50k to save memory
+        }
+
+        List<ThreadPoolError> errors = utilityThreadPool.submit(callable);
+        AbstractCsvCallable.handleErrors(errors);
+    }
+
+    public void waitUntilThreadPoolIsEmpty() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitUntilEmpty();
+            AbstractCsvCallable.handleErrors(errors);
+        }
+    }
+
+    public void stopThreadPool() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitAndStop();
+            AbstractCsvCallable.handleErrors(errors);
+        }
     }
 
 

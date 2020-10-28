@@ -47,22 +47,22 @@ public abstract class HomertonHiCsvToFhirTransformer {
             // process any deletions first by extracting all the deletion hash values to use in each transform
 
             // process the patient files first, using the Resource caching to collect data from all file before filing
-            PersonTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person", true), fhirResourceFiler, csvHelper);
-            PersonDemographicsTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_demographics", true), fhirResourceFiler, csvHelper);
-            PersonAliasTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_alias", true), fhirResourceFiler, csvHelper);
-            PersonLanguageTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_language", true), fhirResourceFiler, csvHelper);
-            PersonPhoneTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_phone", true), fhirResourceFiler, csvHelper);
+            PersonTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person", true), fhirResourceFiler, csvHelper);
+            PersonDemographicsTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Demographics", true), fhirResourceFiler, csvHelper);
+            PersonAliasTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Alias", true), fhirResourceFiler, csvHelper);
+            PersonLanguageTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Language", true), fhirResourceFiler, csvHelper);
+            PersonPhoneTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Phone", true), fhirResourceFiler, csvHelper);
             csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
             // clinical pre-transformers
-            ProcedureCommentTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure_comment", true), fhirResourceFiler, csvHelper);
+            ProcedureCommentTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure_Comment", true), fhirResourceFiler, csvHelper);
 
             // subsequent transforms may refer to Patient resources and pre-transforms, so ensure they're all on the DB before continuing
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             // clinical transformers
-            ProcedureTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure", true), fhirResourceFiler, csvHelper);
-            ConditionTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition", true), fhirResourceFiler, csvHelper);
+            ProcedureTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure", true), fhirResourceFiler, csvHelper);
+            ConditionTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Condition", true), fhirResourceFiler, csvHelper);
 
         } finally {
             //if we had any exception that caused us to bomb out of the transform, we'll have

@@ -1,8 +1,7 @@
 package org.endeavourhealth.transform.homertonhi.transforms;
 
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.ProcedureComment;
 import org.slf4j.Logger;
@@ -18,21 +17,24 @@ public class ProcedureCommentTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonHiCsvHelper csvHelper) throws Exception {
 
-           for (ParserI parser: parsers) {
+        try {
+            for (ParserI parser : parsers) {
                 try {
-
                     while (parser.nextRecord()) {
-                        //no try/catch here, since any failure here means we don't want to continue
+
                         processRecord((ProcedureComment) parser, csvHelper);
                     }
                 } catch (Exception ex) {
 
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
             }
+        } finally {
+            csvHelper.waitUntilThreadPoolIsEmpty();
+        }
 
-            //call this to abort if we had any errors, during the above processing
-            fhirResourceFiler.failIfAnyErrors();
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     public static void processRecord(ProcedureComment parser, HomertonHiCsvHelper csvHelper) throws Exception {
@@ -40,7 +42,43 @@ public class ProcedureCommentTransformer {
         CsvCell procedureIdCell = parser.getProcedureId();
         CsvCell procedureCommentTextCell = parser.getProcedureCommentText();
 
-        //simply cache the procedure comments against the id for retrieval in the Procedure transform
-        csvHelper.cacheProcedureCommentText(procedureIdCell, procedureCommentTextCell);
+        CsvCurrentState parserState = parser.getCurrentState();
+
+        ProcedureCommentTransformer.PreTransformTask task
+                = new ProcedureCommentTransformer.PreTransformTask(parserState, procedureIdCell, procedureCommentTextCell, csvHelper);
+        csvHelper.submitToThreadPool(task);
+    }
+
+    static class PreTransformTask extends AbstractCsvCallable {
+
+        private CsvCell procedureIdCell;
+        private CsvCell procedureCommentTextCell;
+        private HomertonHiCsvHelper csvHelper;
+
+        public PreTransformTask(CsvCurrentState parserState,
+                          CsvCell procedureIdCell,
+                          CsvCell procedureCommentTextCell,
+                          HomertonHiCsvHelper csvHelper) {
+
+            super(parserState);
+            this.procedureIdCell = procedureIdCell;
+            this.procedureCommentTextCell = procedureCommentTextCell;
+            this.csvHelper = csvHelper;
+        }
+
+        @Override
+        public Object call() throws Exception {
+            try {
+
+                //simply cache the procedure comments against the id for retrieval in the Procedure transform
+                csvHelper.cacheProcedureCommentText(procedureIdCell, procedureCommentTextCell);
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
+            }
+
+            return null;
+        }
     }
 }

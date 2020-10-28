@@ -62,22 +62,23 @@ public class ConditionTransformer  {
 
         CsvCell confirmationCell = parser.getConditionConfirmationStatusDisplay();
         if (!confirmationCell.isEmpty()) {
-                String confirmation = confirmationCell.getString();
+
+            String confirmation = confirmationCell.getString();
             if (confirmation.equalsIgnoreCase("confirmed")) {
                 conditionBuilder.setVerificationStatus(org.hl7.fhir.instance.model.Condition.ConditionVerificationStatus.CONFIRMED, confirmationCell);
 
             } else {
 
-                //only interested in Confirmed conditions
+                //only interested in Confirmed conditions/problems
                 return;
             }
         } else {
 
-            //only interested in Confirmed conditions
+            //only interested in Confirmed conditions/problems
             return;
         }
 
-        //is it a problem or a diagnosis?
+        //is it a problem or a diagnosis? Homerton send the type using a specific code
         CsvCell conditionTypeCodeCell = parser.getConditionTypeCode();
         if (conditionTypeCodeCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_CONDITION_PROBLEM)) {
 
@@ -117,6 +118,7 @@ public class ConditionTransformer  {
 
         } else {
 
+            //catch any unknown condition types
             throw new TransformException("Unknown Condition type [" + conditionTypeCodeCell.getString() + "]");
         }
 
@@ -138,12 +140,10 @@ public class ConditionTransformer  {
         CsvCell conditionCodeCell = parser.getConditionRawCode();
         if (!conditionCodeCell.isEmpty()) {
 
-            String conditionCode = conditionCodeCell.getString();
-            CsvCell conditionCodeSystemCell = parser.getConditionCodingSystemId();
-
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
 
+            CsvCell conditionCodeSystemCell = parser.getConditionCodingSystemId();
             if (!conditionCodeSystemCell.isEmpty()) {
 
                 String conceptCodeSystem = conditionCodeSystemCell.getString();
@@ -160,7 +160,9 @@ public class ConditionTransformer  {
                     throw new TransformException("Unknown Condition code system [" + conceptCodeSystem + "]");
                 }
 
+                String conditionCode = conditionCodeCell.getString();
                 codeableConceptBuilder.setCodingCode(conditionCode, conditionCodeCell);
+
                 CsvCell conditionCodeDisplayCell = parser.getConditionDisplay();
                 codeableConceptBuilder.setCodingDisplay(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
                 codeableConceptBuilder.setText(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
@@ -173,13 +175,6 @@ public class ConditionTransformer  {
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.setText(term.getString());
         }
-
-//
-//        CsvCell notes = parser.getDiagnosisNotes();
-//        if (!notes.isEmpty()) {
-//            conditionBuilder.setNotes(notes.getString(), notes);
-//        }
-
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
     }

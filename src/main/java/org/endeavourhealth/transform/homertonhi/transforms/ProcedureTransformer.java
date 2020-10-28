@@ -113,7 +113,7 @@ public class ProcedureTransformer {
         CsvCell procedureCommentsCell = csvHelper.findProcedureCommentText(procedureIdCell);
         if (!procedureCommentsCell.isEmpty()) {
 
-            procedureBuilder.addNotes(procedureCommentsCell.getString());
+            procedureBuilder.addNotes(procedureCommentsCell.getString(), procedureCommentsCell);
         }
 
         //TODO:  evaluate live PLACE_OF_SERVICE details to potentially map to referenced pre-transformed location
