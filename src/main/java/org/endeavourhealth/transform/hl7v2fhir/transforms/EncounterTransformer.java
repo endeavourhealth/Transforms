@@ -9,6 +9,9 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformWarnings;
@@ -17,6 +20,8 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilde
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
+import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -279,31 +284,6 @@ public class EncounterTransformer {
      * @throws Exception
      */
     private static void createChildEncounters(PV1 pv1, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType, String patientGuid) throws Exception {
-        ContainedParametersBuilder parametersBuilder = new ContainedParametersBuilder(existingParentEncounterBuilder);
-        parametersBuilder.removeContainedParameters();
-
-        if (pv1.getHospitalService() != null) {
-            String treatmentFunctionCode = pv1.getHospitalService().toString();
-         /*   MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7","inpatient",
-                    "treatment_function_code"
-            );
-            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
-
-            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7","inpatient",
-                    "treatment_function_code", treatmentFunctionCode, IMConstant.IMPERIAL_CERNER
-            );*/
-            // MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
-
-            CodeableConcept ccValue = new CodeableConcept();
-          /*  ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
-                    .setSystem(valueResponse.getConcept().getScheme());
-          */
-            ccValue.addCoding().setCode("TreatmentCode")
-                    .setSystem("HL7");
-            parametersBuilder.addParameter("code", ccValue);
-        }
 
         List<String> encounterIds = new ArrayList<String>();
         if("E".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
@@ -345,6 +325,7 @@ public class EncounterTransformer {
                 ContainedListBuilder existingEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
 
                 EncounterBuilder childEncounterBuilder = new EncounterBuilder();
+
                 if("E".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
                     childEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
                     CodeableConceptBuilder codeableConceptBuilderAdmission
@@ -404,6 +385,27 @@ public class EncounterTransformer {
                 //add in additional extended data as Parameters resource with additional extension
                 ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(childEncounterBuilder);
                 containedParametersBuilder.removeContainedParameters();
+
+                if (pv1.getHospitalService() != null) {
+                    String treatmentFunctionCode = pv1.getHospitalService().toString();
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7","inpatient",
+                            "treatment_function_code"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7","inpatient",
+                            "treatment_function_code", treatmentFunctionCode, IMConstant.IMPERIAL_CERNER
+                    );
+                     MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
+
+                    containedParametersBuilder.addParameter("code", ccValue);
+                }
 
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, encounterId);
