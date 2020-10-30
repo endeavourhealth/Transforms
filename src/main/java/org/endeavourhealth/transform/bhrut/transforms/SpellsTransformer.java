@@ -393,25 +393,15 @@ public class SpellsTransformer {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
         }
 
-        //first, save the updated parent with links
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), parentEncounterBuilder);
-
-        //then save the sub encounters if created,  admission is always created
+        //save the sub encounters if created,  admission encounter is always created
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
 
         if (dischargeEncounterBuilder != null) {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
         }
 
-//        //first, save the updated parent with links
-//        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !parentEncounterBuilder.isIdMapped(), parentEncounterBuilder);
-//
-//        //then save the sub encounters if created,  admission is always created
-//        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !admissionEncounterBuilder.isIdMapped(), admissionEncounterBuilder);
-//
-//        if (dischargeEncounterBuilder != null) {
-//            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !dischargeEncounterBuilder.isIdMapped(), dischargeEncounterBuilder);
-//        }
+        //finally, save the updated parent with encounter links
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !parentEncounterBuilder.isIdMapped(), parentEncounterBuilder);
     }
 
     private static void createEpisodeOfCare(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
