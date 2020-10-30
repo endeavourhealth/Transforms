@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.bhrut.transforms;
 import org.apache.commons.lang3.ArrayUtils;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.ods.OdsOrganisation;
-import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
@@ -40,7 +39,7 @@ public class PMIPreTransformer {
             long count = 0;
             long checkpoint = 5000;
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId(parser)) {
                     continue;
                 }
                 count++;
@@ -68,6 +67,7 @@ public class PMIPreTransformer {
 
         boolean orgInCache = csvHelper.getOrgCache().organizationInCache(orgId);
         if (!orgInCache) {
+
             boolean orgResourceAlreadyFiled
                     = csvHelper.getOrgCache().organizationInDB(orgId, csvHelper);
             if (!orgResourceAlreadyFiled) {

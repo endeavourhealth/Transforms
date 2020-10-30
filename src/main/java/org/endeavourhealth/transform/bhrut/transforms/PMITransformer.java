@@ -2,10 +2,6 @@ package org.endeavourhealth.transform.bhrut.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
-import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.im.models.mapping.MapColumnRequest;
-import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
-import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.PMI;
@@ -15,13 +11,11 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 public class PMITransformer {
-
 
     private static final Logger LOG = LoggerFactory.getLogger(PMITransformer.class);
 
@@ -33,11 +27,11 @@ public class PMITransformer {
         AbstractCsvParser parser = parsers.get(PMI.class);
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId(parser)) {
                     continue;
                 }
                 try {
-                    createResources((PMI) parser, fhirResourceFiler, csvHelper, version);
+                    createResources((PMI) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -50,8 +44,7 @@ public class PMITransformer {
 
     public static void createResources(PMI parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       BhrutCsvHelper csvHelper,
-                                       String version) throws Exception {
+                                       BhrutCsvHelper csvHelper) throws Exception {
 
 
         CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();
@@ -118,7 +111,6 @@ public class PMITransformer {
                     patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
                     break;
             }
-
         }
 
         createName(patientBuilder, fhirResourceFiler,parser, csvHelper);

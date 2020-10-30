@@ -54,7 +54,6 @@ public abstract class BhrutCsvToFhirTransformer {
     public final static  String  IM_DISCHARGE_METHOD_CODE = "DISCHARGE_METHOD_CODE";
     public final static  String  IM_DISCHARGE_DEST_CODE = "DISCHARGE_DESTINATION_CODE";
 
-
     public static final String BHRUT_ORG_ODS_CODE = "RF4";
 
     public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
@@ -174,13 +173,10 @@ public abstract class BhrutCsvToFhirTransformer {
                                          Map<Class, AbstractCsvParser> parsers,
                                          FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        BhrutCsvHelper csvHelper
-                = new BhrutCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
+        BhrutCsvHelper csvHelper = new BhrutCsvHelper(fhirResourceFiler.getServiceId(),
+                fhirResourceFiler.getSystemId(),
+                fhirResourceFiler.getExchangeId());
 
-        for (Map.Entry entry : parsers.entrySet()) {
-            Class cls = (Class) entry.getKey();
-            AbstractCsvParser prs = (AbstractCsvParser) entry.getValue();
-        }
         //these pre-transforms create Organization and Practitioner resources which subsequent transforms will reference
         PMIPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         OutpatientsPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);

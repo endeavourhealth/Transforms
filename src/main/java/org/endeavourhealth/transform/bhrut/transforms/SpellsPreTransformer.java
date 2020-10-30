@@ -36,27 +36,22 @@ public class SpellsPreTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId(parser)) {
                     continue;
                 }
                 try {
 
-                    if (!parser.getAdmissionHospitalCode().isEmpty()) {
-                        CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
+                    CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
+                    if (!admissionHospitalCodeCell.isEmpty()) {
+
                         String admissionHospitalCode = admissionHospitalCodeCell.getString();
-                        createResource(parser, fhirResourceFiler, csvHelper, version, admissionHospitalCode);
+                        createOrganisationResource(parser, fhirResourceFiler, csvHelper, admissionHospitalCode);
                     }
 
-                    if (!parser.getAdmissionConsultantCode().isEmpty()) {
-                        CsvCell admissionConsultantCodeCell = parser.getAdmissionConsultantCode();
-                        String admissionConsultantCode = admissionConsultantCodeCell.getString();
-                        createConsultantResource(parser, fhirResourceFiler, csvHelper, version, admissionConsultantCode);
-
-                    }
-
+                    createConsultantResources(parser, fhirResourceFiler, csvHelper);
 
                     if (!parser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
-                        cacheResources(parser, fhirResourceFiler, csvHelper, version);
+                        cacheResources(parser, fhirResourceFiler, csvHelper);
                     }
 
                 } catch (Exception ex) {
@@ -72,8 +67,7 @@ public class SpellsPreTransformer {
 
     public static void cacheResources(Spells parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      BhrutCsvHelper csvHelper,
-                                      String version) throws Exception {
+                                      BhrutCsvHelper csvHelper) throws Exception {
 
         if (!parser.getAdmissionConsultantCode().isEmpty()) {
             String name = csvHelper.getStaffCache().getNameForCcode(parser.getAdmissionConsultantCode().getString());
@@ -108,44 +102,78 @@ public class SpellsPreTransformer {
         }
     }
 
-    private static void createConsultantResource(Spells spellsParser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version, String admissionConsultantCode) throws Exception {
-        boolean admissionConsultantCodeInCache = csvHelper.getStaffCache().practitionerCodeInCache(admissionConsultantCode);
-        if (!admissionConsultantCodeInCache) {
-            boolean admissionConsultantCodeResourceAlreadyFiled
-                    = csvHelper.getStaffCache().practitionerCodeInDB(admissionConsultantCode, csvHelper);
-            if (!admissionConsultantCodeResourceAlreadyFiled) {
-                createPractitionerResource(spellsParser, fhirResourceFiler, csvHelper, admissionConsultantCode);
+    private static void createConsultantResources(Spells spellsParser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
+
+        //the admission consultant
+        CsvCell admissionConsultantCodeCell = spellsParser.getAdmissionConsultantCode();
+        if (!admissionConsultantCodeCell.isEmpty()) {
+
+            String admissionConsultantCode = admissionConsultantCodeCell.getString();
+            boolean admissionConsultantCodeInCache = csvHelper.getStaffCache().practitionerCodeInCache(admissionConsultantCode);
+            if (!admissionConsultantCodeInCache) {
+
+                boolean admissionConsultantCodeResourceAlreadyFiled
+                        = csvHelper.getStaffCache().practitionerCodeInDB(admissionConsultantCode, csvHelper);
+                if (!admissionConsultantCodeResourceAlreadyFiled) {
+
+                    CsvCell consultantNameCell = spellsParser.getAdmissionConsultant();
+                    createPractitionerResource(spellsParser,
+                            fhirResourceFiler,
+                            csvHelper,
+                            admissionConsultantCodeCell,
+                            consultantNameCell);
+                }
             }
         }
 
+        //the discharge consultant
+        CsvCell dischargeConsultantCodeCell = spellsParser.getDischargeConsultantCode();
+        if (!dischargeConsultantCodeCell.isEmpty()) {
+
+            String dischargeConsultantCode = dischargeConsultantCodeCell.getString();
+            boolean dischargeConsultantCodeInCache = csvHelper.getStaffCache().practitionerCodeInCache(dischargeConsultantCode);
+            if (!dischargeConsultantCodeInCache) {
+
+                boolean dischargeConsultantCodeResourceAlreadyFiled
+                        = csvHelper.getStaffCache().practitionerCodeInDB(dischargeConsultantCode, csvHelper);
+                if (!dischargeConsultantCodeResourceAlreadyFiled) {
+
+                    CsvCell consultantNameCell = spellsParser.getDischargeConsultant();
+                    createPractitionerResource(spellsParser,
+                            fhirResourceFiler,
+                            csvHelper,
+                            dischargeConsultantCodeCell,
+                            consultantNameCell);
+                }
+            }
+        }
     }
 
-    private static void createPractitionerResource(Spells spellsParser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String admissionConsultantCode) throws Exception {
+    private static void createPractitionerResource(Spells spellsParser,
+                                                   FhirResourceFiler fhirResourceFiler,
+                                                   BhrutCsvHelper csvHelper,
+                                                   CsvCell consultantCodeCell,
+                                                   CsvCell consultantNameCell) throws Exception {
 
         PractitionerBuilder practitionerBuilder
-                = csvHelper.getStaffCache().getOrCreatePractitionerBuilder(admissionConsultantCode, csvHelper);
+                = csvHelper.getStaffCache().getOrCreatePractitionerBuilder(consultantCodeCell.getString(), csvHelper);
 
-        CsvCell admissionConsultantCodeCell = spellsParser.getAdmissionConsultantCode();
-        if (!admissionConsultantCodeCell.isEmpty()) {
-            IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE);
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE);
-            identifierBuilder.setValue(admissionConsultantCodeCell.getString(), admissionConsultantCodeCell);
-        }
+        IdentifierBuilder.removeExistingIdentifiersForSystem(practitionerBuilder, FhirIdentifierUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE);
+        IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitionerBuilder);
+        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_CONSULTANT_CODE);
+        identifierBuilder.setValue(consultantCodeCell.getString(), consultantCodeCell);
 
-        CsvCell admissionConsultant = spellsParser.getAdmissionConsultant();
         NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
-        nameBuilder.setText(admissionConsultant.getString(), admissionConsultant);
+        nameBuilder.setText(consultantNameCell.getString(), consultantNameCell);
         fhirResourceFiler.saveAdminResource(spellsParser.getCurrentState(), practitionerBuilder);
-        csvHelper.getStaffCache().cachePractitionerBuilder(admissionConsultantCode, practitionerBuilder);
 
+        csvHelper.getStaffCache().cachePractitionerBuilder(consultantCodeCell.getString(), practitionerBuilder);
     }
 
-
-    public static void createResource(Spells parser,
+    public static void createOrganisationResource(Spells parser,
                                       FhirResourceFiler fhirResourceFiler,
                                       BhrutCsvHelper csvHelper,
-                                      String version, String orgId) throws Exception {
+                                      String orgId) throws Exception {
 
 
         boolean orgInCache = csvHelper.getOrgCache().organizationInCache(orgId);

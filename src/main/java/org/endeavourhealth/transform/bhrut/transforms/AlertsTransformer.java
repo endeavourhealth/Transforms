@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.bhrut.transforms;
 
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.schema.Alerts;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
@@ -30,7 +29,7 @@ public class AlertsTransformer {
                     continue;
                 }
                 try {
-                    createResource(parser, fhirResourceFiler, csvHelper, version);
+                    createResource(parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -43,8 +42,7 @@ public class AlertsTransformer {
 
     public static void createResource(Alerts parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      BhrutCsvHelper csvHelper,
-                                      String version) throws Exception {
+                                      BhrutCsvHelper csvHelper) throws Exception {
 
         FlagBuilder flagBuilder = new FlagBuilder();
         CsvCell alertIdCell = parser.getId();
@@ -79,10 +77,12 @@ public class AlertsTransformer {
 
         CsvCell alertDescriptionCell = parser.getAlertDescription();
         if (!alertDescriptionCell.isEmpty()) {
+
             flagTextBuilder.append(alertDescriptionCell.getString().trim()).append(".");
         }
         CsvCell alertCommentsCell = parser.getAlertComment();
         if (!alertCommentsCell.isEmpty()) {
+
             flagTextBuilder.append(alertCommentsCell.getString()).append(". ");
         }
         //also use the end date as the active indicator
@@ -107,8 +107,6 @@ public class AlertsTransformer {
 
             flagBuilder.setCategory(alertTypeDescCell.getString(), alertTypeDescCell);
         }
-
-
 
         flagBuilder.setCode(flagTextBuilder.toString().trim(), closedNoteCell, alertCommentsCell);
 

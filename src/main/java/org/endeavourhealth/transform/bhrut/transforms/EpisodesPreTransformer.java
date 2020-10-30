@@ -36,7 +36,7 @@ public class EpisodesPreTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId(parser)) {
                     continue;
                 }
                 try {
@@ -45,15 +45,13 @@ public class EpisodesPreTransformer {
                     if (!episodesParser.getAdmissionHospitalCode().isEmpty()) {
                         CsvCell admissionHospitalCodeCell = episodesParser.getAdmissionHospitalCode();
                         String admissionHospitalCode = admissionHospitalCodeCell.getString();
-                        createResource(episodesParser, fhirResourceFiler, csvHelper, version, admissionHospitalCode);
+                        createResource(episodesParser, fhirResourceFiler, csvHelper, admissionHospitalCode);
                     }
                     if (!episodesParser.getEpisodeConsultantCode().isEmpty()) {
                         CsvCell episodeConsultantCodeCell = episodesParser.getEpisodeConsultantCode();
                         String episodeConsultantCode = episodeConsultantCodeCell.getString();
-                        createEpisodeResource(episodesParser, fhirResourceFiler, csvHelper, version, episodeConsultantCode);
-
+                        createEpisodeResource(episodesParser, fhirResourceFiler, csvHelper, episodeConsultantCode);
                     }
-
                     if (!episodesParser.getDataUpdateStatus().getString().equalsIgnoreCase("Deleted")) {
                         cacheResources(episodesParser, fhirResourceFiler, csvHelper, version);
                     }
@@ -81,19 +79,23 @@ public class EpisodesPreTransformer {
         }
 
         if (!parser.getAdmissionHospitalCode().isEmpty()) {
-            CsvCell addmissionHospitalCode = parser.getAdmissionHospitalCode();
-            String code = addmissionHospitalCode.getString();
+            CsvCell admissionHospitalCode = parser.getAdmissionHospitalCode();
+            String code = admissionHospitalCode.getString();
             String name = csvHelper.getOrgCache().getNameForOrgCode(code);
             if (Strings.isNullOrEmpty(name)) {
                 OdsOrganisation or = lookupOrganisationViaRest(code);
                 if (or != null) { //Ignore non-ODS codes.  Bhrut sometimes uses ePact codes.
-                    csvHelper.getOrgCache().addOrgCode(addmissionHospitalCode, parser.getAdmissionHospitalName());
+                    csvHelper.getOrgCache().addOrgCode(admissionHospitalCode, parser.getAdmissionHospitalName());
                 }
             }
         }
     }
 
-    private static void createEpisodeResource(Episodes episodesParser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String version, String episodeConsultantCode) throws Exception {
+    private static void createEpisodeResource(Episodes episodesParser,
+                                              FhirResourceFiler fhirResourceFiler,
+                                              BhrutCsvHelper csvHelper,
+                                              String episodeConsultantCode) throws Exception {
+
         boolean practitionerCodeInCache = csvHelper.getStaffCache().practitionerCodeInCache(episodeConsultantCode);
         if (!practitionerCodeInCache) {
             boolean practitionerCodeResourceAlreadyFiled
@@ -102,14 +104,12 @@ public class EpisodesPreTransformer {
                 createPractitionerResource(episodesParser, fhirResourceFiler, csvHelper, episodeConsultantCode);
             }
         }
-
     }
 
     public static void createResource(Episodes parser,
                                       FhirResourceFiler fhirResourceFiler,
                                       BhrutCsvHelper csvHelper,
-                                      String version, String orgId) throws Exception {
-
+                                      String orgId) throws Exception {
 
         boolean orgInCache = csvHelper.getOrgCache().organizationInCache(orgId);
         if (!orgInCache) {
@@ -121,7 +121,10 @@ public class EpisodesPreTransformer {
         }
     }
 
-    private static void createPractitionerResource(Episodes episodesParser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper, String episodeConsultantCode) throws Exception {
+    private static void createPractitionerResource(Episodes episodesParser,
+                                                   FhirResourceFiler fhirResourceFiler,
+                                                   BhrutCsvHelper csvHelper,
+                                                   String episodeConsultantCode) throws Exception {
 
         PractitionerBuilder practitionerBuilder
                 = csvHelper.getStaffCache().getOrCreatePractitionerBuilder(episodeConsultantCode, csvHelper);
@@ -176,5 +179,4 @@ public class EpisodesPreTransformer {
         //add to cache
         csvHelper.getOrgCache().cacheOrganizationBuilder(orgId, organizationBuilder);
     }
-
 }

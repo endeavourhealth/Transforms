@@ -16,12 +16,12 @@ public class EpisodeOfCareCache {
 
     private ResourceCache<String, EpisodeOfCareBuilder> episodeOfCareBuildersByCaseId = new ResourceCache<>();
 
-    public EpisodeOfCareBuilder getOrCreateEpisodeOfCareBuilder(CsvCell caseIdCell,
+    public EpisodeOfCareBuilder getOrCreateEpisodeOfCareBuilder(CsvCell idCell,
                                                                 BhrutCsvHelper csvHelper,
                                                                 FhirResourceFiler fhirResourceFiler) throws Exception {
 
         EpisodeOfCareBuilder cachedResource
-                = episodeOfCareBuildersByCaseId.getAndRemoveFromCache(caseIdCell.getString());
+                = episodeOfCareBuildersByCaseId.getAndRemoveFromCache(idCell.getString());
         if (cachedResource != null) {
             return cachedResource;
         }
@@ -29,11 +29,11 @@ public class EpisodeOfCareCache {
         EpisodeOfCareBuilder episodeOfCareBuilder = null;
 
         EpisodeOfCare episodeOfCare
-                = (EpisodeOfCare) csvHelper.retrieveResource(caseIdCell.getString(), ResourceType.EpisodeOfCare);
+                = (EpisodeOfCare) csvHelper.retrieveResource(idCell.getString(), ResourceType.EpisodeOfCare);
         if (episodeOfCare == null) {
             //if the Patient episode doesn't exist yet, create a new one using the Case Id
             episodeOfCareBuilder = new EpisodeOfCareBuilder();
-            episodeOfCareBuilder.setId(caseIdCell.getString(), caseIdCell);
+            episodeOfCareBuilder.setId(idCell.getString(), idCell);
         } else {
             episodeOfCareBuilder = new EpisodeOfCareBuilder(episodeOfCare);
         }
@@ -49,11 +49,11 @@ public class EpisodeOfCareCache {
         }
     }
 
-    public void cacheEpisodeOfCareBuilder(CsvCell caseIdCell, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
-        cacheEpisodeOfCareBuilder(caseIdCell.getString(), episodeOfCareBuilder);
+    public void cacheEpisodeOfCareBuilder(CsvCell idCell, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
+        cacheEpisodeOfCareBuilder(idCell.getString(), episodeOfCareBuilder);
     }
 
-    public void cacheEpisodeOfCareBuilder(String caseId, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
-        episodeOfCareBuildersByCaseId.addToCache(caseId, episodeOfCareBuilder);
+    public void cacheEpisodeOfCareBuilder(String id, EpisodeOfCareBuilder episodeOfCareBuilder) throws Exception {
+        episodeOfCareBuildersByCaseId.addToCache(id, episodeOfCareBuilder);
     }
 }

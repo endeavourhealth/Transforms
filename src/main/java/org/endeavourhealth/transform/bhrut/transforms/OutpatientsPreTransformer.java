@@ -34,11 +34,11 @@ public class OutpatientsPreTransformer {
 
         if (parser != null) {
             while (parser.nextRecord()) {
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                if (!csvHelper.processRecordFilteringOnPatientId(parser)) {
                     continue;
                 }
                 try {
-                    createResource(parser, fhirResourceFiler, csvHelper, version);
+                    createResource(parser, fhirResourceFiler, csvHelper);
 
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
@@ -49,8 +49,7 @@ public class OutpatientsPreTransformer {
 
     public static void createResource(Outpatients parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      BhrutCsvHelper csvHelper,
-                                      String version) throws Exception {
+                                      BhrutCsvHelper csvHelper) throws Exception {
 
 
         //for each unique ods code in the outpatient file, check, file and cache the resource
@@ -59,8 +58,10 @@ public class OutpatientsPreTransformer {
         CsvCell consultantCodeCell = parser.getConsultantCode();
 
         if (!hospitalCodeCell.isEmpty()) {
+
             boolean orgInCache = csvHelper.getOrgCache().organizationInCache(hospitalCodeCell.getString());
             if (!orgInCache) {
+
                 boolean orgResourceAlreadyFiled
                         = csvHelper.getOrgCache().organizationInDB(hospitalCodeCell.getString(), csvHelper);
                 if (!orgResourceAlreadyFiled) {
@@ -69,14 +70,15 @@ public class OutpatientsPreTransformer {
             }
         }
         if (!consultantCodeCell.isEmpty()) {
+
             boolean staffInCache = csvHelper.getStaffCache().cCodeInCache(consultantCodeCell.getString());
             if (!staffInCache) {
+
                 csvHelper.getStaffCache().addConsultantCode(consultantCodeCell, consultantCell);
                 PractitionerBuilder practitionerBuilder
                         = csvHelper.getStaffCache().getOrCreatePractitionerBuilder(consultantCodeCell.getString(), csvHelper);
                 if (practitionerBuilder.getNames().isEmpty()) {
                     NameBuilder nameBuilder = new NameBuilder(practitionerBuilder);
-                    //nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
                     nameBuilder.setText(consultantCell.getString(), consultantCell);
                 }
                 csvHelper.getStaffCache().cachePractitionerBuilder(practitionerBuilder.getResourceId(), practitionerBuilder);
