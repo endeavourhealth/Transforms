@@ -39,13 +39,13 @@ public abstract class ImperialHL7FhirADTTransformer {
             transformADT_A03(fhirResourceFiler, (ADT_A03) hapiMsg, msgType, imperialHL7Helper);
 
         } else if("ADT_A11".equalsIgnoreCase(msgType)) {
-            transformADT_A11(fhirResourceFiler, (ADT_A11) hapiMsg, imperialHL7Helper);
+            transformADT_A11(fhirResourceFiler, (ADT_A11) hapiMsg, msgType, imperialHL7Helper);
 
         } else if("ADT_A12".equalsIgnoreCase(msgType)) {
-            transformADT_A12(fhirResourceFiler, (ADT_A12) hapiMsg, imperialHL7Helper);
+            transformADT_A12(fhirResourceFiler, (ADT_A12) hapiMsg, msgType, imperialHL7Helper);
 
         } else if("ADT_A13".equalsIgnoreCase(msgType)) {
-            transformADT_A13(fhirResourceFiler, (ADT_A13) hapiMsg, imperialHL7Helper);
+            transformADT_A13(fhirResourceFiler, (ADT_A13) hapiMsg, msgType, imperialHL7Helper);
 
         } /*else if("ADT_A05".equalsIgnoreCase(msgType)) {
             transformADT_A05(fhirResourceFiler, (ADT_A05) hapiMsg, msgType, imperialHL7Helper);
@@ -603,7 +603,7 @@ public abstract class ImperialHL7FhirADTTransformer {
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A13(FhirResourceFiler fhirResourceFiler, ADT_A13 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A13(FhirResourceFiler fhirResourceFiler, ADT_A13 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A13 adtMsg = hapiMsg;
 
         //Organization
@@ -698,7 +698,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         Encounter existingParentEncounter
                 = (Encounter) imperialHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(adtMsg.getPV1().getVisitNumber().getID()));
         if(existingParentEncounter != null) {
-            EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper);
+            EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType);
         }
         //Encounter
 
@@ -719,7 +719,7 @@ public abstract class ImperialHL7FhirADTTransformer {
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A12(FhirResourceFiler fhirResourceFiler, ADT_A12 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A12(FhirResourceFiler fhirResourceFiler, ADT_A12 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A12 adtMsg = hapiMsg;
 
         //Organization
@@ -811,7 +811,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         //Patient
 
         //Encounter
-        EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper);
+        EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType);
         //Encounter
 
         //EpisodeOfCare
@@ -831,7 +831,7 @@ public abstract class ImperialHL7FhirADTTransformer {
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A11(FhirResourceFiler fhirResourceFiler, ADT_A11 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A11(FhirResourceFiler fhirResourceFiler, ADT_A11 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A11 adtMsg = hapiMsg;
 
         //Organization
@@ -926,7 +926,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         Encounter existingParentEncounter
                 = (Encounter) imperialHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(adtMsg.getPV1().getVisitNumber().getID()));
         if(existingParentEncounter != null) {
-            EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper);
+            EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType);
         }
         //Encounter
 

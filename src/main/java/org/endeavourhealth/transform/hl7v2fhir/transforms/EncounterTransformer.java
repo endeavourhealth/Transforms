@@ -433,9 +433,10 @@ public class EncounterTransformer {
      * @param pv1
      * @param fhirResourceFiler
      * @param imperialHL7Helper
+     * @param msgType
      * @throws Exception
      */
-    public static void deleteEncounterAndChildren(PV1 pv1, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    public static void deleteEncounterAndChildren(PV1 pv1, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType) throws Exception {
         //retrieve the existing Top level parent Encounter resource to perform a deletion plus any child encounters
         Encounter existingParentEncounter
                 = (Encounter) imperialHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(pv1.getVisitNumber().getID()));
@@ -465,7 +466,9 @@ public class EncounterTransformer {
                 }
             }
             //finally, delete the top level parent
-            fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
+            if ("ADT_A01".equalsIgnoreCase(msgType)) {
+                fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
+            }
 
         } else {
             TransformWarnings.log(LOG, imperialHL7Helper, "Cannot find existing Encounter: {} for deletion", String.valueOf(pv1.getVisitNumber().getID()));
