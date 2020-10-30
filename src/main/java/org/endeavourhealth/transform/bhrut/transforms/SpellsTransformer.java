@@ -152,10 +152,10 @@ public class SpellsTransformer {
         createEpisodeOfCare(parser, fhirResourceFiler, csvHelper);
 
         //Create Top level Parent Spell Encounter
-        EncounterBuilder existingParentEncounterBuilder
+        EncounterBuilder parentEncounterBuilder
                 = createEncountersParentMinimum(parser, fhirResourceFiler, csvHelper);
 
-        ContainedListBuilder existingParentEncounterList = new ContainedListBuilder(existingParentEncounterBuilder);
+        ContainedListBuilder existingParentEncounterList = new ContainedListBuilder(parentEncounterBuilder);
 
         EncounterBuilder admissionEncounterBuilder = new EncounterBuilder();
         admissionEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
@@ -307,7 +307,7 @@ public class SpellsTransformer {
 
             Reference thisParentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-            if (existingParentEncounterBuilder.isIdMapped()) {
+            if (parentEncounterBuilder.isIdMapped()) {
                 thisParentEncounter
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisParentEncounter, csvHelper);
             }
@@ -358,7 +358,7 @@ public class SpellsTransformer {
 
             Reference thisParentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-            if (existingParentEncounterBuilder.isIdMapped()) {
+            if (parentEncounterBuilder.isIdMapped()) {
                 thisParentEncounter
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisParentEncounter, csvHelper);
             }
@@ -394,7 +394,7 @@ public class SpellsTransformer {
         }
 
         //first, save the updated parent with links
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), parentEncounterBuilder);
 
         //then save the sub encounters if created,  admission is always created
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
@@ -402,6 +402,16 @@ public class SpellsTransformer {
         if (dischargeEncounterBuilder != null) {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
         }
+
+//        //first, save the updated parent with links
+//        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !parentEncounterBuilder.isIdMapped(), parentEncounterBuilder);
+//
+//        //then save the sub encounters if created,  admission is always created
+//        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !admissionEncounterBuilder.isIdMapped(), admissionEncounterBuilder);
+//
+//        if (dischargeEncounterBuilder != null) {
+//            fhirResourceFiler.savePatientResource(parser.getCurrentState(), !dischargeEncounterBuilder.isIdMapped(), dischargeEncounterBuilder);
+//        }
     }
 
     private static void createEpisodeOfCare(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
