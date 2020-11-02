@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.subscriber;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.utility.ExpiringCache;
+import org.endeavourhealth.common.utility.ExpiringSet;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.im.models.mapping.MapColumnRequest;
@@ -12,36 +14,40 @@ import org.hl7.fhir.instance.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+
 import java.util.concurrent.locks.ReentrantLock;
 
 public class IMHelper {
     private static final Logger LOG = LoggerFactory.getLogger(IMHelper.class);
+    private static final long CACHE_DURATION = 1000 * 60 *  2 ; //cache objects for 120s
+    private static final long THREAD_SLEEP_TIME = 2400 * 10; //thread sleep for 24s
+    private static final int RETRY_COUNT = 5; //thread retry count
+
 
     //simpler to use just a map in memory than mess about with JCS etc.
     //there won't be so many concepts that we need to worry about limiting in size
-    private static Map<String, Integer> mappedCache = new ConcurrentHashMap<>();
-    private static Set<String> nullMappedCache = ConcurrentHashMap.newKeySet();
 
-    private static Map<String, Integer> coreCache = new ConcurrentHashMap<>();
-    private static Set<String> nullCoreCache = ConcurrentHashMap.newKeySet();
+    private static ExpiringCache<String, Integer> mappedCache = new ExpiringCache<>(CACHE_DURATION);//cache for a minute
+    private static Set<String> nullMappedCache = new ExpiringSet<>(CACHE_DURATION);
 
-    private static Map<Integer, String> snomedConceptForCoreDBIDCache = new ConcurrentHashMap<>();
-    private static Set<Integer> nullSnomedConceptForCoreDBIDCache = ConcurrentHashMap.newKeySet();
+    private static ExpiringCache<String, Integer> coreCache = new ExpiringCache<>( CACHE_DURATION);
+    private static Set<String> nullCoreCache = new ExpiringSet<>(CACHE_DURATION);
 
-    private static Map<String, String> snomedConceptForLegacyCodeCache = new ConcurrentHashMap<>();
-    private static Set<String> nullSnomedConceptForLegacyCodeCache = ConcurrentHashMap.newKeySet();
+    private static ExpiringCache<Integer, String> snomedConceptForCoreDBIDCache = new ExpiringCache<>( CACHE_DURATION);
+    private static Set<Integer> nullSnomedConceptForCoreDBIDCache = new ExpiringSet<Integer>(CACHE_DURATION);
 
-    private static Map<String, String> mappedLegacyCodeForLegacyCodeAndTermCache = new ConcurrentHashMap<>();
-    private static Set<String> nullMappedLegacyCodeForLegacyCodeAndTermCache = ConcurrentHashMap.newKeySet();
+    private static ExpiringCache<String, String> snomedConceptForLegacyCodeCache = new ExpiringCache<>( CACHE_DURATION );
+    private static Set<String> nullSnomedConceptForLegacyCodeCache = new ExpiringSet<>(CACHE_DURATION );
 
-    private static Map<String, MapResponse> mappedColumnRequestResponseCache = new ConcurrentHashMap<>();
-    private static Set<String> nullMappedColumnRequestResponseCache = ConcurrentHashMap.newKeySet();
+    private static ExpiringCache<String, String> mappedLegacyCodeForLegacyCodeAndTermCache = new ExpiringCache<>( CACHE_DURATION);
+    private static Set<String> nullMappedLegacyCodeForLegacyCodeAndTermCache = new ExpiringSet<>(CACHE_DURATION);
 
-    private static Map<String, MapResponse> mappedColumnValueRequestResponseCache = new ConcurrentHashMap<>();
-    private static Set<String> nullMappedColumnValueRequestResponseCache = ConcurrentHashMap.newKeySet();
+    private static ExpiringCache<String, MapResponse> mappedColumnRequestResponseCache = new ExpiringCache<>( CACHE_DURATION);
+    private static Set<String> nullMappedColumnRequestResponseCache = new ExpiringSet<>(CACHE_DURATION);
+
+    private static ExpiringCache<String, MapResponse> mappedColumnValueRequestResponseCache = new ExpiringCache<>( CACHE_DURATION);
+    private static Set<String> nullMappedColumnValueRequestResponseCache = new ExpiringSet<>(CACHE_DURATION);
 
     private static final ReentrantLock lock = new ReentrantLock();
 
@@ -85,7 +91,7 @@ public class IMHelper {
             lock.lock();
 
             //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = 5;
+            int lives = RETRY_COUNT;
 
             while (true) {
                 lives--;
@@ -95,7 +101,7 @@ public class IMHelper {
                     if (lives <= 0) {
                         throw ex;
                     }
-
+                    Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
                 }
             }
@@ -142,7 +148,7 @@ public class IMHelper {
             lock.lock();
 
             //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = 5;
+            int lives = RETRY_COUNT;
 
             while (true) {
                 lives--;
@@ -152,7 +158,7 @@ public class IMHelper {
                     if (lives <= 0) {
                         throw ex;
                     }
-
+                    Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
                 }
             }
@@ -200,7 +206,7 @@ public class IMHelper {
             lock.lock();
 
             //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = 5;
+            int lives = RETRY_COUNT;
 
             while (true) {
                 lives--;
@@ -210,7 +216,7 @@ public class IMHelper {
                     if (lives <= 0) {
                         throw ex;
                     }
-
+                    Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
                 }
             }
@@ -257,7 +263,7 @@ public class IMHelper {
             lock.lock();
 
             //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = 5;
+            int lives = RETRY_COUNT;
 
             while (true) {
                 lives--;
@@ -267,6 +273,7 @@ public class IMHelper {
                     if (lives <= 0) {
                         throw ex;
                     }
+                    Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
                 }
             }
@@ -316,7 +323,7 @@ public class IMHelper {
             lock.lock();
 
             //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = 5;
+            int lives = RETRY_COUNT;
 
             while (true) {
                 lives--;
@@ -326,7 +333,7 @@ public class IMHelper {
                     if (lives <= 0) {
                         throw ex;
                     }
-
+                    Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
                 }
             }
@@ -340,6 +347,7 @@ public class IMHelper {
      * e.g. for Barts code 687309281 it will return 1240511000000106
      */
     public static String getMappedSnomedConceptForSchemeCode(String scheme, String code) throws Exception {
+
         if (code == null) {
             return null;
         }
@@ -360,7 +368,6 @@ public class IMHelper {
             nullSnomedConceptForLegacyCodeCache.add(key);
             //note that this fn is expected to return null quite often
             //so there's no logging or warning for nulls
-
         } else {
             snomedConceptForLegacyCodeCache.put(key, ret);
         }
@@ -371,9 +378,8 @@ public class IMHelper {
     private static String getMappedSnomedConceptForSchemeCodeWithRetry(String scheme, String code) throws Exception {
         try {
             lock.lock();
-
             //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = 5;
+            int lives = RETRY_COUNT;
 
             while (true) {
                 lives--;
@@ -383,7 +389,7 @@ public class IMHelper {
                     if (lives <= 0) {
                         throw ex;
                     }
-
+                    Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
                 }
             }
@@ -437,7 +443,7 @@ public class IMHelper {
             lock.lock();
 
             //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = 5;
+            int lives = RETRY_COUNT;
 
             while (true) {
                 lives--;
@@ -447,6 +453,7 @@ public class IMHelper {
                     if (lives <= 0) {
                         throw ex;
                     }
+                    Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
                 }
             }
