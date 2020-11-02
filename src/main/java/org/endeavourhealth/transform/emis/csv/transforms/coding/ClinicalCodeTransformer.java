@@ -15,6 +15,7 @@ import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCode;
@@ -89,6 +90,9 @@ public abstract class ClinicalCodeTransformer {
         Map<Long, String> hmSnomedTerms = new ConcurrentHashMap<>();
 
         try {
+
+            Task nextTask = new Task(hmAdjustedCodes, hmIsEmisCodes, hmSnomedTerms);
+
             while (parser.nextRecord()) {
                 CsvCell codeIdCell = parser.getCodeId();
                 CsvCell readCodeCell = parser.getReadTermId();
@@ -101,8 +105,16 @@ public abstract class ClinicalCodeTransformer {
                 codeIds.add(new Long(codeId));
 
                 //perform the lookups in the thread pool
-                Task t = new Task(codeId, readCode, snomedConceptId, hmAdjustedCodes, hmIsEmisCodes, hmSnomedTerms);
-                csvHelper.submitToThreadPool(t);
+                nextTask.addRecord(codeId, readCode, snomedConceptId);
+                if (nextTask.isFull()) {
+                    csvHelper.submitToThreadPool(nextTask);
+                    nextTask = new Task(hmAdjustedCodes, hmIsEmisCodes, hmSnomedTerms);
+                }
+            }
+
+            //finish off the current task
+            if (!nextTask.isEmpty()) {
+                csvHelper.submitToThreadPool(nextTask);
             }
 
         } finally {
@@ -146,75 +158,6 @@ public abstract class ClinicalCodeTransformer {
         return dstFile;
     }
 
-    /*private static void transform(ClinicalCode parser,
-                                  FhirResourceFiler fhirResourceFiler,
-                                  EmisCsvHelper csvHelper,
-                                  List<EmisCsvCodeMap> mappingsToSave,
-                                  Set<Long> missingCodes,
-                                  Set<Long> foundMissingCodes) throws Exception {
-
-        CsvCell codeIdCell = parser.getCodeId();
-        CsvCell emisTermCell = parser.getTerm();
-        CsvCell emisCodeCell = parser.getReadTermId();
-        CsvCell snomedConceptIdCell = parser.getSnomedCTConceptId();
-        CsvCell snomedDescriptionIdCell = parser.getSnomedCTDescriptionId();
-        CsvCell emisCategoryCell = parser.getEmisCodeCategoryDescription();
-        CsvCell nationalCodeCell = parser.getNationalCode();
-        CsvCell nationalCodeCategoryCell = parser.getNationalCodeCategory();
-        CsvCell nationalCodeDescriptionCell = parser.getNationalDescription();
-
-        ClinicalCodeType codeType = ClinicalCodeType.fromValue(emisCategoryCell.getString());
-
-        EmisCsvCodeMap mapping = new EmisCsvCodeMap();
-        mapping.setMedication(false);
-        mapping.setCodeId(codeIdCell.getLong().longValue());
-        mapping.setCodeType(codeType.getValue());
-        mapping.setReadTerm(emisTermCell.getString());
-        mapping.setReadCode(emisCodeCell.getString());
-        mapping.setSnomedConceptId(snomedConceptIdCell.getLong());
-        mapping.setSnomedDescriptionId(snomedDescriptionIdCell.getLong());
-        mapping.setNationalCode(nationalCodeCell.getString());
-        mapping.setNationalCodeCategory(nationalCodeCategoryCell.getString());
-        mapping.setNationalCodeDescription(nationalCodeDescriptionCell.getString());
-        mapping.setDtLastReceived(csvHelper.getDataDate());
-
-        //the parent code ID was added after 5.3
-        if (parser.getVersion().equals(EmisCsvToFhirTransformer.VERSION_5_4)) {
-            CsvCell parentCodeId = parser.getParentCodeId();
-            mapping.setParentCodeId(parentCodeId.getLong());
-        }
-
-        ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-        auditWrapper.auditValue(emisCodeCell.getPublishedFileId(), emisCodeCell.getRecordNumber(), emisCodeCell.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_READ_CODE);
-        auditWrapper.auditValue(emisTermCell.getPublishedFileId(), emisTermCell.getRecordNumber(), emisTermCell.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_READ_TERM);
-        auditWrapper.auditValue(snomedConceptIdCell.getPublishedFileId(), snomedConceptIdCell.getRecordNumber(), snomedConceptIdCell.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_SNOMED_CONCEPT_ID);
-        auditWrapper.auditValue(snomedDescriptionIdCell.getPublishedFileId(), snomedDescriptionIdCell.getRecordNumber(), snomedDescriptionIdCell.getColIndex(), EmisCodeHelper.AUDIT_CLINICAL_CODE_SNOMED_DESCRIPTION_ID);
-        mapping.setAudit(auditWrapper);
-
-        mappingsToSave.add(mapping);
-        if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
-            List<EmisCsvCodeMap> copy = new ArrayList<>(mappingsToSave);
-            mappingsToSave.clear();
-            csvHelper.submitToThreadPool(new Task(copy));
-        }
-
-        //if this code was previously missing, record that it's been found
-        Long codeId = codeIdCell.getLong();
-        if (missingCodes.contains(codeId)) {
-            foundMissingCodes.add(codeId);
-        }
-    }
-
-
-    public static String getClinicalCodeSystemForReadCode(String code) throws Exception {
-        Read2Code dbCode = lookupRead2CodeUsingCache(code);
-        if (dbCode == null) {
-            return FhirCodeUri.CODE_SYSTEM_EMIS_CODE;
-        } else {
-            return FhirCodeUri.CODE_SYSTEM_READ2;
-        }
-    }
-*/
 
     private static boolean isEmisCode(String code) throws Exception {
         Read2Code dbCode = lookupRead2CodeUsingCache(code);
@@ -292,100 +235,100 @@ public abstract class ClinicalCodeTransformer {
         return code;
     }
 
-/*
-    static class Task implements Callable {
-
-        private List<EmisCsvCodeMap> mappings = null;
-
-        public Task(List<EmisCsvCodeMap> mappings) {
-            this.mappings = mappings;
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            try {
-
-                //see if we can find an official snomed term for each concept ID
-                for (EmisCsvCodeMap mapping: mappings) {
-
-                    SnomedLookup snomedLookup = snomedDal.getSnomedLookup("" + mapping.getSnomedConceptId());
-                    if (snomedLookup != null) {
-                        String snomedTerm = snomedLookup.getTerm();
-                        mapping.setSnomedTerm(snomedTerm);
-                    }
-
-                    //sanitise the code and work out what coding system it should have
-                    String readCode = mapping.getReadCode();
-                    String adjustedCode = removeSynonymAndPadRead2Code(readCode);
-                    String codeableConceptSystem = getClinicalCodeSystemForReadCode(adjustedCode);
-
-                    mapping.setAdjustedCode(adjustedCode);
-                    mapping.setCodeableConceptSystem(codeableConceptSystem);
-                }
-
-                //and save the mapping batch
-                mappingDal.saveCodeMappings(mappings);
-
-            } catch (Throwable t) {
-                String msg = "Error saving clinical code records for code IDs ";
-                for (EmisCsvCodeMap mapping: mappings) {
-                    msg += mapping.getCodeId();
-                    msg += ", ";
-                }
-
-                LOG.error(msg, t);
-                throw new TransformException(msg, t);
-            }
-
-            return null;
-        }
-    }*/
-
-    static class Task implements Callable {
-
+    static class CodeRecord {
         private long codeId;
         private String readCode;
         private Long snomedConceptId;
-        private Map<Long, String> hmAdjustedCodes;
-        private Map<Long, Integer> hmIsEmisCodes;
-        private Map<Long, String> hmSnomedTerms;
 
-        public Task(long codeId, String readCode, Long snomedConceptId, Map<Long, String> hmAdjustedCodes, Map<Long, Integer> hmIsEmisCodes, Map<Long, String> hmSnomedTerms) {
+        public CodeRecord(long codeId, String readCode, Long snomedConceptId) {
             this.codeId = codeId;
             this.readCode = readCode;
             this.snomedConceptId = snomedConceptId;
+        }
+
+        public long getCodeId() {
+            return codeId;
+        }
+
+        public String getReadCode() {
+            return readCode;
+        }
+
+        public Long getSnomedConceptId() {
+            return snomedConceptId;
+        }
+
+        @Override
+        public String toString() {
+            return "" + codeId;
+        }
+    }
+
+    static class Task implements Callable {
+
+        private List<CodeRecord> records = new ArrayList<>(); //the codes to look up
+        private Map<Long, String> hmAdjustedCodes; //used for results
+        private Map<Long, Integer> hmIsEmisCodes; //used for results
+        private Map<Long, String> hmSnomedTerms; //used for results
+
+        public Task(Map<Long, String> hmAdjustedCodes, Map<Long, Integer> hmIsEmisCodes, Map<Long, String> hmSnomedTerms) {
             this.hmAdjustedCodes = hmAdjustedCodes;
             this.hmIsEmisCodes = hmIsEmisCodes;
             this.hmSnomedTerms = hmSnomedTerms;
         }
 
+        public void addRecord(long codeId, String readCode, Long snomedConceptId) {
+            this.records.add(new CodeRecord(codeId, readCode, snomedConceptId));
+        }
+
+        public boolean isFull() {
+            return this.records.size() >= TransformConfig.instance().getResourceSaveBatchSize();
+        }
+
+        public boolean isEmpty() {
+            return this.records.isEmpty();
+        }
+
         @Override
         public Object call() throws Exception {
 
             try {
 
-                SnomedLookup snomedLookup = snomedDal.getSnomedLookup("" + snomedConceptId);
-                if (snomedLookup != null) {
-                    String snomedTerm = snomedLookup.getTerm();
-                    hmSnomedTerms.put(new Long(codeId), snomedTerm);
+                //look up multiple snomed terms at once, as this has shown to be a bottleneck when doing it one concept at a time
+                Set<String> conceptIds = new HashSet<>();
+                for (CodeRecord record: records) {
+                    String conceptId = "" + record.getSnomedConceptId();
+                    conceptIds.add(conceptId);
+                }
+                Map<String, SnomedLookup> map = snomedDal.getSnomedLookups(conceptIds);
+                for (CodeRecord record: records) {
+                    long codeId = record.getCodeId();
+                    String conceptId = "" + record.getSnomedConceptId();
+                    SnomedLookup snomedLookup = map.get(conceptId);
+                    if (snomedLookup != null) {
+                        String snomedTerm = snomedLookup.getTerm();
+                        hmSnomedTerms.put(new Long(codeId), snomedTerm);
+                    }
                 }
 
                 //sanitise the code and work out what coding system it should have
-                String adjustedCode = removeSynonymAndPadRead2Code(readCode);
-                hmAdjustedCodes.put(new Long(codeId), adjustedCode);
+                for (CodeRecord record: records) {
+                    String readCode = record.getReadCode();
+                    long codeId = record.getCodeId();
+                    String adjustedCode = removeSynonymAndPadRead2Code(readCode);
+                    hmAdjustedCodes.put(new Long(codeId), adjustedCode);
 
-                //check if it's an Emis code or valid Read2
-                boolean isEmisCode = isEmisCode(adjustedCode);
-                if (isEmisCode) {
-                    hmIsEmisCodes.put(new Long(codeId), new Integer(1));
-                } else {
-                    hmIsEmisCodes.put(new Long(codeId), new Integer(0));
+                    //check if it's an Emis code or valid Read2
+                    boolean isEmisCode = isEmisCode(adjustedCode);
+                    if (isEmisCode) {
+                        hmIsEmisCodes.put(new Long(codeId), new Integer(1));
+                    } else {
+                        hmIsEmisCodes.put(new Long(codeId), new Integer(0));
+                    }
                 }
 
-
             } catch (Throwable t) {
-                String msg = "Error processing Clinical Code ID " + codeId;
+                String msg = "Error processing Clinical Code records " + records;
                 throw new TransformException(msg, t);
             }
 

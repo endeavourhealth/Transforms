@@ -15,14 +15,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
-
 import java.util.concurrent.locks.ReentrantLock;
 
 public class IMHelper {
     private static final Logger LOG = LoggerFactory.getLogger(IMHelper.class);
-    private static final long CACHE_DURATION = 1000 * 60 *  2 ; //cache objects for 120s
-    private static final long THREAD_SLEEP_TIME = 2400 * 10; //thread sleep for 24s
-    private static final int RETRY_COUNT = 5; //thread retry count
+    private static final long CACHE_DURATION = 1000 * 60 * 2; //cache objects for 120s
+    private static final long THREAD_SLEEP_TIME = 1000 * 10; //thread sleep for 10s
+    private static final int RETRY_COUNT = 12; //thread retry count
 
 
     //simpler to use just a map in memory than mess about with JCS etc.
@@ -31,22 +30,22 @@ public class IMHelper {
     private static ExpiringCache<String, Integer> mappedCache = new ExpiringCache<>(CACHE_DURATION);//cache for a minute
     private static Set<String> nullMappedCache = new ExpiringSet<>(CACHE_DURATION);
 
-    private static ExpiringCache<String, Integer> coreCache = new ExpiringCache<>( CACHE_DURATION);
+    private static ExpiringCache<String, Integer> coreCache = new ExpiringCache<>(CACHE_DURATION);
     private static Set<String> nullCoreCache = new ExpiringSet<>(CACHE_DURATION);
 
-    private static ExpiringCache<Integer, String> snomedConceptForCoreDBIDCache = new ExpiringCache<>( CACHE_DURATION);
+    private static ExpiringCache<Integer, String> snomedConceptForCoreDBIDCache = new ExpiringCache<>(CACHE_DURATION);
     private static Set<Integer> nullSnomedConceptForCoreDBIDCache = new ExpiringSet<Integer>(CACHE_DURATION);
 
-    private static ExpiringCache<String, String> snomedConceptForLegacyCodeCache = new ExpiringCache<>( CACHE_DURATION );
-    private static Set<String> nullSnomedConceptForLegacyCodeCache = new ExpiringSet<>(CACHE_DURATION );
+    private static ExpiringCache<String, String> snomedConceptForLegacyCodeCache = new ExpiringCache<>(CACHE_DURATION);
+    private static Set<String> nullSnomedConceptForLegacyCodeCache = new ExpiringSet<>(CACHE_DURATION);
 
-    private static ExpiringCache<String, String> mappedLegacyCodeForLegacyCodeAndTermCache = new ExpiringCache<>( CACHE_DURATION);
+    private static ExpiringCache<String, String> mappedLegacyCodeForLegacyCodeAndTermCache = new ExpiringCache<>(CACHE_DURATION);
     private static Set<String> nullMappedLegacyCodeForLegacyCodeAndTermCache = new ExpiringSet<>(CACHE_DURATION);
 
-    private static ExpiringCache<String, MapResponse> mappedColumnRequestResponseCache = new ExpiringCache<>( CACHE_DURATION);
+    private static ExpiringCache<String, MapResponse> mappedColumnRequestResponseCache = new ExpiringCache<>(CACHE_DURATION);
     private static Set<String> nullMappedColumnRequestResponseCache = new ExpiringSet<>(CACHE_DURATION);
 
-    private static ExpiringCache<String, MapResponse> mappedColumnValueRequestResponseCache = new ExpiringCache<>( CACHE_DURATION);
+    private static ExpiringCache<String, MapResponse> mappedColumnValueRequestResponseCache = new ExpiringCache<>(CACHE_DURATION);
     private static Set<String> nullMappedColumnValueRequestResponseCache = new ExpiringSet<>(CACHE_DURATION);
 
     private static final ReentrantLock lock = new ReentrantLock();
@@ -467,24 +466,24 @@ public class IMHelper {
     }
 
     private static String createMapColumnCacheKey(MapColumnRequest propertyRequest) {
-        return propertyRequest.getProvider()+":"+propertyRequest.getSystem()+":"+propertyRequest.getSchema()+":"
-                +propertyRequest.getTable()+":"+propertyRequest.getColumn();
+        return propertyRequest.getProvider() + ":" + propertyRequest.getSystem() + ":" + propertyRequest.getSchema() + ":"
+                + propertyRequest.getTable() + ":" + propertyRequest.getColumn();
     }
 
     private static String createMapColumnValueCacheKey(MapColumnValueRequest valueRequest) {
-        return valueRequest.getProvider()+":"+valueRequest.getSystem()+":"+valueRequest.getSchema()+":"
-                +valueRequest.getTable()+":"+valueRequest.getColumn()+":"
-                +valueRequest.getValue().getCode()+":"
-                +valueRequest.getValue().getScheme();
+        return valueRequest.getProvider() + ":" + valueRequest.getSystem() + ":" + valueRequest.getSchema() + ":"
+                + valueRequest.getTable() + ":" + valueRequest.getColumn() + ":"
+                + valueRequest.getValue().getCode() + ":"
+                + valueRequest.getValue().getScheme();
     }
 
     /*
         Returns a MapResponse for a valid MapColumnRequest, either from the DB or previously cached
      */
-    public static MapResponse getIMMappedPropertyResponse (MapColumnRequest propertyRequest) throws Exception {
+    public static MapResponse getIMMappedPropertyResponse(MapColumnRequest propertyRequest) throws Exception {
 
         //check cache first
-        String mapColumnCacheKey = createMapColumnCacheKey (propertyRequest);
+        String mapColumnCacheKey = createMapColumnCacheKey(propertyRequest);
         MapResponse ret = mappedColumnRequestResponseCache.get(mapColumnCacheKey);
         if (ret != null
                 || nullMappedColumnRequestResponseCache.contains(mapColumnCacheKey)) {
@@ -494,7 +493,7 @@ public class IMHelper {
         ret = IMClient.getMapProperty(propertyRequest);
         //store in the cache using the cache key and response
         if (ret == null) {
-            nullMappedColumnRequestResponseCache.add (mapColumnCacheKey);
+            nullMappedColumnRequestResponseCache.add(mapColumnCacheKey);
         } else {
             mappedColumnRequestResponseCache.put(mapColumnCacheKey, ret);
         }
@@ -505,10 +504,10 @@ public class IMHelper {
     /*
         Returns a MapResponse for a valid MapColumnValueRequest, either from the DB or previously cached
      */
-    public static MapResponse getIMMappedPropertyValueResponse (MapColumnValueRequest valueRequest) throws Exception {
+    public static MapResponse getIMMappedPropertyValueResponse(MapColumnValueRequest valueRequest) throws Exception {
 
         //check cache first
-        String mapColumnValueCacheKey = createMapColumnValueCacheKey (valueRequest);
+        String mapColumnValueCacheKey = createMapColumnValueCacheKey(valueRequest);
         MapResponse ret = mappedColumnValueRequestResponseCache.get(mapColumnValueCacheKey);
         if (ret != null
                 || nullMappedColumnValueRequestResponseCache.contains(mapColumnValueCacheKey)) {
@@ -519,7 +518,7 @@ public class IMHelper {
 
         //store in the cache using the cache key and response
         if (ret == null) {
-            nullMappedColumnValueRequestResponseCache.add (mapColumnValueCacheKey);
+            nullMappedColumnValueRequestResponseCache.add(mapColumnValueCacheKey);
         } else {
             mappedColumnValueRequestResponseCache.put(mapColumnValueCacheKey, ret);
         }

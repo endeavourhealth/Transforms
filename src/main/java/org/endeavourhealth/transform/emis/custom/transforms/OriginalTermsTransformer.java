@@ -54,6 +54,11 @@ public class OriginalTermsTransformer {
         patientGuidCell = CsvCell.factoryWithNewValue(patientGuidCell, "{" + patientGuidCell.getString().toUpperCase() + "}");
         observationGuidCell = CsvCell.factoryWithNewValue(observationGuidCell, "{" + observationGuidCell.getString().toUpperCase() + "}");
 
+        //skip if we're filtering on patients
+        if (!csvHelper.getPatientFilter().shouldProcessRecord(patientGuidCell)) {
+            return;
+        }
+
         CsvCell originalTermCell = parser.getOriginalTerm();
         CsvCurrentState currentState = parser.getCurrentState();
 

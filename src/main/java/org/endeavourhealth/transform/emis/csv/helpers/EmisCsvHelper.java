@@ -68,7 +68,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     private final String dataSharingAgreementGuid;
     private final Map<Class, AbstractCsvParser> parsers;
     private boolean processPatientData;
-    private Set<String> filterPatientGuids;
+    private EmisPatientFiler patientFilter;
 
     //DB access
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
@@ -1460,39 +1460,20 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
                 .post(Entity.entity(parameters, MediaType.APPLICATION_JSON));
 
         if (response.getStatus() != HttpStatus.SC_OK) {
-            throw new Exception("Failed to re-queue Emis exchanges from exchange " + firstExchangeId + " due to found missing codes");
+            throw new Exception("Failed to re-queue Emis exchanges from exchange " + firstExchangeId + " due to found missing codes with HTTP response " + response.getStatus());
         }
 
         //update the audit DB to say we've handled these missing codes
+        LOG.info("Re-queued exchanges for " + patientGuids.size() + " patients for fixed missing codes");
         dal.setMissingCodesFixed(this.foundMissingCodes, getServiceId());
     }
 
-    public void setFilterPatientGuids(Set<String> filterPatientGuids) {
-        this.filterPatientGuids = filterPatientGuids;
+    public void setPatientFilter(EmisPatientFiler patientFilter) {
+        this.patientFilter = patientFilter;
     }
 
     public boolean shouldProcessRecord(AbstractCsvParser parser) {
-
-        //if no filtering, always return true
-        if (this.filterPatientGuids == null
-                || this.filterPatientGuids.isEmpty()) {
-            return true;
-        }
-
-        CsvCell patientGuidCell = parser.getCell("PatientGuid");
-
-        //if the record doesn't have a PatientGUID (e.g. organisation file) then always process
-        if (patientGuidCell == null) {
-            return true;
-        }
-
-        //check our filtered set of GUIDs
-        String patientGuid = patientGuidCell.getString();
-        if (this.filterPatientGuids.contains(patientGuid)) {
-            return true;
-        }
-
-        return false;
+        return this.patientFilter.shouldProcessRecord(parser);
     }
 
     public EmisAdminHelper getAdminHelper() {

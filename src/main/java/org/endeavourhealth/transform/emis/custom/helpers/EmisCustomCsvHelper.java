@@ -20,6 +20,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilde
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisPatientFiler;
 import org.endeavourhealth.transform.emis.custom.transforms.RegistrationStatusTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -37,6 +38,7 @@ public class EmisCustomCsvHelper {
     private Map<String, List<RegStatusObj>> regStatusCache = new HashMap<>();
     private ThreadPool utilityThreadPool = null;
     private UUID serviceId;
+    private EmisPatientFiler patientFilter;
 
     public EmisCustomCsvHelper(UUID serviceId) {
         this.serviceId = serviceId;
@@ -566,6 +568,12 @@ public class EmisCustomCsvHelper {
         }
     }
 
+    public EmisPatientFiler getPatientFilter() {
+        return patientFilter;
+    }
 
+    public void setPatientFilter(EmisPatientFiler patientFilter) {
+        this.patientFilter = patientFilter;
+    }
 }
 

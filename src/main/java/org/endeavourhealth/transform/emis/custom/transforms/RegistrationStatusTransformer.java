@@ -38,6 +38,12 @@ public class RegistrationStatusTransformer {
         CsvCell regTypeCell = parser.getRegistrationType();
         CsvCell organisationGuidCell = parser.getOrganisationGuid();
 
+        //skip if we're filtering on patients
+        String formattedPatientGuid = "{" + patientGuidCell.getString().toUpperCase() + "}"; //need to format in same way as regular extracts
+        if (!csvHelper.getPatientFilter().shouldProcessRecord(formattedPatientGuid)) {
+            return;
+        }
+
         //emis seem unable to work out if they can consistently provide this cell or not, so handle it being absent
         Integer processingOrder = null;
         if (parser.getVersion().equals(RegistrationStatus.VERSION_WITH_PROCESSING_ID)) {

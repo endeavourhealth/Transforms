@@ -14,6 +14,7 @@ import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisPatientFiler;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.appointment.SessionTransformer;
@@ -65,7 +66,7 @@ public abstract class EmisCsvToFhirTransformer {
         }
 
         //see if we're filtering on any specific patients
-        Set<String> filteringPatientGuids = findFilteringPatientGuids(exchange);
+        EmisPatientFiler patientFilter = EmisPatientFiler.factory(exchange);
 
         //we ignore the version already set in the exchange header, as Emis change versions without any notification,
         //so we dynamically work out the version when we load the first set of files
@@ -76,7 +77,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         try {
             createParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, parsers);
-            transformParsers(version, parsers, processor, filteringPatientGuids);
+            transformParsers(version, parsers, processor, patientFilter);
 
         } finally {
             closeParsers(parsers.values());
@@ -242,7 +243,7 @@ public abstract class EmisCsvToFhirTransformer {
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
                                          FhirResourceFiler fhirResourceFiler,
-                                         Set<String> filteringPatientGuids) throws Exception {
+                                         EmisPatientFiler patientFilter) throws Exception {
 
         String sharingAgreementGuid = findDataSharingAgreementGuid(parsers);
 
@@ -251,7 +252,7 @@ public abstract class EmisCsvToFhirTransformer {
 
         boolean processPatientData = shouldProcessPatientData(fhirResourceFiler);
         csvHelper.setProcessPatientData(processPatientData);
-        csvHelper.setFilterPatientGuids(filteringPatientGuids);
+        csvHelper.setPatientFilter(patientFilter);
 
         /*ExchangeDalI exchangeDal = DalProvider.factoryExchangeDal();
         UUID firstExchangeId = exchangeDal.getFirstExchangeId(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId());

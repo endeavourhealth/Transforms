@@ -10,6 +10,7 @@ import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.ExchangePayloadFile;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisPatientFiler;
 import org.endeavourhealth.transform.emis.custom.helpers.EmisCustomCsvHelper;
 import org.endeavourhealth.transform.emis.custom.schema.OriginalTerms;
 import org.endeavourhealth.transform.emis.custom.schema.RegistrationStatus;
@@ -44,8 +45,13 @@ public class EmisCustomCsvToFhirTransformer {
         ExchangeHelper.filterFileTypes(files, service, fhirResourceFiler.getExchangeId());
         LOG.info("Invoking EMIS CUSTOM CSV transformer for " + files.size() + " files and service " + service.getName() + " " + service.getId());
 
+        //when re-queueing for missing codes, we'll also re-queue custom extracts, so we should apply
+        //the same filtering on patient GUIDs
+        EmisPatientFiler patientFilter = EmisPatientFiler.factory(exchange);
+
         //the processor is responsible for saving FHIR resources
         EmisCustomCsvHelper csvHelper = new EmisCustomCsvHelper(serviceId);
+        csvHelper.setPatientFilter(patientFilter);
 
         for (ExchangePayloadFile fileObj: files) {
             String filePath = fileObj.getPath();
