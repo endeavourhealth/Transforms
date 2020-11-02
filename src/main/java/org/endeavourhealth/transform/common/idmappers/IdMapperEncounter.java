@@ -54,6 +54,9 @@ public class IdMapperEncounter extends BaseIdMapper {
         if (encounter.hasServiceProvider()) {
             super.addReference(encounter.getServiceProvider(), referenceValues);
         }
+//        if (encounter.hasPartOf()) {
+//            super.addReference(encounter.getPartOf(), referenceValues);
+//        }
     }
 
     @Override

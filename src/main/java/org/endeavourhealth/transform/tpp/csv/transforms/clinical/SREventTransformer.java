@@ -94,17 +94,17 @@ public class SREventTransformer {
             encounterBuilder.setPeriodStart(eventDate.getDateTime(), eventDate);
         }
 
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
-            encounterBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            encounterBuilder.setRecordedBy(recordedByReference, profileIdRecordedByCell);
         }
 
-        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
+        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
         CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
-        Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, orgDoneAtCell);
-        if (staffReference != null) {
-            encounterBuilder.addParticipant(staffReference, EncounterParticipantType.PRIMARY_PERFORMER, staffMemberIdDoneBy);
+        Reference doneByReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneByCell, orgDoneAtCell);
+        if (doneByReference != null) {
+            encounterBuilder.addParticipant(doneByReference, EncounterParticipantType.PRIMARY_PERFORMER, staffMemberIdDoneByCell, orgDoneAtCell);
         }
 
         encounterBuilder.setStatus(Encounter.EncounterState.FINISHED);

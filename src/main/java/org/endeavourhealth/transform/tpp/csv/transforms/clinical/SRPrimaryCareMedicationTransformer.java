@@ -101,21 +101,22 @@ public class SRPrimaryCareMedicationTransformer {
         Reference patientReference = csvHelper.createPatientReference(patientId);
         medicationStatementBuilder.setPatient(patientReference, patientId);
 
-        CsvCell dateRecored = parser.getDateEventRecorded();
-        if (!dateRecored.isEmpty()) {
-            medicationStatementBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
+        CsvCell dateRecorded = parser.getDateEventRecorded();
+        if (!dateRecorded.isEmpty()) {
+            medicationStatementBuilder.setRecordedDate(dateRecorded.getDateTime(), dateRecorded);
         }
 
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
-            medicationStatementBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            medicationStatementBuilder.setRecordedBy(recordedByReference, profileIdRecordedByCell);
         }
 
-        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-        if (staffReference != null) {
-            medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
+        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
+        CsvCell doneAtCell = parser.getIDOrganisationDoneAt();
+        Reference doneByReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneByCell, doneAtCell);
+        if (doneByReference != null) {
+            medicationStatementBuilder.setInformationSource(doneByReference, profileIdRecordedByCell, doneAtCell);
         }
 
         //TPP acute medication can be future-dated, so use the start date as the clinically relevant date, rather than
@@ -231,22 +232,22 @@ public class SRPrimaryCareMedicationTransformer {
             medicationOrderBuilder.setMedicationStatementReference(statementReference, medicationId);
         }
 
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
-            medicationOrderBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            medicationOrderBuilder.setRecordedBy(recordedByReference, profileIdRecordedByCell);
         }
 
-
-        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-        if (practitionerReference != null) {
-            medicationOrderBuilder.setPrescriber(practitionerReference);
+        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
+        CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
+        Reference doneByReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneByCell, orgDoneAtCell);
+        if (doneByReference != null) {
+            medicationOrderBuilder.setPrescriber(doneByReference, staffMemberIdDoneByCell, orgDoneAtCell);
         }
 
-        CsvCell dateRecored = parser.getDateEventRecorded();
-        if (!dateRecored.isEmpty()) {
-            medicationOrderBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
+        CsvCell dateRecorded = parser.getDateEventRecorded();
+        if (!dateRecorded.isEmpty()) {
+            medicationOrderBuilder.setRecordedDate(dateRecorded.getDateTime(), dateRecorded);
         }
 
         //medication can be future-dated - the DateEvent would remain the same as the SREvent date, but the clinically

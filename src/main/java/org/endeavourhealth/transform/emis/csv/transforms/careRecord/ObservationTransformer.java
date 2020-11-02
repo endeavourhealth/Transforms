@@ -349,16 +349,18 @@ public class ObservationTransformer {
         }
     }
 
-    private static boolean isDisorder(CsvCell codeIdCell) throws Exception {
+    public static boolean isDisorder(CsvCell codeIdCell) throws Exception {
 
-        EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCodeOrParentRead2Code(codeIdCell);
-        if (codeMapping == null) {
-            //if we can't find a Read2 code in the hierarchy we don't know
-            return false;
+        //multiple parents may be found https://endeavourhealth.atlassian.net/browse/SD-140
+        List<EmisClinicalCode> codeMappings = EmisCodeHelper.findClinicalCodeOrParentRead2Code(codeIdCell);
+        for (EmisClinicalCode codeMapping: codeMappings) {
+            String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
+            if (Read2.isDisorder(readCode)) {
+                return true;
+            }
         }
 
-        String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
-        return Read2.isDisorder(readCode);
+        return false;
     }
 
 
@@ -391,16 +393,18 @@ public class ObservationTransformer {
             || codeType == ClinicalCodeType.Health_Management;
     }
 
-    private static boolean isProcedure(CsvCell codeIdCell) throws Exception {
+    public static boolean isProcedure(CsvCell codeIdCell) throws Exception {
 
-        EmisClinicalCode codeMapping = EmisCodeHelper.findClinicalCodeOrParentRead2Code(codeIdCell);
-        if (codeMapping == null) {
-            //if we can't find a Read2 code in the hierarchy we don't know
-            return false;
+        //multiple parents may be found https://endeavourhealth.atlassian.net/browse/SD-140
+        List<EmisClinicalCode> codeMappings = EmisCodeHelper.findClinicalCodeOrParentRead2Code(codeIdCell);
+        for (EmisClinicalCode codeMapping: codeMappings) {
+            String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
+            if (Read2.isProcedure(readCode)) {
+                return true;
+            }
         }
 
-        String readCode = codeMapping.getAdjustedCode(); //use the adjusted code as it's padded to five chars
-        return Read2.isProcedure(readCode);
+        return false;
     }
 
     private static void createOrDeleteReferralRequest(Observation parser,

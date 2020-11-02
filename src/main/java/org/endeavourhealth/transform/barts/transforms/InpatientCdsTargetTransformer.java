@@ -845,7 +845,14 @@ public class InpatientCdsTargetTransformer {
             if (!Strings.isNullOrEmpty(maternityBirthJson)) {
 
                 //store the full json first
-                parametersBuilder.addParameter("JSON_maternity_birth", maternityBirthJson);
+                MapColumnRequest propertyRequestBirth = new MapColumnRequest(
+                        "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "inpatient",
+                        "maternity_birth"
+                );
+                MapResponse propertyResponseBirth = IMHelper.getIMMappedPropertyResponse(propertyRequestBirth);
+                String propertyCode = propertyResponseBirth.getConcept().getCode();
+                String propertyName = "JSON_"+propertyCode;
+                parametersBuilder.addParameter(propertyName, maternityBirthJson);
 
                 //we can also save the IM coded data as encounter additional.  This is only possible for the birth
                 //record as a single encounter to birth ratio
@@ -922,12 +929,19 @@ public class InpatientCdsTargetTransformer {
             String maternityDelivery = targetInpatientCds.getMaternityDataDelivery();
             if (!Strings.isNullOrEmpty(maternityDelivery)) {
 
-                //store the full json
-                parametersBuilder.addParameter("JSON_maternity_delivery", maternityDelivery);
+                MapColumnRequest propertyRequest = new MapColumnRequest(
+                        "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "inpatient",
+                        "maternity_delivery"
+                );
+                MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                String propertyCode = propertyResponse.getConcept().getCode();
+                String propertyName = "JSON_"+propertyCode;
+
+                parametersBuilder.addParameter(propertyName, maternityDelivery);
             }
         }
 
-        //assign the episode ward information as addition JSON.  Need to create JSON for this data
+        //assign the episode ward information as addition JSON.  Need to create JSON for this data as not IM mapped
         String episodeStartWardCode = targetInpatientCds.getEpisodeStartWardCode();
         String episodeEndWardCode = targetInpatientCds.getEpisodeEndWardCode();
         if (!Strings.isNullOrEmpty(episodeStartWardCode) || !Strings.isNullOrEmpty(episodeEndWardCode)) {
@@ -941,7 +955,15 @@ public class InpatientCdsTargetTransformer {
 
                 episodeWardsObjs.addProperty("end_ward", episodeEndWardCode);
             }
-            parametersBuilder.addParameter("JSON_wards", episodeWardsObjs.toString());
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "inpatient",
+                    "wards"
+            );
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+            String propertyCode = propertyResponse.getConcept().getCode();
+            String propertyName = "JSON_"+propertyCode;
+            parametersBuilder.addParameter(propertyName, episodeWardsObjs.toString());
         }
     }
 }

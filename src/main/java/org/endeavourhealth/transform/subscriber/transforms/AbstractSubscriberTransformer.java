@@ -646,37 +646,7 @@ public abstract class AbstractSubscriberTransformer {
 
 
 
-    protected static String getScheme(String codingSystem) throws Exception {
-        String str = null;
-        if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_SNOMED_CT)) {
-            str = IMConstant.SNOMED;
-        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_READ2)) {
-            str = IMConstant.READ2;
-        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CTV3)) {
-            str = IMConstant.CTV3;
-        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_ICD10)) {
-            str = IMConstant.ICD10;
-        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_OPCS4)) {
-            str = IMConstant.OPCS4;
-        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID)) {
-            str = IMConstant.BARTS_CERNER;
-        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) {
-            str = IMConstant.EMIS_LOCAL;
-        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_CTV3)) {
-            str = IMConstant.TPP_LOCAL;
-        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP)) {
-            //no support in IM for Action Groups
-            str = null;
 
-        } else {
-            //confirmed that the IM does not support throwing raw URLs at it, so if we don't match
-            //any of the above something is very wrong
-            throw new Exception("No mapping to IM scheme for code scheme " + codingSystem);
-            //str = codingSystem;
-        }
-
-        return str;
-    }
 
     public static SubscriberId findSubscriberId(SubscriberTransformHelper params, SubscriberTableId subscriberTable, String sourceId) throws Exception {
         List<String> list = new ArrayList<>();

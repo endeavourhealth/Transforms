@@ -86,16 +86,17 @@ public class SRRepeatTemplateTransformer {
             medicationStatementBuilder.setAssertedDate(dateTimeType, effectiveDate);
         }
 
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
-            medicationStatementBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            medicationStatementBuilder.setRecordedBy(recordedByReference, profileIdRecordedByCell);
         }
 
-        CsvCell staffMemberIdDoneBy = parser.getIDDoneBy();
-        Reference staffReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneBy, parser.getIDOrganisationDoneAt());
-        if (staffReference != null) {
-            medicationStatementBuilder.setInformationSource(staffReference, profileIdRecordedBy);
+        CsvCell staffMemberIdDoneByCell = parser.getIDDoneBy();
+        CsvCell orgDoneAtCell = parser.getIDOrganisationDoneAt();
+        Reference doneByReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneByCell, orgDoneAtCell);
+        if (doneByReference != null) {
+            medicationStatementBuilder.setInformationSource(doneByReference, profileIdRecordedByCell, orgDoneAtCell);
         }
 
         //for TPP repeat medication, we receive an update when they're ended, with the end date. Carry these both

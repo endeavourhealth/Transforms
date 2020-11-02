@@ -20,7 +20,8 @@ public class EncounterAdditional extends AbstractTargetTable {
                 Byte.TYPE,
                 Long.TYPE,
                 Integer.class,
-                Integer.class
+                Integer.class,
+                String.class
         };
     }
 
@@ -31,6 +32,7 @@ public class EncounterAdditional extends AbstractTargetTable {
                 "id",
                 "property_id",
                 "value_id",
+                "json_value"
         };
     }
 
@@ -39,12 +41,15 @@ public class EncounterAdditional extends AbstractTargetTable {
         return SubscriberTableId.ENCOUNTER_ADDITIONAL;
     }
 
-    public void writeUpsert(SubscriberId id,
+    public void writeUpsert(SubscriberId subscriberId,
                             Integer propertyId,
-                            Integer valueId ) throws Exception {
+                            Integer valueId,
+                            String jsonValue) throws Exception {
 
         super.printRecord(convertBoolean(false),
-                "" + id,
-                "" + propertyId,
-                "" + valueId);   }
+                "" + subscriberId.getSubscriberId(),
+                convertInt(propertyId),
+                convertInt(valueId),
+                jsonValue);
+    }
 }

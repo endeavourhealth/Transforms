@@ -11,11 +11,12 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.transform.subscriber.targetTables.EncounterAdditional;
-import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+import org.endeavourhealth.transform.subscriber.targetTables.EncounterAdditional;
+import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -208,8 +209,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                     datePrecisionConceptId,
                     episodeOfCareId,
                     serviceProviderOrganisationId,
-                    coreConceptId,
-                    nonCoreConceptId,
+                      coreConceptId,
+                     nonCoreConceptId,
                     ageAtEvent,
                     type,
                     subtype,
@@ -224,49 +225,45 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         } else {
             //if the FHIR Encounter IS part of another encounter, then write it to the encounter event table
             //but ONLY if we know the target DB has the encounter event table
-            if (params.isHasEncounterEventTable()) {
+            Reference partOfReference = fhir.getPartOf();
+            Long parentEncounterId = transformOnDemandAndMapId(partOfReference, SubscriberTableId.ENCOUNTER, params);
 
-                Reference partOfReference = fhir.getPartOf();
-                Long parentEncounterId = transformOnDemandAndMapId(partOfReference, SubscriberTableId.ENCOUNTER, params);
-
-                //if the parent encounter has been deleted, don't transform this
-                if (parentEncounterId == null) {
-                    return;
-                }
-
-                boolean isFinished = fhir.hasStatus() && fhir.getStatus() == Encounter.EncounterState.FINISHED;
-
-                targetEncounterEventTable.writeUpsert(
-                        subscriberId,
-                        organizationId,
-                        patientId,
-                        personId,
-                        parentEncounterId.longValue(),
-                        practitionerId,
-                        appointmentId,
-                        clinicalEffectiveDate,
-                        datePrecisionConceptId,
-                        episodeOfCareId,
-                        serviceProviderOrganisationId,
-                        coreConceptId,
-                        nonCoreConceptId,
-                        ageAtEvent,
-                        type,
-                        subtype,
-                        admissionMethod,
-                        endDate,
-                        institutionLocationId,
-                        dateRecorded,
-                        isFinished);
-
-                //we also need to populate the encounter_additional table with encounter extension data
-                transformEncounterAdditionals(fhir, params, subscriberId);
-
+            //if the parent encounter has been deleted, don't transform this
+            if (parentEncounterId == null) {
+                return;
             }
+
+            boolean isFinished = fhir.hasStatus() && fhir.getStatus() == Encounter.EncounterState.FINISHED;
+
+            targetEncounterEventTable.writeUpsert(
+                    subscriberId,
+                    organizationId,
+                    patientId,
+                    personId,
+                    parentEncounterId.longValue(),
+                    practitionerId,
+                    appointmentId,
+                    clinicalEffectiveDate,
+                    datePrecisionConceptId,
+                    episodeOfCareId,
+                    serviceProviderOrganisationId,
+                    coreConceptId,
+                    nonCoreConceptId,
+                    ageAtEvent,
+                    type,
+                    subtype,
+                    admissionMethod,
+                    endDate,
+                    institutionLocationId,
+                    dateRecorded,
+                    isFinished);
+
+            //we also need to populate the encounter_additional table with encounter extension data
+            transformEncounterAdditionals(fhir, params, subscriberId);
         }
     }
 
-    private void transformEncounterAdditionals(Resource resource, SubscriberTransformHelper params, SubscriberId id) throws Exception {
+    private void transformEncounterAdditionals(Resource resource, SubscriberTransformHelper params, SubscriberId subscriberId) throws Exception {
 
         Encounter fhir = (Encounter)resource;
 
@@ -308,20 +305,40 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
                                 //these values are from IM API mapping
                                 String propertyScheme = IMConstant.DISCOVERY_CODE;
+                                String type = parameter.getValue().getClass().getSimpleName();
+                                if (type.equalsIgnoreCase("CodeableConcept")) {
+                                    CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                                    String valueCode = parameterValue.getCoding().get(0).getCode();
+                                    String valueScheme = parameterValue.getCoding().get(0).getSystem();
+                                    //we need to look up DBids for both
+                                    Integer propertyConceptDbid =
+                                            IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
+                                    if (propertyConceptDbid == null) {
+                                        LOG.debug("No property found for scheme: " + propertyScheme + ":code:" + propertyCode + ".");
+                                        LOG.debug("Skipping problem parameter: " + fhir.getId() + ":" + fhir.getResourceType().toString());
+                                        continue;
+                                    }
+                                    Integer valueConceptDbid =
+                                            IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
+                                    //transform the IM values to the encounter_additional table upsert
+                                    encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid, null);
+                                } else {
+                                    //TODO handle String values
+                                }
+                            } else {
+                                //Handle JSON blobs
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
 
-                                CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
-                                String valueCode = parameterValue.getCoding().get(0).getCode();
-                                String valueScheme = parameterValue.getCoding().get(0).getSystem();
-                                //we need to look up DBids for both
+                                //get the IM concept code
+                                propertyCode = propertyCode.replace("JSON_", "");
                                 Integer propertyConceptDbid =
                                         IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
-                                Integer valueConceptDbid =
-                                        IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
-
-                                //transform the IM values to the encounter_additional table upsert
-                                encounterAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid);
-                            } else {
-                                //TODO: Handle extended additional Json here
+                                if (propertyConceptDbid == null) {
+                                    LOG.debug("Null value for propertyCode " + propertyCode);
+                                }
+                                //the value is a StringType storing JSON
+                                StringType jsonValue = (StringType) parameter.getValue();
+                                encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, null, jsonValue.getValue());
                             }
                         }
                     }

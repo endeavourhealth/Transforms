@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.common.resourceBuilders;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.FhirProfileUri;
@@ -160,6 +161,15 @@ public class DiagnosticReportBuilder extends ResourceBuilderBase
 
         } else {
             throw new IllegalArgumentException("Unknown tag [" + tag + "]");
+        }
+    }
+
+    public void setCategory(CodeableConcept codeableConcept, CsvCell... sourceCells) {
+        if (codeableConcept == null) {
+            this.diagnosticReport.setCategory(null);
+        } else {
+            this.diagnosticReport.setCategory(codeableConcept);
+            auditValue("category.coding[0].code", sourceCells);
         }
     }
 }

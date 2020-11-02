@@ -274,7 +274,8 @@ public class EpisodeOfCareTransformer extends AbstractSubscriberTransformer {
         for (ResourceWrapper wrapper: fullHistory) {
 
             //all the registration status Id values are in this extension
-            if (!wrapper.isDeleted()) {
+            //ADT data has no registration history and occasionally resourcedata is null, so check for that. SD-150.
+            if (!wrapper.isDeleted() && wrapper.getResourceData() != null) {
                 EpisodeOfCare episodeOfCare = (EpisodeOfCare) wrapper.getResource();
                 List<RegStatus> statuses = getRegStatusList(episodeOfCare);
                 for (RegStatus status : statuses) {

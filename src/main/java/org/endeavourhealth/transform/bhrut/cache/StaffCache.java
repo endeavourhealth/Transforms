@@ -82,7 +82,7 @@ public class StaffCache {
         return practitionerBuilder;
     }
 
-    public void returnPractitionerBuilder(String practitionerCodeId, PractitionerBuilder practitionerBuilder) throws Exception {
+    public void cachePractitionerBuilder(String practitionerCodeId, PractitionerBuilder practitionerBuilder) throws Exception {
         practitionerBuilderResourceCache.addToCache(practitionerCodeId, practitionerBuilder);
     }
 

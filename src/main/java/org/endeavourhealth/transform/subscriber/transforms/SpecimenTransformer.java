@@ -108,7 +108,7 @@ public class SpecimenTransformer extends AbstractSubscriberTransformer {
         }
         String originalCode = originalCoding.getCode();
 
-        String conceptScheme = getScheme(originalCoding.getSystem());
+        String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
         nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 

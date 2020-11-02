@@ -20,11 +20,12 @@ import java.util.List;
 import java.util.Map;
 
 public class SRAppointmentTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentTransformer.class);
 
     // FHIR filing note: we create a new slot from constructor, therefore we have to do a
     // mapId on slot, therefore we need to use local ids for appointment as well.
 
-    private static final Logger LOG = LoggerFactory.getLogger(SRAppointmentTransformer.class);
+
     private static String TPP_EMPTY_VALUE = "-1";
 
 
@@ -60,8 +61,7 @@ public class SRAppointmentTransformer {
                 && deleteDataCell.getIntAsBoolean()) {
 
             // get previously filed resources for deletion
-            Appointment appointment
-                    = (Appointment) csvHelper.retrieveResource(appointmentIdCell.getString(), ResourceType.Appointment);
+            Appointment appointment = (Appointment) csvHelper.retrieveResource(appointmentIdCell.getString(), ResourceType.Appointment);
             if (appointment != null) {
 
                 //create the appointment resource from existing
@@ -132,10 +132,10 @@ public class SRAppointmentTransformer {
             appointmentBuilder.setMinutesActualDuration(durationMins);
         }*/
 
-        CsvCell profileIdClinician = parser.getIDProfileClinician();
-        if (!profileIdClinician.isEmpty()) {
-            Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(profileIdClinician);
-            appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, profileIdClinician);
+        CsvCell profileIdClinicianCell = parser.getIDProfileClinician();
+        Reference practitionerReference = csvHelper.createPractitionerReferenceForProfileId(profileIdClinicianCell);
+        if (practitionerReference != null) {
+            appointmentBuilder.addParticipant(practitionerReference, Appointment.ParticipationStatus.ACCEPTED, profileIdClinicianCell);
         }
 
         CsvCell patientSeenDateCell = parser.getDatePatientSeen();

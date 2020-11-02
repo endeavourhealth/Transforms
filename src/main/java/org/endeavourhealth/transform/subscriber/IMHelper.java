@@ -99,7 +99,7 @@ public class IMHelper {
                     return IMClient.getMappedCoreConceptDbidForSchemeCode(scheme, code);
                 } catch (Exception ex) {
                     if (lives <= 0) {
-                        throw ex;
+                        throw new Exception("Failed to call getMappedCoreConceptDbidForSchemeCode for scheme [" + scheme + "] code [" + code + "]", ex);
                     }
                     Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
@@ -156,7 +156,7 @@ public class IMHelper {
                     return IMClient.getConceptDbidForSchemeCode(scheme, code, term, true);
                 } catch (Exception ex) {
                     if (lives <= 0) {
-                        throw ex;
+                        throw new Exception("Failed to call getConceptDbidForSchemeCode with scheme [" + scheme + "] code [" + code + "] term [" + term + "]", ex);
                     }
                     Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
@@ -214,7 +214,7 @@ public class IMHelper {
                     return IMClient.getMappedCoreConceptDbidForTypeTerm(type, term);
                 } catch (Exception ex) {
                     if (lives <= 0) {
-                        throw ex;
+                        throw new Exception("Failed to call getMappedCoreConceptDbidForTypeTerm for type [" + type + "] term [" + term + "]", ex);
                     }
                     Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
@@ -271,7 +271,7 @@ public class IMHelper {
                     return IMClient.getConceptDbidForTypeTerm(type, term, true);
                 } catch (Exception ex) {
                     if (lives <= 0) {
-                        throw ex;
+                        throw new Exception("Failed to call getConceptDbidForTypeTerm for type [" + type + "] term [" + term + "]", ex);
                     }
                     Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
@@ -331,7 +331,7 @@ public class IMHelper {
                     return IMClient.getCodeForConceptDbid(conceptId);
                 } catch (Exception ex) {
                     if (lives <= 0) {
-                        throw ex;
+                        throw new Exception("Failed to call getCodeForConceptDbid for conceptId [" + conceptId + "]", ex);
                     }
                     Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
@@ -387,7 +387,7 @@ public class IMHelper {
                     return IMClient.getMappedCoreCodeForSchemeCode(scheme, code);
                 } catch (Exception ex) {
                     if (lives <= 0) {
-                        throw ex;
+                        throw new Exception("Failed to call getMappedCoreCodeForSchemeCode for scheme [" + scheme + "] code [" + code + "]", ex);
                     }
                     Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
@@ -451,7 +451,7 @@ public class IMHelper {
                     return IMClient.getCodeForTypeTerm(scheme, context, term, true);
                 } catch (Exception ex) {
                     if (lives <= 0) {
-                        throw ex;
+                        throw new Exception("Failed to call getCodeForTypeTerm for scheme [" + scheme + "] context [" + context + "] term [" + term + "]", ex);
                     }
                     Thread.sleep(THREAD_SLEEP_TIME);
                     LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");

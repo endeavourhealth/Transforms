@@ -16,13 +16,15 @@ public class EncounterAdditional extends AbstractEnterpriseCsvWriter {
 
     public void writeUpsert(long id,
                             String propertyId,
-                            String valueId
+                            String valueId,
+                            String jsonValue
                             ) throws Exception {
 
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
                 "" + propertyId,
-                "" + valueId);   }
+                 valueId,
+                jsonValue);   }
 
 
     @Override
@@ -32,6 +34,7 @@ public class EncounterAdditional extends AbstractEnterpriseCsvWriter {
                 "id",
                 "property_id",
                 "value_id",
+                "json_value"
         };
     }
 
@@ -40,6 +43,7 @@ public class EncounterAdditional extends AbstractEnterpriseCsvWriter {
         return new Class[] {
                 String.class,
                 Long.TYPE,
+                String.class,
                 String.class,
                 String.class
         };

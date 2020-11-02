@@ -35,6 +35,7 @@ public class SubscriberConfig {
     private boolean excludeTestPatients;
     private boolean isPseudonymised;
     private List<LinkDistributorConfig> pseudoSalts = new ArrayList<>();
+    private List<LinkDistributorConfig> ralfSalts = new ArrayList<>();
     private CohortType cohortType;
     private Set<String> cohortGpServices = new HashSet<>(); //if cohort is GpRegisteredAt, this gives the ODS codes the patients should be registered at
     private Integer remoteSubscriberId;
@@ -43,7 +44,6 @@ public class SubscriberConfig {
     //compass v1 properties
 
     //compass v2 properties
-    private boolean v2HasEncounterEventTable;
 
     public SubscriberConfig(String subscriberConfigName) {
         this.subscriberConfigName = subscriberConfigName;
@@ -56,10 +56,6 @@ public class SubscriberConfig {
 
     public boolean isIncludeDateRecorded() {
         return includeDateRecorded;
-    }
-
-    public boolean isV2HasEncounterEventTable() {
-        return v2HasEncounterEventTable;
     }
 
     public int getBatchSize() {
@@ -80,6 +76,10 @@ public class SubscriberConfig {
 
     public List<LinkDistributorConfig> getPseudoSalts() {
         return pseudoSalts;
+    }
+
+    public List<LinkDistributorConfig> getRalfSalts() {
+        return ralfSalts;
     }
 
     public Integer getRemoteSubscriberId() {
@@ -159,77 +159,40 @@ public class SubscriberConfig {
             }
         }
 
+        this.isPseudonymised = config.has("pseudonymised")
+                && config.get("pseudonymised").asBoolean();
 
-        //compass v1-specific config
+        if (config.has("pseudo_salts")) {
+
+            JsonNode arrayNode = config.get("pseudo_salts");
+            String linkDistributors = convertJsonNodeToString(arrayNode);
+            LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
+
+            for (LinkDistributorConfig l : arr) {
+                this.pseudoSalts.add(l);
+            }
+        }
+
+        //TODO Should this go inside the else if (subscriberType == SubscriberType.CompassV2) block below?
+        if (config.has("ralf_salts")) {
+
+            JsonNode arrayNode = config.get("ralf_salts");
+            String linkDistributors = convertJsonNodeToString(arrayNode);
+            LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
+
+            for (LinkDistributorConfig l : arr) {
+                this.ralfSalts.add(l);
+            }
+        }
+
+        //version-specific config
         if (subscriberType == SubscriberType.CompassV1) {
 
-            this.isPseudonymised = config.has("pseudonymised")
-                    && config.get("pseudonymised").asBoolean();
-
-            if (config.has("pseudo_salts")) {
-
-                JsonNode linkDistributorsNode = config.get("pseudo_salts");
-
-                if (linkDistributorsNode != null) {
-                    String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
-                    LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
-
-                    for (LinkDistributorConfig l : arr) {
-                        this.pseudoSalts.add(l);
-                    }
-                }
-            }
-
-            //compass v1 config may be stored in an older style, so check for that
-            if (!config.has("pseudonymised") //not the new style
-                && !config.has("pseudo_salts") //not the new style
-                && config.has("pseudonymisation")) { //old style
-
-                this.isPseudonymised = true;
-
-                //the pseudonymisation node itself contains the primary salt key
-                JsonNode saltNode = config.get("pseudonymisation");
-                String json = convertJsonNodeToString(saltNode);
-                LinkDistributorConfig firstSalt = ObjectMapperPool.getInstance().readValue(json, LinkDistributorConfig.class);
-                this.pseudoSalts.add(firstSalt);
-
-                //subsequent salts will be in this element
-                if (config.has("linkedDistributors")) {
-                    JsonNode linkDistributorsNode = config.get("linkedDistributors");
-
-                    String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
-                    LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
-                    for (LinkDistributorConfig l : arr) {
-                        this.pseudoSalts.add(l);
-                    }
-                }
-            }
+            //add v1 specific settings here
 
         } else if (subscriberType == SubscriberType.CompassV2) {
 
-            if (config.has("include_encounter_event")) {
-                this.v2HasEncounterEventTable = config.get("include_encounter_event").asBoolean();
-            } else {
-                //default to true unless explicitly set in the JSON
-                this.v2HasEncounterEventTable = true;
-            }
-
-            this.isPseudonymised = config.has("pseudonymised")
-                    && config.get("pseudonymised").asBoolean();
-
-            if (config.has("pseudo_salts")) {
-
-                JsonNode linkDistributorsNode = config.get("pseudo_salts");
-
-                if (linkDistributorsNode != null) {
-                    String linkDistributors = convertJsonNodeToString(linkDistributorsNode);
-                    LinkDistributorConfig[] arr = ObjectMapperPool.getInstance().readValue(linkDistributors, LinkDistributorConfig[].class);
-
-                    for (LinkDistributorConfig l : arr) {
-                        this.pseudoSalts.add(l);
-                    }
-                }
-            }
+            //add v2 specific settings here
 
         } else {
             throw new Exception("No handler for subscriber type " + this.subscriberType);
@@ -286,12 +249,12 @@ public class SubscriberConfig {
         sb.append("cohortType = [" + cohortType + "],\r\n");
         sb.append("cohortGpServices = [" + cohortGpServices.size() + "],\r\n");
         sb.append("pseudoSalts = [" + pseudoSalts.size() + "],\r\n");
+        sb.append("ralfSalts = [" + ralfSalts.size() + "],\r\n");
         sb.append("excludeNhsNumberRegex = [" + excludeNhsNumberRegex + "],\r\n");
         sb.append("excludeTestPatients = [" + excludeTestPatients + "],\r\n");
         sb.append("remoteSubscriberId = [" + remoteSubscriberId + "],\r\n");
         sb.append("includeDateRecorded = [" + includeDateRecorded + "],\r\n");
         sb.append("batchSize = [" + batchSize + "],\r\n");
-        sb.append("v2HasEncounterEventTable = [" + v2HasEncounterEventTable + "],\r\n");
         sb.append("enterpriseServerUrl = [" + enterpriseServerUrl + "]");
         return sb.toString();
     }

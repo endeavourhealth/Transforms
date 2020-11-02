@@ -18,10 +18,6 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.xml.crypto.dsig.Transform;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 public class ClinicalEventTargetTransformer {

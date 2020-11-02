@@ -73,10 +73,10 @@ public class SRPersonAtRiskTransformer {
             flagBuilder.setEndDate(dateRemoved.getDate(), dateRemoved);
         }
 
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profileIdRecordedBy.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
-            flagBuilder.setAuthor(staffReference, profileIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            flagBuilder.setAuthor(recordedByReference, profileIdRecordedByCell);
         }
 
         CsvCell onPlan = parser.getProtectionPlan();

@@ -41,10 +41,11 @@ public class SRPrimaryCareMedicationPreTransformer {
             return;
         }
 
-        CsvCell id = parser.getRowIdentifier();
 
         CsvCell eventIdCell = parser.getIDEvent();
         if (!eventIdCell.isEmpty()) {
+
+            CsvCell id = parser.getRowIdentifier();
 
             //depending on certain fields, we'll create MedicationOrders, MedicationStatements or both
             CsvCell isRepeatMedication = parser.getIsRepeatMedication();

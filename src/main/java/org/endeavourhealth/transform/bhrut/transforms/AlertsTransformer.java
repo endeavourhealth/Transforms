@@ -29,7 +29,7 @@ public class AlertsTransformer {
                     continue;
                 }
                 try {
-                    createResource(parser, fhirResourceFiler, csvHelper, version);
+                    createResource(parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -42,8 +42,7 @@ public class AlertsTransformer {
 
     public static void createResource(Alerts parser,
                                       FhirResourceFiler fhirResourceFiler,
-                                      BhrutCsvHelper csvHelper,
-                                      String version) throws Exception {
+                                      BhrutCsvHelper csvHelper) throws Exception {
 
         FlagBuilder flagBuilder = new FlagBuilder();
         CsvCell alertIdCell = parser.getId();
@@ -76,6 +75,16 @@ public class AlertsTransformer {
         //build up the flag text from what text is available in the alert record
         StringBuilder flagTextBuilder = new StringBuilder();
 
+        CsvCell alertDescriptionCell = parser.getAlertDescription();
+        if (!alertDescriptionCell.isEmpty()) {
+
+            flagTextBuilder.append(alertDescriptionCell.getString().trim()).append(".");
+        }
+        CsvCell alertCommentsCell = parser.getAlertComment();
+        if (!alertCommentsCell.isEmpty()) {
+
+            flagTextBuilder.append(alertCommentsCell.getString()).append(". ");
+        }
         //also use the end date as the active indicator
         CsvCell endDateTimeCell = parser.getClosedDttm();
         CsvCell closedNoteCell = parser.getClosedNote();
@@ -97,12 +106,6 @@ public class AlertsTransformer {
         if (!alertTypeDescCell.isEmpty()) {
 
             flagBuilder.setCategory(alertTypeDescCell.getString(), alertTypeDescCell);
-        }
-
-        CsvCell alertCommentsCell = parser.getAlertComment();
-        if (!alertCommentsCell.isEmpty()) {
-
-            flagTextBuilder.append("Comments: ").append(alertCommentsCell.getString()).append(". ");
         }
 
         flagBuilder.setCode(flagTextBuilder.toString().trim(), closedNoteCell, alertCommentsCell);

@@ -90,19 +90,17 @@ public class SRSpecialNotesTransformer {
 
         CsvCell expiredDate = parser.getDateExpired();
         if (!expiredDate.isEmpty()) {
-
             flagBuilder.setEndDate(expiredDate.getDate(), expiredDate);
             flagBuilder.setStatus(Flag.FlagStatus.INACTIVE);
-        } else {
 
+        } else {
             flagBuilder.setStatus(Flag.FlagStatus.ACTIVE);
         }
 
-        CsvCell profieIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!profieIdRecordedBy.isEmpty()) {
-
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profieIdRecordedBy);
-            flagBuilder.setAuthor(staffReference, profieIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
+            flagBuilder.setAuthor(recordedByReference, profileIdRecordedByCell);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), flagBuilder);

@@ -11,15 +11,17 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.im.client.IMClient;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
-import org.endeavourhealth.transform.subscriber.targetTables.*;
+import org.endeavourhealth.transform.subscriber.targetTables.ObservationAdditional;
+import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
+import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
-import org.hl7.fhir.instance.model.Observation;
-import org.hl7.fhir.instance.model.Patient;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +47,8 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
 
         org.endeavourhealth.transform.subscriber.targetTables.Observation model = params.getOutputContainer().getObservations();
 
+        org.endeavourhealth.transform.subscriber.targetTables.ObservationAdditional additionalModel = params.getOutputContainer().getObservationAdditional();
+
         Observation fhir = (Observation)resourceWrapper.getResource(); //returns null if deleted
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
@@ -52,6 +56,10 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()
                 || params.shouldClinicalConceptBeDeleted(fhir.getCode())) {
+
+            if (!TransformConfig.instance().isLive()) {
+                additionalModel.writeDelete(subscriberId);
+            }
             model.writeDelete(subscriberId);
             return;
         }
@@ -111,7 +119,7 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
         }
         String originalCode = originalCoding.getCode();
 
-        String conceptScheme = getScheme(originalCoding.getSystem());
+        String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
         nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
@@ -199,7 +207,11 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
 
 
         //we also need to populate the observation additional table with observation extension data
-        // transformAdditionals(fhir, params, subscriberId);
+
+        if (!TransformConfig.instance().isLive()) {
+            transformAdditionals(fhir, params, subscriberId);
+            transformPatientDelays(fhir, params, subscriberId);
+        }
 
     }
 
@@ -316,6 +328,43 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             //transform the IM values to the encounter_additional table upsert
             observationAdditional.writeUpsert(id, propertyConceptDbid,null,  reference);
             System.out.println("refRange : " + reference);
+        }
+    }
+
+    private void transformPatientDelays(Resource resource, SubscriberTransformHelper params, SubscriberId id) throws Exception {
+
+        Observation fhir = (Observation)resource;
+
+        String resourceId = fhir.getId();
+
+        DateTimeType delayDaysStringType
+                = (DateTimeType)ExtensionConverter.findExtensionValue(fhir, FhirExtensionUri.OBSERVATION_PATIENT_DELAY_DAYS);
+
+        if (delayDaysStringType != null) {
+
+            String delayDays = delayDaysStringType.getValue().toString();
+            OutputContainer outputContainer = params.getOutputContainer();
+            ObservationAdditional observationAdditional = outputContainer.getObservationAdditional();
+
+            Integer propertyConceptDbid = 99999;
+            //TODO : Need to change
+
+            try {
+                propertyConceptDbid =
+                        IMClient.getConceptDbidForSchemeCode(IMConstant.DISCOVERY_CODE, "CM_PatientDelayDays");
+            } catch (Exception e) {
+                propertyConceptDbid = 99999;
+            }
+                /*propertyConceptDbid =
+                        IMClient.getConceptDbidForSchemeCode(IMConstant.DISCOVERY_CODE, "CM_PatientDelayDays");*/
+
+            if (propertyConceptDbid == null) {
+                propertyConceptDbid = 99999;
+            }
+            String jsonString = new JSONObject()
+                    .put("date_value", delayDays).toString();
+            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  jsonString);
+
         }
     }
 

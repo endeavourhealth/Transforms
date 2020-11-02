@@ -15,7 +15,7 @@ public enum SubscriberTableId {
     ORGANIZATION((byte)12, "organization"),
     PRACTITIONER((byte)13, "practitioner"),
     PROCEDURE_REQUEST((byte)14, "procedure_request"),
-    PSEUDO_ID((byte)15, "pseudo_id"), //not used any more - superseded by PATIENT_PSEUDO_ID
+    //PSEUDO_ID((byte)15, "pseudo_id"), //not used any more - superseded by PATIENT_PSEUDO_ID
     REFERRAL_REQUEST((byte)16, "referral_request"),
     SCHEDULE((byte)17, "schedule"),
     APPOINTMENT((byte)18, "appointment"),
@@ -28,8 +28,9 @@ public enum SubscriberTableId {
     ENCOUNTER_EVENT((byte)25, "encounter_event"),
     ENCOUNTER_ADDITIONAL((byte)26, "encounter_additional"),
     PATIENT_PSEUDO_ID((byte)27, "patient_pseudo_id"),
-    OBSERVATION_ADDITIONAL((byte)28, "observation_additional"),
-    PATIENT_ADDITIONAL((byte)28, "patient_additional"),;
+    PATIENT_ADDITIONAL((byte)28, "patient_additional"),
+    OBSERVATION_ADDITIONAL((byte)29, "observation_additional"),
+    PATIENT_ADDRESS_RALF((byte)30, "patient_address_ralf");
 
     private byte id;
     private String name;
@@ -41,7 +42,6 @@ public enum SubscriberTableId {
     public String getName() {
         return name;
     }
-
 
     SubscriberTableId(byte id, String name) {
         this.id = id;

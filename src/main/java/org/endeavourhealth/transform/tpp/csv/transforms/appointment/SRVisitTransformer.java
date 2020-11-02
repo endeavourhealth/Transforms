@@ -70,10 +70,10 @@ public class SRVisitTransformer {
             appointmentBuilder.setStartDateTime(visitDate.getDate(), visitDate);
         }
 
-        CsvCell profileIdAssigned = parser.getIDProfileAssigned();
-        if (!profileIdAssigned.isEmpty()) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdAssigned);
-            appointmentBuilder.addParticipant(staffReference, Appointment.ParticipationStatus.ACCEPTED, profileIdAssigned);
+        CsvCell profileIdAssignedCell = parser.getIDProfileAssigned();
+        Reference assignedReference = csvHelper.createPractitionerReferenceForProfileId(profileIdAssignedCell);
+        if (assignedReference != null) {
+            appointmentBuilder.addParticipant(assignedReference, Appointment.ParticipationStatus.ACCEPTED, profileIdAssignedCell);
         }
 
         CsvCell visitStatus = parser.getCurrentStatus();

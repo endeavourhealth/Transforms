@@ -85,9 +85,9 @@ public class SRReferralOutTransformer {
         }
         referralRequestBuilder.setPatient(patientReference, patientId);
 
-        CsvCell dateRecored = parser.getDateEventRecorded();
-        if (!dateRecored.isEmpty()) {
-            referralRequestBuilder.setRecordedDate(dateRecored.getDateTime(), dateRecored);
+        CsvCell dateRecorded = parser.getDateEventRecorded();
+        if (!dateRecorded.isEmpty()) {
+            referralRequestBuilder.setRecordedDate(dateRecorded.getDateTime(), dateRecorded);
         }
 
         CsvCell referralDate = parser.getDateEvent();
@@ -96,13 +96,13 @@ public class SRReferralOutTransformer {
             referralRequestBuilder.setDate(dateTimeType, referralDate);
         }
 
-        CsvCell profileIdRecordedBy = parser.getIDProfileEnteredBy();
-        if (!TppCsvHelper.isEmptyOrNegative(profileIdRecordedBy)) {
-            Reference staffReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedBy);
+        CsvCell profileIdRecordedByCell = parser.getIDProfileEnteredBy();
+        Reference recordedByReference = csvHelper.createPractitionerReferenceForProfileId(profileIdRecordedByCell);
+        if (recordedByReference != null) {
             if (referralRequestBuilder.isIdMapped()) {
-                staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
+                recordedByReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(recordedByReference, fhirResourceFiler);
             }
-            referralRequestBuilder.setRecordedBy(staffReference, profileIdRecordedBy);
+            referralRequestBuilder.setRecordedBy(recordedByReference, profileIdRecordedByCell);
         }
 
         CsvCell referrerProfileIdCell = parser.getIDProfileReferrer();
@@ -116,7 +116,7 @@ public class SRReferralOutTransformer {
             if (referralRequestBuilder.isIdMapped()) {
                 staffReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(staffReference, fhirResourceFiler);
             }
-            referralRequestBuilder.setRequester(staffReference, profileIdRecordedBy);
+            referralRequestBuilder.setRequester(staffReference, profileIdRecordedByCell);
 
         } else {
             Reference practitionerReference = csvHelper.createPractitionerReferenceForStaffMemberId(staffMemberIdDoneByCell, orgIdDoneAtCell);
@@ -124,7 +124,7 @@ public class SRReferralOutTransformer {
                 if (referralRequestBuilder.isIdMapped()) {
                     practitionerReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, fhirResourceFiler);
                 }
-                referralRequestBuilder.setRequester(practitionerReference, staffMemberIdDoneByCell);
+                referralRequestBuilder.setRequester(practitionerReference, staffMemberIdDoneByCell, orgIdDoneAtCell);
             }
         }
 
