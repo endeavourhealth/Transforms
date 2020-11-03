@@ -83,15 +83,15 @@ public class EpisodesTransformer {
 
         if (!parser.getPrimaryProcedureCode().isEmpty()) {
 
-            ProcedureBuilder proc = new ProcedureBuilder();
+            ProcedureBuilder procedurePrimaryBuilder = new ProcedureBuilder();
 
             CsvCell idCell = parser.getId();
-            proc.setId(idCell.getString() + ":Procedure:0", idCell);
+            procedurePrimaryBuilder.setId(idCell.getString() + ":Procedure:0", idCell);
 
             CsvCell patientIdCell = parser.getPasId();
             Reference newPatientReference = csvHelper.createPatientReference(patientIdCell);
-            proc.setPatient(newPatientReference, patientIdCell);
-            proc.setIsPrimary(true);
+            procedurePrimaryBuilder.setPatient(newPatientReference, patientIdCell);
+            procedurePrimaryBuilder.setIsPrimary(true);
 
             //create an Encounter reference for the procedures and conditions to use
             Reference thisEncounter
@@ -99,20 +99,20 @@ public class EpisodesTransformer {
             if (episodeEncounterBuilder.isIdMapped()) {
                 thisEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisEncounter, csvHelper);
             }
-            proc.setEncounter(thisEncounter, idCell);
+            procedurePrimaryBuilder.setEncounter(thisEncounter, idCell);
 
             if (!parser.getPrimaryProcedureDate().isEmpty()) {
                 DateTimeType dttp = new DateTimeType(parser.getPrimaryProcedureDate().getDateTime());
-                proc.setPerformed(dttp, parser.getPrimaryProcedureDate());
+                procedurePrimaryBuilder.setPerformed(dttp, parser.getPrimaryProcedureDate());
             }
             CsvCell episodeConsultantCodeCell = parser.getEpisodeConsultantCode();
             if (!episodeConsultantCodeCell.isEmpty()) {
                 Reference practitionerReference2 = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
-                proc.addPerformer(practitionerReference2, episodeConsultantCodeCell);
+                procedurePrimaryBuilder.addPerformer(practitionerReference2, episodeConsultantCodeCell);
             }
 
             CodeableConceptBuilder code
-                    = new CodeableConceptBuilder(proc, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+                    = new CodeableConceptBuilder(procedurePrimaryBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
             code.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
             code.setCodingCode(parser.getPrimaryProcedureCode().getString(),
                     parser.getPrimaryProcedureCode());
@@ -121,7 +121,7 @@ public class EpisodesTransformer {
                 throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
             }
             code.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), proc);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedurePrimaryBuilder);
 
             //ProcedureBuilder 1-12
             for (int i = 1; i <= 12; i++) {
@@ -133,7 +133,7 @@ public class EpisodesTransformer {
                     procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
 
                     Reference newPatientReference2 = csvHelper.createPatientReference(patientIdCell);
-                    proc.setPatient(newPatientReference2, patientIdCell);
+                    procedureBuilder.setPatient(newPatientReference2, patientIdCell);
                     procedureBuilder.setIsPrimary(false);
 
                     Reference procEncReference

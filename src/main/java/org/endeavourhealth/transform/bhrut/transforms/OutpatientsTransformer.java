@@ -374,10 +374,10 @@ public class OutpatientsTransformer {
         CsvCell primaryProcedureCodeCell = parser.getPrimaryProcedureCode();
         if (!primaryProcedureCodeCell.isEmpty()) {
 
-            ProcedureBuilder procedureBuilder = new ProcedureBuilder();
-            procedureBuilder.setId(idCell.getString() + ":Procedure:0");
+            ProcedureBuilder procedurePrimaryBuilder = new ProcedureBuilder();
+            procedurePrimaryBuilder.setId(idCell.getString() + ":Procedure:0");
             Reference procPatientReference = csvHelper.createPatientReference(patientIdCell);
-            procedureBuilder.setPatient(procPatientReference, patientIdCell);
+            procedurePrimaryBuilder.setPatient(procPatientReference, patientIdCell);
 
             Reference procEncReference
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
@@ -385,11 +385,11 @@ public class OutpatientsTransformer {
                 procEncReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(procEncReference, csvHelper);
             }
-            procedureBuilder.setEncounter(procEncReference, idCell);
-            procedureBuilder.setIsPrimary(true);
+            procedurePrimaryBuilder.setEncounter(procEncReference, idCell);
+            procedurePrimaryBuilder.setIsPrimary(true);
 
             CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+                    = new CodeableConceptBuilder(procedurePrimaryBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
             codeableConceptBuilder.setCodingCode(primaryProcedureCodeCell.getString(), primaryProcedureCodeCell);
             String procTerm = TerminologyService.lookupOpcs4ProcedureName(parser.getPrimaryProcedureCode().getString());
@@ -398,14 +398,14 @@ public class OutpatientsTransformer {
             }
             codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
             Reference consultantReference3 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
-            procedureBuilder.addPerformer(consultantReference3, consultantCodeCell);
+            procedurePrimaryBuilder.addPerformer(consultantReference3, consultantCodeCell);
 
             DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
-            procedureBuilder.setPerformed(dateTimeType, appointmentDateCell);
+            procedurePrimaryBuilder.setPerformed(dateTimeType, appointmentDateCell);
             DateTimeType endedDateTimeType = new DateTimeType(parser.getApptDepartureDttm().getDateTime());
-            procedureBuilder.setEnded(endedDateTimeType,parser.getApptDepartureDttm());
+            procedurePrimaryBuilder.setEnded(endedDateTimeType,parser.getApptDepartureDttm());
 
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
+            fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedurePrimaryBuilder);
         }
 
         //Secondary Procedure(s)
@@ -442,6 +442,9 @@ public class OutpatientsTransformer {
 
                 DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
                 procedureBuilder.setPerformed(dateTimeType, appointmentDateCell);
+
+                DateTimeType endedDateTimeType = new DateTimeType(parser.getApptDepartureDttm().getDateTime());
+                procedureBuilder.setEnded(endedDateTimeType,parser.getApptDepartureDttm());
 
                 fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
             } else {
