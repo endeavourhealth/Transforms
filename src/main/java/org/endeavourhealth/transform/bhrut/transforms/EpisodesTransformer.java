@@ -67,9 +67,10 @@ public class EpisodesTransformer {
                                        BhrutCsvHelper csvHelper) throws Exception {
 
         //retrieve the parent hospital spell encounter created previously
-        CsvCell spellExternalIdCell = parser.getIpSpellExternalId();
-        if (!spellExternalIdCell.isEmpty()) {
+        CsvCell getIpSpellExternalIdRawCell = parser.getIpSpellExternalIdRaw();  //the raw id without BHRUT concatenation
+        if (!getIpSpellExternalIdRawCell.isEmpty()) {
 
+            CsvCell spellExternalIdCell = parser.getIpSpellExternalId();
             Encounter spellEncounter
                     = (Encounter) csvHelper.retrieveResource(spellExternalIdCell.getString(), ResourceType.Encounter);
 
