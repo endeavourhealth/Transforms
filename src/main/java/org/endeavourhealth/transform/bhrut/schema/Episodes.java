@@ -160,6 +160,10 @@ public class Episodes extends AbstractCsvParser {
         return ret;
     }
 
+    public CsvCell getIpSpellExternalIdRaw() {
+        return super.getCell("IP_SPELL_EXTERNAL_ID");
+    }
+
     public CsvCell getAdmEpiFlag() {
         return super.getCell("ADM_EPI_FLAG");
     }

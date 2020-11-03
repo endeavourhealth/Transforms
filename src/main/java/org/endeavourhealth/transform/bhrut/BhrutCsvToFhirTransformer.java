@@ -77,7 +77,7 @@ public abstract class BhrutCsvToFhirTransformer {
             //validate the files and, if this the first batch, open the parsers to validate the file formats
             validateAndOpenParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, allParsers);
 
-            LOG.trace("Transforming Bhrut CSV content encounn {}", orgDirectory);
+            LOG.trace("Transforming Bhrut CSV content in {}", orgDirectory);
             transformParsers(version, allParsers, processor);
 
         } finally {
