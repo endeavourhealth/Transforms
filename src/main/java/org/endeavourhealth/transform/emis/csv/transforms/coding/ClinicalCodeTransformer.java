@@ -7,6 +7,7 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisCodeDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCodeType;
+import org.endeavourhealth.core.database.dal.reference.Read2ToSnomedMapDalI;
 import org.endeavourhealth.core.database.dal.reference.SnomedDalI;
 import org.endeavourhealth.core.database.dal.reference.models.SnomedLookup;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -159,11 +160,6 @@ public abstract class ClinicalCodeTransformer {
     }
 
 
-    private static boolean isEmisCode(String code) throws Exception {
-        Read2Code dbCode = lookupRead2CodeUsingCache(code);
-        return dbCode == null;
-    }
-
     private static String removeSynonymAndPadRead2Code(String code) throws Exception {
 
         if (Strings.isNullOrEmpty(code)) {
@@ -190,9 +186,11 @@ public abstract class ClinicalCodeTransformer {
             return code;
         }
 
-        //the remaining code should ALWAYS be a valid Read2 code, so validate this
         String paddedCode = padToFive(prefix);
 
+        //the remaining code should ALWAYS be a valid Read2 code, so validate this
+        //note, out of the 1.1M Emis clinical codes, this will only happen for about 18k of them,
+        //so it's not too bad that we're looking up these Read2 codes one at a time
         Read2Code dbCode = lookupRead2CodeUsingCache(paddedCode);
         if (dbCode == null) {
             throw new TransformException("Failed to parse non-valid Read2 code [" + code + "], expecting " + paddedCode + " to be valid Read2 code");
@@ -202,29 +200,62 @@ public abstract class ClinicalCodeTransformer {
     }
 
     private static Read2Code lookupRead2CodeUsingCache(String code) throws Exception {
+        Set<String> s = new HashSet<>();
+        s.add(code);
+        Map<String, Read2Code> map = lookupRead2CodesUsingCache(s);
+        return map.get(code);
+    }
+
+    private static Map<String, Read2Code> lookupRead2CodesUsingCache(Collection<String> codes) throws Exception {
+
+        Map<String, Read2Code> ret = new HashMap<>();
+        Set<String> codesForDb = new HashSet<>();
+
         //check the cache first - note that we add lookup failures to the cache too,
         //so we check for if it contains the key rather than if the value is non-null
         try {
             read2CacheLock.lock();
-            if (read2Cache.containsKey(code)) {
-                return read2Cache.get(code);
+
+            for (String code: codes) {
+                if (read2Cache.containsKey(code)) {
+                    Read2Code r2 = read2Cache.get(code);
+                    ret.put(code, r2);
+                } else {
+                    codesForDb.add(code);
+                }
             }
+
         } finally {
             read2CacheLock.unlock();
         }
 
-        //hit the DB to find
-        Read2Code dbCode = TerminologyService.lookupRead2Code(code);
+        //if we have any we need to check the DB for
+        if (!codesForDb.isEmpty()) {
 
-        //add to the cache, even if it's null
-        try {
-            read2CacheLock.lock();
-            read2Cache.put(code, dbCode);
-        } finally {
-            read2CacheLock.unlock();
+            //hit the DB to find any we need
+            Read2ToSnomedMapDalI dal = DalProvider.factoryRead2ToSnomedMapDal();
+            Map<String, Read2Code> dbMap = dal.getRead2Codes(codesForDb);
+
+            //add to ret
+            for (String code: codesForDb) {
+                Read2Code r2 = dbMap.get(code);
+                ret.put(code, r2);
+            }
+
+            //add to the cache, even if it's null
+            try {
+                read2CacheLock.lock();
+
+                for (String code: codesForDb) {
+                    Read2Code r2 = dbMap.get(code);
+                    read2Cache.put(code, r2);
+                }
+            } finally {
+                read2CacheLock.unlock();
+            }
         }
 
-        return dbCode;
+        return ret;
     }
 
 
@@ -300,26 +331,38 @@ public abstract class ClinicalCodeTransformer {
                     String conceptId = "" + record.getSnomedConceptId();
                     conceptIds.add(conceptId);
                 }
-                Map<String, SnomedLookup> map = snomedDal.getSnomedLookups(conceptIds);
+                Map<String, SnomedLookup> snomedMap = snomedDal.getSnomedLookups(conceptIds);
                 for (CodeRecord record: records) {
                     long codeId = record.getCodeId();
                     String conceptId = "" + record.getSnomedConceptId();
-                    SnomedLookup snomedLookup = map.get(conceptId);
+                    SnomedLookup snomedLookup = snomedMap.get(conceptId);
                     if (snomedLookup != null) {
                         String snomedTerm = snomedLookup.getTerm();
                         hmSnomedTerms.put(new Long(codeId), snomedTerm);
                     }
                 }
 
-                //sanitise the code and work out what coding system it should have
+                //re-format each code so it's in proper Read2 format (e.g. A2 -> A2...)
                 for (CodeRecord record: records) {
                     String readCode = record.getReadCode();
                     long codeId = record.getCodeId();
                     String adjustedCode = removeSynonymAndPadRead2Code(readCode);
                     hmAdjustedCodes.put(new Long(codeId), adjustedCode);
+                }
 
-                    //check if it's an Emis code or valid Read2
-                    boolean isEmisCode = isEmisCode(adjustedCode);
+                //work out definitely which codes are Emis codes and which are proper Read2
+                Set<String> codes = new HashSet<>();
+                for (CodeRecord record: records) {
+                    long codeId = record.getCodeId();
+                    String adjustedCode = hmAdjustedCodes.get(new Long(codeId));
+                    codes.add(adjustedCode);
+                }
+                Map<String, Read2Code> read2Map = lookupRead2CodesUsingCache(codes);
+                for (CodeRecord record: records) {
+                    long codeId = record.getCodeId();
+                    String adjustedCode = hmAdjustedCodes.get(new Long(codeId));
+                    Read2Code read2Code = read2Map.get(adjustedCode);
+                    boolean isEmisCode = read2Code == null;
                     if (isEmisCode) {
                         hmIsEmisCodes.put(new Long(codeId), new Integer(1));
                     } else {
