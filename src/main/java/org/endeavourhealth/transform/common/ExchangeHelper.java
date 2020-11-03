@@ -4,6 +4,8 @@ import com.google.gson.JsonSyntaxException;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.JsonSerializer;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
+import org.endeavourhealth.core.database.dal.audit.models.Exchange;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,5 +107,21 @@ public class ExchangeHelper {
 
         //write to exchange_event so we can see this happened
         AuditWriter.writeExchangeEvent(exchangeId, "Automatically filtering on file types (" + String.join(", ", filteredTypes) + ") leaving " + files.size() + " files");
+    }
+
+    /**
+     * checks if this exchange has the "last message" header key
+     */
+    public static boolean isLastMessage(Exchange exchange) {
+        Boolean b = exchange.getHeaderAsBoolean(HeaderKeys.LastMessage);
+        return b != null && b.booleanValue();
+    }
+
+    /**
+     * checks if an exchange has been flagged to not allow re-queueing
+     */
+    public static boolean isAllowRequeueing(Exchange exchange) {
+        Boolean b = exchange.getHeaderAsBoolean(HeaderKeys.AllowQueueing);
+        return b == null || b.booleanValue();
     }
 }
