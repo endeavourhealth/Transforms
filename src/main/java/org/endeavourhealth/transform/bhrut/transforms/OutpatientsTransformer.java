@@ -85,16 +85,63 @@ public class OutpatientsTransformer {
             return;
         }
 
-        //create the episode of care for the outpatient encounter
-        createEpisodeOfCare(parser, fhirResourceFiler, csvHelper);
+        //translate the appointment status here as it determines whether an encounter and EOC occurred
+        //and therefore created or not, i.e. only if the appointment was fulfilled or status = 5
+        if (!parser.getAppointmentStatusCode().isEmpty()) {
 
-        //add the appointment ref to the encounter
-        Reference appointmentRef = csvHelper.createAppointmentReference(apptUniqueId);
-        encounterBuilder.setAppointment(appointmentRef);
+            CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
+            Appointment.AppointmentStatus appointmentStatus
+                    = translateAppointmentStatusCode(appointmentStatusCode, appointmentBuilder, csvHelper, idCell);
 
-        //the linked procedure and diagnosis records
-        createProcedures(encounterBuilder, parser, fhirResourceFiler, csvHelper);
-        createDiagnoses(encounterBuilder, parser, fhirResourceFiler, csvHelper);
+            //only create an encounter and EOC for fulfilled appointments
+            if (appointmentStatus == Appointment.AppointmentStatus.FULFILLED) {
+
+                //create the episode of care for the outpatient encounter
+                createEpisodeOfCare(parser, fhirResourceFiler, csvHelper);
+
+                //add the appointment ref to the encounter
+                Reference appointmentRef = csvHelper.createAppointmentReference(apptUniqueId);
+                encounterBuilder.setAppointment(appointmentRef);
+
+                //the linked procedure and diagnosis records that occurred during the appointment encounter
+                createProcedures(encounterBuilder, parser, fhirResourceFiler, csvHelper);
+                createDiagnoses(encounterBuilder, parser, fhirResourceFiler, csvHelper);
+
+                //add the encounter additional parameters
+                ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(encounterBuilder);
+                containedParametersBuilder.removeContainedParameters();
+
+                CsvCell adminCategoryCodeCell = parser.getAdminCategoryCode();
+                if (!adminCategoryCodeCell.isEmpty()) {
+
+                    addParmIfNotNullNhsdd("ADMIN_CATEGORY_CODE", adminCategoryCodeCell.getString(),
+                            adminCategoryCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+                }
+                CsvCell apptTypeCodeCell = parser.getApptTypeCode();
+                if (!apptTypeCodeCell.isEmpty()) {
+
+                    addParmIfNotNullNhsdd("APPT_TYPE_CODE",
+                            apptTypeCodeCell.getString(), apptTypeCodeCell,
+                            containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+                }
+                CsvCell appointmentStatusCodeCell = parser.getAppointmentStatusCode();
+                if (!appointmentStatusCodeCell.isEmpty()) {
+
+                    addParmIfNotNullNhsdd("APPOINTMENT_STATUS_CODE", appointmentStatusCodeCell.getString(),
+                            appointmentStatusCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+                }
+                CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
+                if (!appointmentOutcomeCodeCell.isEmpty()) {
+
+                    addParmIfNotNullNhsdd("APPOINTMENT_OUTCOME_CODE",
+                            appointmentOutcomeCodeCell.getString(), appointmentOutcomeCodeCell,
+                            containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+                }
+
+                //save the encounter
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
+            }
+        }
 
         //the remaining appointment details
         CsvCell appointmentDateCell = parser.getAppointmentDttm();
@@ -186,45 +233,7 @@ public class OutpatientsTransformer {
             appointmentBuilder.setComments(followUpDetails.getString(), followUpDetails);
         }
 
-        //translate the appointment status
-        if (!parser.getAppointmentStatusCode().isEmpty()) {
-
-            CsvCell appointmentStatusCode = parser.getAppointmentStatusCode();
-            translateAppointmentStatusCode(appointmentStatusCode, appointmentBuilder, csvHelper, idCell);
-        }
-
-        //add the encounter additional parameters
-        ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(encounterBuilder);
-        containedParametersBuilder.removeContainedParameters();
-
-        CsvCell adminCategoryCodeCell = parser.getAdminCategoryCode();
-        if (!adminCategoryCodeCell.isEmpty()) {
-
-            addParmIfNotNullNhsdd("ADMIN_CATEGORY_CODE", adminCategoryCodeCell.getString(),
-                    adminCategoryCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-        }
-        CsvCell apptTypeCodeCell = parser.getApptTypeCode();
-        if (!apptTypeCodeCell.isEmpty()) {
-
-            addParmIfNotNullNhsdd("APPT_TYPE_CODE",
-                    apptTypeCodeCell.getString(), apptTypeCodeCell,
-                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-        }
-        CsvCell appointmentStatusCodeCell = parser.getAppointmentStatusCode();
-        if (!appointmentStatusCodeCell.isEmpty()) {
-
-            addParmIfNotNullNhsdd("APPOINTMENT_STATUS_CODE", appointmentStatusCodeCell.getString(),
-                    appointmentStatusCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-        }
-        CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
-        if (!appointmentOutcomeCodeCell.isEmpty()) {
-
-            addParmIfNotNullNhsdd(  "APPOINTMENT_OUTCOME_CODE",
-                    appointmentOutcomeCodeCell.getString(), appointmentOutcomeCodeCell,
-                    containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-        }
-        //save the Encounter and Appointment
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
+        //save the Appointment
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !appointmentBuilder.isIdMapped(), appointmentBuilder);
     }
 
@@ -471,11 +480,15 @@ public class OutpatientsTransformer {
             builder.setPatient(patientReference);
         }
 
-        //encounter start and end date/times set as the appointment seen and departure date/times
-        if (!parser.getApptSeenDttm().isEmpty()) {
-            builder.setPeriodStart(parser.getApptSeenDttm().getDateTime(), parser.getApptSeenDttm());
+        //encounter start and end date/times set as either the appointment seen/appt date and departure date/times
+        CsvCell encounterStartDateCell
+                = ObjectUtils.firstNonNull(parser.getApptSeenDttm(), parser.getAppointmentDttm());
+        if (!encounterStartDateCell.isEmpty()) {
+
+            builder.setPeriodStart(encounterStartDateCell.getDateTime(), encounterStartDateCell);
         }
         if (!parser.getApptDepartureDttm().isEmpty()) {
+
             builder.setPeriodEnd(parser.getApptDepartureDttm().getDateTime(),parser.getApptDepartureDttm());
         }
 
@@ -652,7 +665,7 @@ public class OutpatientsTransformer {
         csvHelper.getEpisodeOfCareCache().cacheEpisodeOfCareBuilder(idCell, episodeBuilder);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),!episodeBuilder.isIdMapped(),episodeBuilder);
     }
-    private static void translateAppointmentStatusCode(CsvCell appointmentStatusCode, AppointmentBuilder appointmentBuilder, BhrutCsvHelper csvHelper,CsvCell idCell) throws Exception {
+    private static Appointment.AppointmentStatus translateAppointmentStatusCode(CsvCell appointmentStatusCode, AppointmentBuilder appointmentBuilder, BhrutCsvHelper csvHelper,CsvCell idCell) throws Exception {
         // from the NHS data dictionary ATTENDED OR DID NOT ATTEND
         // 5	Attended on time or, if late, before the relevant CARE PROFESSIONAL was ready to see the PATIENT
         // 6	Arrived late, after the relevant CARE PROFESSIONAL was ready to see the PATIENT, but was seen
@@ -660,39 +673,40 @@ public class OutpatientsTransformer {
         // 2	APPOINTMENT cancelled by, or on behalf of, the PATIENT
         // 3	Did not attend - no advance warning given
         // 4	APPOINTMENT cancelled or postponed by the Health Care Provider
-        // 0   Not applicable - APPOINTMENT occurs in the future
+        // 0    Not applicable - APPOINTMENT occurs in the future
         if (!appointmentStatusCode.isEmpty()) {
+
+            //xxxx Indicates missing data
             if (appointmentStatusCode.getString().toLowerCase().contains("x")) {
                 appointmentBuilder.setStatus(Appointment.AppointmentStatus.NULL);
-                return;} //Indicates missing data
+                return Appointment.AppointmentStatus.NULL;
+            }
             try {
                 int statusCode = Integer.parseInt(appointmentStatusCode.getString());
                 switch (statusCode) { //Ostensibly an int but there's garbage in the field
                     case 2:
                     case 4:
                         appointmentBuilder.setStatus(Appointment.AppointmentStatus.CANCELLED);
-                        break;
+                        return Appointment.AppointmentStatus.CANCELLED;
                     case 3:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
-                        break;
-                    case 5:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
-                        break;
-                    case 6:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
-                        break;
                     case 7:
                         appointmentBuilder.setStatus(Appointment.AppointmentStatus.NOSHOW);
-                        break;
+                        return Appointment.AppointmentStatus.NOSHOW;
+                    case 5:
+                    case 6:
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
+                        return Appointment.AppointmentStatus.FULFILLED;
                     case 0:
                         appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
-                        break;
                     default:
                         TransformWarnings.log(LOG, csvHelper, "Unknown appointment status code integer {} for id {} ", statusCode, idCell.getString());
+                        return Appointment.AppointmentStatus.NULL;
                 }
             } catch (NumberFormatException ex) {
                 TransformWarnings.log(LOG, csvHelper, "Invalid appointment status code - not integer {} ", appointmentStatusCode.getString());
+                return Appointment.AppointmentStatus.NULL;
             }
         }
+        return Appointment.AppointmentStatus.NULL;
     }
 }

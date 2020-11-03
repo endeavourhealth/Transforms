@@ -111,8 +111,9 @@ public class EpisodesTransformer {
             procedurePrimaryBuilder.setIsPrimary(true);
 
             //create an Encounter reference for the procedures and conditions to use
+            String episodeEncounterId = idCell.getString() + ":" + parser.getEpiNum().getInt() + ":IP:Episode";
             Reference thisEncounter
-                    = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
+                    = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
             if (episodeEncounterBuilder.isIdMapped()) {
                 thisEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisEncounter, csvHelper);
             }
@@ -154,7 +155,7 @@ public class EpisodesTransformer {
                     procedureBuilder.setIsPrimary(false);
 
                     Reference procEncReference
-                            = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
+                            = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
                     if (episodeEncounterBuilder.isIdMapped()) {
                         procEncReference
                                 = IdHelper.convertLocallyUniqueReferenceToEdsReference(procEncReference, csvHelper);
@@ -212,8 +213,9 @@ public class EpisodesTransformer {
             condition.setAsProblem(false);
 
             //create an Encounter reference for the conditions to use
+            String episodeEncounterId = idCell.getString() + ":" + parser.getEpiNum().getInt() + ":IP:Episode";
             Reference thisEncounter
-                    = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
+                    = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
             if (episodeEncounterBuilder.isIdMapped()) {
                 thisEncounter = IdHelper.convertLocallyUniqueReferenceToEdsReference(thisEncounter, csvHelper);
             }
@@ -253,7 +255,7 @@ public class EpisodesTransformer {
                     conditionOther.setId(idCell.getString() + "Condition:" + i);
                     conditionOther.setAsProblem(false);
                     Reference condEncReference
-                            = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
+                            = ReferenceHelper.createReference(ResourceType.Encounter, episodeEncounterId);
                     if (episodeEncounterBuilder.isIdMapped()) {
                         condEncReference
                                 = IdHelper.convertLocallyUniqueReferenceToEdsReference(condEncReference, csvHelper);
