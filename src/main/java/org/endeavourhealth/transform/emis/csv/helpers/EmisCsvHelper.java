@@ -1381,46 +1381,16 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         //find the patient GUIDs affected
         EmisMissingCodeDalI dal = DalProvider.factoryEmisMissingCodeDal();
-        Set<String> patientGuids = dal.retrievePatientGuidsForMissingCodes(this.foundMissingCodes, getServiceId());
-        LOG.debug("Found " + patientGuids.size() + " patients to re-queue");
+        Set<String> patientGuidSet = dal.retrievePatientGuidsForMissingCodes(this.foundMissingCodes, getServiceId());
+        LOG.debug("Found " + patientGuidSet.size() + " patients to re-queue");
 
         //find the exchange IDs we'll need to re-queue
         UUID firstExchangeId = dal.retrieveOldestExchangeIdForMissingCodes(this.foundMissingCodes, getServiceId());
 
         Service service = DalProvider.factoryServiceDal().getById(getServiceId());
         String msg = "" + this.foundMissingCodes.size() + " missing codes have been found for " + service.getLocalId() + " " + service.getName() + "\r\n"
-                + "Exchanges from " + firstExchangeId + " will be re-queued, filtering on " + patientGuids.size() + " patientGUIDs";
+                + "Exchanges from " + firstExchangeId + " will be re-queued, filtering on " + patientGuidSet.size() + " patientGUIDs";
         SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, msg);
-
-        //note the below parameters match the expected JSON received in ExchangeAuditEndpoint.postToExchange(..)
-        String[] patientGuidArr = patientGuids.toArray(new String[0]);
-        String patientGuidHeaderValue = ObjectMapperPool.getInstance().writeValueAsString(patientGuidArr);
-
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode jsonRoot = new ObjectNode(mapper.getNodeFactory());
-
-        jsonRoot.put("exchangeId", firstExchangeId.toString());
-        jsonRoot.put("serviceId", getServiceId().toString());
-        jsonRoot.put("systemId", getSystemId().toString());
-        jsonRoot.put("exchangeName", "EdsInbound"); //want to target the inbound queue
-        jsonRoot.put("postMode", "Onwards"); //want to queue from our first exchange ID and onward
-        jsonRoot.put("reason", "Missing codes found"); //free-text reason for re-queuing
-        ObjectNode subObj = jsonRoot.putObject("additionalHeaders");
-        subObj.put(HeaderKeys.EmisPatientGuids, patientGuidHeaderValue);
-
-        String parameters = mapper.writeValueAsString(jsonRoot);
-
-        /*Map<String, Object> headersMap = new HashMap<>();
-        headersMap.put(HeaderKeys.EmisPatientGuids, patientGuidHeaderValue);
-
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("exchangeId", firstExchangeId.toString());
-        parameters.put("serviceId", getServiceId().toString());
-        parameters.put("systemId", getSystemId().toString());
-        parameters.put("exchangeName", "EdsInbound"); //want to target the inbound queue
-        parameters.put("postMode", "Onwards"); //want to queue from our first exchange ID and onward
-        parameters.put("reason", "Missing codes found"); //free-text reason for re-queuing
-        parameters.put("additionalHeaders", headersMap);*/
 
         //get the Keycloak details from the EMIS config
         JsonNode json = ConfigManager.getConfigurationAsJson("emis_config", "queuereader");
@@ -1432,39 +1402,58 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         String keyCloakUser = json.get("keycloak-username").asText();
         String keyCloakPass = json.get("keycloak-password").asText();
         String keyCloakClientId = json.get("keycloak-client-id").asText();
+        int batchSize = json.get("max_batch_size").asInt(); //do 3000 at a time
 
         KeycloakClient kcClient = new KeycloakClient(keyCloakUrl, keyCloakRealm, keyCloakUser, keyCloakPass, keyCloakClientId);
 
-        /*if (true) {
-            WebTarget testTarget = ClientBuilder.newClient().target(ddsUrl).path("api/service/ccgCodes");
+        //if we try to post with more than about 3000 PatientGUIDs, RabbitMQ reject the post, because it's too large (looks like the limit is about 128KB)
+        //so we need to break into blocks of 3000 patients
+        List<String> patientGuidList = new ArrayList<>(patientGuidSet);
+        while (!patientGuidList.isEmpty()) {
 
-            Response response = testTarget
+            List<String> patientGuidBatch = new ArrayList<>();
+            while (patientGuidBatch.size() < batchSize && !patientGuidList.isEmpty()) {
+                String guid = patientGuidList.remove(0);
+                patientGuidBatch.add(guid);
+            }
+
+            //note the below parameters match the expected JSON received in ExchangeAuditEndpoint.postToExchange(..)
+            String[] patientGuidArr = patientGuidBatch.toArray(new String[0]);
+            String patientGuidHeaderValue = ObjectMapperPool.getInstance().writeValueAsString(patientGuidArr);
+
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode jsonRequestRoot = new ObjectNode(mapper.getNodeFactory());
+
+            jsonRequestRoot.put("exchangeId", firstExchangeId.toString());
+            jsonRequestRoot.put("serviceId", getServiceId().toString());
+            jsonRequestRoot.put("systemId", getSystemId().toString());
+            jsonRequestRoot.put("exchangeName", "EdsInbound"); //want to target the inbound queue
+            jsonRequestRoot.put("postMode", "Onwards"); //want to queue from our first exchange ID and onward
+            jsonRequestRoot.put("reason", "Missing codes found for " + patientGuidBatch.size() + " patients"); //free-text reason for re-queuing
+            ObjectNode subObj = jsonRequestRoot.putObject("additionalHeaders");
+            subObj.put(HeaderKeys.EmisPatientGuids, patientGuidHeaderValue);
+
+            String parameters = mapper.writeValueAsString(jsonRequestRoot);
+
+
+            //use a slightly different URL now so that we can use a user from the machine realm in Keycloak
+            //TODO - finish tesitng this and get it using the new Keycloak user and different API
+            WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/postToExchange");
+            //WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/PostToExchangeApi");
+
+
+            Response response = target
                     .request()
                     .header("Authorization", "Bearer " + kcClient.getToken().getToken())
-                    .get();
-            int status = response.getStatus();
-            LOG.debug("Status = " + status);
-            String responseStr = response.readEntity(String.class);
-            LOG.debug("responseStr = " + responseStr);
-        }*/
+                    .post(Entity.entity(parameters, MediaType.APPLICATION_JSON));
 
-        //use a slightly different URL now so that we can use a user from the machine realm in Keycloak
-        //TODO - finish tesitng this and get it using the new Keycloak user and different API
-        WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/postToExchange");
-        //WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/PostToExchangeApi");
-
-
-        Response response = target
-                .request()
-                .header("Authorization", "Bearer " + kcClient.getToken().getToken())
-                .post(Entity.entity(parameters, MediaType.APPLICATION_JSON));
-
-        if (response.getStatus() != HttpStatus.SC_OK) {
-            throw new Exception("Failed to re-queue Emis exchanges from exchange " + firstExchangeId + " due to found missing codes with HTTP response " + response.getStatus());
+            if (response.getStatus() != HttpStatus.SC_OK) {
+                throw new Exception("Failed to re-queue Emis exchanges from exchange " + firstExchangeId + " due to found missing codes with HTTP response " + response.getStatus());
+            }
         }
 
         //update the audit DB to say we've handled these missing codes
-        LOG.info("Re-queued exchanges for " + patientGuids.size() + " patients for fixed missing codes");
+        LOG.info("Re-queued exchanges for " + patientGuidSet.size() + " patients for fixed missing codes");
         dal.setMissingCodesFixed(this.foundMissingCodes, getServiceId());
     }
 
