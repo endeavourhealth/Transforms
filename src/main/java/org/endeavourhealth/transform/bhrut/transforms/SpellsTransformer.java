@@ -216,7 +216,11 @@ public class SpellsTransformer {
 
         //and link the parent to this new child admissions encounter
         Reference childAdmissionRef = ReferenceHelper.createReference(ResourceType.Encounter, admissionEncounterId);
-        childAdmissionRef = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+        if (parentEncounterBuilder.isIdMapped()) {
+
+            childAdmissionRef
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(childAdmissionRef, csvHelper);
+        }
         existingParentEncounterList.addReference(childAdmissionRef);
 
         //if the main encounter has a discharge date create a linked Discharge encounter
@@ -289,7 +293,11 @@ public class SpellsTransformer {
             //and link the parent to this new child discharge encounter
             Reference childDischargeRef
                     = ReferenceHelper.createReference(ResourceType.Encounter, dischargeEncounterId);
-            childDischargeRef = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
+            if (parentEncounterBuilder.isIdMapped()) {
+
+                childDischargeRef
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, csvHelper);
+            }
             existingParentEncounterList.addReference(childDischargeRef);
         }
 
@@ -393,15 +401,15 @@ public class SpellsTransformer {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
         }
 
-        //save the sub encounters if created,  admission encounter is always created
+        //first, save the updated parent with encounter links
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !parentEncounterBuilder.isIdMapped(), parentEncounterBuilder);
+
+        //then save the sub encounters if created,  admission encounter is always created
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), admissionEncounterBuilder);
 
         if (dischargeEncounterBuilder != null) {
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), dischargeEncounterBuilder);
         }
-
-        //finally, save the updated parent with encounter links
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !parentEncounterBuilder.isIdMapped(), parentEncounterBuilder);
     }
 
     private static void createEpisodeOfCare(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -559,8 +567,11 @@ public class SpellsTransformer {
         if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-            parentEncounter
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+
+            //if (builder.isIdMapped()) {
+                parentEncounter
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            //}
 
             builder.setPartOf(parentEncounter);
         }
