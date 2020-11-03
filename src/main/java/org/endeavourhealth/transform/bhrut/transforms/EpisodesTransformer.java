@@ -131,6 +131,9 @@ public class EpisodesTransformer {
 
                     ProcedureBuilder procedureBuilder = new ProcedureBuilder();
                     procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
+
+                    Reference newPatientReference2 = csvHelper.createPatientReference(patientIdCell);
+                    proc.setPatient(newPatientReference2, patientIdCell);
                     procedureBuilder.setIsPrimary(false);
 
                     Reference procEncReference
@@ -151,6 +154,17 @@ public class EpisodesTransformer {
                         throw new Exception("Failed to find procedure term for OPCS-4 code " + procCode.getString());
                     }
                     codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
+
+                    //consultant and procedure date are inferred from the primary procedure
+                    if (!parser.getPrimaryProcedureDate().isEmpty()) {
+                        DateTimeType dttp = new DateTimeType(parser.getPrimaryProcedureDate().getDateTime());
+                        procedureBuilder.setPerformed(dttp, parser.getPrimaryProcedureDate());
+                    }
+                    if (!parser.getEpisodeConsultantCode().isEmpty()) {
+                        Reference practitionerReference2
+                                = csvHelper.createPractitionerReference(episodeConsultantCodeCell.getString());
+                        procedureBuilder.addPerformer(practitionerReference2, episodeConsultantCodeCell);
+                    }
 
                     fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
                 } else {
