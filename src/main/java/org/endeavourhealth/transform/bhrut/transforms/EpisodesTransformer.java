@@ -132,6 +132,15 @@ public class EpisodesTransformer {
                     ProcedureBuilder procedureBuilder = new ProcedureBuilder();
                     procedureBuilder.setId(idCell.getString() + ":Procedure:" + i);
                     procedureBuilder.setIsPrimary(false);
+
+                    Reference procEncReference
+                            = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
+                    if (episodeEncounterBuilder.isIdMapped()) {
+                        procEncReference
+                                = IdHelper.convertLocallyUniqueReferenceToEdsReference(procEncReference, csvHelper);
+                    }
+                    procedureBuilder.setEncounter(procEncReference, idCell);
+
                     procedureBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Procedure_Main_Code, null);
                     CodeableConceptBuilder codeableConceptBuilder
                             = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
@@ -212,7 +221,13 @@ public class EpisodesTransformer {
                     ConditionBuilder conditionOther = new ConditionBuilder();
                     conditionOther.setId(idCell.getString() + "Condition:" + i);
                     conditionOther.setAsProblem(false);
-                    conditionOther.setEncounter(thisEncounter, idCell);
+                    Reference condEncReference
+                            = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
+                    if (episodeEncounterBuilder.isIdMapped()) {
+                        condEncReference
+                                = IdHelper.convertLocallyUniqueReferenceToEdsReference(condEncReference, csvHelper);
+                    }
+                    conditionOther.setEncounter(condEncReference, idCell);
 
                     conditionOther.setPatient(csvHelper.createPatientReference(patientIdCell), patientIdCell);
                     method = Episodes.class.getDeclaredMethod("getDiag" + i + "Dttm");
@@ -381,7 +396,7 @@ public class EpisodesTransformer {
         createProcedures(episodeEncounterBuilder, parser, fhirResourceFiler, csvHelper);
 
         //finally, save the episode encounter which always exists
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeEncounterBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !episodeEncounterBuilder.isIdMapped(), episodeEncounterBuilder);
      }
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
