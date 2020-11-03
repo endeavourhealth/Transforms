@@ -386,25 +386,18 @@ public class EncounterTransformer {
                 ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(childEncounterBuilder);
                 containedParametersBuilder.removeContainedParameters();
 
-                /*if (pv1.getHospitalService() != null) {
+                if (pv1.getHospitalService() != null) {
                     String treatmentFunctionCode = pv1.getHospitalService().toString();
+
                     MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
-                            "treatment_function_code"
-                    );
-                   *//* MapColumnRequest propertyRequest = new MapColumnRequest(
                             "CM_Org_Imperial","CM_Sys_Cerner","HL7","inpatient",
                             "treatment_function_code"
-                    );*//*
-                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
-                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Barts", "CM_Sys_Cerner", "CDS", "emergency",
-                            "treatment_function_code", treatmentFunctionCode, IMConstant.BARTS_CERNER
                     );
-                  *//*  MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                     MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                             "CM_Org_Imperial","CM_Sys_Cerner","HL7","inpatient",
                             "treatment_function_code", treatmentFunctionCode, IMConstant.IMPERIAL_CERNER
-                    );*//*
+                    );
                      MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
                     CodeableConcept ccValue = new CodeableConcept();
@@ -412,7 +405,7 @@ public class EncounterTransformer {
                             .setSystem(valueResponse.getConcept().getScheme());
 
                     containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
-                }*/
+                }
 
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, encounterId);
