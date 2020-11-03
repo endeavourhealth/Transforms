@@ -12,6 +12,7 @@ import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.Episodes;
 import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -67,12 +68,27 @@ public class EpisodesTransformer {
 
         //retrieve the parent hospital spell encounter created previously
         CsvCell spellExternalIdCell = parser.getIpSpellExternalId();
-        Encounter spellEncounter
-                = (Encounter) csvHelper.retrieveResource(spellExternalIdCell.getString(), ResourceType.Encounter);
-        EncounterBuilder spellEncounterBuilder = new EncounterBuilder(spellEncounter);
+        if (!spellExternalIdCell.isEmpty()) {
 
-        //create the episode encounter
-        createEpisodeEncounters(parser, spellEncounterBuilder, fhirResourceFiler, csvHelper);
+            Encounter spellEncounter
+                    = (Encounter) csvHelper.retrieveResource(spellExternalIdCell.getString(), ResourceType.Encounter);
+
+            if (spellEncounter != null) {
+                EncounterBuilder spellEncounterBuilder = new EncounterBuilder(spellEncounter);
+
+                //create the episode encounter
+                createEpisodeEncounters(parser, spellEncounterBuilder, fhirResourceFiler, csvHelper);
+            } else {
+
+                //if we have received a spell encounter id reference that we cannot find resource for in the db, throw an exception
+                throw new TransformRuntimeException("Cannot find spell encounter for id: "+spellExternalIdCell.getString());
+            }
+        } else {
+
+            //if the spell encounter Id is missing then this record should follow in a later extract
+            //with a valid spell encounter Id to link to a spell record.  Simply log the fact here.
+            TransformWarnings.log(LOG, csvHelper, "Missing external spell id for episode encounter id: {} ", parser.getId().getString());
+        }
     }
 
 
