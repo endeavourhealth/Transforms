@@ -186,6 +186,13 @@ public class OutpatientsTransformer {
             appointmentBuilder.setSentInDateTime(d, patientSeenDateCell);
         }
 
+        CsvCell consultantCodeCell = parser.getConsultantCode();
+        if (!consultantCodeCell.isEmpty()) {
+
+            Reference consultantReference = csvHelper.createPractitionerReference(consultantCodeCell.getString());
+            appointmentBuilder.addParticipant(consultantReference, Appointment.ParticipationStatus.ACCEPTED, consultantCodeCell);
+        }
+
         //calculate the delay as the difference between the scheduled start and actual start
         if (!appointmentDateCell.isEmpty()
                 && !patientSeenDateCell.isEmpty()) {
@@ -481,11 +488,13 @@ public class OutpatientsTransformer {
         }
 
         //encounter start and end date/times set as either the appointment seen/appt date and departure date/times
-        CsvCell encounterStartDateCell
-                = ObjectUtils.firstNonNull(parser.getApptSeenDttm(), parser.getAppointmentDttm());
-        if (!encounterStartDateCell.isEmpty()) {
+        CsvCell seenDateTimeCell = parser.getApptSeenDttm();
+        CsvCell appointmentDateTimeCell = parser.getAppointmentDttm();
+        if (!seenDateTimeCell.isEmpty()) {
 
-            builder.setPeriodStart(encounterStartDateCell.getDateTime(), encounterStartDateCell);
+            builder.setPeriodStart(seenDateTimeCell.getDateTime(), seenDateTimeCell);
+        } else {
+            builder.setPeriodStart(appointmentDateTimeCell.getDateTime(), appointmentDateTimeCell);
         }
         if (!parser.getApptDepartureDttm().isEmpty()) {
 
@@ -620,9 +629,14 @@ public class OutpatientsTransformer {
         }
         episodeBuilder.setPatient(patientReference, patientIdCell);
 
-        CsvCell startDateTime = parser.getApptSeenDttm();
-        if (!startDateTime.isEmpty()) {
-            episodeBuilder.setRegistrationStartDate(startDateTime.getDateTime(), startDateTime);
+        //use appointment seen date if it exists, otherwise use the appointment date (which always exists)
+        CsvCell seenDateTimeCell = parser.getApptSeenDttm();
+        CsvCell appointmentDateTimeCell = parser.getAppointmentDttm();
+        if (!seenDateTimeCell.isEmpty()) {
+
+            episodeBuilder.setRegistrationStartDate(seenDateTimeCell.getDateTime(), seenDateTimeCell);
+        } else {
+            episodeBuilder.setRegistrationStartDate(appointmentDateTimeCell.getDateTime(), appointmentDateTimeCell);
         }
         CsvCell endDateTime = parser.getApptDepartureDttm();
         if (!endDateTime.isEmpty()) {
