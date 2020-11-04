@@ -386,7 +386,7 @@ public class EncounterTransformer {
                 ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(childEncounterBuilder);
                 containedParametersBuilder.removeContainedParameters();
 
-                if (pv1.getHospitalService() != null) {
+                /*if (pv1.getHospitalService() != null) {
                     String treatmentFunctionCode = pv1.getHospitalService().toString();
 
                     MapColumnRequest propertyRequest = new MapColumnRequest(
@@ -405,7 +405,7 @@ public class EncounterTransformer {
                             .setSystem(valueResponse.getConcept().getScheme());
 
                     containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
-                }
+                }*/
 
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, encounterId);
@@ -450,9 +450,25 @@ public class EncounterTransformer {
                 Encounter childEncounter
                         = (Encounter) resourceDal.getCurrentVersionAsResource(imperialHL7Helper.getServiceId(), ResourceType.Encounter, comps.getId());
                 if (childEncounter != null) {
-                    LOG.debug("Deleting child encounter " + childEncounter.getId());
+                    boolean deleteChild = false;
+                    if(("EMERGENCY".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A11".equalsIgnoreCase(msgType))) {
+                        deleteChild = true;
 
-                    fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A12".equalsIgnoreCase(msgType))) {
+                        deleteChild = true;
+
+                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A11".equalsIgnoreCase(msgType))) {
+                        deleteChild = true;
+
+                    } else if("OUTPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) {
+                        deleteChild = true;
+                    }
+
+                    if(deleteChild) {
+                        LOG.debug("Deleting child encounter " + childEncounter.getId());
+                        fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
+                    }
+
                 } else {
 
                     TransformWarnings.log(LOG, imperialHL7Helper, "Cannot find existing child Encounter: {} for deletion", childEncounter.getId());
