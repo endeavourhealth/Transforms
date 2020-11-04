@@ -93,7 +93,14 @@ public class OutpatientsTransformer {
             Appointment.AppointmentStatus appointmentStatus
                     = translateAppointmentStatusCode(appointmentStatusCode, appointmentBuilder, csvHelper, idCell);
 
-            //only create an encounter and EOC for fulfilled appointments
+            //if the appointment status is missing then we cannot really do anything with it so log and return
+            if (appointmentStatus == Appointment.AppointmentStatus.PENDING) {
+
+                TransformWarnings.log(LOG, csvHelper, "Missing appointment status for: {} .  Unable to process", idCell.getString());
+                return;
+            }
+
+            //only create an encounter and EOC for fulfilled appointments (as per FHIR AppointmentStatus enum rule)
             if (appointmentStatus == Appointment.AppointmentStatus.FULFILLED) {
 
                 //create the episode of care for the outpatient encounter
@@ -690,10 +697,10 @@ public class OutpatientsTransformer {
         // 0    Not applicable - APPOINTMENT occurs in the future
         if (!appointmentStatusCode.isEmpty()) {
 
-            //xxxx Indicates missing data
-            if (appointmentStatusCode.getString().toLowerCase().contains("x")) {
-                appointmentBuilder.setStatus(Appointment.AppointmentStatus.NULL);
-                return Appointment.AppointmentStatus.NULL;
+            //XXXX indicates no status data and accompanies future dates therefore it is a BOOKED appointment
+            if (appointmentStatusCode.getString().toUpperCase().contains("XXXX")) {
+                appointmentBuilder.setStatus(Appointment.AppointmentStatus.BOOKED);
+                return Appointment.AppointmentStatus.BOOKED;
             }
             try {
                 int statusCode = Integer.parseInt(appointmentStatusCode.getString());
@@ -711,16 +718,16 @@ public class OutpatientsTransformer {
                         appointmentBuilder.setStatus(Appointment.AppointmentStatus.FULFILLED);
                         return Appointment.AppointmentStatus.FULFILLED;
                     case 0:
-                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
+                        appointmentBuilder.setStatus(Appointment.AppointmentStatus.BOOKED);
                     default:
                         TransformWarnings.log(LOG, csvHelper, "Unknown appointment status code integer {} for id {} ", statusCode, idCell.getString());
-                        return Appointment.AppointmentStatus.NULL;
+                        return Appointment.AppointmentStatus.PENDING;
                 }
             } catch (NumberFormatException ex) {
                 TransformWarnings.log(LOG, csvHelper, "Invalid appointment status code - not integer {} ", appointmentStatusCode.getString());
-                return Appointment.AppointmentStatus.NULL;
+                return Appointment.AppointmentStatus.PENDING;
             }
         }
-        return Appointment.AppointmentStatus.NULL;
+        return Appointment.AppointmentStatus.PENDING;
     }
 }
