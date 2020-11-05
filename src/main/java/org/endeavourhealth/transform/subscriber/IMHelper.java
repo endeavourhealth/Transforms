@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class IMHelper {
     private static final Logger LOG = LoggerFactory.getLogger(IMHelper.class);
-    private static final long CACHE_DURATION = 1000 * 60 * 2; //cache objects for 120s
+    private static final long CACHE_DURATION = 1000 * 60 * 60; //cache objects for 2hrs
     private static final long THREAD_SLEEP_TIME = 1000 * 10; //thread sleep for 10s
     private static final int RETRY_COUNT = 12; //thread retry count
 
@@ -34,7 +34,7 @@ public class IMHelper {
     private static Set<String> nullCoreCache = new ExpiringSet<>(CACHE_DURATION);
 
     private static ExpiringCache<Integer, String> snomedConceptForCoreDBIDCache = new ExpiringCache<>(CACHE_DURATION);
-    private static Set<Integer> nullSnomedConceptForCoreDBIDCache = new ExpiringSet<Integer>(CACHE_DURATION);
+    private static Set<Integer> nullSnomedConceptForCoreDBIDCache = new ExpiringSet<>(CACHE_DURATION);
 
     private static ExpiringCache<String, String> snomedConceptForLegacyCodeCache = new ExpiringCache<>(CACHE_DURATION);
     private static Set<String> nullSnomedConceptForLegacyCodeCache = new ExpiringSet<>(CACHE_DURATION);
@@ -48,7 +48,6 @@ public class IMHelper {
     private static ExpiringCache<String, MapResponse> mappedColumnValueRequestResponseCache = new ExpiringCache<>(CACHE_DURATION);
     private static Set<String> nullMappedColumnValueRequestResponseCache = new ExpiringSet<>(CACHE_DURATION);
 
-    private static final ReentrantLock lock = new ReentrantLock();
 
     public static Integer getIMMappedConcept(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String scheme, String code) throws Exception {
 
@@ -86,26 +85,21 @@ public class IMHelper {
 
     private static Integer getIMMappedConceptWithRetry(String scheme, String code) throws Exception {
 
-        try {
-            lock.lock();
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = RETRY_COUNT;
 
-            //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = RETRY_COUNT;
-
-            while (true) {
-                lives--;
-                try {
-                    return IMClient.getMappedCoreConceptDbidForSchemeCode(scheme, code);
-                } catch (Exception ex) {
-                    if (lives <= 0) {
-                        throw new Exception("Failed to call getMappedCoreConceptDbidForSchemeCode for scheme [" + scheme + "] code [" + code + "]", ex);
-                    }
-                    Thread.sleep(THREAD_SLEEP_TIME);
-                    LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + scheme + ", " + code);
+                return IMClient.getMappedCoreConceptDbidForSchemeCode(scheme, code);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getMappedCoreConceptDbidForSchemeCode for scheme [" + scheme + "] code [" + code + "]", ex);
                 }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
             }
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -143,27 +137,21 @@ public class IMHelper {
 
     private static Integer getConceptIdForSchemeCodeWithRetry(String scheme, String code, String term) throws Exception {
 
-        try {
-            lock.lock();
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = RETRY_COUNT;
 
-            //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = RETRY_COUNT;
-
-            while (true) {
-                lives--;
-                try {
-                    return IMClient.getConceptDbidForSchemeCode(scheme, code, term, true);
-                } catch (Exception ex) {
-                    if (lives <= 0) {
-                        throw new Exception("Failed to call getConceptDbidForSchemeCode with scheme [" + scheme + "] code [" + code + "] term [" + term + "]", ex);
-                    }
-                    Thread.sleep(THREAD_SLEEP_TIME);
-                    LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + scheme + ", " + code + ", " + term);
+                return IMClient.getConceptDbidForSchemeCode(scheme, code, term, true);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getConceptDbidForSchemeCode with scheme [" + scheme + "] code [" + code + "] term [" + term + "]", ex);
                 }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
             }
-
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -201,26 +189,21 @@ public class IMHelper {
 
     private static Integer getIMMappedConceptForTypeTermWithRetry(String type, String term) throws Exception {
 
-        try {
-            lock.lock();
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = RETRY_COUNT;
 
-            //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = RETRY_COUNT;
-
-            while (true) {
-                lives--;
-                try {
-                    return IMClient.getMappedCoreConceptDbidForTypeTerm(type, term);
-                } catch (Exception ex) {
-                    if (lives <= 0) {
-                        throw new Exception("Failed to call getMappedCoreConceptDbidForTypeTerm for type [" + type + "] term [" + term + "]", ex);
-                    }
-                    Thread.sleep(THREAD_SLEEP_TIME);
-                    LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + type + ", " + term);
+                return IMClient.getMappedCoreConceptDbidForTypeTerm(type, term);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getMappedCoreConceptDbidForTypeTerm for type [" + type + "] term [" + term + "]", ex);
                 }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
             }
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -258,26 +241,21 @@ public class IMHelper {
 
     private static Integer getConceptDbidForTypeTermWithRetry(String type, String term) throws Exception {
 
-        try {
-            lock.lock();
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = RETRY_COUNT;
 
-            //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = RETRY_COUNT;
-
-            while (true) {
-                lives--;
-                try {
-                    return IMClient.getConceptDbidForTypeTerm(type, term, true);
-                } catch (Exception ex) {
-                    if (lives <= 0) {
-                        throw new Exception("Failed to call getConceptDbidForTypeTerm for type [" + type + "] term [" + term + "]", ex);
-                    }
-                    Thread.sleep(THREAD_SLEEP_TIME);
-                    LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + type + ", " + term);
+                return IMClient.getConceptDbidForTypeTerm(type, term, true);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getConceptDbidForTypeTerm for type [" + type + "] term [" + term + "]", ex);
                 }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
             }
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -318,26 +296,21 @@ public class IMHelper {
 
     private static String getSnomedConceptIdForCoreDBIDWithRetry(Integer conceptId) throws Exception {
 
-        try {
-            lock.lock();
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = RETRY_COUNT;
 
-            //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = RETRY_COUNT;
-
-            while (true) {
-                lives--;
-                try {
-                    return IMClient.getCodeForConceptDbid(conceptId);
-                } catch (Exception ex) {
-                    if (lives <= 0) {
-                        throw new Exception("Failed to call getCodeForConceptDbid for conceptId [" + conceptId + "]", ex);
-                    }
-                    Thread.sleep(THREAD_SLEEP_TIME);
-                    LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + conceptId);
+                return IMClient.getCodeForConceptDbid(conceptId);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getCodeForConceptDbid for conceptId [" + conceptId + "]", ex);
                 }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
             }
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -375,25 +348,22 @@ public class IMHelper {
     }
 
     private static String getMappedSnomedConceptForSchemeCodeWithRetry(String scheme, String code) throws Exception {
-        try {
-            lock.lock();
-            //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = RETRY_COUNT;
 
-            while (true) {
-                lives--;
-                try {
-                    return IMClient.getMappedCoreCodeForSchemeCode(scheme, code);
-                } catch (Exception ex) {
-                    if (lives <= 0) {
-                        throw new Exception("Failed to call getMappedCoreCodeForSchemeCode for scheme [" + scheme + "] code [" + code + "]", ex);
-                    }
-                    Thread.sleep(THREAD_SLEEP_TIME);
-                    LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = RETRY_COUNT;
+
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + scheme + ", " + code);
+                return IMClient.getMappedCoreCodeForSchemeCode(scheme, code);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getMappedCoreCodeForSchemeCode for scheme [" + scheme + "] code [" + code + "]", ex);
                 }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
             }
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -438,26 +408,22 @@ public class IMHelper {
     }
 
     private static String getMappedLegacyCodeForLegacyCodeAndTermWithRetry(String scheme, String context, String term) throws Exception {
-        try {
-            lock.lock();
 
-            //during development, we get fairly frequent timeouts, so give it a couple of attempts
-            int lives = RETRY_COUNT;
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = RETRY_COUNT;
 
-            while (true) {
-                lives--;
-                try {
-                    return IMClient.getCodeForTypeTerm(scheme, context, term, true);
-                } catch (Exception ex) {
-                    if (lives <= 0) {
-                        throw new Exception("Failed to call getCodeForTypeTerm for scheme [" + scheme + "] context [" + context + "] term [" + term + "]", ex);
-                    }
-                    Thread.sleep(THREAD_SLEEP_TIME);
-                    LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + scheme + ", " + context + ", " + term);
+                return IMClient.getCodeForTypeTerm(scheme, context, term, true);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getCodeForTypeTerm for scheme [" + scheme + "] context [" + context + "] term [" + term + "]", ex);
                 }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
             }
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -490,6 +456,7 @@ public class IMHelper {
             return ret;
         }
         //then try the API
+        LOG.trace("Going to IM API for " + propertyRequest);
         ret = IMClient.getMapProperty(propertyRequest);
         //store in the cache using the cache key and response
         if (ret == null) {
@@ -514,6 +481,7 @@ public class IMHelper {
             return ret;
         }
         //then try the API
+        LOG.trace("Going to IM API for " + valueRequest);
         ret = IMClient.getMapPropertyValue(valueRequest);
 
         //store in the cache using the cache key and response
