@@ -14,6 +14,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -84,7 +85,7 @@ public class AndEAttendanceTransformer {
         //use RECORDED_OUTCOME to populate the discharge disposition
         CsvCell dischargeOutcomeCell = parser.getRecordedOutcome();
         if (!dischargeOutcomeCell.isEmpty()) {
-            parentEncounterBuilder.setDischargeDisposition(dischargeOutcomeCell.getString());
+            parentEncounterBuilder.setDischargeDisposition(dischargeOutcomeCell.getString(), dischargeOutcomeCell);
         }
 
         createEmergencySubEncounters(parser, parentEncounterBuilder, fhirResourceFiler, csvHelper);
@@ -139,9 +140,9 @@ public class AndEAttendanceTransformer {
         parentTopEncounterBuilder.setPeriodStart(parser.getArrivalDttm().getDateTime(), parser.getArrivalDttm());
 
         CsvCell dischargeDateCell = parser.getDischargedDttm();
-        if (!dischargeDateCell.isEmpty()) {
+        if (!isNullDischargeDateCell(dischargeDateCell)) {
 
-            parentTopEncounterBuilder.setPeriodEnd(dischargeDateCell.getDateTime());
+            parentTopEncounterBuilder.setPeriodEnd(dischargeDateCell.getDateTime(), dischargeDateCell);
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         } else {
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
@@ -169,7 +170,7 @@ public class AndEAttendanceTransformer {
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
             }
 
-            builder.setPatient(patientReference);
+            builder.setPatient(patientReference, patientIdCell);
         }
 
         //episode of care references set using the emergency encounter Id
@@ -180,32 +181,29 @@ public class AndEAttendanceTransformer {
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
             }
-
-            builder.setEpisodeOfCare(episodeReference);
+            builder.setEpisodeOfCare(episodeReference, idCell);
         }
 
         //Note: no practitioner available
 
-        CsvCell admissionHospitalCode = parser.getHospitalCode();
-        if (!admissionHospitalCode.isEmpty()) {
+        CsvCell admissionHospitalCodeCell = parser.getHospitalCode();
+        if (!admissionHospitalCodeCell.isEmpty()) {
             Reference organizationReference
-                    = csvHelper.createOrganisationReference(admissionHospitalCode.getString());
+                    = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
             if (builder.isIdMapped()) {
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
             }
 
-            builder.setServiceProvider(organizationReference);
+            builder.setServiceProvider(organizationReference, admissionHospitalCodeCell);
         }
 
         if (isChildEncounter) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
-           // if (builder.isIdMapped()) {
-                parentEncounter
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            //}
-            builder.setPartOf(parentEncounter);
+            parentEncounter
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
+            builder.setPartOf(parentEncounter, idCell);
         }
     }
 
@@ -220,7 +218,7 @@ public class AndEAttendanceTransformer {
         arrivalEncounterBuilder.setId(arrivalEncounterId);
 
         CsvCell arrivalDateCell = parser.getArrivalDttm();
-        arrivalEncounterBuilder.setPeriodStart(arrivalDateCell.getDateTime(),arrivalDateCell);
+        arrivalEncounterBuilder.setPeriodStart(arrivalDateCell.getDateTime(), arrivalDateCell);
         arrivalEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
         CodeableConceptBuilder codeableConceptBuilderAdmission
@@ -265,12 +263,12 @@ public class AndEAttendanceTransformer {
 
         CsvCell triageDateCell = parser.getTriageDttm();
         CsvCell invAndTreatmentsDateCell = parser.getSeenByAeDoctorDttm();
-        CsvCell conclusionDate = parser.getLeftDepartmentDttm();
+        CsvCell leftDepartmentDateCell = parser.getLeftDepartmentDttm();
         CsvCell dischargeDateCell = parser.getDischargedDttm();
 
         Date aeEndDate
                 = ObjectUtils.firstNonNull(triageDateCell.getDateTime(), invAndTreatmentsDateCell.getDateTime(),
-                conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
+                dischargeDateCell.getDateTime(), leftDepartmentDateCell.getDateTime());
         if (aeEndDate != null) {
 
             arrivalEncounterBuilder.setPeriodEnd(aeEndDate);
@@ -288,7 +286,7 @@ public class AndEAttendanceTransformer {
 
             String assessmentEncounterId = parser.getId().getString() + ":02:EM";
             assessmentEncounterBuilder.setId(assessmentEncounterId);
-            assessmentEncounterBuilder.setPeriodStart(triageDateCell.getDateTime());
+            assessmentEncounterBuilder.setPeriodStart(triageDateCell.getDateTime(), triageDateCell);
             assessmentEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderAssessment
@@ -307,7 +305,7 @@ public class AndEAttendanceTransformer {
             existingEncounterList.addReference(childAssessmentRef);
 
             Date aeAssessmentEndDate
-                    = ObjectUtils.firstNonNull(invAndTreatmentsDateCell.getDateTime(), conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
+                    = ObjectUtils.firstNonNull(invAndTreatmentsDateCell.getDateTime(), dischargeDateCell.getDateTime(), leftDepartmentDateCell.getDateTime());
             if (aeAssessmentEndDate != null) {
 
                 assessmentEncounterBuilder.setPeriodEnd(aeAssessmentEndDate);
@@ -326,7 +324,7 @@ public class AndEAttendanceTransformer {
 
             String treatmentsEncounterId = parser.getId().getString() + ":03:EM";
             treatmentsEncounterBuilder.setId(treatmentsEncounterId);
-            treatmentsEncounterBuilder.setPeriodStart(invAndTreatmentsDateCell.getDateTime());
+            treatmentsEncounterBuilder.setPeriodStart(invAndTreatmentsDateCell.getDateTime(), invAndTreatmentsDateCell);
             treatmentsEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
             CodeableConceptBuilder codeableConceptBuilderTreatments
@@ -344,11 +342,10 @@ public class AndEAttendanceTransformer {
             }
             existingEncounterList.addReference(childTreatmentsRef);
 
-            Date aeTreatmentsEndDate
-                    = ObjectUtils.firstNonNull(conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
-            if (aeTreatmentsEndDate != null) {
+            //if you are treated, you get discharged at some point following treatment
+            if (!isNullDischargeDateCell(dischargeDateCell)) {
 
-                treatmentsEncounterBuilder.setPeriodEnd(aeTreatmentsEndDate);
+                treatmentsEncounterBuilder.setPeriodEnd(dischargeDateCell.getDateTime(), dischargeDateCell);
                 treatmentsEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
             }
 
@@ -359,7 +356,7 @@ public class AndEAttendanceTransformer {
         //Is there a discharge/conclusion Encounter ?
         EncounterBuilder dischargeEncounterBuilder = null;
         CsvCell leftDeptDate = parser.getLeftDepartmentDttm();
-        if ((!dischargeDateCell.isEmpty()) || (!leftDeptDate.isEmpty())) {
+        if ((!isNullDischargeDateCell(dischargeDateCell)) || (!leftDeptDate.isEmpty())) {
 
             dischargeEncounterBuilder = new EncounterBuilder();
             dischargeEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
@@ -403,8 +400,10 @@ public class AndEAttendanceTransformer {
                         containedParametersBuilderDischarge, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
             }
 
+            //the left department date/time is usually after the discharge date/time so set that as the
+            //end date of the discharge
             Date aeDischargeEndDate
-                    = ObjectUtils.firstNonNull(conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
+                    = ObjectUtils.firstNonNull(leftDepartmentDateCell.getDateTime(), dischargeDateCell.getDateTime());
             if (aeDischargeEndDate != null) {
 
                 dischargeEncounterBuilder.setPeriodEnd(aeDischargeEndDate);
@@ -430,26 +429,26 @@ public class AndEAttendanceTransformer {
         }
         episodeOfCareBuilder.setPatient(patientReference, patientIdCell);
 
-        //the end date could be anyone of these
         CsvCell arrivalDateCell = parser.getArrivalDttm();
-        CsvCell conclusionDate = parser.getLeftDepartmentDttm();
         CsvCell dischargeDateCell = parser.getDischargedDttm();
-        Date aeEndDate
-                = ObjectUtils.firstNonNull(conclusionDate.getDateTime(), dischargeDateCell.getDateTime());
 
         //the episode begins when they arrive
         if (arrivalDateCell != null) {
 
-            if (episodeOfCareBuilder.getRegistrationStartDate() == null || arrivalDateCell.getDateTime().before(episodeOfCareBuilder.getRegistrationStartDate())) {
+            if (episodeOfCareBuilder.getRegistrationStartDate() == null ||
+                    arrivalDateCell.getDateTime().before(episodeOfCareBuilder.getRegistrationStartDate())) {
+
                 episodeOfCareBuilder.setRegistrationStartDate(arrivalDateCell.getDateTime(), arrivalDateCell);
                 episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
             }
 
-            // End date is either conclusion or discharge
-            if (aeEndDate != null) {
+            // End date is discharge date and time
+            if (!isNullDischargeDateCell(dischargeDateCell)) {
 
-                if (episodeOfCareBuilder.getRegistrationEndDate() == null || aeEndDate.after(episodeOfCareBuilder.getRegistrationEndDate())) {
-                    episodeOfCareBuilder.setRegistrationEndDate(aeEndDate);
+                if (episodeOfCareBuilder.getRegistrationEndDate() == null ||
+                        dischargeDateCell.getDateTime().after(episodeOfCareBuilder.getRegistrationEndDate())) {
+
+                    episodeOfCareBuilder.setRegistrationEndDate(dischargeDateCell.getDateTime(), dischargeDateCell);
                     episodeOfCareBuilder.setStatus(EpisodeOfCare.EpisodeOfCareStatus.FINISHED);
                 }
             }
@@ -483,5 +482,22 @@ public class AndEAttendanceTransformer {
 
         csvHelper.getEpisodeOfCareCache().cacheEpisodeOfCareBuilder(idCell, episodeOfCareBuilder);
         fhirResourceFiler.savePatientResource(parser.getCurrentState(),!episodeOfCareBuilder.isIdMapped(),episodeOfCareBuilder);
+    }
+
+    private static boolean isNullDischargeDateCell (CsvCell dischargeDateCell) throws Exception {
+
+        if (dischargeDateCell.isEmpty()) {
+            return true;
+        }
+
+        //Bhrut A&E data uses 01/01/2020 00:00:00 discharge date as null place holders
+        Date nullDischargeDate = new SimpleDateFormat("yyyy-MM-dd").parse("2200-01-01");
+        Date d = dischargeDateCell.getDate();
+
+        if (d.equals(nullDischargeDate)) {
+            return true;
+        }
+
+        return false;
     }
 }

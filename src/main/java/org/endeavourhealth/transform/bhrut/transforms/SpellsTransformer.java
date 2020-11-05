@@ -162,9 +162,9 @@ public class SpellsTransformer {
         String admissionEncounterId = idCell.getString() + ":01:IP:Admission";
         admissionEncounterBuilder.setId(admissionEncounterId);
 
-        //Note: the admission encounter finished status and end date are set during episodes transform
+        //Note: the admission encounter finished status and end date are set during the associated episodes transform
         CsvCell spellAdmissionDateCell = parser.getAdmissionDttm();
-        admissionEncounterBuilder.setPeriodStart(spellAdmissionDateCell.getDateTime());
+        admissionEncounterBuilder.setPeriodStart(spellAdmissionDateCell.getDateTime(), spellAdmissionDateCell);
         admissionEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
 
         CodeableConceptBuilder codeableConceptBuilderAdmission
@@ -233,8 +233,8 @@ public class SpellsTransformer {
 
             String dischargeEncounterId = idCell.getString() + ":01:IP:Discharge";
             dischargeEncounterBuilder.setId(dischargeEncounterId);
-            dischargeEncounterBuilder.setPeriodStart(dischargeDateCell.getDateTime());
-            dischargeEncounterBuilder.setPeriodEnd(dischargeDateCell.getDateTime());
+            dischargeEncounterBuilder.setPeriodStart(dischargeDateCell.getDateTime(), dischargeDateCell);
+            dischargeEncounterBuilder.setPeriodEnd(dischargeDateCell.getDateTime(), dischargeDateCell);
             dischargeEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
 
             CodeableConceptBuilder codeableConceptBuilderDischarge
@@ -346,15 +346,17 @@ public class SpellsTransformer {
             }
             codeableConceptBuilder.setCodingDisplay(diagTerm);
 
-            if (!parser.getPrimaryDiagnosis().isEmpty()) {
-                codeableConceptBuilder.setText(parser.getPrimaryDiagnosis().getString());
+            CsvCell primaryDiagnosisTextCell = parser.getPrimaryDiagnosis();
+            if (!primaryDiagnosisTextCell.isEmpty()) {
+                codeableConceptBuilder.setText(primaryDiagnosisTextCell.getString(), primaryDiagnosisTextCell);
             }
             conditionBuilder.setCategory("diagnosis");
 
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
         }
         //Primary Procedure
-        if (!parser.getPrimaryProcedureCode().isEmpty()) {
+        CsvCell primaryProcedureCodeCell = parser.getPrimaryProcedureCode();
+        if (!primaryProcedureCodeCell.isEmpty()) {
 
             ProcedureBuilder procedureBuilder = new ProcedureBuilder();
             procedureBuilder.setId(idCell.getString() + ":Procedure:0", idCell);
@@ -386,16 +388,16 @@ public class SpellsTransformer {
                     = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
 
-            CsvCell primaryProcCode = parser.getPrimaryProcedureCode();
-            codeableConceptBuilder.setCodingCode(primaryProcCode.getString(), primaryProcCode);
-            String procTerm = TerminologyService.lookupOpcs4ProcedureName(primaryProcCode.getString());
+            codeableConceptBuilder.setCodingCode(primaryProcedureCodeCell.getString(), primaryProcedureCodeCell);
+            String procTerm = TerminologyService.lookupOpcs4ProcedureName(primaryProcedureCodeCell.getString());
             if (Strings.isNullOrEmpty(procTerm)) {
-                throw new Exception("Failed to find procedure term for OPCS-4 code " + primaryProcCode.getString());
+                throw new Exception("Failed to find procedure term for OPCS-4 code " + primaryProcedureCodeCell.getString());
             }
             codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
 
-            if (!parser.getPrimaryProcedure().isEmpty()) {
-                codeableConceptBuilder.setText(parser.getPrimaryProcedure().getString());
+            CsvCell primaryProcedureTextCell = parser.getPrimaryProcedure();
+            if (!primaryProcedureTextCell.isEmpty()) {
+                codeableConceptBuilder.setText(primaryProcedureTextCell.getString(), primaryProcedureTextCell);
             }
 
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
@@ -420,20 +422,18 @@ public class SpellsTransformer {
 
         CsvCell patientIdCell = parser.getPasId();
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
-
         if (episodeOfCareBuilder.isIdMapped()) {
             patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, fhirResourceFiler);
         }
         episodeOfCareBuilder.setPatient(patientReference, patientIdCell);
 
-        CsvCell startDateTime = parser.getAdmissionDttm();
-        if (!startDateTime.isEmpty()) {
-            episodeOfCareBuilder.setRegistrationStartDate(startDateTime.getDateTime(), startDateTime);
+        CsvCell startDateTimeCell = parser.getAdmissionDttm();
+        if (!startDateTimeCell.isEmpty()) {
+            episodeOfCareBuilder.setRegistrationStartDate(startDateTimeCell.getDateTime(), startDateTimeCell);
         }
-
-        CsvCell endDateTime = parser.getDischargeDttm();
-        if (!endDateTime.isEmpty()) {
-            episodeOfCareBuilder.setRegistrationEndDate(endDateTime.getDateTime(), endDateTime);
+        CsvCell endDateTimeCell = parser.getDischargeDttm();
+        if (!endDateTimeCell.isEmpty()) {
+            episodeOfCareBuilder.setRegistrationEndDate(endDateTimeCell.getDateTime(), endDateTimeCell);
         }
         CsvCell odsCodeCell = parser.getAdmissionHospitalCode();
         Reference organisationReference;
@@ -474,12 +474,12 @@ public class SpellsTransformer {
         parentTopEncounterBuilder.setId(parser.getId().getString());
 
         CsvCell admissionDateCell = parser.getAdmissionDttm();
-        parentTopEncounterBuilder.setPeriodStart(admissionDateCell.getDateTime(), parser.getAdmissionDttm());
+        parentTopEncounterBuilder.setPeriodStart(admissionDateCell.getDateTime(), admissionDateCell);
 
         CsvCell dischargeDateCell = parser.getDischargeDttm();
         if (!dischargeDateCell.isEmpty()) {
 
-            parentTopEncounterBuilder.setPeriodEnd(dischargeDateCell.getDateTime(), parser.getDischargeDttm());
+            parentTopEncounterBuilder.setPeriodEnd(dischargeDateCell.getDateTime(), dischargeDateCell);
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         } else {
 
@@ -522,7 +522,7 @@ public class SpellsTransformer {
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
             }
 
-            builder.setPatient(patientReference);
+            builder.setPatient(patientReference, patientIdCell);
         }
 
         //the episode of care is created prior using the same Id as the parent inpatient spell  encounter
@@ -535,7 +535,7 @@ public class SpellsTransformer {
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
             }
 
-            builder.setEpisodeOfCare(episodeReference);
+            builder.setEpisodeOfCare(episodeReference, idCell);
         }
 
         CsvCell admissionConsultantCodeCell = parser.getAdmissionConsultantCode();
@@ -550,30 +550,27 @@ public class SpellsTransformer {
 
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
-        CsvCell admissionHospitalCode = parser.getAdmissionHospitalCode();
-        Reference organizationReference;
-        if (!admissionHospitalCode.isEmpty()) {
-                organizationReference
-                        = csvHelper.createOrganisationReference(admissionHospitalCode.getString());
+        CsvCell admissionHospitalCodeCell = parser.getAdmissionHospitalCode();
+        if (!admissionHospitalCodeCell.isEmpty()) {
+
+            Reference organizationReference
+                        = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
 
             if (builder.isIdMapped()) {
                 organizationReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, csvHelper);
             }
 
-            builder.setServiceProvider(organizationReference);
+            builder.setServiceProvider(organizationReference, admissionHospitalCodeCell);
         }
-
         if (isChildEncounter) {
+
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, idCell.getString());
+            parentEncounter
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
 
-            //if (builder.isIdMapped()) {
-                parentEncounter
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
-            //}
-
-            builder.setPartOf(parentEncounter);
+            builder.setPartOf(parentEncounter, idCell);
         }
     }
 }

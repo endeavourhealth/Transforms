@@ -426,7 +426,7 @@ public class OutpatientsTransformer {
             DateTimeType dateTimeType = new DateTimeType(appointmentDateCell.getDateTime());
             procedurePrimaryBuilder.setPerformed(dateTimeType, appointmentDateCell);
             DateTimeType endedDateTimeType = new DateTimeType(parser.getApptDepartureDttm().getDateTime());
-            procedurePrimaryBuilder.setEnded(endedDateTimeType,parser.getApptDepartureDttm());
+            procedurePrimaryBuilder.setEnded(endedDateTimeType, parser.getApptDepartureDttm());
 
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedurePrimaryBuilder);
         }
@@ -467,7 +467,7 @@ public class OutpatientsTransformer {
                 procedureBuilder.setPerformed(dateTimeType, appointmentDateCell);
 
                 DateTimeType endedDateTimeType = new DateTimeType(parser.getApptDepartureDttm().getDateTime());
-                procedureBuilder.setEnded(endedDateTimeType,parser.getApptDepartureDttm());
+                procedureBuilder.setEnded(endedDateTimeType, parser.getApptDepartureDttm());
 
                 fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
             } else {
@@ -491,7 +491,7 @@ public class OutpatientsTransformer {
                 patientReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, csvHelper);
             }
-            builder.setPatient(patientReference);
+            builder.setPatient(patientReference, patientIdCell);
         }
 
         //encounter start and end date/times set as either the appointment seen/appt date and departure date/times
@@ -505,7 +505,7 @@ public class OutpatientsTransformer {
         }
         if (!parser.getApptDepartureDttm().isEmpty()) {
 
-            builder.setPeriodEnd(parser.getApptDepartureDttm().getDateTime(),parser.getApptDepartureDttm());
+            builder.setPeriodEnd(parser.getApptDepartureDttm().getDateTime(), parser.getApptDepartureDttm());
         }
 
         CsvCell idCell = parser.getId();
@@ -516,37 +516,33 @@ public class OutpatientsTransformer {
                 episodeReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, csvHelper);
             }
-            builder.setEpisodeOfCare(episodeReference);
+            builder.setEpisodeOfCare(episodeReference, idCell);
         }
 
-        CsvCell admissionConsultantCodeCell = parser.getConsultantCode();
-        if (!admissionConsultantCodeCell.isEmpty()) {
+        CsvCell consultantCodeCell = parser.getConsultantCode();
+        if (!consultantCodeCell.isEmpty()) {
 
             Reference practitionerReference
-                    = ReferenceHelper.createReference(ResourceType.Practitioner, admissionConsultantCodeCell.getString());
+                    = ReferenceHelper.createReference(ResourceType.Practitioner, consultantCodeCell.getString());
             if (builder.isIdMapped()) {
                 practitionerReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, csvHelper);
             }
-            builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
+            builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, consultantCodeCell);
         }
 
         CsvCell hospitalCodeCell = parser.getHospitalCode();
         if (!hospitalCodeCell.isEmpty()) {
 
-            // Test if the hospital code is a local code that we can map to ODS
-            String hospitalCode = null;
-            if (lookupOrganisationViaRest(hospitalCodeCell.getString()) == null) {
-                hospitalCode = hospitalCodeCell.getString();
-            } else {
-                hospitalCode = BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE;
-            }
+            // the Ods code may be invalid so use Bhrut parent RF4
+            String hospitalCode = getValidOdsCode(hospitalCodeCell);
+
             Reference providerReference = csvHelper.createOrganisationReference(hospitalCode);
             if (builder.isIdMapped()) {
                 providerReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(providerReference, csvHelper);
             }
-            builder.setServiceProvider(providerReference);
+            builder.setServiceProvider(providerReference, hospitalCodeCell);
         }
 
         if (isChildEncounter) {
@@ -556,7 +552,7 @@ public class OutpatientsTransformer {
             parentEncounter
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, csvHelper);
 
-            builder.setPartOf(parentEncounter);
+            builder.setPartOf(parentEncounter, idCell);
         }
     }
 
@@ -649,14 +645,18 @@ public class OutpatientsTransformer {
         if (!endDateTime.isEmpty()) {
             episodeBuilder.setRegistrationEndDate(endDateTime.getDateTime(), endDateTime);
         }
-        CsvCell odsCodeCell = parser.getHospitalCode();
-        if (!odsCodeCell.isEmpty()) {
-            Reference organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
+        CsvCell hospitalCodeCell = parser.getHospitalCode();
+        if (!hospitalCodeCell.isEmpty()) {
+
+            // the Ods code may be invalid so use Bhrut parent RF4
+            String hospitalCode = getValidOdsCode(hospitalCodeCell);
+
+            Reference organisationReference = csvHelper.createOrganisationReference(hospitalCode);
             // if episode already ID mapped, get the mapped ID for the org
             if (episodeBuilder.isIdMapped()) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
-            episodeBuilder.setManagingOrganisation(organisationReference, odsCodeCell);
+            episodeBuilder.setManagingOrganisation(organisationReference, hospitalCodeCell);
         } else {
             //v1 uses service details
             UUID serviceId = parser.getServiceId();
@@ -678,15 +678,16 @@ public class OutpatientsTransformer {
         }
 
         //simple priority text set as an extension
-        CsvCell priority = parser.getAppointmentPriority();
-        if (!priority.isEmpty()) {
-            episodeBuilder.setPriority(priority.getString(), priority);
+        CsvCell priorityCell = parser.getAppointmentPriority();
+        if (!priorityCell.isEmpty()) {
+            episodeBuilder.setPriority(priorityCell.getString(), priorityCell);
         }
 
         csvHelper.getEpisodeOfCareCache().cacheEpisodeOfCareBuilder(idCell, episodeBuilder);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(),!episodeBuilder.isIdMapped(),episodeBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !episodeBuilder.isIdMapped(), episodeBuilder);
     }
-    private static Appointment.AppointmentStatus translateAppointmentStatusCode(CsvCell appointmentStatusCode, AppointmentBuilder appointmentBuilder, BhrutCsvHelper csvHelper,CsvCell idCell) throws Exception {
+
+    private static Appointment.AppointmentStatus translateAppointmentStatusCode(CsvCell appointmentStatusCode, AppointmentBuilder appointmentBuilder, BhrutCsvHelper csvHelper, CsvCell idCell) throws Exception {
         // from the NHS data dictionary ATTENDED OR DID NOT ATTEND
         // 5	Attended on time or, if late, before the relevant CARE PROFESSIONAL was ready to see the PATIENT
         // 6	Arrived late, after the relevant CARE PROFESSIONAL was ready to see the PATIENT, but was seen
@@ -729,5 +730,19 @@ public class OutpatientsTransformer {
             }
         }
         return Appointment.AppointmentStatus.PENDING;
+    }
+
+    private static String getValidOdsCode(CsvCell odsCodeCell) throws Exception {
+
+        // Test if the Ods code is a local code that we can map to ODS. if it returns null then
+        // it's not an official ODS code so revert to the Bhrut parent code RF4
+        String hospitalCode = null;
+        if (lookupOrganisationViaRest(odsCodeCell.getString()) != null) {
+
+            hospitalCode = odsCodeCell.getString();
+        } else {
+            hospitalCode = BhrutCsvToFhirTransformer.BHRUT_ORG_ODS_CODE;
+        }
+        return hospitalCode;
     }
 }

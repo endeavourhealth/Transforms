@@ -66,32 +66,26 @@ public class PMITransformer {
         CsvCell nhsNumber = parser.getNhsNumber();
         //NHS number contains spaces.
         String nhs = nhsNumber.getString().replace(" ", "");
-        CsvCell formattedNHS = new CsvCell(nhsNumber.getPublishedFileId(), nhsNumber.getRecordNumber(), nhsNumber.getColIndex(), nhs, nhsNumber.getParentParser());
+        CsvCell formattedNHS
+                = new CsvCell(nhsNumber.getPublishedFileId(), nhsNumber.getRecordNumber(), nhsNumber.getColIndex(), nhs, nhsNumber.getParentParser());
         createIdentifier(patientBuilder, fhirResourceFiler, formattedNHS, Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER);
 
         //store the PAS ID as a secondary identifier
         CsvCell patientIdCell = parser.getPasId();
         createIdentifier(patientBuilder, fhirResourceFiler , patientIdCell, Identifier.IdentifierUse.SECONDARY, FhirIdentifierUri.IDENTIFIER_SYSTEM_BHRUT_PAS_ID);
 
-        CsvCell dob = parser.getDateOfBirth();
-        if (!dob.isEmpty()) {
-            patientBuilder.setDateOfBirth(csvHelper.getDate(dob), dob);
+        CsvCell dobCell = parser.getDateOfBirth();
+        if (!dobCell.isEmpty()) {
+
+            patientBuilder.setDateOfBirth(csvHelper.getDate(dobCell), dobCell);
         }
 
-        CsvCell dod = parser.getDateOfDeath();
-        if (!dod.isEmpty()) {
-            patientBuilder.setDateOfDeath(csvHelper.getDate(dod), dod);
+        CsvCell dodCell = parser.getDateOfDeath();
+        if (!dodCell.isEmpty()) {
+
+            patientBuilder.setDateOfDeath(csvHelper.getDate(dodCell), dodCell);
         } else {
             patientBuilder.clearDateOfDeath();
-        }
-
-        CsvCell infectionStatusCell = parser.getInfectionStatus();
-        if (!infectionStatusCell.isEmpty()) {
-            ObservationBuilder observationBuilder = new ObservationBuilder();
-            observationBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-            CodeableConceptBuilder codeableConceptBuilder
-                    = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
-            codeableConceptBuilder.setText(infectionStatusCell.getString());
         }
 
         CsvCell sex = parser.getGender();
@@ -136,11 +130,11 @@ public class PMITransformer {
             patientBuilder.setEthnicity(ethnicCategory, ethnicCodeCell);
         }
 
-        CsvCell spineSensitive = parser.getSensitivePdsFlag();
-        if (spineSensitive.getBoolean()) {
-            patientBuilder.setSpineSensitive(true, spineSensitive);
+        CsvCell spineSensitiveCell = parser.getSensitivePdsFlag();
+        if (spineSensitiveCell.getBoolean()) {
+            patientBuilder.setSpineSensitive(true, spineSensitiveCell);
         } else {
-            patientBuilder.setSpineSensitive(false, spineSensitive);
+            patientBuilder.setSpineSensitive(false, spineSensitiveCell);
         }
 
         //clear all care provider records, before we start adding more
@@ -155,29 +149,20 @@ public class PMITransformer {
         patientBuilder.setManagingOrganisation(organisationReference);
 
         // set the patient's registered GP.  This resource is created during PMIPreTransformer
-        CsvCell gpPracticeCode = parser.getRegisteredGpPracticeCode();
-        if (!gpPracticeCode.isEmpty()) {
-            Reference gpOrganisationReference = csvHelper.createOrganisationReference(gpPracticeCode.getString());
+        CsvCell gpPracticeCodeCell = parser.getRegisteredGpPracticeCode();
+        if (!gpPracticeCodeCell.isEmpty()) {
+            Reference gpOrganisationReference = csvHelper.createOrganisationReference(gpPracticeCodeCell.getString());
             if (patientBuilder.isIdMapped()) {
                 gpOrganisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, csvHelper);
             }
-            patientBuilder.addCareProvider(gpOrganisationReference);
+            patientBuilder.addCareProvider(gpOrganisationReference, gpPracticeCodeCell);
         }
         return patientBuilder;
     }
 
-
-    private static ConditionBuilder createSkeletonCondition(PMI parser, BhrutCsvHelper csvHelper) throws Exception {
-        ConditionBuilder conditionBuilder = new ConditionBuilder();
-        conditionBuilder.setPatient(csvHelper.createPatientReference(parser.getPasId()));
-        conditionBuilder.setOnset(csvHelper.getDateTimeType(parser.getDateOfDeath()), parser.getDateOfDeath());
-        conditionBuilder.setAsProblem(false);
-        return conditionBuilder;
-    }
-
     private static PatientBuilder getPatientBuilder(PMI parser, BhrutCsvHelper csvHelper) throws Exception {
 
-        PatientBuilder ret = null;
+        PatientBuilder ret;
         CsvCell patientIdCell = parser.getPasId();
         String uniqueId = csvHelper.createUniqueId(patientIdCell, null);
         org.hl7.fhir.instance.model.Patient existingResource
@@ -205,7 +190,7 @@ public class PMITransformer {
     }
 
 
-    private static void     createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
+    private static void createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell, Identifier.IdentifierUse use, String system) throws Exception {
         if (!cell.isEmpty()) {
             if (use.equals(Identifier.IdentifierUse.OFFICIAL)) { //remove previous
                 Iterator<Identifier> ids = patientBuilder.getIdentifiers().iterator();
@@ -244,9 +229,6 @@ public class PMITransformer {
                 nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
                 nameBuilder.addGiven(givenName.getString(), givenName);
                 nameBuilder.addFamily(surname.getString(), surname);
-//            if (patientBuilder.getNames().size()>1) {
-//                NameBuilder.deDuplicateLastName(patientBuilder, fhirResourceFiler.getDataDate());
-//            }
             }
         }
     }
