@@ -136,10 +136,13 @@ public class EpisodesTransformer {
             CodeableConceptBuilder codeableConceptBuilderPrimary
                     = new CodeableConceptBuilder(procedurePrimaryBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
             codeableConceptBuilderPrimary.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
-            codeableConceptBuilderPrimary.setCodingCode(primaryProcedureCodeCell.getString(), primaryProcedureCodeCell);
-            String procTerm = TerminologyService.lookupOpcs4ProcedureName(primaryProcedureCodeCell.getString());
+
+            String primaryProcCodeString = TerminologyService.standardiseOpcs4Code(primaryProcedureCodeCell.getString());
+            codeableConceptBuilderPrimary.setCodingCode(primaryProcCodeString, primaryProcedureCodeCell);
+
+            String procTerm = TerminologyService.lookupOpcs4ProcedureName(primaryProcCodeString);
             if (Strings.isNullOrEmpty(procTerm)) {
-                throw new Exception("Failed to find procedure term for OPCS-4 code " + primaryProcedureCodeCell.getString());
+                throw new Exception("Failed to find procedure term for OPCS-4 code " + primaryProcCodeString);
             }
             codeableConceptBuilderPrimary.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
 
@@ -175,10 +178,13 @@ public class EpisodesTransformer {
                     CodeableConceptBuilder codeableConceptBuilder
                             = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
-                    codeableConceptBuilder.setCodingCode(procCodeCell.getString(), procCodeCell);
-                    procTerm = TerminologyService.lookupOpcs4ProcedureName(procCodeCell.getString());
+
+                    String procCodeString = TerminologyService.standardiseOpcs4Code(procCodeCell.getString());
+                    codeableConceptBuilder.setCodingCode(procCodeString, procCodeCell);
+
+                    procTerm = TerminologyService.lookupOpcs4ProcedureName(procCodeString);
                     if (Strings.isNullOrEmpty(procTerm)) {
-                        throw new Exception("Failed to find procedure term for OPCS-4 code " + procCodeCell.getString());
+                        throw new Exception("Failed to find procedure term for OPCS-4 code " + procCodeString);
                     }
                     codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
 
@@ -281,7 +287,8 @@ public class EpisodesTransformer {
                     CodeableConceptBuilder codeableConceptBuilder
                             = new CodeableConceptBuilder(conditionOther, CodeableConceptBuilder.Tag.Condition_Main_Code);
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
-                    String diagCodeString = diagCodeCell.getString();
+
+                    String diagCodeString = TerminologyService.standardiseIcd10Code(diagCodeCell.getString());
                     if (diagCodeString.endsWith("X") || diagCodeString.endsWith("D") || diagCodeString.endsWith("A")) {
                         diagCodeString = diagCodeString.substring(0, 3);
                     }

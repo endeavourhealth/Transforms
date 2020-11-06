@@ -310,14 +310,13 @@ public class OutpatientsTransformer {
 
             conditionBuilder.setAsProblem(false);
             conditionBuilder.setIsPrimary(true);
+
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
             String icd10 = TerminologyService.standardiseIcd10Code(primaryDiagnosisCodeCell.getString());
-            if (icd10.endsWith("X")) {
+            if (icd10.endsWith("X") || icd10.endsWith("D") || icd10.endsWith("A")) {
                 icd10 = icd10.substring(0, 3);
-            } else if (icd10.length() > 4) {
-
             }
             codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
             String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
@@ -361,7 +360,7 @@ public class OutpatientsTransformer {
                         = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
                 String icd10 = TerminologyService.standardiseIcd10Code(secondaryDiagnosisCodeCell.getString());
-                if (icd10.endsWith("X")) {
+                if (icd10.endsWith("X") || icd10.endsWith("D") || icd10.endsWith("A")) {
                     icd10 = icd10.substring(0, 3);
                 }
                 codeableConceptBuilder.setCodingCode(icd10, secondaryDiagnosisCodeCell);
@@ -414,10 +413,13 @@ public class OutpatientsTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(procedurePrimaryBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
-            codeableConceptBuilder.setCodingCode(primaryProcedureCodeCell.getString(), primaryProcedureCodeCell);
-            String procTerm = TerminologyService.lookupOpcs4ProcedureName(parser.getPrimaryProcedureCode().getString());
+
+            String primaryProcCodeString = TerminologyService.standardiseOpcs4Code(primaryProcedureCodeCell.getString());
+            codeableConceptBuilder.setCodingCode(primaryProcCodeString, primaryProcedureCodeCell);
+
+            String procTerm = TerminologyService.lookupOpcs4ProcedureName(primaryProcCodeString);
             if (Strings.isNullOrEmpty(procTerm)) {
-                throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
+                throw new Exception("Failed to find procedure term for OPCS-4 code " + primaryProcCodeString);
             }
             codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
             Reference consultantReference3 = csvHelper.createPractitionerReference(consultantCodeCell.getString());
@@ -454,10 +456,13 @@ public class OutpatientsTransformer {
                 CodeableConceptBuilder codeableConceptBuilder
                         = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
-                codeableConceptBuilder.setCodingCode(secondaryProcedureCodeCell.getString(), secondaryProcedureCodeCell);
-                String procTerm = TerminologyService.lookupOpcs4ProcedureName(secondaryProcedureCodeCell.getString());
+
+                String ProcCodeString = TerminologyService.standardiseOpcs4Code(secondaryProcedureCodeCell.getString());
+                codeableConceptBuilder.setCodingCode(ProcCodeString, secondaryProcedureCodeCell);
+
+                String procTerm = TerminologyService.lookupOpcs4ProcedureName(ProcCodeString);
                 if (Strings.isNullOrEmpty(procTerm)) {
-                    throw new Exception("Failed to find procedure term for OPCS-4 code " + parser.getPrimaryProcedureCode().getString());
+                    throw new Exception("Failed to find procedure term for OPCS-4 code " + ProcCodeString);
                 }
                 codeableConceptBuilder.setCodingDisplay(procTerm);
                 Reference consultantReference4 = csvHelper.createPractitionerReference(consultantCodeCell.getString());

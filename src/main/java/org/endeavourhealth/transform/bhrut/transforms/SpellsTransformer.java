@@ -335,7 +335,7 @@ public class SpellsTransformer {
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
             String icd10 = primaryDiagnosisCodeCell.getString().trim();
             codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
-            if (icd10.endsWith("X") || icd10.endsWith("D") || icd10.endsWith("A")) {  //X being a wildcard
+            if (icd10.endsWith("X") || icd10.endsWith("D") || icd10.endsWith("A")) {
                 icd10 = icd10.substring(0, 3);
             }
             icd10 = TerminologyService.standardiseIcd10Code(icd10);
@@ -388,10 +388,12 @@ public class SpellsTransformer {
                     = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4);
 
-            codeableConceptBuilder.setCodingCode(primaryProcedureCodeCell.getString(), primaryProcedureCodeCell);
-            String procTerm = TerminologyService.lookupOpcs4ProcedureName(primaryProcedureCodeCell.getString());
+            String primaryProcCodeString = TerminologyService.standardiseOpcs4Code(primaryProcedureCodeCell.getString());
+            codeableConceptBuilder.setCodingCode(primaryProcCodeString, primaryProcedureCodeCell);
+
+            String procTerm = TerminologyService.lookupOpcs4ProcedureName(primaryProcCodeString);
             if (Strings.isNullOrEmpty(procTerm)) {
-                throw new Exception("Failed to find procedure term for OPCS-4 code " + primaryProcedureCodeCell.getString());
+                throw new Exception("Failed to find procedure term for OPCS-4 code " + primaryProcCodeString);
             }
             codeableConceptBuilder.setCodingDisplay(procTerm); //don't pass in a cell as this was derived
 
