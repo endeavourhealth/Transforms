@@ -333,12 +333,14 @@ public class SpellsTransformer {
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
+
             String icd10 = primaryDiagnosisCodeCell.getString().trim();
-            codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
+            icd10 = TerminologyService.standardiseIcd10Code(icd10);
             if (icd10.endsWith("X") || icd10.endsWith("D") || icd10.endsWith("A")) {
                 icd10 = icd10.substring(0, 3);
             }
-            icd10 = TerminologyService.standardiseIcd10Code(icd10);
+            codeableConceptBuilder.setCodingCode(icd10, primaryDiagnosisCodeCell);
+
             String diagTerm = TerminologyService.lookupIcd10CodeDescription(icd10);
             if (Strings.isNullOrEmpty(diagTerm)) {
 
