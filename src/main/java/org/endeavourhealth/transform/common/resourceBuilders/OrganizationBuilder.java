@@ -10,7 +10,10 @@ import java.util.Date;
 import java.util.List;
 
 public class OrganizationBuilder extends ResourceBuilderBase
-                                implements HasAddressI, HasIdentifierI, HasContactPointI {
+        implements HasAddressI,
+        HasIdentifierI,
+        HasContactPointI,
+        HasContainedParametersI {
 
     private Organization organization = null;
 
@@ -35,6 +38,11 @@ public class OrganizationBuilder extends ResourceBuilderBase
     @Override
     public DomainResource getResource() {
         return organization;
+    }
+
+    @Override
+    public String getContainedParametersExtensionUrl() {
+        return FhirExtensionUri.ADDITIONAL;
     }
 
     public void setMainLocation(Reference locationReference, CsvCell... sourceCells) {
