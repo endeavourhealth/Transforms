@@ -73,6 +73,10 @@ public class ObservationCodeHelper {
                 String term = lookup.getPreferredTerm();
                 ret.setDisplay(term);
                 LOG.debug("Had to look up " + term + " for Read2 code " + code + " (see SD-130)");
+
+            } else {
+                LOG.warn("Failed to find term for Read2 code " + code + " (see SD-192)");
+                return null;
             }
         }
 
