@@ -328,7 +328,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        //TODO RALF deletion
     }
 
     private String uprn(SubscriberTransformHelper params, SubscriberId subTableId, String addressLine1, String addressLine2, String addressLine3, String addressLine4, String city, String postcode, Long currentAddressId) throws Exception {
@@ -646,7 +645,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 writer.writeDelete(subTableId);
             }
         }
-        //TODO RALF deletion
 
         return currentAddressId;
     }

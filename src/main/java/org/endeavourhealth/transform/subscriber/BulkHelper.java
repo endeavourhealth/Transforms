@@ -137,6 +137,7 @@ public class BulkHelper {
 
         List<SubscriberTableId> filesToKeep = new ArrayList<>();
         filesToKeep.add(SubscriberTableId.PATIENT_ADDRESS_MATCH);
+        filesToKeep.add(SubscriberTableId.PATIENT_ADDRESS_RALF);
         params.getOutputContainer().clearDownOutputContainer(filesToKeep);
 
         byte[] bytes = params.getOutputContainer().writeToZip();
