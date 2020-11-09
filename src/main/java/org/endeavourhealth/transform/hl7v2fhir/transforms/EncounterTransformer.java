@@ -386,16 +386,16 @@ public class EncounterTransformer {
                 ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(childEncounterBuilder);
                 containedParametersBuilder.removeContainedParameters();
 
-                /*if (pv1.getHospitalService() != null) {
+                if (pv1.getHospitalService() != null) {
                     String treatmentFunctionCode = pv1.getHospitalService().toString();
 
                     MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7","inpatient",
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
                             "treatment_function_code"
                     );
                     MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
                      MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7","inpatient",
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
                             "treatment_function_code", treatmentFunctionCode, IMConstant.IMPERIAL_CERNER
                     );
                      MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
@@ -405,7 +405,7 @@ public class EncounterTransformer {
                             .setSystem(valueResponse.getConcept().getScheme());
 
                     containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
-                }*/
+                }
 
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, encounterId);
