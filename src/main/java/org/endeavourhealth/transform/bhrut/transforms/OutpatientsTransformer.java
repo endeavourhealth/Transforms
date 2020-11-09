@@ -124,26 +124,31 @@ public class OutpatientsTransformer {
                     addParmIfNotNullNhsdd("ADMIN_CATEGORY_CODE", adminCategoryCodeCell.getString(),
                             adminCategoryCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
                 }
-                CsvCell apptTypeCodeCell = parser.getApptTypeCode();
-                if (!apptTypeCodeCell.isEmpty()) {
 
-                    addParmIfNotNullNhsdd("APPT_TYPE_CODE",
-                            apptTypeCodeCell.getString(), apptTypeCodeCell,
-                            containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-                }
+                //NOTE: NHS code retired so don't IM map
+//                CsvCell apptTypeCodeCell = parser.getApptTypeCode();
+//                if (!apptTypeCodeCell.isEmpty()) {
+//
+//                    addParmIfNotNullNhsdd("APPT_TYPE_CODE",
+//                            apptTypeCodeCell.getString(), apptTypeCodeCell,
+//                            containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+//                }
+
                 CsvCell appointmentStatusCodeCell = parser.getAppointmentStatusCode();
                 if (!appointmentStatusCodeCell.isEmpty()) {
 
                     addParmIfNotNullNhsdd("APPOINTMENT_STATUS_CODE", appointmentStatusCodeCell.getString(),
                             appointmentStatusCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
                 }
-                CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
-                if (!appointmentOutcomeCodeCell.isEmpty()) {
 
-                    addParmIfNotNullNhsdd("APPOINTMENT_OUTCOME_CODE",
-                            appointmentOutcomeCodeCell.getString(), appointmentOutcomeCodeCell,
-                            containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
-                }
+                //NOTE: NHS code retired so don't IM map
+//                CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
+//                if (!appointmentOutcomeCodeCell.isEmpty()) {
+//
+//                    addParmIfNotNullNhsdd("APPOINTMENT_OUTCOME_CODE",
+//                            appointmentOutcomeCodeCell.getString(), appointmentOutcomeCodeCell,
+//                            containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+//                }
 
                 //save the encounter
                 fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);

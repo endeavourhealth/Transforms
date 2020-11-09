@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.addParmIfNotNullJson;
-import static org.endeavourhealth.transform.bhrut.BhrutCsvHelper.addParmIfNotNullNhsdd;
 
 
 public class AndEAttendanceTransformer {
@@ -241,17 +240,14 @@ public class AndEAttendanceTransformer {
 
         CsvCell arrivalModeCell = parser.getArrivalMode();
         if (!arrivalModeCell.isEmpty()) {
-            String arrivalMode = "2"; //Default i.e "Other"
-            if (arrivalModeCell.getString().toLowerCase().contains("ambulance")) {
-                arrivalMode = "1";
-            }
-            addParmIfNotNullNhsdd("ARRIVAL_MODE", arrivalMode,
-                    arrivalModeCell, containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
+            addParmIfNotNullJson("ARRIVAL_MODE", arrivalModeCell.getString(), arrivalModeCell,
+                    containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
+        //NOTE: changed to Json after NHS code retired
         CsvCell attendanceTypeCell = parser.getAttendanceType();
         if (!attendanceTypeCell.isEmpty()) {
-            addParmIfNotNullNhsdd("ATTENDANCE_TYPE", attendanceTypeCell.getString(), attendanceTypeCell,
+            addParmIfNotNullJson("ATTENDANCE_TYPE", attendanceTypeCell.getString(), attendanceTypeCell,
                     containedParametersBuilderArrival, BhrutCsvToFhirTransformer.IM_AEATTENDANCE_TABLE_NAME);
         }
 
