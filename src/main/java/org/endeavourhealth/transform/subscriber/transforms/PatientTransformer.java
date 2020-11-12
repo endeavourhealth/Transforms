@@ -443,7 +443,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             //LOG.debug("Pseduonymise!");
 
             SubscriberConfig c = params.getConfig();
-            List<LinkDistributorConfig> salts = c.getPseudoSalts();
+            List<LinkDistributorConfig> salts = c.getRalfSalts();
             LinkDistributorConfig firstSalt = salts.get(0);
             String base64Salt = firstSalt.getSalt();
 
@@ -620,12 +620,12 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                 String uprn = uprn(params, subTableId, addressLine1, addressLine2, addressLine3, addressLine4, city, postcode, currentAddressId);
 
-                //TODO Remove check for live patient_address_ralf deployment
-                if (!TransformConfig.instance().isLive()) {
+                // Check removed for live patient_address_ralf deployment
+                // if (!TransformConfig.instance().isLive()) {
                     if (!(Strings.isNullOrEmpty(uprn))) {
                         transformRalfs(uprn, organisationId, subscriberPatientId, subscriberPersonId, subTableId.getSubscriberId(), resourceWrapper, params);
                     }
-                }
+                //}
             }
         }
 
@@ -1145,9 +1145,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         // generate patientAddressMatchUprnRalf00
         SubscriberConfig c = params.getConfig();
-
-        List<LinkDistributorConfig> salts = c.getPseudoSalts(); // Could be done either way
-        // List<LinkDistributorConfig> salts = c.getRalfSalts();
+        List<LinkDistributorConfig> salts = c.getRalfSalts();
         LinkDistributorConfig firstSalt = salts.get(0);
         String base64Salt = firstSalt.getSalt();
 

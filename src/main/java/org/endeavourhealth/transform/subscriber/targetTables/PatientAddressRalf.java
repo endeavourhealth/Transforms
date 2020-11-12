@@ -20,7 +20,7 @@ public class PatientAddressRalf extends AbstractTargetTable {
                 Long.TYPE, // patient_address_id
                 String.class, // patient_address_match_uprn_ralf00
                 String.class, // salt_name
-                String.class, // skid
+                String.class, // ralf
         };
     }
 
@@ -35,7 +35,7 @@ public class PatientAddressRalf extends AbstractTargetTable {
                 "patient_address_id",
                 "patient_address_match_uprn_ralf00",
                 "salt_name",
-                "skid"
+                "ralf"
         };
     }
 
