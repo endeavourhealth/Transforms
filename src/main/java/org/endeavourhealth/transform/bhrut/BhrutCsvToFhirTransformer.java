@@ -53,6 +53,9 @@ public abstract class BhrutCsvToFhirTransformer {
     public final static  String  IM_DISCHARGE_WARD_CODE = "DISCHARGE_WARD_CODE";
     public final static  String  IM_DISCHARGE_METHOD_CODE = "DISCHARGE_METHOD_CODE";
     public final static  String  IM_DISCHARGE_DEST_CODE = "DISCHARGE_DESTINATION_CODE";
+    public final static  String  IM_ADMINISTRATIVE_CATEGORY_CODE = "ADMINISTRATIVE_CATEGORY_CODE";
+    public final static  String  IM_ADMIN_CATEGORY_CODE = "ADMIN_CATEGORY_CODE";
+    public final static  String  IM_APPOINTMENT_STATUS_CODE = "APPOINTMENT_STATUS_CODE";
 
     public static final String BHRUT_ORG_ODS_CODE = "RF4";
 

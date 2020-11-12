@@ -121,7 +121,7 @@ public class OutpatientsTransformer {
                 CsvCell adminCategoryCodeCell = parser.getAdminCategoryCode();
                 if (!adminCategoryCodeCell.isEmpty()) {
 
-                    addParmIfNotNullNhsdd("ADMIN_CATEGORY_CODE", adminCategoryCodeCell.getString(),
+                    addParmIfNotNullNhsdd(BhrutCsvToFhirTransformer.IM_ADMIN_CATEGORY_CODE, adminCategoryCodeCell.getString(),
                             adminCategoryCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
                 }
 
@@ -137,7 +137,7 @@ public class OutpatientsTransformer {
                 CsvCell appointmentStatusCodeCell = parser.getAppointmentStatusCode();
                 if (!appointmentStatusCodeCell.isEmpty()) {
 
-                    addParmIfNotNullNhsdd("APPOINTMENT_STATUS_CODE", appointmentStatusCodeCell.getString(),
+                    addParmIfNotNullNhsdd(BhrutCsvToFhirTransformer.IM_APPOINTMENT_STATUS_CODE, appointmentStatusCodeCell.getString(),
                             appointmentStatusCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
                 }
 

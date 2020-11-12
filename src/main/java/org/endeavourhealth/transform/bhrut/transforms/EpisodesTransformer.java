@@ -392,7 +392,7 @@ public class EpisodesTransformer {
 
         CsvCell adminCategoryCodeCe = parser.getAdministrativeCategoryCode();
         if (!adminCategoryCodeCe.isEmpty()) {
-            BhrutCsvHelper.addParmIfNotNullNhsdd( "ADMINISTRATIVE_CATEGORY_CODE",
+            BhrutCsvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMINISTRATIVE_CATEGORY_CODE,
                     adminCategoryCodeCe.getString(),
                     adminCategoryCodeCe,
                     containedParametersBuilder,
