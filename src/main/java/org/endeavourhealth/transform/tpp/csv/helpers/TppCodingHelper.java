@@ -8,6 +8,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.SnomedCache;
 import org.endeavourhealth.transform.common.StringMemorySaver;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.hl7.fhir.instance.model.CodeableConcept;
@@ -20,8 +21,7 @@ public class TppCodingHelper {
 
     private static TppCtv3LookupDalI tppCtv3LookupRefDal = DalProvider.factoryTppCtv3LookupDal();
     private static Map<StringMemorySaver, StringMemorySaver> hmCtv3CodeToTerm = new ConcurrentHashMap<>();
-    private static Map<Long, StringMemorySaver> hmSnomedConceptToTerm = new ConcurrentHashMap<>();
-    private static Map<StringMemorySaver, Long> hmCtv2CodeToSnomedConcept = new ConcurrentHashMap<>();
+    private static Map<StringMemorySaver, Long> hmCtv3CodeToSnomedConcept = new ConcurrentHashMap<>();
 
     /**
      * adds CTV3 and/or Snomed codes to a CodeableConcept.
@@ -100,7 +100,7 @@ public class TppCodingHelper {
     private static Long lookUpSnomedConceptForCtv3Code(String ctv3Code) throws Exception {
 
         StringMemorySaver cacheKey = new StringMemorySaver(ctv3Code);
-        Long cached = hmCtv2CodeToSnomedConcept.get(cacheKey);
+        Long cached = hmCtv3CodeToSnomedConcept.get(cacheKey);
         if (cached != null) {
             return cached;
         }
@@ -111,13 +111,14 @@ public class TppCodingHelper {
         }
 
         Long ret = Long.valueOf(snomedCode.getConceptCode());
-        hmCtv2CodeToSnomedConcept.put(cacheKey, ret);
+        hmCtv3CodeToSnomedConcept.put(cacheKey, ret);
 
         //add to the other cache, since the snomed code object already has its term populated too
-        if (!hmSnomedConceptToTerm.containsKey(ret)) {
+        //snomed term cache has moved to a separate class, so keep things simple and just skip this
+        /*if (!hmSnomedConceptToTerm.containsKey(ret)) {
             String term = snomedCode.getTerm();
             hmSnomedConceptToTerm.put(ret, new StringMemorySaver(term));
-        }
+        }*/
 
         return ret;
 
@@ -125,7 +126,7 @@ public class TppCodingHelper {
 
     private static boolean addSnomedCoding(CodeableConceptBuilder codeableConceptBuilder, Long snomedConceptId, CsvCell... sourceCells) throws Exception {
 
-        String snomedTerm = lookUpSnomedTermForConcept(snomedConceptId);
+        String snomedTerm = SnomedCache.lookUpSnomedTermForConcept(snomedConceptId);
         if (snomedTerm == null) {
             return false;
         }
@@ -160,20 +161,4 @@ public class TppCodingHelper {
         return term;
     }
 
-    private static String lookUpSnomedTermForConcept(Long conceptId) throws Exception {
-
-        StringMemorySaver cached = hmSnomedConceptToTerm.get(conceptId);
-        if (cached != null) {
-            return cached.toString();
-        }
-
-        SnomedCode snomedCode = TerminologyService.lookupSnomedFromConceptId("" + conceptId);
-        if (snomedCode == null) {
-            return null;
-        }
-
-        String ret = snomedCode.getTerm();
-        hmSnomedConceptToTerm.put(conceptId, new StringMemorySaver(ret));
-        return ret;
-    }
 }
