@@ -1350,7 +1350,18 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         errorCodeObj.setFileType(parser.getClass().getSimpleName());
         errorCodeObj.setCodeType(rex.getCodeType());
 
+        //if it will be a new code, send an alert to tell us
         EmisMissingCodeDalI dal = DalProvider.factoryEmisMissingCodeDal();
+        if (!dal.isCurrentMissingCode(errorCodeObj)) {
+            ServiceDalI serviceDalI = DalProvider.factoryServiceDal();
+            Service service = serviceDalI.getById(serviceId);
+
+            String msg = "New Emis missing code (" + errorCodeObj.getCodeId() + ") found in " + errorCodeObj.getFileType() + " file "
+                    + "in Exchange " + exchangeId + " for " + service.getName() + " " + service.getLocalId();
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.QueueReaderAlerts, msg);
+        }
+
+        //and save to the DB
         dal.saveMissingCodeError(errorCodeObj);
     }
 
