@@ -89,7 +89,7 @@ public class ConditionTransformer  {
             String problemStatus = problemStatusDisplayCell.getString();
             if (problemStatus.equalsIgnoreCase("active")) {
 
-                conditionBuilder.setEndDateOrBoolean(null);
+                conditionBuilder.setEndDateOrBoolean(null, problemStatusDisplayCell);
 
             } else if (problemStatus.equalsIgnoreCase("resolved")
                     || problemStatus.equalsIgnoreCase("inactive")
@@ -100,12 +100,12 @@ public class ConditionTransformer  {
                 if (!statusDateTimeCell.isEmpty()) {
 
                     DateType dt = new DateType(statusDateTimeCell.getDateTime());
-                    conditionBuilder.setEndDateOrBoolean(dt);
+                    conditionBuilder.setEndDateOrBoolean(dt, problemStatusDisplayCell, statusDateTimeCell);
 
                 } else {
 
                     //if we don't have a status date, use a boolean to indicate the end
-                    conditionBuilder.setEndDateOrBoolean(new BooleanType(true));
+                    conditionBuilder.setEndDateOrBoolean(new BooleanType(true), problemStatusDisplayCell);
                 }
             }
         } else if (conditionTypeCodeCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_CONDITION_DIAGNOSIS)) {
@@ -169,11 +169,11 @@ public class ConditionTransformer  {
             }
         } else {
             //if there's no code, create a non coded code so we retain the text from the non code element
-            CsvCell term = parser.getConditionDescription();
+            CsvCell termCell = parser.getConditionDescription();
 
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
-            codeableConceptBuilder.setText(term.getString());
+            codeableConceptBuilder.setText(termCell.getString(), termCell);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);

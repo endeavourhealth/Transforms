@@ -64,17 +64,17 @@ public class PersonDemographicsTransformer {
         }
 
         //marital status
-        CsvCell maritalStatusCode = parser.getMaritalStatusCernerCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(maritalStatusCode)) {
+        CsvCell maritalStatusCodeCell = parser.getMaritalStatusCernerCode();
+        if (!BartsCsvHelper.isEmptyOrIsZero(maritalStatusCodeCell)) {
 
             CsvCell maritalMeaningCell
-                    = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.MARITAL_STATUS, maritalStatusCode);
+                    = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.MARITAL_STATUS, maritalStatusCodeCell);
             if (maritalMeaningCell == null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner marital status {} not found", maritalStatusCode);
+                TransformWarnings.log(LOG, parser, "ERROR: Cerner marital status {} not found", maritalStatusCodeCell);
 
             } else {
                 MaritalStatus maritalStatus = convertMaritalStatus(maritalMeaningCell.getString(), parser);
-                patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCode, maritalMeaningCell);
+                patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCodeCell, maritalMeaningCell);
             }
         } else {
             //if updating a record, make sure to clear the field in this case
@@ -82,17 +82,17 @@ public class PersonDemographicsTransformer {
         }
 
         //ethnicity
-        CsvCell ethnicityCode = parser.getEthnicityCernerCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(ethnicityCode)) {
+        CsvCell ethnicityCodeCell = parser.getEthnicityCernerCode();
+        if (!BartsCsvHelper.isEmptyOrIsZero(ethnicityCodeCell)) {
 
             CsvCell ehtnicityCell
-                    = HomertonHiCodeableConceptHelper.getCellAlias(csvHelper, CodeValueSet.ETHNIC_GROUP, ethnicityCode);
+                    = HomertonHiCodeableConceptHelper.getCellAlias(csvHelper, CodeValueSet.ETHNIC_GROUP, ethnicityCodeCell);
             if (ehtnicityCell == null) {
-                TransformWarnings.log(LOG, parser, "ERROR: cerner ethnicity {} not found", ethnicityCode);
+                TransformWarnings.log(LOG, parser, "ERROR: cerner ethnicity {} not found", ethnicityCodeCell);
 
             } else {
                 EthnicCategory ethnicCategory = convertEthnicCategory(ehtnicityCell.getString());
-                patientBuilder.setEthnicity(ethnicCategory, ethnicityCode, ehtnicityCell);
+                patientBuilder.setEthnicity(ethnicCategory, ethnicityCodeCell, ehtnicityCell);
             }
 
         } else {
@@ -143,7 +143,7 @@ public class PersonDemographicsTransformer {
             CodeableConcept ccValue = new CodeableConcept();
             ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                     .setSystem(valueResponse.getConcept().getScheme());
-            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+            parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, causeOfDeathCodeCell);
         }
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
