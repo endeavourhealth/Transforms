@@ -5,6 +5,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.fhir.schema.*;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.transform.common.ResourceParser;
+import org.endeavourhealth.transform.common.exceptions.UnmappedValueException;
 
 import java.util.Map;
 
@@ -128,7 +129,7 @@ public class EmisMappingHelper {
 
         String code = organisationTypeMap.get(type);
         if (code == null) {
-            throw new RuntimeException("Unknown organisation type [" + type + "]");
+            throw new UnmappedValueException("Unknown organisation type [" + type + "]", type);
 
         } else if (!Strings.isNullOrEmpty(code)) {
             return OrganisationType.fromCode(code);
@@ -146,7 +147,7 @@ public class EmisMappingHelper {
 
         String code = patientTypeMap.get(type);
         if (code == null) {
-            throw new RuntimeException("Unknown patient type " + type);
+            throw new UnmappedValueException("Unknown patient type " + type, type);
 
         } else if (!Strings.isNullOrEmpty(code)) {
             return RegistrationType.fromCode(code);
@@ -164,7 +165,7 @@ public class EmisMappingHelper {
 
         String code = drugRecordPrescriptionTypeMap.get(type);
         if (code == null) {
-            throw new RuntimeException("Unknown drug record type " + type);
+            throw new UnmappedValueException("Unknown drug record type " + type, type);
 
         } else if (!Strings.isNullOrEmpty(code)) {
             return MedicationAuthorisationType.fromCode(code);
@@ -182,7 +183,7 @@ public class EmisMappingHelper {
 
         String code = problemSeverityMap.get(type);
         if (code == null) {
-            throw new RuntimeException("Unknown problem significance " + type);
+            throw new UnmappedValueException("Unknown problem significance " + type, type);
 
         } else if (!Strings.isNullOrEmpty(code)) {
             return ProblemSignificance.fromCode(code);
@@ -200,7 +201,7 @@ public class EmisMappingHelper {
 
         String code = problemRelationshipMap.get(type);
         if (code == null) {
-            throw new RuntimeException("Unknown problem relationship " + type);
+            throw new UnmappedValueException("Unknown problem relationship " + type, type);
 
         } else if (!Strings.isNullOrEmpty(code)) {
             return ProblemRelationshipType.fromCode(code);

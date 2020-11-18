@@ -7,6 +7,7 @@ import org.endeavourhealth.common.fhir.FhirValueSetUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisAdminCacheDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisLocationDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisOrganisationDalI;
@@ -16,10 +17,8 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisLocation
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisOrganisation;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisUserInRole;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
-import org.endeavourhealth.transform.common.TransformConfig;
+import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.exceptions.UnmappedValueException;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -509,9 +508,16 @@ public class EmisAdminHelper {
 
                     String organisationType = org.getOrganisationType();
                     if (!Strings.isNullOrEmpty(organisationType)) {
-                        OrganisationType fhirOrgType = EmisMappingHelper.findOrganisationType(organisationType);
-                        if (fhirOrgType != null) {
-                            organizationBuilder.setType(fhirOrgType);
+                        try {
+                            OrganisationType fhirOrgType = EmisMappingHelper.findOrganisationType(organisationType);
+                            if (fhirOrgType != null) {
+                                organizationBuilder.setType(fhirOrgType);
+                            }
+                        } catch (UnmappedValueException ex) {
+                            //getting to many unmapped Emis org types, as they keep adding new ones so just handle them
+                            //see https://endeavourhealth.atlassian.net/browse/SD-216
+                            TransformWarnings.log(LOG, csvHelper, "Unmapped Emis organisation type {}", organisationType);
+                            organizationBuilder.setTypeFreeText(organisationType);
                         }
                     }
 
