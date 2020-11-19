@@ -4,6 +4,7 @@ import ca.uhn.hl7v2.model.v23.datatype.CX;
 import ca.uhn.hl7v2.model.v23.datatype.TS;
 import ca.uhn.hl7v2.model.v23.datatype.XCN;
 import ca.uhn.hl7v2.model.v23.segment.PV1;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
@@ -404,6 +405,48 @@ public class EncounterTransformer {
                     ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                             .setSystem(valueResponse.getConcept().getScheme());
 
+                    containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                }
+
+                String admissionMethodCode = pv1.getAdmitSource().getValue();
+                if (!Strings.isNullOrEmpty(admissionMethodCode)) {
+
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
+                            "admission_method_code"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
+                            "admission_method_code", admissionMethodCode, IMConstant.NHS_DATA_DICTIONARY
+                    );
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
+                    containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                }
+
+                String admissionSourceCode = pv1.getAdmissionType().getValue();
+                if (!Strings.isNullOrEmpty(admissionSourceCode)) {
+
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
+                            "admission_source_code"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
+                            "admission_source_code", admissionSourceCode, IMConstant.NHS_DATA_DICTIONARY
+                    );
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
                     containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
                 }
 

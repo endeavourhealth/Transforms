@@ -5,10 +5,14 @@ import ca.uhn.hl7v2.model.v23.segment.MRG;
 import ca.uhn.hl7v2.model.v23.segment.PID;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
+import org.endeavourhealth.common.fhir.schema.Religion;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
@@ -70,6 +74,19 @@ public class PatientTransformer {
         VocSex sexEnum = VocSex.fromValue(String.valueOf(sex));
         Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
         patientBuilder.setGender(gender);
+
+        /*CernerCodeValueRef cvref = csvHelper.lookupCodeRef(CodeValueSet.RELIGION, pid.getReligion().getValue());
+        //if possible, map the religion to the NHS data dictionary values
+        Religion fhirReligion = mapReligion(cvref);
+        if (fhirReligion != null) {
+            patientBuilder.setReligion(fhirReligion);
+        } else {
+            //if not possible to map, carry the value over as free text
+            String freeTextReligion = cvref.getCodeDispTxt();
+            patientBuilder.setReligionFreeText(freeTextReligion);
+        }
+        patientBuilder.setReligion(fhirReligion);*/
+        patientBuilder.setEthnicity(EthnicCategory.fromCode(pid.getEthnicGroup().getValue()));
 
         XTN[] phones = pid.getPhoneNumberHome();
         for(XTN phone : phones) {
@@ -340,6 +357,65 @@ public class PatientTransformer {
             contactPointBuilder.setUse(use);
             contactPointBuilder.setSystem(system);
             contactPointBuilder.setValue(cell);
+        }
+    }
+
+    private static Religion mapReligion(CernerCodeValueRef cvref) throws Exception {
+        String s = cvref.getAliasNhsCdAlias();
+
+        switch (s) {
+            case "BAPTIST":
+                return Religion.BAPTIST;
+            case "BUDDHISM":
+                return Religion.BUDDHIST;
+            case "ROMANCATHOLIC":
+                return Religion.ROMAN_CATHOLIC;
+            case "HINDU":
+                return Religion.HINDU;
+            case "JEHOVAHSWITNESS":
+                return Religion.JEHOVAHS_WITNESS;
+            case "LUTHERAN":
+                return Religion.LUTHERAN;
+            case "METHODIST":
+                return Religion.METHODIST;
+            case "ISLAM":
+                return Religion.MUSLIM;
+            case "SEVENTHDAYADVENTIST":
+                return Religion.SEVENTH_DAY_ADVENTIST;
+            case "OTHER":
+                return Religion.RELIGION_OTHER;
+            case "JUDAISMJEWISHHEBREW":
+                return Religion.JEWISH;
+            case "PRESBYTERIAN":
+                return Religion.PRESBYTERIAN;
+            case "NAZARENE":
+                return Religion.NAZARENE_CHURCH;
+            case "LATTERDAYSAINTS":
+                return Religion.MORMON;
+            case "GREEKORTHODOX":
+                return Religion.GREEK_ORTHODOX;
+            case "PENTECOSTAL":
+                return Religion.PENTECOSTALIST;
+            case "CHURCHOFENGLAND":
+                return Religion.CHURCH_OF_ENGLAND;
+            case "ETHIOPIANORTHODOXRASTAFARIAN":
+                return Religion.RASTAFARI;
+            case "SIKH":
+                return Religion.SIKH;
+            case "PLYMOUTHBRETHREN":
+                return Religion.PLYMOUTH_BRETHREN;
+            case "CHRISTIANCHURCH":
+                return Religion.CHRISTIAN;
+            case "CHURCHOFGOD":
+                return Religion.CHURCH_OF_GOD_OF_PROPHECY;
+            case "ASSEMBLIESOFGOD":
+                return null;
+            case "CHURCHOFCHRIST":
+                return null;
+            case "EPISCOPAL":
+                return null;
+            default:
+                throw new Exception("Unmapped religion " + s);
         }
     }
 

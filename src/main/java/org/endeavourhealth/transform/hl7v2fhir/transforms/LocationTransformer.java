@@ -1,6 +1,8 @@
 package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
 import ca.uhn.hl7v2.model.v23.datatype.ST;
+import ca.uhn.hl7v2.model.v23.datatype.XON;
+import ca.uhn.hl7v2.model.v23.segment.PD1;
 import ca.uhn.hl7v2.model.v23.segment.PV1;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
@@ -62,6 +64,28 @@ public class LocationTransformer {
             /*addressBuilder.setCity(nameOfTownCell.getString());
             addressBuilder.setDistrict(nameOfCountyCell.getString());
             addressBuilder.setPostcode(fullPostCodeCell.getString());*/
+        }
+        return location;
+    }
+
+    /**
+     *
+     * @param pd1
+     * @param location
+     * @return
+     * @throws Exception
+     */
+    public static LocationBuilder transformPD1ToDemographicLocation(PD1 pd1, LocationBuilder location) throws Exception {
+        XON[] patientPrimaryFacility = pd1.getPatientPrimaryFacility();
+        if(patientPrimaryFacility != null) {
+            location.setId(patientPrimaryFacility[0].getIDNumber().getValue());
+            location.setStatus(Location.LocationStatus.ACTIVE);
+            location.setName(patientPrimaryFacility[0].getOrganizationName().getValue());
+            location.setMode(Location.LocationMode.INSTANCE);
+
+            AddressBuilder addressBuilder = new AddressBuilder(location);
+            addressBuilder.setUse(Address.AddressUse.WORK);
+            addressBuilder.addLine(patientPrimaryFacility[0].getOrganizationName().getValue());
         }
         return location;
     }

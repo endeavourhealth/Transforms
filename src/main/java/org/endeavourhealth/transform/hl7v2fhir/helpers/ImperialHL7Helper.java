@@ -4,8 +4,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
@@ -234,6 +236,11 @@ public class ImperialHL7Helper implements HasServiceSystemAndExchangeIdI {
         String resourceId = createUniqueId(patientGuid, sourceGuid);
         resourceBuilder.setId(resourceId);
     }
+
+    /*public CernerCodeValueRef lookupCodeRef(Long codeSet, CsvCell codeCell) throws Exception {
+        String code = codeCell.getString();
+        return lookupCodeRef(codeSet, code);
+    }*/
 
 }
 
