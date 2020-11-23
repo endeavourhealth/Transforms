@@ -86,6 +86,9 @@ public class PublishedFileAuditHelper {
             DeadlockHandler h = new DeadlockHandler();
             h.addErrorMessageToHandler("Connection reset");
 
+            //SD-224 - add a different flavour of error message
+            h.addErrorMessageToHandler("Premature end of Content-Length delimited message body");
+
             while (true) {
                 try {
                     auditRecordsImpl(filePath, fileAuditId, firstRecordContainsHeaders, threadPool, parser);
