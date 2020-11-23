@@ -15,8 +15,7 @@ import java.util.Map;
 
 public class StaffTransformer {
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
@@ -61,18 +60,20 @@ public class StaffTransformer {
         Reference organisationReference = csvHelper.createOrganisationReference(orgID.getString());
         roleBuilder.setRoleManagingOrganisation(organisationReference, orgID);
 
-        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role);
-        codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
+        CsvCell roleCell = parser.getJobCategoryCode();
+        if (!roleCell.isEmpty()) {
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(roleBuilder, CodeableConceptBuilder.Tag.Practitioner_Role);
+            codeableConceptBuilder.addCoding(FhirValueSetUri.VALUE_SET_JOB_ROLE_CODES);
 
-        CsvCell roleCode = parser.getJobCategoryCode();
-        if (!roleCode.isEmpty()) {
-            codeableConceptBuilder.setCodingCode(roleCode.getString(), roleCode);
+            //the Vision role String
+            codeableConceptBuilder.setCodingCode(roleCell.getString(), roleCell);
+
+            String roleName = getJobCategoryName(roleCell.getString());
+            if (!roleName.isEmpty()) {
+                codeableConceptBuilder.setCodingDisplay(roleName);   //don't pass in a cell as roleName was derived
+            }
         }
 
-        String roleName = getJobCategoryName(roleCode.getString());
-        if (!roleName.isEmpty()) {
-            codeableConceptBuilder.setCodingDisplay(roleName);   //don't pass in a cell as roleName was derived
-        }
 
         CsvCell gmpCode = parser.getGMPCode();
         if (!gmpCode.isEmpty()) {
@@ -133,7 +134,7 @@ public class StaffTransformer {
     }*/
 
 
-    public static String getJobCategoryName(String jobCategoryCode) {
+    public static String getJobCategoryName(String jobCategoryCode) throws Exception {
 
         switch (jobCategoryCode){
             case "A": return "Principal GP";
@@ -154,7 +155,10 @@ public class StaffTransformer {
             case "D17": return "District Nurse";
             case "D18": return "Community Psychiatric Nurse";
             case "D19": return "Mental Handicap Nurse";
-            default: return "None";
+            default:
+                //this is supposed to be a fixed value set so throw an error if we get something new
+                throw new Exception("Unmapped Vision job role code [" + jobCategoryCode + "]");
+                //return "None";
         }
     }
 }

@@ -14,8 +14,7 @@ import static org.endeavourhealth.transform.vision.transforms.JournalTransformer
 
 public class JournalDrugPreTransformer {
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
@@ -45,7 +44,7 @@ public class JournalDrugPreTransformer {
             return;
         }
 
-        ResourceType resourceType = getTargetResourceType(parser);
+        ResourceType resourceType = getTargetResourceType(parser, csvHelper);
         //all we are interested in are Drug records (non issues)
         if (resourceType == ResourceType.MedicationStatement) {
             CsvCell patientID = parser.getPatientID();

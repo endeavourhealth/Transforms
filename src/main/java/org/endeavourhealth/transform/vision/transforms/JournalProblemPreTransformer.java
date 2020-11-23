@@ -23,8 +23,7 @@ import java.util.concurrent.Callable;
 public class JournalProblemPreTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(JournalProblemPreTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
@@ -38,7 +37,7 @@ public class JournalProblemPreTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    processLine((Journal) parser, fhirResourceFiler, csvHelper, version, threadPool);
+                    processLine((Journal) parser, fhirResourceFiler, csvHelper, threadPool);
                 } catch (Exception ex) {
                     List<ThreadPoolError> errors = threadPool.waitAndStop();
                     handleErrors(errors);
@@ -50,7 +49,6 @@ public class JournalProblemPreTransformer {
     private static void processLine(Journal parser,
                                     FhirResourceFiler fhirResourceFiler,
                                     VisionCsvHelper csvHelper,
-                                    String version,
                                     ThreadPool threadPool) throws Exception {
 
         if (parser.getAction().getString().equalsIgnoreCase("D")) {
@@ -63,11 +61,10 @@ public class JournalProblemPreTransformer {
             CsvCell patientID = parser.getPatientID();
             CsvCell observationID = parser.getObservationID();
             CsvCurrentState parserState = parser.getCurrentState();
-            String readCode = parser.getReadCode().getString();
 
             //cache the observation IDs of problems, so
             //that we know what is a problem when we run the observation pre-transformer
-            csvHelper.cacheProblemObservationGuid(patientID, observationID, readCode);
+            csvHelper.cacheProblemObservationGuid(patientID, observationID);
 
             //also cache the IDs of any child items from previous instances of this problem, but
             //use a thread pool so we can perform multiple lookups in parallel

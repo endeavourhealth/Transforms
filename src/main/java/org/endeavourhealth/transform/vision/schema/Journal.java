@@ -116,11 +116,11 @@ public class Journal extends AbstractCsvParser {
         return super.getCell("SERVICE_ID");
     }
 
-    public CsvCell getEffectiveDateTime() throws TransformException {
+    public CsvCell getEffectiveDate() throws TransformException {
         return super.getCell("DATE");
     }
 
-    public CsvCell getEnteredDateTime() throws TransformException {
+    public CsvCell getEnteredDate() throws TransformException {
         return super.getCell("RECORDED_DATE");
     }
 
@@ -228,6 +228,14 @@ public class Journal extends AbstractCsvParser {
         return super.getCell("LINKS");
     }
 
+    /**
+     * used in a tiny handful (two) of records out of millions and contains a number
+     */
+    public CsvCell getLinksExt() {
+        return super.getCell("LINKS_EXT");
+    }
+
+
     public CsvCell getAction() {
         return super.getCell("ACTION");
     }
@@ -245,6 +253,14 @@ public class Journal extends AbstractCsvParser {
 
     public CsvCell getDocumentID() {
         return super.getCell("DOCUMENT_ID");
+    }
+
+    public CsvCell getEffectiveTime() {
+        return super.getCell("TIME");
+    }
+
+    public CsvCell getContext() {
+        return super.getCell("CONTEXT");
     }
 
 }

@@ -21,17 +21,32 @@ public class Staff extends AbstractCsvParser {
     }
 
     private static String[] getHeaders(String version) {
-        //the test pack has the same columns as the live data
-        return new String[]{
-                "ID",
-                "HCP_TYPE",
-                "GMP_CODE",             //NHS specified doctor number, GMP code or internal gp identifier
-                "SURNAME",
-                "FORENAME",
-                "TITLE",
-                "SEX",
-                "SERVICE_ID"            //Link to organisation/practice
-        };
+
+        //the test pack has the same columns as the live data, but in a different order
+        if (version.equals(VisionCsvToFhirTransformer.VERSION_TEST_PACK)) {
+            return new String[]{
+                    "ID",
+                    "SURNAME",
+                    "FORENAME",
+                    "TITLE",
+                    "SEX",
+                    "GMP_CODE",             //NHS specified doctor number, GMP code or internal gp identifier
+                    "HCP_TYPE",
+                    "SERVICE_ID"            //Link to organisation/practice
+            };
+
+        } else {
+            return new String[]{
+                    "ID",
+                    "HCP_TYPE",
+                    "GMP_CODE",             //NHS specified doctor number, GMP code or internal gp identifier
+                    "SURNAME",
+                    "FORENAME",
+                    "TITLE",
+                    "SEX",
+                    "SERVICE_ID"            //Link to organisation/practice
+            };
+        }
     }
 
 
@@ -71,30 +86,4 @@ public class Staff extends AbstractCsvParser {
     public CsvCell getJobCategoryCode() {
         return super.getCell("HCP_TYPE");
     }
-
-
-    /* public String getUserID() {
-        return super.getString("ID");
-    }
-    public String getOrganisationID() {
-        return super.getString("SERVICE_ID");
-    }
-    public String getTitle() {
-        return super.getString("TITLE");
-    }
-    public String getSex() {
-        return super.getString("SEX");
-    }
-    public String getGivenName() {
-        return super.getString("FORENAME");
-    }
-    public String getSurname() {
-        return super.getString("SURNAME");
-    }
-    public String getGMPCode() {
-        return super.getString("GMP_CODE");
-    }
-    public String getJobCategoryCode() {
-        return super.getString("HCP_TYPE");
-    }*/
 }

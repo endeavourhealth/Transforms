@@ -8,22 +8,20 @@ import org.endeavourhealth.common.fhir.schema.MedicationAuthorisationType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherTransform.ResourceIdTransformDalI;
 import org.endeavourhealth.core.terminology.Read2;
-import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionCodeHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionDateTimeHelper;
 import org.endeavourhealth.transform.vision.schema.Journal;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-
-import static org.endeavourhealth.core.terminology.Read2.isBPCode;
-
 
 public class JournalTransformer {
 
@@ -34,8 +32,7 @@ public class JournalTransformer {
     private static final String SYSTOLIC = "2469.";
     private static final String DIASTOLIC = "246A.";
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
@@ -50,9 +47,9 @@ public class JournalTransformer {
                     Journal journalParser = (Journal) parser;
 
                     if (journalParser.getAction().getString().equalsIgnoreCase("D")) {
-                        deleteResource(journalParser, fhirResourceFiler, csvHelper, version);
+                        deleteResource(journalParser, fhirResourceFiler, csvHelper);
                     } else {
-                        createResource(journalParser, fhirResourceFiler, csvHelper, version);
+                        createResource(journalParser, fhirResourceFiler, csvHelper);
                     }
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
@@ -66,8 +63,7 @@ public class JournalTransformer {
 
     private static void deleteResource(Journal parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       VisionCsvHelper csvHelper,
-                                       String version) throws Exception {
+                                       VisionCsvHelper csvHelper) throws Exception {
 
         Set<ResourceType> resourceTypes = findOriginalTargetResourceType(fhirResourceFiler, parser);
 
@@ -123,38 +119,38 @@ public class JournalTransformer {
         potentialResourceTypes.add(ResourceType.MedicationStatement);
         potentialResourceTypes.add(ResourceType.MedicationOrder);
 
+        String sourceId = VisionCsvHelper.createUniqueId(parser.getPatientID(), parser.getObservationID());
+
+        Set<Reference> sourceReferences = new HashSet<>();
+        for (ResourceType resourceType: potentialResourceTypes) {
+            Reference ref = ReferenceHelper.createReference(resourceType, sourceId);
+            sourceReferences.add(ref);
+        }
+
+        Map<Reference, UUID> idMap = IdHelper.getEdsResourceIds(hasServiceId.getServiceId(), sourceReferences);
+
         Set<ResourceType> ret = new HashSet<>();
 
-        for (ResourceType resourceType: potentialResourceTypes) {
-            if (wasSavedAsResourceType(hasServiceId, parser, resourceType)) {
+        for (Reference ref: sourceReferences) {
+            UUID id = idMap.get(ref);
+            if (id != null) {
+                ResourceType resourceType = ReferenceHelper.getResourceType(ref);
                 ret.add(resourceType);
             }
         }
+
         return ret;
-    }
-
-    private static boolean wasSavedAsResourceType(HasServiceSystemAndExchangeIdI hasServiceId, Journal parser, ResourceType resourceType) throws Exception {
-        String sourceId = VisionCsvHelper.createUniqueId(parser.getPatientID(), parser.getObservationID());
-
-        //fix for VE-6
-        UUID uuid = IdHelper.getEdsResourceId(hasServiceId.getServiceId(), resourceType, sourceId);
-        return uuid != null;
     }
 
     public static void createResource(Journal parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       VisionCsvHelper csvHelper,
-                                       String version) throws Exception {
+                                       VisionCsvHelper csvHelper) throws Exception {
 
-        //the coded elements should NEVER all be null, adding this to handle those rows gracefully
-//        if (Strings.isNullOrEmpty(parser.getReadCode().getString())
-//                && (Strings.isNullOrEmpty(parser.getDrugDMDCode().getString()))
-//                && (Strings.isNullOrEmpty(parser.getSnomedCode().getString()))) {
-//            TransformWarnings.log(LOG, parser, "Journal ID: {} contains no coded items", parser.getObservationID());
-//            return;
-//        }
+        //common validation
+        validateContext(parser);
 
-        ResourceType resourceType = getTargetResourceType(parser);
+
+        ResourceType resourceType = getTargetResourceType(parser, csvHelper);
         switch (resourceType) {
             case Observation:
                 createOrDeleteObservation(parser, fhirResourceFiler, csvHelper);
@@ -185,6 +181,16 @@ public class JournalTransformer {
         }
     }
 
+    private static void validateContext(Journal parser) throws Exception {
+
+        //according to Vision the Context cell should always be "A"
+        CsvCell contextCell = parser.getContext();
+        String context = contextCell.getString();
+        if (!context.equals("A")) {
+            throw new Exception("CONTEXT cell value not 'A'");
+        }
+    }
+
     private static void createOrDeleteMedicationStatement(Journal parser,
                                                  FhirResourceFiler fhirResourceFiler,
                                                  VisionCsvHelper csvHelper) throws Exception {
@@ -211,11 +217,11 @@ public class JournalTransformer {
             medicationStatementBuilder.setInformationSource(csvHelper.createPractitionerReference(cleanClinicianID), clinicianIdCell);
         }
 
-        CsvCell effectiveDateCell = parser.getEffectiveDateTime();
-        String effectiveDatePrecision = "YMD";
-        DateTimeType date = EmisDateTimeHelper.createDateTimeType(effectiveDateCell.getDate(), effectiveDatePrecision);
-        if (date != null) {
-            medicationStatementBuilder.setAssertedDate(date, effectiveDateCell);
+        CsvCell dateCell = parser.getEffectiveDate();
+        CsvCell timeCell = parser.getEffectiveTime();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+        if (dateTimeType != null) {
+            medicationStatementBuilder.setAssertedDate(dateTimeType, dateCell, timeCell);
         }
 
         //no longer set the active or completed status on medications, just the cancellation date if present
@@ -224,34 +230,9 @@ public class JournalTransformer {
             medicationStatementBuilder.setCancellationDate(endDateCell.getDate(), endDateCell);
         }
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
+        VisionCodeHelper.populateCodeableConcept(true, parser, codeableConceptBuilder, csvHelper);
 
-        CsvCell dmdIdCell = parser.getDrugDMDCode();
-        CsvCell readCodeCell = parser.getReadCode();
-        CsvCell termCell = parser.getRubric();
-
-        //null check because column isn't present in test pack
-        if (dmdIdCell != null && !dmdIdCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(dmdIdCell.getString(), dmdIdCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        //add in original Read2 coding
-        if (!readCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        if (!termCell.isEmpty()) {
-            codeableConceptBuilder.setText(termCell.getString(), termCell);
-        }
 
         CsvCell quantity = parser.getValue1();
         if (!quantity.isEmpty()) {
@@ -285,22 +266,23 @@ public class JournalTransformer {
             medicationStatementBuilder.setLastIssueDate(mostRecentDate); //, mostRecentDate.getSourceCells());
         }
 
-        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
+        /*CsvCell enteredByIdCell = parser.getClinicianUserID();
         //null check because this column is missing from the test pack
         if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             medicationStatementBuilder.setRecordedBy(reference, enteredByIdCell);
-        }
+        }*/
 
-        CsvCell enteredDateTime = parser.getEnteredDateTime();
+        CsvCell enteredDateTime = parser.getEnteredDate();
         if (!enteredDateTime.isEmpty()) {
             medicationStatementBuilder.setRecordedDate(enteredDateTime.getDate(), enteredDateTime);
         }
 
-        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
-        if (!Strings.isNullOrEmpty(consultationID)) {
-            Reference reference = csvHelper.createEncounterReference(consultationID, patientID.getString());
+        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            Reference reference = csvHelper.createEncounterReference(consultationId, patientID.getString());
             medicationStatementBuilder.setEncounter(reference, parser.getLinks());
         }
 
@@ -334,37 +316,16 @@ public class JournalTransformer {
             medicationOrderBuilder.setPrescriber(csvHelper.createPractitionerReference(cleanUserId));
         }
 
-        CsvCell effectiveDate = parser.getEffectiveDateTime();
-        String effectiveDatePrecision = "YMD";
-        DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision);
-        medicationOrderBuilder.setDateWritten(dateTime, effectiveDate);
+        CsvCell dateCell = parser.getEffectiveDate();
+        CsvCell timeCell = parser.getEffectiveTime();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+        if (dateTimeType != null) {
+            medicationOrderBuilder.setDateWritten(dateTimeType, dateCell, timeCell);
+        }
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationOrderBuilder, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code);
+        VisionCodeHelper.populateCodeableConcept(true, parser, codeableConceptBuilder, csvHelper);
 
-        CsvCell dmdId = parser.getDrugDMDCode();
-        CsvCell readCodeCell = parser.getReadCode();
-        CsvCell term = parser.getRubric();
-
-        if (!dmdId.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(dmdId.getString(), dmdId);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
-            }
-        }
-
-        //add in original Read2 coding
-        if (!readCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!term.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(term.getString(), term);
-            }
-        }
-
-        if (!term.isEmpty()) {
-            codeableConceptBuilder.setText(term.getString(), term);
-        }
 
         CsvCell quantity = parser.getValue1();
         if (!quantity.isEmpty()) {
@@ -377,7 +338,9 @@ public class JournalTransformer {
         }
 
         CsvCell dose = parser.getAssociatedText();
-        medicationOrderBuilder.setDose(dose.getString(), dose);
+        if (!dose.isEmpty()) {
+            medicationOrderBuilder.setDose(dose.getString(), dose);
+        }
 
         String links = parser.getLinks().getString();
         if (!Strings.isNullOrEmpty(links)) {
@@ -388,27 +351,29 @@ public class JournalTransformer {
             }
         }
 
-        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
+        /*CsvCell enteredByIdCell = parser.getClinicianUserID();
         //null check because this column is missing from the test pack
         if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             medicationOrderBuilder.setRecordedBy(reference, enteredByIdCell);
-        }
+        }*/
 
-        CsvCell enteredDateTime = parser.getEnteredDateTime();
+        CsvCell enteredDateTime = parser.getEnteredDate();
         if (enteredDateTime != null) {
             medicationOrderBuilder.setRecordedDate(enteredDateTime.getDate(), enteredDateTime);
         }
 
-        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
-        if (!Strings.isNullOrEmpty(consultationID)) {
-            Reference reference = csvHelper.createEncounterReference(consultationID, patientID.getString());
+        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            Reference reference = csvHelper.createEncounterReference(consultationId, patientID.getString());
             medicationOrderBuilder.setEncounter(reference, parser.getLinks());
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationOrderBuilder);
     }
+
 
     private static void createOrDeleteAllergy(Journal parser,
                                               FhirResourceFiler fhirResourceFiler,
@@ -430,7 +395,7 @@ public class JournalTransformer {
             return;
         }
 
-        if (isInvalidData(parser)) {
+        if (isInvalidData(parser, csvHelper)) {
             TransformWarnings.log(LOG, parser, "Journal ID: {} contains invalid Allergy data", parser.getObservationID());
             return;
         }
@@ -442,42 +407,18 @@ public class JournalTransformer {
             allergyIntoleranceBuilder.setClinician(csvHelper.createPractitionerReference(cleanUserId));
         }
 
-        CsvCell enteredDate = parser.getEnteredDateTime();
+        CsvCell enteredDate = parser.getEnteredDate();
         allergyIntoleranceBuilder.setRecordedDate(enteredDate.getDate(), enteredDate);
 
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
+        VisionCodeHelper.populateCodeableConcept(false, parser, codeableConceptBuilder, csvHelper);
 
-        CsvCell snomedCodeCell = parser.getSnomedCode();
-        CsvCell termCell = parser.getRubric();
-        CsvCell readCodeCell = parser.getReadCode();
-
-        //null check because column is missing from test pack
-        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
+        CsvCell dateCell = parser.getEffectiveDate();
+        CsvCell timeCell = parser.getEffectiveTime();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+        if (dateTimeType != null) {
+            allergyIntoleranceBuilder.setOnsetDate(dateTimeType, dateCell, timeCell);
         }
-
-        //add in original Read2 coding
-        if (!readCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        // the item may not be coded, but has a rubric, so set as text
-        if (!termCell.isEmpty()) {
-            codeableConceptBuilder.setText(termCell.getString(), termCell);
-        }
-
-        CsvCell effectiveDate = parser.getEffectiveDateTime();
-        String effectiveDatePrecision = "YMD";
-        allergyIntoleranceBuilder.setOnsetDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
 
         CsvCell associatedText = parser.getAssociatedText();
         if (!associatedText.isEmpty()) {
@@ -500,19 +441,20 @@ public class JournalTransformer {
             }
         }
 
-        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
-        if (!Strings.isNullOrEmpty(consultationID)) {
-            Reference reference = csvHelper.createEncounterReference(consultationID, patientID.getString());
+        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            Reference reference = csvHelper.createEncounterReference(consultationId, patientID.getString());
             allergyIntoleranceBuilder.setEncounter(reference, parser.getLinks());
         }
 
-        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
+        /*CsvCell enteredByIdCell = parser.getClinicianUserID();
         //null check because this column is missing from the test pack
         if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             allergyIntoleranceBuilder.setRecordedBy(reference, enteredByIdCell);
-        }
+        }*/
 
         String documentId = getDocumentId(parser);
         if (!Strings.isNullOrEmpty(documentId)) {
@@ -525,6 +467,9 @@ public class JournalTransformer {
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
     }
+
+
+
 
     private static void createOrDeleteProcedure(Journal parser,
                                                 FhirResourceFiler fhirResourceFiler,
@@ -547,38 +492,15 @@ public class JournalTransformer {
             return;
         }
 
-        CsvCell snomedCodeCell = parser.getSnomedCode();
-        CsvCell readCodeCell = parser.getReadCode();
-        CsvCell termCell = parser.getRubric();
-
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);
+        VisionCodeHelper.populateCodeableConcept(false, parser, codeableConceptBuilder, csvHelper);
 
-        //null check because column is missing from test pack
-        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
+        CsvCell dateCell = parser.getEffectiveDate();
+        CsvCell timeCell = parser.getEffectiveTime();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+        if (dateTimeType != null) {
+            procedureBuilder.setPerformed(dateTimeType, dateCell, timeCell);
         }
-
-        //add in original Read2 coding
-        if (!readCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        // the item may not be coded, but has a rubric, so set as text
-        if (!termCell.isEmpty()) {
-            codeableConceptBuilder.setText(termCell.getString(), termCell);
-        }
-
-        CsvCell effectiveDate = parser.getEffectiveDateTime();
-        String effectiveDatePrecision = "YMD";
-        procedureBuilder.setPerformed(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision));
 
         CsvCell clinicianIdCell = parser.getClinicianUserID();
         //null check because this cell is missing from the test pack
@@ -594,21 +516,22 @@ public class JournalTransformer {
         }
 
         //set linked encounter
-        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
-        if (!Strings.isNullOrEmpty(consultationID)) {
-            procedureBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
+        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            procedureBuilder.setEncounter(csvHelper.createEncounterReference(consultationId, patientID.getString()));
         }
 
-        CsvCell getEnteredDateTime = parser.getEnteredDateTime();
+        CsvCell getEnteredDateTime = parser.getEnteredDate();
         procedureBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
-        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
+        /*CsvCell enteredByIdCell = parser.getClinicianUserID();
         //null check because this column is missing from the test pack
         if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             procedureBuilder.setRecordedBy(reference, enteredByIdCell);
-        }
+        }*/
 
         String documentId = getDocumentId(parser);
         if (!Strings.isNullOrEmpty(documentId)) {
@@ -646,34 +569,8 @@ public class JournalTransformer {
         conditionBuilder.setCategory("complaint", observationID);
         conditionBuilder.setAsProblem(true);
 
-        CsvCell snomedCodeCell = parser.getSnomedCode();
-        CsvCell readCodeCell = parser.getReadCode();
-        CsvCell termCell = parser.getRubric();
-
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
-
-        //null check because column is missing from test pack
-        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        //add in original Read2 coding
-        if (!readCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        // the item may not be coded, but has a rubric, so set as text
-        if (!termCell.isEmpty()) {
-            codeableConceptBuilder.setText(termCell.getString(), termCell);
-        }
+        VisionCodeHelper.populateCodeableConcept(false, parser, codeableConceptBuilder, csvHelper);
 
         CsvCell comments = parser.getAssociatedText();
         if (!comments.isEmpty()) {
@@ -683,14 +580,13 @@ public class JournalTransformer {
         // no other confirmation status except confirmed
         conditionBuilder.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
-        CsvCell recordedDate = parser.getEnteredDateTime();
+        CsvCell recordedDate = parser.getEnteredDate();
         conditionBuilder.setRecordedDate(recordedDate.getDate(), recordedDate);
 
-        CsvCell endDate = parser.getEndDate();
-        if (endDate != null) {
-            String endDatePrecision = "YMD";
-            DateType dateType = EmisDateTimeHelper.createDateType(endDate.getDate(), endDatePrecision);
-            conditionBuilder.setEndDateOrBoolean(dateType, endDate);
+        CsvCell endDateCell = parser.getEndDate();
+        if (endDateCell.isEmpty()) {
+            DateType dateType = new DateType(endDateCell.getDate(), TemporalPrecisionEnum.DAY);
+            conditionBuilder.setEndDateOrBoolean(dateType, endDateCell);
         }
 
         CsvCell episodicityCode = parser.getProblemEpisodicity();
@@ -699,9 +595,12 @@ public class JournalTransformer {
             conditionBuilder.setEpisodicity(episodicity, episodicityCode);
         }
 
-        CsvCell effectiveDate = parser.getEffectiveDateTime();
-        String effectiveDatePrecision = "YMD";
-        conditionBuilder.setOnset(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision), effectiveDate);
+        CsvCell dateCell = parser.getEffectiveDate();
+        CsvCell timeCell = parser.getEffectiveTime();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+        if (dateTimeType != null) {
+            conditionBuilder.setOnset(dateTimeType, dateCell, timeCell);
+        }
 
         CsvCell clinicianIdCell = parser.getClinicianUserID();
         //null check because this cell is missing from the test pack
@@ -721,13 +620,14 @@ public class JournalTransformer {
         ReferenceList newLinkedResources = csvHelper.getAndRemoveNewProblemChildren(observationID, patientID);
         containedListBuilder.addReferences(newLinkedResources);
 
-        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
+        /*CsvCell enteredByIdCell = parser.getClinicianUserID();
         //null check because this column is missing from the test pack
         if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             conditionBuilder.setRecordedBy(reference, enteredByIdCell);
-        }
+        }*/
 
         String documentId = getDocumentId(parser);
         if (!Strings.isNullOrEmpty(documentId)) {
@@ -762,38 +662,15 @@ public class JournalTransformer {
         //status is mandatory, so set the only value we can
         observationBuilder.setStatus(org.hl7.fhir.instance.model.Observation.ObservationStatus.UNKNOWN);
 
-        CsvCell effectiveDate = parser.getEffectiveDateTime();
-        String effectiveDatePrecision = "YMD";
-        observationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
-
-        CsvCell snomedCodeCell = parser.getSnomedCode();
-        CsvCell readCodeCell = parser.getReadCode();
-        CsvCell termCell = parser.getRubric();
+        CsvCell dateCell = parser.getEffectiveDate();
+        CsvCell timeCell = parser.getEffectiveTime();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+        if (dateTimeType != null) {
+            observationBuilder.setEffectiveDate(dateTimeType, dateCell, timeCell);
+        }
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
-
-        //null check because column is missing from test pack
-        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        //add in original Read2 coding
-        if (!readCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        // the item may not be coded, but has a rubric, so set as text
-        if (!termCell.isEmpty()) {
-            codeableConceptBuilder.setText(termCell.getString(), termCell);
-        }
+        VisionCodeHelper.populateCodeableConcept(false, parser, codeableConceptBuilder, csvHelper);
 
         CsvCell clinicianIdCell = parser.getClinicianUserID();
         //null check because this cell is missing from the test pack
@@ -803,16 +680,17 @@ public class JournalTransformer {
             observationBuilder.setClinician(reference, clinicianIdCell);
         }
 
-        CsvCell getEnteredDateTime = parser.getEnteredDateTime();
+        CsvCell getEnteredDateTime = parser.getEnteredDate();
         observationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
-        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
+        /*CsvCell enteredByIdCell = parser.getClinicianUserID();
         //null check because this column is missing from the test pack
         if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             observationBuilder.setRecordedBy(reference, enteredByIdCell);
-        }
+        }*/
 
         Double value1 = null;
         String units1 = null;
@@ -864,9 +742,12 @@ public class JournalTransformer {
         ObservationBuilder systolicObservationBuilder = null;
 
         //BP is a special case - create systolic and diastolic coded components.
-        if (!readCodeCell.isEmpty()
-                && isBPParentCode(readCodeCell.getString())
-                && (value1 != null && value1 > 0) && (value2 != null && value2 > 0)) {
+        CsvCell readCodeCell = parser.getReadCode();
+        String readCode = VisionCodeHelper.formatReadCode(readCodeCell, csvHelper);
+        if (!Strings.isNullOrEmpty(readCode)
+                && isBPParentCode(readCode)
+                && (value1 != null && value1.doubleValue() > 0)
+                && (value2 != null && value2.doubleValue() > 0)) {
 
             isBP = true;
 
@@ -885,7 +766,10 @@ public class JournalTransformer {
             systolicObservationBuilder = new ObservationBuilder();
             systolicObservationBuilder.setId(observationBuilder.getResource().getId().concat(":SYS"));
             systolicObservationBuilder.setStatus(org.hl7.fhir.instance.model.Observation.ObservationStatus.UNKNOWN);
-            systolicObservationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
+            dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+            if (dateTimeType != null) {
+                observationBuilder.setEffectiveDate(dateTimeType, dateCell, timeCell);
+            }
             systolicObservationBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
             //null check because this cell is missing from the test pack
@@ -895,11 +779,12 @@ public class JournalTransformer {
             }
 
             //null check because this column is missing from the test pack
-            if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
+            /*if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
                 String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
                 Reference reference = csvHelper.createPractitionerReference(cleanUserId);
                 systolicObservationBuilder.setRecordedBy(reference, enteredByIdCell);
-            }
+            }*/
 
             CodeableConceptBuilder codeableSystolicConceptBuilder
                     = new CodeableConceptBuilder(systolicObservationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
@@ -934,7 +819,10 @@ public class JournalTransformer {
             diastolicObservationBuilder = new ObservationBuilder();
             diastolicObservationBuilder.setId(observationBuilder.getResource().getId().concat(":DIA"));
             diastolicObservationBuilder.setStatus(org.hl7.fhir.instance.model.Observation.ObservationStatus.UNKNOWN);
-            diastolicObservationBuilder.setEffectiveDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
+            dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+            if (dateTimeType != null) {
+                observationBuilder.setEffectiveDate(dateTimeType, dateCell, timeCell);
+            }
             diastolicObservationBuilder.setPatient(csvHelper.createPatientReference(patientID));
 
             //null check because this cell is missing from the test pack
@@ -944,11 +832,12 @@ public class JournalTransformer {
             }
 
             //null check because this column is missing from the test pack
-            if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
+            //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
+            /*if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
                 String cleanUserId = csvHelper.cleanUserId(enteredByIdCell.getString());
                 Reference reference = csvHelper.createPractitionerReference(cleanUserId);
                 diastolicObservationBuilder.setRecordedBy(reference, enteredByIdCell);
-            }
+            }*/
 
             CodeableConceptBuilder codeableDistolicConceptBuilder
                     = new CodeableConceptBuilder(diastolicObservationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
@@ -990,7 +879,7 @@ public class JournalTransformer {
             }
 
             //the 2nd value only exists if another special case, so add appended to associated text
-            String value2NarrativeText = convertSpecialCaseValues(parser);
+            String value2NarrativeText = convertSpecialCaseValues(parser, csvHelper);
             if (!Strings.isNullOrEmpty(value2NarrativeText)) {
                 associatedTextAsStr = value2NarrativeText.concat(associatedTextAsStr);
             }
@@ -1007,9 +896,9 @@ public class JournalTransformer {
         observationBuilder.setNotes(associatedTextAsStr,associatedTextCell);
 
         //set linked encounter
-        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
-        if (!Strings.isNullOrEmpty(consultationID)) {
-            observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
+        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId, patientID.getString()));
         }
 
         String documentId = getDocumentId(parser);
@@ -1047,9 +936,12 @@ public class JournalTransformer {
             return;
         }
 
-        CsvCell effectiveDate = parser.getEffectiveDateTime();
-        String effectiveDatePrecision = "YMD";
-        familyMemberHistoryBuilder.setDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
+        CsvCell dateCell = parser.getEffectiveDate();
+        CsvCell timeCell = parser.getEffectiveTime();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+        if (dateTimeType != null) {
+            familyMemberHistoryBuilder.setDate(dateTimeType, dateCell, timeCell);
+        }
 
         //status is mandatory, so set the only possible status we can
         familyMemberHistoryBuilder.setStatus(FamilyMemberHistory.FamilyHistoryStatus.HEALTHUNKNOWN);
@@ -1059,33 +951,7 @@ public class JournalTransformer {
         familyMemberHistoryBuilder.setRelationship(FamilyMember.FAMILY_MEMBER);
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(familyMemberHistoryBuilder, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code);
-
-        CsvCell snomedCodeCell = parser.getSnomedCode();
-        CsvCell readCodeCell = parser.getReadCode();
-        CsvCell termCell = parser.getRubric();
-
-        //null check because code missing from test pack
-        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        //add in original Read2 coding
-        if (!readCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        // the item may not be coded, but has a rubric, so set as text
-        if (!termCell.isEmpty()) {
-            codeableConceptBuilder.setText(termCell.getString(), termCell);
-        }
+        VisionCodeHelper.populateCodeableConcept(false, parser, codeableConceptBuilder, csvHelper);
 
         CsvCell associatedText = parser.getAssociatedText();
         if (!associatedText.isEmpty()) {
@@ -1101,21 +967,21 @@ public class JournalTransformer {
         }
 
         //set linked encounter
-        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
-        if (!consultationID.isEmpty()) {
-            familyMemberHistoryBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
+        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            familyMemberHistoryBuilder.setEncounter(csvHelper.createEncounterReference(consultationId, patientID.getString()));
         }
 
-        CsvCell getEnteredDateTime = parser.getEnteredDateTime();
+        CsvCell getEnteredDateTime = parser.getEnteredDate();
         familyMemberHistoryBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
-        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        /*CsvCell enteredByIdCell = parser.getClinicianUserID();
         //null check because this column is missing from the test pack
         if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             familyMemberHistoryBuilder.setRecordedBy(reference, enteredByIdCell);
-        }
+        }*/
 
         String documentId = getDocumentId(parser);
         if (!Strings.isNullOrEmpty(documentId)) {
@@ -1150,9 +1016,34 @@ public class JournalTransformer {
             return;
         }
 
-        if (isInvalidData(parser)) {
+        if (isInvalidData(parser, csvHelper)) {
             TransformWarnings.log(LOG, parser, "Journal ID: {} contains invalid Immunisation data", parser.getObservationID());
             return;
+        }
+
+        //SD-217 The IMMS_STATUS column indicates if a vaccination was refused, so DO NOT create a FHIR resource if the code is for a vaccination
+        //and the status says it didn't happen
+        CsvCell immsStatusCell = parser.getImmsStatus();
+        if (immsStatusCell != null && !immsStatusCell.isEmpty()) { //null check because col not in test pack
+            String status = immsStatusCell.getString();
+            if (status.equalsIgnoreCase("Given")) {
+                //if the imm was given, then it's OK
+
+            } else if (status.equalsIgnoreCase("Refusal to start or complete course")
+                    || status.equalsIgnoreCase("Advised")) {
+                //if the status was one of the other values, then it wasn't given, so if the code is NOT a consent code, then
+                //we don't want to keep the FHIR resource. And because there's bad data on the DB, we need to delete any already there
+                CsvCell rubricCell = parser.getRubric();
+                if (rubricCell.isEmpty() || !rubricCell.getString().toLowerCase().contains("consent")) {
+                    immunizationBuilder.setDeletedAudit(immsStatusCell);
+                    fhirResourceFiler.deletePatientResource(parser.getCurrentState(), immunizationBuilder);
+                    return;
+                }
+
+            } else {
+                //if a fourth value turns up, we need to know about it immediately
+                throw new Exception("Unexpected immunisation status value [" + status + "]");
+            }
         }
 
         //CsvCell status = parser.getImmsStatus();
@@ -1161,46 +1052,15 @@ public class JournalTransformer {
         immunizationBuilder.setWasNotGiven(false); //we know it was given
         immunizationBuilder.setReported(false); //assume it was adminsitered by the practice
 
-        CsvCell effectiveDate = parser.getEffectiveDateTime();
-        String effectiveDatePrecision = "YMD";
-        immunizationBuilder.setPerformedDate(EmisDateTimeHelper.createDateTimeType(effectiveDate.getDate(), effectiveDatePrecision),effectiveDate);
-
-        CodeableConceptBuilder codeableConceptBuilder
-                = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
-
-        CsvCell snomedCodeCell = parser.getSnomedCode();
-        CsvCell readCodeCell = parser.getReadCode();
-        CsvCell termCell = parser.getRubric();
-
-        //null check because column is missing from test pack
-        if (snomedCodeCell != null && !snomedCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-            codeableConceptBuilder.setCodingCode(snomedCodeCell.getString(), snomedCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            } else {
-                // lookup Snomed term for blank immunisation term
-                String snomedTerm = TerminologyService.lookupSnomedTerm(snomedCodeCell.getString());
-                if (!Strings.isNullOrEmpty(snomedTerm)) {
-                    codeableConceptBuilder.setCodingDisplay(snomedTerm);
-                    codeableConceptBuilder.setText(snomedTerm);
-                }
-            }
+        CsvCell dateCell = parser.getEffectiveDate();
+        CsvCell timeCell = parser.getEffectiveTime();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+        if (dateTimeType != null) {
+            immunizationBuilder.setPerformedDate(dateTimeType, dateCell, timeCell);
         }
 
-        //add in original Read2 coding
-        if (!readCodeCell.isEmpty()) {
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCodeCell.getString().substring(0,5), readCodeCell);
-            if (!termCell.isEmpty()) {
-                codeableConceptBuilder.setCodingDisplay(termCell.getString(), termCell);
-            }
-        }
-
-        // the item may not be coded, but has a rubric, so set as text
-        if (!termCell.isEmpty()) {
-            codeableConceptBuilder.setText(termCell.getString(), termCell);
-        }
+        CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(immunizationBuilder, CodeableConceptBuilder.Tag.Immunization_Main_Code);
+        VisionCodeHelper.populateCodeableConcept(false, parser, codeableConceptBuilder, csvHelper);
 
         CsvCell clinicianIdCell = parser.getClinicianUserID();
         //null check because this cell is missing from the test pack
@@ -1237,9 +1097,9 @@ public class JournalTransformer {
         }
 
         //set linked encounter
-        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
-        if (!Strings.isNullOrEmpty(consultationID)) {
-            immunizationBuilder.setEncounter(csvHelper.createEncounterReference(consultationID, patientID.getString()));
+        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            immunizationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId, patientID.getString()));
         }
 
         CsvCell associatedText = parser.getAssociatedText();
@@ -1269,16 +1129,17 @@ public class JournalTransformer {
             immunizationBuilder.setNote(associatedTextStr, associatedText);
         }
 
-        CsvCell getEnteredDateTime = parser.getEnteredDateTime();
+        CsvCell getEnteredDateTime = parser.getEnteredDate();
         immunizationBuilder.setRecordedDate(getEnteredDateTime.getDate(), getEnteredDateTime);
 
-        CsvCell enteredByIdCell = parser.getClinicianUserID();
+        //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
+        /*CsvCell enteredByIdCell = parser.getClinicianUserID();
         //null check because this column is missing from the test pack
         if (enteredByIdCell != null && !enteredByIdCell.isEmpty()) {
             String cleanUserId = csvHelper.cleanUserId(clinicianIdCell.getString());
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             immunizationBuilder.setRecordedBy(reference, enteredByIdCell);
-        }
+        }*/
 
         String documentId = getDocumentId(parser);
         if (!Strings.isNullOrEmpty(documentId)) {
@@ -1341,10 +1202,10 @@ public class JournalTransformer {
     // the extract.  Examples include Immunization records, coded with a 65E..
     // but contain a value code and a class type of WEIGHT or BP.  These records will be
     // logged and the parser row will cease processing that row only
-    private static boolean isInvalidData(Journal parser) throws Exception {
+    private static boolean isInvalidData(Journal parser, VisionCsvHelper csvHelper) throws Exception {
 
         boolean invalid = false;
-        ResourceType type = getTargetResourceType(parser);
+        ResourceType type = getTargetResourceType(parser, csvHelper);
 
         //Fixed VEI-4 (invalid Immunisation records).  Also, invalid Allergies detected, so handled those
         if (type == ResourceType.Immunization || type == ResourceType.AllergyIntolerance) {
@@ -1392,46 +1253,33 @@ public class JournalTransformer {
         return null;
     }
 
-    // convert coded item from Read2 or Snomed to full Snomed codeable concept
-    private static CodeableConcept createCodeableConcept (Journal parser) throws Exception {
-        CodeableConcept codeableConcept = null;
-        String snomedCode = parser.getSnomedCode().getString();
-        String term = parser.getRubric().getString();
-        //if the Snomed code exists with no term, pass through the translator to create a full coded concept
-        if (!Strings.isNullOrEmpty(snomedCode)) {
-            codeableConcept = CodeableConceptHelper.createCodeableConcept(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, term, snomedCode);
-            TerminologyService.translateToSnomed(codeableConcept);
-        }
-        //otherwise, perform a READ to Snomed translation
-        else {
-            // after conversation with Vision, if no Snomed code exists, then it's a non coded item, so discard
+    // implements Appendix B - Special Cases for observations with two values
+    private static String convertSpecialCaseValues(Journal parser, VisionCsvHelper csvHelper) throws Exception {
+        CsvCell readCodeCell = parser.getReadCode();
+        String readCode = VisionCodeHelper.formatReadCode(readCodeCell, csvHelper);
+        if (Strings.isNullOrEmpty(readCode)) {
             return null;
         }
-        return codeableConcept;
-    }
 
-    // implements Appendix B - Special Cases for observations with two values
-    private static String convertSpecialCaseValues(Journal parser) {
-        String readCode = parser.getReadCode().getString();
         Double value2 = parser.getValue2().getDouble();
 
         if (!Strings.isNullOrEmpty(readCode)) {
             //alcohol consumption
             if (readCode.startsWith("136")) {
-                if (value2 == null || value2 == 0)
+                if (value2 == null || value2.doubleValue() == 0)
                     return "lifetime teetotaller. ";
-                if (value2 == 1)
+                if (value2.doubleValue() == 1)
                     return "current drinker. ";
-                if (value2 == 2)
+                if (value2.doubleValue() == 2)
                     return "ex-drinker. ";
             }
             //smoking status
             if (readCode.startsWith("137")) {
-                if (value2 == null || value2 == 0)
+                if (value2 == null || value2.doubleValue() == 0)
                     return "never smoked. ";
-                if (value2 == 1)
+                if (value2.doubleValue() == 1)
                     return "smoker. ";
-                if (value2 == 2)
+                if (value2.doubleValue() == 2)
                     return "ex-smoker. ";
             }
             //weight
@@ -1529,7 +1377,7 @@ public class JournalTransformer {
     }
 
     //the FHIR resource type is roughly derived from the code subset and ReadCode
-    public static ResourceType getTargetResourceType(Journal parser) throws Exception {
+    public static ResourceType getTargetResourceType(Journal parser, VisionCsvHelper csvHelper) throws Exception {
         String subset = parser.getSubset().getString();
         /*  A = Acute (Therapy)
             R = Repeat
@@ -1540,10 +1388,12 @@ public class JournalTransformer {
             T = Test
             L = Allergy
         */
-        String readCode = parser.getReadCode().getString();
+        CsvCell readCodeCell = parser.getReadCode();
+        String readCode = VisionCodeHelper.formatReadCode(readCodeCell, csvHelper);
+
         if (!Strings.isNullOrEmpty(readCode)
                 && Read2.isProcedure(readCode)
-                && !isBPCode(readCode)
+                && !Read2.isBPCode(readCode)
                 && Strings.isNullOrEmpty(parser.getValue1().getString())
                 && !subset.equalsIgnoreCase("T")
                 && !subset.equalsIgnoreCase("I")) {
@@ -1568,9 +1418,7 @@ public class JournalTransformer {
     }
 
     // is the code a parent BP code and not systolic or diastolic
-    public static boolean isBPParentCode(String readCode) {
-
-        readCode = readCode.substring(0,5);  //use 5 byte read
-        return isBPCode(readCode) && !readCode.equalsIgnoreCase(DIASTOLIC) && !readCode.equalsIgnoreCase(SYSTOLIC);
+    private static boolean isBPParentCode(String readCode) {
+        return Read2.isBPCode(readCode) && !readCode.equalsIgnoreCase(DIASTOLIC) && !readCode.equalsIgnoreCase(SYSTOLIC);
     }
 }

@@ -12,10 +12,11 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionCodeHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionMappingHelper;
 import org.endeavourhealth.transform.vision.schema.Patient;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -30,8 +31,9 @@ public class PatientTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(PatientTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    private static final String MARITAL_STATUS_UNIQUE_SUFFIX = "MaritalStatus";
+
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
@@ -41,7 +43,7 @@ public class PatientTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    createResources((Patient) parser, fhirResourceFiler, csvHelper, version);
+                    createResources((Patient) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -54,8 +56,7 @@ public class PatientTransformer {
 
     public static void createResources(Patient parser,
                                        FhirResourceFiler fhirResourceFiler,
-                                       VisionCsvHelper csvHelper,
-                                       String version) throws Exception {
+                                       VisionCsvHelper csvHelper) throws Exception {
 
 
         //if the Resource is to be deleted from the data store, then stop processing the CSV row
@@ -71,17 +72,61 @@ public class PatientTransformer {
         //this transform creates two resources
         PatientBuilder patientBuilder = createPatientResource(parser, csvHelper, fhirResourceFiler);
         EpisodeOfCareBuilder episodeBuilder = createEpisodeResource(parser, csvHelper, fhirResourceFiler);
+        ObservationBuilder maritalStatusObservationBuilder = createMaritalStatusObservation(parser, csvHelper, fhirResourceFiler);
 
         if (patientBuilder.isIdMapped()) {
-            //if patient has previously been saved, we need to save them separately
+
+            //if patient has previously been saved, we need to save them separately because the patient will be ID mapped (i.e. was retrieved off DB)
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, patientBuilder);
             fhirResourceFiler.savePatientResource(parser.getCurrentState(), episodeBuilder);
 
+            //if the marital status observation has a codeableConcept then save it, otherwise delete it
+            if (maritalStatusObservationBuilder.hasMainCodeableConcept()) {
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), maritalStatusObservationBuilder);
+            } else {
+                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), maritalStatusObservationBuilder);
+            }
+
         } else {
-            //save both resources together, so the patient is definitely saved before the episode
-            fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+            //save all resources together, so the patient is definitely saved before the episode
+            //if the marital status observation has a codeable concept then save it, otherwise discard it (since the patient is brand new, there's no point deleting it)
+            if (maritalStatusObservationBuilder.hasMainCodeableConcept()) {
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder, maritalStatusObservationBuilder);
+            } else {
+                fhirResourceFiler.savePatientResource(parser.getCurrentState(), patientBuilder, episodeBuilder);
+            }
         }
 
+    }
+
+    /**
+     * the Marital Status data isn't in the Journal file so won't get transformed into a FHIR Observation. For consistency
+     * with other publishers, we create a FHIR Observation
+     */
+    private static ObservationBuilder createMaritalStatusObservation(Patient parser, VisionCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        CsvCell maritalStatusCell = parser.getMaritalStatus();
+        CsvCell patientIdCell = parser.getPatientID();
+
+        ObservationBuilder observationBuilder = new ObservationBuilder();
+        observationBuilder.setId(VisionCsvHelper.createUniqueId(patientIdCell, CsvCell.factoryDummyWrapper(MARITAL_STATUS_UNIQUE_SUFFIX)));
+        observationBuilder.setPatient(VisionCsvHelper.createPatientReference(patientIdCell), patientIdCell);
+
+        String maritalStatusReadCode = VisionMappingHelper.mapMaritalStatusReadCode(maritalStatusCell);
+        if (!Strings.isNullOrEmpty(maritalStatusReadCode)) {
+            String maritalStatusTerm = VisionMappingHelper.mapMaritalStatusTerm(maritalStatusCell);
+            String maritalStatusSnomedCode = VisionMappingHelper.mapMaritalStatusSnomedCode(maritalStatusCell);
+
+            //create a FHIR Observation with the marital status code
+            CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+            VisionCodeHelper.populateCodeableConcept(
+                    CsvCell.factoryDummyWrapper(maritalStatusSnomedCode),
+                    CsvCell.factoryWithNewValue(maritalStatusCell, maritalStatusReadCode), //copy original cell with new value so auditing works
+                    CsvCell.factoryDummyWrapper(maritalStatusTerm),
+                    codeableConceptBuilder, csvHelper);
+        }
+
+        return observationBuilder;
     }
 
     private static EpisodeOfCareBuilder createEpisodeResource(Patient parser, VisionCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
@@ -189,30 +234,9 @@ public class PatientTransformer {
         }
         patientBuilder.setManagingOrganisation(organisationReference, organisationIdCell);
 
-        CsvCell maritalStatusCell = parser.getMaritalStatus();
-        MaritalStatus maritalStatus = convertMaritalStatus(maritalStatusCell.getString());
-        if (maritalStatus != null) {
-            patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCell);
+        transformMaritalStatus(patientBuilder, parser, csvHelper, fhirResourceFiler);
 
-        } else {
-            //Nothing in patient record, try coded item check from pre-transformer
-            CodeableConcept fhirMartialStatus = csvHelper.findMaritalStatus(patientIdCell);
-            if (fhirMartialStatus != null) {
-                String maritalStatusCode = CodeableConceptHelper.getFirstCoding(fhirMartialStatus).getCode();
-                if (!Strings.isNullOrEmpty(maritalStatusCode)) {
-                    patientBuilder.setMaritalStatus(MaritalStatus.fromCode(maritalStatusCode));
-                }
-            }
-        }
-
-        //try and get Ethnicity from Journal pre-transformer
-        CodeableConcept fhirEthnicity = csvHelper.findEthnicity(patientIdCell);
-        if (fhirEthnicity != null) {
-            String ethnicityCode = CodeableConceptHelper.getFirstCoding(fhirEthnicity).getCode();
-            if (!Strings.isNullOrEmpty(ethnicityCode)) {
-                patientBuilder.setEthnicity(EthnicCategory.fromCode(ethnicityCode));
-            }
-        }
+        transformEthnicity(patientBuilder, parser, csvHelper);
 
         //calculate patient active state based on deduction status
         CsvCell dedDate = parser.getDateOfDeactivation();
@@ -248,6 +272,43 @@ public class PatientTransformer {
         }
 
         return patientBuilder;
+    }
+
+    /**
+     * the ETHNIC field on the Patient record is just a truncated version of the term of a Journal record,
+     * so get the Ethnicity from the pre-cached Journal pre-transformer
+     */
+    private static void transformEthnicity(PatientBuilder patientBuilder, Patient parser, VisionCsvHelper csvHelper) throws Exception {
+
+        CsvCell patientIdCell = parser.getPatientID();
+        VisionCsvHelper.DateAndEthnicityCategory cached = csvHelper.findEthnicity(patientIdCell);
+        if (cached == null) {
+            return;
+        }
+
+        EthnicCategory ethnicCategory = cached.getEthnicCategory();
+        CsvCell sourceCell = cached.getSourceCell();
+        patientBuilder.setEthnicity(ethnicCategory, sourceCell);
+    }
+
+    /**
+     * Vision do not use the Journal for marital status, and just have a code on the Patient record,
+     * so carry this over to the FHIR Patient but also create a FHIR Observation too
+     */
+    private static void transformMaritalStatus(PatientBuilder patientBuilder, Patient parser, VisionCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        CsvCell maritalStatusCell = parser.getMaritalStatus();
+
+        MaritalStatus maritalStatus = VisionMappingHelper.mapMaritalStatusToValueSet(maritalStatusCell);
+        if (maritalStatus == null) {
+
+            //remove flag from Patient resource
+            patientBuilder.setMaritalStatus(null, maritalStatusCell);
+        } else {
+
+            //set on Patient resource
+            patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCell);
+        }
     }
 
     private static void createContact(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, CsvCell cell,

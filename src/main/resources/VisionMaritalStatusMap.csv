@@ -1,0 +1,8 @@
+"SourceCode","SourceMeaning","MappedMaritalStatusCode","MappedRead2Code","MappedTerm","MappedSnomedCode","Comment"
+"S","Single","","1331.","Single","125681006","No FHIR code for single, but does map to Read/Snomed"
+"M","Married","M","1332.","Married","87915002",""
+"D","Divorced","D","1334.","Divorced","20295000",""
+"P","Separated","L","1333.","Separated","13184001",""
+"C","Cohabiting","T","1336.","Cohabiting","38070000",""
+"W","Widowed","W","1335.","Widowed","33553000",""
+"U","Unspecified","","","","","Leave all blank to clear marital status"

@@ -1,38 +1,43 @@
 package org.endeavourhealth.transform.vision;
 
 import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
-import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
-import org.endeavourhealth.common.fhir.schema.MaritalStatus;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
-import org.endeavourhealth.core.database.dal.audit.models.Exchange;
-import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
+import org.endeavourhealth.core.database.dal.publisherCommon.VisionCodeDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
 import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.MedicationStatementBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionCodeHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(VisionCsvHelper.class);
@@ -56,11 +61,12 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
     private Map<String, DateType> drugRecordLastIssueDateMap = new HashMap<>();
     private Map<String, DateType> drugRecordFirstIssueDateMap = new HashMap<>();
-    private Map<String, DateAndCode> ethnicityMap = new HashMap<>();
-    private Map<String, DateAndCode> maritalStatusMap = new HashMap<>();
-    private Map<String, String> problemReadCodes = new HashMap<>();
+    private Map<StringMemorySaver, DateAndEthnicityCategory> ethnicityMap = new HashMap<>();
+    private Set<String> problemReadCodes = new HashSet<>();
     private Set<String> drugRecords = new HashSet<>();
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
+    private Map<CodeAndTerm, AtomicInteger> hmRead2TermMap = new HashMap<>();
+    private Map<String, SnomedConceptAndDate> hmRead2toSnomedMap = new HashMap<>();
 
     public VisionCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
@@ -119,7 +125,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
      * patient-type resources must include the patient GUID are part of the unique ID in the reference
      * because the EMIS GUIDs for things like Obs are only unique within that patient record itself
      */
-    public Reference createPatientReference(CsvCell patientGuid) throws Exception {
+    public static Reference createPatientReference(CsvCell patientGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Patient, createUniqueId(patientGuid, null));
     }
 
@@ -445,39 +451,21 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         return drugRecordLastIssueDateMap.remove(createUniqueId(patientGuid, drugRecordId));
     }
 
-    public void cacheEthnicity(CsvCell patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory) {
-        DateAndCode dc = ethnicityMap.get(createUniqueId(patientGuid, null));
+    public void cacheEthnicity(CsvCell patientIdCell, Date date, EthnicCategory ethnicCategory, CsvCell sourceCell) {
+        String key = patientIdCell.getString();
+        DateAndEthnicityCategory dc = ethnicityMap.get(new StringMemorySaver(key));
         if (dc == null
-            || dc.isBefore(fhirDate)) {
-            ethnicityMap.put(createUniqueId(patientGuid, null), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(ethnicCategory)));
+            || dc.isBefore(date)) {
+            DateAndEthnicityCategory val = new DateAndEthnicityCategory(date, ethnicCategory, sourceCell);
+            ethnicityMap.put(new StringMemorySaver(key), val);
         }
     }
 
-    public CodeableConcept findEthnicity(CsvCell patientGuid) {
-        DateAndCode dc = ethnicityMap.remove(createUniqueId(patientGuid, null));
-        if (dc != null) {
-            return dc.getCodeableConcept();
-        } else {
-            return null;
-        }
+    public DateAndEthnicityCategory findEthnicity(CsvCell patientIdCell) {
+        String key = patientIdCell.getString();
+        return ethnicityMap.remove(new StringMemorySaver(key));
     }
 
-    public void cacheMaritalStatus(CsvCell patientGuid, DateTimeType fhirDate, MaritalStatus maritalStatus) {
-        DateAndCode dc = maritalStatusMap.get(createUniqueId(patientGuid, null));
-        if (dc == null
-                || dc.isBefore(fhirDate)) {
-            maritalStatusMap.put(createUniqueId(patientGuid, null), new DateAndCode(fhirDate, CodeableConceptHelper.createCodeableConcept(maritalStatus)));
-        }
-    }
-
-    public CodeableConcept findMaritalStatus(CsvCell patientGuid) {
-        DateAndCode dc = maritalStatusMap.remove(createUniqueId(patientGuid, null));
-        if (dc != null) {
-            return dc.getCodeableConcept();
-        } else {
-            return null;
-        }
-    }
 
     public void cacheConsultationPreviousLinkedResources(String encounterSourceId, List<Reference> previousReferences) {
 
@@ -582,12 +570,12 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         return CsvCell.factoryDummyWrapper(value);
     }
 
-    public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid, String readCode) {
-        problemReadCodes.put(createUniqueId(patientGuid, problemGuid), readCode);
+    public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid) {
+        problemReadCodes.add(createUniqueId(patientGuid, problemGuid));
     }
 
     public boolean isProblemObservationGuid(String patientGuid, String problemGuid) {
-        return problemReadCodes.containsKey(createUniqueId(patientGuid, problemGuid));
+        return problemReadCodes.contains(createUniqueId(patientGuid, problemGuid));
     }
 
     public void cacheDrugRecordGuid(CsvCell patientGuid, CsvCell drugRecordGuid) {
@@ -596,31 +584,6 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public boolean isDrugRecordGuid(String patientGuid, String drugRecordGuid) {
         return drugRecords.contains(createUniqueId(patientGuid, drugRecordGuid));
-    }
-
-    public String findProblemObservationReadCode(CsvCell patientGuid, CsvCell problemGuid, FhirResourceFiler fhirResourceFiler) throws Exception {
-
-        String locallyUniqueId = createUniqueId(patientGuid, problemGuid);
-
-        //if we've already cached our problem code, then just return it
-        if (problemReadCodes.containsKey(locallyUniqueId)) {
-            return problemReadCodes.get(locallyUniqueId);
-        }
-
-        //if we've not cached our problem code, then the problem itself isn't part of this extract,
-        //so we'll need to retrieve it from the DB and cache the code
-        String readCode = null;
-
-        Condition fhirProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition);
-
-        //we've had cases of data referring to non-existent problems, so check for null
-        if (fhirProblem != null) {
-            CodeableConcept codeableConcept = fhirProblem.getCode();
-            readCode = CodeableConceptHelper.findOriginalCode(codeableConcept);
-        }
-
-        problemReadCodes.put(locallyUniqueId, readCode);
-        return readCode;
     }
 
 
@@ -641,29 +604,291 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
+    /**
+     * caches the terms for Read2 codes. Some codes may have muptiple terms, and there's no clear way to work
+     * out which is the "best" term, so our publishr_common table contains all of them
+     */
+    public void cacheCodeAndTermUsed(CsvCell readCodeCell, CsvCell termCell) throws Exception {
+        if (readCodeCell.isEmpty()
+                || termCell.isEmpty()) {
+            return;
+        }
+
+        String readCode = VisionCodeHelper.formatReadCode(readCodeCell, this); //make sure to properly format the cell
+        String term = termCell.getString();
+        CodeAndTerm key = new CodeAndTerm(readCode, term);
+
+        AtomicInteger count = hmRead2TermMap.get(key);
+        if (count == null) {
+            count = new AtomicInteger(0);
+            hmRead2TermMap.put(key, count);
+        }
+        count.incrementAndGet();
+    }
+
+    /**
+     * caches the Read2/Local code to Snomed concept mappings. There's subtle extra complexity here, because
+     * we need to factor in the recorded date cell too. Vision has changed the Read2 to Snomed mappings over time
+     * so we only want to keep the most recent ones.
+     */
+    public void cacheReadToSnomedMapping(CsvCell readCodeCell, CsvCell snomedCell, CsvCell recordedDateCell) throws Exception {
+
+        String readCode = VisionCodeHelper.formatReadCode(readCodeCell, this); //make sure to properly format the cell
+        Long snomedCode = VisionCodeHelper.formatSnomedConcept(snomedCell, this);
+
+        if (readCode == null
+                || snomedCode == null
+                || recordedDateCell.isEmpty()) {
+            return;
+        }
+
+        Date dRecorded = recordedDateCell.getDate();
+        SnomedConceptAndDate existing = hmRead2toSnomedMap.get(readCode);
+
+        //add to the map if not present or the existing one is older
+        if (existing == null
+                || existing.getDate().before(dRecorded)) {
+
+            hmRead2toSnomedMap.put(readCode, new SnomedConceptAndDate(snomedCode, dRecorded));
+        }
+    }
+
+    /**
+     * saves the map of Read2 codes and their terms to the publisher_common DB so we have
+     * some kind of reference table of Vision coding
+     */
+    public void saveCodeAndTermMaps(FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        //rather than hitting the DB record by record, for potentially thousands of codes,
+        //we prepare a CSV file of the data and bulk insert it
+        File tempDir = FileHelper.getTempDirRandomSubdirectory();
+        File dstFile = new File(tempDir, "VisionRead2AndTerms.csv");
+        LOG.trace("Writing Read2 term mappings to " + dstFile);
+
+        FileOutputStream fos = new FileOutputStream(dstFile);
+        OutputStreamWriter osw = new OutputStreamWriter(fos);
+        BufferedWriter bufferedWriter = new BufferedWriter(osw);
+
+        //for consistency with other, similar upload routines, use the Windows-style record separators
+        CSVFormat format = EmisCsvToFhirTransformer.CSV_FORMAT
+                .withHeader("Code", "Term", "UsageCount", "IsVisionCode")
+                .withRecordSeparator("\r\n");
+
+        CSVPrinter printer = new CSVPrinter(bufferedWriter, format);
+
+        for (CodeAndTerm codeAndTerm: hmRead2TermMap.keySet()) {
+            AtomicInteger count = hmRead2TermMap.get(codeAndTerm);
+            String code = codeAndTerm.getCode();
+            String term = codeAndTerm.getTerm();
+
+            //the upload routine expects this boolean column to be a 1 or 0 (not "true" or "false")
+            Integer isVisionCode;
+            if (Read2Cache.isRealRead2Code(code)) {
+                isVisionCode = new Integer(0);
+            } else {
+                isVisionCode = new Integer(1);
+            }
+
+            printer.printRecord(code, term, new Integer(count.get()), isVisionCode);
+        }
+
+        printer.close();
+        LOG.trace("Written Read2 term mappings to " + dstFile);
+
+        String filePath = dstFile.getAbsolutePath();
+        Date dataDate = fhirResourceFiler.getDataDate();
+        VisionCodeDalI dal = DalProvider.factoryVisionCodeDal();
+        dal.updateRead2TermTable(filePath, dataDate);
+
+        //tidy up after ourselves
+        FileHelper.deleteRecursiveIfExists(tempDir);
+
+        //set to null as we're finished with it now
+        this.hmRead2TermMap = null;
+    }
+
+    /**
+     * saves the map of Read2 codes to Snomed mappings to the pulisher_common DB
+     */
+    public void saveCodeToSnomedMaps(FhirResourceFiler fhirResourceFiler) throws Exception {
+        //rather than hitting the DB record by record, for potentially thousands of codes,
+        //we prepare a CSV file of the data and bulk insert it
+        File tempDir = FileHelper.getTempDirRandomSubdirectory();
+        File dstFile = new File(tempDir, "VisionRead2ToSnomedMap.csv");
+        LOG.trace("Writing Read2 to Snomed mappings to " + dstFile);
+
+        FileOutputStream fos = new FileOutputStream(dstFile);
+        OutputStreamWriter osw = new OutputStreamWriter(fos);
+        BufferedWriter bufferedWriter = new BufferedWriter(osw);
+
+        //for consistency with other, similar upload routines, use the Windows-style record separators
+        CSVFormat format = EmisCsvToFhirTransformer.CSV_FORMAT
+                .withHeader("Read2", "SnomedConcept", "DateLastUsed")
+                .withRecordSeparator("\r\n");
+
+        CSVPrinter printer = new CSVPrinter(bufferedWriter, format);
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd"); //format date to SQL format
+
+        for (String code: hmRead2toSnomedMap.keySet()) {
+            SnomedConceptAndDate value = hmRead2toSnomedMap.get(code);
+            Long snomedConcept = value.getConcept();
+            Date dRecorded = value.getDate();
+            String dRecordedStr = simpleDateFormat.format(dRecorded);
+
+            printer.printRecord(code, snomedConcept, dRecordedStr);
+        }
+
+        printer.close();
+        LOG.trace("Written Read2 to Snomed mappings to " + dstFile);
+
+        String filePath = dstFile.getAbsolutePath();
+        Date dataDate = fhirResourceFiler.getDataDate();
+        VisionCodeDalI dal = DalProvider.factoryVisionCodeDal();
+        dal.updateRead2ToSnomedMapTable(filePath, dataDate);
+
+        //tidy up after ourselves
+        FileHelper.deleteRecursiveIfExists(tempDir);
+
+        //set to null as we're finished with it now
+        hmRead2toSnomedMap = null;
+    }
+
+
+    /**
+     * when the transform is complete, if there's any values left in the ethnicity map
+     * then we need to update pre-existing FHIR Patients with new data
+     *
+     * NOTE: Vision does not use Journal for Marital Status records (like Emis and TPP do) - see SD-187
+     */
+    public void processRemainingEthnicities(FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        //get a combined list of the keys (patientGuids) from both maps
+        HashSet<StringMemorySaver> patientIds = new HashSet<>(ethnicityMap.keySet());
+
+        for (StringMemorySaver key: patientIds) {
+
+            DateAndEthnicityCategory val = ethnicityMap.get(key);
+            String patientId = key.toString();
+
+            Patient fhirPatient = (Patient)retrieveResource(patientId, ResourceType.Patient);
+            if (fhirPatient == null) {
+                //if we try to update the ethnicity on a deleted patient, or one we've never received, we'll get this exception, which is fine to ignore
+                continue;
+            }
+
+            PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
+
+            EthnicCategory ethnicCategory = val.getEthnicCategory();
+            CsvCell sourceCell = val.getSourceCell();
+            patientBuilder.setEthnicity(ethnicCategory, sourceCell);
+
+            fhirResourceFiler.savePatientResource(null, false, patientBuilder);
+        }
+    }
+
+    private class SnomedConceptAndDate {
+        private Long concept;
+        private Date date;
+
+        public SnomedConceptAndDate(Long concept, Date date) {
+            this.concept = concept;
+            this.date = date;
+        }
+
+        public Long getConcept() {
+            return concept;
+        }
+
+        public Date getDate() {
+            return date;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SnomedConceptAndDate that = (SnomedConceptAndDate) o;
+
+            if (!concept.equals(that.concept)) return false;
+            return date.equals(that.date);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = concept.hashCode();
+            result = 31 * result + date.hashCode();
+            return result;
+        }
+    }
+
+    private class CodeAndTerm {
+        private String code;
+        private String term;
+
+        public CodeAndTerm(String code, String term) {
+            this.code = code;
+            this.term = term;
+        }
+
+        public String getCode() {
+            return code;
+        }
+
+        public String getTerm() {
+            return term;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            CodeAndTerm that = (CodeAndTerm) o;
+
+            if (!code.equals(that.code)) return false;
+            return term.equals(that.term);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = code.hashCode();
+            result = 31 * result + term.hashCode();
+            return result;
+        }
+    }
 
 
     /**
      * temporary storage class for a CodeableConcept and Date
      */
-    public class DateAndCode {
-        private DateTimeType date = null;
-        private CodeableConcept codeableConcept = null;
+    public class DateAndEthnicityCategory {
+        private Date date;
+        private EthnicCategory ethnicCategory = null;
+        private CsvCell sourceCell;
 
-        public DateAndCode(DateTimeType date, CodeableConcept codeableConcept) {
+        public DateAndEthnicityCategory(Date date, EthnicCategory ethnicCategory, CsvCell sourceCell) {
             this.date = date;
-            this.codeableConcept = codeableConcept;
+            this.ethnicCategory = ethnicCategory;
+            this.sourceCell = sourceCell;
         }
 
-        public DateTimeType getDate() {
+        public Date getDate() {
             return date;
         }
 
-        public CodeableConcept getCodeableConcept() {
-            return codeableConcept;
+        public EthnicCategory getEthnicCategory() {
+            return ethnicCategory;
         }
 
-        public boolean isBefore(DateTimeType other) {
+        public CsvCell getSourceCell() {
+            return sourceCell;
+        }
+
+        public boolean isBefore(Date other) {
             if (date == null) {
                 return true;
             } else if (other == null) {

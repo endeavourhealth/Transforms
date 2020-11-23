@@ -370,4 +370,7 @@ public class ObservationBuilder extends ResourceBuilderBase
         this.observation.setIssued(issuedDate);
     }
 
+    public boolean hasMainCodeableConcept() {
+        return this.observation.hasCode();
+    }
 }

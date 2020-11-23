@@ -1,25 +1,20 @@
 package org.endeavourhealth.transform.vision;
 
-import com.google.common.io.Files;
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.io.FilenameUtils;
-import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.ExchangeHelper;
 import org.endeavourhealth.transform.common.ExchangePayloadFile;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.exceptions.FileFormatException;
 import org.endeavourhealth.transform.vision.schema.*;
 import org.endeavourhealth.transform.vision.transforms.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public abstract class VisionCsvToFhirTransformer {
 
@@ -29,36 +24,38 @@ public abstract class VisionCsvToFhirTransformer {
     public static final String VERSION_0_18 = "0.18";
 
     public static final String DATE_FORMAT = "yyyyMMdd";
-    public static final String TIME_FORMAT = "hhmm";
+    public static final String TIME_FORMAT = "HHmm"; //changed from hhmm SD-109
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;   //Vision files do not contain a header, so set on in each parsers constructor
 
     public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {
 
-        //the exchange body will be a list of files received
-        String[] files = ExchangeHelper.parseExchangeBodyOldWay(exchangeBody);
+        //get service
+        UUID serviceId = processor.getServiceId();
+        Service service = DalProvider.factoryServiceDal().getById(serviceId);
 
-        if (files.length == 0) {
-            LOG.warn("Exchange {} file list is empty for service {} - skipping", processor.getExchangeId().toString(), processor.getServiceId().toString());
+        //get files to process
+        List<ExchangePayloadFile> files = ExchangeHelper.parseExchangeBody(exchangeBody);
+        ExchangeHelper.filterFileTypes(files, service, processor.getExchangeId());
+        LOG.info("Invoking Vision CSV transformer for " + files.size() + " files and service " + service.getName() + " " + service.getId());
+
+        if (files.isEmpty()) {
+            LOG.info("No files, so returning out");
             return;
         }
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files
-        String orgDirectory = FileHelper.validateFilesAreInSameDirectory(files);
+        ExchangePayloadFile.validateFilesAreInSameDirectory(files);
 
-        LOG.info("Invoking Vision CSV transformer for " + files.length + " files using service " + processor.getServiceId());
-
-        Map<Class, AbstractCsvParser> allParsers = new HashMap<>();
+        Map<Class, AbstractCsvParser> parsers = new HashMap<>();
 
         try {
             //validate the files and, if this the first batch, open the parsers to validate the file contents (columns)
-            validateAndOpenParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, allParsers);
-
-            LOG.trace("Transforming Vision CSV content in {}", orgDirectory);
-            transformParsers(version, allParsers, processor);
+            createParsers(processor.getServiceId(), processor.getSystemId(), processor.getExchangeId(), files, version, parsers);
+            transformParsers(version, parsers, processor);
 
         } finally {
 
-            closeParsers(allParsers.values());
+            closeParsers(parsers.values());
         }
     }
 
@@ -73,7 +70,53 @@ public abstract class VisionCsvToFhirTransformer {
         }
     }
 
-    private static void validateAndOpenParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
+    public static void createParsers(UUID serviceId, UUID systemId, UUID exchangeId, List<ExchangePayloadFile> files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
+
+        for (ExchangePayloadFile fileObj : files) {
+
+            AbstractCsvParser parser = createParserForFile(serviceId, systemId, exchangeId, version, fileObj);
+            if (parser != null) {
+                Class cls = parser.getClass();
+                parsers.put(cls, parser);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static AbstractCsvParser createParserForFile(UUID serviceId, UUID systemId, UUID exchangeId, String version, ExchangePayloadFile fileObj) throws Exception {
+
+        String fileType = fileObj.getType();
+        String filePath = fileObj.getPath();
+
+        Class cls = null;
+        if (fileType.equals("active_user_data_extract")) {
+            //this file type isn't processed
+            return null;
+        } else if (fileType.equals("patient_check_sum_data_extract")) {
+            //this file type isn't processed
+            return null;
+        } else if (fileType.equals("practice_data_extract")) {
+            cls = Practice.class;
+        } else if (fileType.equals("staff_data_extract")) {
+            cls = Staff.class;
+        } else if (fileType.equals("encounter_data_extract")) {
+            cls = Encounter.class;
+        } else if (fileType.equals("journal_data_extract")) {
+            cls = Journal.class;
+        } else if (fileType.equals("patient_data_extract")) {
+            cls = Patient.class;
+        } else if (fileType.equals("referral_data_extract")) {
+            cls = Referral.class;
+        } else {
+            throw new Exception("Unexpected Vision file type [" + fileType + "]");
+        }
+
+        //now construct an instance of the parser for the file we've found
+        Constructor<AbstractCsvParser> constructor = cls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
+        return constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
+    }
+
+    /*private static void validateAndOpenParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
         //admin - practice
         findFileAndOpenParser(Practice.class, serviceId, systemId, exchangeId, files, version, parsers);
         //admin - staff
@@ -165,7 +208,7 @@ public abstract class VisionCsvToFhirTransformer {
         }
 
         throw new FileNotFoundException("Failed to find CSV file for " + name);
-    }
+    }*/
 
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
@@ -174,20 +217,23 @@ public abstract class VisionCsvToFhirTransformer {
         VisionCsvHelper csvHelper = new VisionCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
 
         //these transforms do not create resources themselves, but cache data that the subsequent ones rely on
-        JournalProblemPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        JournalDrugPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        JournalPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        JournalProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        JournalDrugPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        JournalPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         EncounterPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        csvHelper.saveCodeAndTermMaps(fhirResourceFiler);
+        csvHelper.saveCodeToSnomedMaps(fhirResourceFiler);
 
         //run the transforms for non-patient resources
-        PracticeTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        StaffTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        PracticeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        StaffTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
         //then for the patient resources - note the order of these transforms is important, as encounters should be before journal obs etc.
-        PatientTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        EncounterTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        ReferralTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
-        JournalTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
+        PatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        EncounterTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        ReferralTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        JournalTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
+        csvHelper.processRemainingEthnicities(fhirResourceFiler);
     }
 }

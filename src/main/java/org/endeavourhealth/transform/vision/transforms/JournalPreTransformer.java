@@ -9,6 +9,8 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionCodeHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionMappingHelper;
 import org.endeavourhealth.transform.vision.schema.Journal;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -24,8 +26,7 @@ public class JournalPreTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(JournalPreTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
@@ -37,7 +38,7 @@ public class JournalPreTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    processLine((Journal) parser, csvHelper, fhirResourceFiler, version);
+                    processLine((Journal) parser, csvHelper, fhirResourceFiler);
                 } catch (Exception ex) {
                     throw new TransformException(parser.getCurrentState().toString(), ex);
                 }
@@ -46,31 +47,28 @@ public class JournalPreTransformer {
     }
 
 
-    private static void processLine(Journal parser, VisionCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
+    private static void processLine(Journal parser, VisionCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
         if (parser.getAction().getString().equalsIgnoreCase("D")) {
             return;
         }
 
-        ResourceType resourceType = getTargetResourceType(parser);
-        CsvCell observationID = parser.getObservationID();
-        CsvCell patientID = parser.getPatientID();
-        String readCode = parser.getReadCode().getString();
-        if (!Strings.isNullOrEmpty(readCode)) {
-            readCode = readCode.substring(0,5);
-        }
+        ResourceType resourceType = getTargetResourceType(parser, csvHelper);
+        CsvCell observationIdCell = parser.getObservationID();
+        CsvCell patientIdCell = parser.getPatientID();
+
 
         //if it is not a problem itself, cache the Observation or Medication linked problem to be filed with the condition resource
         if (resourceType != ResourceType.Condition) {
             //extract actual problem links
-            String problemLinkIDs = extractProblemLinkIDs(parser.getLinks().getString(), patientID.getString(), csvHelper);
+            String problemLinkIDs = extractProblemLinkIDs(parser.getLinks().getString(), patientIdCell.getString(), csvHelper);
             if (!Strings.isNullOrEmpty(problemLinkIDs)) {
                 String[] linkIDs = problemLinkIDs.split("[|]");
                 for (String problemID : linkIDs) {
                     //store the problem/observation relationship in the helper
                     csvHelper.cacheProblemRelationship(problemID,
-                            patientID.getString(),
-                            observationID.getString(),
+                            patientIdCell.getString(),
+                            observationIdCell.getString(),
                             resourceType,
                             parser.getLinks());
                 }
@@ -78,55 +76,67 @@ public class JournalPreTransformer {
         }
 
         //linked consultation encounter record
-        String consultationID = extractEncounterLinkId(parser.getLinks().getString());
-        if (!Strings.isNullOrEmpty(consultationID)) {
-            csvHelper.cacheNewConsultationChildRelationship(consultationID,
-                    patientID.getString(),
-                    observationID.getString(),
+        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            csvHelper.cacheNewConsultationChildRelationship(consultationId,
+                    patientIdCell.getString(),
+                    observationIdCell.getString(),
                     resourceType,
                     parser.getLinks());
         }
 
         //medication issue record - set linked drug record first and last issue dates
         if (resourceType == ResourceType.MedicationOrder) {
-            String drugRecordID = extractDrugRecordLinkID (parser.getLinks().getString(), patientID.getString(), csvHelper);
+            String drugRecordID = extractDrugRecordLinkID (parser.getLinks().getString(), patientIdCell.getString(), csvHelper);
             if (!Strings.isNullOrEmpty(drugRecordID)) {
-                Date effectiveDate = parser.getEffectiveDateTime().getDate();
+                //note that in this case we only care about the DATE, not the TIME
+                Date effectiveDate = parser.getEffectiveDate().getDate();
                 String effectiveDatePrecision = "YMD";
                 DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
-                csvHelper.cacheDrugRecordDate(drugRecordID, patientID, dateTime);
+                csvHelper.cacheDrugRecordDate(drugRecordID, patientIdCell, dateTime);
             }
         }
 
-        //try to get Ethnicity from Journal
-        if (readCode.startsWith("9S") || readCode.startsWith("9i")) {
-            Date effectiveDate = parser.getEffectiveDateTime().getDate();
-            String effectiveDatePrecision = "YMD";
-            DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
+        CsvCell readCodeCell = parser.getReadCode();
+        String readCode = VisionCodeHelper.formatReadCode(readCodeCell, csvHelper); //use this fn to format the cell into a regular Read2 code
+        if (!Strings.isNullOrEmpty(readCode)) {
 
-            EthnicCategory ethnicCategory = findEthnicityCode(readCode);
-            if (ethnicCategory != null) {
+            //try to get Ethnicity from Journal
+            if (VisionMappingHelper.isPotentialEthnicity(readCode)) {
+                EthnicCategory ethnicCategory = VisionMappingHelper.findEthnicityCode(readCode);
+                if (ethnicCategory != null) {
+                    CsvCell dateCell = parser.getEffectiveDate();
+                    CsvCell timeCell = parser.getEffectiveTime();
+                    Date effectiveDateTime = CsvCell.getDateTimeFromTwoCells(dateCell, timeCell);
 
-                csvHelper.cacheEthnicity(patientID, fhirDate, ethnicCategory);
-            } else {
-                LOG.warn("Unmapped ethnic code: "+readCode+" for PatientID: "+patientID.getString());
+                    csvHelper.cacheEthnicity(patientIdCell, effectiveDateTime, ethnicCategory, readCodeCell);
+                }
             }
+
+            //NOTE - Vision does not have MaritalStatus records in the Journal file so there is no code
+            //here to detect them and cache them for the FHIR Patient (see SD-187)
         }
 
-        //try to get Marital status from Journal
-        if (readCode.startsWith("133")) {
-            Date effectiveDate = parser.getEffectiveDateTime().getDate();
-            String effectiveDatePrecision = "YMD";
-            DateTimeType fhirDate = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
+        //audit the Read2/Local codes and their term
+        CsvCell termCell = parser.getRubric();
+        csvHelper.cacheCodeAndTermUsed(readCodeCell, termCell);
 
-            MaritalStatus maritalStatus = findMaritalStatus(readCode);
-            if (maritalStatus != null) {
-                csvHelper.cacheMaritalStatus(patientID, fhirDate, maritalStatus);
-            }
+        //audit the Read2/Local code to Snomed mappings too
+        if (resourceType == ResourceType.MedicationOrder
+                || resourceType == ResourceType.MedicationStatement) {
+
+            CsvCell dmdCell = parser.getDrugDMDCode();
+            CsvCell recordedDateCell = parser.getEnteredDate();
+            csvHelper.cacheReadToSnomedMapping(readCodeCell, dmdCell, recordedDateCell);
+
+        } else {
+            CsvCell snomedCell = parser.getSnomedCode();
+            CsvCell recordedDateCell = parser.getEnteredDate();
+            csvHelper.cacheReadToSnomedMapping(readCodeCell, snomedCell, recordedDateCell);
         }
     }
 
-    private static MaritalStatus findMaritalStatus(String readCode) {
+    /*private static MaritalStatus findMaritalStatus(String readCode) {
         if (Strings.isNullOrEmpty(readCode)) {
             return null;
         }
@@ -198,7 +208,7 @@ public class JournalPreTransformer {
         } else {
             return null;
         }
-    }
+    }*/
 
 }
 

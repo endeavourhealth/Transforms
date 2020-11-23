@@ -6,10 +6,7 @@ import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Practice;
 import org.hl7.fhir.instance.model.Address;
@@ -25,8 +22,7 @@ public class PracticeTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(PracticeTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
@@ -144,7 +140,8 @@ public class PracticeTransformer {
                 organizationBuilder.setType(fhirOrgType);
             } else {
                 //if the org type from the CSV can't be mapped to one of the value set, store as a freetext type
-                organizationBuilder.setTypeFreeText(name.getString(), name);
+                //garbage
+                //organizationBuilder.setTypeFreeText(name.getString(), name);
             }
         }
 

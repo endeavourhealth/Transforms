@@ -12,6 +12,8 @@ import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuil
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionDateTimeHelper;
+import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Encounter;
 import org.hl7.fhir.instance.model.Reference;
 import org.slf4j.Logger;
@@ -23,8 +25,7 @@ import java.util.Map;
 public class EncounterTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(EncounterTransformer.class);
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
@@ -34,7 +35,7 @@ public class EncounterTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((org.endeavourhealth.transform.vision.schema.Encounter) parser, fhirResourceFiler, csvHelper, version);
+                    createResource((org.endeavourhealth.transform.vision.schema.Encounter) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -47,8 +48,7 @@ public class EncounterTransformer {
 
     public static void createResource(org.endeavourhealth.transform.vision.schema.Encounter parser,
                                         FhirResourceFiler fhirResourceFiler,
-                                        VisionCsvHelper csvHelper,
-                                        String version) throws Exception {
+                                        VisionCsvHelper csvHelper) throws Exception {
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
 
@@ -89,16 +89,12 @@ public class EncounterTransformer {
             encounterBuilder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER, clinicianId);
         }
 
-        //NOTE: there is no recorded date for Vision encounter extracts
-
-        CsvCell effectiveDate = parser.getEffectiveDate();
-        CsvCell effectiveTime = parser.getEffectiveTime();
-        if (!effectiveTime.getString().equalsIgnoreCase("9999")) {
-            Date effectiveDateTime = CsvCell.getDateTimeFromTwoCells(effectiveDate, effectiveTime);
-            encounterBuilder.setPeriodStart(effectiveDateTime, effectiveDate, effectiveTime);
-        } else {
-            Date effectiveDateTime = effectiveDate.getDate();
-            encounterBuilder.setPeriodStart(effectiveDateTime, effectiveDate);
+        //NOTE: there is no recorded date for Vision encounter extracts, just the effective date
+        CsvCell dateCell = parser.getEffectiveDate();
+        CsvCell timeCell = parser.getEffectiveTime();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, timeCell);
+        if (dateTimeType != null) {
+            encounterBuilder.setPeriodStart(dateTimeType, dateCell, timeCell);
         }
 
         CsvCell organisationID = parser.getOrganisationID();

@@ -9,8 +9,8 @@ import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ResourceParser;
 import org.endeavourhealth.transform.common.resourceBuilders.ReferralRequestBuilder;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionDateTimeHelper;
 import org.endeavourhealth.transform.vision.schema.Referral;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
@@ -19,16 +19,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-import static org.endeavourhealth.transform.vision.transforms.JournalTransformer.extractEncounterLinkId;
-
 public class ReferralTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReferralTransformer.class);
 
     private static Map<String, String> specialtyCodeMapCache = null;
 
-    public static void transform(String version,
-                                 Map<Class, AbstractCsvParser> parsers,
+    public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
@@ -71,9 +68,11 @@ public class ReferralTransformer {
             return;
         }
 
-        CsvCell referralDateCell = parser.getReferralDate();
-        DateTimeType dt = EmisDateTimeHelper.createDateTimeType(referralDateCell.getDate(), "YMD");
-        referralRequestBuilder.setDate(dt, referralDateCell);
+        CsvCell dateCell = parser.getReferralDate();
+        DateTimeType dateTimeType = VisionDateTimeHelper.getDateTime(dateCell, null);
+        if (dateTimeType != null) {
+            referralRequestBuilder.setDate(dateTimeType, dateCell);
+        }
 
         CsvCell referralSenderUserId = parser.getReferralSenderUserId();
         if (!referralSenderUserId.isEmpty()) {
@@ -98,7 +97,7 @@ public class ReferralTransformer {
 
         //set linked encounter
         CsvCell linksCell = parser.getLinks();
-        String consultationId = extractEncounterLinkId(linksCell.getString());
+        String consultationId = JournalTransformer.extractEncounterLinkId(linksCell.getString());
         if (!Strings.isNullOrEmpty(consultationId)) {
             Reference ref = csvHelper.createEncounterReference(consultationId, patientIdCell.getString());
             referralRequestBuilder.setEncounter(ref, linksCell);

@@ -121,12 +121,18 @@ public class Patient extends AbstractCsvParser {
     }
 
     /**
-     * note we derive ethnicity from the Journal records with ethnicity codes, so this field is ignored
+     * see SD-187
+     * we derive ethnicity from the Journal records with ethnicity codes, so this field is ignored
+     * analysis showed this field to just be the truncated term of the most recent ethnicity journal code
      */
     public CsvCell getEthnicOrigin() {
         return super.getCell("ETHNIC");
     }
 
+    /**
+     * see SD-187
+     * Vision do not use Journal for marital status, so this field IS used to derive the marital status
+     */
     public CsvCell getMaritalStatus() {
         return super.getCell("MARITAL_STATUS");
     }
@@ -159,6 +165,10 @@ public class Patient extends AbstractCsvParser {
         return super.getCell("NHS_NUMBER");
     }
 
+    /**
+     * patient number within the practice
+     * from the spec: "External patient identifier."
+     */
     public CsvCell getPatientNumber() {
         return super.getCell("PRACT_NUMBER");
     }
@@ -195,10 +205,16 @@ public class Patient extends AbstractCsvParser {
         return super.getCell("ADDRESS_3");
     }
 
+    /**
+     * address_4 is always populated with TOWN
+     */
     public CsvCell getTown() {
         return super.getCell("ADDRESS_4");
     }
 
+    /**
+     * address_5 is always populated with COUNTY
+     */
     public CsvCell getCounty() {
         return super.getCell("ADDRESS_5");
     }
@@ -233,10 +249,6 @@ public class Patient extends AbstractCsvParser {
     public CsvCell getRegisteredGpId() {
         return super.getCell("GP");
     }
-
-    /*public CsvCell getExternalUsualGPOrganisation() {
-        return super.getCell("SERVICE_ID");
-    }*/
 
     public CsvCell getPatientAction() {
         return super.getCell("ACTION");
