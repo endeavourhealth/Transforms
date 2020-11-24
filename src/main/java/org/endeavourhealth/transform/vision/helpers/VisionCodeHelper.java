@@ -177,7 +177,7 @@ public class VisionCodeHelper {
             //the vast majority of codes are seven-characters, with a five-letter Read2 code (or local code) and
             //then a two-digit term code
             String prefix = code.substring(0, 5);
-            if (Read2Cache.isRealRead2Code(code)) {
+            if (Read2Cache.isRealRead2Code(prefix)) {
                 //if the first five characters are a true Read2 code, then use that as the code
                 return prefix;
             } else {
