@@ -153,7 +153,8 @@ public class ObservationCodeHelper {
 
         String system = originalCoding.getSystem();
         if (system.equals(FhirCodeUri.CODE_SYSTEM_READ2)
-                || system.equals(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) {
+                || system.equals(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)
+                || system.equals(FhirCodeUri.CODE_SYSTEM_VISION_CODE)) {
             //there's already a vast amount of Read2 and Emis data in the table, so it's too late
             //to easily prefix this, so just use the raw code
             return originalCoding.getCode();
