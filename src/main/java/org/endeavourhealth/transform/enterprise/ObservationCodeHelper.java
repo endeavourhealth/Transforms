@@ -255,6 +255,8 @@ public class ObservationCodeHelper {
             str = IMConstant.BARTS_CERNER;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_EMIS_CODE)) {
             str = IMConstant.EMIS_LOCAL;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_VISION_CODE)) {
+            str = IMConstant.VISION_LOCAL;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_CTV3)) {
             str = IMConstant.TPP_LOCAL;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP)) {
