@@ -80,6 +80,24 @@ public class ObservationCodeHelper {
             }
         }
 
+        //when IM concepts are looked up it requires a term as well as a code, but some suppliers don't give
+        //terms in all cases. If the Coding doesn't have a term, see if the CodeableConcept text can be used, and
+        //if not return null since there's not sufficient data to use.
+        if (ret != null
+                && ret.hasCode()
+                && !ret.hasDisplay()) {
+
+            if (codeableConcept.hasText()) {
+                String text = codeableConcept.getText();
+                ret.setDisplay(text);
+                LOG.debug("Had to use CodeableConcept text for coding " + ret.getSystem() + " [" + ret.getCode() + "]");
+
+            } else {
+                LOG.warn("Failed to find any term for original coding " + ret.getSystem() + " [" + ret.getCode() + "]");
+                return null;
+            }
+        }
+
         return ret;
     }
 
