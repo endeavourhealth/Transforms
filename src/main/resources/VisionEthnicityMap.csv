@@ -83,13 +83,20 @@
 9T1..,"New Zealand ethnic groups",S,OTHER
 9T11.,"New Zealand European",S,OTHER
 9T12.,"Other N.Z European",S,OTHER
+9T13.,"New Zealand Maori",S,OTHER
 9T14.,Samoan,S,OTHER
+9T15.,"Cook Island Maori",S,OTHER
+9T16.,"Tongan",S,OTHER
+9T17.,"Niuean",S,OTHER
+9T18.,"Tokelauan",S,OTHER
+9T19.,"Fijian",S,OTHER
 9T1A.,"Other Pacific ethnic group",S,OTHER
 9T1B.,"South East Asian",L,OTHER_ASIAN
 9T1C.,Chinese,R,CHINESE
 9T1D.,Indian,H,ASIAN_INDIAN
 9T1E.,"Other Asian",L,OTHER_ASIAN
 9T1Y.,"Other New Zealand ethnic group",S,OTHER
+9T1Z.,"New Zealand ethnic group NOS",S,OTHER
 9T2..,"Traveller - gypsy",S,"Not supported by NHS codes"
 9T3..,Yemeni,S,OTHER
 9T4..,Romanian,C,OTHER_WHITE
