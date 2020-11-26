@@ -30,7 +30,15 @@ public enum SubscriberTableId {
     PATIENT_PSEUDO_ID((byte)27, "patient_pseudo_id"),
     PATIENT_ADDITIONAL((byte)28, "patient_additional"),
     OBSERVATION_ADDITIONAL((byte)29, "observation_additional"),
-    PATIENT_ADDRESS_RALF((byte)30, "patient_address_ralf");
+    PATIENT_ADDRESS_RALF((byte)30, "patient_address_ralf"),
+    ORGANIZATION_ADDITIONAL((byte)31, "organization_additional"),
+    PROPERTY_V2 ((byte)32, "property_v2"),
+    ORGANIZATION_V2((byte)33, "organization_v2"),
+    ORGANIZATION_CONTACT_V2((byte)34, "organization_contact_v2"),
+    LOCATION_V2((byte)35, "location_v2"),
+    ABP_ADDRESS_V2((byte)36, "abp_address_v2"),
+    ADDRESS_V2((byte)37, "address_v2"),
+    UPRN_MATCH_EVENT_V2((byte)38, "uprn_match_event_v2");
 
     private byte id;
     private String name;

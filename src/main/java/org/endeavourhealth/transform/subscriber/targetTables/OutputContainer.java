@@ -62,6 +62,14 @@ public class OutputContainer {
         csvWriters.add(new PatientAdditional(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAddressRalf(csvFormat, dateFormat, timeFormat));
 
+        csvWriters.add(new Organization_v2(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new OrganizationContact_v2(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Location_v2(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new AbpAddress_v2(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Property_v2(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new Address_v2(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new UprnMatchEvent_v2(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new OrganizationAdditional(csvFormat, dateFormat, timeFormat));
     }
 
     public byte[] writeToZip() throws Exception {
@@ -173,6 +181,22 @@ public class OutputContainer {
         return findCsvWriter(Organization.class);
     }
 
+    public Organization_v2 getOrganisations_v2() {
+        return findCsvWriter(Organization_v2.class);
+    }
+
+    public OrganizationContact_v2 getOrganizationContact_v2() {
+        return findCsvWriter(OrganizationContact_v2.class);
+    }
+
+    public Location_v2 getLocation_v2() {
+        return findCsvWriter(Location_v2.class);
+    }
+
+    public AbpAddress_v2 getAbpAddress_v2() {
+        return findCsvWriter(AbpAddress_v2.class);
+    }
+
     public Location getLocations() {
         return findCsvWriter(Location.class);
     }
@@ -265,6 +289,8 @@ public class OutputContainer {
         return findCsvWriter(ObservationAdditional.class);
     }
 
+    public OrganizationAdditional getOrganizationAdditional() { return findCsvWriter(OrganizationAdditional.class); }
+
     public PatientPseudoId getPatientPseudoId() {
         return findCsvWriter(PatientPseudoId.class);
     }
@@ -277,4 +303,11 @@ public class OutputContainer {
         return findCsvWriter(PatientAddressRalf.class);
     }
 
+    public Property_v2 getProperty_v2() {
+        return findCsvWriter(Property_v2.class);
+    }
+
+    public Address_v2 getAddress_v2() {return findCsvWriter(Address_v2.class);}
+
+    public UprnMatchEvent_v2 getUprnMatchEvent_v2() {return findCsvWriter(UprnMatchEvent_v2.class);}
 }

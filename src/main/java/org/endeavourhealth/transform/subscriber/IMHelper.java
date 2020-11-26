@@ -440,7 +440,8 @@ public class IMHelper {
         return valueRequest.getProvider() + ":" + valueRequest.getSystem() + ":" + valueRequest.getSchema() + ":"
                 + valueRequest.getTable() + ":" + valueRequest.getColumn() + ":"
                 + valueRequest.getValue().getCode() + ":"
-                + valueRequest.getValue().getScheme();
+                + valueRequest.getValue().getScheme() + ":"
+                + valueRequest.getValue().getTerm();
     }
 
     /*
