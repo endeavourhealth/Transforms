@@ -14,8 +14,7 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class OrganisationTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
@@ -121,16 +120,7 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
                     name = odsOrg.getOrganisationName();
                 }
 
-                OrganisationType odsType = null;
-
-                Set<OrganisationType> types = new HashSet<>(odsOrg.getOrganisationTypes());
-                types.remove(OrganisationType.PRESCRIBING_COST_CENTRE); //always remove so we match to the "better" type
-                if (types.size() == 1) {
-                    odsType = types.iterator().next();
-                } else {
-                    LOG.warn("Could not select type for org " + odsOrg);
-                }
-
+                OrganisationType odsType = findOdsOrganisationType(odsOrg);
                 if (odsType != null) {
                     typeCode = odsType.getCode();
                     typeDesc = odsType.getDescription();
@@ -188,6 +178,85 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
     @Override
     protected SubscriberTableId getMainSubscriberTableId() {
         return SubscriberTableId.ORGANIZATION;
+    }
+
+    /**
+     * returns the "best" type of an ODS Organisation (which can contain multiple)
+     *
+     * this isn't very elegant, but I've based it on looking at what's in ODS for the
+     * existing DDS publishers (and their parents) and returns acceptable results (see SD-201)
+     */
+    public static OrganisationType findOdsOrganisationType(OdsOrganisation odsRecord) throws Exception {
+
+        Set<OrganisationType> types = new HashSet<>(odsRecord.getOrganisationTypes());
+
+        //if nothing to work with, return
+        if (types.isEmpty()) {
+            return null;
+        }
+
+        //if only one type, then use it
+        if (types.size() == 1) {
+            return types.iterator().next();
+        }
+
+        //if multiple types, try removing this specific type, since EVERY GP practice has this
+        types.remove(OrganisationType.PRESCRIBING_COST_CENTRE);
+        if (types.size() == 1) {
+            return types.iterator().next();
+        }
+
+        //if still multiple ones, try removing this type, since every STP is also a Strategic Partnership
+        types.remove(OrganisationType.STRATEGIC_PARTNERSHIP);
+        if (types.size() == 1) {
+            return types.iterator().next();
+        }
+
+        //if still multiple ones, try removing this type, since some hospital trusts as also foundation trusts
+        types.remove(OrganisationType.FOUNDATION_TRUST);
+        if (types.size() == 1) {
+            return types.iterator().next();
+        }
+
+        //if still multiple ones, try removing this type, since Homerton is a Hosptce as well as a trust
+        types.remove(OrganisationType.HOSPICE);
+        if (types.size() == 1) {
+            return types.iterator().next();
+        }
+
+        throw new Exception("Unable to determine best org type for ODS record " + odsRecord.getOdsCode());
+    }
+
+    /**
+     * returns the "best" parent organisation from a ODS record. ODS allows organisations to have multiple parents,
+     * so this function tries to find the one best suited for the expected hierarchy (GP practice -> CCG -> STP).
+     */
+    public static OdsOrganisation findParentOrganisation(OdsOrganisation odsRecord) throws Exception {
+
+        List<OdsOrganisation> parents = new ArrayList<>(odsRecord.getParents().values());
+
+        //if no parents, then nothing to do
+        if (parents.isEmpty()) {
+            return null;
+        }
+
+        //if just one parent, then it's easy
+        if (parents.size() == 1) {
+            return parents.get(0);
+        }
+
+        //most practices have one or more PCNs as a parent, in addition to CCG, so remove thos
+        for (int i=parents.size()-1; i>=0; i--) {
+            OdsOrganisation parent = parents.get(i);
+            if (parent.getOrganisationTypes().contains(OrganisationType.PRIMARY_CARE_NETWORK)) {
+                parents.remove(i);
+            }
+        }
+        if (parents.size() == 1) {
+            return parents.get(0);
+        }
+
+        throw new Exception("Unable to determine best org parent for ODS record " + odsRecord.getOdsCode());
     }
 
 }

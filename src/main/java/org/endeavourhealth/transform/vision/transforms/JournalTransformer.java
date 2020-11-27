@@ -12,7 +12,6 @@ import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.exceptions.FieldNotEmptyException;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.helpers.VisionCodeHelper;
 import org.endeavourhealth.transform.vision.helpers.VisionDateTimeHelper;
@@ -250,13 +249,15 @@ public class JournalTransformer {
             medicationStatementBuilder.setDose(dose.getString(), dose);
         }
 
-        CsvCell authorisationType = parser.getDrugPrescriptionType();
+        CsvCell authorisationType = parser.getEpisode();
         MedicationAuthorisationType fhirAuthorisationType = getMedicationAuthType(authorisationType.getString());
         if (fhirAuthorisationType != null) {
             medicationStatementBuilder.setAuthorisationType(fhirAuthorisationType, authorisationType);
         }
 
-        DateType firstIssueDate = csvHelper.getDrugRecordFirstIssueDate(drugRecordID, patientID);
+        //see SD-105 - this never worked, as there is no link from medication issues to their authorisations
+        //once a link is understood, this can be replaced.
+        /*DateType firstIssueDate = csvHelper.getDrugRecordFirstIssueDate(drugRecordID, patientID);
         if (firstIssueDate != null) {
             medicationStatementBuilder.setFirstIssueDate(firstIssueDate); //, firstIssueDate.getSourceCells());
         }
@@ -264,7 +265,7 @@ public class JournalTransformer {
         DateType mostRecentDate = csvHelper.getDrugRecordLastIssueDate(drugRecordID, patientID);
         if (mostRecentDate != null) {
             medicationStatementBuilder.setLastIssueDate(mostRecentDate); //, mostRecentDate.getSourceCells());
-        }
+        }*/
 
         //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
         /*CsvCell enteredByIdCell = parser.getClinicianUserID();
@@ -280,10 +281,11 @@ public class JournalTransformer {
             medicationStatementBuilder.setRecordedDate(enteredDateTime.getDate(), enteredDateTime);
         }
 
-        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        CsvCell linksCell = parser.getLinks();
+        String consultationId = extractEncounterLinkId(linksCell);
         if (!Strings.isNullOrEmpty(consultationId)) {
             Reference reference = csvHelper.createEncounterReference(consultationId, patientID.getString());
-            medicationStatementBuilder.setEncounter(reference, parser.getLinks());
+            medicationStatementBuilder.setEncounter(reference, linksCell);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationStatementBuilder);
@@ -342,14 +344,16 @@ public class JournalTransformer {
             medicationOrderBuilder.setDose(dose.getString(), dose);
         }
 
-        String links = parser.getLinks().getString();
+        //see SD-105 - there is NO link between repeat issues and repeat journal records
+        /*CsvCell linkaCell = parser.getLinks();
+        String links = linkaCell.getString();
         if (!Strings.isNullOrEmpty(links)) {
             String drugRecordID = extractDrugRecordLinkID (links, patientID.getString(), csvHelper);
             if (!Strings.isNullOrEmpty(drugRecordID)) {
                  Reference medicationStatementReference = csvHelper.createMedicationStatementReference(drugRecordID, patientID.getString());
                  medicationOrderBuilder.setMedicationStatementReference(medicationStatementReference, parser.getLinks());
             }
-        }
+        }*/
 
         //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
         /*CsvCell enteredByIdCell = parser.getClinicianUserID();
@@ -365,10 +369,11 @@ public class JournalTransformer {
             medicationOrderBuilder.setRecordedDate(enteredDateTime.getDate(), enteredDateTime);
         }
 
-        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        CsvCell linksCell = parser.getLinks();
+        String consultationId = extractEncounterLinkId(linksCell);
         if (!Strings.isNullOrEmpty(consultationId)) {
             Reference reference = csvHelper.createEncounterReference(consultationId, patientID.getString());
-            medicationOrderBuilder.setEncounter(reference, parser.getLinks());
+            medicationOrderBuilder.setEncounter(reference, linksCell);
         }
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), medicationOrderBuilder);
@@ -441,10 +446,11 @@ public class JournalTransformer {
             }
         }
 
-        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        CsvCell linksCell = parser.getLinks();
+        String consultationId = extractEncounterLinkId(linksCell);
         if (!Strings.isNullOrEmpty(consultationId)) {
             Reference reference = csvHelper.createEncounterReference(consultationId, patientID.getString());
-            allergyIntoleranceBuilder.setEncounter(reference, parser.getLinks());
+            allergyIntoleranceBuilder.setEncounter(reference, linksCell);
         }
 
         //removed (https://endeavourhealth.atlassian.net/browse/SD-220)
@@ -516,9 +522,11 @@ public class JournalTransformer {
         }
 
         //set linked encounter
-        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        CsvCell linksCell = parser.getLinks();
+        String consultationId = extractEncounterLinkId(linksCell);
         if (!Strings.isNullOrEmpty(consultationId)) {
-            procedureBuilder.setEncounter(csvHelper.createEncounterReference(consultationId, patientID.getString()));
+            Reference encounterReference = csvHelper.createEncounterReference(consultationId, patientID.getString());
+            procedureBuilder.setEncounter(encounterReference, linksCell);
         }
 
         CsvCell getEnteredDateTime = parser.getEnteredDate();
@@ -589,7 +597,7 @@ public class JournalTransformer {
             conditionBuilder.setEndDateOrBoolean(dateType, endDateCell);
         }
 
-        CsvCell episodicityCode = parser.getProblemEpisodicity();
+        CsvCell episodicityCode = parser.getEpisode();
         if (!episodicityCode.isEmpty()) {
             String episodicity = convertEpisodicityCode(episodicityCode.getString());
             conditionBuilder.setEpisodicity(episodicity, episodicityCode);
@@ -628,6 +636,13 @@ public class JournalTransformer {
             Reference reference = csvHelper.createPractitionerReference(cleanUserId);
             conditionBuilder.setRecordedBy(reference, enteredByIdCell);
         }*/
+
+        CsvCell linksCell = parser.getLinks();
+        String consultationId = extractEncounterLinkId(linksCell);
+        if (!Strings.isNullOrEmpty(consultationId)) {
+            Reference reference = csvHelper.createEncounterReference(consultationId, patientID.getString());
+            conditionBuilder.setEncounter(reference, linksCell);
+        }
 
         String documentId = getDocumentId(parser);
         if (!Strings.isNullOrEmpty(documentId)) {
@@ -896,9 +911,11 @@ public class JournalTransformer {
         observationBuilder.setNotes(associatedTextAsStr,associatedTextCell);
 
         //set linked encounter
-        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        CsvCell linksCell = parser.getLinks();
+        String consultationId = extractEncounterLinkId(linksCell);
         if (!Strings.isNullOrEmpty(consultationId)) {
-            observationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId, patientID.getString()));
+            Reference encounterReference = csvHelper.createEncounterReference(consultationId, patientID.getString());
+            observationBuilder.setEncounter(encounterReference, linksCell);
         }
 
         String documentId = getDocumentId(parser);
@@ -967,9 +984,11 @@ public class JournalTransformer {
         }
 
         //set linked encounter
-        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        CsvCell linksCell = parser.getLinks();
+        String consultationId = extractEncounterLinkId(linksCell);
         if (!Strings.isNullOrEmpty(consultationId)) {
-            familyMemberHistoryBuilder.setEncounter(csvHelper.createEncounterReference(consultationId, patientID.getString()));
+            Reference encounterReference = csvHelper.createEncounterReference(consultationId, patientID.getString());
+            familyMemberHistoryBuilder.setEncounter(encounterReference, linksCell);
         }
 
         CsvCell getEnteredDateTime = parser.getEnteredDate();
@@ -1097,9 +1116,11 @@ public class JournalTransformer {
         }
 
         //set linked encounter
-        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
+        CsvCell linksCell = parser.getLinks();
+        String consultationId = extractEncounterLinkId(linksCell);
         if (!Strings.isNullOrEmpty(consultationId)) {
-            immunizationBuilder.setEncounter(csvHelper.createEncounterReference(consultationId, patientID.getString()));
+            Reference encounterReference = csvHelper.createEncounterReference(consultationId, patientID.getString());
+            immunizationBuilder.setEncounter(encounterReference, linksCell);
         }
 
         CsvCell associatedText = parser.getAssociatedText();
@@ -1153,20 +1174,68 @@ public class JournalTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), immunizationBuilder);
     }
 
-    // the consultation encounter link value is pre-fixed with E
-    public static String extractEncounterLinkId(String links) {
-        if (!Strings.isNullOrEmpty(links)) {
-            String[] linkIDs = links.split("[|]");
-            for (String link : linkIDs) {
-                if (link.startsWith("E")) {
-                    return link.replace("E", "");
+    /**
+     * the LINKS column contains IDs of Journal and Encounter records.
+     * Encounter IDs are prefixed with an E and each journal record only has one Encounter link (but we validate this)
+     */
+    public static String extractEncounterLinkId(CsvCell linksCell) throws Exception {
+        if (linksCell.isEmpty()) {
+            return null;
+        }
+
+        List<String> l = new ArrayList<>();
+
+        String links = linksCell.getString();
+        String[] linkIds = links.split("[|]");
+        for (String link : linkIds) {
+            if (link.startsWith("E")) {
+                String sub = link.substring(1);
+                if (!Strings.isNullOrEmpty(sub)) {
+                    l.add(sub);
                 }
             }
         }
-        return null;
+
+        if (l.isEmpty()) {
+            return null;
+
+        } else if (l.size() > 1) {
+            throw new Exception("More than one encounter ID in journal record");
+
+        } else {
+            return l.get(0);
+        }
     }
 
-    public static String extractDrugRecordLinkID(String links, String patientID, VisionCsvHelper csvHelper) {
+    /**
+     * the LINKS column contains IDs of Journal and Encounter records.
+     * Encounter IDs are prefixed with an E so we only want the ones that do not have an ID
+     */
+    public static Set<String> extractJournalLinkIds(CsvCell linksCell) {
+        if (linksCell.isEmpty()) {
+            return null;
+        }
+
+        Set<String> ret = new HashSet<>();
+
+        String links = linksCell.getString();
+        String[] linkIds = links.split("[|]");
+        for (String link : linkIds) {
+            if (!Strings.isNullOrEmpty(link)
+                && !link.startsWith("E")) {
+                ret.add(link);
+            }
+        }
+
+        if (ret.isEmpty()) {
+            return null;
+
+        } else {
+            return ret;
+        }
+    }
+
+    /*public static String extractDrugRecordLinkID(String links, String patientID, VisionCsvHelper csvHelper) {
         if (!Strings.isNullOrEmpty(links)) {
             String[] linkIDs = links.split("[|]");
             for (String linkID : linkIDs) {
@@ -1196,7 +1265,7 @@ public class JournalTransformer {
             }
         }
         return problemLinkIDs;
-    }
+    }*/
 
     // Advanced have indicated that erroneous data rows could be extracted and sent as part of
     // the extract.  Examples include Immunization records, coded with a 65E..

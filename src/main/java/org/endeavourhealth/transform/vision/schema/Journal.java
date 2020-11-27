@@ -140,13 +140,22 @@ public class Journal extends AbstractCsvParser {
         return super.getCell("HCP");
     }
 
-    public CsvCell getProblemEpisodicity() {
+    /**
+     * if a medication item:
+     * A	Acute (one-off issue)
+     * I	Issue of repeat
+     * R	Repeat authorisation
+     * NOTE: the episode is a one-to-one match with the SUBSET for medications (so subset A always has epsisode A, subset R -> episode R, subset S -> episode I)
+     *
+     * for non-medication items:
+     * F	First
+     * N	New
+     * O	Other
+     * D  Cause of Death
+     */
+    public CsvCell getEpisode() {
         return super.getCell("EPISODE");
-    }   //if CODE = Diagnosis or Problem
-
-    public CsvCell getDrugPrescriptionType() {
-        return super.getCell("EPISODE");
-    } //if CODE = Prescribeable item
+    }
 
     public CsvCell getDrugDMDCode() {
         return super.getCell("DMD_CODE");
@@ -246,6 +255,11 @@ public class Journal extends AbstractCsvParser {
 
     /**
      * additional classification of the record (e.g. WEIGHT, HEIGHT, PULSE)
+     *
+     * for medication items this is just a one-to-one match with subset,
+     * - subset A -> entity ACUTE
+     * - subset S -> entity REPEAT ISSUE
+     * - subset R -> entity REPEATS
      */
     public CsvCell getObservationEntity() {
         return super.getCell("ENTITY");

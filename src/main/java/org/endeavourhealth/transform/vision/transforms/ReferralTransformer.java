@@ -97,7 +97,7 @@ public class ReferralTransformer {
 
         //set linked encounter
         CsvCell linksCell = parser.getLinks();
-        String consultationId = JournalTransformer.extractEncounterLinkId(linksCell.getString());
+        String consultationId = JournalTransformer.extractEncounterLinkId(linksCell);
         if (!Strings.isNullOrEmpty(consultationId)) {
             Reference ref = csvHelper.createEncounterReference(consultationId, patientIdCell.getString());
             referralRequestBuilder.setEncounter(ref, linksCell);

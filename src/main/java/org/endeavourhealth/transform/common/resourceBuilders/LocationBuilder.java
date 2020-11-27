@@ -39,12 +39,15 @@ public class LocationBuilder extends ResourceBuilderBase
         return location;
     }
 
-    public void addTelecom(ContactPoint fhirContact, CsvCell... sourceCells) {
+    /**
+     * removed - use ContactPointBuilder to add telephone numbers
+     */
+    /*public void addTelecom(ContactPoint fhirContact, CsvCell... sourceCells) {
         this.location.addTelecom(fhirContact);
 
         int index = this.location.getTelecom().size()-1;
         auditValue("telecom[" + index + "].value", sourceCells);
-    }
+    }*/
 
 
     /*public void setDescription(String name, CsvCell... sourceCells) {

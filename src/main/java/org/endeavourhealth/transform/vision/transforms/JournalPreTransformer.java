@@ -3,24 +3,29 @@ package org.endeavourhealth.transform.vision.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
+import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.helpers.VisionCodeHelper;
 import org.endeavourhealth.transform.vision.helpers.VisionMappingHelper;
 import org.endeavourhealth.transform.vision.schema.Journal;
+import org.hl7.fhir.instance.model.Condition;
 import org.hl7.fhir.instance.model.DateTimeType;
+import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
-
-import static org.endeavourhealth.transform.vision.transforms.JournalTransformer.*;
+import java.util.Set;
+import java.util.concurrent.Callable;
 
 public class JournalPreTransformer {
 
@@ -30,64 +35,83 @@ public class JournalPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
-        //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
-        //to parse any record in this file is a critical error
-        AbstractCsvParser parser = parsers.get(Journal.class);
+        try {
+            //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
+            //to parse any record in this file is a critical error
+            AbstractCsvParser parser = parsers.get(Journal.class);
 
-        if (parser != null) {
-            while (parser.nextRecord()) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
 
-                try {
-                    processLine((Journal) parser, csvHelper, fhirResourceFiler);
-                } catch (Exception ex) {
-                    throw new TransformException(parser.getCurrentState().toString(), ex);
+                    try {
+                        processLine((Journal) parser, csvHelper, fhirResourceFiler);
+                    } catch (Exception ex) {
+                        throw new TransformException(parser.getCurrentState().toString(), ex);
+                    }
                 }
             }
+
+        } finally {
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
 
     private static void processLine(Journal parser, VisionCsvHelper csvHelper, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        if (parser.getAction().getString().equalsIgnoreCase("D")) {
+        CsvCell actionCell = parser.getAction();
+        if (actionCell.getString().equalsIgnoreCase("D")) {
             return;
         }
 
-        ResourceType resourceType = getTargetResourceType(parser, csvHelper);
+
+        ResourceType resourceType = JournalTransformer.getTargetResourceType(parser, csvHelper);
         CsvCell observationIdCell = parser.getObservationID();
         CsvCell patientIdCell = parser.getPatientID();
 
+        //all we are interested in are Drug records (non issues)
+        //this was used to track the records that represented medication being prescribed, so the
+        //issue records could be linked to them, but there is NO link between these records in the data (see SD-105)
+        /*if (resourceType == ResourceType.MedicationStatement) {
+            CsvCell patientID = parser.getPatientID();
+            CsvCell drugRecordID = parser.getObservationID();
+
+            //cache the observation IDs of Drug records (not Issues), so  that we know what is a Drug Record
+            //when we run the observation pre and main transformers, i.e. for linking and deriving medications issues
+            csvHelper.cacheDrugRecordGuid(patientID, drugRecordID);
+        }*/
+
+        //linked consultation encounter record
+        CsvCell linkCell = parser.getLinks();
+        String consultationId = JournalTransformer.extractEncounterLinkId(linkCell);
+        if (!Strings.isNullOrEmpty(consultationId)) {
+
+            csvHelper.cacheNewConsultationChildRelationship(consultationId, patientIdCell, observationIdCell, resourceType, linkCell);
+        }
 
         //if it is not a problem itself, cache the Observation or Medication linked problem to be filed with the condition resource
         if (resourceType != ResourceType.Condition) {
-            //extract actual problem links
-            String problemLinkIDs = extractProblemLinkIDs(parser.getLinks().getString(), patientIdCell.getString(), csvHelper);
-            if (!Strings.isNullOrEmpty(problemLinkIDs)) {
-                String[] linkIDs = problemLinkIDs.split("[|]");
-                for (String problemID : linkIDs) {
+
+            Set<String> problemLinkIds = JournalTransformer.extractJournalLinkIds(linkCell);
+            if (problemLinkIds != null) {
+
+                for (String problemId: problemLinkIds) {
+
                     //store the problem/observation relationship in the helper
-                    csvHelper.cacheProblemRelationship(problemID,
-                            patientIdCell.getString(),
-                            observationIdCell.getString(),
-                            resourceType,
-                            parser.getLinks());
+                    csvHelper.cacheProblemRelationship(problemId, patientIdCell, observationIdCell, resourceType, linkCell);
                 }
             }
         }
 
-        //linked consultation encounter record
-        String consultationId = extractEncounterLinkId(parser.getLinks().getString());
-        if (!Strings.isNullOrEmpty(consultationId)) {
-            csvHelper.cacheNewConsultationChildRelationship(consultationId,
-                    patientIdCell.getString(),
-                    observationIdCell.getString(),
-                    resourceType,
-                    parser.getLinks());
-        }
 
-        //medication issue record - set linked drug record first and last issue dates
-        if (resourceType == ResourceType.MedicationOrder) {
-            String drugRecordID = extractDrugRecordLinkID (parser.getLinks().getString(), patientIdCell.getString(), csvHelper);
+
+        //medication issue record (subset = S) - set linked drug record first and last issue dates
+        //see SD-105: there is no link between medication issues and repeat journal records, so none of this is doing anything
+        /*if (resourceType == ResourceType.MedicationOrder) {
+            String drugRecordID = JournalTransformer.extractDrugRecordLinkID (parser.getLinks().getString(), patientIdCell.getString(), csvHelper);
             if (!Strings.isNullOrEmpty(drugRecordID)) {
                 //note that in this case we only care about the DATE, not the TIME
                 Date effectiveDate = parser.getEffectiveDate().getDate();
@@ -95,7 +119,7 @@ public class JournalPreTransformer {
                 DateTimeType dateTime = EmisDateTimeHelper.createDateTimeType(effectiveDate, effectiveDatePrecision);
                 csvHelper.cacheDrugRecordDate(drugRecordID, patientIdCell, dateTime);
             }
-        }
+        }*/
 
         CsvCell readCodeCell = parser.getReadCode();
         String readCode = VisionCodeHelper.formatReadCode(readCodeCell, csvHelper); //use this fn to format the cell into a regular Read2 code
@@ -133,6 +157,24 @@ public class JournalPreTransformer {
             CsvCell snomedCell = parser.getSnomedCode();
             CsvCell recordedDateCell = parser.getEnteredDate();
             csvHelper.cacheReadToSnomedMapping(readCodeCell, snomedCell, recordedDateCell);
+        }
+
+        //only concerned with Problems in this pre-transformer
+        if (resourceType == ResourceType.Condition) {
+
+            CsvCell patientID = parser.getPatientID();
+            CsvCell observationID = parser.getObservationID();
+            CsvCurrentState parserState = parser.getCurrentState();
+
+            //cache the observation IDs of problems, so
+            //that we know what is a problem when we run the observation pre-transformer
+            //see SD-105 - the links column only ever refers to problems or encounters, so we don't need this
+            //csvHelper.cacheProblemObservationGuid(patientID, observationID);
+
+            //also cache the IDs of any child items from previous instances of this problem, but
+            //use a thread pool so we can perform multiple lookups in parallel
+            LookupTask task = new LookupTask(patientID, observationID, fhirResourceFiler, csvHelper, parserState);
+            csvHelper.submitToThreadPool(task);
         }
     }
 
@@ -210,6 +252,57 @@ public class JournalPreTransformer {
         }
     }*/
 
+
+    static class LookupTask extends AbstractCsvCallable {
+
+        private CsvCell patientID;
+        private CsvCell observationID;
+        private FhirResourceFiler fhirResourceFiler;
+        private VisionCsvHelper csvHelper;
+
+        public LookupTask(CsvCell patientID,
+                          CsvCell observationID,
+                          FhirResourceFiler fhirResourceFiler,
+                          VisionCsvHelper csvHelper,
+                          CsvCurrentState parserState) {
+
+            super(parserState);
+            this.patientID = patientID;
+            this.observationID = observationID;
+            this.fhirResourceFiler = fhirResourceFiler;
+            this.csvHelper = csvHelper;
+        }
+
+        @Override
+        public Object call() throws Exception {
+            try {
+                String locallyUniqueId = EmisCsvHelper.createUniqueId(patientID, observationID);
+
+                //carry over linked items from any previous instance of this problem
+                Condition previousVersion = (Condition)csvHelper.retrieveResource(locallyUniqueId, ResourceType.Condition);
+                if (previousVersion == null) {
+                    //if this is the first time, then we'll have a null resource
+                    return null;
+                }
+
+                ConditionBuilder conditionBuilder = new ConditionBuilder(previousVersion);
+                ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
+
+                List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getReferences();
+
+                //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
+                List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);
+
+                csvHelper.cacheProblemPreviousLinkedResources(locallyUniqueId, previousReferencesLocalIds);
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+                throw t;
+            }
+
+            return null;
+        }
+    }
 }
 
 

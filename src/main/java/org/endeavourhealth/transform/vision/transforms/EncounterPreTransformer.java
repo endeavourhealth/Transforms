@@ -26,10 +26,6 @@ public class EncounterPreTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  VisionCsvHelper csvHelper) throws Exception {
 
-        //use a thread pool to perform multiple lookups in parallel
-        int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(fhirResourceFiler.getServiceId());
-        ThreadPool threadPool = new ThreadPool(threadPoolSize, 1000, "VisionEncounter"); //lower from 50k to save memory
-
         //unlike most of the other parsers, we don't handle record-level exceptions and continue, since a failure
         //to parse any record in this file it a critical error
         try {
@@ -38,7 +34,8 @@ public class EncounterPreTransformer {
                 while (parser.nextRecord()) {
 
                     try {
-                        transform((org.endeavourhealth.transform.vision.schema.Encounter) parser, fhirResourceFiler, csvHelper, threadPool);
+                        transform((org.endeavourhealth.transform.vision.schema.Encounter) parser, fhirResourceFiler, csvHelper);
+
                     } catch (Exception ex) {
                         throw new TransformException(parser.getCurrentState().toString(), ex);
                     }
@@ -46,57 +43,38 @@ public class EncounterPreTransformer {
             }
 
         } finally {
-            List<ThreadPoolError> errors = threadPool.waitAndStop();
-            handleErrors(errors);
+            csvHelper.waitUntilThreadPoolIsEmpty();
         }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     public static void transform(org.endeavourhealth.transform.vision.schema.Encounter parser,
                                  FhirResourceFiler fhirResourceFiler,
-                                 VisionCsvHelper csvHelper,
-                                 ThreadPool threadPool) throws Exception {
+                                 VisionCsvHelper csvHelper) throws Exception {
 
         CsvCell consultationID = parser.getConsultationID();
         CsvCell patientID = parser.getPatientID();
-
-        String encounterSourceId = csvHelper.createUniqueId(patientID, consultationID);
+        String encounterSourceId = VisionCsvHelper.createUniqueId(patientID, consultationID);
 
         CsvCurrentState parserState = parser.getCurrentState();
 
-        LookupTask task = new LookupTask(encounterSourceId, fhirResourceFiler, csvHelper, parserState);
-        List<ThreadPoolError> errors = threadPool.submit(task);
-        handleErrors(errors);
+        LookupTask task = new LookupTask(encounterSourceId, csvHelper, parserState);
+        csvHelper.submitToThreadPool(task);
     }
 
-    private static void handleErrors(List<ThreadPoolError> errors) throws Exception {
-        if (errors == null || errors.isEmpty()) {
-            return;
-        }
-
-        //if we've had multiple errors, just throw the first one, since the first exception is always most relevant
-        ThreadPoolError first = errors.get(0);
-        LookupTask callable = (LookupTask)first.getCallable();
-        Throwable exception = first.getException();
-        CsvCurrentState parserState = callable.getParserState();
-        throw new TransformException(parserState.toString(), exception);
-    }
-
-    static class LookupTask implements Callable {
+    static class LookupTask extends AbstractCsvCallable {
 
         private String encounterSourceId;
-        private FhirResourceFiler fhirResourceFiler;
         private VisionCsvHelper csvHelper;
-        private CsvCurrentState parserState;
 
         public LookupTask(String encounterSourceId,
-                          FhirResourceFiler fhirResourceFiler,
                           VisionCsvHelper csvHelper,
                           CsvCurrentState parserState) {
-
+            super(parserState);
             this.encounterSourceId = encounterSourceId;
-            this.fhirResourceFiler = fhirResourceFiler;
             this.csvHelper = csvHelper;
-            this.parserState = parserState;
         }
 
         @Override
@@ -125,10 +103,6 @@ public class EncounterPreTransformer {
             }
 
             return null;
-        }
-
-        public CsvCurrentState getParserState() {
-            return parserState;
         }
     }
 }

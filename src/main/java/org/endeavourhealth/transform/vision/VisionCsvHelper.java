@@ -9,20 +9,20 @@ import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.ThreadPool;
+import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.VisionCodeDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
-import org.endeavourhealth.transform.common.resourceBuilders.GenericBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.vision.helpers.VisionCodeHelper;
@@ -36,6 +36,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -59,14 +60,15 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     private Map<String, ReferenceList> problemPreviousLinkedResources = new ConcurrentHashMap<>(); //written to by many threads
     private Map<String, ReferenceList> consultationNewChildMap = new HashMap<>();
     private Map<String, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>(); //written to by many threads
-    private Map<String, DateType> drugRecordLastIssueDateMap = new HashMap<>();
-    private Map<String, DateType> drugRecordFirstIssueDateMap = new HashMap<>();
+    /*private Map<String, DateType> drugRecordLastIssueDateMap = new HashMap<>();
+    private Map<String, DateType> drugRecordFirstIssueDateMap = new HashMap<>();*/
     private Map<StringMemorySaver, DateAndEthnicityCategory> ethnicityMap = new HashMap<>();
-    private Set<String> problemReadCodes = new HashSet<>();
-    private Set<String> drugRecords = new HashSet<>();
+    //private Set<String> problemReadCodes = new HashSet<>();
+    //private Set<String> drugRecords = new HashSet<>();
     private Map<String, String> latestEpisodeStartDateCache = new HashMap<>();
     private Map<CodeAndTerm, AtomicInteger> hmRead2TermMap = new HashMap<>();
     private Map<String, SnomedConceptAndDate> hmRead2toSnomedMap = new HashMap<>();
+    private ThreadPool utilityThreadPool = null;
 
     public VisionCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId) {
         this.serviceId = serviceId;
@@ -111,13 +113,13 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     /**
      * admin-type resources just use the Vision CSV GUID as their reference
      */
-    public Reference createLocationReference(String locationGuid) throws Exception {
+    public static Reference createLocationReference(String locationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Location, locationGuid);
     }
-    public Reference createOrganisationReference(String organizationGuid) throws Exception {
+    public static Reference createOrganisationReference(String organizationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid);
     }
-    public Reference createPractitionerReference(String practitionerGuid) throws Exception {
+    public static Reference createPractitionerReference(String practitionerGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid);
     }
 
@@ -280,31 +282,27 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public ReferenceList getAndRemoveNewProblemChildren(CsvCell problemGuid, CsvCell patientGuid) {
-        return newProblemChildren.remove(createUniqueId(patientGuid, problemGuid));
+        String key = createUniqueId(patientGuid, problemGuid);
+        return newProblemChildren.remove(key);
     }
 
-    public void cacheProblemRelationship(String problemObservationGuid,
-                                         String patientGuid,
-                                         String resourceGuid,
+    public void cacheProblemRelationship(String problemJournalId,
+                                         CsvCell patientIdCell,
+                                         CsvCell journalIdCell,
                                          ResourceType resourceType,
-                                         CsvCell problemLinkCell) {
+                                         CsvCell linksCell) {
 
-        if (problemObservationGuid.isEmpty()) {
-            return;
-        }
+        String key = createUniqueId(patientIdCell.getString(), problemJournalId);
 
-        String problemLocalUniqueId = createUniqueId(patientGuid, problemObservationGuid);
-        ReferenceList referenceList = newProblemChildren.get(problemLocalUniqueId);
+        ReferenceList referenceList = newProblemChildren.get(key);
         if (referenceList == null) {
-            //we know there will only one CsvCells, so use this reference list class to save memory
-            referenceList = new ReferenceListSingleCsvCells();
-            //referenceList = new ReferenceList();
-            newProblemChildren.put(problemLocalUniqueId, referenceList);
+            referenceList = new ReferenceListSingleCsvCells(); //we know there will only one CsvCells, so use this reference list class to save memory
+            newProblemChildren.put(key, referenceList);
         }
 
-        String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        String resourceLocalUniqueId = createUniqueId(patientIdCell, journalIdCell);
         Reference reference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
-        referenceList.add(reference, problemLinkCell);
+        referenceList.add(reference, linksCell);
     }
 
     /**
@@ -425,7 +423,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ret;
     }
 
-    public void cacheDrugRecordDate(String drugRecordGuid, CsvCell patientGuid, DateTimeType dateTime) {
+    /*public void cacheDrugRecordDate(String drugRecordGuid, CsvCell patientGuid, DateTimeType dateTime) {
         String uniqueId = createUniqueId(patientGuid.getString(), drugRecordGuid);
 
         Date date = dateTime.getValue();
@@ -449,7 +447,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public DateType getDrugRecordLastIssueDate(CsvCell drugRecordId, CsvCell patientGuid) {
         return drugRecordLastIssueDateMap.remove(createUniqueId(patientGuid, drugRecordId));
-    }
+    }*/
 
     public void cacheEthnicity(CsvCell patientIdCell, Date date, EthnicCategory ethnicCategory, CsvCell sourceCell) {
         String key = patientIdCell.getString();
@@ -486,28 +484,23 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         return consultationExistingChildMap.remove(encounterSourceId);
     }
 
-    public void cacheNewConsultationChildRelationship(String consultationGuid,
-                                                      String patientGuid,
-                                                      String resourceGuid,
+    public void cacheNewConsultationChildRelationship(String encounterId,
+                                                      CsvCell patientIdCell,
+                                                      CsvCell journalIdCell,
                                                       ResourceType resourceType,
-                                                      CsvCell consultationIDCell) {
+                                                      CsvCell linksCell) {
 
-        if (consultationGuid.isEmpty()) {
-            return;
-        }
+        String consultationLocalUniqueId = createUniqueId(patientIdCell.getString(), encounterId);
 
-        String consultationLocalUniqueId = createUniqueId(patientGuid, consultationGuid);
         ReferenceList list = consultationNewChildMap.get(consultationLocalUniqueId);
         if (list == null) {
-            //we know there will a single CsvCell, so use this reference list class to save memory
-            list = new ReferenceListSingleCsvCells();
-            //list = new ReferenceList();
+            list = new ReferenceListSingleCsvCells(); //we know there will a single CsvCell, so use this reference list class to save memory
             consultationNewChildMap.put(consultationLocalUniqueId, list);
         }
 
-        String resourceLocalUniqueId = createUniqueId(patientGuid, resourceGuid);
+        String resourceLocalUniqueId = createUniqueId(patientIdCell, journalIdCell);
         Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
-        list.add(resourceReference, consultationIDCell);
+        list.add(resourceReference, linksCell);
     }
 
     public ReferenceList getAndRemoveNewConsultationRelationships(String encounterSourceId) {
@@ -570,7 +563,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         return CsvCell.factoryDummyWrapper(value);
     }
 
-    public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid) {
+    /*public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid) {
         problemReadCodes.add(createUniqueId(patientGuid, problemGuid));
     }
 
@@ -584,7 +577,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public boolean isDrugRecordGuid(String patientGuid, String drugRecordGuid) {
         return drugRecords.contains(createUniqueId(patientGuid, drugRecordGuid));
-    }
+    }*/
 
 
 
@@ -787,6 +780,78 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
+    /**
+     * if our journal file contained a link to one or more problems but the problems themselves
+     * weren't transformed, then we need to update those problems with the new linked items
+     */
+    public void processRemainingProblemItems(FhirResourceFiler fhirResourceFiler) throws Exception {
+        for (String localProblemId: newProblemChildren.keySet()) {
+            ReferenceList newLinkedItems = newProblemChildren.get(localProblemId);
+
+            Condition existingCondition = (Condition)retrieveResource(localProblemId, ResourceType.Condition);
+            if (existingCondition == null) {
+                //if the problem has been deleted, just skip it
+                return;
+            }
+
+            ConditionBuilder conditionBuilder = new ConditionBuilder(existingCondition);
+            ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
+
+            boolean madeChange = false;
+
+            for (int i=0; i<newLinkedItems.size(); i++) {
+                Reference reference = newLinkedItems.getReference(i);
+                CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
+
+                //make sure to convert the reference into a DDS reference, since the Condition is already ID mapped
+                Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+
+                boolean added = containedListBuilder.addReference(globallyUniqueReference, sourceCells);
+                if (added) {
+                    madeChange = true;
+                }
+            }
+
+            if (madeChange) {
+                fhirResourceFiler.savePatientResource(null, false, conditionBuilder);
+            }
+        }
+    }
+
+    public void processRemainingEncounterItems(FhirResourceFiler fhirResourceFiler) throws Exception {
+        for (String localEncounterId: consultationNewChildMap.keySet()) {
+            ReferenceList newLinkedItems = consultationNewChildMap.get(localEncounterId);
+
+            Encounter existingEncounter = (Encounter)retrieveResource(localEncounterId, ResourceType.Encounter);
+            if (existingEncounter == null) {
+                //if deleted, just skip it
+                return;
+            }
+
+            EncounterBuilder encounterBuilder = new EncounterBuilder(existingEncounter);
+            ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
+
+            boolean madeChange = false;
+
+            for (int i=0; i<newLinkedItems.size(); i++) {
+                Reference reference = newLinkedItems.getReference(i);
+                CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
+
+                //make sure to convert the reference into a DDS reference, since the Condition is already ID mapped
+                Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
+
+                boolean added = containedListBuilder.addReference(globallyUniqueReference, sourceCells);
+                if (added) {
+                    madeChange = true;
+                }
+            }
+
+            if (madeChange) {
+                fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
+            }
+        }
+    }
+
     private class SnomedConceptAndDate {
         private Long concept;
         private Date date;
@@ -913,6 +978,31 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
         }
         return data;
+    }
+
+
+    public void submitToThreadPool(Callable callable) throws Exception {
+        if (this.utilityThreadPool == null) {
+            int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
+            this.utilityThreadPool = new ThreadPool(threadPoolSize, 1000, "VisionCsvHelper"); //lower from 50k to save memory
+        }
+
+        List<ThreadPoolError> errors = utilityThreadPool.submit(callable);
+        AbstractCsvCallable.handleErrors(errors);
+    }
+
+    public void waitUntilThreadPoolIsEmpty() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitUntilEmpty();
+            AbstractCsvCallable.handleErrors(errors);
+        }
+    }
+
+    public void stopThreadPool() throws Exception {
+        if (this.utilityThreadPool != null) {
+            List<ThreadPoolError> errors = utilityThreadPool.waitAndStop();
+            AbstractCsvCallable.handleErrors(errors);
+        }
     }
 
 }

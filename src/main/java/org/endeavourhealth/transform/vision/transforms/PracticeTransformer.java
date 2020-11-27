@@ -1,18 +1,20 @@
 package org.endeavourhealth.transform.vision.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ContactPointHelper;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
+import org.endeavourhealth.common.ods.OdsOrganisation;
+import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.subscriber.transforms.OrganisationTransformer;
 import org.endeavourhealth.transform.vision.VisionCsvHelper;
 import org.endeavourhealth.transform.vision.schema.Practice;
-import org.hl7.fhir.instance.model.Address;
-import org.hl7.fhir.instance.model.ContactPoint;
-import org.hl7.fhir.instance.model.Identifier;
-import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +57,114 @@ public class PracticeTransformer {
         createLocationResource(parser, fhirResourceFiler, csvHelper);
     }
 
+
+    private static void createOrganisationResource(Practice parser,
+                                                   FhirResourceFiler fhirResourceFiler,
+                                                   VisionCsvHelper csvHelper) throws Exception {
+
+        OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+        CsvCell orgIdCell = parser.getOrganisationID();
+        organizationBuilder.setId(orgIdCell.getString(), orgIdCell);
+
+        CsvCell odsCodeCell = parser.getIdentifier();
+        if (!odsCodeCell.isEmpty()) {
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            identifierBuilder.setValue(odsCodeCell.getString(), odsCodeCell);
+        }
+
+        //SD-201 phone and address were simply missed on the Org resource
+        transformAddress(parser, organizationBuilder);
+        transformPhoneNumbers(parser, organizationBuilder);
+
+        CsvCell nameCell = parser.getOrganisationName();
+        if (!nameCell.isEmpty()) {
+            organizationBuilder.setName(nameCell.getString(), nameCell);
+        }
+
+        //link to the FHIR Location we'll create, which uses the same source ID
+        Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, orgIdCell.getString());
+        organizationBuilder.setMainLocation(locationReference, orgIdCell);
+
+        //SD-201 we don't get type or parent or anything similar from Vision, so use the ODS API to look up what we can
+        if (!odsCodeCell.isEmpty()) {
+            String odsCode = odsCodeCell.getString();
+            OdsOrganisation odsRecord = OdsWebService.lookupOrganisationViaRest(odsCode);
+            if (odsRecord != null) {
+
+                OrganisationType fhirOrgType = OrganisationTransformer.findOdsOrganisationType(odsRecord);
+                if (fhirOrgType != null) {
+                    organizationBuilder.setType(fhirOrgType);
+                }
+
+                String parentId = populateParentFromOds(odsRecord, fhirResourceFiler);
+                if (parentId != null) {
+                    Reference parentReference = VisionCsvHelper.createOrganisationReference(parentId);
+                    organizationBuilder.setParentOrganisation(parentReference);
+                }
+            }
+        }
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
+    }
+
+    private static String populateParentFromOds(OdsOrganisation childRecord, FhirResourceFiler fhirResourceFiler) throws Exception {
+
+        OdsOrganisation parent = OrganisationTransformer.findParentOrganisation(childRecord);
+        if (parent == null) {
+            return null;
+        }
+
+        OrganizationBuilder organizationBuilder = new OrganizationBuilder();
+
+        //use the org ID as the unique identifier for the FHIR org
+        String orgId = parent.getOdsCode();
+        if (Strings.isNullOrEmpty(orgId)) {
+            return null;
+        }
+        organizationBuilder.setId(orgId);
+
+        String name = parent.getOrganisationName();
+        organizationBuilder.setName(name);
+
+        OrganisationType fhirOrgType = OrganisationTransformer.findOdsOrganisationType(parent);
+        if (fhirOrgType != null) {
+            organizationBuilder.setType(fhirOrgType);
+        }
+
+        AddressBuilder addressBuilder = new AddressBuilder(organizationBuilder);
+
+        String line1 = parent.getAddressLine1();
+        addressBuilder.addLine(line1);
+
+        String line2 = parent.getAddressLine2();
+        addressBuilder.addLine(line2);
+
+        String town = parent.getTown();
+        addressBuilder.setCity(town);
+
+        String county = parent.getCounty();
+        addressBuilder.setDistrict(county);
+
+        String postcode = parent.getPostcode();
+        addressBuilder.setPostcode(postcode);
+
+        //recurse to generate the parent of this parent
+        String parentId = populateParentFromOds(parent, fhirResourceFiler);
+        if (parentId != null) {
+            Reference parentReference = VisionCsvHelper.createOrganisationReference(parentId);
+            organizationBuilder.setParentOrganisation(parentReference);
+        }
+
+        //save
+        fhirResourceFiler.saveAdminResource(null, organizationBuilder);
+
+        //and return the org ID so it can be set on the child resource
+        return orgId;
+    }
+
+
     private static void createLocationResource(Practice parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        VisionCsvHelper csvHelper) throws Exception {
@@ -62,8 +172,60 @@ public class PracticeTransformer {
         LocationBuilder locationBuilder = new LocationBuilder();
 
         //set the Location ID to that of the Organisation ID
-        CsvCell organisationID = parser.getOrganisationID();
-        locationBuilder.setId(organisationID.getString(), organisationID);
+        CsvCell organisationIdCell = parser.getOrganisationID();
+        locationBuilder.setId(organisationIdCell.getString(), organisationIdCell);
+
+        transformAddress(parser, locationBuilder);
+        transformPhoneNumbers(parser, locationBuilder);
+
+        // the location name is the organisation name, that's all we have
+        CsvCell nameCell = parser.getOrganisationName();
+        if (!nameCell.isEmpty()) {
+            locationBuilder.setName(nameCell.getString(), nameCell);
+        }
+
+        //set the managing organisation for the location, basically itself!
+        Reference organisationReference = csvHelper.createOrganisationReference(organisationIdCell.getString());
+        locationBuilder.setManagingOrganisation(organisationReference, organisationIdCell);
+
+        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
+    }
+
+    private static void transformPhoneNumbers(Practice parser, HasContactPointI parentBuilder) {
+
+        CsvCell phoneNumberCell = parser.getPhone();
+        if (!phoneNumberCell.isEmpty()) {
+            String value = phoneNumberCell.getString();
+
+            ContactPointBuilder builder = new ContactPointBuilder(parentBuilder);
+            builder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+            builder.setUse(ContactPoint.ContactPointUse.WORK);
+            builder.setValue(value, phoneNumberCell);
+        }
+
+        CsvCell faxNumberCell = parser.getFax();
+        if (!faxNumberCell.isEmpty()) {
+            String value = faxNumberCell.getString();
+
+            ContactPointBuilder builder = new ContactPointBuilder(parentBuilder);
+            builder.setSystem(ContactPoint.ContactPointSystem.FAX);
+            builder.setUse(ContactPoint.ContactPointUse.WORK);
+            builder.setValue(value, faxNumberCell);
+        }
+
+        CsvCell emailCell = parser.getEmail();
+        if (!emailCell.isEmpty()) {
+            String value = emailCell.getString();
+
+            ContactPointBuilder builder = new ContactPointBuilder(parentBuilder);
+            builder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
+            builder.setUse(ContactPoint.ContactPointUse.WORK);
+            builder.setValue(value, emailCell);
+        }
+
+    }
+
+    private static void transformAddress(Practice parser, HasAddressI parentBuilder) {
 
         CsvCell houseNameFlat = parser.getAddress1();
         CsvCell numberAndStreet = parser.getAddress2();
@@ -72,7 +234,7 @@ public class PracticeTransformer {
         CsvCell county = parser.getAddress5();
         CsvCell postcode = parser.getPostCode();
 
-        AddressBuilder addressBuilder = new AddressBuilder(locationBuilder);
+        AddressBuilder addressBuilder = new AddressBuilder(parentBuilder);
         addressBuilder.setUse(Address.AddressUse.WORK);
         addressBuilder.addLine(houseNameFlat.getString(), houseNameFlat);
         addressBuilder.addLine(numberAndStreet.getString(), numberAndStreet);
@@ -80,75 +242,10 @@ public class PracticeTransformer {
         addressBuilder.setCity(town.getString(), town);
         addressBuilder.setDistrict(county.getString(), county);
         addressBuilder.setPostcode(postcode.getString(), postcode);
-
-        CsvCell phoneNumber = parser.getPhone();
-        if (!phoneNumber.isEmpty()) {
-            ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.WORK, phoneNumber.getString());
-            locationBuilder.addTelecom(fhirContact, phoneNumber);
-        }
-
-        CsvCell faxNumber = parser.getFax();
-        if (!faxNumber.isEmpty()) {
-            ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.FAX, ContactPoint.ContactPointUse.WORK, faxNumber.getString());
-            locationBuilder.addTelecom(fhirContact, faxNumber);
-        }
-
-        CsvCell email = parser.getEmail();
-        if (!email.isEmpty()) {
-            ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.EMAIL, ContactPoint.ContactPointUse.WORK, email.getString());
-            locationBuilder.addTelecom(fhirContact, email);
-        }
-
-        // the location name is the organisation name, that's all we have
-        CsvCell name = parser.getOrganisationName();
-        if (!name.isEmpty()) {
-            locationBuilder.setName(name.getString(), name);
-        }
-
-        //set the managing organisation for the location, basically itself!
-        Reference organisationReference = csvHelper.createOrganisationReference(organisationID.getString());
-        locationBuilder.setManagingOrganisation(organisationReference, organisationID);
-
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), locationBuilder);
     }
 
-    private static void createOrganisationResource(Practice parser,
-                                                   FhirResourceFiler fhirResourceFiler,
-                                                   VisionCsvHelper csvHelper) throws Exception {
 
-        OrganizationBuilder organizationBuilder = new OrganizationBuilder();
-        CsvCell orgID = parser.getOrganisationID();
-        organizationBuilder.setId(orgID.getString(), orgID);
-
-        CsvCell odsCode = parser.getIdentifier();
-        if (!odsCode.isEmpty()) {
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organizationBuilder);
-            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-            identifierBuilder.setValue(odsCode.getString(), odsCode);
-        }
-
-        CsvCell name = parser.getOrganisationName();
-        if (!name.isEmpty()) {
-            organizationBuilder.setName(name.getString(), name);
-        }
-
-        //try to get a org type from the name, i.e. Tinshill Surgery = GP_PRACTICE
-        if (!name.isEmpty()) {
-            OrganisationType fhirOrgType = convertOrganisationType(name.getString());
-            if (fhirOrgType != null) {
-                organizationBuilder.setType(fhirOrgType);
-            } else {
-                //if the org type from the CSV can't be mapped to one of the value set, store as a freetext type
-                //garbage
-                //organizationBuilder.setTypeFreeText(name.getString(), name);
-            }
-        }
-
-        fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
-    }
-
-    private static OrganisationType convertOrganisationType(String csvOrganisationName) {
+    /*private static OrganisationType convertOrganisationType(String csvOrganisationName) {
         //the below mappings are based on what was present in the Vision CSV sample files
         csvOrganisationName = csvOrganisationName.toLowerCase();
 
@@ -167,5 +264,5 @@ public class PracticeTransformer {
         } else {
             return null;
         }
-    }
+    }*/
 }

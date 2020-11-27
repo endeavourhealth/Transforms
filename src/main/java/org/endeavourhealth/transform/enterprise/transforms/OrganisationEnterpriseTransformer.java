@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.endeavourhealth.transform.subscriber.transforms.OrganisationTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,16 +127,7 @@ public class OrganisationEnterpriseTransformer extends AbstractEnterpriseTransfo
                     name = odsOrg.getOrganisationName();
                 }
 
-                OrganisationType odsType = null;
-
-                Set<OrganisationType> types = new HashSet<>(odsOrg.getOrganisationTypes());
-                types.remove(OrganisationType.PRESCRIBING_COST_CENTRE); //always remove so we match to the "better" type
-                if (types.size() == 1) {
-                    odsType = types.iterator().next();
-                } else {
-                    LOG.warn("Could not select type for org " + odsOrg);
-                }
-
+                OrganisationType odsType = OrganisationTransformer.findOdsOrganisationType(odsOrg);
                 if (odsType != null) {
                     typeCode = odsType.getCode();
                     typeDesc = odsType.getDescription();

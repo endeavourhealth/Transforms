@@ -376,20 +376,26 @@ public class EmisAdminHelper {
 
                     String faxNumber = loc.getFaxNumber();
                     if (!Strings.isNullOrEmpty(faxNumber)) {
-                        ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.FAX, ContactPoint.ContactPointUse.WORK, faxNumber);
-                        locationBuilder.addTelecom(fhirContact);
+                        ContactPointBuilder contactPointBuilder = new ContactPointBuilder(locationBuilder);
+                        contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.FAX);
+                        contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+                        contactPointBuilder.setValue(faxNumber);
                     }
 
                     String email = loc.getEmailAddress();
                     if (!Strings.isNullOrEmpty(email)) {
-                        ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.EMAIL, ContactPoint.ContactPointUse.WORK, email);
-                        locationBuilder.addTelecom(fhirContact);
+                        ContactPointBuilder contactPointBuilder = new ContactPointBuilder(locationBuilder);
+                        contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
+                        contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+                        contactPointBuilder.setValue(email);
                     }
 
                     String phoneNumber = loc.getPhoneNumber();
                     if (!Strings.isNullOrEmpty(phoneNumber)) {
-                        ContactPoint fhirContact = ContactPointHelper.create(ContactPoint.ContactPointSystem.PHONE, ContactPoint.ContactPointUse.WORK, phoneNumber);
-                        locationBuilder.addTelecom(fhirContact);
+                        ContactPointBuilder contactPointBuilder = new ContactPointBuilder(locationBuilder);
+                        contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
+                        contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
+                        contactPointBuilder.setValue(phoneNumber);
                     }
 
 

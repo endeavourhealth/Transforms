@@ -90,10 +90,10 @@ public abstract class VisionCsvToFhirTransformer {
 
         Class cls = null;
         if (fileType.equals("active_user_data_extract")) {
-            //this file type isn't processed
+            //this file type isn't processed (and confirmed we don't need it https://endeavourhealth.atlassian.net/browse/SD-229)
             return null;
         } else if (fileType.equals("patient_check_sum_data_extract")) {
-            //this file type isn't processed
+            //this file type isn't processed (doesn't contain anything useful)
             return null;
         } else if (fileType.equals("practice_data_extract")) {
             cls = Practice.class;
@@ -116,113 +116,22 @@ public abstract class VisionCsvToFhirTransformer {
         return constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
     }
 
-    /*private static void validateAndOpenParsers(UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> parsers) throws Exception {
-        //admin - practice
-        findFileAndOpenParser(Practice.class, serviceId, systemId, exchangeId, files, version, parsers);
-        //admin - staff
-        findFileAndOpenParser(Staff.class, serviceId, systemId, exchangeId, files, version, parsers);
-        //patient - demographics
-        findFileAndOpenParser(Patient.class, serviceId, systemId, exchangeId, files, version, parsers);
-        //clinical - encounters
-        findFileAndOpenParser(Encounter.class, serviceId, systemId, exchangeId, files, version, parsers);
-        //clinical - referrals
-        findFileAndOpenParser(Referral.class, serviceId, systemId, exchangeId, files, version, parsers);
-        //clinical - journal (observations, medication, problems etc.)
-        findFileAndOpenParser(Journal.class, serviceId, systemId, exchangeId, files, version, parsers);
-
-        //then validate there are no extra, unexpected files in the folder, which would imply new data
-        Set<String> expectedFiles = parsers
-                .values()
-                .stream()
-                .map(T -> T.getFilePath())
-                .collect(Collectors.toSet());
-
-        for (String filePath: files) {
-            if (!ignoreKnownFile(filePath)
-                    && !expectedFiles.contains(filePath)
-                    && !FilenameUtils.getExtension(filePath).equalsIgnoreCase("csv")) {
-
-                throw new FileFormatException(filePath, "Unexpected file " + filePath + " in Vision CSV extract");
-            }
-        }
-    }
-
-    // these files comes with the Vision extract but we currently do not transform, so ignore them in the unexpected file check
-    private static boolean ignoreKnownFile(String filePath) {
-        String name = FilenameUtils.getName(filePath);
-        return name.contains("active_user_data") || name.contains("patient_check_sum_data");
-    }
-
-    @SuppressWarnings("unchecked")
-    public static void findFileAndOpenParser(Class parserCls, UUID serviceId, UUID systemId, UUID exchangeId, String[] files, String version, Map<Class, AbstractCsvParser> ret) throws Exception {
-
-        String name = parserCls.getSimpleName();
-
-        int fileCount = 0;
-
-        for (String filePath: files) {
-            String fName = FilenameUtils.getName(filePath);
-
-            fileCount++;
-
-            //we're only interested in CSV files
-            String extension = Files.getFileExtension(fName);
-            if (!extension.equalsIgnoreCase("csv")) {
-                continue;
-            }
-
-            //Vision files are format:  FULL_33333_encounter_data_extract-2017-09-23-165206.csv
-            String[] toks = fName.split("_");
-            if (toks.length != 5) {
-                continue;
-            }
-
-            //No file matching the class, i.e. Encounter
-            if (!toks[2].equalsIgnoreCase(name)) {
-                continue;
-            }
-
-            //now construct an instance of the parser for the file we've found
-            Constructor<AbstractCsvParser> constructor = parserCls.getConstructor(UUID.class, UUID.class, UUID.class, String.class, String.class);
-            AbstractCsvParser parser = constructor.newInstance(serviceId, systemId, exchangeId, version, filePath);
-
-            ret.put(parserCls, parser);
-            return;
-        }
-
-        //if the file count is 4, manage the scenario below
-        if (fileCount == 4) {
-
-            //patient files exist (4) but no admin files.  Must have skipped a day
-            if (name.equalsIgnoreCase("Practice") || name.equalsIgnoreCase("Staff")) {
-                LOG.trace("Failed to find CSV file for " + name + ". Missing admin file...continuing with transform.");
-                return;
-            }
-
-            //admin files exist (4) but no patient files.  Admin batch only
-            if (name.equalsIgnoreCase("Patient") || name.equalsIgnoreCase("Encounter")
-                    || name.equalsIgnoreCase("Journal") || name.equalsIgnoreCase("Referral")) {
-                LOG.trace("Failed to find CSV file for " + name + ". Admin batch only...continuing with transform.");
-                return;
-            }
-        }
-
-        throw new FileNotFoundException("Failed to find CSV file for " + name);
-    }*/
-
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
                                          FhirResourceFiler fhirResourceFiler) throws Exception {
 
         VisionCsvHelper csvHelper = new VisionCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId());
 
-        //these transforms do not create resources themselves, but cache data that the subsequent ones rely on
-        JournalProblemPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        JournalDrugPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        //pre-cache various things from the Journal file
         JournalPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        EncounterPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
         csvHelper.saveCodeAndTermMaps(fhirResourceFiler);
         csvHelper.saveCodeToSnomedMaps(fhirResourceFiler);
+
+        //pre-cache links from referrals to problems and encounters
+        ReferralPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+
+        //pre-cache previous linked resources to Encounters
+        EncounterPreTransformer.transform(version, parsers, fhirResourceFiler, csvHelper);
 
         //run the transforms for non-patient resources
         PracticeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -234,6 +143,19 @@ public abstract class VisionCsvToFhirTransformer {
         ReferralTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         JournalTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
+        //if we've received ethnicity journal records but no update to the patient, we
+        //need to explicitly update those patients
         csvHelper.processRemainingEthnicities(fhirResourceFiler);
+
+        //if we've received new items linked to problems we've not transformed, we need to explicitly
+        //update those problems now
+        csvHelper.processRemainingProblemItems(fhirResourceFiler);
+
+        //if we've received new items linked to encounters we've not transformed, we need to explicitly
+        //update those encounters now
+        csvHelper.processRemainingEncounterItems(fhirResourceFiler);
+
+        //close down the utility thread pool
+        csvHelper.stopThreadPool();
     }
 }
