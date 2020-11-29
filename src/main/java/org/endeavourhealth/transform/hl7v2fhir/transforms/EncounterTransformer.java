@@ -391,12 +391,12 @@ public class EncounterTransformer {
                     String treatmentFunctionCode = pv1.getHospitalService().toString();
 
                     MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
                             "treatment_function_code"
                     );
                     MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
                      MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
                             "treatment_function_code", treatmentFunctionCode, IMConstant.IMPERIAL_CERNER
                     );
                      MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
@@ -408,17 +408,38 @@ public class EncounterTransformer {
                     containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
                 }
 
-                String admissionMethodCode = pv1.getAdmitSource().getValue();
+                String admissionSourceCode = pv1.getAdmitSource().getValue();
+                if (!Strings.isNullOrEmpty(admissionSourceCode)) {
+
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "admission_source_code"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "admission_source_code", admissionSourceCode, IMConstant.NHS_DATA_DICTIONARY
+                    );
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
+                    containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                }
+
+                String admissionMethodCode = pv1.getAdmissionType().getValue();
                 if (!Strings.isNullOrEmpty(admissionMethodCode)) {
 
                     MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
                             "admission_method_code"
                     );
                     MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
                     MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
                             "admission_method_code", admissionMethodCode, IMConstant.NHS_DATA_DICTIONARY
                     );
                     MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
@@ -429,18 +450,37 @@ public class EncounterTransformer {
                     containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
                 }
 
-                String admissionSourceCode = pv1.getAdmissionType().getValue();
-                if (!Strings.isNullOrEmpty(admissionSourceCode)) {
-
+                String dischargeDisposition = pv1.getDischargeDisposition().getValue();
+                if (!Strings.isNullOrEmpty(dischargeDisposition)) {
                     MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
-                            "admission_source_code"
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "discharge_method"
                     );
                     MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
 
                     MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType.substring(4,7),
-                            "admission_source_code", admissionSourceCode, IMConstant.NHS_DATA_DICTIONARY
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "discharge_method", dischargeDisposition, IMConstant.NHS_DATA_DICTIONARY
+                    );
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
+                    containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                }
+
+                String dischargedToLocation = pv1.getDischargedToLocation().toString();
+                if (!Strings.isNullOrEmpty(dischargedToLocation)) {
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "discharge_destination_code"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "discharge_destination_code", dischargedToLocation, IMConstant.NHS_DATA_DICTIONARY
                     );
                     MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 

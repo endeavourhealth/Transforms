@@ -80,7 +80,7 @@ public abstract class ImperialHL7FhirORUTransformer {
                 newPatient = true;
             }
 
-            patientBuilder = PatientTransformer.transformPIDToPatient(pid, patientBuilder, fhirResourceFiler, imperialHL7Helper);
+            patientBuilder = PatientTransformer.transformPIDToPatient(pid, patientBuilder, fhirResourceFiler, imperialHL7Helper, oruMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
             if(newPatient) {
                 patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));

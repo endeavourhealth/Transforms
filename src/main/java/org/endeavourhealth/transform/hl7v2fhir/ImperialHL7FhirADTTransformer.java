@@ -30,34 +30,34 @@ public abstract class ImperialHL7FhirADTTransformer {
                 fhirResourceFiler.getExchangeId(), null, null);
 
         if("ADT_A01".equalsIgnoreCase(msgType)) {
-            transformADT_A01(fhirResourceFiler, (ADT_A01) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A01(fhirResourceFiler, (ADT_A01) hapiMsg, imperialHL7Helper);
 
         } else if("ADT_A02".equalsIgnoreCase(msgType)) {
-            transformADT_A02(fhirResourceFiler, (ADT_A02) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A02(fhirResourceFiler, (ADT_A02) hapiMsg, imperialHL7Helper);
 
         } else if("ADT_A03".equalsIgnoreCase(msgType)) {
-            transformADT_A03(fhirResourceFiler, (ADT_A03) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A03(fhirResourceFiler, (ADT_A03) hapiMsg, imperialHL7Helper);
 
         } else if("ADT_A11".equalsIgnoreCase(msgType)) {
-            transformADT_A11(fhirResourceFiler, (ADT_A11) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A11(fhirResourceFiler, (ADT_A11) hapiMsg, imperialHL7Helper);
 
         } else if("ADT_A12".equalsIgnoreCase(msgType)) {
-            transformADT_A12(fhirResourceFiler, (ADT_A12) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A12(fhirResourceFiler, (ADT_A12) hapiMsg, imperialHL7Helper);
 
         } else if("ADT_A13".equalsIgnoreCase(msgType)) {
-            transformADT_A13(fhirResourceFiler, (ADT_A13) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A13(fhirResourceFiler, (ADT_A13) hapiMsg, imperialHL7Helper);
 
         } /*else if("ADT_A05".equalsIgnoreCase(msgType)) {
-            transformADT_A05(fhirResourceFiler, (ADT_A05) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A05(fhirResourceFiler, (ADT_A05) hapiMsg, imperialHL7Helper);
 
         }*/ else if("ADT_A08".equalsIgnoreCase(msgType)) {
-            transformADT_A08(fhirResourceFiler, (ADT_A08) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A08(fhirResourceFiler, (ADT_A08) hapiMsg, imperialHL7Helper);
 
         } else if("ADT_A28".equalsIgnoreCase(msgType)) {
-            transformADT_A28(fhirResourceFiler, (ADT_A28) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A28(fhirResourceFiler, (ADT_A28) hapiMsg, imperialHL7Helper);
 
         } else if("ADT_A31".equalsIgnoreCase(msgType)) {
-            transformADT_A31(fhirResourceFiler, (ADT_A31) hapiMsg, msgType, imperialHL7Helper);
+            transformADT_A31(fhirResourceFiler, (ADT_A31) hapiMsg, imperialHL7Helper);
 
         } else if("ADT_A34".equalsIgnoreCase(msgType)) {
             transformADT_A34(fhirResourceFiler, (ADT_A34) hapiMsg, imperialHL7Helper);
@@ -109,7 +109,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -132,11 +132,10 @@ public abstract class ImperialHL7FhirADTTransformer {
      *
      * @param fhirResourceFiler
      * @param hapiMsg
-     * @param msgType
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A31(FhirResourceFiler fhirResourceFiler, ADT_A31 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A31(FhirResourceFiler fhirResourceFiler, ADT_A31 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A31 adtMsg = hapiMsg;
 
         //MessageHeader
@@ -220,7 +219,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -280,7 +279,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         //EpisodeOfCare
 
         //Encounter
-        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue(), patientGuid);
         //Encounter
     }
 
@@ -288,11 +287,10 @@ public abstract class ImperialHL7FhirADTTransformer {
      *
      * @param fhirResourceFiler
      * @param hapiMsg
-     * @param msgType
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A28(FhirResourceFiler fhirResourceFiler, ADT_A28 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A28(FhirResourceFiler fhirResourceFiler, ADT_A28 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A28 adtMsg = hapiMsg;
 
         //MessageHeader
@@ -376,7 +374,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -436,7 +434,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         //EpisodeOfCare
 
         //Encounter
-        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue(), patientGuid);
         //Encounter
     }
 
@@ -444,11 +442,10 @@ public abstract class ImperialHL7FhirADTTransformer {
      *
      * @param fhirResourceFiler
      * @param hapiMsg
-     * @param msgType
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A08(FhirResourceFiler fhirResourceFiler, ADT_A08 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A08(FhirResourceFiler fhirResourceFiler, ADT_A08 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A08 adtMsg = hapiMsg;
 
         //MessageHeader
@@ -532,7 +529,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -592,7 +589,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         //EpisodeOfCare
 
         //Encounter
-        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue(), patientGuid);
         //Encounter
     }
 
@@ -603,7 +600,7 @@ public abstract class ImperialHL7FhirADTTransformer {
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A13(FhirResourceFiler fhirResourceFiler, ADT_A13 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A13(FhirResourceFiler fhirResourceFiler, ADT_A13 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A13 adtMsg = hapiMsg;
 
         //Organization
@@ -679,7 +676,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -698,7 +695,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         Encounter existingParentEncounter
                 = (Encounter) imperialHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(adtMsg.getPV1().getVisitNumber().getID()));
         if(existingParentEncounter != null) {
-            EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType);
+            EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
         }
         //Encounter
 
@@ -719,7 +716,7 @@ public abstract class ImperialHL7FhirADTTransformer {
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A12(FhirResourceFiler fhirResourceFiler, ADT_A12 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A12(FhirResourceFiler fhirResourceFiler, ADT_A12 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A12 adtMsg = hapiMsg;
 
         //Organization
@@ -795,7 +792,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -811,7 +808,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         //Patient
 
         //Encounter
-        EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType);
+        EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
         //Encounter
 
         //EpisodeOfCare
@@ -831,7 +828,7 @@ public abstract class ImperialHL7FhirADTTransformer {
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A11(FhirResourceFiler fhirResourceFiler, ADT_A11 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A11(FhirResourceFiler fhirResourceFiler, ADT_A11 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A11 adtMsg = hapiMsg;
 
         //Organization
@@ -907,7 +904,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -926,7 +923,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         Encounter existingParentEncounter
                 = (Encounter) imperialHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(adtMsg.getPV1().getVisitNumber().getID()));
         if(existingParentEncounter != null) {
-            EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType);
+            EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
         }
         //Encounter
 
@@ -944,11 +941,10 @@ public abstract class ImperialHL7FhirADTTransformer {
      *
      * @param fhirResourceFiler
      * @param hapiMsg
-     * @param msgType
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A03(FhirResourceFiler fhirResourceFiler, ADT_A03 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A03(FhirResourceFiler fhirResourceFiler, ADT_A03 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A03 adtMsg = hapiMsg;
 
         //MessageHeader
@@ -1027,7 +1023,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -1087,7 +1083,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         //EpisodeOfCare
 
         //Encounter
-        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue(), patientGuid);
         //Encounter
     }
 
@@ -1095,11 +1091,10 @@ public abstract class ImperialHL7FhirADTTransformer {
      *
      * @param fhirResourceFiler
      * @param hapiMsg
-     * @param msgType
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A02(FhirResourceFiler fhirResourceFiler, ADT_A02 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A02(FhirResourceFiler fhirResourceFiler, ADT_A02 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A02 adtMsg = hapiMsg;
 
         //MessageHeader
@@ -1178,7 +1173,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -1238,7 +1233,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         //EpisodeOfCare
 
         //Encounter
-        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue(), patientGuid);
         //Encounter
     }
 
@@ -1246,11 +1241,10 @@ public abstract class ImperialHL7FhirADTTransformer {
      *
      * @param fhirResourceFiler
      * @param hapiMsg
-     * @param msgType
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A01(FhirResourceFiler fhirResourceFiler, ADT_A01 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A01(FhirResourceFiler fhirResourceFiler, ADT_A01 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A01 adtMsg = hapiMsg;
 
         //MessageHeader
@@ -1356,7 +1350,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -1372,6 +1366,33 @@ public abstract class ImperialHL7FhirADTTransformer {
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
         //Patient
+
+        //Observation
+        ObservationBuilder observationBuilder = null;
+        boolean newObservation = false;
+        Observation existingObservation = null;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Religion", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Religion", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDToObservation(adtMsg.getPID(), observationBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+        //Observation
 
         //EpisodeOfCare
         boolean newEpisodeOfCare = false;
@@ -1418,7 +1439,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         //EpisodeOfCare
 
         //Encounter
-        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue(), patientGuid);
         //Encounter
     }
 
@@ -1426,11 +1447,10 @@ public abstract class ImperialHL7FhirADTTransformer {
      *
      * @param fhirResourceFiler
      * @param hapiMsg
-     * @param msgType
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void transformADT_A05(FhirResourceFiler fhirResourceFiler, ADT_A05 hapiMsg, String msgType, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    private static void transformADT_A05(FhirResourceFiler fhirResourceFiler, ADT_A05 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A05 adtMsg = hapiMsg;
 
         //MessageHeader
@@ -1509,7 +1529,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             newPatient = true;
         }
 
-        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
         if(newPatient) {
             patientBuilder.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
@@ -1569,7 +1589,7 @@ public abstract class ImperialHL7FhirADTTransformer {
         //EpisodeOfCare
 
         //Encounter
-        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+        EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue(), patientGuid);
         //Encounter
     }
 

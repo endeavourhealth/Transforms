@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.hl7v2fhir.transforms;
 import ca.uhn.hl7v2.model.v23.datatype.*;
 import ca.uhn.hl7v2.model.v23.segment.MRG;
 import ca.uhn.hl7v2.model.v23.segment.PID;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
@@ -12,6 +13,9 @@ import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -21,6 +25,8 @@ import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
 import org.endeavourhealth.transform.fhirhl7v2.FhirHl7v2Filer;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
+import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +49,7 @@ public class PatientTransformer {
      * @return
      * @throws Exception
      */
-    public static PatientBuilder transformPIDToPatient(PID pid, PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    public static PatientBuilder transformPIDToPatient(PID pid, PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType) throws Exception {
         CX[] patientIdList = pid.getPatientIDInternalID();
         String id = String.valueOf(patientIdList[0].getID());
         String nhsNumber = String.valueOf(patientIdList[1].getID());
@@ -75,18 +81,28 @@ public class PatientTransformer {
         Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
         patientBuilder.setGender(gender);
 
-        /*CernerCodeValueRef cvref = csvHelper.lookupCodeRef(CodeValueSet.RELIGION, pid.getReligion().getValue());
-        //if possible, map the religion to the NHS data dictionary values
-        Religion fhirReligion = mapReligion(cvref);
-        if (fhirReligion != null) {
-            patientBuilder.setReligion(fhirReligion);
-        } else {
-            //if not possible to map, carry the value over as free text
-            String freeTextReligion = cvref.getCodeDispTxt();
-            patientBuilder.setReligionFreeText(freeTextReligion);
-        }
-        patientBuilder.setReligion(fhirReligion);*/
         patientBuilder.setEthnicity(EthnicCategory.fromCode(pid.getEthnicGroup().getValue()));
+
+        /*String ethnicity = pid.getEthnicGroup().getValue();
+        if (!Strings.isNullOrEmpty(ethnicity)) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                    "ethnicity"
+            );
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                    "ethnicity", ethnicity, IMConstant.NHS_DATA_DICTIONARY
+            );
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+            CodeableConcept ccValue = patientBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Patient_Language,false);
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme()).setDisplay("Ethnicity");
+            patientBuilder.
+        }*/
 
         XTN[] phones = pid.getPhoneNumberHome();
         for(XTN phone : phones) {
