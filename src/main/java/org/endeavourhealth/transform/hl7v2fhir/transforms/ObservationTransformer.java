@@ -53,7 +53,7 @@ public class ObservationTransformer {
         String id = String.valueOf(patientIdList[0].getID());
 
         String religion = pid.getReligion().getValue();
-        if (!Strings.isNullOrEmpty(religion)) {
+        if (!Strings.isNullOrEmpty(religion) && !religion.equalsIgnoreCase("\"\"")) {
             MapColumnRequest propertyRequest = new MapColumnRequest(
                     "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
                     "religion"

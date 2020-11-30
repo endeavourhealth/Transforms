@@ -81,7 +81,10 @@ public class PatientTransformer {
         Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
         patientBuilder.setGender(gender);
 
-        patientBuilder.setEthnicity(EthnicCategory.fromCode(pid.getEthnicGroup().getValue()));
+        String ethnicity = pid.getEthnicGroup().getValue();
+        if (!Strings.isNullOrEmpty(ethnicity) && !ethnicity.equalsIgnoreCase("\"\"")) {
+            patientBuilder.setEthnicity(EthnicCategory.fromCode(pid.getEthnicGroup().getValue()));
+        }
 
         /*String ethnicity = pid.getEthnicGroup().getValue();
         if (!Strings.isNullOrEmpty(ethnicity)) {

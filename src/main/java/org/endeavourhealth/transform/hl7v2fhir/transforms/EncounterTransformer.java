@@ -387,8 +387,8 @@ public class EncounterTransformer {
                 ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(childEncounterBuilder);
                 containedParametersBuilder.removeContainedParameters();
 
-                if (pv1.getHospitalService() != null) {
-                    String treatmentFunctionCode = pv1.getHospitalService().toString();
+                String treatmentFunctionCode = pv1.getHospitalService().getValue();
+                if (!Strings.isNullOrEmpty(treatmentFunctionCode)  && !treatmentFunctionCode.equalsIgnoreCase("\"\"")) {
 
                     MapColumnRequest propertyRequest = new MapColumnRequest(
                             "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
@@ -409,7 +409,7 @@ public class EncounterTransformer {
                 }
 
                 String admissionSourceCode = pv1.getAdmitSource().getValue();
-                if (!Strings.isNullOrEmpty(admissionSourceCode)) {
+                if (!Strings.isNullOrEmpty(admissionSourceCode) && !admissionSourceCode.equalsIgnoreCase("\"\"")) {
 
                     MapColumnRequest propertyRequest = new MapColumnRequest(
                             "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
@@ -430,7 +430,7 @@ public class EncounterTransformer {
                 }
 
                 String admissionMethodCode = pv1.getAdmissionType().getValue();
-                if (!Strings.isNullOrEmpty(admissionMethodCode)) {
+                if (!Strings.isNullOrEmpty(admissionMethodCode) && !admissionMethodCode.equalsIgnoreCase("\"\"")) {
 
                     MapColumnRequest propertyRequest = new MapColumnRequest(
                             "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
@@ -451,7 +451,7 @@ public class EncounterTransformer {
                 }
 
                 String dischargeDisposition = pv1.getDischargeDisposition().getValue();
-                if (!Strings.isNullOrEmpty(dischargeDisposition)) {
+                if (!Strings.isNullOrEmpty(dischargeDisposition) && !dischargeDisposition.equalsIgnoreCase("\"\"")) {
                     MapColumnRequest propertyRequest = new MapColumnRequest(
                             "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
                             "discharge_method"
@@ -471,7 +471,7 @@ public class EncounterTransformer {
                 }
 
                 String dischargedToLocation = pv1.getDischargedToLocation().toString();
-                if (!Strings.isNullOrEmpty(dischargedToLocation)) {
+                if (!Strings.isNullOrEmpty(dischargedToLocation) && !dischargedToLocation.equalsIgnoreCase("\"\"")) {
                     MapColumnRequest propertyRequest = new MapColumnRequest(
                             "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
                             "discharge_destination_code"
