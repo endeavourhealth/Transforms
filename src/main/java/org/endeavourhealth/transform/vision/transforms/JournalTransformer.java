@@ -232,10 +232,12 @@ public class JournalTransformer {
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationStatementBuilder, CodeableConceptBuilder.Tag.Medication_Statement_Drug_Code);
         VisionCodeHelper.populateCodeableConcept(true, parser, codeableConceptBuilder, csvHelper);
 
+        //ensure that value1 is the quantity
+        assertValue1NameIsQuantity(parser, csvHelper);
 
-        CsvCell quantity = parser.getValue1();
-        if (!quantity.isEmpty()) {
-            medicationStatementBuilder.setQuantityValue(quantity.getDouble(), quantity);
+        CsvCell quantityCell = parser.getValue1();
+        if (!quantityCell.isEmpty()) {
+            medicationStatementBuilder.setQuantityValue(quantityCell.getDouble(), quantityCell);
         }
 
         CsvCell quantityUnitCell = parser.getDrugPrep();
@@ -328,10 +330,12 @@ public class JournalTransformer {
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(medicationOrderBuilder, CodeableConceptBuilder.Tag.Medication_Order_Drug_Code);
         VisionCodeHelper.populateCodeableConcept(true, parser, codeableConceptBuilder, csvHelper);
 
+        //ensure that value1 is the quantity
+        assertValue1NameIsQuantity(parser, csvHelper);
 
-        CsvCell quantity = parser.getValue1();
-        if (!quantity.isEmpty()) {
-            medicationOrderBuilder.setQuantityValue(quantity.getDouble(), quantity);
+        CsvCell quantityCell = parser.getValue1();
+        if (!quantityCell.isEmpty()) {
+            medicationOrderBuilder.setQuantityValue(quantityCell.getDouble(), quantityCell);
         }
 
         CsvCell quantityUnit = parser.getDrugPrep();
@@ -469,7 +473,7 @@ public class JournalTransformer {
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
-        assertValueEmpty(allergyIntoleranceBuilder, parser);
+        assertValue1NameIsEmpty(parser, csvHelper);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), allergyIntoleranceBuilder);
     }
@@ -548,7 +552,7 @@ public class JournalTransformer {
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
-        assertValueEmpty(procedureBuilder, parser);
+        assertValue1NameIsEmpty(parser, csvHelper);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
     }
@@ -649,6 +653,9 @@ public class JournalTransformer {
             Identifier fhirDocIdentifier = IdentifierHelper.createIdentifier(Identifier.IdentifierUse.OFFICIAL, FhirIdentifierUri.IDENTIFIER_SYSTEM_VISION_DOCUMENT_GUID, documentId);
             conditionBuilder.addDocumentIdentifier(fhirDocIdentifier, parser.getDocumentID());
         }
+
+        //assert that these cells are empty, as we don't stored them in this resource type
+        assertValue1NameIsEmpty(parser, csvHelper);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), conditionBuilder);
     }
@@ -1009,7 +1016,7 @@ public class JournalTransformer {
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
-        assertValueEmpty(familyMemberHistoryBuilder, parser);
+        assertValue1NameIsEmpty(parser, csvHelper);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), familyMemberHistoryBuilder);
     }
@@ -1169,7 +1176,7 @@ public class JournalTransformer {
         }
 
         //assert that these cells are empty, as we don't stored them in this resource type
-        assertValueEmpty(immunizationBuilder, parser);
+        assertValue1NameIsEmpty(parser, csvHelper);
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), immunizationBuilder);
     }
@@ -1293,11 +1300,64 @@ public class JournalTransformer {
         return invalid;
     }
 
-    private static void assertValueEmpty(ResourceBuilderBase resourceBuilder, Journal parser) throws Exception {
-        if (!Strings.isNullOrEmpty(parser.getValue1().getString())
-                && !parser.getValue1Name().getString().equalsIgnoreCase("REVIEW_DAT")) {
-            throw new FieldNotEmptyException("Value", resourceBuilder.getResource());
+
+    /**
+     * for Medication-type records (subset A, R, S), the VALUE1_NAME field should only be used
+     * to give the quantity of the medication
+     */
+    private static void assertValue1NameIsQuantity(Journal parser, VisionCsvHelper csvHelper) throws Exception {
+
+        //if there's no value1, then it doesn't matter
+        CsvCell value1Cell = parser.getValue1();
+        if (value1Cell.isEmpty()) {
+            return;
         }
+
+        CsvCell value1NameCell = parser.getValue1Name();
+        if (value1NameCell.isEmpty()) {
+            return;
+        }
+
+        String value1Name = value1NameCell.getString();
+        if (value1Name.equals("QUANTITY")) {
+            return;
+        }
+
+        CsvCell subsetCell = parser.getSubset();
+
+        throw new Exception("VALUE1_NAME cell should contain QUANTITY but contains [" + value1Name + "] for SUBSET " + subsetCell.getString());
+    }
+
+    /**
+     * in many cases we expect the VALUE1 field to be empty, so assert that it is
+     */
+    private static void assertValue1NameIsEmpty(Journal parser, VisionCsvHelper csvHelper) throws Exception {
+
+        //if there's no value1, then it doesn't matter
+        CsvCell value1Cell = parser.getValue1();
+        if (value1Cell.isEmpty()) {
+            return;
+        }
+
+        CsvCell value1NameCell = parser.getValue1Name();
+        if (value1NameCell.isEmpty()) {
+            return;
+        }
+        String value1Name = value1NameCell.getString();
+
+        CsvCell subsetCell = parser.getSubset();
+        String subset = subsetCell.getString();
+
+        //see https://endeavourhealth.atlassian.net/browse/SD-250
+        //we have some immunisation records where we have test result data, so audit that and let through
+        if (subset.equals("I")
+                && value1Name.equals("NUM_RESULT")) {
+
+            TransformWarnings.log(LOG, csvHelper, "Vision Immunisation with non-empty VALUE1_NAME {}", value1NameCell);
+            return;
+        }
+
+        throw new Exception("VALUE1_NAME cell should be empty but contains [" + value1Name + "] for SUBSET " + subsetCell.getString());
     }
 
     private static String getDocumentId(Journal parser) {
