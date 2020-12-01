@@ -17,6 +17,8 @@ import java.util.UUID;
 public class ExchangeHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ExchangeHelper.class);
 
+    public static final UUID DUMMY_BATCH_ID = UUID.fromString("00000000-0000-0000-0000-000000000000"); //used as a non-null batch ID when we don't have one
+
     public static List<ExchangePayloadFile> parseExchangeBody(String exchangeBody) {
         return parseExchangeBody(exchangeBody, true);
     }
