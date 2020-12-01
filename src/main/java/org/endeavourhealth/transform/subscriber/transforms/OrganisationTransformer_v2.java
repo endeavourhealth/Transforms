@@ -328,16 +328,19 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
 
                 String losa_code = ""; String msoa_code = ""; String imp_code = "";
 
+                uprn_ralf00 = pseudoUprn(abp_uprn, params);
+
+                /* no need to pseudonymise
                 if (params.isPseudonymised()) {
                     uprn_ralf00 = pseudoUprn(abp_uprn, params);
                     abp_uprn = "";
                     // and null the rest of the fields
-                    latitude = null; longitude = null; x = null; y = null;
-                    abp_flat = null; abp_building = null; abp_number = null;
-                    abp_dep_locality = null; abp_class_code = null;
-                    abp_throughfare = null; abp_town = null; abp_street = null;
-                    qualifier = null; algorithm = null;
+                    sLatitude = ""; sLongitude = ""; sX = ""; sY = "";
+                    abp_flat = ""; abp_building = ""; abp_number = "";
+                    abp_dep_locality = ""; abp_class_code = "";
+                    abp_throughfare = ""; abp_town = ""; abp_street = "";
                 }
+                */
 
                 // main_location_id
                 sql = "SELECT location_id as id FROM organization_v2 ov2 where ov2.id="+subscriberId.getSubscriberId();
