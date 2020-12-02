@@ -328,7 +328,7 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
 
                 String losa_code = ""; String msoa_code = ""; String imp_code = "";
 
-                uprn_ralf00 = pseudoUprn(abp_uprn, params);
+                if (params.isPseudonymised()) {uprn_ralf00 = pseudoUprn(abp_uprn, params);}
 
                 /* no need to pseudonymise
                 if (params.isPseudonymised()) {
