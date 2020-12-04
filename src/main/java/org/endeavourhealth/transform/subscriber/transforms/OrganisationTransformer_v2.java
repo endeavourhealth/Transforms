@@ -234,17 +234,22 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
             for (ContactPoint contact: fhir.getTelecom()) {
                 String contact_type = contact.getSystem().toString();
                 String value = contact.getValue();
+
                 // get contact_id
                 // select id from contact where id = subscriberId and value = value
-                String sql = "select id from organization_contact_v2 where organization_id=" + subscriberId.getSubscriberId() + " AND value='" + value + "'";
-                contact_id = getId(connectionWrapper, params, sql);
-                if (contact_id.isEmpty()) {
-                    //sql = getNextIdSQL(schema, "organization_contact_v2");
-                    //contact_id = getId(connectionWrapper, params, sql);
-                    contact_id = GetLastInsertId(configName);
+
+                if (value !=null && !value.isEmpty()) {
+                    String sql = "select id from organization_contact_v2 where organization_id=" + subscriberId.getSubscriberId() + " AND value='" + value + "'";
+                    contact_id = getId(connectionWrapper, params, sql);
+                    if (contact_id.isEmpty()) {
+                        //sql = getNextIdSQL(schema, "organization_contact_v2");
+                        //contact_id = getId(connectionWrapper, params, sql);
+                        contact_id = GetLastInsertId(configName);
+                    }
+                    contact_model.writeUpsert(Long.parseLong(contact_id), subscriberId.getSubscriberId(), contact_type, value);
                 }
-                contact_model.writeUpsert(Long.parseLong(contact_id), subscriberId.getSubscriberId(), contact_type, value); }
             }
+        }
 
             String adrec = ""; String address_line_1 = ""; String address_line_2 = ""; String address_line_3 = "";
             String city =""; String district = ""; String uprn_ralf00 = "";
