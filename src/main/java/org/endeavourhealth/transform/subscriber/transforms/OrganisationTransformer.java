@@ -224,6 +224,12 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
             return types.iterator().next();
         }
 
+        //another one
+        types.remove(OrganisationType.REGISTERED_UNDER_PART_2_CARE_STDS_ACT_2000);
+        if (types.size() == 1) {
+            return types.iterator().next();
+        }
+
         throw new Exception("Unable to determine best org type for ODS record " + odsRecord.getOdsCode());
     }
 

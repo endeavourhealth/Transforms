@@ -360,6 +360,7 @@ public class PatientTransformer {
     private static void transformAddress(PatientBuilder patientBuilder, Patient parser, FhirResourceFiler fhirResourceFiler, RegistrationType registrationType) throws Exception {
         //if the patient is a temp patient, then the address supplied will be the temporary address,
         //rather than home. Emis Web stores the home address for these patients in a table we don't get in the extract
+        //This has been confirmed by Emis (https://endeavourhealth.atlassian.net/browse/SD-244)
         Address.AddressUse use = null;
         if (registrationType != null
                 && registrationType == RegistrationType.TEMPORARY) {

@@ -1314,7 +1314,8 @@ public class JournalTransformer {
         }
 
         CsvCell value1NameCell = parser.getValue1Name();
-        if (value1NameCell.isEmpty()) {
+        if (value1NameCell == null //field not present in Test Pack data
+            || value1NameCell.isEmpty()) {
             return;
         }
 
@@ -1340,7 +1341,8 @@ public class JournalTransformer {
         }
 
         CsvCell value1NameCell = parser.getValue1Name();
-        if (value1NameCell.isEmpty()) {
+        if (value1NameCell == null //field not present in Test Pack data
+            || value1NameCell.isEmpty()) {
             return;
         }
         String value1Name = value1NameCell.getString();
