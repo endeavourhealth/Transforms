@@ -479,6 +479,11 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             y = null;
         }
 
+        String alg_version = "";
+        String epoch = "";
+        if (indexInBound(ss, 21)) alg_version = ss[21];
+        if (indexInBound(ss, 22)) epoch = ss[22];
+
         uprnwriter.writeUpsert(//uprn_subTableId,
                 //subTableId.getSubscriberId(),
                 subTableId.getSubscriberId(),
@@ -503,10 +508,14 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 match_number, // match number [10]
                 match_building, // match building [8]
                 match_flat, // match flat [9]
-                "", // alg version ** TO DO
-                ""); // epoc ** TO DO
+                alg_version, // alg version [21]
+                epoch); // epoch [22]
 
         return uprnRet;
+    }
+
+    private static boolean indexInBound(String[] data, int index){
+        return data != null && index >= 0 && index < data.length;
     }
 
     private Long transformAddresses(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {

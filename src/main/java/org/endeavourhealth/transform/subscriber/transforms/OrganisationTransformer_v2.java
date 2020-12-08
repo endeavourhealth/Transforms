@@ -329,7 +329,11 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
                 qualifier = ss[7]; algorithm = ss[6]; match_pattern_postcode = ss[11];
                 match_pattern_street = ss[12]; match_pattern_number = ss[10];
                 match_pattern_building = ss[8]; match_pattern_flat = ss[9];
-                algorithm_version = "4.2"; epoch = "b";
+
+                algorithm_version = ""; epoch = "";
+                if (indexInBound(ss, 21)) algorithm_version = ss[21];
+                if (indexInBound(ss, 22)) epoch = ss[22];
+
 
                 String losa_code = ""; String msoa_code = ""; String imp_code = "";
 
@@ -522,6 +526,10 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
     @Override
     protected SubscriberTableId getMainSubscriberTableId() {
         return SubscriberTableId.ORGANIZATION_V2;
+    }
+
+    private static boolean indexInBound(String[] data, int index){
+        return data != null && index >= 0 && index < data.length;
     }
 
     // defunct
