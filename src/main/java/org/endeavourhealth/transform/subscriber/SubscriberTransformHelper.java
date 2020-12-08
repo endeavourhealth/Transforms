@@ -5,6 +5,7 @@ import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.utility.ExpiringCache;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.eds.PatientSearchDalI;
@@ -35,6 +36,7 @@ import java.util.regex.Pattern;
 public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(SubscriberTransformHelper.class);
 
+    private static final long CACHE_DURATION = 1000 * 60 * 60; //cache objects for 2hrs
     private static final Object MAP_VAL = new Object(); //concurrent hash map requires non-null values, so just use this
 
     private static Set<String> protectedCodesRead2;
@@ -60,7 +62,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final boolean isBulkDeleteFromSubscriber;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
     private Patient cachedPatient = null;
-    private Map<String, String> snomedToBnfChapter = new HashMap<>();
+    private static ExpiringCache<String, String> snomedToBnfChapter = new ExpiringCache<>(CACHE_DURATION);
     private final ReentrantLock lock = new ReentrantLock();
     private ResourceWrapper patientTransformedWrapper = null;
 
