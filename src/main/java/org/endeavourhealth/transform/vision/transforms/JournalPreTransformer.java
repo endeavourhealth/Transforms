@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.vision.transforms;
 
 import com.google.common.base.Strings;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.utility.ThreadPoolError;
@@ -92,8 +93,11 @@ public class JournalPreTransformer {
             csvHelper.cacheNewConsultationChildRelationship(consultationId, patientIdCell, observationIdCell, resourceType, linkCell);
         }
 
-        //if it is not a problem itself, cache the Observation or Medication linked problem to be filed with the condition resource
-        if (resourceType != ResourceType.Condition) {
+        //cache the journal-to-journal links between journal items and Problems
+        //SD-261 - SKIP any linking MedicationOrders to Problems. Patients can have thousands of medication issues for
+        //their repeat templates, so let the repeat templates (MedicationStatements) be linked, but don't link the
+        //issues (MedicationOrder) because we end up with FHIR Conditions with thousands of linked items.
+        if (resourceType != ResourceType.MedicationOrder) {
 
             Set<String> problemLinkIds = JournalTransformer.extractJournalLinkIds(linkCell);
             if (problemLinkIds != null) {
@@ -289,6 +293,18 @@ public class JournalPreTransformer {
                 ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
 
                 List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getReferences();
+
+                //SD-261 - we have FHIR Conditions with thousands of linked MedicationOrders (issues of repeat templates), which is
+                //crippling the transform and doesn't add any clinical usefulness (since the MedicationStatements are also linked).
+                //The pre-transform no longer populated these links, but we've got a lot of data already affected, so remove those links
+                for (int i=previousReferencesDiscoveryIds.size()-1; i>=0; i--) {
+                    Reference ref = previousReferencesDiscoveryIds.get(i);
+                    ResourceType resourceType = ReferenceHelper.getResourceType(ref);
+                    if (resourceType == ResourceType.MedicationOrder) {
+                        previousReferencesDiscoveryIds.remove(i);
+                        continue;
+                    }
+                }
 
                 //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
                 List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);

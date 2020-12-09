@@ -46,6 +46,31 @@ public class ContainedListBuilder {
         return true;
     }
 
+    public boolean removeReference(Reference reference) {
+
+        List_ list = getContainedList();
+        if (list == null) {
+            return false;
+        }
+
+        boolean removed = false;
+
+        List<List_.ListEntryComponent> components = list.getEntry();
+        for (int i=components.size()-1; i>=0; i--) {
+            List_.ListEntryComponent component = components.get(i);
+            if (component.hasItem()) {
+                Reference existingReference = component.getItem();
+                if (ReferenceHelper.equals(existingReference, reference)) {
+                    components.remove(i);
+                    removed = true;
+                    continue; //don't break, just on the off chance the reference is in multiple times
+                }
+            }
+        }
+
+        return removed;
+    }
+
     public void removeContainedList() {
 
         DomainResource resource = parentBuilder.getResource();

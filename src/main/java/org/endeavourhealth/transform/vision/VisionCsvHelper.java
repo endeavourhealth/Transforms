@@ -797,6 +797,16 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             ConditionBuilder conditionBuilder = new ConditionBuilder(existingCondition);
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
 
+            //SD-261 we've got FHIR Conditions with thousands of MedicationOrder references that shouldn't be there,
+            //so tidy up our reference list and remove any we find
+            List<Reference> existingReferences = containedListBuilder.getReferences();
+            for (Reference reference: existingReferences) {
+                ResourceType resourceType = ReferenceHelper.getResourceType(reference);
+                if (resourceType == ResourceType.MedicationOrder) {
+                    containedListBuilder.removeReference(reference);
+                }
+            }
+
             boolean madeChange = false;
 
             for (int i=0; i<newLinkedItems.size(); i++) {
