@@ -126,4 +126,5 @@ public class ExchangeHelper {
         Boolean b = exchange.getHeaderAsBoolean(HeaderKeys.AllowQueueing);
         return b == null || b.booleanValue();
     }
+
 }
