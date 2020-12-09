@@ -115,7 +115,7 @@ public class ExchangeHelper {
      * checks if this exchange has the "last message" header key
      */
     public static boolean isLastMessage(Exchange exchange) {
-        Boolean b = exchange.getHeaderAsBoolean(HeaderKeys.LastMessage);
+        Boolean b = exchange.getHeaderAsBoolean(HeaderKeys.LastMessageForExchange);
         return b != null && b.booleanValue();
     }
 
