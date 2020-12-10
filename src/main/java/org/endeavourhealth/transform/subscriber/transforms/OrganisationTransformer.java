@@ -1,20 +1,25 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.common.fhir.FhirValueSetUri;
+import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.schema.OrganisationType;
 import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class OrganisationTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
@@ -226,6 +231,12 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
 
         //another one
         types.remove(OrganisationType.REGISTERED_UNDER_PART_2_CARE_STDS_ACT_2000);
+        if (types.size() == 1) {
+            return types.iterator().next();
+        }
+
+        //another one - SD-263
+        types.remove(OrganisationType.LEVEL_04_PCT);
         if (types.size() == 1) {
             return types.iterator().next();
         }
