@@ -141,17 +141,21 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
                                 String valueScheme = parameterValue.getCoding().get(0).getSystem();
                                 String valueDisplay = parameterValue.getCoding().get(0).getDisplay();
                                 String[] ss = valueDisplay.split("\\~",-1);
-                                String vDisplay = ss[0]; String vName = ss[1];
+                                String vDisplay = ss[0]; String vName = ss[1]; String isCode = ss[2];
 
                                 Integer propertyConceptDbid = FindDBID(propertyScheme, propertyCode, configName);
-                                Integer valueConceptDbid = FindDBID(valueScheme, valueCode, configName);
+
+                                Integer valueConceptDbid = 0;
+                                if (isCode.equals("1")) {
+                                    valueConceptDbid = FindDBID(valueScheme, valueCode, configName);
+                                }
 
                                 if (propertyConceptDbid.equals(0)) {
                                     propertyConceptDbid = IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
                                     InsertDBID(propertyScheme, propertyCode, propertyConceptDbid, configName);
                                 }
 
-                                if (valueConceptDbid.equals(0)) {
+                                if (isCode.equals("1") && valueConceptDbid.equals(0)) {
                                     valueConceptDbid = IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
                                     InsertDBID(valueScheme, valueCode, valueConceptDbid, configName);
                                 }
