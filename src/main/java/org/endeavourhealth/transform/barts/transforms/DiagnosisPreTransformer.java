@@ -79,14 +79,10 @@ public class DiagnosisPreTransformer {
 
         //SD-269 - moved this null/empty check prior to further date checking processing to prevent NPE if row blank/partially blank
         CsvCell vocabCell = parser.getVocabulary();
-        String vocab = vocabCell.getString();
-        obj.setVocab(vocab);
-
         CsvCell diagCodeCell = parser.getDiagnosisCode();
-        String diagCode = diagCodeCell.getString();
 
         //discard row if contains no code and vocab. Either a complete row with blank values, or a null data row
-        if (Strings.isNullOrEmpty(diagCode) && Strings.isNullOrEmpty(vocabCell.getString())) {
+        if (diagCodeCell.isEmpty() && vocabCell.isEmpty()) {
             TransformWarnings.log(LOG, csvHelper, "Skipping Diagnosis {} containing no code or vocab", diagnosisIdCell);
             return;
         }
@@ -114,6 +110,10 @@ public class DiagnosisPreTransformer {
 
         CsvCell diagnosisConsultant = parser.getDiagPrnsl();
         obj.setConsultant(diagnosisConsultant.getString());
+
+        String vocab = vocabCell.getString();
+        obj.setVocab(vocab);
+        String diagCode = diagCodeCell.getString();
 
         String diagTerm = "";
         if (vocab.equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT)
