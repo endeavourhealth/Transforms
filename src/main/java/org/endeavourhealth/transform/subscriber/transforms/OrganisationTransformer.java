@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class OrganisationTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
@@ -205,43 +206,35 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
             return types.iterator().next();
         }
 
-        //if multiple types, try removing this specific type, since EVERY GP practice has this
-        types.remove(OrganisationType.PRESCRIBING_COST_CENTRE);
-        if (types.size() == 1) {
-            return types.iterator().next();
+        //if multiple types, try removing specific types until we get down to a single one
+        List<OrganisationType> typesToRemove = new ArrayList<>();
+        typesToRemove.add(OrganisationType.PRESCRIBING_COST_CENTRE); //EVERY GP practice has this
+        typesToRemove.add(OrganisationType.STRATEGIC_PARTNERSHIP); //every STP is also a Strategic Partnership
+        typesToRemove.add(OrganisationType.FOUNDATION_TRUST); //some hospital trusts as also foundation trusts
+        typesToRemove.add(OrganisationType.HOSPICE); //Homerton is a Hospice as well as a trust
+        typesToRemove.add(OrganisationType.REGISTERED_UNDER_PART_2_CARE_STDS_ACT_2000);
+        typesToRemove.add(OrganisationType.LEVEL_04_PCT); ////another one - SD-263
+        typesToRemove.add(OrganisationType.EXTENDED_ACCESS_HUB); //SD-267
+        typesToRemove.add(OrganisationType.EXTENDED_ACCESS_PROVIDER); //SD-267
+        typesToRemove.add(OrganisationType.NHS_TRUST_DERIVED); //SD-267
+        typesToRemove.add(OrganisationType.LEVEL_04_PCT); //SD-267
+        typesToRemove.add(OrganisationType.MEDICINE_SUPPLIER); //SD-267
+
+        //for each of the above types, try removing from the set and if we're down to one, use it
+        for (OrganisationType t: typesToRemove) {
+            types.remove(t);
+
+            if (types.size() == 1) {
+                return types.iterator().next();
+            }
         }
 
-        //if still multiple ones, try removing this type, since every STP is also a Strategic Partnership
-        types.remove(OrganisationType.STRATEGIC_PARTNERSHIP);
-        if (types.size() == 1) {
-            return types.iterator().next();
-        }
-
-        //if still multiple ones, try removing this type, since some hospital trusts as also foundation trusts
-        types.remove(OrganisationType.FOUNDATION_TRUST);
-        if (types.size() == 1) {
-            return types.iterator().next();
-        }
-
-        //if still multiple ones, try removing this type, since Homerton is a Hosptce as well as a trust
-        types.remove(OrganisationType.HOSPICE);
-        if (types.size() == 1) {
-            return types.iterator().next();
-        }
-
-        //another one
-        types.remove(OrganisationType.REGISTERED_UNDER_PART_2_CARE_STDS_ACT_2000);
-        if (types.size() == 1) {
-            return types.iterator().next();
-        }
-
-        //another one - SD-263
-        types.remove(OrganisationType.LEVEL_04_PCT);
-        if (types.size() == 1) {
-            return types.iterator().next();
-        }
-
-        throw new Exception("Unable to determine best org type for ODS record " + odsRecord.getOdsCode());
+        List<String> typeList = typesToRemove
+                .stream()
+                .map(t -> t.toString())
+                .collect(Collectors.toList());
+        String typeStr = String.join(", ", typeList);
+        throw new Exception("Unable to determine best org type for ODS record " + odsRecord.getOdsCode() + " with types [" + typeStr + "]");
     }
 
     /**
@@ -262,15 +255,23 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
             return parents.get(0);
         }
 
-        //most practices have one or more PCNs as a parent, in addition to CCG, so remove thos
-        for (int i=parents.size()-1; i>=0; i--) {
-            OdsOrganisation parent = parents.get(i);
-            if (parent.getOrganisationTypes().contains(OrganisationType.PRIMARY_CARE_NETWORK)) {
-                parents.remove(i);
+        List<OrganisationType> parentTypesToIgnore = new ArrayList<>();
+        parentTypesToIgnore.add(OrganisationType.PRIMARY_CARE_NETWORK); //most practices have one or more PCNs as a parent, in addition to CCG, so remove thos
+        parentTypesToIgnore.add(OrganisationType.SUSTAINABILITY_TRANSFORMATION_PARTNERSHIP); //some orgs have an STP as their direct parent and a parent further up, so remove as the direct parent
+        parentTypesToIgnore.add(OrganisationType.GOVERNMENT_OFFICE_REGION); //old SHAs have this as an odd parent
+        parentTypesToIgnore.add(OrganisationType.HEALTH_AUTHORITY);
+
+        for (OrganisationType t: parentTypesToIgnore) {
+
+            for (int i = parents.size() - 1; i >= 0; i--) {
+                OdsOrganisation parent = parents.get(i);
+                if (parent.getOrganisationTypes().contains(t)) {
+                    parents.remove(i);
+                }
             }
-        }
-        if (parents.size() == 1) {
-            return parents.get(0);
+            if (parents.size() == 1) {
+                return parents.get(0);
+            }
         }
 
         throw new Exception("Unable to determine best org parent for ODS record " + odsRecord.getOdsCode());
