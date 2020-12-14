@@ -77,11 +77,14 @@ public class DiagnosisPreTransformer {
         obj.setDtReceived(csvHelper.getDataDate());
         obj.setDiagnosisId(diagnosisIdCell.getInt());
 
-        //SD-269 - moved this null/empty check prior to further date checking processing to prevent NPE if row blank/partially blank
-        CsvCell vocabCell = parser.getVocabulary();
+        //SD-269 - moved this null/empty check prior to further date checking processing to prevent NPE if row has NULL columns
         CsvCell diagCodeCell = parser.getDiagnosisCode();
-
-        //discard row if contains no code and vocab. Either a complete row with blank values, or a null data row
+        CsvCell vocabCell = parser.getVocabulary();
+        if (diagCodeCell == null && vocabCell == null) {
+            TransformWarnings.log(LOG, csvHelper, "Skipping Diagnosis {} containing NULL diag_code and vocab columns", diagnosisIdCell);
+            return;
+        }
+        //discard row if contains no code and vocab.
         if (diagCodeCell.isEmpty() && vocabCell.isEmpty()) {
             TransformWarnings.log(LOG, csvHelper, "Skipping Diagnosis {} containing no code or vocab", diagnosisIdCell);
             return;
