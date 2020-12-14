@@ -10,6 +10,8 @@ import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -126,7 +128,7 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
                     name = odsOrg.getOrganisationName();
                 }
 
-                OrganisationType odsType = findOdsOrganisationType(odsOrg);
+                OrganisationType odsType = findOdsOrganisationType(odsOrg, params);
                 if (odsType != null) {
                     typeCode = odsType.getCode();
                     typeDesc = odsType.getDescription();
@@ -192,7 +194,7 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
      * this isn't very elegant, but I've based it on looking at what's in ODS for the
      * existing DDS publishers (and their parents) and returns acceptable results (see SD-201)
      */
-    public static OrganisationType findOdsOrganisationType(OdsOrganisation odsRecord) throws Exception {
+    public static OrganisationType findOdsOrganisationType(OdsOrganisation odsRecord, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
 
         Set<OrganisationType> types = new HashSet<>(odsRecord.getOrganisationTypes());
 
@@ -219,6 +221,8 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
         typesToRemove.add(OrganisationType.NHS_TRUST_DERIVED); //SD-267
         typesToRemove.add(OrganisationType.LEVEL_04_PCT); //SD-267
         typesToRemove.add(OrganisationType.MEDICINE_SUPPLIER); //SD-267
+        typesToRemove.add(OrganisationType.SPECIALISED_COMMISSIONING_HUB); //SD-267
+        typesToRemove.add(OrganisationType.TREATMENT_CENTRE); //SD-267
 
         //for each of the above types, try removing from the set and if we're down to one, use it
         for (OrganisationType t: typesToRemove) {
@@ -229,19 +233,32 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        List<String> typeList = typesToRemove
+        //SD-267 we keep hitting this error due to a load of old data that's come through. Rather than just keep hacking
+        //at the above, I'm going to just select the first org type and log that it's happened
+
+        if (hasServiceSystemAndExchangeId != null) {
+            TransformWarnings.log(LOG, hasServiceSystemAndExchangeId, "Unable to select best type for ODS organisation {}", odsRecord.getOdsCode());
+        } else {
+            LOG.warn("Unable to select best type for ODS organisation " + odsRecord.getOdsCode());
+        }
+
+        List<OrganisationType> typeList = new ArrayList<>(types);
+        typeList.sort((o1, o2) -> o1.getDescription().compareTo(o2.getDescription())); //sort so any output is at least consistent
+        return typeList.get(0);
+
+        /*List<String> typeList = types
                 .stream()
                 .map(t -> t.toString())
                 .collect(Collectors.toList());
         String typeStr = String.join(", ", typeList);
-        throw new Exception("Unable to determine best org type for ODS record " + odsRecord.getOdsCode() + " with types [" + typeStr + "]");
+        throw new Exception("Unable to determine best org type for ODS record " + odsRecord.getOdsCode() + " with types [" + typeStr + "]");*/
     }
 
     /**
      * returns the "best" parent organisation from a ODS record. ODS allows organisations to have multiple parents,
      * so this function tries to find the one best suited for the expected hierarchy (GP practice -> CCG -> STP).
      */
-    public static OdsOrganisation findParentOrganisation(OdsOrganisation odsRecord) throws Exception {
+    public static OdsOrganisation findParentOrganisation(OdsOrganisation odsRecord, HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
 
         List<OdsOrganisation> parents = new ArrayList<>(odsRecord.getParents().values());
 
@@ -274,7 +291,20 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
             }
         }
 
-        throw new Exception("Unable to determine best org parent for ODS record " + odsRecord.getOdsCode());
+        //SD-267 we keep hitting this error due to a load of old data that's come through. Rather than just keep hacking
+        //at the above, I'm going to just select the first org type and log that it's happened
+
+        if (hasServiceSystemAndExchangeId != null) {
+            TransformWarnings.log(LOG, hasServiceSystemAndExchangeId, "Unable to select best parent for ODS organisation {}", odsRecord.getOdsCode());
+        } else {
+            LOG.warn("Unable to select best parent for ODS organisation " + odsRecord.getOdsCode());
+        }
+
+        List<OdsOrganisation> typeList = new ArrayList<>(parents);
+        typeList.sort((o1, o2) -> o1.getOdsCode().compareTo(o2.getOdsCode())); //sort so any output is at least consistent
+        return typeList.get(0);
+
+        //throw new Exception("Unable to determine best org parent for ODS record " + odsRecord.getOdsCode());
     }
 
 }

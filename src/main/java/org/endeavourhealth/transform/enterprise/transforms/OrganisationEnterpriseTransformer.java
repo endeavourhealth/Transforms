@@ -127,7 +127,7 @@ public class OrganisationEnterpriseTransformer extends AbstractEnterpriseTransfo
                     name = odsOrg.getOrganisationName();
                 }
 
-                OrganisationType odsType = OrganisationTransformer.findOdsOrganisationType(odsOrg);
+                OrganisationType odsType = OrganisationTransformer.findOdsOrganisationType(odsOrg, params);
                 if (odsType != null) {
                     typeCode = odsType.getCode();
                     typeDesc = odsType.getDescription();

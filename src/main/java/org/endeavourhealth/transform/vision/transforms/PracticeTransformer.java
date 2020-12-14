@@ -93,12 +93,12 @@ public class PracticeTransformer {
             OdsOrganisation odsRecord = OdsWebService.lookupOrganisationViaRest(odsCode);
             if (odsRecord != null) {
 
-                OrganisationType fhirOrgType = OrganisationTransformer.findOdsOrganisationType(odsRecord);
+                OrganisationType fhirOrgType = OrganisationTransformer.findOdsOrganisationType(odsRecord, csvHelper);
                 if (fhirOrgType != null) {
                     organizationBuilder.setType(fhirOrgType);
                 }
 
-                String parentId = populateParentFromOds(odsRecord, fhirResourceFiler);
+                String parentId = populateParentFromOds(odsRecord, fhirResourceFiler, csvHelper);
                 if (parentId != null) {
                     Reference parentReference = VisionCsvHelper.createOrganisationReference(parentId);
                     organizationBuilder.setParentOrganisation(parentReference);
@@ -109,9 +109,9 @@ public class PracticeTransformer {
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), organizationBuilder);
     }
 
-    private static String populateParentFromOds(OdsOrganisation childRecord, FhirResourceFiler fhirResourceFiler) throws Exception {
+    private static String populateParentFromOds(OdsOrganisation childRecord, FhirResourceFiler fhirResourceFiler, VisionCsvHelper csvHelper) throws Exception {
 
-        OdsOrganisation parent = OrganisationTransformer.findParentOrganisation(childRecord);
+        OdsOrganisation parent = OrganisationTransformer.findParentOrganisation(childRecord, csvHelper);
         if (parent == null) {
             return null;
         }
@@ -128,7 +128,7 @@ public class PracticeTransformer {
         String name = parent.getOrganisationName();
         organizationBuilder.setName(name);
 
-        OrganisationType fhirOrgType = OrganisationTransformer.findOdsOrganisationType(parent);
+        OrganisationType fhirOrgType = OrganisationTransformer.findOdsOrganisationType(parent, csvHelper);
         if (fhirOrgType != null) {
             organizationBuilder.setType(fhirOrgType);
         }
@@ -151,7 +151,7 @@ public class PracticeTransformer {
         addressBuilder.setPostcode(postcode);
 
         //recurse to generate the parent of this parent
-        String parentId = populateParentFromOds(parent, fhirResourceFiler);
+        String parentId = populateParentFromOds(parent, fhirResourceFiler, csvHelper);
         if (parentId != null) {
             Reference parentReference = VisionCsvHelper.createOrganisationReference(parentId);
             organizationBuilder.setParentOrganisation(parentReference);
