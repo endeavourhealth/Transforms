@@ -77,6 +77,20 @@ public class DiagnosisPreTransformer {
         obj.setDtReceived(csvHelper.getDataDate());
         obj.setDiagnosisId(diagnosisIdCell.getInt());
 
+        //SD-269 - moved this null/empty check prior to further date checking processing to prevent NPE if row blank/partially blank
+        CsvCell vocabCell = parser.getVocabulary();
+        String vocab = vocabCell.getString();
+        obj.setVocab(vocab);
+
+        CsvCell diagCodeCell = parser.getDiagnosisCode();
+        String diagCode = diagCodeCell.getString();
+
+        //discard row if contains no code and vocab. Either a complete row with blank values, or a null data row
+        if (Strings.isNullOrEmpty(diagCode) && Strings.isNullOrEmpty(vocabCell.getString())) {
+            TransformWarnings.log(LOG, csvHelper, "Skipping Diagnosis {} containing no code or vocab", diagnosisIdCell);
+            return;
+        }
+
         //audit that our staging object came from this file and record
         ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
         audit.auditRecord(diagnosisIdCell.getPublishedFileId(), diagnosisIdCell.getRecordNumber());
@@ -95,25 +109,11 @@ public class DiagnosisPreTransformer {
         CsvCell dtCell = parser.getDiagnosisDate();
         obj.setDiagDtTm(BartsCsvHelper.parseDate(dtCell));
 
-
         CsvCell diagnosisTypeCell = parser.getDiagType();
         obj.setDiagType(diagnosisTypeCell.getString());
 
         CsvCell diagnosisConsultant = parser.getDiagPrnsl();
         obj.setConsultant(diagnosisConsultant.getString());
-
-        CsvCell vocabCell = parser.getVocabulary();
-        String vocab = vocabCell.getString();
-        obj.setVocab(vocab);
-
-        CsvCell diagCodeCell = parser.getDiagnosisCode();
-        String diagCode = diagCodeCell.getString();
-
-        //discard row if contains no code and vocab
-        if (Strings.isNullOrEmpty(diagCode) && Strings.isNullOrEmpty(vocabCell.getString())) {
-            TransformWarnings.log(LOG, csvHelper, "Skipping Diagnosis {} containing no code or vocab", diagnosisIdCell);
-            return;
-        }
 
         String diagTerm = "";
         if (vocab.equals(BartsCsvHelper.CODE_TYPE_SNOMED_CT)
