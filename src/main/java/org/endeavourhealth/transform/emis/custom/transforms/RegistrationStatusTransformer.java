@@ -170,7 +170,7 @@ public class RegistrationStatusTransformer {
                 || status == org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_REGISTRATION_EXPIRED;
     }
 
-    public static RegistrationType convertRegistrationType(Integer obj) throws Exception {
+    /*public static RegistrationType convertRegistrationType(Integer obj) throws Exception {
         int value = obj.intValue();
 
         if (value == 1) { //Emergency
@@ -217,6 +217,6 @@ public class RegistrationStatusTransformer {
             throw new TransformException("Unsupported registration type " + value);
         }
 
-    }
+    }*/
 
 }

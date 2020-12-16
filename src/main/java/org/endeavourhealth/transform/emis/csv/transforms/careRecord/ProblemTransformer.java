@@ -13,6 +13,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilde
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisDateTimeHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisMappingHelper;
 import org.endeavourhealth.transform.emis.csv.schema.careRecord.Problem;
 import org.hl7.fhir.instance.model.BooleanType;
 import org.hl7.fhir.instance.model.DateType;
@@ -128,17 +129,21 @@ public class ProblemTransformer {
 
         CsvCell significanceCell = parser.getSignificanceDescription();
         if (!significanceCell.isEmpty()) {
-            ProblemSignificance fhirSignificance = convertSignificance(significanceCell, csvHelper);
+            //SD-236 change to use mapping CSV file
+            ProblemSignificance fhirSignificance = EmisMappingHelper.findProblemSignificance(significanceCell.getString());
+            //ProblemSignificance fhirSignificance = convertSignificance(significanceCell, csvHelper);
             conditionBuilder.setProblemSignificance(fhirSignificance, significanceCell);
         }
 
         CsvCell parentProblemGuid = parser.getParentProblemObservationGuid();
         if (!parentProblemGuid.isEmpty()) {
 
-            CsvCell parentRelationship = parser.getParentProblemRelationship();
-            if (!parentRelationship.isEmpty()) {
-                ProblemRelationshipType fhirRelationshipType = convertRelationshipType(parentRelationship.getString());
-                conditionBuilder.setParentProblemRelationship(fhirRelationshipType, parentRelationship);
+            CsvCell parentRelationshipCell = parser.getParentProblemRelationship();
+            if (!parentRelationshipCell.isEmpty()) {
+                //SD-236 change to use mapping CSV file
+                ProblemRelationshipType fhirRelationshipType = EmisMappingHelper.findProblemRelationship(parentRelationshipCell.getString());
+                //ProblemRelationshipType fhirRelationshipType = convertRelationshipType(parentRelationship.getString());
+                conditionBuilder.setParentProblemRelationship(fhirRelationshipType, parentRelationshipCell);
             }
 
             Reference problemReference = csvHelper.createProblemReference(parentProblemGuid, patientGuid);
@@ -160,7 +165,7 @@ public class ProblemTransformer {
     }
 
 
-    private static ProblemRelationshipType convertRelationshipType(String relationshipType) throws Exception {
+    /*private static ProblemRelationshipType convertRelationshipType(String relationshipType) throws Exception {
 
         if (relationshipType.equalsIgnoreCase("grouped")) {
             return ProblemRelationshipType.GROUPED;
@@ -188,7 +193,7 @@ public class ProblemTransformer {
             TransformWarnings.log(LOG, csvHelper, "Unmapped problem significance {}", significanceCell);
             return ProblemSignificance.UNSPECIIED;
         }
-    }
+    }*/
 
 
 }

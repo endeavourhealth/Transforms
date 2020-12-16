@@ -17,7 +17,8 @@ public class EmisMappingHelper {
     private static Map<String, String> referralModeMap;
     private static Map<String, String> referralTypeMap;
     private static Map<String, String> organisationTypeMap;
-    private static Map<String, String> patientTypeMap;
+    private static Map<String, String> patientTypeDescMap;
+    private static Map<String, String> patientTypeCodeMap;
     private static Map<String, String> drugRecordPrescriptionTypeMap;
     private static Map<String, String> problemSeverityMap;
     private static Map<String, String> problemRelationshipMap;
@@ -139,15 +140,40 @@ public class EmisMappingHelper {
         }
     }
 
-    public static RegistrationType findRegistrationType(String type) throws Exception {
+    /**
+     * the regular Emis extract provides patient type (i.e. reg type) as a String
+     */
+    public static RegistrationType findRegistrationType(String typeStr) throws Exception {
 
-        if (patientTypeMap == null) {
-            patientTypeMap = ResourceParser.readCsvResourceIntoMap("EmisPatientTypeMap.csv", "SourceType", "TargetCode", CSVFormat.DEFAULT.withHeader());
+        if (patientTypeDescMap == null) {
+            patientTypeDescMap = ResourceParser.readCsvResourceIntoMap("EmisPatientTypeMap.csv", "SourceType", "TargetCode", CSVFormat.DEFAULT.withHeader());
         }
 
-        String code = patientTypeMap.get(type);
+        String code = patientTypeDescMap.get(typeStr);
         if (code == null) {
-            throw new UnmappedValueException("Unknown patient type " + type, type);
+            throw new UnmappedValueException("Unknown patient type " + typeStr, typeStr);
+
+        } else if (!Strings.isNullOrEmpty(code)) {
+            return RegistrationType.fromCode(code);
+
+        } else {
+            return null;
+        }
+    }
+
+
+    /**
+     * the custom Emis reg status extract provides patient type (i.e. reg type) as an int, using the internal Emis codes
+     */
+    public static RegistrationType findRegistrationTypeFromCode(Integer typeInt) throws Exception {
+
+        if (patientTypeCodeMap == null) {
+            patientTypeCodeMap = ResourceParser.readCsvResourceIntoMap("EmisPatientTypeMap.csv", "EmisInternalCode", "TargetCode", CSVFormat.DEFAULT.withHeader());
+        }
+
+        String code = patientTypeCodeMap.get(typeInt.toString());
+        if (code == null) {
+            throw new UnmappedValueException("Unknown patient type code " + typeInt, typeInt.toString());
 
         } else if (!Strings.isNullOrEmpty(code)) {
             return RegistrationType.fromCode(code);
