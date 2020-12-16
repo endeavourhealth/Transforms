@@ -20,6 +20,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilde
 import org.endeavourhealth.transform.common.resourceBuilders.EpisodeOfCareBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
+import org.endeavourhealth.transform.emis.csv.helpers.EmisMappingHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisPatientFiler;
 import org.endeavourhealth.transform.emis.custom.transforms.RegistrationStatusTransformer;
 import org.hl7.fhir.instance.model.*;
@@ -288,7 +289,9 @@ public class EmisCustomCsvHelper {
         Reference organisationReference = EmisCsvHelper.createOrganisationReference(organisationGuidCell);
         episodeBuilder.setManagingOrganisation(organisationReference, organisationGuidCell);
 
-        RegistrationType registrationType = RegistrationStatusTransformer.convertRegistrationType(regTypeCell.getInt());
+        //SD-271 use the same mapping CSV file which includes all reg types
+        //RegistrationType registrationType = RegistrationStatusTransformer.convertRegistrationType(regTypeCell.getInt());
+        RegistrationType registrationType = EmisMappingHelper.findRegistrationTypeFromCode(regTypeCell.getInt());
         episodeBuilder.setRegistrationType(registrationType, regTypeCell);
 
         Date startDate = startDateCell.getDate();
@@ -517,7 +520,9 @@ public class EmisCustomCsvHelper {
         }
 
         public RegistrationType convertRegistrationType() throws Exception {
-            return RegistrationStatusTransformer.convertRegistrationType(regTypeCell.getInt());
+            //SD-271 use the same mapping CSV file which includes all reg types
+            return EmisMappingHelper.findRegistrationTypeFromCode(regTypeCell.getInt());
+            //return RegistrationStatusTransformer.convertRegistrationType(regTypeCell.getInt());
         }
 
         public RegistrationStatus convertRegistrationStatus() throws Exception {
