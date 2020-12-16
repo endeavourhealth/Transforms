@@ -251,11 +251,16 @@ public class JournalTransformer {
             medicationStatementBuilder.setDose(dose.getString(), dose);
         }
 
-        CsvCell authorisationType = parser.getEpisode();
+        //there's a one-to-one match between SUBSET and EPISODE for medications, both saying the same
+        //thing, so just look to the SUBSET to work out the auth type
+        CsvCell subsetCell = parser.getSubset();
+        MedicationAuthorisationType fhirAuthorisationType = getMedicationAuthType(subsetCell);
+        medicationStatementBuilder.setAuthorisationType(fhirAuthorisationType, subsetCell);
+        /*CsvCell authorisationType = parser.getEpisode();
         MedicationAuthorisationType fhirAuthorisationType = getMedicationAuthType(authorisationType.getString());
         if (fhirAuthorisationType != null) {
             medicationStatementBuilder.setAuthorisationType(fhirAuthorisationType, authorisationType);
-        }
+        }*/
 
         //see SD-105 - this never worked, as there is no link from medication issues to their authorisations
         //once a link is understood, this can be replaced.
@@ -1492,11 +1497,26 @@ public class JournalTransformer {
         }
     }
 
-    public static MedicationAuthorisationType getMedicationAuthType(String prescriptionType) {
-        /*  A	Acute(one-off issue)
+    /**
+     * medication auth type CANNOT be null in DDS FHIR, so changed to not silently fail and return null
+     */
+    public static MedicationAuthorisationType getMedicationAuthType(CsvCell subsetCell) throws Exception {
+        String subset = subsetCell.getString();
+        if (subset.equalsIgnoreCase("A")) {
+            return MedicationAuthorisationType.ACUTE;
+
+        } else if (subset.equalsIgnoreCase("R")) {
+            return MedicationAuthorisationType.REPEAT;
+
+        } else {
+            throw new Exception("Unexpected subset for Vision medication " + subset);
+        }
+    }
+    /*public static MedicationAuthorisationType getMedicationAuthType(String prescriptionType) {
+        *//*  A	Acute(one-off issue)
             I	Issue of repeat
             R	Repeat authorisation
-        */
+        *//*
         if (prescriptionType.equalsIgnoreCase("A")) {
             return MedicationAuthorisationType.ACUTE;
         }
@@ -1505,7 +1525,7 @@ public class JournalTransformer {
         }
         else
             return null;
-    }
+    }*/
 
     //the FHIR resource type is roughly derived from the code subset and ReadCode
     public static ResourceType getTargetResourceType(Journal parser, VisionCsvHelper csvHelper) throws Exception {
