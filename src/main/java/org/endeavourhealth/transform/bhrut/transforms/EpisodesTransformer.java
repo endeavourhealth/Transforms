@@ -12,7 +12,6 @@ import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
 import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
 import org.endeavourhealth.transform.bhrut.schema.Episodes;
 import org.endeavourhealth.transform.common.*;
-import org.endeavourhealth.transform.common.exceptions.TransformRuntimeException;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.DateTimeType;
@@ -77,12 +76,19 @@ public class EpisodesTransformer {
             if (spellEncounter != null) {
                 EncounterBuilder spellEncounterBuilder = new EncounterBuilder(spellEncounter);
 
-                //create the episode encounter
+                //create the episode encounter, linking it to the existing parent
                 createEpisodeEncounters(parser, spellEncounterBuilder, fhirResourceFiler, csvHelper);
             } else {
 
-                //if we have received a spell encounter id reference that we cannot find resource for in the db, throw an exception
-                throw new TransformRuntimeException("Cannot find spell encounter for id: "+spellExternalIdCell.getString());
+                //if we have received a spell encounter id reference that we cannot find resource for in the db, then this
+                //record has not been received yet and should follow in a later extract together with the episode record
+                //again alongside it, see (SD-270). So log this instead of throwing an exception.
+                //throw new TransformRuntimeException("Cannot find spell encounter for id: "+spellExternalIdCell.getString());
+                TransformWarnings.log(
+                        LOG,
+                        csvHelper,
+                        "Cannot find spell encounter for spellExternalId: {} and episode encounter id: {} ",
+                        spellExternalIdCell.getString(), parser.getId().getString());
             }
         } else {
 
