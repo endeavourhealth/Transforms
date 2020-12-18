@@ -24,9 +24,6 @@ public abstract class FhirTransformer {
      */
     public static void transform(Exchange exchange, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
         String HL7Message = exchange.getBody();
-        String bodyStr= HL7Message.replace("\r\n","#@#@#@");
-        bodyStr= bodyStr.replace("\n","\r\n");
-        bodyStr= bodyStr.replace("#@#@#@","\r\n");
         //get HL7 message from the table based on id
         /*Connection connection = ConnectionManager.getHL7v2InboundConnection();
         PreparedStatement ps = null;
@@ -52,7 +49,7 @@ public abstract class FhirTransformer {
         }*/
         //get HL7 message from the table based on id
 
-        Message hapiMsg = parseHL7Message(bodyStr);
+        Message hapiMsg = parseHL7Message(HL7Message);
         String msgType = (hapiMsg.printStructure()).substring(0, 3);
 
         if("ADT".equalsIgnoreCase(msgType)) {
