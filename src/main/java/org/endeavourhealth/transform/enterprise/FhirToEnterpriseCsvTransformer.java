@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.enterprise;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -11,14 +10,12 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberInstanceMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberOrgMappingDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.*;
 import org.endeavourhealth.transform.subscriber.FhirToSubscriberCsvTransformer;
 import org.endeavourhealth.transform.subscriber.SubscriberConfig;
-import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.Resource;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -55,7 +52,7 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
 
         OutputContainer data = params.getOutputContainer();
 
-        //sometimes we may fail to find an org id, so just return null as there's nothing to send
+        //sometimes we may fail to find an org id, so just return null as there's nothing to send yet
         if (enterpriseOrgId == null) {
             return null;
         }
@@ -95,6 +92,11 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         //not contain enough info to work out which resource is our interesting one, so we need to
         //rely on there being a patient resource that tells us.
         Reference orgReference = EnterpriseTransformHelper.findOrganisationReferenceForPublisher(serviceId);
+        if (orgReference == null) {
+            // if this happens, there is no patient organisation found so don't send anything to Subscriber,
+            // as it'll all be sorted out when they do send patient data.
+            return null;
+        }
 
         ReferenceComponents comps = ReferenceHelper.getReferenceComponents(orgReference);
         ResourceType resourceType = comps.getResourceType();

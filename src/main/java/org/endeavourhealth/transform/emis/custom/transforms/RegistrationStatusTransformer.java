@@ -134,6 +134,28 @@ public class RegistrationStatusTransformer {
                 return org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_RECORDS_RECEIVED_BY_FHSA;
             case 37:
                 return org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_REGISTRATION_EXPIRED;
+            case 38: //All records removed
+                return org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_RECORDS_SENT_BACK_TO_FHSA;
+
+            //there is no clear mapping for these values, but no data has ever been received for them, so leave unmapped for now
+            /*case 39: //Untraced-outwith HB
+            case 40: //Multiple Transfer
+            case 41: //Intra-consortium transfer
+            case 42: //District birth
+            case 43: //Transfer in
+            case 44: //Transfer out
+            case 45: //Movement in
+            case 46: //Movement out*/
+
+            case 47: //Died
+                return org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_DEATH;
+            case 48: //Still birth
+                return org.endeavourhealth.common.fhir.schema.RegistrationStatus.DEDUCTED_DEATH;
+
+            //there is no clear mapping for these values, but no data has ever been received for them, so leave unmapped for now
+            /*case 49: //Living out, treated in
+            case 50: //Living in, treated out*/
+
             default:
                 throw new TransformException("Unsupported registration status " + value);
         }
