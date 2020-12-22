@@ -120,8 +120,13 @@ public class ConditionBuilder extends ResourceBuilderBase
 
     public void setRecordedDate(Date enteredDateTime, CsvCell... sourceCells) {
         this.condition.setDateRecorded(enteredDateTime);
-
         auditValue("dateRecorded", sourceCells);
+
+        //the above field only stores the data as a DATE, not DATETIME, so it makes sense to
+        //store the full value in the standard extension used everywhere else. Note that this
+        //has only been added late 2020, so this extension will not be present for any data
+        //recorded before this.
+        super.createOrUpdateRecordedDateExtension(enteredDateTime, sourceCells);
     }
 
 
