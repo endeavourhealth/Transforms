@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.enterprise.transforms;
 
 import OpenPseudonymiser.Crypto;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
@@ -31,9 +29,9 @@ import org.endeavourhealth.transform.subscriber.SubscriberConfig;
 import org.endeavourhealth.transform.subscriber.UPRN;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.transforms.PatientTransformer;
-import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Practitioner;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -650,7 +648,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         //history is most-recent-first
         for (ResourceWrapper wrapper : history) {
             Date dtCreatedAt = wrapper.getCreatedAt();
-            if (dtCreatedAt.equals(dtLastSent)) {
+            if (dtCreatedAt.equals(dtLastSent) && wrapper.getResourceData() != null) {
                 return (Patient) wrapper.getResource();
             }
         }
