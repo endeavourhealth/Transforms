@@ -98,12 +98,11 @@ public class SessionTransformer {
 
         //if just the session has changed, so won't receive the session_user records again, so we need
         //to retrieve the existing instance of the schedule from the DB and carry over the users from that instance into our new one
+        List<CsvCell> newUsersToSave = csvHelper.findSessionPractitionersToSave(sessionGuid);
+        List<CsvCell> newUsersToDelete = csvHelper.findSessionPractitionersToDelete(sessionGuid);
         List<CsvCell> userGuidCells = retrieveExistingSessionUsers(sessionGuid, csvHelper, fhirResourceFiler);
 
-        List<CsvCell> newUsersToSave = csvHelper.findSessionPractitionersToSave(sessionGuid);
         CsvCell.addAnyMissingByValue(userGuidCells, newUsersToSave);
-
-        List<CsvCell> newUsersToDelete = csvHelper.findSessionPractitionersToDelete(sessionGuid);
         CsvCell.removeAnyByValue(userGuidCells, newUsersToDelete);
 
         //not strictly necessary, since we're creating a NEW schedule resource (even if it's a delta), but good practice
@@ -141,6 +140,11 @@ public class SessionTransformer {
                 //our list expects CsvCells, so create a dummy cell with a row audit of -1, which will automatically be ignored
                 CsvCell wrapperCell = CsvCell.factoryDummyWrapper(emisUserGuid);
                 ret.add(wrapperCell);
+
+                //SD-284 - when appointments are booked into pre-exisitng sessions, we get an update to the session
+                //but don't get the session user data again. To ensure that the practitioner is set on the appointment properly
+                //we need to cache the existing session practitioners here.
+                csvHelper.cacheSessionPractitionerMap(sessionGuidCell, wrapperCell, false);
             }
         }
 
