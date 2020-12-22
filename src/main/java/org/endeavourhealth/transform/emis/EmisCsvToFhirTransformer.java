@@ -17,10 +17,7 @@ import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisPatientFiler;
 import org.endeavourhealth.transform.emis.csv.transforms.admin.*;
 import org.endeavourhealth.transform.emis.csv.transforms.agreements.SharingOrganisationTransformer;
-import org.endeavourhealth.transform.emis.csv.transforms.appointment.SessionTransformer;
-import org.endeavourhealth.transform.emis.csv.transforms.appointment.SessionUserTransformer;
-import org.endeavourhealth.transform.emis.csv.transforms.appointment.SlotPreTransformer;
-import org.endeavourhealth.transform.emis.csv.transforms.appointment.SlotTransformer;
+import org.endeavourhealth.transform.emis.csv.transforms.appointment.*;
 import org.endeavourhealth.transform.emis.csv.transforms.careRecord.*;
 import org.endeavourhealth.transform.emis.csv.transforms.coding.ClinicalCodeTransformer;
 import org.endeavourhealth.transform.emis.csv.transforms.coding.DrugCodeTransformer;
@@ -291,6 +288,8 @@ public abstract class EmisCsvToFhirTransformer {
             OrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             ObservationPreTransformer2.transform(parsers, fhirResourceFiler, csvHelper); //finds user IDs that are referenced
             IssueRecordPreTransformer2.transform(parsers, fhirResourceFiler, csvHelper); //finds user IDs that are referenced
+            SessionUserPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //SD-283 - finds user IDs that are referenced
+
             UserInRoleTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
             csvHelper.getAdminHelper().processAdminChanges(fhirResourceFiler, csvHelper);
