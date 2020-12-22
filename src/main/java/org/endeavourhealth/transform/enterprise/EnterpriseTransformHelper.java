@@ -164,6 +164,13 @@ public class EnterpriseTransformHelper implements HasServiceSystemAndExchangeIdI
                 }
             }
         }
+
+        //SD-278 - FHIR Condition has a proper field for this, which may have been used instead (although this only supports a Date not DateTime)
+        if (dateRecorded == null
+                && fhir instanceof Condition) {
+            dateRecorded = ((Condition)fhir).getDateRecorded();
+        }
+
         return dateRecorded;
     }
 
