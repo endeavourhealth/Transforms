@@ -1,10 +1,7 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
 import OpenPseudonymiser.Crypto;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -21,14 +18,12 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Subscrib
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.common.RalfBuilder;
-import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.subscriber.*;
-import org.endeavourhealth.transform.subscriber.json.ConfigParameter;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.*;
-import org.hl7.fhir.instance.model.*;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.Practitioner;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -678,7 +673,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     public static int getMaxNumberOfTelecoms(List<ResourceWrapper> history) throws Exception {
         int max = 0;
         for (ResourceWrapper wrapper : history) {
-            if (!wrapper.isDeleted()) {
+            if (!wrapper.isDeleted() && wrapper.getResourceData() != null) {
                 Patient patient = (Patient) wrapper.getResource();
                 if (patient.hasTelecom()) {
                     max = Math.max(max, patient.getTelecom().size());
@@ -691,7 +686,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     public static int getMaxNumberOfAddresses(List<ResourceWrapper> history) throws Exception {
         int max = 0;
         for (ResourceWrapper wrapper : history) {
-            if (!wrapper.isDeleted()) {
+            if (!wrapper.isDeleted() && wrapper.getResourceData() != null) {
                 Patient patient = (Patient) wrapper.getResource();
                 if (patient.hasAddress()) {
                     max = Math.max(max, patient.getAddress().size());
