@@ -292,6 +292,7 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             transformResources(ResourceType.Specimen, threadPool, params);
             transformResources(ResourceType.Flag, threadPool, params);
             transformResources(ResourceType.Slot, threadPool, params);
+            transformResources(ResourceType.QuestionnaireResponse, threadPool, params);
 
         } finally {
 
@@ -304,61 +305,6 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         params.checkForMissedResources();
     }
 
-    /*public static AbstractSubscriberCsvWriter findCsvWriterForResourceType(ResourceType resourceType, SubscriberTransformParams params) throws Exception {
-
-        OutputContainer data = params.getOutputContainer();
-
-        if (resourceType == ResourceType.Organization) {
-            return data.getOrganisations();
-        } else if (resourceType == ResourceType.Location) {
-            return data.getLocations();
-        } else if (resourceType == ResourceType.Practitioner) {
-            return data.getPractitioners();
-        } else if (resourceType == ResourceType.Schedule) {
-            return data.getSchedules();
-        } else if (resourceType == ResourceType.Patient) {
-            return data.getPatients();
-        } else if (resourceType == ResourceType.EpisodeOfCare) {
-            return data.getEpisodesOfCare();
-        } else if (resourceType == ResourceType.Appointment) {
-            return data.getAppointments();
-        } else if (resourceType == ResourceType.Encounter) {
-            return data.getEncounters();
-        } else if (resourceType == ResourceType.Flag) {
-            return data.getFlags();
-        } else if (resourceType == ResourceType.Condition) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.Procedure) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.ReferralRequest) {
-            return data.getReferralRequests();
-        } else if (resourceType == ResourceType.ProcedureRequest) {
-            return data.getProcedureRequests();
-        } else if (resourceType == ResourceType.Observation) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.MedicationStatement) {
-            return data.getMedicationStatements();
-        } else if (resourceType == ResourceType.MedicationOrder) {
-            return data.getMedicationOrders();
-        } else if (resourceType == ResourceType.Immunization) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.FamilyMemberHistory) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.AllergyIntolerance) {
-            return data.getAllergyIntolerances();
-        } else if (resourceType == ResourceType.DiagnosticOrder) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.DiagnosticReport) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.Specimen) {
-            return data.getObservations();
-        } else if (resourceType == ResourceType.Slot) {
-            //slots are handled in the appointment transformer, so have no dedicated one
-            return null;
-        } else {
-            throw new TransformException("Unhandled resource type " + resourceType);
-        }
-    }*/
 
     public static AbstractSubscriberTransformer createTransformerForResourceType(ResourceType resourceType) throws Exception {
         if (resourceType == ResourceType.Organization) {
@@ -407,6 +353,9 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             return new SpecimenTransformer();
         } else if (resourceType == ResourceType.Slot) {
             //slots are handled in the appointment transformer, so have no dedicated one
+            return null;
+        } else if (resourceType == ResourceType.QuestionnaireResponse) {
+            //no target table for questionnaire reponse
             return null;
         } else {
             throw new TransformException("Unhandled resource type " + resourceType);

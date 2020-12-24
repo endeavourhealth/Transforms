@@ -2,10 +2,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.appointment;
 
 import org.endeavourhealth.common.fhir.QuantityHelper;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
@@ -17,10 +14,13 @@ import org.hl7.fhir.instance.model.Appointment;
 import org.hl7.fhir.instance.model.Duration;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class SlotTransformer {
+    private static final Logger LOG = LoggerFactory.getLogger(SlotTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -119,6 +119,12 @@ public class SlotTransformer {
         List<CsvCell> newUsersToSave = csvHelper.findSessionPractitionersToSave(sessionGuid);
         List<CsvCell> newUsersToDelete = csvHelper.findSessionPractitionersToDelete(sessionGuid);
         List<CsvCell> userGuidCells = retrieveExistingPractitioners(slotGuid, csvHelper, fhirResourceFiler);
+
+        //if we haven't got an use UUIDs from the cache, it means our belief that the Session record will always be present
+        //when a Slot is added/updated it wrong, and we'll need to add a pre-transformer for the Slot file to retrieve the Session practitioners(s).
+        if (userGuidCells.isEmpty()) {
+            TransformWarnings.log(LOG, csvHelper, "No user GUIDS in cache for Emis slot {}", slotGuid);
+        }
 
         CsvCell.addAnyMissingByValue(userGuidCells, newUsersToSave);
         CsvCell.removeAnyByValue(userGuidCells, newUsersToDelete);
