@@ -40,6 +40,7 @@ public class SubscriberConfig {
     private Set<String> cohortGpServices = new HashSet<>(); //if cohort is GpRegisteredAt, this gives the ODS codes the patients should be registered at
     private Integer remoteSubscriberId;
     private String enterpriseServerUrl;
+    private boolean includePatientAge;
 
     //compass v1 properties
 
@@ -100,6 +101,10 @@ public class SubscriberConfig {
 
     public String getEnterpriseServerUrl() {
         return enterpriseServerUrl;
+    }
+
+    public boolean isIncludePatientAge() {
+        return includePatientAge;
     }
 
     public static SubscriberConfig readFromConfig(String subscriberConfigName) throws Exception {
@@ -173,8 +178,7 @@ public class SubscriberConfig {
             }
         }
 
-        //TODO Should this go inside the else if (subscriberType == SubscriberType.CompassV2) block below?
-        if (config.has("ralf_salts")) {
+       if (config.has("ralf_salts")) {
 
             JsonNode arrayNode = config.get("ralf_salts");
             String linkDistributors = convertJsonNodeToString(arrayNode);
@@ -184,6 +188,10 @@ public class SubscriberConfig {
                 this.ralfSalts.add(l);
             }
         }
+
+        this.includePatientAge = config.has("include_patient_age")
+                && config.get("include_patient_age").asBoolean();
+
 
         //version-specific config
         if (subscriberType == SubscriberType.CompassV1) {
@@ -256,6 +264,8 @@ public class SubscriberConfig {
         sb.append("includeDateRecorded = [" + includeDateRecorded + "],\r\n");
         sb.append("batchSize = [" + batchSize + "],\r\n");
         sb.append("enterpriseServerUrl = [" + enterpriseServerUrl + "]");
+        sb.append("includePatientAge = [" + includePatientAge + "],\r\n");
+
         return sb.toString();
     }
 }

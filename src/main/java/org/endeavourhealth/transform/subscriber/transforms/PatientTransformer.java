@@ -112,7 +112,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         Long currentAddressId = null;
         Integer ethnicCodeConceptId = null;
         Long registeredPracticeId = null;
-
+        Integer birthYear = null;
+        Integer birthMonth = null;
+        Integer birthWeek = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
@@ -177,6 +179,17 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
         }
 
+        if (fhirPatient.hasBirthDate()) {
+            if (params.isIncludePatientAge()) {
+                Date birthDate = fhirPatient.getBirthDate();
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(birthDate);
+                birthYear = cal.get(Calendar.YEAR);
+                birthMonth = cal.get(Calendar.MONTH) + 1; // Java month is zero-indexed
+                birthWeek = cal.get(Calendar.WEEK_OF_YEAR);
+            }
+        }
+
         if (fhirPatient.hasGender()) {
 
             Enumerations.AdministrativeGender gender = fhirPatient.getGender();
@@ -217,7 +230,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 dateOfDeath,
                 currentAddressId,
                 ethnicCodeConceptId,
-                registeredPracticeId);
+                registeredPracticeId,
+                birthYear,
+                birthMonth,
+                birthWeek);
 
         transformPatientAdditionals(fhirPatient, params, subscriberId);
     }

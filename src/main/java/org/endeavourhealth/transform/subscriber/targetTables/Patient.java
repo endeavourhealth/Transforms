@@ -18,20 +18,22 @@ public class Patient extends AbstractTargetTable {
                 "" + subscriberId.getSubscriberId());
     }
 
-
     public void writeUpsert(SubscriberId subscriberId,
-                                        long organizationId,
-                                        long personId,
-                                        String title,
-                                        String firstNames,
-                                        String lastName,
-                                        Integer genderConceptId,
-                                        String nhsNumber,
-                                        Date dateOfBirth,
-                                        Date dateOfDeath,
-                                        Long currentAddressId,
-                                        Integer ethnicCodeConceptId,
-                                        Long registeredPracticeId) throws Exception {
+                            long organizationId,
+                            long personId,
+                            String title,
+                            String firstNames,
+                            String lastName,
+                            Integer genderConceptId,
+                            String nhsNumber,
+                            Date dateOfBirth,
+                            Date dateOfDeath,
+                            Long currentAddressId,
+                            Integer ethnicCodeConceptId,
+                            Long registeredPracticeId,
+                            Integer birthYear,
+                            Integer birthMonth,
+                            Integer birthWeek) throws Exception {
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
@@ -46,7 +48,10 @@ public class Patient extends AbstractTargetTable {
                 convertDate(dateOfDeath),
                 convertLong(currentAddressId),
                 convertInt(ethnicCodeConceptId),
-                convertLong(registeredPracticeId));
+                convertLong(registeredPracticeId),
+                convertInt(birthYear),
+                convertInt(birthMonth),
+                convertInt(birthWeek));
     }
 
     @Override
@@ -65,7 +70,10 @@ public class Patient extends AbstractTargetTable {
                 "date_of_death",
                 "current_address_id",
                 "ethnic_code_concept_id",
-                "registered_practice_organization_id"
+                "registered_practice_organization_id",
+                "birth_year",
+                "birth_month",
+                "birth_week"
         };
     }
 
@@ -91,6 +99,9 @@ public class Patient extends AbstractTargetTable {
                 Long.class,
                 Integer.class,
                 Long.class,
+                Integer.class,
+                Integer.class,
+                Integer.class
         };
     }
 }

@@ -145,6 +145,10 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return dateRecorded;
     }
 
+     public boolean isIncludePatientAge() {
+        return config.isIncludePatientAge();
+    }
+
     @Override
     public UUID getServiceId() {
         return serviceId;
