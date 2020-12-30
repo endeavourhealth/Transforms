@@ -69,6 +69,7 @@ public class AppointmentTransformer extends AbstractSubscriberTransformer {
 
                 if (components.getResourceType() == ResourceType.Practitioner) {
                     practitionerId = transformOnDemandAndMapId(reference, SubscriberTableId.PRACTITIONER, params);
+                    break; //break out so we only use the FIRST practitioner
                 }
             }
         }

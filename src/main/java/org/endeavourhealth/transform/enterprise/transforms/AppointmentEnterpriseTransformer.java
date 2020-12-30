@@ -65,6 +65,7 @@ public class AppointmentEnterpriseTransformer extends AbstractEnterpriseTransfor
 
                 if (components.getResourceType() == ResourceType.Practitioner) {
                     practitionerId = transformOnDemandAndMapId(reference, params);
+                    break; //break out so we only use the FIRST practitioner
                 }
             }
         }
