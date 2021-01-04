@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class PatientTransformer extends AbstractSubscriberTransformer {
@@ -187,6 +188,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 birthYear = cal.get(Calendar.YEAR);
                 birthMonth = cal.get(Calendar.MONTH) + 1; // Java month is zero-indexed
                 birthWeek = cal.get(Calendar.WEEK_OF_YEAR);
+
+                //logging for SD-292
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                LOG.debug("Cal " + cal);
+                LOG.debug("Patient Dob = " + sdf.format(birthDate));
+                LOG.debug("Birth year = " + birthYear + ", birth month = " + birthMonth + ", birth week = " + birthWeek);
+
             }
         }
 
@@ -349,7 +357,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         String configName = params.getSubscriberConfigName();
         if (!UPRN.isActivated(configName)) {
-            LOG.debug("subscriber " + configName + " not activated for UPRN");
+            //LOG.debug("subscriber " + configName + " not activated for UPRN");
             return null;
         }
 
