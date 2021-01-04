@@ -183,17 +183,22 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         if (fhirPatient.hasBirthDate()) {
             if (params.isIncludePatientAge()) {
                 Date birthDate = fhirPatient.getBirthDate();
-                Calendar cal = Calendar.getInstance();
+
+                //SD-292 - the default LOCALE for AWS EC2 instances is en_US (US English), which starts the week
+                //differently to the en_GB (British English) and counts weeks differently.
+                Calendar cal = Calendar.getInstance(Locale.UK);
+                //Calendar cal = Calendar.getInstance();
+
                 cal.setTime(birthDate);
-                birthYear = cal.get(Calendar.YEAR);
-                birthMonth = cal.get(Calendar.MONTH) + 1; // Java month is zero-indexed
-                birthWeek = cal.get(Calendar.WEEK_OF_YEAR);
+                birthYear = new Integer(cal.get(Calendar.YEAR));
+                birthMonth = new Integer(cal.get(Calendar.MONTH) + 1); // Java month is zero-indexed
+                birthWeek = new Integer(cal.get(Calendar.WEEK_OF_YEAR));
 
                 //logging for SD-292
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                /*SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 LOG.debug("Cal " + cal);
                 LOG.debug("Patient Dob = " + sdf.format(birthDate));
-                LOG.debug("Birth year = " + birthYear + ", birth month = " + birthMonth + ", birth week = " + birthWeek);
+                LOG.debug("Birth year = " + birthYear + ", birth month = " + birthMonth + ", birth week = " + birthWeek);*/
 
             }
         }
