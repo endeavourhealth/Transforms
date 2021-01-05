@@ -6,15 +6,10 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
-import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
-import org.endeavourhealth.core.database.dal.audit.models.Exchange;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.ServiceInterfaceEndpoint;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.transforms.admin.SRCcgTransformer;
@@ -33,8 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -533,17 +526,19 @@ public abstract class TppCsvToFhirTransformer {
         SRStaffMemberTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be after the above
 
         LOG.info("Starting pre-transforms to cache patient data");
-        SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRPrimaryCareMedicationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRRecallPreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        SRRepeatTemplatePreTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        SREventPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches existing links to consultations
+        SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches ethnicities, marital status and new links to consultation
+        SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
+        SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
+        SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
+        SRPrimaryCareMedicationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
+        SRRecallPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
+        SRRepeatTemplatePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
 
-
+        SRRotaPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //retrieves existing rota data off the DB and caches
+        SRAppointmentPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches staff and start for rotas
         SRRotaTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+        csvHelper.getRotaDateAndStaffCache().processRemainingRotaDetails(fhirResourceFiler, csvHelper); //make updates to rotas NOT in SRRota
 
         if (processPatientData) {
 
