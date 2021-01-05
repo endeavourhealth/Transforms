@@ -68,9 +68,10 @@ public class ObservationTransformer {
 
             CodeableConcept ccValue = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
             observationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
+            // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
             CodeableConcept ccValue1 = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
-             ccValue1.addCoding().setCode(valueResponse.getConcept().getCode())
-                   .setSystem(valueResponse.getConcept().getScheme()).setDisplay("Religion");
+            ccValue1.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme()).setDisplay("Religion");
         }
         return observationBuilder;
     }
