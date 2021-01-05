@@ -101,11 +101,27 @@ public class ScheduleBuilder extends ResourceBuilderBase {
         return period;
     }
 
+    public Date getPlanningHorizonStart() {
+        if (!this.schedule.hasPlanningHorizon()) {
+            return null;
+        } else {
+            return this.schedule.getPlanningHorizon().getStart();
+        }
+    }
+
     public void setPlanningHorizonStart(Date date, CsvCell... sourceCells) {
         Period period = getOrCreatePlanningHorizon();
         period.setStart(date);
 
         auditValue("planningHorizon.start", sourceCells);
+    }
+
+    public Date getPlanningHorizonEnd() {
+        if (!this.schedule.hasPlanningHorizon()) {
+            return null;
+        } else {
+            return this.schedule.getPlanningHorizon().getEnd();
+        }
     }
 
     public void setPlanningHorizonEnd(Date date, CsvCell... sourceCells) {

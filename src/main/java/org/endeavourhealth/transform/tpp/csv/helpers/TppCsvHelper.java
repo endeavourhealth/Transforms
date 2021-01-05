@@ -65,11 +65,13 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private AppointmentFlagCache appointmentFlagCache = new AppointmentFlagCache();
     private PatientResourceCache patientResourceCache = new PatientResourceCache();
     private ConditionResourceCache conditionResourceCache = new ConditionResourceCache();
+    private RotaDetailsCache rotaDateAndStaffCache = new RotaDetailsCache();
     private Map<Long, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
     private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
     private ThreadPool utilityThreadPool = null;
     private Map<String, ResourceType> codeToTypes = new HashMap<>();
+
 
     private final UUID serviceId;
     private final UUID systemId;
@@ -816,6 +818,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public ConditionResourceCache getConditionResourceCache() {
         return conditionResourceCache;
+    }
+
+    public RotaDetailsCache getRotaDateAndStaffCache() {
+        return rotaDateAndStaffCache;
     }
 
     public void submitToThreadPool(Callable callable) throws Exception {
