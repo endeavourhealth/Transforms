@@ -322,6 +322,7 @@ public abstract class ImperialHL7FhirADTTransformer {
             imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Religion", null);
             newObservation = true;
         }
+
         observationBuilder = ObservationTransformer.transformPIDToObservation(adtMsg.getPID(), observationBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
         if(newObservation) {
             observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
@@ -329,8 +330,9 @@ public abstract class ImperialHL7FhirADTTransformer {
 
         } else {
             Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
-            //  patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            //patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
             observationBuilder.setPatient(patientReference);
+
             fhirResourceFiler.savePatientResource(null, false, observationBuilder);
         }
         //Observation
