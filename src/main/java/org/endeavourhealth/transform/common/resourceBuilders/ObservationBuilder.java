@@ -272,8 +272,7 @@ public class ObservationBuilder extends ResourceBuilderBase
             if (this.observation.hasCode()) {
                 if (useExisting) {
                     return observation.getCode();
-                }
-                else {
+                } else {
                     throw new IllegalArgumentException("Trying to add code to Observation when it already has one");
                 }
             }
