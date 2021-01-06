@@ -650,62 +650,42 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return ret;
     }
 
-    public CernerCodeValueRef lookupCodeRef(Long codeSet, CsvCell codeCell) throws Exception {
-        String code = codeCell.getString();
-        return lookupCodeRef(codeSet, code);
+    public CernerCodeValueRef lookupCodeRef(CodeValueSet codeSet, String code) throws Exception {
+        return lookupCodeRef(codeSet, CsvCell.factoryDummyWrapper(code));
     }
 
-    public CernerCodeValueRef lookupCodeRef(Long codeSet, String code) throws Exception {
+    /**
+     * looks up a CVREF record for its unique code. The CodeSet enum parameter isn't actually used
+     * in the lookup in the codes themselves are unique.
+     */
+    public CernerCodeValueRef lookupCodeRef(CodeValueSet codeSet, CsvCell codeCell) throws Exception {
 
-        String cacheKey = code;
+        String code = codeCell.getString();
+
+        //SD-295 - there are no CVREF records with code "0" so I'm unsure why there used to be specific handling for it
+        //in this function. Changing to throw an exception if this fn is called for code "0"
         if (code.equals("0")) {
-            //if looking up code zero, this exists in multiple code sets, so add the codeset to the cache key
-            cacheKey = codeSet + "|" + cacheKey;
+            throw new Exception("Trying to look up Cerner CVREF record for code zero");
         }
 
         //Find the code in the cache
-        CernerCodeValueRef cernerCodeFromCache = cernerCodes.get(cacheKey);
-        if (cernerCodeFromCache != null) {
-            return cernerCodeFromCache;
+        CernerCodeValueRef ret = cernerCodes.get(code);
+        if (ret != null) {
+            return ret;
         }
 
-        CernerCodeValueRef cernerCodeFromDB = null;
+        ret = cernerCodeValueRefDal.getCodeWithoutCodeSet(code, serviceId);
 
-        //the code is unique across all code sets, EXCEPT for code "0" where this can be repeated
-        //between sets. So if the code is "0", perform the lookup using the code set, otherwise just use the code
-        if (code.equals("0")) {
-            cernerCodeFromDB = cernerCodeValueRefDal.getCodeFromCodeSet(codeSet, code, serviceId);
-
-        } else {
-            cernerCodeFromDB = cernerCodeValueRefDal.getCodeWithoutCodeSet(code, serviceId);
+        //if we fail to look up a CVREF record then something is very wrong, and we can't safely continue since
+        //various parts of the transform have logic that depends on the CVREF text/desc.
+        if (ret == null) {
+            throw new Exception("Failed to find Cerner CVREF record for code " + code + " in code set " + codeSet);
         }
-
-        //TODO - trying to track errors so don't return null from here, but remove once we no longer want to process missing codes
-        if (cernerCodeFromDB == null) {
-            TransformWarnings.log(LOG, this, "Failed to find Cerner CVREF record for code {} and code set {}", code, codeSet);
-            // return new CernerCodeValueRef();
-            return null;
-        }
-
-        //seem to have whitespace around some of the fields. As a temporary fix, trim them here
-        //not required now
-        /*if (!Strings.isNullOrEmpty(cernerCodeFromDB.getAliasNhsCdAlias())) {
-            cernerCodeFromDB.setAliasNhsCdAlias(cernerCodeFromDB.getAliasNhsCdAlias().trim());
-        }
-        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeDescTxt())) {
-            cernerCodeFromDB.setCodeDescTxt(cernerCodeFromDB.getCodeDescTxt().trim());
-        }
-        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeDispTxt())) {
-            cernerCodeFromDB.setCodeDispTxt(cernerCodeFromDB.getCodeDispTxt().trim());
-        }
-        if (!Strings.isNullOrEmpty(cernerCodeFromDB.getCodeMeaningTxt())) {
-            cernerCodeFromDB.setCodeMeaningTxt(cernerCodeFromDB.getCodeMeaningTxt().trim());
-        }*/
 
         // Add to the cache
-        cernerCodes.put(cacheKey, cernerCodeFromDB);
+        cernerCodes.put(code, ret);
 
-        return cernerCodeFromDB;
+        return ret;
     }
 
     /*public static ResourceId getResourceIdFromCache(String resourceIdLookup) {

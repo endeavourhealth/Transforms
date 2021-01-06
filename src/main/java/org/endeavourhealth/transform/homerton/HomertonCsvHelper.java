@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueR
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.HasServiceSystemAndExchangeIdI;
@@ -296,9 +297,6 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public CernerCodeValueRef lookupCodeRef(String code) throws Exception {
-        return lookupCodeRef(0L, code);
-    }
 
     public void cacheCodeNHSAlias(String codeValue, CsvCell codeNHSAliasCell) {
         codeValueNHSAlias.put(codeValue, codeNHSAliasCell);
@@ -308,12 +306,12 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
         return codeValueNHSAlias.get(codeValue);
     }
 
-    public CernerCodeValueRef lookupCodeRef(Long codeSet, String code) throws Exception {
+    public CernerCodeValueRef lookupCodeRef(CodeValueSet codeSet, String code) throws Exception {
 
         String cacheKey = code;
         if (code.equals("0")) {
             //if looking up code zero, this exists in multiple code sets, so add the codeset to the cache key
-            cacheKey = codeSet + "|" + cacheKey;
+            cacheKey = codeSet.value() + "|" + cacheKey;
         }
 
         //Find the code in the cache
@@ -327,7 +325,7 @@ public class HomertonCsvHelper implements HasServiceSystemAndExchangeIdI {
         //the code is unique across all code sets, EXCEPT for code "0" where this can be repeated
         //between sets. So if the code is "0", perform the lookup using the code set, otherwise just use the code
         if (code.equals("0")) {
-            cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(codeSet, code, serviceId);
+            cernerCodeFromDB = cernerCodeValueRefDalI.getCodeFromCodeSet(new Long(codeSet.value()), code, serviceId);
 
         } else {
             cernerCodeFromDB = cernerCodeValueRefDalI.getCodeWithoutCodeSet(code, serviceId);

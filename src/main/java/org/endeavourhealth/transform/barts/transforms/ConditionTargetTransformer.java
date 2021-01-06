@@ -7,6 +7,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingCond
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
@@ -213,7 +214,7 @@ public class ConditionTargetTransformer {
                     Integer.parseInt(conditionType);
 
                     // these are specific diagnosis category coded types, code set 17, Principal, Working etc.
-                    CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(new Long(17), conditionType);
+                    CernerCodeValueRef cernerCodeValueRef = csvHelper.lookupCodeRef(CodeValueSet.DIAG_TYPE, conditionType);
                     if (cernerCodeValueRef != null) {
 
                         String category = cernerCodeValueRef.getCodeDispTxt();

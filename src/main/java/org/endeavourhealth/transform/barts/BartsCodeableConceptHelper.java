@@ -17,20 +17,20 @@ public class BartsCodeableConceptHelper {
     public static final String ALIAS_TXT = "Alias";
 
 
-    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, CodeValueSet codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(DESC_TXT, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, CodeValueSet codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(DISP_TXT, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, CodeValueSet codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(MEANING_TXT, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
     private static CodeableConceptBuilder applyCodeMeaningTxt(String elementToApply, CsvCell codeCell,
-                                                              Long codeSet, HasCodeableConceptI resourceBuilder,
+                                                              CodeValueSet codeSet, HasCodeableConceptI resourceBuilder,
                                                               CodeableConceptBuilder.Tag resourceBuilderTag, BartsCsvHelper csvHelper) throws Exception {
 
         if (codeCell == null
@@ -97,7 +97,7 @@ public class BartsCodeableConceptHelper {
         return CsvCell.factoryDummyWrapper(value);
     }
 
-    public static CsvCell getCellDesc(BartsCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+    public static CsvCell getCellDesc(BartsCsvHelper csvHelper, CodeValueSet codeSet, CsvCell codeIdCell) throws Exception {
         CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
         if (mapping != null) {
             return createCsvCell(mapping, DESC_TXT);
@@ -106,7 +106,7 @@ public class BartsCodeableConceptHelper {
         }
     }
 
-    public static CsvCell getCellDisp(BartsCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+    public static CsvCell getCellDisp(BartsCsvHelper csvHelper, CodeValueSet codeSet, CsvCell codeIdCell) throws Exception {
         CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
         if (mapping != null) {
             return createCsvCell(mapping, DISP_TXT);
@@ -115,7 +115,7 @@ public class BartsCodeableConceptHelper {
         }
     }
 
-    public static CsvCell getCellMeaning(BartsCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+    public static CsvCell getCellMeaning(BartsCsvHelper csvHelper, CodeValueSet codeSet, CsvCell codeIdCell) throws Exception {
         CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
         if (mapping != null) {
             return createCsvCell(mapping, MEANING_TXT);
@@ -124,7 +124,7 @@ public class BartsCodeableConceptHelper {
         }
     }
 
-    public static CsvCell getCellAlias(BartsCsvHelper csvHelper, Long codeSet, CsvCell codeIdCell) throws Exception {
+    public static CsvCell getCellAlias(BartsCsvHelper csvHelper, CodeValueSet codeSet, CsvCell codeIdCell) throws Exception {
         CernerCodeValueRef mapping = csvHelper.lookupCodeRef(codeSet, codeIdCell);
         if (mapping != null) {
             return createCsvCell(mapping, ALIAS_TXT);

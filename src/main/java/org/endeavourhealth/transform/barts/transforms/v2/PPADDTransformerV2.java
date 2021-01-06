@@ -88,6 +88,16 @@ public class PPADDTransformerV2 {
             return;
         }
 
+        //SD-295 - there are a small number (about 100 out of millions) of PPADD records where the type code is zero. The vast majority
+        //of these have empty address fields, and the remainder are garage (e.g. city = "Z999"), so ignore any record like this
+        CsvCell typeCell = parser.getAddressTypeCode();
+        if (BartsCsvHelper.isEmptyOrIsZero(typeCell)) {
+            //there's no point logging this now since there's no further investigation that will be done
+            //TransformWarnings.log(LOG, csvHelper, "Skipping PPADD {} for person {} because it has no type", addressIdCell, personIdCell);
+            return;
+        }
+
+
         CsvCell line1 = parser.getAddressLine1();
         CsvCell line2 = parser.getAddressLine2();
         CsvCell line3 = parser.getAddressLine3();
@@ -117,12 +127,6 @@ public class PPADDTransformerV2 {
         patientAddress.setAddressLine4(line4.getString());
         patientAddress.setCity(city.getString());
         patientAddress.setPostCode(postcode.getString());
-
-        CsvCell typeCell = parser.getAddressTypeCode();
-        if (BartsCsvHelper.isEmptyOrIsZero(typeCell)) {
-            TransformWarnings.log(LOG, csvHelper, "Skipping PPADD {} for person {} because it has no type", addressIdCell, personIdCell);
-            return;
-        }
 
         boolean isActive = true;
         CsvCell startDate = parser.getBeginEffectiveDate();

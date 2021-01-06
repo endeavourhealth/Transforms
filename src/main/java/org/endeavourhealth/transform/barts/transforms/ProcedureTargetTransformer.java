@@ -7,6 +7,7 @@ import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProc
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
@@ -21,8 +22,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-
-import static org.endeavourhealth.transform.barts.CodeValueSet.SURGEON_SPECIALITY_GROUP;
 
 public class ProcedureTargetTransformer {
 
@@ -171,37 +170,34 @@ public class ProcedureTargetTransformer {
             if (!Strings.isNullOrEmpty(locationText)) {
 
                 try {
-                        // is the location an Integer Id?
-                        Integer.parseInt(locationText);
+                    // is the location an Integer Id?
+                    Integer.parseInt(locationText);
 
-                        //create a reference using the code (locationText) which has been validated as an Integer
-                        Reference procedureLocation
-                            = ReferenceHelper.createReference(ResourceType.Location, locationText);
-                        procedureBuilder.setLocation(procedureLocation);
+                    //create a reference using the code (locationText) which has been validated as an Integer
+                    Reference procedureLocation = ReferenceHelper.createReference(ResourceType.Location, locationText);
+                    procedureBuilder.setLocation(procedureLocation);
 
-                     } catch (NumberFormatException ex) {
-                        //the location is text only, so set as notes
-                        procedureBuilder.addNotes("Location(s): " + locationText);
-                    }
+                } catch (NumberFormatException ex) {
+                    //the location is text only, so set as notes
+                    procedureBuilder.addNotes("Location(s): " + locationText);
+                }
             }
 
             // this is the speciality group code of the surgeon
             String specialtyCode = targetProcedure.getSpecialty();
-            if (!Strings.isNullOrEmpty(specialtyCode)) {
+            if (!Strings.isNullOrEmpty(specialtyCode)
+                    && !specialtyCode.equals("0")) { //some SURCC records have a "0" specialty which is used in place of an empty cell
 
-                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(SURGEON_SPECIALITY_GROUP, specialtyCode);
-                if (codeRef != null) {
-                    String specialtyGroupTerm = codeRef.getCodeDispTxt();
-
-                    procedureBuilder.setSpecialtyGroup(specialtyGroupTerm);
-                }
+                CernerCodeValueRef codeRef = csvHelper.lookupCodeRef(CodeValueSet.SURGEON_SPECIALITY_GROUP, specialtyCode);
+                String specialtyGroupTerm = codeRef.getCodeDispTxt();
+                procedureBuilder.setSpecialtyGroup(specialtyGroupTerm);
             }
 
             // sequence number, primary and parent procedure
             Integer sequenceNumber = targetProcedure.getProcedureSeqNbr();
             if (sequenceNumber != null) {
-                procedureBuilder.setSequenceNumber(sequenceNumber);
-                if (sequenceNumber == 1) {
+                procedureBuilder.setSequenceNumber(sequenceNumber.intValue());
+                if (sequenceNumber.intValue() == 1) {
                     procedureBuilder.setIsPrimary(true);
 
                 } else {

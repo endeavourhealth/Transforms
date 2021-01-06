@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.homerton;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
+import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
@@ -13,20 +14,20 @@ public class HomertonCodeableConceptHelper {
     public static final String AUDIT_ELEMENT_CODE_DISPLAY = "Display";
     public static final String AUDIT_ELEMENT_CODE_MEANING = "Meaning";
 
-    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeDescTxt(CsvCell codeCell, CodeValueSet codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DESC, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeDisplayTxt(CsvCell codeCell, CodeValueSet codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_DISPLAY, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
-    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, Long codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonCsvHelper csvHelper) throws Exception {
+    public static CodeableConceptBuilder applyCodeMeaningTxt(CsvCell codeCell, CodeValueSet codeSet, HasCodeableConceptI resourceBuilder, CodeableConceptBuilder.Tag resourceBuilderTag, HomertonCsvHelper csvHelper) throws Exception {
         return applyCodeMeaningTxt(AUDIT_ELEMENT_CODE_MEANING, codeCell, codeSet, resourceBuilder, resourceBuilderTag, csvHelper);
     }
 
     private static CodeableConceptBuilder applyCodeMeaningTxt(String elementToApply, CsvCell codeCell,
-                                                              Long codeSet, HasCodeableConceptI resourceBuilder,
+                                                              CodeValueSet codeSet, HasCodeableConceptI resourceBuilder,
                                                               CodeableConceptBuilder.Tag resourceBuilderTag, HomertonCsvHelper csvHelper) throws Exception {
         if (codeCell == null || codeCell.isEmpty() || codeCell.getLong() == 0) {
             return null;
