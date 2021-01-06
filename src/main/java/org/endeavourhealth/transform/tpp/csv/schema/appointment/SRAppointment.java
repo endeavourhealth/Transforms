@@ -189,6 +189,11 @@ public class SRAppointment extends AbstractCsvParser {
         return super.getCell("IDRotaOwner");
     }
 
+    /**
+     * NOTE: this column is NOT what it appears to be. It does not contain details on who
+     * the owning practitioner of the rota is. According to the TPP spec this is only used in
+     * secondary care settings.
+     */
     public CsvCell getIDProfileRotaOwner() {
         return super.getCell("IDProfileRotaOwner");
     }

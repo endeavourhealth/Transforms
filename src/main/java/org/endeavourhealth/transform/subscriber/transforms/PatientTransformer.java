@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class PatientTransformer extends AbstractSubscriberTransformer {
@@ -182,11 +183,23 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         if (fhirPatient.hasBirthDate()) {
             if (params.isIncludePatientAge()) {
                 Date birthDate = fhirPatient.getBirthDate();
-                Calendar cal = Calendar.getInstance();
+
+                //SD-292 - the default LOCALE for AWS EC2 instances is en_US (US English), which starts the week
+                //differently to the en_GB (British English) and counts weeks differently.
+                Calendar cal = Calendar.getInstance(Locale.UK);
+                //Calendar cal = Calendar.getInstance();
+
                 cal.setTime(birthDate);
-                birthYear = cal.get(Calendar.YEAR);
-                birthMonth = cal.get(Calendar.MONTH) + 1; // Java month is zero-indexed
-                birthWeek = cal.get(Calendar.WEEK_OF_YEAR);
+                birthYear = new Integer(cal.get(Calendar.YEAR));
+                birthMonth = new Integer(cal.get(Calendar.MONTH) + 1); // Java month is zero-indexed
+                birthWeek = new Integer(cal.get(Calendar.WEEK_OF_YEAR));
+
+                //logging for SD-292
+                /*SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                LOG.debug("Cal " + cal);
+                LOG.debug("Patient Dob = " + sdf.format(birthDate));
+                LOG.debug("Birth year = " + birthYear + ", birth month = " + birthMonth + ", birth week = " + birthWeek);*/
+
             }
         }
 
@@ -349,7 +362,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         String configName = params.getSubscriberConfigName();
         if (!UPRN.isActivated(configName)) {
-            LOG.debug("subscriber " + configName + " not activated for UPRN");
+            //LOG.debug("subscriber " + configName + " not activated for UPRN");
             return null;
         }
 

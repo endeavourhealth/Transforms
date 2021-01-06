@@ -122,8 +122,8 @@ public class SlotTransformer {
 
         //if we haven't got an use UUIDs from the cache, it means our belief that the Session record will always be present
         //when a Slot is added/updated it wrong, and we'll need to add a pre-transformer for the Slot file to retrieve the Session practitioners(s).
-        if (userGuidCells.isEmpty()) {
-            TransformWarnings.log(LOG, csvHelper, "No user GUIDS in cache for Emis slot {}", slotGuid);
+        if (newUsersToSave.isEmpty()) {
+            TransformWarnings.log(LOG, csvHelper, "No user GUIDS cached from session for Emis slot {} and session {}", slotGuid, sessionGuid);
         }
 
         CsvCell.addAnyMissingByValue(userGuidCells, newUsersToSave);

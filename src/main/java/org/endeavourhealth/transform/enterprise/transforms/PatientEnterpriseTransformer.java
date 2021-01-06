@@ -773,7 +773,7 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
         }
 
         if (!UPRN.isActivated(configName)) {
-            LOG.debug("subscriber " + configName + " not activated for UPRN");
+            //LOG.debug("subscriber " + configName + " not activated for UPRN");
             return;
         }
 

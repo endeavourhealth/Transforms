@@ -85,7 +85,7 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
         Extension scheduleNameRef = ExtensionConverter.findExtension(fhir, FhirExtensionUri.SCHEDULE_NAME);
         if (scheduleNameRef != null) {
             StringType ref = (StringType) scheduleNameRef.getValue();
-            if (ref.getValue() != null) {
+            if (ref != null && ref.hasValue()) {
                 name = ref.getValue();
             }
         }
