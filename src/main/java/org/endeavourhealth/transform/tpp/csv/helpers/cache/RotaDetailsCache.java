@@ -62,8 +62,13 @@ public class RotaDetailsCache {
         //add to the cache if the cache has no record for this rota or the new start is earlier
         RotaDetailsObject cache = getOrCreateCacheObject(rotaIdCell);
 
-        cache.setStartDate(startDate);
-        cache.setClinicianProfileIdCell(CsvCell.factoryDummyWrapper("" + profileId)); //just create a dummy cell around the value
+        if (startDate != null) {
+            cache.setStartDate(startDate);
+        }
+
+        if (profileId != null) {
+            cache.setClinicianProfileIdCell(CsvCell.factoryDummyWrapper("" + profileId)); //just create a dummy cell around the value
+        }
     }
 
     /**

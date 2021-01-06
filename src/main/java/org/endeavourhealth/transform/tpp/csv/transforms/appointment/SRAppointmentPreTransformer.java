@@ -51,6 +51,11 @@ public class SRAppointmentPreTransformer {
         //pre-cache rota clinician, because the SRRota transformer needs this information
         CsvCell rotaIdCell = parser.getIDRota();
         CsvCell profileIdCell = parser.getIDProfileClinician();
+        if (profileIdCell.isEmpty()
+                || profileIdCell.getString().equals("-1")) {
+            throw new Exception("Unexpected IDProfileClinician cell value: " + profileIdCell);
+        }
+
         csvHelper.getRotaDateAndStaffCache().cacheRotaProfile(rotaIdCell, profileIdCell);
     }
 }
