@@ -266,11 +266,10 @@ public class EncounterTransformer {
         if ((encounterInd) && (!patientVisitId.isEmpty())) {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, patientVisitId);
-            if (builder.isIdMapped()) {
 
                 parentEncounter
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, imperialHL7Helper);
-            }
+
             builder.setPartOf(parentEncounter);
         }
 
