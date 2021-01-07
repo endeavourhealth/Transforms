@@ -314,78 +314,86 @@ public abstract class TppCsvToFhirTransformer {
 
             Set<String> set = new HashSet<>();
 
-            //add any non-empty files we want to ignore here
-            set.add("SRAddressBookEntry");
-            set.add("SRManifest");
+            //add any non-empty files we are aware we're ignoring here
+            //set.add("SRCtv3ToSnomed"); //added transformer for this
             set.add("SRMappingGroup");
-            set.add("SRStaff"); //obsolete file, replaced with SRStaffMember, which is processed
-            set.add("SRStaffMemberProfileRole"); //not to be confused with SRStaffMemberProfile, which we DO process
-
-/**
- 29 May 14:56:25.670 [RabbitMQ-pool-2-thread-3] WARN  o.e.t.c.TransformWarnings:120 - [from o.e.t.t.TppCsvToFhirTransformer:112] - TPP file SRGPPracticeHistory ignored but not empty
- 29 May 14:56:25.766 [RabbitMQ-pool-2-thread-3] WARN  o.e.t.c.TransformWarnings:120 - [from o.e.t.t.TppCsvToFhirTransformer:112] - TPP file SRPatientInformation ignored but not empty
- 29 May 14:56:25.784 [RabbitMQ-pool-2-thread-3] WARN  o.e.t.c.TransformWarnings:120 - [from o.e.t.t.TppCsvToFhirTransformer:112] - TPP file SRQuestionnaire ignored but not empty
- */
-
-            //TODO - confirm that these files ARE OK to be ignored
-
+            set.add("SRQuestionnaire");
+            set.add("SRStaffMemberProfileRole");
+            set.add("SRCodeTemplateLink");
+            set.add("SRGPPracticeHistory");
+            set.add("SRImmunisationConsent");
+            set.add("SRLetter");
+            set.add("SRMedia");
+            set.add("SROnlineServices");
+            set.add("SRSmsConsent");
+            set.add("SRSystmOnline");
+            set.add("SRAddressBookEntry");
+            set.add("SRGoal");
+            set.add("SROnlineUsers");
+            set.add("SRCarePlanPerformanceCodeLink");
             set.add("SRActivityEvent");
-            set.add("SRAppointmentRoom");
+            set.add("SRAnsweredQuestionnaire");
             set.add("SRCarePlanDetail");
             set.add("SRCarePlanItem");
-            set.add("SRCarePlanReview");
-            set.add("SRCarePlanSkillset");
-            set.add("SRCarePlanPerformance");
             set.add("SRCaseload");
             set.add("SRCaseloadHistory");
-            set.add("SRCtv3ToVersion2");
-            set.add("SRCtv3ToSnomed");
-            set.add("SRGPPracticeHistory");
-            set.add("SRLetter");
-            set.add("SRMappingGroup");
-            set.add("SROnlineServices");
-            set.add("SROnlineUsers");
+            set.add("SRExpense");
+            set.add("SRHospitalAAndENumber");
+            set.add("SROverseasVisitorChargingCategory");
             set.add("SRPatientGroups");
-            set.add("SRPatientInformation");
-            set.add("SRQuestionnaire");
-            set.add("SRAnsweredQuestionnaire");
-            set.add("SRReferralContactEvent");
+            set.add("SRProblemSubstance");
             set.add("SRReferralIn");
-            set.add("SRReferralInStatusDetails");
             set.add("SRReferralInIntervention");
             set.add("SRReferralInReferralReason");
-            set.add("SRRotaSlot");
-            set.add("SRSchoolHistory");
-            set.add("SRSmsConsent");
-            set.add("SRStaff");
-            set.add("SRStaffMemberProfileRole");
-            set.add("SRSystmOnline");
-            set.add("SRTreatmentCentrePreference");
-            set.add("SRTemplate");
-            set.add("SRCodeTemplateLink");
-            set.add("SRMedia");
-            set.add("SRImmunisationConsent");
-            set.add("SRGoal");
+            set.add("SRReferralInStatusDetails");
             set.add("SRWaitingList");
-            set.add("SRAttendee");
-            set.add("SRCluster");
-            set.add("SRHospitalAAndENumber");
-            set.add("SRCHSStatusHistory");
-            set.add("SRMentalHealthAssessment");
-            set.add("SRCarePlanFrequency");
-            set.add("SRPlaceHolderMedication");
-            set.add("SRProblemSubstance");
-            set.add("SR18WeekWait");
-            set.add("SRCarePlanPerformanceCodeLink");
-            set.add("SRExpense");
-            set.add("SROverseasVisitorChargingCategory");
-            set.add("SRAppointmentAttendees");
-            set.add("SRSchedulingSuspension");
-            set.add("SRQuestionnaireAmendment");
-            set.add("SRHospitalAlertIndicator");
+            set.add("SRSchoolHistory");
+            set.add("SRTeam");
+            set.add("SRTeamMember");
+            set.add("SRTreatmentCentrePreference");
+            set.add("SRCPA");
             set.add("SRReferralAllocation");
-            set.add("SRContacts");
             set.add("SRReferralAllocationStaff");
+            set.add("SR18WeekWait");
+            set.add("SRCHSStatusHistory");
+            set.add("SRCarePlanReview");
+            set.add("SRAppointmentAttendees");
+            set.add("SRAttendee");
+            set.add("SRSchedulingSuspension");
+            set.add("SRCarePlanPerformance");
+            set.add("SRCarePlanFrequency");
+            set.add("SRVariableDoseCDMedication");
+            set.add("SRContacts");
+            set.add("SRQuestionnaireAmendment");
+            set.add("SRMentalHealthAssessment");
+            set.add("SRPlaceHolderMedication");
+            set.add("SRRiskReview");
+            set.add("SRCluster");
+            set.add("SRSection");
+            set.add("SRCarePlanSkillset");
+            set.add("SRManifest");
+            set.add("SRSectionedBy");
+            set.add("SRSectionAppeal");
+            set.add("SRSectionRecall");
+            set.add("SRReferralContactEvent");
+            set.add("SRPatientRelationship");
+            set.add("SRMHConsent");
+            set.add("SRMentalHealthCarePlan");
+            set.add("SRSecondaryCareMedication");
+            set.add("SRDrugAdministration");
+            set.add("SRAppointmentVisitOutcomes");
+            set.add("SRPatientContactProperty");
+            set.add("SRRefusedOffer");
+            set.add("SRRtt");
+            set.add("SRRttPause");
+            set.add("SRRttStatus");
+            set.add("SRStaffActivity");
+            set.add("SRClinicalCode");
+            set.add("SRTask");
+            set.add("SRTaskUpdate");
+            set.add("SRTTOMedication");
+            set.add("SROnAdmissionMedication");
+            set.add("SRSectionRightsExplained");
 
             cachedFileNamesToIgnore = set;
         }

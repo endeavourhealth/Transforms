@@ -170,14 +170,16 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
                 //if active but a past cancellation date, something is odd
                 if (cancellationDate != null
                         && !cancellationDate.after(new Date())) {
-                    TransformWarnings.log(LOG, params, "MedicationStatement has is active (active = {}) but has cancellation date {}", new Boolean(active), cancellationDate);
-                }
-            } else {
-                //if not active but no cancellation date, something is odd
-                if (cancellationDate == null) {
-                    TransformWarnings.log(LOG, params, "MedicationStatement has is not active (active = {}) but has no cancellation date", new Boolean(active));
+                    TransformWarnings.log(LOG, params, "MedicationStatement {} has is active (active = {}) but has cancellation date {}", fhir.getId(), new Boolean(active), cancellationDate);
                 }
             }
+            //SD-304 - we simply don't have end dates (or the ability to work it out) for some publishers. Any users of subscriber DBs will have to factor this in
+            /*else {
+                //if not active but no cancellation date, something is odd
+                if (cancellationDate == null) {
+                    TransformWarnings.log(LOG, params, "MedicationStatement {} has is not active (active = {}) but has no cancellation date", fhir.getId(), new Boolean(active));
+                }
+            }*/
         }
 
 

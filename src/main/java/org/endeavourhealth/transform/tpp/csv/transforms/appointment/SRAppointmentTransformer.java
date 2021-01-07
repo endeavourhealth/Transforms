@@ -188,21 +188,12 @@ public class SRAppointmentTransformer {
         }
 
         CsvCell appointmentStatusCell = parser.getAppointmentStatus();
-        if (!appointmentStatusCell.isEmpty()) {
-
-            TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(appointmentStatusCell);
-            if (tppMappingRef != null) {
-                String statusTerm = tppMappingRef.getMappedTerm();
-                Appointment.AppointmentStatus status = convertAppointmentStatus(statusTerm, parser);
-                appointmentBuilder.setStatus(status, appointmentStatusCell);
-            } else {
-                TransformWarnings.log(LOG, csvHelper, "Missing appointment status Mapping record {}", appointmentStatusCell);
-                appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
-            }
-        } else {
-            TransformWarnings.log(LOG, csvHelper, "Empty appointment status");
-            appointmentBuilder.setStatus(Appointment.AppointmentStatus.PENDING);
+        if (appointmentStatusCell.isEmpty()) {
+            throw new Exception("Unexpected empty AppointmentStatus cell " + appointmentStatusCell);
         }
+
+        Appointment.AppointmentStatus status = convertAppointmentStatus(appointmentStatusCell, csvHelper);
+        appointmentBuilder.setStatus(status, appointmentStatusCell);
 
         // Check for appointment flags
         List<AppointmentFlagsPojo> pojoList = csvHelper.getAppointmentFlagCache().getAndRemoveFlagsForAppointmentId(appointmentIdCell.getLong());
@@ -213,31 +204,41 @@ public class SRAppointmentTransformer {
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), appointmentBuilder, slotBuilder);
     }
 
-    private static Appointment.AppointmentStatus convertAppointmentStatus(String status, SRAppointment parser) throws Exception {
+    private static Appointment.AppointmentStatus convertAppointmentStatus(CsvCell statusCell, TppCsvHelper csvHelper) throws Exception {
+
+        TppMappingRef tppMappingRef = csvHelper.lookUpTppMappingRef(statusCell);
+        String status = tppMappingRef.getMappedTerm();
 
         if (status.toLowerCase().startsWith("did not attend")
-        || status.toLowerCase().trim().contains("no access visit")) {
+            || status.toLowerCase().trim().contains("no access visit")) {
             return Appointment.AppointmentStatus.NOSHOW;
+
         } else if (status.toLowerCase().startsWith("cancelled")) {
             return Appointment.AppointmentStatus.CANCELLED;
+
         } else if (status.equalsIgnoreCase("finished")) {
             return Appointment.AppointmentStatus.FULFILLED;
+
         } else if (status.equalsIgnoreCase("arrived")) {
             return Appointment.AppointmentStatus.ARRIVED;
+
         } else if (status.equalsIgnoreCase("in progress")) {
             return Appointment.AppointmentStatus.BOOKED;
+
         } else if (status.equalsIgnoreCase("waiting")) {
             return Appointment.AppointmentStatus.PENDING;
+
         } else if (status.toLowerCase().startsWith("booked")) {
             return Appointment.AppointmentStatus.BOOKED;
+
         } else if (status.toLowerCase().startsWith("patient walked out")) {
             return Appointment.AppointmentStatus.CANCELLED;
+
         } else if (status.toLowerCase().startsWith("rejected")) {
             return Appointment.AppointmentStatus.CANCELLED;
+
         } else {
-            TransformWarnings.log(LOG, parser, "Unrecognized appointment status {} line {} file {}",
-                    status, parser.getRowIdentifier().getString(), parser.getFilePath());
-            return Appointment.AppointmentStatus.PENDING;
+            throw new Exception("Unexpected TPP appointment status [" + status + "] in cell " + statusCell);
         }
     }
 

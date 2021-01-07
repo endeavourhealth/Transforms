@@ -68,7 +68,8 @@ public class PPPHOTransformer {
         //Do this BEFORE we get the patient builder out, otherwise it never gets returned
         CsvCell numberCell = parser.getPhoneNumber();
         if (numberCell.isEmpty()) {
-            TransformWarnings.log(LOG, csvHelper, "Ignoring PPPHO record {} for person ID {} because number is empty", phoneIdCell, personIdCell);
+            //SD-296 - removing warning as this is legitimate and not need to track it happening
+            //TransformWarnings.log(LOG, csvHelper, "Ignoring PPPHO record {} for person ID {} because number is empty", phoneIdCell, personIdCell);
             return;
         }
 

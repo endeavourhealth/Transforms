@@ -40,6 +40,9 @@ public class AppointmentBuilder extends ResourceBuilderBase
         return appointment;
     }
 
+    /**
+     * used to record the PATIENT and assigned PRACTITIONER
+     */
     public void addParticipant(Reference reference, Appointment.ParticipationStatus status, CsvCell... sourceCells) {
         Appointment.AppointmentParticipantComponent fhirParticipant = this.appointment.addParticipant();
         fhirParticipant.setActor(reference);
@@ -47,6 +50,13 @@ public class AppointmentBuilder extends ResourceBuilderBase
 
         int index = this.appointment.getParticipant().size() - 1;
         auditValue("participant[" + index + "].actor.reference", sourceCells);
+    }
+
+    /**
+     * records the PRACTITIONER that booked the appointment (not the assigned clinician)
+     */
+    public void setRecordedBy(Reference practitionerReference, CsvCell... sourceCells) {
+        createOrUpdateRecordedByExtension(practitionerReference, sourceCells);
     }
 
     public void setStartDateTime(Date startDateTime, CsvCell... sourceCells) {
@@ -135,6 +145,9 @@ public class AppointmentBuilder extends ResourceBuilderBase
         auditValue("status", sourceCells);
     }
 
+    /**
+     * e.g. telephone appointment, home visit
+     */
     public void setType(String type, CsvCell... sourceCells) {
         if (Strings.isNullOrEmpty(type)) {
             this.appointment.setType(null);

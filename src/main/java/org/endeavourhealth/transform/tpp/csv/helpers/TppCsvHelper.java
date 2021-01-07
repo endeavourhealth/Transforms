@@ -222,30 +222,28 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return consultationNewChildMap.remove(consultationIdCell.getLong());
     }
 
-    public void cacheNewEncounterAppointmentOrVisitMap(CsvCell encounterId,
-                                                       String resourceGuid,
-                                                       ResourceType resourceType) {
+    public void cacheNewEncounterAppointmentLink(CsvCell eventIdCell,
+                                                 String resourceGuid,
+                                                 ResourceType resourceType) {
 
-        if (encounterId.isEmpty()) {
-            return;
-        }
-
-        Long consultationLocalUniqueId = encounterId.getLong();
-        ReferenceList list = encounterAppointmentOrVisitMap.get(consultationLocalUniqueId);
+        Long eventId = eventIdCell.getLong();
+        ReferenceList list = encounterAppointmentOrVisitMap.get(eventId);
         if (list == null) {
             //we know there will only be a single CsvCell so use this implementation to save memory
             list = new ReferenceListSingleCsvCells();
             //list = new ReferenceList();
-            encounterAppointmentOrVisitMap.put(consultationLocalUniqueId, list);
+            encounterAppointmentOrVisitMap.put(eventId, list);
         }
 
         String resourceLocalUniqueId = resourceGuid;
         Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
-        list.add(resourceReference, encounterId);
+        list.add(resourceReference, eventIdCell);
     }
 
-    public ReferenceList getAndRemoveEncounterAppointmentOrVisitMap(String encounterSourceId) {
-        return encounterAppointmentOrVisitMap.remove(encounterSourceId);
+    public ReferenceList getAndRemoveEncounterAppointmentLink(CsvCell eventIdCell) {
+
+        Long eventId = eventIdCell.getLong();
+        return encounterAppointmentOrVisitMap.remove(eventId);
     }
 
     public void cacheConsultationPreviousLinkedResources(CsvCell consultationIdCell, List<Reference> previousReferences) {

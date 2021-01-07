@@ -24,7 +24,7 @@ public class SREventLinkTransformer {
             while (parser.nextRecord()) {
 
                 try {
-                    createResource((SREventLink) parser, fhirResourceFiler, csvHelper);
+                    processRecord((SREventLink) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {
                     fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
@@ -35,31 +35,33 @@ public class SREventLinkTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    public static void createResource(SREventLink parser,
+    public static void processRecord(SREventLink parser,
                                       FhirResourceFiler fhirResourceFiler,
                                       TppCsvHelper csvHelper) throws Exception {
 
         CsvCell removedData = parser.getRemovedData();
-        if (removedData != null && removedData.getIntAsBoolean()) {
+        if (removedData != null //column not always present
+                && removedData.getIntAsBoolean()) {
             return;
         }
 
-        CsvCell appointmentId = parser.getIDAppointment();
-        CsvCell visitId = parser.getIDVisit();
+        CsvCell eventIdCell = parser.getIDEvent();
+        if (!eventIdCell.isEmpty()) {
 
-        CsvCell eventLinkId = parser.getIDEvent();
-        if (!eventLinkId.isEmpty()) {
+            CsvCell appointmentId = parser.getIDAppointment();
+            if (!TppCsvHelper.isEmptyOrNegative(appointmentId)) {
 
-            if (!appointmentId.isEmpty()) {
-
-                csvHelper.cacheNewEncounterAppointmentOrVisitMap(eventLinkId, appointmentId.getString(), ResourceType.Appointment);
+                //for FHIR Appointments we just use the SRAppointment ID as the unique ID
+                String srcId = appointmentId.getString();
+                csvHelper.cacheNewEncounterAppointmentLink(eventIdCell, srcId, ResourceType.Appointment);
             }
 
-            if (!visitId.isEmpty()) {
+            CsvCell visitIdCell = parser.getIDVisit();
+            if (!TppCsvHelper.isEmptyOrNegative(visitIdCell)) {
 
-                // appointments and visits are transformed into Appointments, so make sure Id is unique for visits
-                String visitIdUnique = SRVisitTransformer.VISIT_ID_PREFIX + visitId.getString();
-                csvHelper.cacheNewEncounterAppointmentOrVisitMap(eventLinkId, visitIdUnique, ResourceType.Appointment);
+                //SRVisit records are transformed into FHIR Appoitments and add a prefix to the unique ID to make it clear
+                String visitIdUnique = SRVisitTransformer.VISIT_ID_PREFIX + visitIdCell.getString();
+                csvHelper.cacheNewEncounterAppointmentLink(eventIdCell, visitIdUnique, ResourceType.Appointment);
             }
         }
     }

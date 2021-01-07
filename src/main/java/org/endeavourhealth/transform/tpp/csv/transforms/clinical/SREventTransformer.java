@@ -56,13 +56,13 @@ public class SREventTransformer {
                                        FhirResourceFiler fhirResourceFiler,
                                        TppCsvHelper csvHelper) throws Exception {
 
-        CsvCell eventId = parser.getRowIdentifier();
+        CsvCell eventIdCell = parser.getRowIdentifier();
         CsvCell patientId = parser.getIDPatient();
         CsvCell deleteData = parser.getRemovedData();
 
         if (deleteData != null && deleteData.getIntAsBoolean()) {
             // get previously filed resource for deletion
-            Encounter encounter = (Encounter)csvHelper.retrieveResource(eventId.getString(), ResourceType.Encounter);
+            Encounter encounter = (Encounter)csvHelper.retrieveResource(eventIdCell.getString(), ResourceType.Encounter);
             if (encounter != null) {
                 EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
                 encounterBuilder.setDeletedAudit(deleteData);
@@ -72,7 +72,7 @@ public class SREventTransformer {
         }
 
         EncounterBuilder encounterBuilder = new EncounterBuilder();
-        encounterBuilder.setId(eventId.getString(), eventId);
+        encounterBuilder.setId(eventIdCell.getString(), eventIdCell);
 
         Reference patientReference = csvHelper.createPatientReference(patientId);
         encounterBuilder.setPatient(patientReference, patientId);
@@ -118,17 +118,18 @@ public class SREventTransformer {
         ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
 
         //carry over linked items from any previous instance of this encounter.
-        ReferenceList previousReferences = csvHelper.findConsultationPreviousLinkedResources(eventId);
+        ReferenceList previousReferences = csvHelper.findConsultationPreviousLinkedResources(eventIdCell);
         containedListBuilder.addReferences(previousReferences);
 
         //apply any new linked items from this extract. Encounter links set-up in Codes/Referral/Medication etc. pre-transformers
-        ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(eventId);
+        ReferenceList newLinkedResources = csvHelper.getAndRemoveNewConsultationRelationships(eventIdCell);
         containedListBuilder.addReferences(newLinkedResources);
 
         //apply any linked appointments / visits
-        ReferenceList appLinkedResources = csvHelper.getAndRemoveEncounterAppointmentOrVisitMap(encounterBuilder.getResourceId());
-        if (appLinkedResources != null) {
-            encounterBuilder.setAppointment(appLinkedResources.getReference(0));
+        ReferenceList linkedAppointmentReferences = csvHelper.getAndRemoveEncounterAppointmentLink(eventIdCell);
+        if (linkedAppointmentReferences != null) {
+            Reference ref = linkedAppointmentReferences.getReference(0); //the list will only ever contain one item
+            encounterBuilder.setAppointment(ref);
         }
 
         CsvCell branchIdCell = parser.getIDBranch();
