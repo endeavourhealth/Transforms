@@ -145,26 +145,10 @@ public class ReferralTransformer {
             case "D": return ReferralType.DAY_CARE;         //Day-case
             case "I": return ReferralType.INVESTIGATION; 	//Investigation
             case "V": return ReferralType.COMMUNITY_CARE;   //Domiciliary visit
-            default: return ReferralType.UNKNOWN;
-        }
-    }
-
-    private static ReferralPriority convertUrgency(String urgency) throws Exception {
-
-        if (urgency.equalsIgnoreCase("Routine")) {
-            return ReferralPriority.ROUTINE;
-
-        } else if (urgency.equalsIgnoreCase("Urgent")) {
-            return ReferralPriority.URGENT;
-
-        } else if (urgency.equalsIgnoreCase("2 Week Wait")) {
-            return ReferralPriority.TWO_WEEK_WAIT;
-
-        } else if (urgency.equalsIgnoreCase("Soon")) {
-            return ReferralPriority.SOON;
-
-        } else {
-            return null;
+            default:
+                //the Vision spec only states the above are used, so if we get anything else, then it should be treated as an error
+                throw new Exception("Unexpected Vision referral type [" + type + "]");
+                //return ReferralType.UNKNOWN;
         }
     }
 
