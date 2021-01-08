@@ -11,6 +11,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
@@ -197,9 +198,14 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralPriority fhirReferralPriority = ReferralPriority.fromCode(coding.getCode());
-                Integer referralRequestPriorityId = fhirReferralPriority.ordinal();
-                referralRequestPriorityConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_PRIORITY,
-                        referralRequestPriorityId.toString(), coding.getDisplay());
+                int referralRequestPriorityId = fhirReferralPriority.ordinal();
+                referralRequestPriorityConceptId = IMHelper.getIMConcept(null, fhir, IMConstant.FHIR_REFERRAL_PRIORITY, "" + referralRequestPriorityId, coding.getDisplay());
+
+            } else if (codeableConcept.hasText()) {
+                //SD-308 - we can't always map the inbound free-text referral priority to one of the hard-coded valueset, so may
+                //carry it through as free-text, in which case just look up using that text
+                String text = codeableConcept.getText();
+                referralRequestPriorityConceptId = IMClient.getConceptDbidForTypeTerm(IMConstant.FHIR_REFERRAL_PRIORITY, text, true);
             }
         }
 
@@ -208,8 +214,12 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
-                referralRequestTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_TYPE,
-                        fhirReferralType.getCode(), coding.getDisplay());
+                referralRequestTypeConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_REFERRAL_TYPE, fhirReferralType.getCode(), coding.getDisplay());
+
+            } else if (codeableConcept.hasText()) {
+                //if we don't have a value in the valueset, we can still use the IM to look up a concept for the textual term
+                String text = codeableConcept.getText();
+                referralRequestTypeConceptId = IMClient.getConceptDbidForTypeTerm(IMConstant.FHIR_REFERRAL_TYPE, text, true);
             }
         }
 

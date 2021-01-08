@@ -196,10 +196,11 @@ public class SRReferralOutTransformer {
                 ccb.addCoding(mappedPriority.getSystem()); //the URL for the priority system
                 ccb.setCodingCode(mappedPriority.getCode());
                 ccb.setCodingDisplay(mappedPriority.getDescription());
-
-            } else {
-                TransformWarnings.log(LOG, csvHelper, "Unmapped TPP referral priority {} {}", referralPriorityCell, desc);
             }
+            //SD-308 - don't bother trying to keep mapping all priorities to the same set and just leave to the IM to handle on the way out
+            /*else {
+                TransformWarnings.log(LOG, csvHelper, "Unmapped TPP referral priority {} {}", referralPriorityCell, desc);
+            }*/
         }
 
         //we may have retrieved the Resource from the DB, so clear out any existing codeable concept
@@ -264,7 +265,8 @@ public class SRReferralOutTransformer {
             return ReferralPriority.URGENT;
 
         } else if (priority.toLowerCase().contains("two week")
-                || priority.toLowerCase().contains("2 week")) {
+                || priority.toLowerCase().contains("2 week")
+                || priority.toLowerCase().contains("Two-Week Wait")) {
             return ReferralPriority.TWO_WEEK_WAIT;
 
         } else if (priority.toLowerCase().contains("soon")) {

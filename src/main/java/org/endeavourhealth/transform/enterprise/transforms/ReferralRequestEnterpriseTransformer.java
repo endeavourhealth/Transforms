@@ -7,9 +7,11 @@ import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,7 +167,11 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralPriority fhirReferralPriority = ReferralPriority.fromCode(coding.getCode());
-                priorityId = fhirReferralPriority.ordinal();
+                priorityId = new Integer(fhirReferralPriority.ordinal());
+
+            } else if (codeableConcept.hasText()) {
+                //we can't always map the inbound free-text referral priority to one of the hard-coded valueset, so may
+                //carry it through as free-text, in which case just look up using that text, but we have no way to use that in Compass v2
             }
         }
 
@@ -174,7 +180,11 @@ public class ReferralRequestEnterpriseTransformer extends AbstractEnterpriseTran
             if (codeableConcept.hasCoding()) {
                 Coding coding = codeableConcept.getCoding().get(0);
                 ReferralType fhirReferralType = ReferralType.fromCode(coding.getCode());
-                typeId = fhirReferralType.ordinal();
+                typeId = new Integer(fhirReferralType.ordinal());
+
+            } else if (codeableConcept.hasText()) {
+                //we can't always map the inbound free-text referral priority to one of the hard-coded valueset, so may
+                //carry it through as free-text, in which case just look up using that text, but we have no way to use that in Compass v2
             }
         }
 

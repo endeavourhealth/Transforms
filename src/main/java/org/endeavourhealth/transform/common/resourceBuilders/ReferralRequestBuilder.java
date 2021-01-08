@@ -145,6 +145,9 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         auditValue("priority.text", sourceCells);
     }*/
 
+    /**
+     * the referral "type" is the objective e.g. Treatment, Assessment, Investigation
+     */
     public void setType(ReferralType type, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(type);
         this.referralRequest.setType(codeableConcept);
@@ -152,6 +155,9 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         auditValue("type.coding[0]", sourceCells);
     }
 
+    /**
+     * the referral "type" is the objective e.g. Treatment, Assessment, Investigation
+     */
     public void setTypeFreeText(String freeText, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(freeText);
         this.referralRequest.setType(codeableConcept);
@@ -159,6 +165,9 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
         auditValue("type.text", sourceCells);
     }
 
+    /**
+     * the referral "mode" is how the referral was communicated to the recipient, e.g. ERS, written
+     */
     public void setMode(ReferralRequestSendMode fhirMode, CsvCell... sourceCells) {
         CodeableConcept codeableConcept = CodeableConceptHelper.createCodeableConcept(fhirMode);
         Extension extension = ExtensionConverter.createOrUpdateExtension(this.referralRequest, FhirExtensionUri.REFERRAL_REQUEST_SEND_MODE, codeableConcept);

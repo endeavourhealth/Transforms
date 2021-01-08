@@ -82,10 +82,12 @@ public class ObservationReferralTransformer {
                 ccb.addCoding(mappedPriority.getSystem()); //the URL for the priority system
                 ccb.setCodingCode(mappedPriority.getCode());
                 ccb.setCodingDisplay(mappedPriority.getDescription());
-
-            } else {
-                TransformWarnings.log(LOG, csvHelper, "Unmapped EMIS referral priority {}", urgencyDesc);
             }
+            //SD-308 - the outbound transform now allows free-text referral priorities, so we don't need to log that we've got one
+            //that wan't mapped to a valueset value
+            /*else {
+                TransformWarnings.log(LOG, csvHelper, "Unmapped EMIS referral priority {}", urgencyDesc);
+            }*/
         }
 
         CsvCell serviceType = parser.getReferralServiceType();

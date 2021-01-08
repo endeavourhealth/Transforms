@@ -188,10 +188,22 @@ public class SRReferralOut extends AbstractCsvParser {
         return super.getCell("IDOrganisationDoneAt");
     }
 
+    /**
+     * links to TPP SRMapping file to give the high-level service type being referred to:
+     * e.g. e-Consult, Secondary care, Hospital, Community, Diagnostic Treatment Centre
+     *
+     * see: select * from publisher_common.tpp_mapping_ref_2 where group_id = 31685
+     */
     public CsvCell getTypeOfReferral() {
         return super.getCell("TypeOfReferral");
     }
 
+    /**
+     * links to TPP SRConfiguredList to list the high-level reason/objective of the referral
+     * e.g. Assessment for hospice, Pain / Symptom Control, Bereavement support, Admission
+     *
+     * see: select * from publisher_common.tpp_config_list_option_2 where config_list_id = 176076;
+     */
     public CsvCell getReason() {
         return super.getCell("Reason");
     }
@@ -200,6 +212,14 @@ public class SRReferralOut extends AbstractCsvParser {
         return super.getCell("IDProfileReferrer");
     }
 
+    /**
+     * links to TPP SRMapping to give the service type being referred to.
+     * NOTE, the TPP documentation is wrong and states this refers to the SRConfiguredList file, but this is not true
+     *
+     * e.g. Burns Care, Plastic Surgery, Cardiothoracic Surgery, Paediatric Surgery
+     *
+     * see: select * from publisher_common.tpp_mapping_ref_2 where group_id = 175137
+     */
     public CsvCell getServiceOffered() {
         return super.getCell("ServiceOffered");
     }
