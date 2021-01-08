@@ -85,9 +85,8 @@ public class MedicationOrderEnterpriseTransformer extends AbstractEnterpriseTran
         try {
             dmdId = CodeableConceptHelper.findSnomedConceptId(fhir.getMedicationCodeableConcept());
         } catch (NumberFormatException nfe) {
-            //we have had a case of Vision data containing DM+Ds that exceed max long. Until we know why and can come
-            //up with a good strategy, we'll log and skip them
-            TransformWarnings.log(LOG, params, "Invalid DM+D ID {} for {} {}", nfe.getMessage(), fhir.getResourceType(), fhir.getId());
+            //deal with the error
+            logInvalidDMDId(nfe, fhir, params);
             return;
         }
 
@@ -174,4 +173,22 @@ public class MedicationOrderEnterpriseTransformer extends AbstractEnterpriseTran
             medicationStatementId,
             originalTerm);
     }
+
+    /**
+     * we have had a case of Vision data containing DM+Ds that exceed max long. Until we know why and can come
+     * up with a good strategy, we'll log and skip them
+     */
+    public static void logInvalidDMDId(NumberFormatException nfe, Resource fhir, EnterpriseTransformHelper params) throws Exception {
+
+        //SD-310 as well as bad Vision data, we have some TPP data with DM+D concept ID set to "MULTIPLE_DMD_MAPPING"
+        //so if the error is due to that specific String, then don't log the warning any more
+        if (nfe.getMessage() != null
+                && nfe.getMessage().contains("MULTIPLE_DMD_MAPPING")) {
+            LOG.warn("Got TPP non-valid DM+D ID MULTIPLE_DMD_MAPPING in resource " + fhir.getResourceType() + " " + fhir.getId() + " so skipping in Enterprise transform");
+            return;
+        }
+
+        TransformWarnings.log(LOG, params, "Invalid DM+D ID {} for {} {}", nfe.getMessage(), fhir.getResourceType(), fhir.getId());
+    }
+
 }

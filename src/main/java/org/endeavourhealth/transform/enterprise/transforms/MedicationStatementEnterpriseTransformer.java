@@ -81,9 +81,8 @@ public class MedicationStatementEnterpriseTransformer extends AbstractEnterprise
         try {
             dmdId = CodeableConceptHelper.findSnomedConceptId(fhir.getMedicationCodeableConcept());
         } catch (NumberFormatException nfe) {
-            //we have had a case of Vision data containing DM+Ds that exceed max long. Until we know why and can come
-            //up with a good strategy, we'll log and skip them
-            TransformWarnings.log(LOG, params, "Invalid DM+D ID {} for {} {}", nfe.getMessage(), fhir.getResourceType(), fhir.getId());
+            //deal with the error
+            MedicationOrderEnterpriseTransformer.logInvalidDMDId(nfe, fhir, params);
             return;
         }
 
