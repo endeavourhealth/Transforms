@@ -711,6 +711,7 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
             if (rs.next()) {
                 id = rs.getString("id");
             }
+            ps.close();
             subscriberConnection.close();
             return id;
         }
@@ -734,6 +735,7 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
         String id = "";
         if (rs.next()) {id = rs.getString("LAST_INSERT_ID()");}
 
+        preparedStmt.close();
         connection.close();
         return id;
     }
