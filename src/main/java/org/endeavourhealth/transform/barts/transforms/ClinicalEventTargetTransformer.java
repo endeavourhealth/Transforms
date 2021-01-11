@@ -49,7 +49,8 @@ public class ClinicalEventTargetTransformer {
 
         int size = targetClinicalEvents.size();
         int done = 0;
-        TransformWarnings.log(LOG, csvHelper, "Target Clinical events to transform to FHIR: {} for exchangeId: {}", new Integer(size), csvHelper.getExchangeId());
+        //removing this as it's not actually a warning
+        //TransformWarnings.log(LOG, csvHelper, "Target Clinical events to transform to FHIR: {} for exchangeId: {}", new Integer(size), csvHelper.getExchangeId());
 
         for (StagingClinicalEventTarget targetClinicalEvent : targetClinicalEvents) {
             createObservationFromTarget(targetClinicalEvent, fhirResourceFiler, csvHelper);

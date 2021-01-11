@@ -107,7 +107,8 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             CodeableConcept fhirServiceRequested = fhir.getServiceRequested().get(0);
             Coding originalCoding = ObservationCodeHelper.findOriginalCoding(fhirServiceRequested);
             if (originalCoding == null) {
-                TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+                //SD-297 - no longer needed
+                //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
                 return;
             }
             String originalCode = originalCoding.getCode();

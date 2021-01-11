@@ -92,7 +92,8 @@ public class ImmunisationTransformer extends AbstractSubscriberTransformer {
 
         Coding originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getVaccineCode());
         if (originalCoding == null) {
-            TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+            //SD-297 - no longer needed
+            //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
         }
         String originalCode = originalCoding.getCode();

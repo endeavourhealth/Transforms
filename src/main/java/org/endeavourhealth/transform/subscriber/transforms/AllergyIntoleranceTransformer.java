@@ -95,7 +95,8 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
 
         Coding originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getSubstance());
         if (originalCoding == null) {
-            TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+            //SD-297 - no longer needed
+            //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
         }
         String originalCode = originalCoding.getCode();
