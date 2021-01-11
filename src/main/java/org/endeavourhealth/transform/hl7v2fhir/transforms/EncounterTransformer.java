@@ -101,18 +101,18 @@ public class EncounterTransformer {
 
         TS admitDtTime = pv1.getAdmitDateTime();
         String startDt = String.valueOf(admitDtTime.getTimeOfAnEvent());
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        Date stDt = formatter.parse(startDt.substring(0,4)+"-"+startDt.substring(4,6)+"-"+startDt.substring(6,8));
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        Date stDt = formatter.parse(startDt.substring(0,4)+startDt.substring(4,6)+startDt.substring(6,8)+startDt.substring(8,10)+startDt.substring(10,12)+startDt.substring(12,14));
         parentTopEncounterBuilder.setPeriodStart(stDt);
 
         TS dischargeDtTime = pv1.getDischargeDateTime();
         Date dsDt = null;
         if(!dischargeDtTime.isEmpty()) {
             String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
-            dsDt = formatter.parse(endDt.substring(0,4)+"-"+endDt.substring(4,6)+"-"+endDt.substring(6,8));
+            dsDt = formatter.parse(endDt.substring(0,4)+endDt.substring(4,6)+endDt.substring(6,8)+endDt.substring(8,10)+endDt.substring(10,12)+endDt.substring(12,14));
         }
 
-        if (("ADT_A03".equalsIgnoreCase(msgType) && (!dischargeDtTime.isEmpty()))) {
+        if (("A03".equalsIgnoreCase(msgType) && (!dischargeDtTime.isEmpty()))) {
             parentTopEncounterBuilder.setPeriodEnd(dsDt);
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         } else {
@@ -157,18 +157,19 @@ public class EncounterTransformer {
 
         TS admitDtTime = pv1.getAdmitDateTime();
         String startDt = String.valueOf(admitDtTime.getTimeOfAnEvent());
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        Date stDt = formatter.parse(startDt.substring(0,4)+"-"+startDt.substring(4,6)+"-"+startDt.substring(6,8));
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        Date stDt = formatter.parse(startDt.substring(0,4)+startDt.substring(4,6)+startDt.substring(6,8)+startDt.substring(8,10)+startDt.substring(10,12)+startDt.substring(12,14));
         parentTopEncounterBuilder.setPeriodStart(stDt);
 
         TS dischargeDtTime = pv1.getDischargeDateTime();
         Date dsDt = null;
         if(!dischargeDtTime.isEmpty()) {
             String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
-            dsDt = formatter.parse(endDt.substring(0,4)+"-"+endDt.substring(4,6)+"-"+endDt.substring(6,8));
+            dsDt = formatter.parse(endDt.substring(0,4)+endDt.substring(4,6)+endDt.substring(6,8)+endDt.substring(8,10)+endDt.substring(10,12)+endDt.substring(12,14));
+
         }
 
-        if (("ADT_A03".equalsIgnoreCase(msgType) && (!dischargeDtTime.isEmpty()))) {
+        if (("A03".equalsIgnoreCase(msgType) && (!dischargeDtTime.isEmpty()))) {
             parentTopEncounterBuilder.setPeriodEnd(dsDt);
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
         } else {
@@ -287,10 +288,10 @@ public class EncounterTransformer {
 
         List<String> encounterIds = new ArrayList<String>();
         if("E".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
-            if ("ADT_A03".equalsIgnoreCase(msgType)) {
+            if ("A03".equalsIgnoreCase(msgType)) {
                 encounterIds.add(pv1.getVisitNumber().getID() + ":02:EM");
 
-            } else if ("ADT_A08".equalsIgnoreCase(msgType)) {
+            } else if ("A08".equalsIgnoreCase(msgType)) {
                 Encounter existingChildEncounter = (Encounter) imperialHL7Helper.retrieveResource(pv1.getVisitNumber().getID() + ":02:EM", ResourceType.Encounter);
                 encounterIds.add(pv1.getVisitNumber().getID() + ":01:EM");
                 if(existingChildEncounter != null) {
@@ -302,10 +303,10 @@ public class EncounterTransformer {
             }
 
         } else if("I".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
-            if ("ADT_A03".equalsIgnoreCase(msgType)) {
+            if ("A03".equalsIgnoreCase(msgType)) {
                 encounterIds.add(pv1.getVisitNumber().getID() + ":02:IP");
 
-            } else if ("ADT_A08".equalsIgnoreCase(msgType)) {
+            } else if ("A08".equalsIgnoreCase(msgType)) {
                 Encounter existingChildEncounter = (Encounter) imperialHL7Helper.retrieveResource(pv1.getVisitNumber().getID() + ":02:IP", ResourceType.Encounter);
                 encounterIds.add(pv1.getVisitNumber().getID() + ":01:IP");
                 if(existingChildEncounter != null) {
@@ -330,7 +331,7 @@ public class EncounterTransformer {
                     childEncounterBuilder.setClass(Encounter.EncounterClass.EMERGENCY);
                     CodeableConceptBuilder codeableConceptBuilderAdmission
                             = new CodeableConceptBuilder(childEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-                    if ("ADT_A03".equalsIgnoreCase(msgType)) {
+                    if ("A03".equalsIgnoreCase(msgType)) {
                         codeableConceptBuilderAdmission.setText("Emergency Discharge");
 
                     } else {
@@ -341,7 +342,7 @@ public class EncounterTransformer {
                     childEncounterBuilder.setClass(Encounter.EncounterClass.INPATIENT);
                     CodeableConceptBuilder codeableConceptBuilderAdmission
                             = new CodeableConceptBuilder(childEncounterBuilder, CodeableConceptBuilder.Tag.Encounter_Source);
-                    if ("ADT_A03".equalsIgnoreCase(msgType)) {
+                    if ("A03".equalsIgnoreCase(msgType)) {
                         codeableConceptBuilderAdmission.setText("Inpatient Discharge");
 
                     } else {
@@ -358,11 +359,12 @@ public class EncounterTransformer {
 
                 childEncounterBuilder.setId(encounterId);
 
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
                 TS admitDtTime = pv1.getAdmitDateTime();
                 if(!admitDtTime.isEmpty()) {
                     String startDt = String.valueOf(admitDtTime.getTimeOfAnEvent());
-                    Date stDt = formatter.parse(startDt.substring(0,4)+"-"+startDt.substring(4,6)+"-"+startDt.substring(6,8));
+                    Date stDt = formatter.parse(startDt.substring(0,4)+startDt.substring(4,6)+startDt.substring(6,8)+startDt.substring(8,10)+startDt.substring(10,12)+startDt.substring(12,14));
+
                     childEncounterBuilder.setPeriodStart(stDt);
                 }
 
@@ -370,10 +372,10 @@ public class EncounterTransformer {
                 Date dsDt = null;
                 if(!dischargeDtTime.isEmpty()) {
                     String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
-                    dsDt = formatter.parse(endDt.substring(0,4)+"-"+endDt.substring(4,6)+"-"+endDt.substring(6,8));
+                    dsDt = formatter.parse(endDt.substring(0,4)+endDt.substring(4,6)+endDt.substring(6,8)+endDt.substring(8,10)+endDt.substring(10,12)+endDt.substring(12,14));
                 }
 
-                if (("ADT_A03".equalsIgnoreCase(msgType) && (!dischargeDtTime.isEmpty()))) {
+                if (("A03".equalsIgnoreCase(msgType) && (!dischargeDtTime.isEmpty()))) {
                     childEncounterBuilder.setPeriodEnd(dsDt);
                     childEncounterBuilder.setStatus(Encounter.EncounterState.FINISHED);
                 } else {
