@@ -49,8 +49,9 @@ public class PROVIDERTransformer {
         CsvCell patientIdCell = parser.getPatientId();
         CsvCell gpPracticeCodeCell = parser.getGPPracticeNatCode();
         if (gpPracticeCodeCell.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "Provider GP Practice Code is blank for PatientId: {}",
-                    patientIdCell.getString());
+            //SD-314 - no longer needed
+            //TransformWarnings.log(LOG, parser, "Provider GP Practice Code is blank for PatientId: {}",
+            //        patientIdCell.getString());
             return;
         }
 
