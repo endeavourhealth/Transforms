@@ -80,20 +80,25 @@ public class SessionTransformer {
             scheduleBuilder.setPlanningHorizonEnd(endDateTime, endDate, endTime);
         }
 
-        CsvCell sessionType = parser.getSessionTypeDescription();
-        if (!sessionType.isEmpty()) {
-            scheduleBuilder.setTypeFreeText(sessionType.getString(), sessionType);
+        CsvCell sessionTypeCell = parser.getSessionTypeDescription();
+        if (!sessionTypeCell.isEmpty()) {
+            //SD-305 - make mapping consistent with TPP and useful for subscriber DBs
+            scheduleBuilder.addComment(sessionTypeCell.getString(), sessionTypeCell);
+            //scheduleBuilder.setTypeFreeText(sessionTypeCell.getString(), sessionTypeCell);
         }
 
-        CsvCell category = parser.getSessionCategoryDisplayName();
-        if (!category.isEmpty()) {
-            //the FHIR description of "Comment" seems approproate to store the category
-            scheduleBuilder.addComment(category.getString(), category);
+        CsvCell categoryCell = parser.getSessionCategoryDisplayName();
+        if (!categoryCell.isEmpty()) {
+            //SD-305 - make mapping consistent with TPP and useful for subscriber DBs
+            scheduleBuilder.setTypeFreeText(categoryCell.getString(), categoryCell);
+            //scheduleBuilder.addComment(categoryCell.getString(), categoryCell);
         }
 
-        CsvCell description = parser.getDescription();
-        if (!description.isEmpty()) {
-            scheduleBuilder.addComment(description.getString(), description);
+        CsvCell descriptionCell = parser.getDescription();
+        if (!descriptionCell.isEmpty()) {
+            //SD-305 - make mapping consistent with TPP and useful for subscriber DBs
+            scheduleBuilder.setScheduleName(descriptionCell.getString(), descriptionCell);
+            //scheduleBuilder.addComment(descriptionCell.getString(), descriptionCell);
         }
 
         //if just the session has changed, so won't receive the session_user records again, so we need

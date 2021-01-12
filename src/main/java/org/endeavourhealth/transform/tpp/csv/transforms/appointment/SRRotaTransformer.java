@@ -52,10 +52,10 @@ public class SRRotaTransformer {
             return;
         }
 
-        CsvCell locationBranchId = parser.getIDBranch();
-        if (!locationBranchId.isEmpty() && locationBranchId.getLong().longValue() > 0) {
-            Reference fhirReference = csvHelper.createLocationReference(locationBranchId);
-            scheduleBuilder.setLocation(fhirReference, locationBranchId);
+        CsvCell locationBranchIdCell = parser.getIDBranch();
+        if (!TppCsvHelper.isEmptyOrNegative(locationBranchIdCell)) {
+            Reference fhirReference = csvHelper.createLocationReference(locationBranchIdCell);
+            scheduleBuilder.setLocation(fhirReference, locationBranchIdCell);
         }
 
         CsvCell sessionType = parser.getRotaType();
@@ -72,8 +72,7 @@ public class SRRotaTransformer {
 
         //added missing transforms
         CsvCell locationTypeIdCell = parser.getLocation();
-        if (!locationTypeIdCell.isEmpty()
-                && locationTypeIdCell.getLong().longValue() > 0) {
+        if (!TppCsvHelper.isEmptyOrNegative(locationTypeIdCell)) {
 
             //the location type links to a configured list item
             TppConfigListOption configuredListItem = TppCsvHelper.lookUpTppConfigListOption(locationTypeIdCell);

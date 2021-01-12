@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -67,6 +68,13 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
                         location = fhirLocation.getName();
                     }
                 }
+            }
+        }
+        //in the absence of a specific named location, see if we have a location TYPE set
+        if (Strings.isNullOrEmpty(location)) {
+            StringType stringType = (StringType)ExtensionConverter.findExtensionValue(fhir, FhirExtensionUri.SCHEDULE_LOCATION_TYPE);
+            if (stringType != null) {
+                location = stringType.toString();
             }
         }
 
