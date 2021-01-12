@@ -203,7 +203,7 @@ public class EncounterTransformer {
             referringDoctorId = String.valueOf(referringDoctor[0].getIDNumber());
         }
 
-        if (!patientId.isEmpty()) {
+        if (null!=patientId && !patientId.isEmpty()) {
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientId);
             if (builder.isIdMapped()) {
                 patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
@@ -211,7 +211,7 @@ public class EncounterTransformer {
             builder.setPatient(patientReference);
         }
 
-        if (!patientVisitId.isEmpty()) {
+        if (null!=patientVisitId && !patientVisitId.isEmpty()) {
             Reference episodeReference
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientVisitId);
             if (builder.isIdMapped()) {
@@ -222,7 +222,7 @@ public class EncounterTransformer {
         }
 
         String loc[] = String.valueOf(pv1.getAssignedPatientLocation().getLocationType()).split(",");
-        if (!loc[0].isEmpty()) {
+        if (null!=loc[0] && (!loc[0].isEmpty())) {
             Reference patientAssignedLocReference
                     = ReferenceHelper.createReference(ResourceType.Location, loc[0]);
             if (builder.isIdMapped()) {
@@ -233,7 +233,7 @@ public class EncounterTransformer {
         }
 
         //Todo need to verify the practitioner code
-        if (!consultingDoctorId.isEmpty()) {
+        if (null!=consultingDoctorId && (!consultingDoctorId.isEmpty())) {
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, consultingDoctorId);
             if (builder.isIdMapped()) {
@@ -244,7 +244,7 @@ public class EncounterTransformer {
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
 
-        if (!referringDoctorId.isEmpty()) {
+        if (null!=referringDoctorId && (!referringDoctorId.isEmpty())) {
             Reference practitionerReferenceRd
                     = ReferenceHelper.createReference(ResourceType.Practitioner, referringDoctorId);
             if (builder.isIdMapped()) {
