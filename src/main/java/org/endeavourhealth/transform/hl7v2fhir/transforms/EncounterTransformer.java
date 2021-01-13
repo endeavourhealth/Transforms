@@ -221,7 +221,7 @@ public class EncounterTransformer {
             builder.setEpisodeOfCare(episodeReference);
         }
 
-        String loc[] = String.valueOf(pv1.getAssignedPatientLocation().getLocationType()).split(",");
+        String loc[] = String.valueOf(pv1.getAssignedPatientLocation().getPointOfCare()).split(",");
         if (null!=loc[0] && (!loc[0].isEmpty())) {
             Reference patientAssignedLocReference
                     = ReferenceHelper.createReference(ResourceType.Location, loc[0]);

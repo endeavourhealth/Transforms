@@ -1,6 +1,6 @@
 package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
-import ca.uhn.hl7v2.model.v23.datatype.ST;
+import ca.uhn.hl7v2.model.primitive.ID;
 import ca.uhn.hl7v2.model.v23.datatype.XON;
 import ca.uhn.hl7v2.model.v23.segment.PD1;
 import ca.uhn.hl7v2.model.v23.segment.PV1;
@@ -47,7 +47,7 @@ public class LocationTransformer {
      * @throws Exception
      */
     public static LocationBuilder transformPV1ToPatientAssignedLocation(PV1 pv1, LocationBuilder location) throws Exception {
-        ST assignedPatientLoc = pv1.getAssignedPatientLocation().getLocationType();
+        ID assignedPatientLoc = pv1.getAssignedPatientLocation().getPointOfCare();
         if(assignedPatientLoc.getValue() != null) {
             String loc[] = String.valueOf(assignedPatientLoc).split(",");
             location.setId(loc[0]);
