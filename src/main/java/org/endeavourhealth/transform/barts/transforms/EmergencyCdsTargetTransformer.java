@@ -989,6 +989,10 @@ public class EmergencyCdsTargetTransformer {
             int count = 0;
             for (String diagnosisCode : records) {
 
+                if (Strings.isNullOrEmpty(diagnosisCode) || diagnosisCode.equalsIgnoreCase("#N/A")) {
+                    continue;
+                }
+
                 count++;
 
                 //create the id using the uniqueId for the encounter diagnosis plus count text
@@ -1076,6 +1080,15 @@ public class EmergencyCdsTargetTransformer {
             int count = 0;
             for (String invRecord : invRecords) {
 
+                //each record is in format:  20190820 132000~252167001
+                String[] invRecordDateTimeCode = invRecord.split("~");
+
+                //evaluate the Snomed code and continue loop if null or invalid
+                String invSnomedCode = invRecordDateTimeCode[1];       //Snomed code
+                if (Strings.isNullOrEmpty(invSnomedCode) || invSnomedCode.equalsIgnoreCase("#N/A")) {
+                    continue;
+                }
+
                 count++;
 
                 ObservationBuilder observationBuilderInv
@@ -1095,9 +1108,6 @@ public class EmergencyCdsTargetTransformer {
                     Reference encounterReference = ReferenceHelper.createReference(ResourceType.Encounter, "" + encounterId);
                     observationBuilderInv.setEncounter(encounterReference);
                 }
-
-                //each record is in format:  20190820 132000~252167001
-                String[] invRecordDateTimeCode = invRecord.split("~");
 
                 //we always have a performed date, so no null handling required
                 String invDateTime = invRecordDateTimeCode[0];   //20190820 132000
@@ -1119,14 +1129,13 @@ public class EmergencyCdsTargetTransformer {
                 CodeableConceptBuilder codeableConceptBuilder
                         = new CodeableConceptBuilder(observationBuilderInv, CodeableConceptBuilder.Tag.Observation_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                String invSnomedCode = invRecordDateTimeCode[1];       //Snomed code
                 codeableConceptBuilder.setCodingCode(invSnomedCode);
 
                 //look up the term for the snomed concept
                 String snomedTerm = TerminologyService.lookupSnomedTerm(invSnomedCode);
                 if (Strings.isNullOrEmpty(snomedTerm)) {
                     throw new Exception("Failed to find term for Snomed code " + invSnomedCode);
-                }
+            }
                 codeableConceptBuilder.setCodingDisplay(snomedTerm);
                 codeableConceptBuilder.setText(snomedTerm);
 
@@ -1142,6 +1151,16 @@ public class EmergencyCdsTargetTransformer {
             String[] treatmentRecords = treatments.split("\\|");
             int count = 0;
             for (String treatmentRecord : treatmentRecords) {
+
+                //each record is in format:  20190820 132000~252167001
+                String[] treatmentRecordDateTimeCode = treatmentRecord.split("~");
+
+                //evaluate the Snomed code and continue loop if null or invalid
+                String treatmentSnomedCode = treatmentRecordDateTimeCode[1];       //Snomed code
+                if (Strings.isNullOrEmpty(treatmentSnomedCode)
+                        || treatmentSnomedCode.equalsIgnoreCase("#N/A")) {
+                    continue;
+                }
 
                 count++;
 
@@ -1164,8 +1183,6 @@ public class EmergencyCdsTargetTransformer {
                     observationBuilderTreatment.setEncounter(encounterReference);
                 }
 
-                //each record is in format:  20190820 132000~252167001
-                String[] treatmentRecordDateTimeCode = treatmentRecord.split("~");
                 String treatmentDateTime = treatmentRecordDateTimeCode[0];   //20190820 132000
 
                 //we always have a performed date, so no null handling required
@@ -1187,7 +1204,6 @@ public class EmergencyCdsTargetTransformer {
                 CodeableConceptBuilder codeableConceptBuilder
                         = new CodeableConceptBuilder(observationBuilderTreatment, CodeableConceptBuilder.Tag.Observation_Main_Code);
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                String treatmentSnomedCode = treatmentRecordDateTimeCode[1];       //Snomed code
                 codeableConceptBuilder.setCodingCode(treatmentSnomedCode);
 
                 //look up the term for the snomed concept
@@ -1210,6 +1226,11 @@ public class EmergencyCdsTargetTransformer {
             String[] sgRecords = safeGuardingConcerns.split("\\|");
             int count = 0;
             for (String sgRecordCode : sgRecords) {
+
+                //ignore N/A codes
+                if (sgRecordCode.equalsIgnoreCase("#N/A")) {
+                    continue;
+                }
 
                 count++;
 
