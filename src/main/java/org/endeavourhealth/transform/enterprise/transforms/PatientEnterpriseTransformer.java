@@ -19,7 +19,6 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Enterpri
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.PseudoIdAudit;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.*;
@@ -945,8 +944,10 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
                                     String valueScheme = parameterValue.getCoding().get(0).getSystem();
 
                                     //we need to get the unique IM conceptId for the property and value
-                                    String propertyConceptId = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
-                                    String valueConceptId = IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
+                                    String propertyConceptId = IMHelper.getIMConceptId(propertyScheme, propertyCode);
+                                            //IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
+                                    String valueConceptId = IMHelper.getIMConceptId(valueScheme, valueCode);
+                                            //IMClient.getConceptIdForSchemeCode(valueScheme, valueCode);
                                     //write the IM values to the encounter_additional table upsert
                                     patientAdditional.writeUpsert(id, propertyConceptId, valueConceptId,null);
                                 } else if (type.equalsIgnoreCase("StringType")) {
@@ -958,8 +959,8 @@ public class PatientEnterpriseTransformer extends AbstractEnterpriseTransformer 
 
                                 //get the IM concept code
                                 propertyCode = propertyCode.replace("JSON_", "");
-                                String propertyConceptId
-                                        = IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
+                                String propertyConceptId = IMHelper.getIMConceptId(propertyScheme, propertyCode);
+                                        //= IMClient.getConceptIdForSchemeCode(propertyScheme, propertyCode);
 
                                 //the value is a StringType storing JSON
                                 StringType jsonValue = (StringType) parameter.getValue();

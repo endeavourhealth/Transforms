@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class IMHelper {
     private static final Logger LOG = LoggerFactory.getLogger(IMHelper.class);
@@ -48,6 +47,8 @@ public class IMHelper {
     private static ExpiringCache<String, MapResponse> mappedColumnValueRequestResponseCache = new ExpiringCache<>(CACHE_DURATION);
     private static Set<String> nullMappedColumnValueRequestResponseCache = new ExpiringSet<>(CACHE_DURATION);
 
+    private static ExpiringCache<String, String> conceptIdCache = new ExpiringCache<>(CACHE_DURATION);
+    private static Set<String> nullconceptIdCache = new ExpiringSet<>(CACHE_DURATION);
 
     public static Integer getIMMappedConcept(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String scheme, String code) throws Exception {
 
@@ -119,7 +120,7 @@ public class IMHelper {
         }
 
         //hit the IM API
-        ret = getConceptIdForSchemeCodeWithRetry(scheme, code, term);
+        ret = getConceptDbidForSchemeCodeWithRetry(scheme, code, term);
 
         if (ret == null) {
             nullCoreCache.add(key);
@@ -135,7 +136,7 @@ public class IMHelper {
         return ret;
     }
 
-    private static Integer getConceptIdForSchemeCodeWithRetry(String scheme, String code, String term) throws Exception {
+    private static Integer getConceptDbidForSchemeCodeWithRetry(String scheme, String code, String term) throws Exception {
 
         //during development, we get fairly frequent timeouts, so give it a couple of attempts
         int lives = RETRY_COUNT;
@@ -148,6 +149,111 @@ public class IMHelper {
             } catch (Exception ex) {
                 if (lives <= 0) {
                     throw new Exception("Failed to call getConceptDbidForSchemeCode with scheme [" + scheme + "] code [" + code + "] term [" + term + "]", ex);
+                }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+            }
+        }
+    }
+
+    public static Integer getIMConcept(String scheme, String code) throws Exception {
+
+        if (code == null
+                || scheme == null) {
+            return null;
+        }
+
+        //check cache first
+        String key = createCacheKey(scheme, code);
+        Integer ret = coreCache.get(key);
+        if (ret != null
+                || nullCoreCache.contains(key)) {
+            return ret;
+        }
+
+        //hit the IM API
+        ret = getConceptDbidForSchemeCodeWithRetry(scheme, code);
+
+        if (ret == null) {
+            nullCoreCache.add(key);
+
+            if (!TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
+                throw new TransformException("Null IM concept for scheme " + scheme + " and code " + code);
+            }
+
+        } else {
+            coreCache.put(key, ret);
+        }
+
+        return ret;
+    }
+
+    private static Integer getConceptDbidForSchemeCodeWithRetry(String scheme, String code) throws Exception {
+
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = RETRY_COUNT;
+
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + scheme + ", " + code);
+                return IMClient.getConceptDbidForSchemeCode(scheme, code);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getConceptDbidForSchemeCode with scheme [" + scheme + "] code [" + code + "]", ex);
+                }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+            }
+        }
+    }
+
+    //specifically used to lookup IM concept Id (String) using the scheme and code - compass v1 only
+    public static String getIMConceptId(String scheme, String code) throws Exception {
+
+        if (code == null
+                || scheme == null) {
+            return null;
+        }
+
+        //check cache first
+        String key = createCacheKey(scheme, code);
+        String ret = conceptIdCache.get(key);
+        if (ret != null
+                || nullconceptIdCache.contains(key)) {
+            return ret;
+        }
+
+        //hit the IM API
+        ret = getConceptIdForSchemeCodeWithRetry(scheme, code);
+
+        if (ret == null) {
+            nullconceptIdCache.add(key);
+
+            if (!TransformConfig.instance().isAllowMissingConceptIdsInSubscriberTransform()) {
+                throw new TransformException("Null IM concept for scheme " + scheme + " and code " + code);
+            }
+
+        } else {
+            conceptIdCache.put(key, ret);
+        }
+
+        return ret;
+    }
+
+    private static String getConceptIdForSchemeCodeWithRetry(String scheme, String code) throws Exception {
+
+        //during development, we get fairly frequent timeouts, so give it a couple of attempts
+        int lives = RETRY_COUNT;
+
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + scheme + ", " + code);
+                return IMClient.getConceptIdForSchemeCode(scheme, code);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getConceptIdForSchemeCode with scheme [" + scheme + "] code [" + code + "]", ex);
                 }
                 Thread.sleep(THREAD_SLEEP_TIME);
                 LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
