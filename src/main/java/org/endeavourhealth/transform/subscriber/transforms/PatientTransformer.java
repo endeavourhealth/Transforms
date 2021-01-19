@@ -15,7 +15,6 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.PseudoIdAudit;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.common.RalfBuilder;
 import org.endeavourhealth.transform.subscriber.*;
@@ -28,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class PatientTransformer extends AbstractSubscriberTransformer {
@@ -1122,19 +1120,33 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                             //these values are from IM API mapping
                             String propertyCode = parameter.getName();
-                            String propertyScheme = IMConstant.DISCOVERY_CODE;
+                            if (!propertyCode.startsWith("JSON_")) {
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
 
-                            CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
-                            String valueCode = parameterValue.getCoding().get(0).getCode();
-                            String valueScheme = parameterValue.getCoding().get(0).getSystem();
+                                CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                                String valueCode = parameterValue.getCoding().get(0).getCode();
+                                String valueScheme = parameterValue.getCoding().get(0).getSystem();
 
-                            //we need to look up DBids for both
-                            Integer propertyConceptDbid =
-                                    IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
-                            Integer valueConceptDbid =
-                                    IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
-                            //write the IM values to the patient_additional table upsert
-                            patientAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null);
+                                //we need to look up DBids for both
+                                Integer propertyConceptDbid =
+                                        IMHelper.getIMConcept(propertyScheme, propertyCode);
+                                Integer valueConceptDbid =
+                                        IMHelper.getIMConcept(valueScheme, valueCode);
+                                //write the IM values to the patient_additional table upsert
+                                patientAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null);
+                            } else {
+
+                                //Handle JSON blobs
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
+
+                                //get the IM concept code
+                                propertyCode = propertyCode.replace("JSON_", "");
+                                Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
+
+                                //the value is a StringType storing JSON
+                                StringType jsonValue = (StringType) parameter.getValue();
+                                patientAdditional.writeUpsert(id, propertyConceptDbid, null, jsonValue.getValue());
+                            }
                         }
                     }
                     break;

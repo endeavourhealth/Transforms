@@ -10,8 +10,6 @@ import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.reference.EncounterCodeDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -311,19 +309,16 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                                     String valueCode = parameterValue.getCoding().get(0).getCode();
                                     String valueScheme = parameterValue.getCoding().get(0).getSystem();
                                     //we need to look up DBids for both
-                                    Integer propertyConceptDbid =
-                                            IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
+                                    Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
                                     if (propertyConceptDbid == null) {
                                         LOG.debug("No property found for scheme: " + propertyScheme + ":code:" + propertyCode + ".");
                                         LOG.debug("Skipping problem parameter: " + fhir.getId() + ":" + fhir.getResourceType().toString());
                                         continue;
                                     }
-                                    Integer valueConceptDbid =
-                                            IMClient.getConceptDbidForSchemeCode(valueScheme, valueCode);
+                                    Integer valueConceptDbid = IMHelper.getIMConcept(valueScheme, valueCode);
+
                                     //transform the IM values to the encounter_additional table upsert
                                     encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid, null);
-                                } else {
-                                    //TODO handle String values
                                 }
                             } else {
                                 //Handle JSON blobs
@@ -331,8 +326,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
                                 //get the IM concept code
                                 propertyCode = propertyCode.replace("JSON_", "");
-                                Integer propertyConceptDbid =
-                                        IMClient.getConceptDbidForSchemeCode(propertyScheme, propertyCode);
+                                Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
                                 if (propertyConceptDbid == null) {
                                     LOG.debug("Null value for propertyCode " + propertyCode);
                                 }
