@@ -26,6 +26,12 @@ public class SubscriberConfig {
         GpRegisteredAt
     }
 
+    public enum SubscriberLocation {
+        Internal,
+        Remote,
+        InternalAndRemote
+    }
+
     //common properties to subscribers
     private String subscriberConfigName;
     private SubscriberType subscriberType;
@@ -41,6 +47,8 @@ public class SubscriberConfig {
     private Integer remoteSubscriberId;
     private String enterpriseServerUrl;
     private boolean includePatientAge;
+    private String description; //textual description/reminder of what each config is for
+    private SubscriberLocation subscriberLocation;
 
     //compass v1 properties
 
@@ -106,6 +114,15 @@ public class SubscriberConfig {
     public boolean isIncludePatientAge() {
         return includePatientAge;
     }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public SubscriberLocation getSubscriberLocation() {
+        return subscriberLocation;
+    }
+
 
     public static SubscriberConfig readFromConfig(String subscriberConfigName) throws Exception {
         JsonNode config = ConfigManager.getConfigurationAsJson(subscriberConfigName, "db_subscriber");
@@ -192,6 +209,15 @@ public class SubscriberConfig {
         this.includePatientAge = config.has("include_patient_age")
                 && config.get("include_patient_age").asBoolean();
 
+        if (config.has("description")) {
+            this.description = config.get("description").asText();
+        }
+
+        if (config.has("subscriber_location")) {
+            this.subscriberLocation = parseSubscriberLocation(config.get("subscriber_location").asText());
+        }
+
+
 
         //version-specific config
         if (subscriberType == SubscriberType.CompassV1) {
@@ -208,7 +234,22 @@ public class SubscriberConfig {
 
     }
 
-    private CohortType parseCohortType(String type) {
+    private static SubscriberLocation parseSubscriberLocation(String location) {
+        if (location.equalsIgnoreCase("internal")) {
+            return SubscriberLocation.Internal;
+
+        } else if (location.equalsIgnoreCase("remote")) {
+            return SubscriberLocation.Remote;
+
+        } else if (location.equalsIgnoreCase("internal_and_remote")) {
+            return SubscriberLocation.InternalAndRemote;
+
+        } else {
+            throw new RuntimeException("Unsupported subscriber location [" + location + "]");
+        }
+    }
+
+    private static CohortType parseCohortType(String type) {
 
         if (type.equals("all_patients")) {
             return CohortType.AllPatients;
@@ -263,8 +304,11 @@ public class SubscriberConfig {
         sb.append("remoteSubscriberId = [" + remoteSubscriberId + "],\r\n");
         sb.append("includeDateRecorded = [" + includeDateRecorded + "],\r\n");
         sb.append("batchSize = [" + batchSize + "],\r\n");
-        sb.append("enterpriseServerUrl = [" + enterpriseServerUrl + "]");
+        sb.append("enterpriseServerUrl = [" + enterpriseServerUrl + "],\r\n");
         sb.append("includePatientAge = [" + includePatientAge + "],\r\n");
+        sb.append("description = [" + description + "],\r\n");
+        sb.append("subscriberLocation = [" + subscriberLocation + "]");
+
 
         return sb.toString();
     }
