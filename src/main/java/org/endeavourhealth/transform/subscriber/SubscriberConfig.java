@@ -39,6 +39,7 @@ public class SubscriberConfig {
     private int batchSize = DEFAULT_TRANSFORM_BATCH_SIZE;
     private String excludeNhsNumberRegex;
     private boolean excludeTestPatients;
+    private boolean excludePatientsWithoutNhsNumber;
     private boolean isPseudonymised;
     private List<LinkDistributorConfig> pseudoSalts = new ArrayList<>();
     private List<LinkDistributorConfig> ralfSalts = new ArrayList<>();
@@ -81,6 +82,10 @@ public class SubscriberConfig {
 
     public boolean isPseudonymised() {
         return isPseudonymised;
+    }
+
+    public boolean isExcludePatientsWithoutNhsNumber() {
+        return excludePatientsWithoutNhsNumber;
     }
 
     public List<LinkDistributorConfig> getPseudoSalts() {
@@ -156,6 +161,9 @@ public class SubscriberConfig {
 
         this.excludeTestPatients = config.has("exclude_test_patients")
                 && config.get("exclude_test_patients").asBoolean();
+
+        this.excludePatientsWithoutNhsNumber = config.has("exclude_no_nhs_number")
+                && config.get("exclude_no_nhs_number").asBoolean();
 
         this.includeDateRecorded = config.has("include_date_recorded")
                 && config.get("include_date_recorded").asBoolean();
@@ -301,6 +309,7 @@ public class SubscriberConfig {
         sb.append("ralfSalts = [" + ralfSalts.size() + "],\r\n");
         sb.append("excludeNhsNumberRegex = [" + excludeNhsNumberRegex + "],\r\n");
         sb.append("excludeTestPatients = [" + excludeTestPatients + "],\r\n");
+        sb.append("excludePatientsWithoutNhsNumber = [" + excludePatientsWithoutNhsNumber + "],\r\n");
         sb.append("remoteSubscriberId = [" + remoteSubscriberId + "],\r\n");
         sb.append("includeDateRecorded = [" + includeDateRecorded + "],\r\n");
         sb.append("batchSize = [" + batchSize + "],\r\n");
