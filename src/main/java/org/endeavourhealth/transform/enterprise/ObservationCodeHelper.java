@@ -277,7 +277,10 @@ public class ObservationCodeHelper {
             str = IMConstant.VISION_LOCAL;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_CTV3)) {
             str = IMConstant.TPP_LOCAL;
-        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP)) {
+        } else if (codingSystem.equalsIgnoreCase(IMConstant.DISCOVERY_CODE)) {
+            str = IMConstant.IMPERIAL_CERNER;
+        }
+        else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP)) {
             //no support in IM for Action Groups
             str = null;
 
