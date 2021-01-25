@@ -62,7 +62,7 @@ public class ObservationTransformer {
 
             MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                     "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                    "religion", religion, IMConstant.NHS_DATA_DICTIONARY
+                    "religion", religion, IMConstant.IMPERIAL_CERNER
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
@@ -70,8 +70,9 @@ public class ObservationTransformer {
             observationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
             // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
             CodeableConcept ccValue1 = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
+            ccValue1.setText(propertyResponse.getConcept().getCode());
             ccValue1.addCoding().setCode(valueResponse.getConcept().getCode())
-                    .setSystem(valueResponse.getConcept().getScheme()).setDisplay("Religion");
+                    .setSystem(valueResponse.getConcept().getScheme()).setDisplay(religion);
         }
         return observationBuilder;
     }
