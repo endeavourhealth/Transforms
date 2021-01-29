@@ -51,7 +51,7 @@ public class OrganizationTransformer {
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(organization);
         identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-        identifierBuilder.setValue(patientPrimaryFacility[0].getOrganizationName().getValue());
+        identifierBuilder.setValue(patientPrimaryFacility[0].getIDNumber().getValue());
 
         AddressBuilder addressBuilder = new AddressBuilder(organization);
         addressBuilder.setUse(Address.AddressUse.WORK);
