@@ -2,10 +2,7 @@ package org.endeavourhealth.transform.homertonhi.transforms;
 
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
@@ -27,6 +24,10 @@ public class PersonAliasTransformer {
         for (ParserI parser: parsers) {
             if (parser != null) {
                 while (parser.nextRecord()) {
+
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
                     try {
                         transform((PersonAlias) parser, fhirResourceFiler, csvHelper);
                     } catch (Exception ex) {

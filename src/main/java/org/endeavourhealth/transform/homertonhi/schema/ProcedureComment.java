@@ -19,20 +19,20 @@ public class ProcedureComment extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
 
             return new String[] {
-                    "POPULATION_ID",
-                    "EMPI_ID",
-                    "PROCEDURE_ID",
-                    "COMMENT_TEXT",
-                    "COMMENT_DT_TM",
-                    "COMMENT_DATE_ID",
-                    "COMMENT_PROVIDER_ID",
-                    "SOURCE_TYPE",
-                    "SOURCE_ID",
-                    "SOURCE_VERSION",
-                    "SOURCE_DESCRIPTION",
-                    "COMMENT_TIME_ID",
-                    "COMMENT_DATE",
-                    "HASH_VALUE"
+                    "population_id",
+                    "empi_id",
+                    "procedure_id",
+                    "comment_text",
+                    "comment_dt_tm",
+                    "comment_date_id",
+                    "comment_provider_id",
+                    "source_type",
+                    "source_id",
+                    "source_version",
+                    "source_description",
+                    "comment_time_id",
+                    "comment_date",
+                    "hash_value"
             };
     }
 
@@ -42,15 +42,14 @@ public class ProcedureComment extends AbstractCsvParser {
     }
 
     public CsvCell getProcedureId() {
-        return super.getCell("PROCEDURE_ID");
+        return super.getCell("procedure_id");
     }
 
     public CsvCell getPersonEmpiId() {
-        return super.getCell("EMPI_ID");
+        return super.getCell("empi_id");
     }
 
-    public CsvCell getProcedureCommentText() { return super.getCell("COMMENT_TEXT");  }
+    public CsvCell getProcedureCommentText() { return super.getCell("comment_text");  }
 
-    public CsvCell getHashValue() { return super.getCell("HASH_VALUE"); }
+    public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }
-

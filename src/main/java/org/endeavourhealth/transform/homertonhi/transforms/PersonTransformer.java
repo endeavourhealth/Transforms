@@ -24,6 +24,10 @@ public class PersonTransformer {
         for (ParserI parser: parsers) {
             if (parser != null) {
                 while (parser.nextRecord()) {
+
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
                     try {
                         transform((Person) parser, fhirResourceFiler, csvHelper);
                     } catch (Exception ex) {

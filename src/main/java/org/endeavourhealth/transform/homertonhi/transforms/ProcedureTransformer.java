@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.homertonhi.transforms;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -29,9 +30,12 @@ public class ProcedureTransformer {
            for (ParserI parser: parsers) {
                 try {
 
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
                     while (parser.nextRecord()) {
                         //no try/catch here, since any failure here means we don't want to continue
-                        processRecord((Procedure) parser, fhirResourceFiler, csvHelper);
+                        transform((Procedure) parser, fhirResourceFiler, csvHelper);
                     }
                 } catch (Exception ex) {
 
@@ -43,7 +47,7 @@ public class ProcedureTransformer {
             fhirResourceFiler.failIfAnyErrors();
     }
 
-    public static void processRecord(Procedure parser, FhirResourceFiler fhirResourceFiler, HomertonHiCsvHelper csvHelper) throws Exception {
+    public static void transform(Procedure parser, FhirResourceFiler fhirResourceFiler, HomertonHiCsvHelper csvHelper) throws Exception {
 
         ProcedureBuilder procedureBuilder = new ProcedureBuilder();
 

@@ -19,6 +19,10 @@ public class ProcedureCommentTransformer {
 
         try {
             for (ParserI parser : parsers) {
+
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 try {
                     while (parser.nextRecord()) {
 

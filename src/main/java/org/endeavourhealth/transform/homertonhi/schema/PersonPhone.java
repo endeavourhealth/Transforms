@@ -19,24 +19,24 @@ public class PersonPhone extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
 
             return new String[] {
-                    "EMPI_ID",
-                    "PERSON_SEQ",
-                    "PHONE_TYPE_CODE",
-                    "PHONE_TYPE_DISPLAY",
-                    "PHONE_TYPE_CODING_SYSTEM_ID",
-                    "PHONE_TYPE_RAW_CODING_SYSTEM_ID",
-                    "PHONE_TYPE_RAW_CODE",
-                    "PHONE_NUMBER",
-                    "EXTENSION",
-                    "COUNTRY_CD",
-                    "SOURCE_TYPE",
-                    "SOURCE_ID",
-                    "SOURCE_VERSION",
-                    "SOURCE_DESCRIPTION",
-                    "POPULATION_ID",
-                    "PHONE_TYPE_PRIMARY_DISPLAY",
-                    "SOURCE_TYPE_KEY",
-                    "HASH_VALUE",
+                    "empi_id",
+                    "person_seq",
+                    "phone_type_code",
+                    "phone_type_display",
+                    "phone_type_coding_system_id",
+                    "phone_type_raw_coding_system_id",
+                    "phone_type_raw_code",
+                    "phone_number",
+                    "extension",
+                    "country_cd",
+                    "source_type",
+                    "source_id",
+                    "source_version",
+                    "source_description",
+                    "population_id",
+                    "phone_type_primary_display",
+                    "source_type_key",
+                    "hash_value",
             };
     }
 
@@ -46,22 +46,22 @@ public class PersonPhone extends AbstractCsvParser {
     }
 
     public CsvCell getPersonEmpiId() {
-        return super.getCell("EMPI_ID");
+        return super.getCell("empi_id");
     }
 
     public CsvCell getPhoneSequence() {
-        return super.getCell("PERSON_SEQ");
+        return super.getCell("person_seq");
     }
 
-    public CsvCell getPhoneTypeCode() { return super.getCell("PHONE_TYPE_CODE"); }
+    public CsvCell getPhoneTypeCode() { return super.getCell("phone_type_code"); }
 
-    public CsvCell getPhoneTypeCernerCodeSystemId() { return super.getCell("PHONE_TYPE_RAW_CODING_SYSTEM_ID"); }
+    public CsvCell getPhoneTypeCernerCodeSystemId() { return super.getCell("phone_type_raw_coding_system_id"); }
 
-    public CsvCell getPhoneTypeCernerCode() { return super.getCell("PHONE_TYPE_RAW_CODE"); }
+    public CsvCell getPhoneTypeCernerCode() { return super.getCell("phone_type_raw_code"); }
 
-    public CsvCell getPhoneNumber() { return super.getCell("PHONE_NUMBER"); }
+    public CsvCell getPhoneNumber() { return super.getCell("phone_number"); }
 
-    public CsvCell getPhoneExt() { return super.getCell("EXTENSION"); }
+    public CsvCell getPhoneExt() { return super.getCell("extension"); }
 
-    public CsvCell getHashValue() { return super.getCell("HASH_VALUE"); }
+    public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }

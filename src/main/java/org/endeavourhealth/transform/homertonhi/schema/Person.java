@@ -19,107 +19,107 @@ public class Person extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
 
             return new String[] {
-                    "EMPI_ID",
-                    "BIRTH_DATE",
-                    "BIRTH_DATE_ID",
-                    "BIRTH_DATE_SOURCE_TYPE",
-                    "BIRTH_DATE_SOURCE_ID",
-                    "BIRTH_DATE_SOURCE_VERSION",
-                    "BIRTH_DATE_SOURCE_DESCRIPTION",
-                    "BIRTH_DATE_REFERENCE_ID",
-                    "GENDER_CODE",
-                    "GENDER_DISPLAY",
-                    "GENDER_CODING_SYSTEM_ID",
-                    "GENDER_RAW_CODING_SYSTEM_ID",
-                    "GENDER_RAW_CODE",
-                    "GENDER_SOURCE_TYPE",
-                    "GENDER_SOURCE_ID",
-                    "GENDER_SOURCE_VERSION",
-                    "GENDER_SOURCE_DESCRIPTION",
-                    "GENDER_REFERENCE_ID",
-                    "DECEASED",
-                    "DECEASED_DT_TM",
-                    "DECEASED_DATE_ID",
-                    "DECEASED_SOURCE_TYPE",
-                    "DECEASED_SOURCE_ID",
-                    "DECEASED_SOURCE_VERSION",
-                    "DECEASED_SOURCE_DESCRIPTION",
-                    "DECEASED_REFERENCE_ID",
-                    "ADDRESS_TYPE_CODE",
-                    "ADDRESS_TYPE_DISPLAY",
-                    "ADDRESS_TYPE_CODING_SYSTEM_ID",
-                    "ADDRESS_TYPE_RAW_CODING_SYSTEM_ID",
-                    "ADDRESS_TYPE_RAW_CODE",
-                    "ADDRESS_LINE_1",
-                    "ADDRESS_LINE_2",
-                    "ADDRESS_LINE_3",
-                    "CITY",
-                    "STATE_CODE",
-                    "STATE_DISPLAY",
-                    "STATE_CODING_SYSTEM_ID",
-                    "STATE_RAW_CODING_SYSTEM_ID",
-                    "STATE_RAW_CODE",
-                    "POSTAL_CD",
-                    "COUNTY_CODE",
-                    "COUNTY_DISPLAY",
-                    "COUNTY_CODING_SYSTEM_ID",
-                    "COUNTY_RAW_CODING_SYSTEM_ID",
-                    "COUNTY_RAW_CODE",
-                    "COUNTRY_CODE",
-                    "COUNTRY_DISPLAY",
-                    "COUNTRY_CODING_SYSTEM_ID",
-                    "COUNTRY_RAW_CODING_SYSTEM_ID",
-                    "COUNTRY_RAW_CODE",
-                    "ADDRESS_SOURCE_TYPE",
-                    "ADDRESS_SOURCE_ID",
-                    "ADDRESS_SOURCE_VERSION",
-                    "ADDRESS_SOURCE_DESCRIPTION",
-                    "ADDRESS_REFERENCE_ID",
-                    "PHONE_TYPE_CODE",
-                    "PHONE_TYPE_DISPLAY",
-                    "PHONE_TYPE_CODING_SYSTEM_ID",
-                    "PHONE_TYPE_RAW_CODING_SYSTEM_ID",
-                    "PHONE_TYPE_RAW_CODE",
-                    "PHONE_NUMBER",
-                    "EXTENSION",
-                    "COUNTRY_CD",
-                    "PHONE_SOURCE_TYPE",
-                    "PHONE_SOURCE_ID",
-                    "PHONE_SOURCE_VERSION",
-                    "PHONE_SOURCE_DESCRIPTION",
-                    "PHONE_REFERENCE_ID",
-                    "PERSON_NAME_TYPE_CODE",
-                    "PERSON_NAME_TYPE_DISPLAY",
-                    "PERSON_NAME_CODING_SYSTEM_ID",
-                    "PERSON_NAME_RAW_CODING_SYSTEM_ID",
-                    "PERSON_NAME_RAW_CODE",
-                    "FULL_NAME",
-                    "PREFIX",
-                    "SUFFIX",
-                    "GIVEN_NAME1",
-                    "GIVEN_NAME2",
-                    "GIVEN_NAME3",
-                    "FAMILY_NAME1",
-                    "FAMILY_NAME2",
-                    "FAMILY_NAME3",
-                    "TITLE1",
-                    "TITLE2",
-                    "TITLE3",
-                    "NAME_SOURCE_TYPE",
-                    "NAME_SOURCE_ID",
-                    "NAME_SOURCE_VERSION",
-                    "NAME_SOURCE_DESCRIPTION",
-                    "NAME_REFERENCE_ID",
-                    "POPULATION_ID",
-                    "GENDER_PRIMARY_DISPLAY",
-                    "ADDRESS_TYPE_PRIMARY_DISPLAY",
-                    "STATE_PRIMARY_DISPLAY",
-                    "COUNTRY_PRIMARY_DISPLAY",
-                    "PHONE_TYPE_PRIMARY_DISPLAY",
-                    "PERSON_NAME_TYPE_PRIMARY_DISPLAY",
-                    "RECORD_DATA_PARTITION_ID",
-                    "RECORD_PERSON_ID",
-                    "HASH_VALUE"
+                    "empi_id",
+                    "birth_date",
+                    "birth_date_id",
+                    "birth_date_source_type",
+                    "birth_date_source_id",
+                    "birth_date_source_version",
+                    "birth_date_source_description",
+                    "birth_date_reference_id",
+                    "gender_code",
+                    "gender_display",
+                    "gender_coding_system_id",
+                    "gender_raw_coding_system_id",
+                    "gender_raw_code",
+                    "gender_source_type",
+                    "gender_source_id",
+                    "gender_source_version",
+                    "gender_source_description",
+                    "gender_reference_id",
+                    "deceased",
+                    "deceased_dt_tm",
+                    "deceased_date_id",
+                    "deceased_source_type",
+                    "deceased_source_id",
+                    "deceased_source_version",
+                    "deceased_source_description",
+                    "deceased_reference_id",
+                    "address_type_code",
+                    "address_type_display",
+                    "address_type_coding_system_id",
+                    "address_type_raw_coding_system_id",
+                    "address_type_raw_code",
+                    "address_line_1",
+                    "address_line_2",
+                    "address_line_3",
+                    "city",
+                    "state_code",
+                    "state_display",
+                    "state_coding_system_id",
+                    "state_raw_coding_system_id",
+                    "state_raw_code",
+                    "postal_cd",
+                    "county_code",
+                    "county_display",
+                    "county_coding_system_id",
+                    "county_raw_coding_system_id",
+                    "county_raw_code",
+                    "country_code",
+                    "country_display",
+                    "country_coding_system_id",
+                    "country_raw_coding_system_id",
+                    "country_raw_code",
+                    "address_source_type",
+                    "address_source_id",
+                    "address_source_version",
+                    "address_source_description",
+                    "address_reference_id",
+                    "phone_type_code",
+                    "phone_type_display",
+                    "phone_type_coding_system_id",
+                    "phone_type_raw_coding_system_id",
+                    "phone_type_raw_code",
+                    "phone_number",
+                    "extension",
+                    "country_cd",
+                    "phone_source_type",
+                    "phone_source_id",
+                    "phone_source_version",
+                    "phone_source_description",
+                    "phone_reference_id",
+                    "person_name_type_code",
+                    "person_name_type_display",
+                    "person_name_coding_system_id",
+                    "person_name_raw_coding_system_id",
+                    "person_name_raw_code",
+                    "full_name",
+                    "prefix",
+                    "suffix",
+                    "given_name1",
+                    "given_name2",
+                    "given_name3",
+                    "family_name1",
+                    "family_name2",
+                    "family_name3",
+                    "title1",
+                    "title2",
+                    "title3",
+                    "name_source_type",
+                    "name_source_id",
+                    "name_source_version",
+                    "name_source_description",
+                    "name_reference_id",
+                    "population_id",
+                    "gender_primary_display",
+                    "address_type_primary_display",
+                    "state_primary_display",
+                    "country_primary_display",
+                    "phone_type_primary_display",
+                    "person_name_type_primary_display",
+                    "record_data_partition_id",
+                    "record_person_id",
+                    "hash_value"
             };
     }
 
@@ -129,57 +129,56 @@ public class Person extends AbstractCsvParser {
     }
 
     public CsvCell getPersonEmpiId() {
-        return super.getCell("EMPI_ID");
+        return super.getCell("empi_id");
     }
 
-    public CsvCell getBirthDate() { return super.getCell("BIRTH_DATE"); }
+    public CsvCell getBirthDate() { return super.getCell("birth_date"); }
 
-    public CsvCell getGenderCode() { return super.getCell("GENDER_CODE"); }
+    public CsvCell getGenderCode() { return super.getCell("gender_code"); }
 
-    public CsvCell getIsDecesed() { return super.getCell("DECEASED"); }
+    public CsvCell getIsDecesed() { return super.getCell("deceased"); }
 
-    public CsvCell getDeceasedDtTm() { return super.getCell("DECEASED_DT_TM"); }
+    public CsvCell getDeceasedDtTm() { return super.getCell("deceased_dt_tm"); }
 
-    public CsvCell getAddressTypeCernerCodeSystemId() { return super.getCell("ADDRESS_TYPE_RAW_CODING_SYSTEM_ID"); }
+    public CsvCell getAddressTypeCernerCodeSystemId() { return super.getCell("address_type_raw_coding_system_id"); }
 
-    public CsvCell getAddressTypeCernerCode() { return super.getCell("ADDRESS_TYPE_RAW_CODE"); }
+    public CsvCell getAddressTypeCernerCode() { return super.getCell("address_type_raw_code"); }
 
-    public CsvCell getAddressLine1() { return super.getCell("ADDRESS_LINE_1"); }
+    public CsvCell getAddressLine1() { return super.getCell("address_line_1"); }
 
-    public CsvCell getAddressLine2() { return super.getCell("ADDRESS_LINE_2"); }
+    public CsvCell getAddressLine2() { return super.getCell("address_line_2"); }
 
-    public CsvCell getAddressLine3() { return super.getCell("ADDRESS_LINE_3"); }
+    public CsvCell getAddressLine3() { return super.getCell("address_line_3"); }
 
-    public CsvCell getAddressCity() { return super.getCell("CITY"); }
+    public CsvCell getAddressCity() { return super.getCell("city"); }
 
-    public CsvCell getAddressPostCode() { return super.getCell("POSTAL_CD"); }
+    public CsvCell getAddressPostCode() { return super.getCell("postal_cd"); }
 
-    public CsvCell getAddressCounty() { return super.getCell("COUNTY_DISPLAY"); }
+    public CsvCell getAddressCounty() { return super.getCell("county_display"); }
 
-    public CsvCell getPhoneTypeCode() { return super.getCell("PHONE_TYPE_CODE"); }
+    public CsvCell getPhoneTypeCode() { return super.getCell("phone_type_code"); }
 
-    public CsvCell getPhoneNumber() { return super.getCell("PHONE_NUMBER"); }
+    public CsvCell getPhoneNumber() { return super.getCell("phone_number"); }
 
-    public CsvCell getPhoneExt() { return super.getCell("EXTENSION"); }
+    public CsvCell getPhoneExt() { return super.getCell("extension"); }
 
-    public CsvCell getPersonNameTypeCernerCodeSystemId() { return super.getCell("PERSON_NAME_RAW_CODING_SYSTEM_ID"); }
+    public CsvCell getPersonNameTypeCernerCodeSystemId() { return super.getCell("person_name_raw_coding_system_id"); }
 
-    public CsvCell getPersonNameTypeCernerCode() { return super.getCell("PERSON_NAME_RAW_CODE"); }
+    public CsvCell getPersonNameTypeCernerCode() { return super.getCell("person_name_raw_code"); }
 
-    public CsvCell getPersonFullName() { return super.getCell("FULL_NAME"); }
+    public CsvCell getPersonFullName() { return super.getCell("full_name"); }
 
-    public CsvCell getPersonNamePrefix() { return super.getCell("PREFIX"); }
+    public CsvCell getPersonNamePrefix() { return super.getCell("prefix"); }
 
-    public CsvCell getPersonNameSuffix() { return super.getCell("SUFFIX"); }
+    public CsvCell getPersonNameSuffix() { return super.getCell("suffix"); }
 
-    public CsvCell getPersonNameGiven1() { return super.getCell("GIVEN_NAME1"); }
+    public CsvCell getPersonNameGiven1() { return super.getCell("given_name1"); }
 
-    public CsvCell getPersonNameGiven2() { return super.getCell("GIVEN_NAME2"); }
+    public CsvCell getPersonNameGiven2() { return super.getCell("given_name2"); }
 
-    public CsvCell getPersonNameFamily() { return super.getCell("FAMILY_NAME1"); }
+    public CsvCell getPersonNameFamily() { return super.getCell("family_name1"); }
 
-    public CsvCell getPersonNameTitle() { return super.getCell("TITLE"); }
+    public CsvCell getPersonNameTitle() { return super.getCell("title"); }
 
-    public CsvCell getHashValue() { return super.getCell("HASH_VALUE"); }
-
+    public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }

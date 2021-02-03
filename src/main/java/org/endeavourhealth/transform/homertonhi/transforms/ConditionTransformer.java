@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.homertonhi.transforms;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
@@ -25,6 +26,10 @@ public class ConditionTransformer  {
 
         for (ParserI parser: parsers) {
             while (parser.nextRecord()) {
+
+                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    continue;
+                }
                 try {
                     createCondition((Condition) parser, fhirResourceFiler, csvHelper);
                 } catch (Exception ex) {

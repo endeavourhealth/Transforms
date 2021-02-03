@@ -19,68 +19,68 @@ public class PersonDemographics extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
 
             return new String[] {
-                    "EMPI_ID",
-                    "PERSON_SEQ",
-                    "REFERENCE_ID",
-                    "BIRTH_DATE",
-                    "BIRTH_DATE_ID",
-                    "GENDER_CODE",
-                    "GENDER_DISPLAY",
-                    "GENDER_CODING_SYSTEM_ID",
-                    "GENDER_RAW_CODING_SYSTEM_ID",
-                    "GENDER_RAW_CODE",
-                    "MARITAL_STATUS_CODE",
-                    "MARITAL_STATUS_DISPLAY",
-                    "MARITAL_CODING_SYSTEM_ID",
-                    "MARITAL_RAW_CODING_SYSTEM_ID",
-                    "MARITAL_RAW_CODE",
-                    "ETHNICITY_CODE",
-                    "ETHNICITY_DISPLAY",
-                    "ETHNICITY_CODING_SYSTEM_ID",
-                    "ETHNICITY_RAW_CODING_SYSTEM_ID",
-                    "ETHNICITY_RAW_CODE",
-                    "RELIGION_CODE",
-                    "RELIGION_DISPLAY",
-                    "RELIGION_CODING_SYSTEM_ID",
-                    "RELIGION_RAW_CODING_SYSTEM_ID",
-                    "RELIGION_RAW_CODE",
-                    "DECEASED",
-                    "DECEASED_DT_TM",
-                    "DECEASED_DATE_ID",
-                    "CAUSE_OF_DEATH_CODE",
-                    "CAUSE_OF_DEATH_DISPLAY",
-                    "CAUSE_OF_DEATH_CODING_SYSTEM_ID",
-                    "CAUSE_OF_DEATH_RAW_CODING_SYSTEM_ID",
-                    "CAUSE_OF_DEATH_RAW_CODE",
-                    "SOURCE_TYPE",
-                    "SOURCE_ID",
-                    "SOURCE_VERSION",
-                    "SOURCE_DESCRIPTION",
-                    "POPULATION_ID",
-                    "GENDER_PRIMARY_DISPLAY",
-                    "MARITAL_STATUS_PRIMARY_DISPLAY",
-                    "ETHNICITY_PRIMARY_DISPLAY",
-                    "RELIGION_PRIMARY_DISPLAY",
-                    "CAUSE_OF_DEATH_PRIMARY_DISPLAY",
-                    "SOURCE_TYPE_KEY",
-                    "RAW_ENTITY_KEY",
-                    "SUPPORTING_FACT_ID",
-                    "SUPPORTING_FACT_TYPE",
-                    "SUPPORTING_FACT_ENTITY_ID",
-                    "RECORD_DATA_PARTITION_ID",
-                    "RECORD_PERSON_ID",
-                    "DEMOGRAPHICS_PERSON_ID",
-                    "BIRTH_SEX_RAW_CODE",
-                    "BIRTH_SEX_RAW_CODING_SYSTEM_ID",
-                    "BIRTH_SEX_DISPLAY",
-                    "BIRTH_SEX_CODE",
-                    "BIRTH_SEX_PRIMARY_DISPLAY",
-                    "BIRTH_SEX_CODING_SYSTEM_ID",
-                    "BIRTH_DT_TM",
-                    "DECEASED_TIME_ID",
-                    "DECEASED_DATE",
-                    "BIRTH_TIME_ID",
-                    "HASH_VALUE"
+                    "empi_id",
+                    "person_seq",
+                    "reference_id",
+                    "birth_date",
+                    "birth_date_id",
+                    "gender_code",
+                    "gender_display",
+                    "gender_coding_system_id",
+                    "gender_raw_coding_system_id",
+                    "gender_raw_code",
+                    "marital_status_code",
+                    "marital_status_display",
+                    "marital_coding_system_id",
+                    "marital_raw_coding_system_id",
+                    "marital_raw_code",
+                    "ethnicity_code",
+                    "ethnicity_display",
+                    "ethnicity_coding_system_id",
+                    "ethnicity_raw_coding_system_id",
+                    "ethnicity_raw_code",
+                    "religion_code",
+                    "religion_display",
+                    "religion_coding_system_id",
+                    "religion_raw_coding_system_id",
+                    "religion_raw_code",
+                    "deceased",
+                    "deceased_dt_tm",
+                    "deceased_date_id",
+                    "cause_of_death_code",
+                    "cause_of_death_display",
+                    "cause_of_death_coding_system_id",
+                    "cause_of_death_raw_coding_system_id",
+                    "cause_of_death_raw_code",
+                    "source_type",
+                    "source_id",
+                    "source_version",
+                    "source_description",
+                    "population_id",
+                    "gender_primary_display",
+                    "marital_status_primary_display",
+                    "ethnicity_primary_display",
+                    "religion_primary_display",
+                    "cause_of_death_primary_display",
+                    "source_type_key",
+                    "raw_entity_key",
+                    "supporting_fact_id",
+                    "supporting_fact_type",
+                    "supporting_fact_entity_id",
+                    "record_data_partition_id",
+                    "record_person_id",
+                    "demographics_person_id",
+                    "birth_sex_raw_code",
+                    "birth_sex_raw_coding_system_id",
+                    "birth_sex_display",
+                    "birth_sex_code",
+                    "birth_sex_primary_display",
+                    "birth_sex_coding_system_id",
+                    "birth_dt_tm",
+                    "deceased_time_id",
+                    "deceased_date",
+                    "birth_time_id",
+                    "hash_value"
             };
     }
 
@@ -90,25 +90,24 @@ public class PersonDemographics extends AbstractCsvParser {
     }
 
     public CsvCell getPersonEmpiId() {
-        return super.getCell("EMPI_ID");
+        return super.getCell("empi_id");
     }
 
     public CsvCell getMaritalStatusCernerCode() {
-        return super.getCell("MARITAL_RAW_CODE");
+        return super.getCell("marital_raw_code");
     }
 
     public CsvCell getEthnicityCernerCode() {
-        return super.getCell("ETHNICITY_RAW_CODE");
+        return super.getCell("ethnicity_raw_code");
     }
 
     public CsvCell getReligionCernerCode() {
-        return super.getCell("RELIGION_RAW_CODE");
+        return super.getCell("religion_raw_code");
     }
 
-    public CsvCell getIsDecesed() { return super.getCell("DECEASED"); }
+    public CsvCell getIsDecesed() { return super.getCell("deceased"); }
 
-    public CsvCell getCauseOfDeathCernerCode() { return super.getCell("CAUSE_OF_DEATH_RAW_CODE"); }
+    public CsvCell getCauseOfDeathCernerCode() { return super.getCell("cause_of_death_raw_code"); }
 
-    public CsvCell getHashValue() { return super.getCell("HASH_VALUE"); }
-
+    public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }

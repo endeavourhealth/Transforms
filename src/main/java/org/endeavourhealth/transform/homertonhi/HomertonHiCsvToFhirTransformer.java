@@ -21,7 +21,7 @@ public abstract class HomertonHiCsvToFhirTransformer {
 
     public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "HH:mm:ss";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withHeader();  //TODO check files
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
 
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
@@ -47,22 +47,22 @@ public abstract class HomertonHiCsvToFhirTransformer {
             // process any deletions first by extracting all the deletion hash values to use in each transform
 
             // process the patient files first, using the Resource caching to collect data from all file before filing
-            PersonTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person", true), fhirResourceFiler, csvHelper);
-            PersonDemographicsTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Demographics", true), fhirResourceFiler, csvHelper);
-            PersonAliasTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Alias", true), fhirResourceFiler, csvHelper);
-            PersonLanguageTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Language", true), fhirResourceFiler, csvHelper);
-            PersonPhoneTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Phone", true), fhirResourceFiler, csvHelper);
+            PersonTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person", true), fhirResourceFiler, csvHelper);
+            PersonDemographicsTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_demographics", true), fhirResourceFiler, csvHelper);
+            PersonAliasTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_alias", true), fhirResourceFiler, csvHelper);
+            PersonLanguageTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_language", true), fhirResourceFiler, csvHelper);
+            PersonPhoneTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_phone", true), fhirResourceFiler, csvHelper);
             csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
             // clinical pre-transformers
-            ProcedureCommentTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure_Comment", true), fhirResourceFiler, csvHelper);
+            ProcedureCommentTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure_comment", true), fhirResourceFiler, csvHelper);
 
             // subsequent transforms may refer to Patient resources and pre-transforms, so ensure they're all on the DB before continuing
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             // clinical transformers
-            ProcedureTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure", true), fhirResourceFiler, csvHelper);
-            ConditionTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Condition", true), fhirResourceFiler, csvHelper);
+            ProcedureTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure", true), fhirResourceFiler, csvHelper);
+            ConditionTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition", true), fhirResourceFiler, csvHelper);
 
         } finally {
             //if we had any exception that caused us to bomb out of the transform, we'll have

@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.homertonhi;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -12,7 +13,7 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.core.xml.QueryDocument.CodeSetValue;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.homertonhi.cache.OrganisationResourceCache;
@@ -23,9 +24,9 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -74,6 +75,8 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
     private UUID systemId = null;
     private UUID exchangeId = null;
     private String version = null;
+
+    private Set<String> personIdsToFilterOn = null;
 
     public HomertonHiCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String version) {
         this.serviceId = serviceId;
@@ -143,6 +146,61 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
 //        return ret;
 //    }
 //
+
+    public boolean processRecordFilteringOnPatientId(AbstractCsvParser parser) throws TransformException {
+        CsvCell personIdCell = parser.getCell("empi_id");
+                    //if nothing that looks like a person ID, process the record
+        if (personIdCell == null) {
+            throw new TransformException("No empi_id column on parser " + parser.getFilePath());
+        }
+
+        String personId = personIdCell.getString();
+        return processRecordFilteringOnPatientId(personId);
+    }
+
+    public boolean processRecordFilteringOnPatientId(String personId) {
+
+        if (personIdsToFilterOn == null) {
+            String filePath = TransformConfig.instance().getCernerPatientIdFile();  //use same cerner config
+            if (Strings.isNullOrEmpty(filePath)) {
+                LOG.debug("Not filtering on patients");
+                personIdsToFilterOn = new HashSet<>();
+
+            } else {
+                personIdsToFilterOn = new HashSet<>();
+                try {
+                    List<String> lines = Files.readAllLines(new File(filePath).toPath());
+                    for (String line : lines) {
+                        line = line.trim();
+
+                        //ignore comments
+                        if (line.startsWith("#")) {
+                            continue;
+                        }
+                        personIdsToFilterOn.add(line);
+                    }
+                    LOG.debug("Filtering on " + personIdsToFilterOn.size() + " patients from " + filePath);
+
+                } catch (Exception ex) {
+                    LOG.error("Error reading in person ID file " + filePath, ex);
+                }
+            }
+        }
+
+        //if no filtering IDs
+        if (personIdsToFilterOn.isEmpty()) {
+            return true;
+        }
+
+        //many files have an empty person ID when they're being deleted, and we don't want to skip processing them
+        if (Strings.isNullOrEmpty(personId)) {
+            return true;
+        }
+
+        return personIdsToFilterOn.contains(personId);
+    }
+
+
     public Resource retrieveResourceForLocalId(ResourceType resourceType, String locallyUniqueId) throws Exception {
 
         UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, resourceType, locallyUniqueId);
