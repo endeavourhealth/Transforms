@@ -46,9 +46,9 @@ public abstract class HomertonHiCsvToFhirTransformer {
 
             // process any deletions first by using the deletion hash value lookups to use in each transform
             //note ordering of clinical deletions first, then patients
-            ConditionTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition_delete", true), fhirResourceFiler, csvHelper);
-
-            PersonTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_delete", true), fhirResourceFiler, csvHelper);
+            ConditionTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition_delete", false), fhirResourceFiler, csvHelper);
+            ProcedureTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure_delete", false), fhirResourceFiler, csvHelper);
+            PersonTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_delete", false), fhirResourceFiler, csvHelper);
 
 
             // process the patient files first, using the Resource caching to collect data from all file before filing
