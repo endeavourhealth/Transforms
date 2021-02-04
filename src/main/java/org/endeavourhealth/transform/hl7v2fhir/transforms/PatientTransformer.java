@@ -68,7 +68,7 @@ public class PatientTransformer {
 
         TS dod = pid.getPatientDeathDateAndTime();
         if (!dod.isEmpty()) {
-            String dtD = String.valueOf(dob.getTimeOfAnEvent());
+            String dtD = String.valueOf(dod.getTimeOfAnEvent());
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
             Date date = formatter.parse(dtD.substring(0,4)+"-"+dtD.substring(4,6)+"-"+dtD.substring(6,8));
             patientBuilder.setDateOfDeath(date);
