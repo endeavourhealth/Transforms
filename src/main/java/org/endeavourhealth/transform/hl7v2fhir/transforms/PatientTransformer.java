@@ -108,9 +108,25 @@ public class PatientTransformer {
         }*/
 
         XTN[] phones = pid.getPhoneNumberHome();
+        addPhoneData(phones, patientBuilder, fhirResourceFiler, imperialHL7Helper);
+
+        XTN[] businessPhones = pid.getPhoneNumberBusiness();
+        addPhoneData(businessPhones, patientBuilder, fhirResourceFiler, imperialHL7Helper);
+
+        createName(patientBuilder, pid, fhirResourceFiler);
+        createAddress(patientBuilder, pid, fhirResourceFiler);
+
+        //clear all care provider records, before we start adding more
+        patientBuilder.clearCareProvider();
+
+        return patientBuilder;
+    }
+
+    private static void addPhoneData(XTN[] phones, PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper) throws Exception {
         for(XTN phone : phones) {
             ID useCd = phone.getTelecommunicationUseCode();
-            String phoneNumber = (String.valueOf(phone).split("^"))[0].substring(4,15);
+            String phoneString = String.valueOf(phone);
+            String phoneNumber = phoneString.contains("^") ?(String.valueOf(phone).split("\\^"))[0].substring(4,14) : phoneString;
             if("PRN".equalsIgnoreCase(String.valueOf(useCd))) {
                 if (!phoneNumber.isEmpty()) {
                     createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
@@ -121,15 +137,12 @@ public class PatientTransformer {
                     createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
                 }
             }
-        }
-
-        createName(patientBuilder, pid, fhirResourceFiler);
-        createAddress(patientBuilder, pid, fhirResourceFiler);
-
-        //clear all care provider records, before we start adding more
-        patientBuilder.clearCareProvider();
-
-        return patientBuilder;
+            else if("WPN".equalsIgnoreCase(String.valueOf(useCd))) {
+                if (!phoneNumber.isEmpty()) {
+                    createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.WORK, ContactPoint.ContactPointSystem.PHONE);
+                }
+            }
+    }
     }
 
     /**
