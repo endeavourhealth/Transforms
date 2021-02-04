@@ -1,16 +1,15 @@
 package org.endeavourhealth.transform.homertonhi.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.Condition;
+import org.endeavourhealth.transform.homertonhi.schema.ConditionDelete;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,19 +20,21 @@ public class ConditionTransformer  {
     private static final Logger LOG = LoggerFactory.getLogger(ConditionTransformer.class);
 
     public static void transform(List<ParserI> parsers,
-                                 FhirResourceFiler fhirResourceFiler,
-                                 HomertonHiCsvHelper csvHelper) throws Exception {
+                                      FhirResourceFiler fhirResourceFiler,
+                                      HomertonHiCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
-            while (parser.nextRecord()) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
 
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
-                    continue;
-                }
-                try {
-                    createCondition((Condition) parser, fhirResourceFiler, csvHelper);
-                } catch (Exception ex) {
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                        continue;
+                    }
+                    try {
+                        transform((Condition) parser, fhirResourceFiler, csvHelper);
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    }
                 }
             }
         }
@@ -42,7 +43,49 @@ public class ConditionTransformer  {
         fhirResourceFiler.failIfAnyErrors();
     }
 
-    public static void createCondition(Condition parser,
+    public static void delete(List<ParserI> parsers,
+                              FhirResourceFiler fhirResourceFiler,
+                              HomertonHiCsvHelper csvHelper) throws Exception {
+
+        for (ParserI parser: parsers) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
+
+                    try {
+                        ConditionDelete conditionDeleteParser = (ConditionDelete) parser;
+                        CsvCell hashValueCell = conditionDeleteParser.getHashValue();
+
+                        //lookup the localId value set when the Condition was initially transformed
+                        String conditionId = csvHelper.findLocalIdFromHashValue(hashValueCell);
+                        if (!Strings.isNullOrEmpty(conditionId)) {
+                            //get the resource to perform the deletion on
+                            org.hl7.fhir.instance.model.Condition existingCondition
+                                    = (org.hl7.fhir.instance.model.Condition) csvHelper.retrieveResourceForLocalId(ResourceType.Condition, conditionId);
+
+                            if (existingCondition != null) {
+
+                                ConditionBuilder conditionBuilder = new ConditionBuilder(existingCondition);
+                                conditionBuilder.setDeletedAudit(hashValueCell);
+
+                                //delete the condition resource. mapids is always false for deletions
+                                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, conditionBuilder);
+                            }
+                        } else {
+                            TransformWarnings.log(LOG, parser, "Delete failed. Unable to find Condition HASH_VALUE_TO_LOCAL_ID using hash_value: {}",
+                                    hashValueCell.toString());
+                        }
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    }
+                }
+            }
+        }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
+    }
+
+    public static void transform(Condition parser,
                                        FhirResourceFiler fhirResourceFiler,
                                        HomertonHiCsvHelper csvHelper) throws Exception {
 
@@ -56,14 +99,10 @@ public class ConditionTransformer  {
                 = ReferenceHelper.createReference(ResourceType.Patient, personEmpiIdCell.getString());
         conditionBuilder.setPatient(patientReference, personEmpiIdCell);
 
-        //NOTE:deletions are checked by comparing the deletion hash values set up in the deletion pre-transform
+        //NOTE:deletions are done using the hash values in the deletion transforms linking back to the local Id
+        //so, save an InternalId link between the hash value and the local Id for this resource, i.e. condition_id
         CsvCell hashValueCell = parser.getHashValue();
-        boolean deleted = false;  //TODO: requires pre-transform per file to establish deletions
-        if (deleted) {
-            conditionBuilder.setDeletedAudit(hashValueCell);
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), conditionBuilder);
-            return;
-        }
+        csvHelper.saveHashValueToLocalId(hashValueCell, conditionIdCell);
 
         CsvCell confirmationCell = parser.getConditionConfirmationStatusDisplay();
         if (!confirmationCell.isEmpty()) {

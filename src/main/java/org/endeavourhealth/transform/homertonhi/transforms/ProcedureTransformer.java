@@ -1,16 +1,15 @@
 package org.endeavourhealth.transform.homertonhi.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.Procedure;
+import org.endeavourhealth.transform.homertonhi.schema.ProcedureDelete;
 import org.hl7.fhir.instance.model.DateTimeType;
 import org.hl7.fhir.instance.model.Reference;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -27,24 +26,66 @@ public class ProcedureTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonHiCsvHelper csvHelper) throws Exception {
 
-           for (ParserI parser: parsers) {
-                try {
+        for (ParserI parser: parsers) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
 
-                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                         continue;
                     }
-                    while (parser.nextRecord()) {
-                        //no try/catch here, since any failure here means we don't want to continue
+                    try {
                         transform((Procedure) parser, fhirResourceFiler, csvHelper);
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                     }
-                } catch (Exception ex) {
-
-                    fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                 }
             }
+        }
 
-            //call this to abort if we had any errors, during the above processing
-            fhirResourceFiler.failIfAnyErrors();
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
+    }
+
+    public static void delete(List<ParserI> parsers,
+                              FhirResourceFiler fhirResourceFiler,
+                              HomertonHiCsvHelper csvHelper) throws Exception {
+
+        for (ParserI parser: parsers) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
+
+                    try {
+                        ProcedureDelete procedureDeleteParser = (ProcedureDelete) parser;
+                        CsvCell hashValueCell = procedureDeleteParser.getHashValue();
+
+                        //lookup the localId value set when the Procedure was initially transformed
+                        String procedureId = csvHelper.findLocalIdFromHashValue(hashValueCell);
+                        if (!Strings.isNullOrEmpty(procedureId)) {
+                            //get the resource to perform the deletion on
+                            org.hl7.fhir.instance.model.Procedure procedure
+                                    = (org.hl7.fhir.instance.model.Procedure) csvHelper.retrieveResourceForLocalId(ResourceType.Procedure, procedureId);
+
+                            if (procedure != null) {
+
+                                ProcedureBuilder procedureBuilder = new ProcedureBuilder(procedure);
+                                procedureBuilder.setDeletedAudit(hashValueCell);
+
+                                //delete the patient resource. mapids is always false for deletions
+                                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, procedureBuilder);
+                            }
+                        } else {
+                            TransformWarnings.log(LOG, parser, "Delete failed. Unable to find Procedure HASH_VALUE_TO_LOCAL_ID using hash_value: {}",
+                                    hashValueCell.toString());
+                        }
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    }
+                }
+            }
+        }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
     }
 
     public static void transform(Procedure parser, FhirResourceFiler fhirResourceFiler, HomertonHiCsvHelper csvHelper) throws Exception {
@@ -59,14 +100,10 @@ public class ProcedureTransformer {
                 = ReferenceHelper.createReference(ResourceType.Patient, personEmpiIdCell.getString());
         procedureBuilder.setPatient(patientReference, personEmpiIdCell);
 
-        //NOTE:deletions are checked by comparing the deletion hash values set up in the deletion pre-transform
+        //NOTE:deletions are done using the hash values in the deletion transforms linking back to the local Id
+        //so, save an InternalId link between the hash value and the local Id for this resource, i.e. procedure_id
         CsvCell hashValueCell = parser.getHashValue();
-        boolean deleted = false;  //TODO: requires pre-transform per file to establish deletions
-        if (deleted) {
-            procedureBuilder.setDeletedAudit(hashValueCell);
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), procedureBuilder);
-            return;
-        }
+        csvHelper.saveHashValueToLocalId(hashValueCell, procedureIdCell);
 
         DateTimeType procedureDateTime = new DateTimeType(parser.getProcedureStartDate().getDateTime());
         procedureBuilder.setPerformed(procedureDateTime);

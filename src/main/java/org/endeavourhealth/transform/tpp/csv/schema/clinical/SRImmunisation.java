@@ -222,10 +222,16 @@ public class SRImmunisation extends AbstractCsvParser {
         return super.getCell("IDOrganisationDoneAt");
     }
 
+    /**
+     * ignored, but this is always identical to IDImmunisationContent which is not ignored
+     */
     public CsvCell getIDVaccination() {
         return super.getCell("IDVaccination");
     }
 
+    /**
+     * always identical to IDVaccination
+     */
     public CsvCell getIDImmunisationContent() {
         return super.getCell("IDImmunisationContent");
     }

@@ -1,12 +1,14 @@
 package org.endeavourhealth.transform.homertonhi.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.Person;
+import org.endeavourhealth.transform.homertonhi.schema.PersonDelete;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class PersonTransformer {
+
     private static final Logger LOG = LoggerFactory.getLogger(PersonTransformer.class);
 
     public static void transform(List<ParserI> parsers,
@@ -25,11 +28,53 @@ public class PersonTransformer {
             if (parser != null) {
                 while (parser.nextRecord()) {
 
-                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
                         continue;
                     }
                     try {
                         transform((Person) parser, fhirResourceFiler, csvHelper);
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    }
+                }
+            }
+        }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
+    }
+
+    public static void delete(List<ParserI> parsers,
+                              FhirResourceFiler fhirResourceFiler,
+                              HomertonHiCsvHelper csvHelper) throws Exception {
+
+        for (ParserI parser: parsers) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
+
+                    try {
+                        PersonDelete personDeleteParser = (PersonDelete) parser;
+                        CsvCell hashValueCell = personDeleteParser.getHashValue();
+
+                        //lookup the localId value set when the Person was initially transformed
+                        String personEmpiId = csvHelper.findLocalIdFromHashValue(hashValueCell);
+                        if (!Strings.isNullOrEmpty(personEmpiId)) {
+                            //get the resource to perform the deletion on
+                            Patient patient
+                                    = (Patient) csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personEmpiId);
+
+                            if (patient != null) {
+
+                                PatientBuilder patientBuilder = new PatientBuilder(patient);
+                                patientBuilder.setDeletedAudit(hashValueCell);
+
+                                //delete the patient resource. mapids is always false for deletions
+                                fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, patientBuilder);
+                            }
+                        } else {
+                            TransformWarnings.log(LOG, parser, "Delete failed. Unable to find Person HASH_VALUE_TO_LOCAL_ID using hash_value: {}",
+                                    hashValueCell.toString());
+                        }
                     } catch (Exception ex) {
                         fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
                     }
@@ -55,20 +100,17 @@ public class PersonTransformer {
             return;
         }
 
-        CsvCell personEmpiCell = parser.getPersonEmpiId();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiCell, csvHelper);
+        CsvCell personEmpiIdCell = parser.getPersonEmpiId();
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiIdCell, csvHelper);
         if (patientBuilder == null) {
             return;
         }
 
-        //NOTE:deletions are checked by comparing the deletion hash values set up in the deletion pre-transform
+        //NOTE:deletions are done using the hash values in the deletion transforms linking back to the local Id
+        //so, save an InternalId link between the hash value and the local Id for this resource, i.e. empi_id
         CsvCell hashValueCell = parser.getHashValue();
-        boolean deleted = false;  //TODO: requires pre-transform per file to establish deletions
-        if (deleted) {
-            patientBuilder.setDeletedAudit(hashValueCell);
-            csvHelper.getPatientCache().deletePatient(patientBuilder, personEmpiCell, fhirResourceFiler, parser.getCurrentState());
-            return;
-        }
+        csvHelper.saveHashValueToLocalId(hashValueCell, personEmpiIdCell);
+
         patientBuilder.setActive(true);
 
         Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
@@ -80,10 +122,10 @@ public class PersonTransformer {
         csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId, organizationBuilder);
 
         //remove existing name if set - this is the first place names are set and are added to using PersonName transformers
-        NameBuilder.removeExistingNameById(patientBuilder, personEmpiCell.getString());
+        NameBuilder.removeExistingNameById(patientBuilder, personEmpiIdCell.getString());
 
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
-        nameBuilder.setId(personEmpiCell.getString(), personEmpiCell);  //so it can be removed if exists
+        nameBuilder.setId(personEmpiIdCell.getString(), personEmpiIdCell);  //so it can be removed if exists
 
         CsvCell nameTypeCernerCodeCell = parser.getPersonNameTypeCernerCode();
         CsvCell codeMeaningCell
@@ -111,7 +153,7 @@ public class PersonTransformer {
 
             //use the personEmpid as the identifier for the main phone number
             ContactPointBuilder contactPointBuilder
-                    = ContactPointBuilder.findOrCreateForId(patientBuilder, personEmpiCell);
+                    = ContactPointBuilder.findOrCreateForId(patientBuilder, personEmpiIdCell);
             contactPointBuilder.reset();
 
             contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);   //this is always a phone
@@ -151,7 +193,7 @@ public class PersonTransformer {
         }
 
         // remove existing address if set
-        AddressBuilder.removeExistingAddressById(patientBuilder, personEmpiCell.getString());
+        AddressBuilder.removeExistingAddressById(patientBuilder, personEmpiIdCell.getString());
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
 
@@ -164,7 +206,7 @@ public class PersonTransformer {
         if (use != null) {
             addressBuilder.setUse(use, typeCell, typeDescCell);
         }
-        addressBuilder.setId(personEmpiCell.getString(), personEmpiCell);  //so it can be removed
+        addressBuilder.setId(personEmpiIdCell.getString(), personEmpiIdCell);  //so it can be removed
 
         CsvCell line1Cell = parser.getAddressLine1();
         CsvCell line2Cell = parser.getAddressLine2();
@@ -182,7 +224,7 @@ public class PersonTransformer {
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
         //here we simply return the patient builder to the cache
-        csvHelper.getPatientCache().returnPatientBuilder(personEmpiCell, patientBuilder);
+        csvHelper.getPatientCache().returnPatientBuilder(personEmpiIdCell, patientBuilder);
     }
 
     public static Enumerations.AdministrativeGender convertGenderToFHIR(String gender) {

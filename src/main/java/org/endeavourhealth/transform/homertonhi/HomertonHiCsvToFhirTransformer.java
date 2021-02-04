@@ -21,7 +21,7 @@ public abstract class HomertonHiCsvToFhirTransformer {
 
     public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final String TIME_FORMAT = "HH:mm:ss";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
+    public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withHeader();
 
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
@@ -44,7 +44,12 @@ public abstract class HomertonHiCsvToFhirTransformer {
         try {
             // non-patient transforms here
 
-            // process any deletions first by extracting all the deletion hash values to use in each transform
+            // process any deletions first by using the deletion hash value lookups to use in each transform
+            //note ordering of clinical deletions first, then patients
+            ConditionTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition_delete", false), fhirResourceFiler, csvHelper);
+            ProcedureTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure_delete", false), fhirResourceFiler, csvHelper);
+            PersonTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_delete", false), fhirResourceFiler, csvHelper);
+
 
             // process the patient files first, using the Resource caching to collect data from all file before filing
             PersonTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person", true), fhirResourceFiler, csvHelper);
@@ -128,6 +133,8 @@ public abstract class HomertonHiCsvToFhirTransformer {
 
         if (type.equalsIgnoreCase("person")) {
             return new Person(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_delete")) {
+            return new PersonDelete(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_demographics")) {
             return new PersonDemographics(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_alias")) {
@@ -138,10 +145,14 @@ public abstract class HomertonHiCsvToFhirTransformer {
             return new PersonPhone(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("procedure")) {
             return new Procedure(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("procedure_delete")) {
+            return new ProcedureDelete(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("procedure_comment")) {
             return new ProcedureComment(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("condition")) {
             return new Condition(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("condition_delete")) {
+            return new ConditionDelete(serviceId, systemId, exchangeId, version, file);
         } else {
             throw new TransformException("Unknown file type [" + type + "]");
         }
