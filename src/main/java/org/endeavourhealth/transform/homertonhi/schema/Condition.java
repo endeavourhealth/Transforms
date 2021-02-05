@@ -128,6 +128,8 @@ public class Condition extends AbstractCsvParser {
 
     public CsvCell getEncounterId() { return super.getCell("encounter_id");  }
 
+    public CsvCell getRankType() { return super.getCell("rank_type");  }
+
     public CsvCell getEffectiveDtm() { return super.getCell("effective_dt_tm"); }
 
     public CsvCell getHashValue() { return super.getCell("hash_value"); }

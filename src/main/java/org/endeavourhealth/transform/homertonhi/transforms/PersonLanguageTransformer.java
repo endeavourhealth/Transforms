@@ -46,16 +46,11 @@ public class PersonLanguageTransformer {
                                              FhirResourceFiler fhirResourceFiler,
                                              HomertonHiCsvHelper csvHelper) throws Exception {
 
-        //if there is a sequence number and it is not 1 then return out as we only currently support one language
-        CsvCell languageSeqCell = parser.getLanguageSequence();
-        if (!languageSeqCell.isEmpty()) {
-            if (!languageSeqCell.getString().equalsIgnoreCase("1")) {
-                return;
-            }
-        }
+        //NOTE: we only currently support one language.  The sequence numbers in the data files are always 1
+        //so provide no indication of primary / secondary languages anyway.  Deletes not supported.
 
-        CsvCell personEmpiCell = parser.getPersonEmpiId();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiCell, csvHelper);
+        CsvCell personEmpiIdCell = parser.getPersonEmpiId();
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiIdCell, csvHelper);
         if (patientBuilder == null) {
             return;
         }
@@ -67,6 +62,6 @@ public class PersonLanguageTransformer {
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
         //here we simply return the patient builder to the cache
-        csvHelper.getPatientCache().returnPatientBuilder(personEmpiCell, patientBuilder);
+        csvHelper.getPatientCache().returnPatientBuilder(personEmpiIdCell, patientBuilder);
     }
 }

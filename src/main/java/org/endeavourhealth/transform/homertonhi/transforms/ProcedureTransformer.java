@@ -122,6 +122,11 @@ public class ProcedureTransformer {
             procedureBuilder.setEncounter(encounterReference);
         }
 
+        CsvCell rankTypeCell = parser.getRankType();
+        if (!rankTypeCell.isEmpty()) {
+            procedureBuilder.setIsPrimary(rankTypeCell.getString().equalsIgnoreCase("PRIMARY"), rankTypeCell);
+        }
+
         // coded concept
         CodeableConceptBuilder codeableConceptBuilder
                 = new CodeableConceptBuilder(procedureBuilder, CodeableConceptBuilder.Tag.Procedure_Main_Code);

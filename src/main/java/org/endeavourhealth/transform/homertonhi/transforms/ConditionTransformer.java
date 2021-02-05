@@ -122,6 +122,11 @@ public class ConditionTransformer  {
             return;
         }
 
+        CsvCell rankTypeCell = parser.getRankType();
+        if (!rankTypeCell.isEmpty()) {
+            conditionBuilder.setIsPrimary(rankTypeCell.getString().equalsIgnoreCase("PRIMARY"), rankTypeCell);
+        }
+
         //is it a problem or a diagnosis? Homerton send the type using a specific code
         CsvCell conditionTypeCodeCell = parser.getConditionTypeCode();
         if (conditionTypeCodeCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_CONDITION_PROBLEM)) {

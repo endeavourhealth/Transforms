@@ -148,29 +148,8 @@ public class PersonTransformer {
         nameBuilder.addFamily(familyNameCell.getString(), familyNameCell);
         nameBuilder.addSuffix(suffixCell.getString(), suffixCell);
 
-        CsvCell phoneNumberCell = parser.getPhoneNumber();
-        if (!phoneNumberCell.isEmpty()) {
-
-            //use the personEmpid as the identifier for the main phone number
-            ContactPointBuilder contactPointBuilder
-                    = ContactPointBuilder.findOrCreateForId(patientBuilder, personEmpiIdCell);
-            contactPointBuilder.reset();
-
-            contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);   //this is always a phone
-            CsvCell getPhoneTypeCodeCell = parser.getPhoneTypeCode();
-            CsvCell phoneTypeDescCell
-                    = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, getPhoneTypeCodeCell);
-            ContactPoint.ContactPointUse use
-                    = convertPhoneType(phoneTypeDescCell.getString(), true);  //their active phone type
-            contactPointBuilder.setUse(use, getPhoneTypeCodeCell, phoneTypeDescCell);
-
-            String phoneNumber = phoneNumberCell.getString();
-            CsvCell phoneExtCell = parser.getPhoneExt();
-            if (!phoneExtCell.isEmpty()) {
-                phoneNumber += " " + phoneExtCell.getString();
-            }
-            contactPointBuilder.setValue(phoneNumber, phoneNumberCell, phoneExtCell);
-        }
+        //NOTE: phone number supported by separate person_phone data extract
+        //CsvCell phoneNumberCell = parser.getPhoneNumber();
 
         // Gender
         CsvCell genderCell = parser.getGenderCode();
@@ -193,6 +172,7 @@ public class PersonTransformer {
         }
 
         // remove existing address if set
+        //TODO: use person_address data to add / delete addresses in next phase using hash_value
         AddressBuilder.removeExistingAddressById(patientBuilder, personEmpiIdCell.getString());
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
@@ -285,72 +265,6 @@ public class PersonTransformer {
                 return HumanName.NameUse.OLD;
             default:
                 return null;
-        }
-    }
-
-    private static ContactPoint.ContactPointUse convertPhoneType(String phoneType, boolean isActive) throws Exception {
-
-        //FHIR states to use "old" for anything no longer active
-        if (!isActive) {
-            return ContactPoint.ContactPointUse.OLD;
-        }
-
-        //we're missing codes in the code ref table, so just handle by returning SOMETHING
-        if (phoneType == null) {
-            return null;
-        }
-
-        //this is based on the full list of types from CODE_REF where the set is 43
-        switch (phoneType.toUpperCase()) {
-            case "HOME":
-            case "VHOME":
-            case "PHOME":
-            case "USUAL":
-            case "PAGER PERS":
-            case "FAX PERS":
-            case "VERIFY":
-                return ContactPoint.ContactPointUse.HOME;
-
-            case "FAX BUS":
-            case "PROFESSIONAL":
-            case "SECBUSINESS":
-            case "CARETEAM":
-            case "PHONEEPRESCR":
-            case "AAM": //Automated Answering Machine
-            case "BILLING":
-            case "PAGER ALT":
-            case "PAGING":
-            case "PAGER BILL":
-            case "FAX BILL":
-            case "FAX ALT":
-            case "ALTERNATE":
-            case "EXTSECEMAIL":
-            case "INTSECEMAIL":
-            case "FAXEPRESCR":
-            case "EMC":  //Emergency Phone
-            case "TECHNICAL":
-            case "OS AFTERHOUR":
-            case "OS PHONE":
-            case "OS PAGER":
-            case "OS BK OFFICE":
-            case "OS FAX":
-            case "BUSINESS":
-                return ContactPoint.ContactPointUse.WORK;
-
-            case "MOBILE":
-                return ContactPoint.ContactPointUse.MOBILE;
-
-            case "FAX PREV":
-            case "PREVIOUS":
-            case "PAGER PREV":
-                return ContactPoint.ContactPointUse.OLD;
-
-            case "FAX TEMP":
-            case "TEMPORARY":
-                return ContactPoint.ContactPointUse.TEMP;
-
-            default:
-                throw new TransformException("Unsupported phone type [" + phoneType + "]");
         }
     }
 

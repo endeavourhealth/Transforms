@@ -57,6 +57,8 @@ public class PersonDemographicsTransformer {
         // Note: This transform adds any additional patient related demographics information to
         // the Patient resource which is not collected during the Person transformer such as
         // Marital status, Ethnicity, Religion and Cause of death if the patient is deceased
+        // NOTE: patient_demographics_delete not implemented as it is specific to the entire patient,
+        // which is handled via the parson_delete instead, i.e. no individual demographics referenced and deleted
 
         CsvCell personEmpiCell = parser.getPersonEmpiId();
         PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiCell, csvHelper);

@@ -1,17 +1,17 @@
 package org.endeavourhealth.transform.homertonhi.transforms;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.CodeValueSet;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.ParserI;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
+import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonPhone;
 import org.hl7.fhir.instance.model.ContactPoint;
+import org.hl7.fhir.instance.model.Patient;
+import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,8 +21,8 @@ public class PersonPhoneTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonPhoneTransformer.class);
 
     public static void transform(List<ParserI> parsers,
-                                 FhirResourceFiler fhirResourceFiler,
-                                 HomertonHiCsvHelper csvHelper) throws Exception {
+                                      FhirResourceFiler fhirResourceFiler,
+                                      HomertonHiCsvHelper csvHelper) throws Exception {
 
         for (ParserI parser: parsers) {
             if (parser != null) {
@@ -44,30 +44,70 @@ public class PersonPhoneTransformer {
         fhirResourceFiler.failIfAnyErrors();
     }
 
+    public static void delete(List<ParserI> parsers,
+                                 FhirResourceFiler fhirResourceFiler,
+                                 HomertonHiCsvHelper csvHelper) throws Exception {
+
+        for (ParserI parser: parsers) {
+            if (parser != null) {
+                while (parser.nextRecord()) {
+
+                    try {
+                        PersonPhone personPhoneParser = (PersonPhone) parser;
+                        CsvCell hashValueCell = personPhoneParser.getHashValue();
+
+                        //lookup the Patient localId value set when the PersonPhone was initially transformed
+                        String personEmpiId = csvHelper.findLocalIdFromHashValue(hashValueCell);
+                        if (!Strings.isNullOrEmpty(personEmpiId)) {
+                            //get the Patient resource to perform the Phone deletion from
+                            Patient patient
+                                    = (Patient) csvHelper.retrieveResourceForLocalId(ResourceType.Patient, personEmpiId);
+
+                            if (patient != null) {
+                                PatientBuilder patientBuilder = new PatientBuilder(patient);
+
+                                //if the contactpoint is found and removed, save the resource (with the contact point removed)
+                                if (ContactPointBuilder.removeExistingContactPointById(patientBuilder, hashValueCell.getString())) {
+
+                                    //note, mapids = false as the resource is already saved and mapped
+                                    fhirResourceFiler.savePatientResource(parser.getCurrentState(), false, patientBuilder);
+                                }
+                            }
+                        } else {
+                            TransformWarnings.log(LOG, parser, "Person Alias delete failed. Unable to find Person HASH_VALUE_TO_LOCAL_ID using hash_value: {}",
+                                    hashValueCell.toString());
+                        }
+                    } catch (Exception ex) {
+                        fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
+                    }
+                }
+            }
+        }
+
+        //call this to abort if we had any errors, during the above processing
+        fhirResourceFiler.failIfAnyErrors();
+    }
+
     public static void transform(PersonPhone parser,
                                  FhirResourceFiler fhirResourceFiler,
                                  HomertonHiCsvHelper csvHelper) throws Exception {
 
-        CsvCell personEmpiCell = parser.getPersonEmpiId();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiCell, csvHelper);
+        CsvCell personEmpiIdCell = parser.getPersonEmpiId();
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiIdCell, csvHelper);
         if (patientBuilder == null) {
             return;
         }
 
-        //if there is a sequence number, this can be used to create an Id for the phone number, i.e. 1,2,3
-        CsvCell phoneSeqCell = parser.getPhoneSequence();
-        if (!phoneSeqCell.isEmpty()) {
-
-            //if it is 1, then it will already have been added during the Person transform
-            if (phoneSeqCell.getString().equalsIgnoreCase("1")) {
-                return;
-            }
-        }
+        //NOTE:deletions are done using the hash values in the deletion transforms linking back to the local Id
+        //so, save an InternalId link between the hash value and the local Id for this resource, i.e. empi_id
+        //i.e. the ContactPointBuilder belongs to a patient
+        CsvCell hashValueCell = parser.getHashValue();
+        csvHelper.saveHashValueToLocalId(hashValueCell, personEmpiIdCell);
 
         //by removing from the patient and re-adding, we're constantly changing the order of the
         //contact points, so attempt to reuse the existing one for the ID
         ContactPointBuilder contactPointBuilder
-                = ContactPointBuilder.findOrCreateForId(patientBuilder, phoneSeqCell);
+                = ContactPointBuilder.findOrCreateForId(patientBuilder, hashValueCell);
         contactPointBuilder.reset();
 
         CsvCell phoneTypeCell = parser.getPhoneTypeCode();
@@ -87,10 +127,9 @@ public class PersonPhoneTransformer {
         }
         contactPointBuilder.setValue(phoneNumber, phoneNumberCell, extensionCell);
 
-
         //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
         //here we simply return the patient builder to the cache
-        csvHelper.getPatientCache().returnPatientBuilder(personEmpiCell, patientBuilder);
+        csvHelper.getPatientCache().returnPatientBuilder(personEmpiIdCell, patientBuilder);
     }
 
     private static ContactPoint.ContactPointUse convertPhoneType(String phoneType) throws Exception {

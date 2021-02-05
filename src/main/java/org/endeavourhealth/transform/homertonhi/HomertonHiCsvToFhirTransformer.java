@@ -46,9 +46,11 @@ public abstract class HomertonHiCsvToFhirTransformer {
 
             // process any deletions first by using the deletion hash value lookups to use in each transform
             //note ordering of clinical deletions first, then patients
-            ConditionTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition_delete", false), fhirResourceFiler, csvHelper);
-            ProcedureTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure_delete", false), fhirResourceFiler, csvHelper);
-            PersonTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_delete", false), fhirResourceFiler, csvHelper);
+            ConditionTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition_delete", true), fhirResourceFiler, csvHelper);
+            ProcedureTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure_delete", true), fhirResourceFiler, csvHelper);
+            PersonAliasTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_alias_delete", true), fhirResourceFiler, csvHelper);
+            PersonPhoneTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_phone_delete", true), fhirResourceFiler, csvHelper);
+            PersonTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_delete", true), fhirResourceFiler, csvHelper);
 
 
             // process the patient files first, using the Resource caching to collect data from all file before filing
@@ -139,10 +141,14 @@ public abstract class HomertonHiCsvToFhirTransformer {
             return new PersonDemographics(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_alias")) {
             return new PersonAlias(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_alias_delete")) {
+            return new PersonAliasDelete(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_language")) {
             return new PersonLanguage(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_phone")) {
             return new PersonPhone(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_phone_delete")) {
+            return new PersonPhoneDelete(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("procedure")) {
             return new Procedure(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("procedure_delete")) {
