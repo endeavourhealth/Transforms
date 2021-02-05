@@ -74,7 +74,7 @@ public class PersonPhoneTransformer {
                                 }
                             }
                         } else {
-                            TransformWarnings.log(LOG, parser, "Person Alias delete failed. Unable to find Person HASH_VALUE_TO_LOCAL_ID using hash_value: {}",
+                            TransformWarnings.log(LOG, parser, "Person Phone delete failed. Unable to find Person HASH_VALUE_TO_LOCAL_ID using hash_value: {}",
                                     hashValueCell.toString());
                         }
                     } catch (Exception ex) {

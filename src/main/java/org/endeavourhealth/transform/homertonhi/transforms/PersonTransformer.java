@@ -1,10 +1,11 @@
 package org.endeavourhealth.transform.homertonhi.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.*;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.Person;
@@ -72,7 +73,7 @@ public class PersonTransformer {
                                 fhirResourceFiler.deletePatientResource(parser.getCurrentState(), false, patientBuilder);
                             }
                         } else {
-                            TransformWarnings.log(LOG, parser, "Delete failed. Unable to find Person HASH_VALUE_TO_LOCAL_ID using hash_value: {}",
+                            TransformWarnings.log(LOG, parser, "Person delete failed. Unable to find Person HASH_VALUE_TO_LOCAL_ID using hash_value: {}",
                                     hashValueCell.toString());
                         }
                     } catch (Exception ex) {
@@ -148,7 +149,7 @@ public class PersonTransformer {
         nameBuilder.addFamily(familyNameCell.getString(), familyNameCell);
         nameBuilder.addSuffix(suffixCell.getString(), suffixCell);
 
-        //NOTE: phone number supported by separate person_phone data extract
+        //NOTE: phone numbers supported by person_phone transform
         //CsvCell phoneNumberCell = parser.getPhoneNumber();
 
         // Gender
@@ -171,36 +172,7 @@ public class PersonTransformer {
             patientBuilder.setDateOfDeath(dodCell.getDateTime(), dobCell);
         }
 
-        // remove existing address if set
-        //TODO: use person_address data to add / delete addresses in next phase using hash_value
-        AddressBuilder.removeExistingAddressById(patientBuilder, personEmpiIdCell.getString());
-
-        AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
-
-        CsvCell typeCell = parser.getAddressTypeCernerCode();
-        CsvCell typeDescCell
-                = HomertonHiCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.ADDRESS_TYPE, typeCell);
-        String typeDesc = typeDescCell.getString();
-
-        Address.AddressUse use = convertAddressUse(typeDesc, true);   //their active address
-        if (use != null) {
-            addressBuilder.setUse(use, typeCell, typeDescCell);
-        }
-        addressBuilder.setId(personEmpiIdCell.getString(), personEmpiIdCell);  //so it can be removed
-
-        CsvCell line1Cell = parser.getAddressLine1();
-        CsvCell line2Cell = parser.getAddressLine2();
-        CsvCell line3Cell = parser.getAddressLine3();
-        CsvCell cityCell = parser.getAddressCity();
-        CsvCell countyCell = parser.getAddressCounty();
-        CsvCell postcodeCell = parser.getAddressPostCode();
-
-        addressBuilder.addLine(line1Cell.getString(), line1Cell);
-        addressBuilder.addLine(line2Cell.getString(), line2Cell);
-        addressBuilder.addLine(line3Cell.getString(), line3Cell);
-        addressBuilder.setCity(cityCell.getString(), cityCell);
-        addressBuilder.setDistrict(countyCell.getString(), countyCell);
-        addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
+        // NOTES: address data handled by person_address transform
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
         //here we simply return the patient builder to the cache
@@ -265,35 +237,6 @@ public class PersonTransformer {
                 return HumanName.NameUse.OLD;
             default:
                 return null;
-        }
-    }
-
-    private static Address.AddressUse convertAddressUse(String typeDesc, boolean isActive) throws TransformException {
-
-        //FHIR states to use "old" for anything no longer active
-        if (!isActive) {
-            return Address.AddressUse.OLD;
-        }
-
-        //NOTE there are 20+ address types in CVREF, but only the types known to be used are mapped below
-        if (typeDesc.equalsIgnoreCase("Birth Address")
-                || typeDesc.equalsIgnoreCase("home")
-                || typeDesc.equalsIgnoreCase("mailing")) {
-            return Address.AddressUse.HOME;
-
-        } else if (typeDesc.equalsIgnoreCase("business")) {
-            return Address.AddressUse.WORK;
-
-        } else if (typeDesc.equalsIgnoreCase("temporary")
-                || typeDesc.equalsIgnoreCase("Alternate Address")) {
-            return Address.AddressUse.TEMP;
-
-        } else if (typeDesc.equalsIgnoreCase("Prevous Address")) { //note the wrong spelling is in the Cerner data CVREF file
-            return Address.AddressUse.OLD;
-
-        } else {
-            //NOTE if adding a new type above here make sure to add to convertAddressType(..) too
-            throw new TransformException("Unhandled type [" + typeDesc + "]");
         }
     }
 }
