@@ -49,11 +49,11 @@ public class LocationTransformer {
     public static LocationBuilder transformPV1ToPatientAssignedLocation(PV1 pv1, LocationBuilder location) throws Exception {
         ID assignedPatientLoc = pv1.getAssignedPatientLocation().getPointOfCare();
         if(assignedPatientLoc.getValue() != null) {
-            String loc[] = String.valueOf(assignedPatientLoc).split(",");
-            location.setId(loc[0]);
+            String loc= String.valueOf(assignedPatientLoc);
+            location.setId(loc);
             //location.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_LOCATION));
             location.setStatus(Location.LocationStatus.ACTIVE);
-            location.setName(loc[0]);
+            location.setName(loc);
             //location.setDescription(loc[1]+","+loc[2]);
             location.setMode(Location.LocationMode.INSTANCE);
 

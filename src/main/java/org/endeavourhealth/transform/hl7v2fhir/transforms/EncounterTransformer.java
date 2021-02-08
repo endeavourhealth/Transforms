@@ -221,10 +221,10 @@ public class EncounterTransformer {
             builder.setEpisodeOfCare(episodeReference);
         }
 
-        String loc[] = String.valueOf(pv1.getAssignedPatientLocation().getPointOfCare()).split(",");
-        if (null!=loc[0] && (!loc[0].isEmpty())) {
+        String loc = String.valueOf(pv1.getAssignedPatientLocation().getPointOfCare());
+        if (null!=loc) {
             Reference patientAssignedLocReference
-                    = ReferenceHelper.createReference(ResourceType.Location, loc[0]);
+                    = ReferenceHelper.createReference(ResourceType.Location, loc);
             if (builder.isIdMapped()) {
                 patientAssignedLocReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientAssignedLocReference, imperialHL7Helper);
