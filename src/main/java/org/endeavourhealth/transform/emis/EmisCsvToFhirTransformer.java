@@ -290,9 +290,9 @@ public abstract class EmisCsvToFhirTransformer {
             IssueRecordPreTransformer2.transform(parsers, fhirResourceFiler, csvHelper); //finds user IDs that are referenced
             SessionUserPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //SD-283 - finds user IDs that are referenced
 
-            UserInRoleTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            UserInRoleTransformer.transform(parsers, fhirResourceFiler, csvHelper); //load changed staff into staging DB
 
-            csvHelper.getAdminHelper().processAdminChanges(fhirResourceFiler, csvHelper);
+            csvHelper.getAdminHelper().processAdminChanges(fhirResourceFiler, csvHelper); //transform changed and required staff
 
             //appointments
             LOG.trace("Starting appointments transforms");
@@ -319,7 +319,7 @@ public abstract class EmisCsvToFhirTransformer {
             LOG.trace("Starting patient transforms");
             PatientTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SlotTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-            csvHelper.clearCachedSessionPractitioners(); //clear this down as it's a huge memory sink
+            csvHelper.clearCachedSessionPractitioners(); //clear this down as it's a huge memory sink and isn't need after this point
 
             ConsultationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             IssueRecordTransformer.transform(parsers, fhirResourceFiler, csvHelper); //must be before DrugRecord

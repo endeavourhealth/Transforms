@@ -108,7 +108,7 @@ public class SRCodePreTransformer {
     }
 
     //Map ethnic groups from Read code
-    private static EthnicCategory findEthnicityCode(String readCode) {
+    /*private static EthnicCategory findEthnicityCode(String readCode) {
         if (Strings.isNullOrEmpty(readCode)) {
             return null;
         }
@@ -150,7 +150,7 @@ public class SRCodePreTransformer {
         } else {
             return null;
         }
-    }
+    }*/
 
 
 }
