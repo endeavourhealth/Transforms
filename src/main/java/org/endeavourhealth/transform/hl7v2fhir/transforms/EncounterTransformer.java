@@ -389,6 +389,28 @@ public class EncounterTransformer {
                 ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(childEncounterBuilder);
                 containedParametersBuilder.removeContainedParameters();
 
+                String patientType = pv1.getPatientType().getValue();
+                if (!Strings.isNullOrEmpty(patientType)  && !patientType.equalsIgnoreCase("\"\"")) {
+
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "patient_type"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "patient_type", patientType, IMConstant.IMPERIAL_CERNER
+                    );
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
+
+                    containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                }
+
+
                 String treatmentFunctionCode = pv1.getHospitalService().getValue();
                 if (!Strings.isNullOrEmpty(treatmentFunctionCode)  && !treatmentFunctionCode.equalsIgnoreCase("\"\"")) {
 

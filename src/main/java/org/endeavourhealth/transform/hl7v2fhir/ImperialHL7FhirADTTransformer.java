@@ -252,23 +252,13 @@ public abstract class ImperialHL7FhirADTTransformer {
         //LocationPatientAssLoc
         LocationBuilder locationBuilderPatientAssLoc = null;
         locationBuilderPatientAssLoc = new LocationBuilder();
-        ST assignedPatientLoc = adtMsg.getPV1().getAssignedPatientLocation().getLocationType();
-        if(assignedPatientLoc.getValue() != null) {
-            locationBuilderPatientAssLoc = LocationTransformer.transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), locationBuilderPatientAssLoc);
-            locationBuilderPatientAssLoc.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
 
-            fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
-        }
+        locationBuilderPatientAssLoc = LocationTransformer.transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), locationBuilderPatientAssLoc);
+        locationBuilderPatientAssLoc.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
+
+        fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
+
         //LocationPatientAssLoc
-
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
 
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
@@ -472,15 +462,6 @@ public abstract class ImperialHL7FhirADTTransformer {
         }
         //LocationPatientAssLoc
 
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
-
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
         fhirResourceFiler.saveAdminResource(null, organizationBuilder);
@@ -674,23 +655,13 @@ public abstract class ImperialHL7FhirADTTransformer {
         //LocationPatientAssLoc
         LocationBuilder locationBuilderPatientAssLoc = null;
         locationBuilderPatientAssLoc = new LocationBuilder();
-        ST assignedPatientLoc = adtMsg.getPV1().getAssignedPatientLocation().getLocationType();
-        if(assignedPatientLoc.getValue() != null) {
-            locationBuilderPatientAssLoc = LocationTransformer.transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), locationBuilderPatientAssLoc);
-            locationBuilderPatientAssLoc.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
 
-            fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
-        }
+        locationBuilderPatientAssLoc = LocationTransformer.transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), locationBuilderPatientAssLoc);
+        locationBuilderPatientAssLoc.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
+
+        fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
+
         //LocationPatientAssLoc
-
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
 
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
@@ -886,15 +857,6 @@ public abstract class ImperialHL7FhirADTTransformer {
         fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
         //LocationPatientAssLoc
 
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
-
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
         fhirResourceFiler.saveAdminResource(null, organizationBuilder);
@@ -1058,15 +1020,6 @@ public abstract class ImperialHL7FhirADTTransformer {
         fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
         //LocationPatientAssLoc
 
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
-
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
         fhirResourceFiler.saveAdminResource(null, organizationBuilder);
@@ -1225,15 +1178,6 @@ public abstract class ImperialHL7FhirADTTransformer {
 
         fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
         //LocationPatientAssLoc
-
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
 
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
@@ -1400,15 +1344,6 @@ public abstract class ImperialHL7FhirADTTransformer {
 
         fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
         //LocationPatientAssLoc
-
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
 
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
@@ -1607,15 +1542,6 @@ public abstract class ImperialHL7FhirADTTransformer {
         fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
         //LocationPatientAssLoc
 
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
-
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
         fhirResourceFiler.saveAdminResource(null, organizationBuilder);
@@ -1813,15 +1739,6 @@ public abstract class ImperialHL7FhirADTTransformer {
         fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
         //LocationPatientAssLoc
 
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
-
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
         fhirResourceFiler.saveAdminResource(null, organizationBuilder);
@@ -2018,15 +1935,6 @@ public abstract class ImperialHL7FhirADTTransformer {
 
         fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
         //LocationPatientAssLoc
-
-        //PatientDemographicLocation
-        LocationBuilder locationBuilderDemographic = null;
-        locationBuilderDemographic = new LocationBuilder();
-        locationBuilderDemographic = LocationTransformer.transformPD1ToDemographicLocation(adtMsg.getPD1(), locationBuilderDemographic);
-        locationBuilderDemographic.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderDemographic);
-        //PatientDemographicLocation
 
         //Organization
         organizationBuilder.setMainLocation(ImperialHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
