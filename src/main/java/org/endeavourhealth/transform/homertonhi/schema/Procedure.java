@@ -100,6 +100,8 @@ public class Procedure extends AbstractCsvParser {
 
     public CsvCell getRankType() { return super.getCell("rank_type");  }
 
+    public CsvCell getSourceDescription() { return super.getCell("source_description"); }
+
     public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }
 

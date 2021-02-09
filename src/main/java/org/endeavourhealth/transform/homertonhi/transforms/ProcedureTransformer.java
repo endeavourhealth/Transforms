@@ -105,13 +105,18 @@ public class ProcedureTransformer {
         CsvCell hashValueCell = parser.getHashValue();
         csvHelper.saveHashValueToLocalId(hashValueCell, procedureIdCell);
 
-        DateTimeType procedureDateTime = new DateTimeType(parser.getProcedureStartDate().getDateTime());
-        procedureBuilder.setPerformed(procedureDateTime);
+        CsvCell procedureStartDateCell = parser.getProcedureStartDate();
+        if (!procedureStartDateCell.isEmpty()) {
+
+            DateTimeType procedureDateTime = new DateTimeType(procedureStartDateCell.getDateTime());
+            procedureBuilder.setPerformed(procedureDateTime, procedureStartDateCell);
+        }
 
         CsvCell procedureEndDateCell = parser.getProcedureEndDate();
         if (!procedureEndDateCell.isEmpty()) {
+
             DateTimeType dt = new DateTimeType(procedureEndDateCell.getDateTime());
-            procedureBuilder.setEnded(dt);
+            procedureBuilder.setEnded(dt, procedureEndDateCell);
         }
 
         CsvCell encounterIdCell = parser.getEncounterId();
@@ -119,7 +124,7 @@ public class ProcedureTransformer {
 
             Reference encounterReference
                     = ReferenceHelper.createReference(ResourceType.Encounter, encounterIdCell.getString());
-            procedureBuilder.setEncounter(encounterReference);
+            procedureBuilder.setEncounter(encounterReference, encounterIdCell);
         }
 
         CsvCell rankTypeCell = parser.getRankType();
@@ -152,7 +157,7 @@ public class ProcedureTransformer {
         CsvCell procedureDescriptionCell = parser.getProcedureDescription();
         if (!procedureDescriptionCell.isEmpty()) {
 
-            codeableConceptBuilder.setText(procedureDescriptionCell.getString());
+            codeableConceptBuilder.setText(procedureDescriptionCell.getString(), procedureDescriptionCell);
         }
 
         //get any procedure comments text set during the pre-transform
@@ -161,8 +166,6 @@ public class ProcedureTransformer {
 
             procedureBuilder.addNotes(procedureCommentsCell.getString(), procedureCommentsCell);
         }
-
-        //TODO:  evaluate live PLACE_OF_SERVICE details to potentially map to referenced pre-transformed location
 
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), procedureBuilder);
     }

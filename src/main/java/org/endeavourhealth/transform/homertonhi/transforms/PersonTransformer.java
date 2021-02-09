@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.UUID;
 
 public class PersonTransformer {
 
@@ -91,14 +90,26 @@ public class PersonTransformer {
                                              FhirResourceFiler fhirResourceFiler,
                                              HomertonHiCsvHelper csvHelper) throws Exception {
 
-        // first up, get or create the Homerton organisation from the service
-        UUID serviceId = parser.getServiceId();
-        OrganizationBuilder organizationBuilder
-                = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(serviceId, csvHelper, fhirResourceFiler, parser);
-        if (organizationBuilder == null) {
-            TransformWarnings.log(LOG, parser, "Error creating Organization resource for ServiceId: {}",
-                    serviceId.toString());
-            return;
+        // first up, get or create the Homerton Hospital / Royal Free Hospital organisations from the data source
+        // Every extract has a source_description type field.  The Person file has once for each of the main
+        // data items and one is always present for date of birth, so use that.  If it is not present, throw an
+        // exception for now.  The remaining clinical transforms will use these cached builders.
+
+        OrganizationBuilder organizationBuilder;
+        CsvCell birthDateSourceDescriptionCell = parser.getBirthDateSourceDescription();
+        if (!birthDateSourceDescriptionCell.isEmpty()) {
+
+            String sourceOrgDescription = birthDateSourceDescriptionCell.getString().trim();
+            organizationBuilder
+                    = csvHelper.getOrganisationCache().getOrCreateOrganizationBuilder(sourceOrgDescription, csvHelper, fhirResourceFiler, parser);
+            if (organizationBuilder == null) {
+                TransformWarnings.log(LOG, parser, "Error creating Organization resource for source description: {}",
+                        sourceOrgDescription);
+                return;
+            }
+        } else {
+
+            throw new Exception("birth_date_source_description column is empty for Person record: "+parser.getPersonEmpiId());
         }
 
         CsvCell personEmpiIdCell = parser.getPersonEmpiId();
@@ -114,17 +125,18 @@ public class PersonTransformer {
 
         patientBuilder.setActive(true);
 
-        Reference organisationReference = csvHelper.createOrganisationReference(serviceId.toString());
+        String sourceOrgDescription = birthDateSourceDescriptionCell.getString().trim();
+        String orgOds = csvHelper.getOrganisationCache().getOdsFromOrgName(sourceOrgDescription);
+        Reference organisationReference = csvHelper.createOrganisationReference(orgOds);
         if (patientBuilder.isIdMapped()) {
             organisationReference
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
         }
-        patientBuilder.setManagingOrganisation(organisationReference);
-        csvHelper.getOrganisationCache().returnOrganizationBuilder(serviceId, organizationBuilder);
+        patientBuilder.setManagingOrganisation(organisationReference, birthDateSourceDescriptionCell);
+        csvHelper.getOrganisationCache().returnOrganizationBuilder(sourceOrgDescription, organizationBuilder);
 
         //remove existing name if set - this is the first place names are set and are added to using PersonName transformers
         NameBuilder.removeExistingNameById(patientBuilder, personEmpiIdCell.getString());
-
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(personEmpiIdCell.getString(), personEmpiIdCell);  //so it can be removed if exists
 

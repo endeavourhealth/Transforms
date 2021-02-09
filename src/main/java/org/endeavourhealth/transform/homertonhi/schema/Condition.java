@@ -132,5 +132,7 @@ public class Condition extends AbstractCsvParser {
 
     public CsvCell getEffectiveDtm() { return super.getCell("effective_dt_tm"); }
 
+    public CsvCell getSourceDescription() { return super.getCell("source_description"); }
+
     public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }
