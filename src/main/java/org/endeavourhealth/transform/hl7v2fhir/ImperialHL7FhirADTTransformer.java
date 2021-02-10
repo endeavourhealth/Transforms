@@ -252,11 +252,13 @@ public abstract class ImperialHL7FhirADTTransformer {
         //LocationPatientAssLoc
         LocationBuilder locationBuilderPatientAssLoc = null;
         locationBuilderPatientAssLoc = new LocationBuilder();
+        String assignedPatientLoc = String.valueOf(adtMsg.getPV1().getAssignedPatientLocation().getPointOfCare());
+        if(assignedPatientLoc != null) {
+            locationBuilderPatientAssLoc = LocationTransformer.transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), locationBuilderPatientAssLoc);
+            locationBuilderPatientAssLoc.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
 
-        locationBuilderPatientAssLoc = LocationTransformer.transformPV1ToPatientAssignedLocation(adtMsg.getPV1(), locationBuilderPatientAssLoc);
-        locationBuilderPatientAssLoc.setManagingOrganisation(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
-
-        fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
+            fhirResourceFiler.saveAdminResource(null, locationBuilderPatientAssLoc);
+        }
 
         //LocationPatientAssLoc
 
