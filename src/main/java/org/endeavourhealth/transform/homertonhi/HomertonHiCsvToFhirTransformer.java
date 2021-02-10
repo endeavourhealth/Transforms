@@ -20,7 +20,7 @@ public abstract class HomertonHiCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonHiCsvToFhirTransformer.class);
 
     public static final String DATE_FORMAT = "yyyy-MM-dd";
-    public static final String TIME_FORMAT = "HH:mm:ss";
+    public static final String TIME_FORMAT = "'T'HH:mm:ss";   //note: 'T' prefixed as Homerton date times are DateFormat yyyy-MM-dd'T'HH:mm:ss
     public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withHeader();
 
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
