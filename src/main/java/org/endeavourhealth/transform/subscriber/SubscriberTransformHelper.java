@@ -127,6 +127,10 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return config.isIncludeDateRecorded();
     }
 
+    public boolean isIncludeObservationAdditional() {
+        return config.isIncludeObservationAdditional();
+    }
+
     public boolean isBulkDeleteFromSubscriber() {
         return isBulkDeleteFromSubscriber;
     }
