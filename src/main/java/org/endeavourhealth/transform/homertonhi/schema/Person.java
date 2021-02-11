@@ -181,7 +181,7 @@ public class Person extends AbstractCsvParser {
 
     public CsvCell getPersonNameFamily() { return super.getCell("family_name1"); }
 
-    public CsvCell getPersonNameTitle() { return super.getCell("title"); }
+    public CsvCell getPersonNameTitle() { return super.getCell("title1"); }
 
     public CsvCell getBirthDateSourceDescription() { return super.getCell("birth_date_source_description"); }
 
