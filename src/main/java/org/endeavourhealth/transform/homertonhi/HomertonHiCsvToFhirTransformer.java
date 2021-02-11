@@ -30,6 +30,11 @@ public abstract class HomertonHiCsvToFhirTransformer {
         Service service = DalProvider.factoryServiceDal().getById(serviceId);
         //ExchangeHelper.filterFileTypes(files, service, fhirResourceFiler.getExchangeId());   //TODO: potential file filtering
 
+        if (files.isEmpty()) {
+            LOG.warn("Exchange {} file list is empty for service {} - skipping",  fhirResourceFiler.getExchangeId().toString(), fhirResourceFiler.getServiceId().toString());
+            return;
+        }
+
         LOG.info("Invoking HomertonHi CSV transformer for " + files.size() + " files for service " + service.getName() + " " + service.getId());
 
         //the files should all be in a directory structure of org folder -> processing ID folder -> CSV files

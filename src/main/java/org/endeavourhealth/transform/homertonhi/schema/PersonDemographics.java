@@ -97,15 +97,29 @@ public class PersonDemographics extends AbstractCsvParser {
         return super.getCell("marital_raw_code");
     }
 
+    public CsvCell getMaritalStatusCode() {
+        return super.getCell("marital_status_code");
+    }
+
     public CsvCell getEthnicityCernerCode() {
         return super.getCell("ethnicity_raw_code");
+    }
+
+    public CsvCell getEthnicityCode() {
+        return super.getCell("ethnicity_code");
     }
 
     public CsvCell getReligionCernerCode() {
         return super.getCell("religion_raw_code");
     }
 
-    public CsvCell getIsDecesed() { return super.getCell("deceased"); }
+    public CsvCell getReligionDisplay() {
+        return super.getCell("religion_display");
+    }
+
+    public CsvCell getIsDeceased() { return super.getCell("deceased"); }
+
+    public CsvCell getDeceasedDtm() { return super.getCell("deceased_dt_tm"); }
 
     public CsvCell getCauseOfDeathCernerCode() { return super.getCell("cause_of_death_raw_code"); }
 

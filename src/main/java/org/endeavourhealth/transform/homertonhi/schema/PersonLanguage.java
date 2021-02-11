@@ -53,6 +53,10 @@ public class PersonLanguage extends AbstractCsvParser {
 
     public CsvCell getLanguageDisplay() { return super.getCell("lang_display"); }
 
+    public CsvCell getLanguagePrimaryDisplay() { return super.getCell("lang_primary_display"); }
+
+    public CsvCell getLanguageCode() { return super.getCell("lang_code"); }
+
     public CsvCell getLanguageCernerCodeSystemId() { return super.getCell("lang_raw_coding_system_id"); }
 
     public CsvCell getLanguageCernerCode() { return super.getCell("lang_raw_code"); }

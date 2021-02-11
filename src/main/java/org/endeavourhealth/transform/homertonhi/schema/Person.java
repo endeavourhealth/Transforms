@@ -114,6 +114,7 @@ public class Person extends AbstractCsvParser {
                     "gender_primary_display",
                     "address_type_primary_display",
                     "state_primary_display",
+                    "county_primary_display",
                     "country_primary_display",
                     "phone_type_primary_display",
                     "person_name_type_primary_display",
@@ -165,6 +166,8 @@ public class Person extends AbstractCsvParser {
     public CsvCell getPersonNameTypeCernerCodeSystemId() { return super.getCell("person_name_raw_coding_system_id"); }
 
     public CsvCell getPersonNameTypeCernerCode() { return super.getCell("person_name_raw_code"); }
+
+    public CsvCell getPersonNameTypeDisplay() { return super.getCell("person_name_type_display"); }
 
     public CsvCell getPersonFullName() { return super.getCell("full_name"); }
 

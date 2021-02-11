@@ -2,11 +2,9 @@ package org.endeavourhealth.transform.homertonhi.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonAddress;
 import org.endeavourhealth.transform.homertonhi.schema.PersonAddressDelete;
@@ -112,14 +110,14 @@ public class PersonAddressTransformer {
 
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
 
-        CsvCell typeCell = parser.getAddressTypeCernerCode();
-        CsvCell typeDescCell
-                = HomertonHiCodeableConceptHelper.getCellDesc(csvHelper, CodeValueSet.ADDRESS_TYPE, typeCell);
-        String typeDesc = typeDescCell.getString();
+        CsvCell addressTypeDisplayCell = parser.getAddressTypeDisplay();
+        if (!addressTypeDisplayCell.isEmpty()) {
 
-        Address.AddressUse use = convertAddressUse(typeDesc, true);   //their active address
-        if (use != null) {
-            addressBuilder.setUse(use, typeCell, typeDescCell);
+            String typeDesc = addressTypeDisplayCell.getString();
+            Address.AddressUse use = convertAddressUse(typeDesc, true);   //their active address
+            if (use != null) {
+                addressBuilder.setUse(use, addressTypeDisplayCell);
+            }
         }
         addressBuilder.setId(hashValueCell.getString(), hashValueCell);  //so it can be removed / deleted
 
@@ -151,6 +149,7 @@ public class PersonAddressTransformer {
 
         //NOTE there are 20+ address types in CVREF, but only the types known to be used are mapped below
         if (typeDesc.equalsIgnoreCase("Birth Address")
+                || typeDesc.equalsIgnoreCase("birth")
                 || typeDesc.equalsIgnoreCase("home")
                 || typeDesc.equalsIgnoreCase("mailing")) {
             return Address.AddressUse.HOME;
@@ -159,7 +158,8 @@ public class PersonAddressTransformer {
             return Address.AddressUse.WORK;
 
         } else if (typeDesc.equalsIgnoreCase("temporary")
-                || typeDesc.equalsIgnoreCase("Alternate Address")) {
+                || typeDesc.equalsIgnoreCase("alternate")
+                || typeDesc.equalsIgnoreCase("alternate address")) {
             return Address.AddressUse.TEMP;
 
         } else if (typeDesc.equalsIgnoreCase("Prevous Address")) { //note the wrong spelling is in the Cerner data CVREF file

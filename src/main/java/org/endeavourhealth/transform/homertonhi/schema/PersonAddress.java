@@ -80,6 +80,8 @@ public class PersonAddress extends AbstractCsvParser {
 
     public CsvCell getAddressTypeCernerCode() { return super.getCell("address_type_raw_code"); }
 
+    public CsvCell getAddressTypeDisplay() { return super.getCell("address_type_display"); }
+
     public CsvCell getAddressLine1() { return super.getCell("address_line_1"); }
 
     public CsvCell getAddressLine2() { return super.getCell("address_line_2"); }

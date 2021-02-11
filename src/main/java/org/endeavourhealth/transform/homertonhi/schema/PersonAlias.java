@@ -58,5 +58,7 @@ public class PersonAlias extends AbstractCsvParser {
 
     public CsvCell getAliasTypeCernerCode() { return super.getCell("alias_type_raw_code"); }
 
+    public CsvCell getAliasTypeDisplay() { return super.getCell("alias_type_display"); }
+
     public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }

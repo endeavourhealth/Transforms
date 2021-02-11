@@ -2,11 +2,9 @@ package org.endeavourhealth.transform.homertonhi.transforms;
 
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonPhone;
 import org.hl7.fhir.instance.model.ContactPoint;
@@ -110,13 +108,13 @@ public class PersonPhoneTransformer {
                 = ContactPointBuilder.findOrCreateForId(patientBuilder, hashValueCell);
         contactPointBuilder.reset();
 
-        CsvCell phoneTypeCell = parser.getPhoneTypeCode();
-        CsvCell phoneTypeDescCell
-                = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.PHONE_TYPE, phoneTypeCell);
-        String phoneTypeDesc = phoneTypeDescCell.getString();
-        ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc);
-        contactPointBuilder.setUse(use, phoneTypeCell, phoneTypeDescCell);
+        CsvCell phoneTypeDisplayCell = parser.getPhoneTypeDisplay();
+        if (!phoneTypeDisplayCell.isEmpty()) {
 
+            String phoneTypeDesc = phoneTypeDisplayCell.getString();
+            ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc);
+            contactPointBuilder.setUse(use, phoneTypeDisplayCell);
+        }
         CsvCell phoneNumberCell = parser.getPhoneNumber();
         String phoneNumber = phoneNumberCell.getString();
 

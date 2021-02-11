@@ -1,12 +1,10 @@
 package org.endeavourhealth.transform.homertonhi.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.Person;
 import org.endeavourhealth.transform.homertonhi.schema.PersonDelete;
@@ -140,12 +138,13 @@ public class PersonTransformer {
         NameBuilder nameBuilder = new NameBuilder(patientBuilder);
         nameBuilder.setId(personEmpiIdCell.getString(), personEmpiIdCell);  //so it can be removed if exists
 
-        CsvCell nameTypeCernerCodeCell = parser.getPersonNameTypeCernerCode();
-        CsvCell codeMeaningCell
-                = HomertonHiCodeableConceptHelper.getCellMeaning(csvHelper, CodeValueSet.NAME_USE, nameTypeCernerCodeCell);
-        HumanName.NameUse nameUse
-                = convertNameUse(codeMeaningCell.getString(), true);  //this name is their active name
-        nameBuilder.setUse(nameUse, nameTypeCernerCodeCell, codeMeaningCell);
+        CsvCell nameTypeDisplayCell = parser.getPersonNameTypeDisplay();
+        if (!nameTypeDisplayCell.isEmpty()) {
+
+            HumanName.NameUse nameUse
+                    = convertNameUse(nameTypeDisplayCell.getString(), true);  //this name is their active name
+            nameBuilder.setUse(nameUse, nameTypeDisplayCell);
+        }
 
         CsvCell familyNameCell = parser.getPersonNameFamily();
         CsvCell givenName1Cell = parser.getPersonNameGiven1();
@@ -181,7 +180,7 @@ public class PersonTransformer {
         // Deceased date if present
         CsvCell dodCell = parser.getDeceasedDtTm();
         if (!dodCell.isEmpty()) {
-            patientBuilder.setDateOfDeath(dodCell.getDateTime(), dobCell);
+            patientBuilder.setDateOfDeath(dodCell.getDateTime(), dodCell);
         }
 
         // NOTES: address data handled by person_address transform

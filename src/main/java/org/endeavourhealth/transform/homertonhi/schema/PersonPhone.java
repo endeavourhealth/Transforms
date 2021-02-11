@@ -59,6 +59,8 @@ public class PersonPhone extends AbstractCsvParser {
 
     public CsvCell getPhoneTypeCernerCode() { return super.getCell("phone_type_raw_code"); }
 
+    public CsvCell getPhoneTypeDisplay() { return super.getCell("phone_type_display"); }
+
     public CsvCell getPhoneNumber() { return super.getCell("phone_number"); }
 
     public CsvCell getPhoneExt() { return super.getCell("extension"); }
