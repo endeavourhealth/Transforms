@@ -45,8 +45,8 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public static final String HASH_VALUE_TO_LOCAL_ID = "HASH_VALUE_TO_LOCAL_ID";
 
-    public static final String ROYAL_FREE_HOSPITAL_ODS = "5C197";
-    public static final String HOMERTON_UNIVERSITY_HOSPITAL_ODS = "RQXM1";
+    public static final String ROYAL_FREE_HOSPITAL_ODS = "RAL";
+    public static final String HOMERTON_UNIVERSITY_HOSPITAL_ODS = "RQX";
 
 //    public static final String CODE_TYPE_ICD_10 = "ICD-10";
 //    public static final String CODE_TYPE_OPCS_4 = "OPCS4";
