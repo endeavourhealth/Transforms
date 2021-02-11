@@ -190,14 +190,14 @@ public class PersonTransformer {
             patientBuilder.setGender(fhirGender, genderCell);
         }
 
-        // Date of birth
+        // Date of birth (date only)
         CsvCell dobCell = parser.getBirthDate();
         if (!dobCell.isEmpty()) {
 
-            patientBuilder.setDateOfBirth(dobCell.getDateTime(), dobCell);
+            patientBuilder.setDateOfBirth(dobCell.getDate(), dobCell);
         }
 
-        // Deceased date if present
+        // Deceased date if present (date and time)
         CsvCell dodCell = parser.getDeceasedDtTm();
         if (!dodCell.isEmpty()) {
 
