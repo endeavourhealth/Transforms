@@ -39,6 +39,7 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
     public static final String CODE_TYPE_SNOMED_URN = "2.16.840.1.113883.6.96";
     public static final String CODE_TYPE_FREETEXT = "freetext";
     public static final String CODE_TYPE_ICD10_URN = "2.16.840.1.113883.6.90";
+    public static final String CODE_TYPE_OPCS4_URN = "2.16.840.1.113883.2.1.3.2.4.16.67";
 
     public static final String CODE_TYPE_CONDITION_PROBLEM   = "55607006";
     public static final String CODE_TYPE_CONDITION_DIAGNOSIS = "282291009";

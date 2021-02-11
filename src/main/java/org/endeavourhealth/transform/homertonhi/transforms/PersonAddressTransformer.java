@@ -128,12 +128,24 @@ public class PersonAddressTransformer {
         CsvCell countyCell = parser.getAddressCounty();
         CsvCell postcodeCell = parser.getAddressPostCode();
 
-        addressBuilder.addLine(line1Cell.getString(), line1Cell);
-        addressBuilder.addLine(line2Cell.getString(), line2Cell);
-        addressBuilder.addLine(line3Cell.getString(), line3Cell);
-        addressBuilder.setCity(cityCell.getString(), cityCell);
-        addressBuilder.setDistrict(countyCell.getString(), countyCell);
-        addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
+        if (!line1Cell.isEmpty()) {
+            addressBuilder.addLine(line1Cell.getString(), line1Cell);
+        }
+        if (!line2Cell.isEmpty()) {
+            addressBuilder.addLine(line2Cell.getString(), line2Cell);
+        }
+        if (!line3Cell.isEmpty()) {
+            addressBuilder.addLine(line3Cell.getString(), line3Cell);
+        }
+        if (!cityCell.isEmpty()) {
+            addressBuilder.setCity(cityCell.getString(), cityCell);
+        }
+        if (!countyCell.isEmpty()) {
+            addressBuilder.setDistrict(countyCell.getString(), countyCell);
+        }
+        if (!postcodeCell.isEmpty()) {
+            addressBuilder.setPostcode(postcodeCell.getString(), postcodeCell);
+        }
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
         //here we simply return the patient builder to the cache

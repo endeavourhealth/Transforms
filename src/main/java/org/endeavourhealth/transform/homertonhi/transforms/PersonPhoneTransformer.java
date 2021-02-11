@@ -108,6 +108,12 @@ public class PersonPhoneTransformer {
                 = ContactPointBuilder.findOrCreateForId(patientBuilder, hashValueCell);
         contactPointBuilder.reset();
 
+        //no number to save
+        CsvCell phoneNumberCell = parser.getPhoneNumber();
+        if (phoneNumberCell.isEmpty()) {
+            return;
+        }
+
         CsvCell phoneTypeDisplayCell = parser.getPhoneTypeDisplay();
         if (!phoneTypeDisplayCell.isEmpty()) {
 
@@ -115,7 +121,7 @@ public class PersonPhoneTransformer {
             ContactPoint.ContactPointUse use = convertPhoneType(phoneTypeDesc);
             contactPointBuilder.setUse(use, phoneTypeDisplayCell);
         }
-        CsvCell phoneNumberCell = parser.getPhoneNumber();
+
         String phoneNumber = phoneNumberCell.getString();
 
         //just append the extension on to the number

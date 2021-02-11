@@ -127,6 +127,7 @@ public class PersonTransformer {
         String orgOds = csvHelper.getOrganisationCache().getOdsFromOrgName(sourceOrgDescription);
         Reference organisationReference = csvHelper.createOrganisationReference(orgOds);
         if (patientBuilder.isIdMapped()) {
+
             organisationReference
                     = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
         }
@@ -153,12 +154,30 @@ public class PersonTransformer {
         CsvCell prefixCell = parser.getPersonNamePrefix();
         CsvCell suffixCell = parser.getPersonNameSuffix();
 
-        nameBuilder.addPrefix(titleCell.getString(), titleCell);
-        nameBuilder.addPrefix(prefixCell.getString(), prefixCell);
-        nameBuilder.addGiven(givenName1Cell.getString(), givenName1Cell);
-        nameBuilder.addGiven(givenName2Cell.getString(), givenName2Cell);
-        nameBuilder.addFamily(familyNameCell.getString(), familyNameCell);
-        nameBuilder.addSuffix(suffixCell.getString(), suffixCell);
+        if (!titleCell.isEmpty()) {
+
+            nameBuilder.addPrefix(titleCell.getString(), titleCell);
+        }
+        if (!prefixCell.isEmpty()) {
+
+            nameBuilder.addPrefix(prefixCell.getString(), prefixCell);
+        }
+        if (!givenName1Cell.isEmpty()) {
+
+            nameBuilder.addGiven(givenName1Cell.getString(), givenName1Cell);
+        }
+        if (!givenName2Cell.isEmpty()) {
+
+            nameBuilder.addGiven(givenName2Cell.getString(), givenName2Cell);
+        }
+        if (!familyNameCell.isEmpty()) {
+
+            nameBuilder.addFamily(familyNameCell.getString(), familyNameCell);
+        }
+        if (!suffixCell.isEmpty()) {
+
+            nameBuilder.addSuffix(suffixCell.getString(), suffixCell);
+        }
 
         //NOTE: phone numbers supported by person_phone transform
         //CsvCell phoneNumberCell = parser.getPhoneNumber();
@@ -174,12 +193,14 @@ public class PersonTransformer {
         // Date of birth
         CsvCell dobCell = parser.getBirthDate();
         if (!dobCell.isEmpty()) {
+
             patientBuilder.setDateOfBirth(dobCell.getDateTime(), dobCell);
         }
 
         // Deceased date if present
         CsvCell dodCell = parser.getDeceasedDtTm();
         if (!dodCell.isEmpty()) {
+
             patientBuilder.setDateOfDeath(dodCell.getDateTime(), dodCell);
         }
 

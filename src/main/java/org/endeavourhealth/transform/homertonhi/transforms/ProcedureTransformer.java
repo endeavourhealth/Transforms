@@ -147,9 +147,17 @@ public class ProcedureTransformer {
             CsvCell procedureDisplayTermCell = parser.getProcedureDisplayTerm();
             codeableConceptBuilder.setCodingDisplay(procedureDisplayTermCell.getString(), procedureDisplayTermCell);
 
+        } else if (procedureCodeSystemCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_OPCS4_URN)) {
+
+            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, procedureCodeSystemCell);
+            codeableConceptBuilder.setCodingCode(procedureCodeCell.getString(), procedureCodeCell);
+
+            CsvCell procedureDisplayTermCell = parser.getProcedureDisplayTerm();
+            codeableConceptBuilder.setCodingDisplay(procedureDisplayTermCell.getString(), procedureDisplayTermCell);
+
         } else if (procedureCodeSystemCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_FREETEXT)) {
 
-            //nothing to do here as text is set further down
+            //nothing to do here as procedure free text is set further down
         } else {
 
             throw new TransformException("Unknown Procedure code system [" + procedureCodeSystemCell.getString() + "]");

@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.homertonhi.transforms;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.fhir.schema.Religion;
-import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
@@ -58,7 +57,7 @@ public class PersonDemographicsTransformer {
 
         //marital status
         CsvCell maritalStatusCodeCell = parser.getMaritalStatusCode();
-        if (!BartsCsvHelper.isEmptyOrIsZero(maritalStatusCodeCell)) {
+        if (!maritalStatusCodeCell.isEmpty()) {
 
             MaritalStatus maritalStatus = convertMaritalStatus(maritalStatusCodeCell.getString(), parser);
             patientBuilder.setMaritalStatus(maritalStatus, maritalStatusCodeCell);
