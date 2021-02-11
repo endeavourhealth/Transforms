@@ -54,6 +54,7 @@ public class SlotTransformer {
         CsvCell patientGuid = parser.getPatientGuid();
 
         //the slots CSV contains data on empty slots too; ignore them
+        //updates to slots, REMOVING a previously booked patien, are dealt with in the SlotPreTransformer class
         if (patientGuid.isEmpty()) {
             return;
         }
@@ -65,6 +66,12 @@ public class SlotTransformer {
             return;
         }
 
+        //if the Resource is to be deleted from the data store, then stop processing the CSV row
+        CsvCell deletedCell = parser.getDeleted();
+        if (deletedCell.getBoolean()) {
+            //the SlotPreTransformer deals with deleting slots
+            return;
+        }
 
         SlotBuilder slotBuilder = new SlotBuilder();
         AppointmentBuilder appointmentBuilder = new AppointmentBuilder();
@@ -76,15 +83,6 @@ public class SlotTransformer {
         //moved this higher up, because we need to have set the patient ID on the resource before we delete it
         Reference patientReference = EmisCsvHelper.createPatientReference(patientGuid);
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientGuid);
-
-        //if the Resource is to be deleted from the data store, then stop processing the CSV row
-        CsvCell deletedCell = parser.getDeleted();
-        if (deletedCell.getBoolean()) {
-            slotBuilder.setDeletedAudit(deletedCell);
-            appointmentBuilder.setDeletedAudit(deletedCell);
-            fhirResourceFiler.deletePatientResource(parser.getCurrentState(), slotBuilder, appointmentBuilder);
-            return;
-        }
 
         CsvCell sessionGuid = parser.getSessionGuid();
         Reference scheduleReference = csvHelper.createScheduleReference(sessionGuid);
@@ -122,10 +120,11 @@ public class SlotTransformer {
 
         //if we haven't got an use UUIDs from the cache, it means our belief that the Session record will always be present
         //when a Slot is added/updated it wrong, and we'll need to add a pre-transformer for the Slot file to retrieve the Session practitioners(s).
-        if (newUsersToSave.isEmpty()) {
+        //SD-326 - this can legitimately happen. We have some "cancellation lists" which are sessions with appts, but no assigned clinician
+        /*if (newUsersToSave.isEmpty()) {
             //if we get this again, check SD-294 for more info
             TransformWarnings.log(LOG, csvHelper, "No user GUIDS cached from session for Emis slot {} and session {}", slotGuid, sessionGuid);
-        }
+        }*/
 
         CsvCell.addAnyMissingByValue(userGuidCells, newUsersToSave);
         CsvCell.removeAnyByValue(userGuidCells, newUsersToDelete);
