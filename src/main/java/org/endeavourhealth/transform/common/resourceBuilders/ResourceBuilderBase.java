@@ -151,7 +151,7 @@ public abstract class ResourceBuilderBase {
             //there are also some places where dummy cell objects are created, with a row audit
             //of -1, so ignore them too
             if (csvCell == null
-                    || csvCell.isEmpty()
+                    //|| csvCell.isEmpty() //audit for empty cells, since the removal of something can be important (i.e. Emis slow file changing patient GUID to empty will cancel the appt)
                     || csvCell.getPublishedFileId() <= 0) {
                 continue;
             }
