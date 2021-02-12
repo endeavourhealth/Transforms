@@ -171,6 +171,30 @@ public abstract class ImperialHL7FhirADTTransformer {
         }
         //Observation
 
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+        //Observation
+
         FhirHl7v2Filer.AdtResourceFiler filer = new FhirHl7v2Filer.AdtResourceFiler(fhirResourceFiler);
         PatientTransformer.performA34PatientMerge(filer, adtMsg.getPID(), adtMsg.getMRG(), imperialHL7Helper);
     }
@@ -328,6 +352,30 @@ public abstract class ImperialHL7FhirADTTransformer {
             fhirResourceFiler.savePatientResource(null, false, observationBuilder);
         }
         //Observation
+
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+
 
         //EpisodeOfCare
         boolean newEpisodeOfCare = false;
@@ -531,6 +579,30 @@ public abstract class ImperialHL7FhirADTTransformer {
         }
         //Observation
 
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+
+
         //EpisodeOfCare
         boolean newEpisodeOfCare = false;
         EpisodeOfCare fhirEpisodeOfCare = null;
@@ -732,6 +804,30 @@ public abstract class ImperialHL7FhirADTTransformer {
         }
         //Observation
 
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+
+
         //EpisodeOfCare
         boolean newEpisodeOfCare = false;
         EpisodeOfCare fhirEpisodeOfCare = null;
@@ -926,6 +1022,30 @@ public abstract class ImperialHL7FhirADTTransformer {
         }
         //Observation
 
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+
+
         //Encounter
         Encounter existingParentEncounter
                 = (Encounter) imperialHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(adtMsg.getPV1().getVisitNumber().getID()));
@@ -1089,6 +1209,30 @@ public abstract class ImperialHL7FhirADTTransformer {
         }
         //Observation
 
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+
+
         //Encounter
         EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
         //Encounter
@@ -1247,6 +1391,30 @@ public abstract class ImperialHL7FhirADTTransformer {
             fhirResourceFiler.savePatientResource(null, false, observationBuilder);
         }
         //Observation
+
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+
 
         //Encounter
         Encounter existingParentEncounter
@@ -1413,6 +1581,30 @@ public abstract class ImperialHL7FhirADTTransformer {
             fhirResourceFiler.savePatientResource(null, false, observationBuilder);
         }
         //Observation
+
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+
 
         //EpisodeOfCare
         boolean newEpisodeOfCare = false;
@@ -1611,6 +1803,31 @@ public abstract class ImperialHL7FhirADTTransformer {
         }
         //Observation
 
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+        //Observation
+
+
         //EpisodeOfCare
         boolean newEpisodeOfCare = false;
         EpisodeOfCare fhirEpisodeOfCare = null;
@@ -1808,6 +2025,30 @@ public abstract class ImperialHL7FhirADTTransformer {
         }
         //Observation
 
+        newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+
+
         //EpisodeOfCare
         boolean newEpisodeOfCare = false;
         EpisodeOfCare fhirEpisodeOfCare = null;
@@ -2004,6 +2245,29 @@ public abstract class ImperialHL7FhirADTTransformer {
             fhirResourceFiler.savePatientResource(null, false, observationBuilder);
         }
         //Observation
+            newObservation = false;
+        existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            imperialHL7Helper.setUniqueId(observationBuilder, patientGuid+"Language", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(adtMsg.getPID(), observationBuilder, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+        if(newObservation) {
+            observationBuilder.setPatient(ImperialHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+
+        } else {
+            Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            observationBuilder.setPatient(patientReference);
+
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+
 
         //EpisodeOfCare
         boolean newEpisodeOfCare = false;

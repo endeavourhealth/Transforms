@@ -43,11 +43,7 @@ public class ObservationTransformer {
      * @throws Exception
      */
     public static ObservationBuilder transformPIDToObservation(PID pid, ObservationBuilder observationBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType) throws Exception {
-        CE primaryLanguage = pid.getPrimaryLanguage();
-        String language = String.valueOf(primaryLanguage.getIdentifier());
-
         CX[] patientIdList = pid.getPatientIDInternalID();
-        String id = String.valueOf(patientIdList[0].getID());
 
         String religion = pid.getReligion().getValue();
         CodeableConcept ccValue = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
@@ -71,6 +67,24 @@ public class ObservationTransformer {
             ccValue1.addCoding().setCode(valueResponse.getConcept().getCode())
                     .setSystem(valueResponse.getConcept().getScheme()).setDisplay(religion);
         }
+        return observationBuilder;
+    }
+
+    /**
+     *
+     * @param pid
+     * @param observationBuilder
+     * @return
+     * @throws Exception
+     */
+    public static ObservationBuilder transformPIDPrimaryLanguageToObservation(PID pid, ObservationBuilder observationBuilder, String msgType) throws Exception {
+        CE primaryLanguage = pid.getPrimaryLanguage();
+        String language = String.valueOf(primaryLanguage.getIdentifier());
+
+        CodeableConcept ccValue = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
+        observationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
+        // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
+        CodeableConcept ccValue1 = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
 
         if (!Strings.isNullOrEmpty(language) && !language.equalsIgnoreCase("\"\"")) {
             MapColumnRequest propertyRequest = new MapColumnRequest(
