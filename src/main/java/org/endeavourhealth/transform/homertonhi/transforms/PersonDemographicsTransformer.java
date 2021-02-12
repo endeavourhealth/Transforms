@@ -202,13 +202,10 @@ public class PersonDemographicsTransformer {
             case "CHURCHOFGOD":
                 return Religion.CHURCH_OF_GOD_OF_PROPHECY;
             case "OTHERSECTS/RELIGIONS":
-                return null;
+                return Religion.RELIGION_OTHER;
             case "ASSEMBLIESOFGOD":
-                return null;
             case "CHURCHOFCHRIST":
-                return null;
             case "EPISCOPAL":
-                return null;
             case "NONE":
                 return null;
             default:

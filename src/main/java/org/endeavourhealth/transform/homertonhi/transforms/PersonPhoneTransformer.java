@@ -7,6 +7,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonPhone;
+import org.endeavourhealth.transform.homertonhi.schema.PersonPhoneDelete;
 import org.hl7.fhir.instance.model.ContactPoint;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -51,8 +52,8 @@ public class PersonPhoneTransformer {
                 while (parser.nextRecord()) {
 
                     try {
-                        PersonPhone personPhoneParser = (PersonPhone) parser;
-                        CsvCell hashValueCell = personPhoneParser.getHashValue();
+                        PersonPhoneDelete personPhoneDeleteParser = (PersonPhoneDelete) parser;
+                        CsvCell hashValueCell = personPhoneDeleteParser.getHashValue();
 
                         //lookup the Patient localId value set when the PersonPhone was initially transformed
                         String personEmpiId = csvHelper.findLocalIdFromHashValue(hashValueCell);
@@ -146,10 +147,13 @@ public class PersonPhoneTransformer {
         //this is based on the full list of types from CODE_REF where the set is 43
         switch (phoneType.toUpperCase()) {
             case "HOME":
+            case "HOME NUMBER":
             case "VHOME":
             case "PHOME":
             case "USUAL":
+            case "USUAL NUMBER":
             case "PAGER PERS":
+            case "PAGER PERSONAL":
             case "FAX PERS":
             case "VERIFY":
                 return ContactPoint.ContactPointUse.HOME;
@@ -178,14 +182,19 @@ public class PersonPhoneTransformer {
             case "OS BK OFFICE":
             case "OS FAX":
             case "BUSINESS":
+            case "WORK":
+            case "WORK NUMBER":
                 return ContactPoint.ContactPointUse.WORK;
 
             case "MOBILE":
+            case "MOBILE NUMBER":
                 return ContactPoint.ContactPointUse.MOBILE;
 
             case "FAX PREV":
             case "PREVIOUS":
             case "PAGER PREV":
+            case "PAGER PREVIOUS":
+            case "MOBILE PREVIOUS":
                 return ContactPoint.ContactPointUse.OLD;
 
             case "FAX TEMP":

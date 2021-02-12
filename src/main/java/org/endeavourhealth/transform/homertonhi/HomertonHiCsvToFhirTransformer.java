@@ -44,7 +44,7 @@ public abstract class HomertonHiCsvToFhirTransformer {
         HomertonHiCsvHelper csvHelper
                 = new HomertonHiCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), version);
 
-        Map<String, List<ParserI>> parserMap = hashFilesByType(files, exchangeDirectory, csvHelper);
+        Map<String, List<ParserI>> parserMap = hashFilesByType(files, csvHelper);
 
         try {
             // non-patient transforms here
@@ -84,7 +84,7 @@ public abstract class HomertonHiCsvToFhirTransformer {
         }
     }
 
-    private static Map<String, List<ParserI>> hashFilesByType(List<ExchangePayloadFile> files, String exchangeDirectory, HomertonHiCsvHelper csvHelper) throws Exception {
+    private static Map<String, List<ParserI>> hashFilesByType(List<ExchangePayloadFile> files, HomertonHiCsvHelper csvHelper) throws Exception {
 
         Map<String, List<ParserI>> ret = new HashMap<>();
 
@@ -94,6 +94,9 @@ public abstract class HomertonHiCsvToFhirTransformer {
             String type = fileObj.getType();  //this is set during sftpReader processing
 
             ParserI parser = createParser(file, type, csvHelper);
+
+            if (parser == null)
+                continue;
 
             List<ParserI> list = ret.get(type);
             if (list == null) {
@@ -139,9 +142,6 @@ public abstract class HomertonHiCsvToFhirTransformer {
         UUID exchangeId = csvHelper.getExchangeId();
         String version = csvHelper.getVersion();
 
-        //TODO: handle those included files which will not be transformed,
-        // i.e. procedure_comment_delete, person_language_delete, person_demographics_delete
-
         if (type.equalsIgnoreCase("person")) {
             return new Person(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_delete")) {
@@ -172,7 +172,16 @@ public abstract class HomertonHiCsvToFhirTransformer {
             return new Condition(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("condition_delete")) {
             return new ConditionDelete(serviceId, systemId, exchangeId, version, file);
-        } else {
+        } else if (type.equalsIgnoreCase("person_demographics_delete") ||
+                    type.equalsIgnoreCase("procedure_comment_delete") ||
+                    type.equalsIgnoreCase("person_language_delete")) {
+
+            // these delete files are not processed as the delete items are not Id linked to the main resource
+            // and therefore cannot be individually removed. TODO: Further data processing required to see if needed at all
+            LOG.warn("File type ["+type+"] received and not processed");
+            return null;
+        }else {
+
             throw new TransformException("Unknown file type [" + type + "]");
         }
     }

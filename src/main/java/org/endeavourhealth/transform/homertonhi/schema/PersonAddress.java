@@ -41,6 +41,11 @@ public class PersonAddress extends AbstractCsvParser {
                     "county_coding_system_id",
                     "county_raw_coding_system_id",
                     "county_raw_code",
+                    "country_code",
+                    "country_display",
+                    "country_coding_system_id",
+                    "country_raw_coding_system_id",
+                    "country_raw_code",
                     "source_type",
                     "source_id",
                     "source_version",
@@ -73,7 +78,10 @@ public class PersonAddress extends AbstractCsvParser {
     }
 
     public CsvCell getPersonEmpiId() {
-        return super.getCell("empi_id");
+        CsvCell id = super.getCell("empi_id");
+        String newId = "empi_id-" + id.getString();
+        CsvCell ret = new CsvCell(id.getPublishedFileId(), id.getRecordNumber(), id.getColIndex(), newId, id.getParentParser());
+        return ret;
     }
 
     public CsvCell getAddressTypeCernerCodeSystemId() { return super.getCell("address_type_raw_coding_system_id"); }

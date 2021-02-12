@@ -36,9 +36,16 @@ import java.util.concurrent.locks.ReentrantLock;
 public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonHiCsvHelper.class);
 
+    //unsupported code oids which have been checked and handled as freetext
+    public static final String CODE_TYPE_LOINC_URN = "2.16.840.1.113883.6.1";
+    public static final String CODE_TYPE_CERNER_APRDRG = "urn:cerner:codingsystem:drg:aprdrg";
+
     public static final String CODE_TYPE_SNOMED_URN = "2.16.840.1.113883.6.96";
+    public static final String CODE_TYPE_SNOMED_CT_URN = "2.16.840.1.113883.2.1.3.2.4.15";
     public static final String CODE_TYPE_FREETEXT = "freetext";
-    public static final String CODE_TYPE_ICD10_URN = "2.16.840.1.113883.6.90";
+    public static final String CODE_TYPE_ICD10_CM_URN = "2.16.840.1.113883.6.90";
+    public static final String CODE_TYPE_ICD10_URN = "2.16.840.1.113883.6.3";
+
     public static final String CODE_TYPE_OPCS4_URN = "2.16.840.1.113883.2.1.3.2.4.16.67";
 
     public static final String CODE_TYPE_CONDITION_PROBLEM   = "55607006";

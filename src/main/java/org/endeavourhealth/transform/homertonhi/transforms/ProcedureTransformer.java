@@ -139,21 +139,27 @@ public class ProcedureTransformer {
         // can be either of these types
         CsvCell procedureCodeSystemCell = parser.getProcedureCodingSystem();
         CsvCell procedureCodeCell = parser.getProcedureRawCode();
+        CsvCell procedureDisplayTermCell = parser.getProcedureDisplayTerm();
         if (procedureCodeSystemCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_SNOMED_URN)) {
 
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, procedureCodeSystemCell);
             codeableConceptBuilder.setCodingCode(procedureCodeCell.getString(), procedureCodeCell);
-
-            CsvCell procedureDisplayTermCell = parser.getProcedureDisplayTerm();
             codeableConceptBuilder.setCodingDisplay(procedureDisplayTermCell.getString(), procedureDisplayTermCell);
 
         } else if (procedureCodeSystemCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_OPCS4_URN)) {
 
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_OPCS4, procedureCodeSystemCell);
             codeableConceptBuilder.setCodingCode(procedureCodeCell.getString(), procedureCodeCell);
-
-            CsvCell procedureDisplayTermCell = parser.getProcedureDisplayTerm();
             codeableConceptBuilder.setCodingDisplay(procedureDisplayTermCell.getString(), procedureDisplayTermCell);
+
+        } else if (procedureCodeSystemCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_LOINC_URN)) {
+
+            LOG.warn("Unsupported Procedure code type: "
+                    +HomertonHiCsvHelper.CODE_TYPE_LOINC_URN
+                    +" , code: "+procedureCodeCell.getString()
+                    +" , term: "+procedureDisplayTermCell.getString()
+                    +". Will save as free text only"
+            );
 
         } else if (procedureCodeSystemCell.getString().equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_FREETEXT)) {
 
@@ -170,7 +176,7 @@ public class ProcedureTransformer {
 
         //get any procedure comments text set during the pre-transform
         CsvCell procedureCommentsCell = csvHelper.findProcedureCommentText(procedureIdCell);
-        if (!procedureCommentsCell.isEmpty()) {
+        if (procedureCommentsCell != null) {
 
             procedureBuilder.addNotes(procedureCommentsCell.getString(), procedureCommentsCell);
         }

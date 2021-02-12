@@ -19,18 +19,20 @@ public class ProcedureCommentTransformer {
 
         try {
             for (ParserI parser : parsers) {
-
-                if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
-                    continue;
-                }
-                try {
+                if (parser != null) {
                     while (parser.nextRecord()) {
 
-                        processRecord((ProcedureComment) parser, csvHelper);
-                    }
-                } catch (Exception ex) {
+                        if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                            continue;
+                        }
+                        try {
 
-                    throw new TransformException(parser.getCurrentState().toString(), ex);
+                            processRecord((ProcedureComment) parser, csvHelper);
+                        } catch(Exception ex){
+
+                            throw new TransformException(parser.getCurrentState().toString(), ex);
+                        }
+                    }
                 }
             }
         } finally {

@@ -7,6 +7,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonAlias;
+import org.endeavourhealth.transform.homertonhi.schema.PersonAliasDelete;
 import org.hl7.fhir.instance.model.Identifier;
 import org.hl7.fhir.instance.model.Patient;
 import org.hl7.fhir.instance.model.ResourceType;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class PersonAliasTransformer {
+
     private static final Logger LOG = LoggerFactory.getLogger(PersonAliasTransformer.class);
 
     public static void transform(List<ParserI> parsers,
@@ -51,8 +53,8 @@ public class PersonAliasTransformer {
                 while (parser.nextRecord()) {
 
                     try {
-                        PersonAlias personAliasParser = (PersonAlias) parser;
-                        CsvCell hashValueCell = personAliasParser.getHashValue();
+                        PersonAliasDelete personAliasDeleteParser = (PersonAliasDelete) parser;
+                        CsvCell hashValueCell = personAliasDeleteParser.getHashValue();
 
                         //lookup the localId value set when the PersonAlias was initially transformed
                         String personEmpiId = csvHelper.findLocalIdFromHashValue(hashValueCell);
@@ -147,7 +149,6 @@ public class PersonAliasTransformer {
             case "MRN":
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_ROYAL_FREE_MRN_PATIENT_ID;
             case "NHS":
-                return FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER;
             case "NHS NUMBER":
                 return FhirIdentifierUri.IDENTIFIER_SYSTEM_NHSNUMBER;
             case "CNN":

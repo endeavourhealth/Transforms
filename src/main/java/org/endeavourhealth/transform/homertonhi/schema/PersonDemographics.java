@@ -90,7 +90,10 @@ public class PersonDemographics extends AbstractCsvParser {
     }
 
     public CsvCell getPersonEmpiId() {
-        return super.getCell("empi_id");
+        CsvCell id = super.getCell("empi_id");
+        String newId = "empi_id-" + id.getString();
+        CsvCell ret = new CsvCell(id.getPublishedFileId(), id.getRecordNumber(), id.getColIndex(), newId, id.getParentParser());
+        return ret;
     }
 
     public CsvCell getMaritalStatusCernerCode() {

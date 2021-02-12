@@ -160,7 +160,7 @@ public class PersonAddressTransformer {
         }
 
         //NOTE there are 20+ address types in CVREF, but only the types known to be used are mapped below
-        if (typeDesc.equalsIgnoreCase("Birth Address")
+        if (typeDesc.equalsIgnoreCase("birth address")
                 || typeDesc.equalsIgnoreCase("birth")
                 || typeDesc.equalsIgnoreCase("home")
                 || typeDesc.equalsIgnoreCase("mailing")) {
@@ -174,7 +174,9 @@ public class PersonAddressTransformer {
                 || typeDesc.equalsIgnoreCase("alternate address")) {
             return Address.AddressUse.TEMP;
 
-        } else if (typeDesc.equalsIgnoreCase("Prevous Address")) { //note the wrong spelling is in the Cerner data CVREF file
+        } else if (typeDesc.equalsIgnoreCase("prevous address")  //note the wrong spelling is in the Cerner data CVREF file
+                || typeDesc.equalsIgnoreCase("Previous")
+                || typeDesc.equalsIgnoreCase("Previous address")) {
             return Address.AddressUse.OLD;
 
         } else {
