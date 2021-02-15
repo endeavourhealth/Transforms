@@ -544,7 +544,7 @@ public class EncounterTransformer {
         EncounterBuilder parentEncounterBuilder
                 = new EncounterBuilder(existingParentEncounter);
 
-        if (existingParentEncounter.hasContained()) {
+        if (existingParentEncounter!= null && existingParentEncounter.hasContained()) {
             ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
 
