@@ -550,6 +550,7 @@ public class EncounterTransformer {
 
             for (List_.ListEntryComponent item : listBuilder.getContainedListItems()) {
                 Reference ref = item.getItem();
+
                 ReferenceComponents comps = ReferenceHelper.getReferenceComponents(ref);
                 if (comps.getResourceType() != ResourceType.Encounter) {
                     continue;
