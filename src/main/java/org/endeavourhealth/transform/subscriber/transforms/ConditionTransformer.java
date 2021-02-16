@@ -50,7 +50,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
                 || params.getShouldPatientRecordBeDeleted()
                 || params.shouldClinicalConceptBeDeleted(fhir.getCode())) {
 
-            if (!TransformConfig.instance().isLive()) {
+            if (params.isIncludeObservationAdditional()) {
                 additionalModel.writeDelete(subscriberId);
             }
             model.writeDelete(subscriberId);
@@ -189,7 +189,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
 
         //we also need to populate the observation additional table with observation extension data
 
-        if (!TransformConfig.instance().isLive()) {
+        if (params.isIncludeObservationAdditional()) {
             transformAdditionals(fhir, params, subscriberId);
         }
 

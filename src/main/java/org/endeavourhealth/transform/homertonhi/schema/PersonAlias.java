@@ -19,23 +19,24 @@ public class PersonAlias extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
 
             return new String[] {
-                    "EMPI_ID",
-                    "PERSON_SEQ",
-                    "ALIAS_TYPE_CODE",
-                    "ALIAS_TYPE_DISPLAY",
-                    "ALIAS_TYPE_CODING_SYSTEM_ID",
-                    "ALIAS_TYPE_RAW_CODING_SYSTEM_ID",
-                    "ALIAS_TYPE_RAW_CODE",
-                    "ALIAS",
-                    "ASSIGNING_AUTHORITY",
-                    "SOURCE_TYPE",
-                    "SOURCE_ID",
-                    "SOURCE_VERSION",
-                    "SOURCE_DESCRIPTION",
-                    "POPULATION_ID",
-                    "ALIAS_TYPE_PRIMARY_DISPLAY",
-                    "SOURCE_TYPE_KEY",
-                    "HASH_VALUE"
+                    "empi_id",
+                    "person_seq",
+                    "alias_type_code",
+                    "alias_type_display",
+                    "alias_type_coding_system_id",
+                    "alias_type_raw_coding_system_id",
+                    "alias_type_raw_code",
+                    "alias",
+                    "assigning_authority",
+                    "source_type",
+                    "source_id",
+                    "source_version",
+                    "source_description",
+                    "population_id",
+                    "alias_type_primary_display",
+                    "source_type_key",
+                    "reference_id",
+                    "hash_value"
             };
     }
 
@@ -45,18 +46,23 @@ public class PersonAlias extends AbstractCsvParser {
     }
 
     public CsvCell getPersonEmpiId() {
-        return super.getCell("EMPI_ID");
+        CsvCell id = super.getCell("empi_id");
+        String newId = "empi_id-" + id.getString();
+        CsvCell ret = new CsvCell(id.getPublishedFileId(), id.getRecordNumber(), id.getColIndex(), newId, id.getParentParser());
+        return ret;
     }
 
     public CsvCell getAliasSequence() {
-        return super.getCell("PERSON_SEQ");
+        return super.getCell("person_seq");
     }
 
-    public CsvCell getAlias() { return super.getCell("ALIAS"); }
+    public CsvCell getAlias() { return super.getCell("alias"); }
 
-    public CsvCell getAliasTypeCernerCodeSystemId() { return super.getCell("ALIAS_TYPE_RAW_CODING_SYSTEM_ID"); }
+    public CsvCell getAliasTypeCernerCodeSystemId() { return super.getCell("alias_type_raw_coding_system_id"); }
 
-    public CsvCell getAliasTypeCernerCode() { return super.getCell("ALIAS_TYPE_RAW_CODE"); }
+    public CsvCell getAliasTypeCernerCode() { return super.getCell("alias_type_raw_code"); }
 
-    public CsvCell getHashValue() { return super.getCell("HASH_VALUE"); }
+    public CsvCell getAliasTypeDisplay() { return super.getCell("alias_type_display"); }
+
+    public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }

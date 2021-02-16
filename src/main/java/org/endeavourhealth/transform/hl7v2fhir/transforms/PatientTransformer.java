@@ -68,7 +68,7 @@ public class PatientTransformer {
 
         TS dod = pid.getPatientDeathDateAndTime();
         if (!dod.isEmpty()) {
-            String dtD = String.valueOf(dob.getTimeOfAnEvent());
+            String dtD = String.valueOf(dod.getTimeOfAnEvent());
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
             Date date = formatter.parse(dtD.substring(0,4)+"-"+dtD.substring(4,6)+"-"+dtD.substring(6,8));
             patientBuilder.setDateOfDeath(date);
@@ -84,6 +84,30 @@ public class PatientTransformer {
         String ethnicity = pid.getEthnicGroup().getValue();
         if (!Strings.isNullOrEmpty(ethnicity) && !ethnicity.equalsIgnoreCase("\"\"")) {
             patientBuilder.setEthnicity(EthnicCategory.fromCode(pid.getEthnicGroup().getValue()));
+        }
+
+        ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(patientBuilder);
+        containedParametersBuilder.removeContainedParameters();
+
+        CX patientAccountNumber = pid.getPatientAccountNumber();
+        if (!Strings.isNullOrEmpty(patientAccountNumber.getID().getValue())  && !patientAccountNumber.getID().getValue().equalsIgnoreCase("\"\"")) {
+
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                    "patient_FIN_number"
+            );
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                    "patient_FIN_number", patientAccountNumber.getID().getValue(), IMConstant.IMPERIAL_CERNER
+            );
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme());
+
+            containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
         }
 
         /*String ethnicity = pid.getEthnicGroup().getValue();
@@ -108,9 +132,25 @@ public class PatientTransformer {
         }*/
 
         XTN[] phones = pid.getPhoneNumberHome();
+        addPhoneData(phones, patientBuilder, fhirResourceFiler, imperialHL7Helper);
+
+        XTN[] businessPhones = pid.getPhoneNumberBusiness();
+        addPhoneData(businessPhones, patientBuilder, fhirResourceFiler, imperialHL7Helper);
+
+        createName(patientBuilder, pid, fhirResourceFiler);
+        createAddress(patientBuilder, pid, fhirResourceFiler);
+
+        //clear all care provider records, before we start adding more
+        patientBuilder.clearCareProvider();
+
+        return patientBuilder;
+    }
+
+    private static void addPhoneData(XTN[] phones, PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper) throws Exception {
         for(XTN phone : phones) {
             ID useCd = phone.getTelecommunicationUseCode();
-            String phoneNumber = (String.valueOf(phone).split("^"))[0].substring(4,15);
+            String phoneString = String.valueOf(phone);
+            String phoneNumber = phoneString.contains("^") ?(String.valueOf(phone).split("\\^"))[0].substring(4,14) : phoneString;
             if("PRN".equalsIgnoreCase(String.valueOf(useCd))) {
                 if (!phoneNumber.isEmpty()) {
                     createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
@@ -121,15 +161,12 @@ public class PatientTransformer {
                     createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
                 }
             }
-        }
-
-        createName(patientBuilder, pid, fhirResourceFiler);
-        createAddress(patientBuilder, pid, fhirResourceFiler);
-
-        //clear all care provider records, before we start adding more
-        patientBuilder.clearCareProvider();
-
-        return patientBuilder;
+            else if("WPN".equalsIgnoreCase(String.valueOf(useCd))) {
+                if (!phoneNumber.isEmpty()) {
+                    createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.WORK, ContactPoint.ContactPointSystem.PHONE);
+                }
+            }
+    }
     }
 
     /**

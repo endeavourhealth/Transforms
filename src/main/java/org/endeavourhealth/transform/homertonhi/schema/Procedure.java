@@ -19,55 +19,55 @@ public class Procedure extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
 
             return new String[] {
-                    "PROCEDURE_ID",
-                    "REFERENCE_ID",
-                    "EMPI_ID",
-                    "ENCOUNTER_ID",
-                    "PROCEDURE_CODE",
-                    "PROCEDURE_DISPLAY",
-                    "PROCEDURE_CODING_SYSTEM_ID",
-                    "PROCEDURE_RAW_CODING_SYSTEM_ID",
-                    "PROCEDURE_RAW_CODE",
-                    "DESCRIPTION",
-                    "SERVICE_START_DT_TM",
-                    "SERVICE_START_DATE_ID",
-                    "SERVICE_END_DT_TM",
-                    "SERVICE_END_DATE_ID",
-                    "PLACE_OF_SERVICE_CODE",
-                    "PLACE_OF_SERVICE_DISPLAY",
-                    "PLACE_OF_SERVICE_CODING_SYSTEM_ID",
-                    "PLACE_OF_SERVICE_RAW_CODING_SYSTEM_ID",
-                    "PLACE_OF_SERVICE_RAW_CODE",
-                    "CLAIM_UID",
-                    "CLAIM_ID",
-                    "UPDATE_DT_TM",
-                    "UPDATE_DATE_ID",
-                    "SOURCE_TYPE",
-                    "SOURCE_ID",
-                    "SOURCE_VERSION",
-                    "SOURCE_DESCRIPTION",
-                    "RANK_TYPE",
-                    "POPULATION_ID",
-                    "PROCEDURE_PRIMARY_DISPLAY",
-                    "PLACE_OF_SERVICE_PRIMARY_DISPLAY",
-                    "UPDATE_PROVIDER_ID",
-                    "PRINCIPAL_PROVIDER_ID",
-                    "SOURCE_TYPE_KEY",
-                    "BILLING_RANK_TYPE_KEY",
-                    "RAW_ENTITY_KEY",
-                    "SERVICE_START_DATE",
-                    "SERVICE_START_TIME_ID",
-                    "SERVICE_END_DATE",
-                    "SERVICE_END_TIME_ID",
-                    "UPDATE_DATE",
-                    "UPDATE_TIME_ID",
-                    "STATUS_RAW_CODE_ID",
-                    "STATUS_RAW_CODING_SYSTEM_ID",
-                    "STATUS_RAW_CODE_DISPLAY",
-                    "STATUS_CODE_ID",
-                    "STATUS_CODING_SYSTEM_ID",
-                    "STATUS_PRIMARY_DISPLAY",
-                    "HASH_VALUE"
+                    "procedure_id",
+                    "reference_id",
+                    "empi_id",
+                    "encounter_id",
+                    "procedure_code",
+                    "procedure_display",
+                    "procedure_coding_system_id",
+                    "procedure_raw_coding_system_id",
+                    "procedure_raw_code",
+                    "description",
+                    "service_start_dt_tm",
+                    "service_start_date_id",
+                    "service_end_dt_tm",
+                    "service_end_date_id",
+                    "place_of_service_code",
+                    "place_of_service_display",
+                    "place_of_service_coding_system_id",
+                    "place_of_service_raw_coding_system_id",
+                    "place_of_service_raw_code",
+                    "claim_uid",
+                    "claim_id",
+                    "update_dt_tm",
+                    "update_date_id",
+                    "source_type",
+                    "source_id",
+                    "source_version",
+                    "source_description",
+                    "rank_type",
+                    "population_id",
+                    "procedure_primary_display",
+                    "place_of_service_primary_display",
+                    "update_provider_id",
+                    "principal_provider_id",
+                    "source_type_key",
+                    "billing_rank_type_key",
+                    "raw_entity_key",
+                    "service_start_date",
+                    "service_start_time_id",
+                    "service_end_date",
+                    "service_end_time_id",
+                    "update_date",
+                    "update_time_id",
+                    "status_raw_code_id",
+                    "status_raw_coding_system_id",
+                    "status_raw_code_display",
+                    "status_code_id",
+                    "status_coding_system_id",
+                    "status_primary_display",
+                    "hash_value"
             };
     }
 
@@ -77,27 +77,34 @@ public class Procedure extends AbstractCsvParser {
     }
 
     public CsvCell getProcedureId() {
-        return super.getCell("PROCEDURE_ID");
+        return super.getCell("procedure_id");
     }
 
     public CsvCell getPersonEmpiId() {
-        return super.getCell("EMPI_ID");
+        CsvCell id = super.getCell("empi_id");
+        String newId = "empi_id-" + id.getString();
+        CsvCell ret = new CsvCell(id.getPublishedFileId(), id.getRecordNumber(), id.getColIndex(), newId, id.getParentParser());
+        return ret;
     }
 
-    public CsvCell getProcedureRawCode() { return super.getCell("PROCEDURE_RAW_CODE");  }
+    public CsvCell getProcedureRawCode() { return super.getCell("procedure_raw_code");  }
 
-    public CsvCell getProcedureDisplayTerm() { return super.getCell("PROCEDURE_DISPLAY");  }
+    public CsvCell getProcedureDisplayTerm() { return super.getCell("procedure_display");  }
 
-    public CsvCell getProcedureCodingSystem() { return super.getCell("PROCEDURE_CODING_SYSTEM_ID"); }
+    public CsvCell getProcedureCodingSystem() { return super.getCell("procedure_coding_system_id"); }
 
-    public CsvCell getProcedureDescription() { return super.getCell("DESCRIPTION");  }
+    public CsvCell getProcedureDescription() { return super.getCell("description");  }
 
-    public CsvCell getProcedureStartDate() { return super.getCell("SERVICE_START_DT_TM");  }
+    public CsvCell getProcedureStartDate() { return super.getCell("service_start_dt_tm");  }
 
-    public CsvCell getProcedureEndDate() { return super.getCell("SERVICE_END_DT_TM");  }
+    public CsvCell getProcedureEndDate() { return super.getCell("service_end_dt_tm");  }
 
-    public CsvCell getEncounterId() { return super.getCell("ENCOUNTER_ID");  }
+    public CsvCell getEncounterId() { return super.getCell("encounter_id");  }
 
-    public CsvCell getHashValue() { return super.getCell("HASH_VALUE"); }
+    public CsvCell getRankType() { return super.getCell("rank_type");  }
+
+    public CsvCell getSourceDescription() { return super.getCell("source_description"); }
+
+    public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }
 

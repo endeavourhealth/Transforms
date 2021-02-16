@@ -57,7 +57,7 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
                 || params.getShouldPatientRecordBeDeleted()
                 || params.shouldClinicalConceptBeDeleted(fhir.getCode())) {
 
-            if (!TransformConfig.instance().isLive()) {
+            if (params.isIncludeObservationAdditional()) {
                 additionalModel.writeDelete(subscriberId);
             }
             model.writeDelete(subscriberId);
@@ -207,9 +207,8 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             dateRecorded);
 
 
-        //we also need to populate the observation additional table with observation extension data
-
-        if (!TransformConfig.instance().isLive()) {
+        //we also need to populate the observation additional table with observation extension data if the config is set
+        if (params.isIncludeObservationAdditional()) {
             transformAdditionals(fhir, params, subscriberId);
             transformPatientDelays(fhir, params, subscriberId);
         }

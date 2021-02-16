@@ -50,6 +50,7 @@ public class SubscriberConfig {
     private boolean includePatientAge;
     private String description; //textual description/reminder of what each config is for
     private SubscriberLocation subscriberLocation;
+    private boolean includeObservationAdditional;
 
     //compass v1 properties
 
@@ -128,6 +129,9 @@ public class SubscriberConfig {
         return subscriberLocation;
     }
 
+    public boolean isIncludeObservationAdditional() {
+        return includeObservationAdditional;
+    }
 
     public static SubscriberConfig readFromConfig(String subscriberConfigName) throws Exception {
         JsonNode config = ConfigManager.getConfigurationAsJson(subscriberConfigName, "db_subscriber");
@@ -225,7 +229,8 @@ public class SubscriberConfig {
             this.subscriberLocation = parseSubscriberLocation(config.get("subscriber_location").asText());
         }
 
-
+        this.includeObservationAdditional = config.has("include_observation_additional")
+                && config.get("include_observation_additional").asBoolean();
 
         //version-specific config
         if (subscriberType == SubscriberType.CompassV1) {

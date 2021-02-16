@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.homertonhi;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
@@ -10,9 +11,11 @@ import org.endeavourhealth.core.database.dal.admin.models.Service;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.CernerCodeValueRefDalI;
+import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
+import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.core.xml.QueryDocument.CodeSetValue;
+import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.homertonhi.cache.OrganisationResourceCache;
@@ -23,21 +26,35 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonHiCsvHelper.class);
 
+    //unsupported code oids which have been checked and handled as freetext
+    public static final String CODE_TYPE_LOINC_URN = "2.16.840.1.113883.6.1";
+    public static final String CODE_TYPE_CERNER_APRDRG = "urn:cerner:codingsystem:drg:aprdrg";
+
     public static final String CODE_TYPE_SNOMED_URN = "2.16.840.1.113883.6.96";
+    public static final String CODE_TYPE_SNOMED_CT_URN = "2.16.840.1.113883.2.1.3.2.4.15";
     public static final String CODE_TYPE_FREETEXT = "freetext";
-    public static final String CODE_TYPE_ICD10_URN = "2.16.840.1.113883.6.90";
+    public static final String CODE_TYPE_ICD10_CM_URN = "2.16.840.1.113883.6.90";
+    public static final String CODE_TYPE_ICD10_URN = "2.16.840.1.113883.6.3";
+
+    public static final String CODE_TYPE_OPCS4_URN = "2.16.840.1.113883.2.1.3.2.4.16.67";
 
     public static final String CODE_TYPE_CONDITION_PROBLEM   = "55607006";
     public static final String CODE_TYPE_CONDITION_DIAGNOSIS = "282291009";
+
+    public static final String HASH_VALUE_TO_LOCAL_ID = "HASH_VALUE_TO_LOCAL_ID";
+
+    public static final String ROYAL_FREE_HOSPITAL_ODS = "RAL";
+    public static final String HOMERTON_UNIVERSITY_HOSPITAL_ODS = "RQX";
 
 //    public static final String CODE_TYPE_ICD_10 = "ICD-10";
 //    public static final String CODE_TYPE_OPCS_4 = "OPCS4";
@@ -63,17 +80,23 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
 //    private LocationResourceCache locationCache = new LocationResourceCache();
     private OrganisationResourceCache organisationCache = new OrganisationResourceCache();
 //
-//    private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
+    private InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
+    private List<InternalIdMap> internalIdSaveBatch = new ArrayList<>();
     private ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
     private CernerCodeValueRefDalI cernerCodeValueRefDal = DalProvider.factoryCernerCodeValueRefDal();
     private ServiceDalI serviceRepository = DalProvider.factoryServiceDal();
 
     private ThreadPool utilityThreadPool = null;
 
+    private Map<StringMemorySaver, StringMemorySaver> internalIdMapCache = new HashMap<>(); //contains nulls so a regular map but uses the cacheLock
+    private ReentrantLock cacheLock = new ReentrantLock();
+
     private UUID serviceId = null;
     private UUID systemId = null;
     private UUID exchangeId = null;
     private String version = null;
+
+    private Set<String> personIdsToFilterOn = null;
 
     public HomertonHiCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String version) {
         this.serviceId = serviceId;
@@ -143,6 +166,185 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
 //        return ret;
 //    }
 //
+
+    public boolean processRecordFilteringOnPatientId(AbstractCsvParser parser) throws TransformException {
+        CsvCell personIdCell = parser.getCell("empi_id");
+                    //if nothing that looks like a person ID, process the record
+        if (personIdCell == null) {
+            throw new TransformException("No empi_id column on parser " + parser.getFilePath());
+        }
+
+        String personId = personIdCell.getString();
+        return processRecordFilteringOnPatientId(personId);
+    }
+
+    public boolean processRecordFilteringOnPatientId(String personId) {
+
+        if (personIdsToFilterOn == null) {
+            String filePath = TransformConfig.instance().getCernerPatientIdFile();  //use same cerner config
+            if (Strings.isNullOrEmpty(filePath)) {
+                LOG.debug("Not filtering on patients");
+                personIdsToFilterOn = new HashSet<>();
+
+            } else {
+                personIdsToFilterOn = new HashSet<>();
+                try {
+                    List<String> lines = Files.readAllLines(new File(filePath).toPath());
+                    for (String line : lines) {
+                        line = line.trim();
+
+                        //ignore comments
+                        if (line.startsWith("#")) {
+                            continue;
+                        }
+                        personIdsToFilterOn.add(line);
+                    }
+                    LOG.debug("Filtering on " + personIdsToFilterOn.size() + " patients from " + filePath);
+
+                } catch (Exception ex) {
+                    LOG.error("Error reading in person ID file " + filePath, ex);
+                }
+            }
+        }
+
+        //if no filtering IDs
+        if (personIdsToFilterOn.isEmpty()) {
+            return true;
+        }
+
+        //many files have an empty person ID when they're being deleted, and we don't want to skip processing them
+        if (Strings.isNullOrEmpty(personId)) {
+            return true;
+        }
+
+        return personIdsToFilterOn.contains(personId);
+    }
+
+    public void saveHashValueToLocalId(CsvCell hashValueCell, CsvCell localIdCell) throws Exception {
+        String hashValue = hashValueCell.getString();
+        String localId = localIdCell.getString();
+        saveInternalId(HASH_VALUE_TO_LOCAL_ID, hashValue, localId);
+    }
+
+    public String findLocalIdFromHashValue(CsvCell hashValueCell) throws Exception {
+        return getInternalId(HASH_VALUE_TO_LOCAL_ID, hashValueCell.getString());
+    }
+
+    public void saveInternalId(String idType, String sourceId, String destinationId) throws Exception {
+
+        StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
+        StringMemorySaver cacheValue = new StringMemorySaver(destinationId);
+
+        List<InternalIdMap> batchToSave = null;
+
+        try {
+            cacheLock.lock();
+
+            //check to see if the current value is the same, in which case just return out
+            if (internalIdMapCache.containsKey(cacheKey)) {
+                StringMemorySaver currentValue = internalIdMapCache.get(cacheKey);
+                if (currentValue != null
+                        && currentValue.equals(cacheValue)) {
+                    return;
+                }
+            }
+
+            //add/replace in the cache
+            internalIdMapCache.put(cacheKey, cacheValue);
+
+            //add to the queue to be saved
+            InternalIdMap dbObj = new InternalIdMap();
+            dbObj.setDestinationId(destinationId);
+            dbObj.setSourceId(sourceId);
+            dbObj.setIdType(idType);
+            dbObj.setServiceId(serviceId);
+
+            internalIdSaveBatch.add(dbObj);
+            if (internalIdSaveBatch.size() > TransformConfig.instance().getResourceSaveBatchSize()) {
+                batchToSave = new ArrayList<>(internalIdSaveBatch);
+                internalIdSaveBatch.clear();
+            }
+
+        } finally {
+            cacheLock.unlock();
+        }
+
+        if (batchToSave != null) {
+            saveInternalIdBatch(batchToSave);
+        }
+    }
+
+    private void saveInternalIdBatch(List<InternalIdMap> batch) throws Exception {
+        if (batch.isEmpty()) {
+            return;
+        }
+        internalIdDal.save(batch);
+    }
+
+
+    public String getInternalId(String idType, String sourceId) throws Exception {
+        Set<String> hs = new HashSet<>();
+        hs.add(sourceId);
+
+        Map<String, String> hm = getInternalIds(idType, hs);
+        return hm.get(sourceId);
+    }
+
+    public Map<String, String> getInternalIds(String idType, Set<String> sourceIds) throws Exception {
+
+        Map<String, String> ret = new HashMap<>();
+
+        //check the cache - note we cache null lookups in the cache
+        Set<String> idsForDb = new HashSet<>();
+        for (String sourceId : sourceIds) {
+            StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
+
+            try {
+                cacheLock.lock();
+                if (internalIdMapCache.containsKey(cacheKey)) {
+                    StringMemorySaver cacheValue = internalIdMapCache.get(cacheKey);
+                    if (cacheValue == null) {
+                        //if null was put in the cache, it means we previously checked the DB and found null
+                    } else {
+                        String val = cacheValue.toString();
+                        ret.put(sourceId, val);
+                    }
+                } else {
+                    idsForDb.add(sourceId);
+                }
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+
+        if (!idsForDb.isEmpty()) {
+            Map<String, String> dbResults = internalIdDal.getDestinationIds(serviceId, idType, idsForDb);
+
+            //add to the cache - note we cache lookup failures too
+            try {
+                cacheLock.lock();
+
+                for (String sourceId : idsForDb) {
+                    StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
+
+                    String dbVal = dbResults.get(sourceId);
+                    if (dbVal == null) {
+                        internalIdMapCache.put(cacheKey, null);
+                    } else {
+                        internalIdMapCache.put(cacheKey, new StringMemorySaver(dbVal));
+
+                        ret.put(sourceId, dbVal);
+                    }
+                }
+
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+
+        return ret;
+    }
+
     public Resource retrieveResourceForLocalId(ResourceType resourceType, String locallyUniqueId) throws Exception {
 
         UUID globallyUniqueId = IdHelper.getEdsResourceId(serviceId, resourceType, locallyUniqueId);

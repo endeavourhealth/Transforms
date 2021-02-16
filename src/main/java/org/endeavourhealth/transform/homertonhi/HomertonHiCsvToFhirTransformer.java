@@ -20,8 +20,8 @@ public abstract class HomertonHiCsvToFhirTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonHiCsvToFhirTransformer.class);
 
     public static final String DATE_FORMAT = "yyyy-MM-dd";
-    public static final String TIME_FORMAT = "HH:mm:ss";
-    public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withHeader();  //TODO check files
+    public static final String TIME_FORMAT = "'T'HH:mm:ss";   //note: 'T' prefixed as Homerton date times are DateFormat yyyy-MM-dd'T'HH:mm:ss
+    public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withHeader();
 
     public static void transform(String exchangeBody, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
 
@@ -29,6 +29,11 @@ public abstract class HomertonHiCsvToFhirTransformer {
         UUID serviceId = fhirResourceFiler.getServiceId();
         Service service = DalProvider.factoryServiceDal().getById(serviceId);
         //ExchangeHelper.filterFileTypes(files, service, fhirResourceFiler.getExchangeId());   //TODO: potential file filtering
+
+        if (files.isEmpty()) {
+            LOG.warn("Exchange {} file list is empty for service {} - skipping",  fhirResourceFiler.getExchangeId().toString(), fhirResourceFiler.getServiceId().toString());
+            return;
+        }
 
         LOG.info("Invoking HomertonHi CSV transformer for " + files.size() + " files for service " + service.getName() + " " + service.getId());
 
@@ -39,30 +44,38 @@ public abstract class HomertonHiCsvToFhirTransformer {
         HomertonHiCsvHelper csvHelper
                 = new HomertonHiCsvHelper(fhirResourceFiler.getServiceId(), fhirResourceFiler.getSystemId(), fhirResourceFiler.getExchangeId(), version);
 
-        Map<String, List<ParserI>> parserMap = hashFilesByType(files, exchangeDirectory, csvHelper);
+        Map<String, List<ParserI>> parserMap = hashFilesByType(files, csvHelper);
 
         try {
             // non-patient transforms here
 
-            // process any deletions first by extracting all the deletion hash values to use in each transform
+            // process any deletions first by using the deletion hash value lookups to use in each transform
+            // note ordering of clinical deletions first, then patients
+            ConditionTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition_delete", true), fhirResourceFiler, csvHelper);
+            ProcedureTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure_delete", true), fhirResourceFiler, csvHelper);
+            PersonAliasTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_alias_delete", true), fhirResourceFiler, csvHelper);
+            PersonPhoneTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_phone_delete", true), fhirResourceFiler, csvHelper);
+            PersonAddressTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_address_delete", true), fhirResourceFiler, csvHelper);
+            PersonTransformer.delete(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_delete", true), fhirResourceFiler, csvHelper);
 
-            // process the patient files first, using the Resource caching to collect data from all file before filing
-            PersonTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person", true), fhirResourceFiler, csvHelper);
-            PersonDemographicsTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Demographics", true), fhirResourceFiler, csvHelper);
-            PersonAliasTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Alias", true), fhirResourceFiler, csvHelper);
-            PersonLanguageTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Language", true), fhirResourceFiler, csvHelper);
-            PersonPhoneTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Person_Phone", true), fhirResourceFiler, csvHelper);
+            // process the patient files first, using the Resource caching to collect data from all files before filing
+            PersonTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person", true), fhirResourceFiler, csvHelper);
+            PersonAddressTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_address", true), fhirResourceFiler, csvHelper);
+            PersonDemographicsTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_demographics", true), fhirResourceFiler, csvHelper);
+            PersonAliasTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_alias", true), fhirResourceFiler, csvHelper);
+            PersonLanguageTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_language", true), fhirResourceFiler, csvHelper);
+            PersonPhoneTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "person_phone", true), fhirResourceFiler, csvHelper);
             csvHelper.getPatientCache().filePatientResources(fhirResourceFiler);
 
             // clinical pre-transformers
-            ProcedureCommentTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure_Comment", true), fhirResourceFiler, csvHelper);
+            ProcedureCommentTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure_comment", true), fhirResourceFiler, csvHelper);
 
             // subsequent transforms may refer to Patient resources and pre-transforms, so ensure they're all on the DB before continuing
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
             // clinical transformers
-            ProcedureTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Procedure", true), fhirResourceFiler, csvHelper);
-            ConditionTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "Condition", true), fhirResourceFiler, csvHelper);
+            ProcedureTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "procedure", true), fhirResourceFiler, csvHelper);
+            ConditionTransformer.transform(getParsers(parserMap, csvHelper, fhirResourceFiler, "condition", true), fhirResourceFiler, csvHelper);
 
         } finally {
             //if we had any exception that caused us to bomb out of the transform, we'll have
@@ -71,7 +84,7 @@ public abstract class HomertonHiCsvToFhirTransformer {
         }
     }
 
-    private static Map<String, List<ParserI>> hashFilesByType(List<ExchangePayloadFile> files, String exchangeDirectory, HomertonHiCsvHelper csvHelper) throws Exception {
+    private static Map<String, List<ParserI>> hashFilesByType(List<ExchangePayloadFile> files, HomertonHiCsvHelper csvHelper) throws Exception {
 
         Map<String, List<ParserI>> ret = new HashMap<>();
 
@@ -81,6 +94,9 @@ public abstract class HomertonHiCsvToFhirTransformer {
             String type = fileObj.getType();  //this is set during sftpReader processing
 
             ParserI parser = createParser(file, type, csvHelper);
+
+            if (parser == null)
+                continue;
 
             List<ParserI> list = ret.get(type);
             if (list == null) {
@@ -128,21 +144,44 @@ public abstract class HomertonHiCsvToFhirTransformer {
 
         if (type.equalsIgnoreCase("person")) {
             return new Person(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_delete")) {
+            return new PersonDelete(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_demographics")) {
             return new PersonDemographics(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_alias")) {
             return new PersonAlias(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_alias_delete")) {
+            return new PersonAliasDelete(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_address")) {
+            return new PersonAddress(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_address_delete")) {
+            return new PersonAddressDelete(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_language")) {
             return new PersonLanguage(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("person_phone")) {
             return new PersonPhone(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_phone_delete")) {
+            return new PersonPhoneDelete(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("procedure")) {
             return new Procedure(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("procedure_delete")) {
+            return new ProcedureDelete(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("procedure_comment")) {
             return new ProcedureComment(serviceId, systemId, exchangeId, version, file);
         } else if (type.equalsIgnoreCase("condition")) {
             return new Condition(serviceId, systemId, exchangeId, version, file);
-        } else {
+        } else if (type.equalsIgnoreCase("condition_delete")) {
+            return new ConditionDelete(serviceId, systemId, exchangeId, version, file);
+        } else if (type.equalsIgnoreCase("person_demographics_delete") ||
+                    type.equalsIgnoreCase("procedure_comment_delete") ||
+                    type.equalsIgnoreCase("person_language_delete")) {
+
+            // these delete files are not processed as the delete items are not Id linked to the main resource
+            // and therefore cannot be individually removed. TODO: Further data processing required to see if needed at all
+            LOG.warn("File type ["+type+"] received and not processed");
+            return null;
+        }else {
+
             throw new TransformException("Unknown file type [" + type + "]");
         }
     }

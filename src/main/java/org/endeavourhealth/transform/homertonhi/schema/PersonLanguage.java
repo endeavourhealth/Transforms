@@ -19,22 +19,23 @@ public class PersonLanguage extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
 
             return new String[] {
-                    "EMPI_ID",
-                    "PERSON_SEQ",
-                    "LANG_CODE",
-                    "LANG_DISPLAY",
-                    "LANG_CODING_SYSTEM_ID",
-                    "LANG_RAW_CODING_SYSTEM_ID",
-                    "LANG_RAW_CODE",
-                    "LANG_SEQ",
-                    "SOURCE_TYPE",
-                    "SOURCE_ID",
-                    "SOURCE_VERSION",
-                    "SOURCE_DESCRIPTION",
-                    "POPULATION_ID",
-                    "LANG_PRIMARY_DISPLAY",
-                    "SOURCE_TYPE_KEY",
-                    "HASH_VALUE"
+                    "empi_id",
+                    "person_seq",
+                    "lang_code",
+                    "lang_display",
+                    "lang_coding_system_id",
+                    "lang_raw_coding_system_id",
+                    "lang_raw_code",
+                    "lang_seq",
+                    "source_type",
+                    "source_id",
+                    "source_version",
+                    "source_description",
+                    "population_id",
+                    "lang_primary_display",
+                    "source_type_key",
+                    "reference_id",
+                    "hash_value"
             };
     }
 
@@ -44,18 +45,25 @@ public class PersonLanguage extends AbstractCsvParser {
     }
 
     public CsvCell getPersonEmpiId() {
-        return super.getCell("EMPI_ID");
+        CsvCell id = super.getCell("empi_id");
+        String newId = "empi_id-" + id.getString();
+        CsvCell ret = new CsvCell(id.getPublishedFileId(), id.getRecordNumber(), id.getColIndex(), newId, id.getParentParser());
+        return ret;
     }
 
     public CsvCell getLanguageSequence() {
-        return super.getCell("LANG_SEQ");
+        return super.getCell("lang_seq");
     }
 
-    public CsvCell getLanguageDisplay() { return super.getCell("LANG_DISPLAY"); }
+    public CsvCell getLanguageDisplay() { return super.getCell("lang_display"); }
 
-    public CsvCell getLanguageCernerCodeSystemId() { return super.getCell("LANG_RAW_CODING_SYSTEM_ID"); }
+    public CsvCell getLanguagePrimaryDisplay() { return super.getCell("lang_primary_display"); }
 
-    public CsvCell getLanguageCernerCode() { return super.getCell("LANG_RAW_CODE"); }
+    public CsvCell getLanguageCode() { return super.getCell("lang_code"); }
 
-    public CsvCell getHashValue() { return super.getCell("HASH_VALUE"); }
+    public CsvCell getLanguageCernerCodeSystemId() { return super.getCell("lang_raw_coding_system_id"); }
+
+    public CsvCell getLanguageCernerCode() { return super.getCell("lang_raw_code"); }
+
+    public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }

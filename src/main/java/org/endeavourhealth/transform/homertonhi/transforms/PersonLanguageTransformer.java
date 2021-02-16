@@ -1,18 +1,19 @@
 package org.endeavourhealth.transform.homertonhi.transforms;
 
-import org.endeavourhealth.transform.barts.CodeValueSet;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.homertonhi.HomertonHiCsvHelper;
-import org.endeavourhealth.transform.homertonhi.HomertonHiCodeableConceptHelper;
 import org.endeavourhealth.transform.homertonhi.schema.PersonLanguage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+
+import static org.endeavourhealth.common.fhir.FhirCodeUri.CODE_SYSTEM_NHS_DD;
 
 public class PersonLanguageTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonLanguageTransformer.class);
@@ -24,6 +25,10 @@ public class PersonLanguageTransformer {
         for (ParserI parser: parsers) {
             if (parser != null) {
                 while (parser.nextRecord()) {
+
+                    if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser)parser)) {
+                        continue;
+                    }
                     try {
                         transform((PersonLanguage) parser, fhirResourceFiler, csvHelper);
                     } catch (Exception ex) {
@@ -41,27 +46,41 @@ public class PersonLanguageTransformer {
                                              FhirResourceFiler fhirResourceFiler,
                                              HomertonHiCsvHelper csvHelper) throws Exception {
 
-        //if there is a sequence number and it is not 1 then return out as we only currently support one language
-        CsvCell languageSeqCell = parser.getLanguageSequence();
-        if (!languageSeqCell.isEmpty()) {
-            if (!languageSeqCell.getString().equalsIgnoreCase("1")) {
-                return;
-            }
-        }
+        //NOTE: we only currently support one language.  The sequence numbers in the data files are always 1
+        //so provide no indication of primary / secondary languages anyway.  Deletes not supported.
 
-        CsvCell personEmpiCell = parser.getPersonEmpiId();
-        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiCell, csvHelper);
+        CsvCell personEmpiIdCell = parser.getPersonEmpiId();
+        PatientBuilder patientBuilder = csvHelper.getPatientCache().getPatientBuilder(personEmpiIdCell, csvHelper);
         if (patientBuilder == null) {
             return;
         }
 
         CodeableConceptBuilder.removeExistingCodeableConcept(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, null);
+        CodeableConceptBuilder languageCodeableConceptBuilder
+                = new CodeableConceptBuilder(patientBuilder, CodeableConceptBuilder.Tag.Patient_Language);
 
-        CsvCell languageCodeCell = parser.getLanguageCernerCode();
-        HomertonHiCodeableConceptHelper.applyCodeDescTxt(languageCodeCell, CodeValueSet.LANGUAGE, patientBuilder, CodeableConceptBuilder.Tag.Patient_Language, csvHelper);
+        CsvCell languageDisplayCell = parser.getLanguageDisplay();
+        CsvCell languagePrimaryDisplayCell = parser.getLanguagePrimaryDisplay();
+        CsvCell languageCodeCell = parser.getLanguageCode();
+        //the languages are NHS_DD coded or just free text
+        if (!languageCodeCell.isEmpty()) {
+
+            languageCodeableConceptBuilder.addCoding(CODE_SYSTEM_NHS_DD);
+            languageCodeableConceptBuilder.setCodingCode(languageCodeCell.getString(), languageCodeCell);
+            languageCodeableConceptBuilder.setCodingDisplay(languageDisplayCell.getString(), languageDisplayCell);
+            languageCodeableConceptBuilder.setText(languagePrimaryDisplayCell.getString(), languagePrimaryDisplayCell);
+
+            if (languageCodeCell.getString().equalsIgnoreCase("en")) {
+                patientBuilder.setSpeaksEnglish(Boolean.TRUE, languageCodeCell);
+            }
+
+        } else {
+
+            languageCodeableConceptBuilder.setText(languagePrimaryDisplayCell.getString(), languagePrimaryDisplayCell);
+        }
 
         //no need to save the resource now, as all patient resources are saved at the end of the Patient transform section
         //here we simply return the patient builder to the cache
-        csvHelper.getPatientCache().returnPatientBuilder(personEmpiCell, patientBuilder);
+        csvHelper.getPatientCache().returnPatientBuilder(personEmpiIdCell, patientBuilder);
     }
 }

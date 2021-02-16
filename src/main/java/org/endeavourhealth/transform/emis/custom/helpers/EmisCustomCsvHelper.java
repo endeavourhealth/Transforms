@@ -431,8 +431,10 @@ public class EmisCustomCsvHelper {
 
     public void submitToThreadPool(Callable callable) throws Exception {
         if (this.utilityThreadPool == null) {
-            int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId);
-            this.utilityThreadPool = new ThreadPool(threadPoolSize, 1000, "EmisCustomCsvHelper"); //lower from 50k to save memory
+            //SD-347 the Original Terms transfom seems to be bottlenecks by deserialising FHIR in this pool, so
+            //double the threads to try to improve performance
+            int threadPoolSize = ConnectionManager.getPublisherTransformConnectionPoolMaxSize(serviceId) * 2;
+            this.utilityThreadPool = new ThreadPool(threadPoolSize, 1000, "EmisCustomCsvHelper");
         }
 
         List<ThreadPoolError> errors = utilityThreadPool.submit(callable);

@@ -28,7 +28,7 @@ public class EpisodeOfCareTransformer {
 
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(episodeOfCare);
         identifierBuilder.setSystem("");
-        identifierBuilder.setValue(pv1.getVisitNumber().toString());
+        identifierBuilder.setValue(pv1.getVisitNumber().getID().toString());
 
         episodeOfCare.setStatus(EpisodeOfCare.EpisodeOfCareStatus.ACTIVE);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");

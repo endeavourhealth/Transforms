@@ -165,7 +165,9 @@ public class VisionCodeHelper {
                 //and throw an exception if it's something else
                 if (code.equals("#9V0..")
                         || code.equals("9V0.00")
-                        || code.equals("asthma")) {
+                        || code.equals("asthma")
+                        || code.equals("9mb.00") //SD-358 - new code with empty RUBRIC field, so just treat like the above ones
+                        ) {
                     return code;
 
                 } else {

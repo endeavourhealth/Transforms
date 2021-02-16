@@ -221,15 +221,16 @@ public class EncounterTransformer {
             builder.setEpisodeOfCare(episodeReference);
         }
 
-        String loc[] = String.valueOf(pv1.getAssignedPatientLocation().getPointOfCare()).split(",");
-        if (null!=loc[0] && (!loc[0].isEmpty())) {
+        String loc = String.valueOf(pv1.getAssignedPatientLocation().getPointOfCare());
+        if (null!=loc) {
             Reference patientAssignedLocReference
-                    = ReferenceHelper.createReference(ResourceType.Location, loc[0]);
+                    = ReferenceHelper.createReference(ResourceType.Location, loc);
             if (builder.isIdMapped()) {
                 patientAssignedLocReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientAssignedLocReference, imperialHL7Helper);
             }
             builder.addLocation(patientAssignedLocReference);
+            builder.getLocation().get(0).setStatus(Encounter.EncounterLocationStatus.ACTIVE);
         }
 
         //Todo need to verify the practitioner code
@@ -388,6 +389,28 @@ public class EncounterTransformer {
                 ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(childEncounterBuilder);
                 containedParametersBuilder.removeContainedParameters();
 
+                String patientType = pv1.getPatientType().getValue();
+                if (!Strings.isNullOrEmpty(patientType)  && !patientType.equalsIgnoreCase("\"\"")) {
+
+                    MapColumnRequest propertyRequest = new MapColumnRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "patient_type"
+                    );
+                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                            "patient_type", patientType, IMConstant.IMPERIAL_CERNER
+                    );
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+                    CodeableConcept ccValue = new CodeableConcept();
+                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                            .setSystem(valueResponse.getConcept().getScheme());
+
+                    containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                }
+
+
                 String treatmentFunctionCode = pv1.getHospitalService().getValue();
                 if (!Strings.isNullOrEmpty(treatmentFunctionCode)  && !treatmentFunctionCode.equalsIgnoreCase("\"\"")) {
 
@@ -521,12 +544,13 @@ public class EncounterTransformer {
         EncounterBuilder parentEncounterBuilder
                 = new EncounterBuilder(existingParentEncounter);
 
-        if (existingParentEncounter.hasContained()) {
+        if (existingParentEncounter!= null && existingParentEncounter.hasContained()) {
             ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
             ResourceDalI resourceDal = DalProvider.factoryResourceDal();
 
             for (List_.ListEntryComponent item : listBuilder.getContainedListItems()) {
                 Reference ref = item.getItem();
+
                 ReferenceComponents comps = ReferenceHelper.getReferenceComponents(ref);
                 if (comps.getResourceType() != ResourceType.Encounter) {
                     continue;

@@ -11,18 +11,12 @@ import com.google.common.base.Strings;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.im.models.mapping.MapColumnRequest;
 import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
 import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
-import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
-import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
@@ -50,9 +44,13 @@ public class ObservationTransformer {
      */
     public static ObservationBuilder transformPIDToObservation(PID pid, ObservationBuilder observationBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType) throws Exception {
         CX[] patientIdList = pid.getPatientIDInternalID();
-        String id = String.valueOf(patientIdList[0].getID());
 
         String religion = pid.getReligion().getValue();
+        CodeableConcept ccValue = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
+        observationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
+        // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
+        CodeableConcept ccValue1 = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
+
         if (!Strings.isNullOrEmpty(religion) && !religion.equalsIgnoreCase("\"\"")) {
             MapColumnRequest propertyRequest = new MapColumnRequest(
                     "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
@@ -65,14 +63,46 @@ public class ObservationTransformer {
                     "religion", religion, IMConstant.IMPERIAL_CERNER
             );
             MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
-
-            CodeableConcept ccValue = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
-            observationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
-            // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
-            CodeableConcept ccValue1 = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
             ccValue1.setText(propertyResponse.getConcept().getCode());
             ccValue1.addCoding().setCode(valueResponse.getConcept().getCode())
                     .setSystem(valueResponse.getConcept().getScheme()).setDisplay(religion);
+        }
+        return observationBuilder;
+    }
+
+    /**
+     *
+     * @param pid
+     * @param observationBuilder
+     * @return
+     * @throws Exception
+     */
+    public static ObservationBuilder transformPIDPrimaryLanguageToObservation(PID pid, ObservationBuilder observationBuilder, String msgType) throws Exception {
+        CE primaryLanguage = pid.getPrimaryLanguage();
+        String language = String.valueOf(primaryLanguage.getIdentifier());
+
+        CodeableConcept ccValue = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
+        observationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
+        // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
+        CodeableConcept ccValue1 = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
+
+        if (!Strings.isNullOrEmpty(language) && !language.equalsIgnoreCase("\"\"")) {
+            MapColumnRequest propertyRequest = new MapColumnRequest(
+                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                    "language"
+            );
+            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+
+            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
+                    "language", language, IMConstant.IMPERIAL_CERNER
+            );
+            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+            // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
+            ccValue1.setText(propertyResponse.getConcept().getCode());
+            ccValue1.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme()).setDisplay(language);
         }
         return observationBuilder;
     }

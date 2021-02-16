@@ -1468,6 +1468,10 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         dal.setMissingCodesFixed(this.foundMissingCodes, getServiceId());
     }
 
+    public EmisPatientFiler getPatientFilter() {
+        return patientFilter;
+    }
+
     public void setPatientFilter(EmisPatientFiler patientFilter) {
         this.patientFilter = patientFilter;
     }

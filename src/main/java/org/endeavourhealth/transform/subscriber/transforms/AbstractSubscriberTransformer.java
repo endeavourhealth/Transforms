@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import com.google.common.base.Strings;
 import org.apache.jcs.JCS;
 import org.apache.jcs.access.exception.CacheException;
-import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.IdentifierHelper;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -34,25 +33,56 @@ public abstract class AbstractSubscriberTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractSubscriberTransformer.class);
 
-    private static JCS idCache = null;
-    private static JCS instanceCache = null;
+    private static JCS cachedIdCache = null;
+    private static JCS cachedInstanceCache = null;
+    private static final ReentrantLock jcsLock = new ReentrantLock();
+
     private static final ReentrantLock onDemandLock = new ReentrantLock();
 
-    static {
+    /**
+     * change JCS initialisation to happen only when required, and not when the class is loaded,
+     * otherwise this tries to initialise caches on Messaging API etc. which would never actually use the caches
+     */
+    private static JCS getIdCache() {
+        if (cachedIdCache == null) {
+            try {
+                jcsLock.lock();
+                if (cachedIdCache == null) {
+                    cachedIdCache = JCS.getInstance("SubscriberResourceMap");
+                }
+            } catch (CacheException ex) {
+                throw new RuntimeException("Error initialising cache", ex);
+            } finally {
+                jcsLock.unlock();
+            }
+        }
+        return cachedIdCache;
+    }
+
+    private static JCS getInstanceCache() {
+        if (cachedInstanceCache == null) {
+            try {
+                jcsLock.lock();
+                if (cachedInstanceCache == null) {
+                    cachedInstanceCache = JCS.getInstance("SubscriberInstanceMap");
+                }
+            } catch (CacheException ex) {
+                throw new RuntimeException("Error initialising cache", ex);
+            } finally {
+                jcsLock.unlock();
+            }
+        }
+        return cachedInstanceCache;
+    }
+
+    /*static {
         try {
-
-            //by default the Java Caching System has a load of logging enabled, which is really slow, so turn it off
-            //not longer required, since it no longer uses log4J and the new default doesn't have debug enabled
-            /*org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger("org.apache.jcs");
-            logger.setLevel(org.apache.log4j.Level.OFF);*/
-
             idCache = JCS.getInstance("SubscriberResourceMap");
             instanceCache = JCS.getInstance("SubscriberInstanceMap");
-
         } catch (CacheException ex) {
             throw new RuntimeException("Error initialising cache", ex);
         }
-    }
+    }*/
 
 
     public void transformResources(List<ResourceWrapper> resourceWrappers, SubscriberTransformHelper params) throws Exception {
@@ -281,14 +311,14 @@ public abstract class AbstractSubscriberTransformer {
     }
 
     private static SubscriberId checkCacheForId(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId) throws Exception {
-        return (SubscriberId) idCache.get(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId));
+        return (SubscriberId) getIdCache().get(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId));
     }
 
     private static void addIdToCache(String enterpriseConfigName, SubscriberTableId subscriberTableId, String sourceId, SubscriberId toCache) throws Exception {
         if (toCache == null) {
             return;
         }
-        idCache.put(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId), toCache);
+        getIdCache().put(createSubscriberIdCacheKey(enterpriseConfigName, subscriberTableId, sourceId), toCache);
     }
 
     /*public static Resource deserialiseResouce(ResourceByExchangeBatch resourceByExchangeBatch) throws Exception {
@@ -490,7 +520,7 @@ public abstract class AbstractSubscriberTransformer {
 
     private static UUID checkInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId) {
         Object key = createInstanceMapCacheKey(enterpriseConfigName, resourceType, resourceId);
-        return (UUID) instanceCache.get(key);
+        return (UUID) getInstanceCache().get(key);
     }
 
     /**
@@ -618,7 +648,7 @@ public abstract class AbstractSubscriberTransformer {
     private static void addToInstanceMapCache(String enterpriseConfigName, ResourceType resourceType, UUID resourceId, UUID mappedResourceId) throws Exception {
         Object key = createInstanceMapCacheKey(enterpriseConfigName, resourceType, resourceId);
         //LOG.debug("Added to cache [key:" + key + " value:" + mappedResourceId.toString() + "]");
-        instanceCache.put(key, mappedResourceId);
+        getInstanceCache().put(key, mappedResourceId);
     }
 
     protected static Double getPatientAgeInDecimalYears(Patient patient, Date eventDate) {
