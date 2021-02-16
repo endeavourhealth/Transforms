@@ -131,14 +131,13 @@ public class JournalPreTransformer {
 
             //try to get Ethnicity from Journal
             if (VisionMappingHelper.isPotentialEthnicity(readCode)) {
-                EthnicCategory ethnicCategory = VisionMappingHelper.findEthnicityCode(readCode);
-                if (ethnicCategory != null) {
-                    CsvCell dateCell = parser.getEffectiveDate();
-                    CsvCell timeCell = parser.getEffectiveTime();
-                    Date effectiveDateTime = CsvCell.getDateTimeFromTwoCells(dateCell, timeCell);
 
-                    csvHelper.cacheEthnicity(patientIdCell, effectiveDateTime, ethnicCategory, readCodeCell);
-                }
+                EthnicCategory ethnicCategory = VisionMappingHelper.findEthnicityCode(readCode); //note this might be null if it's an ethnicity code we can't map
+                CsvCell dateCell = parser.getEffectiveDate();
+                CsvCell timeCell = parser.getEffectiveTime();
+                Date effectiveDateTime = CsvCell.getDateTimeFromTwoCells(dateCell, timeCell);
+
+                csvHelper.cacheEthnicity(patientIdCell, effectiveDateTime, ethnicCategory, readCodeCell);
             }
 
             //NOTE - Vision does not have MaritalStatus records in the Journal file so there is no code

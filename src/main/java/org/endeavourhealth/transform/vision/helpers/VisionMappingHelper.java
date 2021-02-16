@@ -6,6 +6,9 @@ import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.ResourceParser;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.vision.VisionCsvHelper;
+import org.endeavourhealth.transform.vision.schema.Patient;
 
 import java.util.Map;
 
@@ -52,6 +55,16 @@ public class VisionMappingHelper {
             //if mapped to a an empty string, just return null
             return null;
         }
+    }
+
+    public static void applyEthnicityCode(VisionCsvHelper.DateAndEthnicityCategory newEthnicity, PatientBuilder patientBuilder) {
+        if (newEthnicity == null) {
+            return;
+        }
+
+        EthnicCategory ethnicCategory = newEthnicity.getEthnicCategory(); //note this might be null if it's an ethnicity code we can't map
+        CsvCell sourceCell = newEthnicity.getSourceCell();
+        patientBuilder.setEthnicity(ethnicCategory, sourceCell);
     }
 
     public static MaritalStatus mapMaritalStatusToValueSet(CsvCell maritalStatusCell) throws Exception {
@@ -127,4 +140,6 @@ public class VisionMappingHelper {
         }
         return value;
     }
+
+
 }
