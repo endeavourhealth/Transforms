@@ -107,14 +107,25 @@ public class PersonAddressTransformer {
 
         // remove existing address if set using the hash_value as the unique id
         AddressBuilder.removeExistingAddressById(patientBuilder, hashValueCell.getString());
-
         AddressBuilder addressBuilder = new AddressBuilder(patientBuilder);
+
+        //address start and end dates are used to derive active or not
+        CsvCell addressBeginDtmCell = parser.getAddressBeginDtm();
+        if (!addressBeginDtmCell.isEmpty()) {
+
+            addressBuilder.setStartDate(addressBeginDtmCell.getDate(), addressBeginDtmCell);
+        }
+        CsvCell addressEndDtmCell = parser.getAddressEndDtm();
+        if (!addressEndDtmCell.isEmpty()) {
+
+            addressBuilder.setStartDate(addressEndDtmCell.getDate(), addressEndDtmCell);
+        }
 
         CsvCell addressTypeDisplayCell = parser.getAddressTypeDisplay();
         if (!addressTypeDisplayCell.isEmpty()) {
 
             String typeDesc = addressTypeDisplayCell.getString();
-            Address.AddressUse use = convertAddressUse(typeDesc, true);   //their active address
+            Address.AddressUse use = convertAddressUse(typeDesc);   //their active address
             if (use != null) {
                 addressBuilder.setUse(use, addressTypeDisplayCell);
             }
@@ -152,12 +163,12 @@ public class PersonAddressTransformer {
         csvHelper.getPatientCache().returnPatientBuilder(personEmpiIdCell, patientBuilder);
     }
 
-    private static Address.AddressUse convertAddressUse(String typeDesc, boolean isActive) throws TransformException {
+    private static Address.AddressUse convertAddressUse(String typeDesc) throws TransformException {
 
-        //FHIR states to use "old" for anything no longer active
-        if (!isActive) {
-            return Address.AddressUse.OLD;
-        }
+        //FHIR states to use "old" for anything no longer active but just use the start and end dates now
+//        if (!isActive) {
+//            return Address.AddressUse.OLD;
+//        }
 
         //NOTE there are 20+ address types in CVREF, but only the types known to be used are mapped below
         if (typeDesc.equalsIgnoreCase("birth address")

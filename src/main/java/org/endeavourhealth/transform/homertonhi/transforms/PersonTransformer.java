@@ -153,6 +153,7 @@ public class PersonTransformer {
         CsvCell titleCell = parser.getPersonNameTitle();
         CsvCell prefixCell = parser.getPersonNamePrefix();
         CsvCell suffixCell = parser.getPersonNameSuffix();
+        CsvCell fullNameCell = parser.getPersonFullName();
 
         if (!titleCell.isEmpty()) {
 
@@ -177,6 +178,10 @@ public class PersonTransformer {
         if (!suffixCell.isEmpty()) {
 
             nameBuilder.addSuffix(suffixCell.getString(), suffixCell);
+        }
+        if (!fullNameCell.isEmpty()) {
+
+            nameBuilder.setText(fullNameCell.getString(), fullNameCell );
         }
 
         //NOTE: phone numbers supported by person_phone transform
