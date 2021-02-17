@@ -229,8 +229,16 @@ public class EncounterTransformer {
                 patientAssignedLocReference
                         = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientAssignedLocReference, imperialHL7Helper);
             }
-            builder.addLocation(patientAssignedLocReference);
-            builder.getLocation().get(0).setStatus(Encounter.EncounterLocationStatus.ACTIVE);
+
+            if(builder.getLocation().size() > 0) {
+                for (int i = 0; i < builder.getLocation().size(); i++) {
+                    builder.getLocation().remove(i);
+                }
+            }
+                builder.addLocation(patientAssignedLocReference);
+                builder.getLocation().get(builder.getLocation().size() - 1).setStatus(Encounter.EncounterLocationStatus.ACTIVE);
+
+
         }
 
         //Todo need to verify the practitioner code
