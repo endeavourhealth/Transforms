@@ -54,14 +54,24 @@ public class CodeAndDate {
         }
     }
 
-    /*public boolean isBefore(DateTimeType other) {
-        if (date == null) {
-            return true;
-        } else if (other == null) {
-            return false;
-        } else {
-            return date.before(other);
-        }
+    public boolean isSameDate(CodeAndDate other) {
 
-    }*/
+        DateTimeType ourDate = getDate();
+        DateTimeType otherDate = other.getDate();
+
+        //handle having a null date
+        if (ourDate == null && otherDate == null) {
+            //if both dates are null count them as the same date
+            return true;
+
+        } else if (ourDate == null || otherDate == null) {
+            //if one or other is null then they're not the same
+            return false;
+
+        } else {
+            //DateTimeType does not implement the equals(..) fn, so must compare the inner values
+            return ourDate.getValue().equals(otherDate.getValue());
+            //return ourDate.equals(otherDate);
+        }
+    }
 }

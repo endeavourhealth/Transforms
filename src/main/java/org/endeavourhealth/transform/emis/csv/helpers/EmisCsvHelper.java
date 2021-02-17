@@ -11,6 +11,7 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
@@ -786,11 +787,28 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }*/
 
-    public void cacheEthnicity(CsvCell patientGuid, CodeAndDate codeAndDate) {
+    public void cacheEthnicity(CsvCell patientGuid, CodeAndDate codeAndDate) throws Exception {
         String localUniquePatientId = createUniqueId(patientGuid, null);
         StringMemorySaver key = new StringMemorySaver(localUniquePatientId);
         CodeAndDate existing = ethnicityMap.get(key);
+
+        boolean addToMap = false;
+
+        //if this new ethnicity code is newer (or there isn't already one cached) then add it
         if (codeAndDate.isAfterOrOtherIsNull(existing)) {
+            addToMap = true;
+
+        } else if (codeAndDate.isSameDate(existing)) {
+
+            //if we already have an ethnicity code on the same date, then overwrite if it doesn't map to an ethnicity value
+            EmisClinicalCode existingCode = existing.getCodeMapping();
+            EthnicCategory existingEc = EmisMappingHelper.findEthnicityCode(existingCode);
+            if (existingEc == null) {
+                addToMap = true;
+            }
+        }
+
+        if (addToMap) {
             ethnicityMap.put(key, codeAndDate);
         }
     }
