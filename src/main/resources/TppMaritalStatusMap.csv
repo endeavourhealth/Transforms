@@ -1,0 +1,40 @@
+SourceCode,SourceTerm,TargetCode,Comment
+1331.,"Single (& [unmarried])",,"Leave blank"
+1332.,"Married (& [remarried] or [newly wed])",M,Married
+1333.,"(Separ (& [from cohab]) or (left home: [husb][wife][cohab]))",L,"Legally Separated"
+1334.,Divorced,D,Divorced
+1335.,Widowed,W,Widowed
+1336.,Cohabiting,T,"Domestic Partner"
+133C.,Widower,W,Widowed
+133F.,"Marital state unknown",,"Leave blank"
+13HE.,"Engaged to be married",,"Leave blank"
+13HF.,"Broken engagement",,"Leave blank"
+13HG.,"(Broken with partner) or (spouse left home)",,"Leave blank"
+Ua0HX,"Marital or partnership status",,"Leave blank"
+Ua0HZ,"Common law partnership",T,"Domestic Partner"
+Ua0Ha,"Number of previous marriages",,"Leave blank"
+Ua1ZI,Polygamous,,"Leave blank"
+Ua1ZL,Monogamous,,"Leave blank"
+XE0oZ,"Single person",,"Leave blank"
+XE0oa,Married,M,Married
+XE0ob,Separated,L,"Legally Separated"
+XE0pE,"Broken with partner",,"Leave blank"
+XM1bE,"Marital status",,"Leave blank"
+XM1bF,"Separated from cohabitee",,"Leave blank"
+XM1bG,"Husband left home",M,Married
+XM1bH,"Wife left home",M,Married
+XM1bI,"Cohabitee left home",,"Leave blank"
+XM1bJ,"Spouse left home",M,Married
+Xa0rc,Remarried,M,Married
+Xa0rd,"Newly wed",M,Married
+Xa96Q,Eloped,M,Married
+XaMz3,"Married/civil partner",M,Married
+XaMz4,"Divorced/person whose civil partnership has been dissolved",D,Divorced
+XaMz6,"Widowed/surviving civil partner",W,Widowed
+XaMz7,"Marital/civil state not disclosed",,"Leave blank"
+Y0673,"Married/Civil Partner",M,Married
+Y0674,"Divorced/Person whose Civil Partnership has been dissolved",D,Divorced
+Y0675,"Widowed/Surviving Civil Partner",W,Widowed
+Y1f8b,"Finding of marital or partnership status",,"Leave blank"
+Y2762,"Single - living with family",,"Leave blank"
+Y2771,"Single - living alone",,"Leave blank"

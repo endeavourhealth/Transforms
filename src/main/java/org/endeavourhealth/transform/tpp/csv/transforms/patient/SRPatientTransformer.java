@@ -9,6 +9,7 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.helpers.TppMappingHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.patient.SRPatient;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -107,19 +108,11 @@ public class SRPatientTransformer {
 
             //see if there is a ethnicity for patient from pre-transformer (but don't set to null if a new one hasn't been received)
             TppCsvHelper.DateAndCode newEthnicity = csvHelper.findEthnicity(rowIdCell);
-            if (newEthnicity != null) {
-                EthnicCategory ethnicCategory = EthnicCategory.fromCode(newEthnicity.getCode());
-                CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
-                patientBuilder.setEthnicity(ethnicCategory, additionalSourceCells);
-            }
+            TppMappingHelper.applyNewEthnicity(newEthnicity, patientBuilder);
 
             //see if there is a marital status for patient from pre-transformer (but don't set to null if a new one hasn't been received)
             TppCsvHelper.DateAndCode newMaritalStatus = csvHelper.findMaritalStatus(rowIdCell);
-            if (newMaritalStatus != null) {
-                MaritalStatus maritalStatus = MaritalStatus.fromCode(newMaritalStatus.getCode());
-                CsvCell[] additionalSourceCells = newMaritalStatus.getAdditionalSourceCells();
-                patientBuilder.setMaritalStatus(maritalStatus, additionalSourceCells);
-            }
+            TppMappingHelper.applyNewMaritalStatus(newMaritalStatus, patientBuilder);
 
             CsvCell testPatientCell = parser.getTestPatient();
             patientBuilder.setTestPatient(testPatientCell.getBoolean(), testPatientCell);

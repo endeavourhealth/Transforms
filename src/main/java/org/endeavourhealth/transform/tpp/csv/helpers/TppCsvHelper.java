@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.helpers;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
@@ -68,7 +69,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private RotaDetailsCache rotaDateAndStaffCache = new RotaDetailsCache();
     private Map<Long, DateAndCode> ethnicityMap = new HashMap<>();
     private Map<Long, DateAndCode> maritalStatusMap = new HashMap<>();
-    private Map<String, EthnicCategory> knownEthnicCodes = new HashMap<>();
     private ThreadPool utilityThreadPool = null;
     private Map<String, ResourceType> codeToTypes = new HashMap<>();
 
@@ -81,7 +81,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
-        buildKnownEthnicCodes();
     }
 
 
@@ -300,18 +299,18 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return referralStatusCache;
     }
 
-    public EthnicCategory getKnownEthnicCategory(String readcode) {
-        if (knownEthnicCodes.containsKey(readcode)) {
-            return knownEthnicCodes.get(readcode);
-        }
-        return null;
-    }
-
     public void cacheEthnicity(CsvCell patientGuid, DateTimeType fhirDate, EthnicCategory ethnicCategory, CsvCell srCodeIdCell) {
+
+        //we may have a null ethnic category, if we know a code is an ethnicity one, but isn't one that can be mapped
+        String code = null;
+        if (ethnicCategory != null) {
+            code = ethnicCategory.getCode();
+        }
+
         DateAndCode dc = ethnicityMap.get(patientGuid.getLong());
         if (dc == null
                 || dc.isBefore(fhirDate)) {
-            ethnicityMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, ethnicCategory.getCode(), srCodeIdCell));
+            ethnicityMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, code, srCodeIdCell));
         }
     }
 
@@ -320,10 +319,17 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void cacheMaritalStatus(CsvCell patientGuid, DateTimeType fhirDate, MaritalStatus maritalStatus, CsvCell srCodeIdCell) {
+
+        //we may have a null ethnic category, if we know a code is a marital status ones, but isn't one that can be mapped
+        String code = null;
+        if (maritalStatus != null) {
+            code = maritalStatus.getCode();
+        }
+
         DateAndCode dc = maritalStatusMap.get(patientGuid.getLong());
         if (dc == null
                 || dc.isBefore(fhirDate)) {
-            maritalStatusMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, maritalStatus.getCode(), srCodeIdCell));
+            maritalStatusMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, code, srCodeIdCell));
         }
     }
 
@@ -547,261 +553,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-    private void buildKnownEthnicCodes() {
-
-        knownEthnicCodes.put("9S1..", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("XactH", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("Xacus", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("Xacut", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("XaFwD", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("XaIuh", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("XaIui", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("XaJRC", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("XaJRD", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("XaJRE", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("XaJRG", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("XaQEa", EthnicCategory.WHITE_BRITISH);
-        knownEthnicCodes.put("9SA9.", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("XactI", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("XacuQ", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("XacuR", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("Xacuu", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("Xacuv", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("XaFwE", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("XaFx2", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("XaJQw", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("XaJRF", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("XaQEb", EthnicCategory.WHITE_IRISH);
-        knownEthnicCodes.put("9SAA.", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("9SAB.", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("9SAC.", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("9T11.", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("9T12.", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XactJ", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XactK", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("Xacux", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("Xacuy", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaedN", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaedQ", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaedS", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaedT", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaedU", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaedV", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaedW", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaFwF", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJQx", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJRg", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJRh", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJRi", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJRj", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJRk", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJRl", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJRm", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSB", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSC", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSD", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSE", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSF", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSG", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSH", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSI", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSJ", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSK", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSL", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSM", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSN", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSO", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSP", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaJSQ", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaR4o", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaR4p", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaR61", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaVw5", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaW8w", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XaW95", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XE2Nz", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XE2O0", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XM1SF", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XM1SG", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XM1SH", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XM1SI", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("XS7AU", EthnicCategory.OTHER_WHITE);
-        knownEthnicCodes.put("9S2..", EthnicCategory.MIXED_CARIBBEAN);
-        knownEthnicCodes.put("XaBz7", EthnicCategory.MIXED_CARIBBEAN);
-        knownEthnicCodes.put("XaBz8", EthnicCategory.MIXED_CARIBBEAN);
-        knownEthnicCodes.put("XactL", EthnicCategory.MIXED_CARIBBEAN);
-        knownEthnicCodes.put("XacuS", EthnicCategory.MIXED_CARIBBEAN);
-        knownEthnicCodes.put("XaIB5", EthnicCategory.MIXED_CARIBBEAN);
-        knownEthnicCodes.put("XaJQy", EthnicCategory.MIXED_CARIBBEAN);
-        knownEthnicCodes.put("XaJRA", EthnicCategory.MIXED_CARIBBEAN);
-        knownEthnicCodes.put("9S3..", EthnicCategory.MIXED_AFRICAN);
-        knownEthnicCodes.put("Xactd", EthnicCategory.MIXED_AFRICAN);
-        knownEthnicCodes.put("XacuT", EthnicCategory.MIXED_AFRICAN);
-        knownEthnicCodes.put("XaIB6", EthnicCategory.MIXED_AFRICAN);
-        knownEthnicCodes.put("XaJQz", EthnicCategory.MIXED_AFRICAN);
-        knownEthnicCodes.put("Xacte", EthnicCategory.MIXED_ASIAN);
-        knownEthnicCodes.put("XacuU", EthnicCategory.MIXED_ASIAN);
-        knownEthnicCodes.put("Xacv0", EthnicCategory.MIXED_ASIAN);
-        knownEthnicCodes.put("Xacv2", EthnicCategory.MIXED_ASIAN);
-        knownEthnicCodes.put("XaJR0", EthnicCategory.MIXED_ASIAN);
-        knownEthnicCodes.put("9S5..", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("9S51.", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("9SB..", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("9SB1.", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("9SB2.", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("9SB3.", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("9SB4.", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("Xactf", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("Xacua", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("Xacuz", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("XaFwG", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("XaJR1", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("XaJRH", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("XaJRI", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("XaJRJ", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("XaJRK", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("XaJRL", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("XaJRM", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("XM1S7", EthnicCategory.OTHER_MIXED);
-        knownEthnicCodes.put("9S6..", EthnicCategory.ASIAN_INDIAN);
-        knownEthnicCodes.put("Xactg", EthnicCategory.ASIAN_INDIAN);
-        knownEthnicCodes.put("Xacuc", EthnicCategory.ASIAN_INDIAN);
-        knownEthnicCodes.put("XaJR2", EthnicCategory.ASIAN_INDIAN);
-        knownEthnicCodes.put("XaJRO", EthnicCategory.ASIAN_INDIAN);
-        knownEthnicCodes.put("XaJRP", EthnicCategory.ASIAN_INDIAN);
-        knownEthnicCodes.put("9S7..", EthnicCategory.ASIAN_PAKISTANI);
-        knownEthnicCodes.put("Xacth", EthnicCategory.ASIAN_PAKISTANI);
-        knownEthnicCodes.put("Xacui", EthnicCategory.ASIAN_PAKISTANI);
-        knownEthnicCodes.put("XaJR3", EthnicCategory.ASIAN_PAKISTANI);
-        knownEthnicCodes.put("9S8..", EthnicCategory.ASIAN_BANGLADESHI);
-        knownEthnicCodes.put("Xacti", EthnicCategory.ASIAN_BANGLADESHI);
-        knownEthnicCodes.put("Xacuj", EthnicCategory.ASIAN_BANGLADESHI);
-        knownEthnicCodes.put("Xacv5", EthnicCategory.ASIAN_BANGLADESHI);
-        knownEthnicCodes.put("XaJR4", EthnicCategory.ASIAN_BANGLADESHI);
-        knownEthnicCodes.put("9SA6.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9SA7.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9SA8.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T13.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T14.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T15.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T16.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T17.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T18.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T19.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T1A.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T1B.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9T1E.", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("Xactk", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("Xacul", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XacvG", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaE4A", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaFwz", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaFx0", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJR5", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRc", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRd", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRe", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRf", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRN", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRQ", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRR", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRS", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRT", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRU", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRV", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJRW", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJSb", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJSU", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJSV", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJSW", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJSX", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XaJSY", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XM1SD", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("XM1SE", EthnicCategory.OTHER_ASIAN);
-        knownEthnicCodes.put("9S42.", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("9SA3.", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("Xactm", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("Xacun", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("Xacva", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("XacvJ", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("XaJR6", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("XE2Nt", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("XM1S8", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("XM1S9", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("XM1SA", EthnicCategory.BLACK_CARIBBEAN);
-        knownEthnicCodes.put("9S44.", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("9SA5.", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("Xacum", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XacvH", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XacvI", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XaJR7", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XaJRX", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XaJRZ", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XaJST", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XE2Nu", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XE2Nw", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XM1S3", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("XM1S4", EthnicCategory.BLACK_AFRICAN);
-        knownEthnicCodes.put("9S4..", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("9S41.", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("9S43.", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("9S45.", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("9S46.", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("9S47.", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("9S48.", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("Xactl", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("Xactn", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("Xacuo", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XacvZ", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XaFwH", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XaFwy", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XaJR8", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XaJRa", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XaJRb", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XaJRY", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XE2Nx", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XE2Ny", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XM1S5", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("XM1S6", EthnicCategory.OTHER_BLACK);
-        knownEthnicCodes.put("9T1C.", EthnicCategory.CHINESE);
-        knownEthnicCodes.put("9T1C.", EthnicCategory.CHINESE);
-        knownEthnicCodes.put("Xactj", EthnicCategory.CHINESE);
-        knownEthnicCodes.put("Xacuk", EthnicCategory.CHINESE);
-        knownEthnicCodes.put("XacvF", EthnicCategory.CHINESE);
-        knownEthnicCodes.put("XaJR9", EthnicCategory.OTHER);
-        knownEthnicCodes.put("9S52.", EthnicCategory.OTHER);
-        knownEthnicCodes.put("9SA..", EthnicCategory.OTHER);
-        knownEthnicCodes.put("9SA1.", EthnicCategory.OTHER);
-        knownEthnicCodes.put("9SA4.", EthnicCategory.OTHER);
-        knownEthnicCodes.put("9T1..", EthnicCategory.OTHER);
-        knownEthnicCodes.put("9T1Y.", EthnicCategory.OTHER);
-        knownEthnicCodes.put("Xacto", EthnicCategory.OTHER);
-        knownEthnicCodes.put("Xactp", EthnicCategory.OTHER);
-        knownEthnicCodes.put("Xacup", EthnicCategory.OTHER);
-        knownEthnicCodes.put("Xacuq", EthnicCategory.OTHER);
-        knownEthnicCodes.put("Xacvb", EthnicCategory.OTHER);
-        knownEthnicCodes.put("Xacvc", EthnicCategory.OTHER);
-        knownEthnicCodes.put("XaFx1", EthnicCategory.OTHER);
-        knownEthnicCodes.put("XaJSa", EthnicCategory.OTHER);
-        knownEthnicCodes.put("XaJSg", EthnicCategory.OTHER);
-        knownEthnicCodes.put("XaJSR", EthnicCategory.OTHER);
-        knownEthnicCodes.put("XaJSS", EthnicCategory.OTHER);
-        knownEthnicCodes.put("XaJSZ", EthnicCategory.OTHER);
-        knownEthnicCodes.put("XaN9x", EthnicCategory.OTHER);
-        knownEthnicCodes.put("XM1SB", EthnicCategory.OTHER);
-        knownEthnicCodes.put("XM1SC", EthnicCategory.OTHER);
-        knownEthnicCodes.put("9SA2.", EthnicCategory.NOT_STATED);
-        knownEthnicCodes.put("9SZ..", EthnicCategory.NOT_STATED);
-        knownEthnicCodes.put("9T1Z.", EthnicCategory.NOT_STATED);
-        knownEthnicCodes.put("XaJRB", EthnicCategory.NOT_STATED);
-        knownEthnicCodes.put("XaJSc", EthnicCategory.NOT_STATED);
-        knownEthnicCodes.put("XaJSd", EthnicCategory.NOT_STATED);
-        knownEthnicCodes.put("XaJSe", EthnicCategory.NOT_STATED);
-        knownEthnicCodes.put("XaJSf", EthnicCategory.NOT_STATED);
-        knownEthnicCodes.put("Y1527", EthnicCategory.NOT_STATED);
-        knownEthnicCodes.put("Y16b7", EthnicCategory.NOT_STATED);
-    }
-
     public StaffMemberCache getStaffMemberCache() {
         return staffMemberCache;
     }
@@ -935,17 +686,8 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
 
-            if (newEthnicity != null) {
-                EthnicCategory ethnicCategory = EthnicCategory.fromCode(newEthnicity.getCode());
-                CsvCell[] additionalSourceCells = newEthnicity.getAdditionalSourceCells();
-                patientBuilder.setEthnicity(ethnicCategory, additionalSourceCells);
-            }
-
-            if (newMaritalStatus != null) {
-                MaritalStatus maritalStatus = MaritalStatus.fromCode(newMaritalStatus.getCode());
-                CsvCell[] additionalSourceCells = newMaritalStatus.getAdditionalSourceCells();
-                patientBuilder.setMaritalStatus(maritalStatus, additionalSourceCells);
-            }
+            TppMappingHelper.applyNewEthnicity(newEthnicity, patientBuilder);
+            TppMappingHelper.applyNewMaritalStatus(newMaritalStatus, patientBuilder);
 
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
@@ -995,6 +737,10 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         public String getCode() {
             return code;
+        }
+
+        public boolean hasCode() {
+            return !Strings.isNullOrEmpty(code);
         }
 
         public CsvCell[] getAdditionalSourceCells() {

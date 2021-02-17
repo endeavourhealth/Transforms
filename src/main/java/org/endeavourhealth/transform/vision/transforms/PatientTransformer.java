@@ -236,7 +236,10 @@ public class PatientTransformer {
 
         transformMaritalStatus(patientBuilder, parser, csvHelper, fhirResourceFiler);
 
-        transformEthnicity(patientBuilder, parser, csvHelper);
+        //the ETHNIC field on the Patient record is just a truncated version of the term of a Journal record,
+        //so get the Ethnicity from the pre-cached Journal pre-transformer
+        VisionCsvHelper.DateAndEthnicityCategory cached = csvHelper.findEthnicity(patientIdCell);
+        VisionMappingHelper.applyEthnicityCode(cached, patientBuilder);
 
         //calculate patient active state based on deduction status
         CsvCell dedDate = parser.getDateOfDeactivation();
@@ -272,23 +275,6 @@ public class PatientTransformer {
         }
 
         return patientBuilder;
-    }
-
-    /**
-     * the ETHNIC field on the Patient record is just a truncated version of the term of a Journal record,
-     * so get the Ethnicity from the pre-cached Journal pre-transformer
-     */
-    private static void transformEthnicity(PatientBuilder patientBuilder, Patient parser, VisionCsvHelper csvHelper) throws Exception {
-
-        CsvCell patientIdCell = parser.getPatientID();
-        VisionCsvHelper.DateAndEthnicityCategory cached = csvHelper.findEthnicity(patientIdCell);
-        if (cached == null) {
-            return;
-        }
-
-        EthnicCategory ethnicCategory = cached.getEthnicCategory();
-        CsvCell sourceCell = cached.getSourceCell();
-        patientBuilder.setEthnicity(ethnicCategory, sourceCell);
     }
 
     /**

@@ -26,6 +26,7 @@ import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.vision.helpers.VisionCodeHelper;
+import org.endeavourhealth.transform.vision.helpers.VisionMappingHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -771,10 +772,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
             }
 
             PatientBuilder patientBuilder = new PatientBuilder(fhirPatient);
-
-            EthnicCategory ethnicCategory = val.getEthnicCategory();
-            CsvCell sourceCell = val.getSourceCell();
-            patientBuilder.setEthnicity(ethnicCategory, sourceCell);
+            VisionMappingHelper.applyEthnicityCode(val, patientBuilder);
 
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
@@ -947,7 +945,7 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         public DateAndEthnicityCategory(Date date, EthnicCategory ethnicCategory, CsvCell sourceCell) {
             this.date = date;
-            this.ethnicCategory = ethnicCategory;
+            this.ethnicCategory = ethnicCategory; //note this might be null if it's an ethnicity code we can't map
             this.sourceCell = sourceCell;
         }
 
