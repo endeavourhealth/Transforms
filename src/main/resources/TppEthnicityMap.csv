@@ -2,9 +2,9 @@ SourceCode,SourceTerm,TargetCode,Comment
 134B.,"Race: Caucasian",C,"Any other White background"
 134C.,"Race: Arab",S,"Any other ethnic group"
 134D.,"Race: Chinese",R,Chinese
-134E.,"Race: Japanese",L,"Any other Asian background"
-134F.,"Race: Korean",L,"Any other Asian background"
-134G.,"Race: Oriental",L,"Any other Asian background"
+134E.,"Race: Japanese",S,"Any other ethnic group"
+134F.,"Race: Korean",S,"Any other ethnic group"
+134G.,"Race: Oriental",S,"Any other ethnic group"
 134H.,"Race: Afro-Caribbean",M,Caribbean
 134I.,"Race: Bangladeshi",K,Bangladeshi
 134J.,"Race: Mixed",G,"Any other mixed background"
@@ -101,7 +101,7 @@ Xa8Es,Race,,"Leave blank"
 XaBEN,"Ethnic groups",,"Leave blank"
 XaBz7,"Black West Indian",M,Caribbean
 XaBz8,"Black Guyana",M,Caribbean
-XaE4A,Vietnamese,L,"Any other Asian background"
+XaE4A,Vietnamese,S,"Any other ethnic group"
 XaE4B,"Ethnic group not given - patient refused",Z,"Not stated"
 XaFwD,"White British",A,British
 XaFwE,"White Irish",B,Irish
@@ -161,10 +161,10 @@ XaJRY,"Mixed Black - ethnic category 2001 census",P,"Any other Black background"
 XaJRZ,"Nigerian - ethnic category 2001 census",P,"Any other Black background"
 XaJRa,"Black British - ethnic category 2001 census",P,"Any other Black background"
 XaJRb,"Other Black or Black unspecified ethnic category 2001 census",P,"Any other Black background"
-XaJRc,"Vietnamese - ethnic category 2001 census",L,"Any other Asian background"
-XaJRd,"Japanese - ethnic category 2001 census",L,"Any other Asian background"
-XaJRe,"Filipino - ethnic category 2001 census",L,"Any other Asian background"
-XaJRf,"Malaysian - ethnic category 2001 census",L,"Any other Asian background"
+XaJRc,"Vietnamese - ethnic category 2001 census",S,"Any other ethnic group"
+XaJRd,"Japanese - ethnic category 2001 census",S,"Any other ethnic group"
+XaJRe,"Filipino - ethnic category 2001 census",S,"Any other ethnic group"
+XaJRf,"Malaysian - ethnic category 2001 census",S,"Any other ethnic group"
 XaJRg,"Cypriot (part not stated) - ethnic category 2001 census",C,"Any other White background"
 XaJRh,"Ulster Scots - ethnic category 2001 census",C,"Any other White background"
 XaJRi,"Greek - ethnic category 2001 census",C,"Any other White background"
