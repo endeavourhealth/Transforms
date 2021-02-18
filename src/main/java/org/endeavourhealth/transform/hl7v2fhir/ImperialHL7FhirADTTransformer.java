@@ -322,6 +322,14 @@ public abstract class ImperialHL7FhirADTTransformer {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
             patientBuilder.setManagingOrganisation(organisationReference);
 
+            Reference practitionerAddCareProviderReference = imperialHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+            practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+
+            Reference OrgAddCareProviderReference= imperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+            OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(OrgAddCareProviderReference);
+
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
         //Patient
@@ -548,6 +556,14 @@ public abstract class ImperialHL7FhirADTTransformer {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
             patientBuilder.setManagingOrganisation(organisationReference);
 
+            Reference practitionerAddCareProviderReference = imperialHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+            practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+
+            Reference OrgAddCareProviderReference= imperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+            OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(OrgAddCareProviderReference);
+
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
         //Patient
@@ -773,6 +789,14 @@ public abstract class ImperialHL7FhirADTTransformer {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
             patientBuilder.setManagingOrganisation(organisationReference);
 
+            Reference practitionerAddCareProviderReference = imperialHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+            practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+
+            Reference OrgAddCareProviderReference= imperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+            OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(OrgAddCareProviderReference);
+
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
         //Patient
@@ -991,6 +1015,14 @@ public abstract class ImperialHL7FhirADTTransformer {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
             patientBuilder.setManagingOrganisation(organisationReference);
 
+            Reference practitionerAddCareProviderReference = imperialHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+            practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+
+            Reference OrgAddCareProviderReference= imperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+            OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(OrgAddCareProviderReference);
+
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
         //Patient
@@ -1177,6 +1209,14 @@ public abstract class ImperialHL7FhirADTTransformer {
             Reference organisationReference = imperialHL7Helper.createOrganizationReference(organizationBuilder.getResourceId());
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
             patientBuilder.setManagingOrganisation(organisationReference);
+
+            Reference practitionerAddCareProviderReference = imperialHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+            practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+
+            Reference OrgAddCareProviderReference= imperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+            OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(OrgAddCareProviderReference);
 
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
@@ -1396,6 +1436,14 @@ public abstract class ImperialHL7FhirADTTransformer {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
             patientBuilder.setManagingOrganisation(organisationReference);
 
+            Reference practitionerAddCareProviderReference = imperialHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+            practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+
+            Reference OrgAddCareProviderReference= imperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+            OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(OrgAddCareProviderReference);
+
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
         //Patient
@@ -1585,6 +1633,14 @@ public abstract class ImperialHL7FhirADTTransformer {
             Reference organisationReference = imperialHL7Helper.createOrganizationReference(organizationBuilder.getResourceId());
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
             patientBuilder.setManagingOrganisation(organisationReference);
+
+            Reference practitionerAddCareProviderReference = imperialHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+            practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+
+            Reference OrgAddCareProviderReference= imperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+            OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(OrgAddCareProviderReference);
 
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
@@ -1807,6 +1863,15 @@ public abstract class ImperialHL7FhirADTTransformer {
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
             patientBuilder.setManagingOrganisation(organisationReference);
 
+            Reference practitionerAddCareProviderReference = imperialHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+            practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+
+            Reference OrgAddCareProviderReference= imperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+            OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(OrgAddCareProviderReference);
+
+
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
         //Patient
@@ -1915,6 +1980,7 @@ public abstract class ImperialHL7FhirADTTransformer {
     /**
      *
      * @param fhirResourceFiler
+     *
      * @param hapiMsg
      * @param imperialHL7Helper
      * @throws Exception
@@ -2028,6 +2094,15 @@ public abstract class ImperialHL7FhirADTTransformer {
             Reference organisationReference = imperialHL7Helper.createOrganizationReference(organizationBuilder.getResourceId());
             organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, imperialHL7Helper);
             patientBuilder.setManagingOrganisation(organisationReference);
+
+            Reference practitionerAddCareProviderReference = imperialHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+            practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+
+            Reference OrgAddCareProviderReference= imperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+            OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, imperialHL7Helper);
+            patientBuilder.addCareProvider(OrgAddCareProviderReference);
+
 
             fhirResourceFiler.savePatientResource(null, false, patientBuilder);
         }
