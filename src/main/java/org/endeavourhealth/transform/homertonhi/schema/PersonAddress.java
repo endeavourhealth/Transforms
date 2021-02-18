@@ -102,5 +102,9 @@ public class PersonAddress extends AbstractCsvParser {
 
     public CsvCell getAddressPostCode() { return super.getCell("postal_cd"); }
 
+    public CsvCell getAddressBeginDtm() { return super.getCell("begin_effective_dt_tm"); }
+
+    public CsvCell getAddressEndDtm() { return super.getCell("end_effective_dt_tm"); }
+
     public CsvCell getHashValue() { return super.getCell("hash_value"); }
 }

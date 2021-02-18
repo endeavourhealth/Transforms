@@ -307,11 +307,25 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
             code = ethnicCategory.getCode();
         }
 
-        DateAndCode dc = ethnicityMap.get(patientGuid.getLong());
-        if (dc == null
-                || dc.isBefore(fhirDate)) {
+        DateAndCode existing = ethnicityMap.get(patientGuid.getLong());
+        boolean addToMap = false;
+
+        if (existing == null
+                || existing.isBefore(fhirDate)) {
+            addToMap = true;
+
+        } else if (existing.isSameDate(fhirDate)) {
+
+            //if we already have an ethnicity code on the same date, then overwrite if it doesn't map to an ethnicity value
+            if (Strings.isNullOrEmpty(existing.getCode())) {
+                addToMap = true;
+            }
+        }
+
+        if (addToMap) {
             ethnicityMap.put(patientGuid.getLong(), new DateAndCode(fhirDate, code, srCodeIdCell));
         }
+
     }
 
     public DateAndCode findEthnicity(CsvCell patientGuid) {
@@ -754,6 +768,19 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
                 return false;
             } else {
                 return date.before(other);
+            }
+
+        }
+
+        public boolean isSameDate(DateTimeType other) {
+            if (date == null && other == null) {
+                return true;
+            } else if (date == null || other == null) {
+                return false;
+            } else {
+                //NOTE: the equals(..) funciton hasn't been implemented, so we need to get the dates out to compare
+                //return date.equals(other);
+                return date.getValue().equals(other.getValue());
             }
 
         }

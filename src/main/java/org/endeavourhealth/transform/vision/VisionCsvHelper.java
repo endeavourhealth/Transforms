@@ -452,9 +452,23 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
 
     public void cacheEthnicity(CsvCell patientIdCell, Date date, EthnicCategory ethnicCategory, CsvCell sourceCell) {
         String key = patientIdCell.getString();
-        DateAndEthnicityCategory dc = ethnicityMap.get(new StringMemorySaver(key));
-        if (dc == null
-            || dc.isBefore(date)) {
+        DateAndEthnicityCategory existing = ethnicityMap.get(new StringMemorySaver(key));
+
+        boolean addToMap = false;
+
+        if (existing == null
+            || existing.isBefore(date)) {
+            addToMap = true;
+
+        } else if (existing.isSameDate(date)) {
+
+            //if we already have an ethnicity code on the same date, then overwrite if it doesn't map to an ethnicity value
+            if (existing.getEthnicCategory() == null) {
+                addToMap = true;
+            }
+        }
+
+        if (addToMap) {
             DateAndEthnicityCategory val = new DateAndEthnicityCategory(date, ethnicCategory, sourceCell);
             ethnicityMap.put(new StringMemorySaver(key), val);
         }
@@ -968,6 +982,17 @@ public class VisionCsvHelper implements HasServiceSystemAndExchangeIdI {
                 return false;
             } else {
                 return date.before(other);
+            }
+
+        }
+
+        public boolean isSameDate(Date other) {
+            if (date == null && other == null) {
+                return true;
+            } else if (date == null || other == null) {
+                return false;
+            } else {
+                return date.equals(other);
             }
 
         }

@@ -13,8 +13,9 @@ SourceCode,SourceTerm,TargetCode,Comment
 134B.,"RACE: Caucasian",C,"Any other White background"
 134C.,"RACE: Arab",S,"Any other ethnic group"
 134D.,"RACE: Chinese",R,Chinese
-134E.,"RACE: Japanese",L,"Any other Asian background"
-134G.,"RACE: Oriental",L,"Any other Asian background"
+134E.,"RACE: Japanese",S,"Any other ethnic group"
+134F.,"RACE: Korean",S,"Any other ethnic group"
+134G.,"RACE: Oriental",S,"Any other ethnic group"
 134H.,"RACE: Afro-caribbean",M,Caribbean
 134I.,"RACE: Bangladeshi",K,Bangladeshi
 134J.,"RACE: Mixed",G,"Any other mixed background"
@@ -71,7 +72,7 @@ SourceCode,SourceTerm,TargetCode,Comment
 9SB4.,"Other ethnic, other mixed orig",G,"Any other mixed background"
 9SB5.,"Black Caribbean and White",D,"White and Black Caribbean"
 9SB6.,"Black African and White",E,"White and Black African"
-9SC..,Vietnamese,L,"Any other Asian background"
+9SC..,Vietnamese,S,"Any other ethnic group"
 9SD..,"Ethnic group - patient refused",Z,"Not stated"
 9SE..,"Ethnic group not recorded",,"Leave blank"
 9SG..,"Other black ethnic group",P,"Any other Black background"
@@ -178,10 +179,10 @@ SourceCode,SourceTerm,TargetCode,Comment
 9iD4.,"Other Black/Black unsp 2001cen",P,"Any other Black background"
 9iE..,"Chinese - ethn cat 2001 census",R,Chinese
 9iF..,"Other - ethn categ 2001 census",S,"Any other ethnic group"
-9iF0.,"Vietnamese eth cat 2001 census",L,"Any other Asian background"
-9iF1.,"Japanese eth categ 2001 census",L,"Any other Asian background"
-9iF2.,"Filipino eth categ 2001 census",L,"Any other Asian background"
-9iF3.,"Malaysian ethn cat 2001 census",L,"Any other Asian background"
+9iF0.,"Vietnamese eth cat 2001 census",S,"Any other ethnic group"
+9iF1.,"Japanese eth categ 2001 census",S,"Any other ethnic group"
+9iF2.,"Filipino eth categ 2001 census",S,"Any other ethnic group"
+9iF3.,"Malaysian ethn cat 2001 census",S,"Any other ethnic group"
 9iF4.,"Buddhist - eth cat 2001 census",S,"Any other ethnic group"
 9iF5.,"Hindu - ethn categ 2001 census",S,"Any other ethnic group"
 9iF6.,"Jewish - eth categ 2001 census",S,"Any other ethnic group"

@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.common;
 
 import com.google.common.base.Strings;
-import com.google.common.primitives.Shorts;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -84,7 +83,13 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         }
 
         if (!Strings.isNullOrEmpty(dateFormat) && !Strings.isNullOrEmpty(timeFormat)) {
-            this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
+
+            if (!timeFormat.startsWith("'T'")) {
+                this.dateTimeFormat = new SimpleDateFormat(dateFormat + " " + timeFormat);
+            } else {
+                //handle "yyyy-MM-dd'T'HH:mm:ss" date time format omitting the space to accommodate the 'T'
+                this.dateTimeFormat = new SimpleDateFormat(dateFormat + timeFormat);
+            }
         } else {
             this.dateTimeFormat = null;
         }
