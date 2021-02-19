@@ -45,6 +45,8 @@ public class HomertonHiCsvHelper implements HasServiceSystemAndExchangeIdI {
     public static final String CODE_TYPE_FREETEXT = "freetext";
     public static final String CODE_TYPE_ICD10_CM_URN = "2.16.840.1.113883.6.90";
     public static final String CODE_TYPE_ICD10_URN = "2.16.840.1.113883.6.3";
+    public static final String CODE_TYPE_PTCARE_URN = "urn:cerner:coding:codingsystem:nomenclature.source_vocab:PTCARE";
+    public static final String CODE_TYPE_CERNER_URN = "urn:cerner:coding:codingsystem:nomenclature.source_vocab:CERNER";
 
     public static final String CODE_TYPE_OPCS4_URN = "2.16.840.1.113883.2.1.3.2.4.16.67";
 

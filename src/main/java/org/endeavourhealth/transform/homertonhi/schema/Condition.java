@@ -119,6 +119,8 @@ public class Condition extends AbstractCsvParser {
 
     public CsvCell getConditionCodingSystemId() { return super.getCell("condition_coding_system_id"); }
 
+    public CsvCell getConditionRawCodingSystemId() { return super.getCell("condition_raw_coding_system_id"); }
+
     public CsvCell getConditionConfirmationStatusDisplay() { return super.getCell("confirmation_status_display"); }
 
     public CsvCell getConditionDisplay() { return super.getCell("condition_display"); }

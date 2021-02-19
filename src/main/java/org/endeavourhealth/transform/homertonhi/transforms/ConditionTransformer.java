@@ -185,14 +185,16 @@ public class ConditionTransformer  {
             conditionBuilder.setOnset(dateTimeType, effectiveDateTimeCell);
         }
 
-        // Conditions are coded either as Snomed or ICD10
-        CsvCell conditionCodeCell = parser.getConditionRawCode();
-        if (!conditionCodeCell.isEmpty()) {
+        // Conditions are coded either as Snomed, ICD10 or occasionally Patient Care(PTCARE) or Cerner
+        CsvCell conditionRawCodeCell = parser.getConditionRawCode();
+        if (!conditionRawCodeCell.isEmpty()) {
 
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(conditionBuilder, CodeableConceptBuilder.Tag.Condition_Main_Code);
 
+            //check for code system first, then raw code system if blank
             CsvCell conditionCodeSystemCell = parser.getConditionCodingSystemId();
+            CsvCell conditionRawCodeSystemCell = parser.getConditionRawCodingSystemId();
             if (!conditionCodeSystemCell.isEmpty()) {
 
                 String conceptCodeSystem = conditionCodeSystemCell.getString();
@@ -200,8 +202,8 @@ public class ConditionTransformer  {
                         conceptCodeSystem.equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_SNOMED_CT_URN)) {
 
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT, conditionCodeSystemCell);
-                    String conditionCode = conditionCodeCell.getString();
-                    codeableConceptBuilder.setCodingCode(conditionCode, conditionCodeCell);
+                    String conditionCode = conditionRawCodeCell.getString();
+                    codeableConceptBuilder.setCodingCode(conditionCode, conditionRawCodeCell);
 
                     CsvCell conditionCodeDisplayCell = parser.getConditionDisplay();
                     codeableConceptBuilder.setCodingDisplay(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
@@ -211,8 +213,8 @@ public class ConditionTransformer  {
                         conceptCodeSystem.equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_ICD10_CM_URN)) {
 
                     codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10, conditionCodeSystemCell);
-                    String conditionCode = conditionCodeCell.getString();
-                    codeableConceptBuilder.setCodingCode(conditionCode, conditionCodeCell);
+                    String conditionCode = conditionRawCodeCell.getString();
+                    codeableConceptBuilder.setCodingCode(conditionCode, conditionRawCodeCell);
 
                     CsvCell conditionCodeDisplayCell = parser.getConditionDisplay();
                     codeableConceptBuilder.setCodingDisplay(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
@@ -228,8 +230,36 @@ public class ConditionTransformer  {
 
                     throw new TransformException(
                             "Unknown Condition code system [" + conceptCodeSystem + "] for code value ["
-                                    + conditionCodeCell.getString()+"] with term ["
+                                    + conditionRawCodeCell.getString()+"] with term ["
                                     + parser.getConditionDisplay().getString()+"]");
+                }
+            } else if (!conditionRawCodeSystemCell.isEmpty()) {
+
+                String conceptRawCodeSystem = conditionRawCodeSystemCell.getString();
+                if (conceptRawCodeSystem.equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_PTCARE_URN)) {
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_PATIENT_CARE, conditionRawCodeSystemCell);
+                    String conditionCode = conditionRawCodeCell.getString();
+                    codeableConceptBuilder.setCodingCode(conditionCode, conditionRawCodeCell);
+
+                    CsvCell conditionCodeDisplayCell = parser.getConditionDisplay();
+                    codeableConceptBuilder.setCodingDisplay(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
+                    codeableConceptBuilder.setText(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
+                } else if (conceptRawCodeSystem.equalsIgnoreCase(HomertonHiCsvHelper.CODE_TYPE_CERNER_URN)) {
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID, conditionRawCodeSystemCell);
+                    String conditionCode = conditionRawCodeCell.getString();
+                    codeableConceptBuilder.setCodingCode(conditionCode, conditionRawCodeCell);
+
+                    CsvCell conditionCodeDisplayCell = parser.getConditionDisplay();
+                    codeableConceptBuilder.setCodingDisplay(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
+                    codeableConceptBuilder.setText(conditionCodeDisplayCell.getString(), conditionCodeDisplayCell);
+                } else {
+
+                    throw new TransformException(
+                            "Unknown Condition raw code system [" + conceptRawCodeSystem + "] for code value ["
+                                    + conditionRawCodeCell.getString() + "] with term ["
+                                    + parser.getConditionDisplay().getString() + "]");
                 }
             }
         } else {
