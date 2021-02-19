@@ -1083,17 +1083,9 @@ public abstract class ImperialHL7FhirADTTransformer {
                 = (Encounter) imperialHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(adtMsg.getPV1().getVisitNumber().getID()));
         if(existingParentEncounter != null) {
             EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
+            EncounterTransformer.deleteEndDate(existingParentEncounter,fhirResourceFiler);
         }
         //Encounter
-
-        //EpisodeOfCare
-        String visitNum = String.valueOf(adtMsg.getPV1().getVisitNumber().getID());
-        EpisodeOfCare episodeOfCare = (EpisodeOfCare)imperialHL7Helper.retrieveResource(visitNum, ResourceType.EpisodeOfCare);
-        if(episodeOfCare != null) {
-            EpisodeOfCareBuilder episodeOfCareBuilder = new EpisodeOfCareBuilder(episodeOfCare);
-            fhirResourceFiler.deletePatientResource(null, false, episodeOfCareBuilder);
-        }
-        //EpisodeOfCare
     }
 
     /**
@@ -2128,7 +2120,7 @@ public abstract class ImperialHL7FhirADTTransformer {
 
         } else {
             Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
-           // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
             observationBuilder.setPatient(patientReference);
 
             fhirResourceFiler.savePatientResource(null, false, observationBuilder);
@@ -2349,13 +2341,13 @@ public abstract class ImperialHL7FhirADTTransformer {
 
         } else {
             Reference patientReference = imperialHL7Helper.createPatientReference(patientBuilder.getResourceId());
-           // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+            // patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
             observationBuilder.setPatient(patientReference);
 
             fhirResourceFiler.savePatientResource(null, false, observationBuilder);
         }
         //Observation
-            newObservation = false;
+        newObservation = false;
         existingObservation = (Observation) imperialHL7Helper.retrieveResource(patientGuid+"Language", ResourceType.Observation);
         if (existingObservation != null) {
             observationBuilder = new ObservationBuilder(existingObservation);

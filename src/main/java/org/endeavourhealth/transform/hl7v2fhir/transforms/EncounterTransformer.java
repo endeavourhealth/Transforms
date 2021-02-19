@@ -123,6 +123,14 @@ public class EncounterTransformer {
         return parentTopEncounterBuilder;
     }
 
+
+    public static void deleteEndDate(Encounter parentEncounterBuilder, FhirResourceFiler fhirResourceFiler) throws Exception{
+        EncounterBuilder encounterBuilder = new EncounterBuilder(parentEncounterBuilder);
+        encounterBuilder.getPeriod().setEnd(null);
+        fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
+    }
+
+
     /**
      *
      * @param pv1
@@ -235,8 +243,8 @@ public class EncounterTransformer {
                     builder.getLocation().remove(i);
                 }
             }
-                builder.addLocation(patientAssignedLocReference);
-                builder.getLocation().get(builder.getLocation().size() - 1).setStatus(Encounter.EncounterLocationStatus.ACTIVE);
+            builder.addLocation(patientAssignedLocReference);
+            builder.getLocation().get(builder.getLocation().size() - 1).setStatus(Encounter.EncounterLocationStatus.ACTIVE);
 
 
         }
@@ -277,8 +285,8 @@ public class EncounterTransformer {
             Reference parentEncounter
                     = ReferenceHelper.createReference(ResourceType.Encounter, patientVisitId);
 
-                parentEncounter
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, imperialHL7Helper);
+            parentEncounter
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, imperialHL7Helper);
 
             builder.setPartOf(parentEncounter);
         }
@@ -427,11 +435,11 @@ public class EncounterTransformer {
                             "treatment_function_code"
                     );
                     MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
-                     MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
                             "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
                             "treatment_function_code", treatmentFunctionCode, IMConstant.IMPERIAL_CERNER
                     );
-                     MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
                     CodeableConcept ccValue = new CodeableConcept();
                     ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -570,7 +578,7 @@ public class EncounterTransformer {
                     if(("EMERGENCY".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A11".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
-                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A12".equalsIgnoreCase(msgType))) {
+                    } else if((("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A12".equalsIgnoreCase(msgType))) || ("ADT_A13".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
                     } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A11".equalsIgnoreCase(msgType))) {
