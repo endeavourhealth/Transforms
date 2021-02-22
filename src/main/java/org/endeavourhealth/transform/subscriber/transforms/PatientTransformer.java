@@ -15,6 +15,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.PseudoIdAudit;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.common.RalfBuilder;
 import org.endeavourhealth.transform.subscriber.*;
@@ -39,6 +40,8 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     //private static final String PREFIX_ADDRESS_MATCH_ID = "-ADDRMATCH-";
 
     private static final PatientLinkDalI patientLinkDal = DalProvider.factoryPatientLinkDal();
+
+    public static final String PROP_CODE_CM_GP_PRACTITIONER_CODE = "CM_GPPractitionerId";
 
     //public static String uprnToken = "";
 
@@ -114,6 +117,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         Integer birthYear = null;
         Integer birthMonth = null;
         Integer birthWeek = null;
+        Long registeredPractitionerId = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
@@ -159,8 +163,19 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 //added try/catch to track down a bug in Cerner->FHIR->Enterprise
                 try {
                     registeredPracticeId = transformOnDemandAndMapId(orgReference, SubscriberTableId.ORGANIZATION, params);
+                    //registeredPractionerId = transformOnDemandAndMapId(pracReference, SubscriberTableId.PRACTITIONER, params);
                 } catch (Throwable t) {
-                    LOG.error("Error finding enterprise ID for reference " + orgReference.getReference());
+                    LOG.error("Error finding enterprise ID for Org reference " + orgReference.getReference());
+                    throw t;
+                }
+            }
+            Reference practitionerReference= findPractitionerReference(fhirPatient, params); //ADT 09
+            if (practitionerReference != null) {
+                //added try/catch to track down a bug in Cerner->FHIR->Enterprise
+                try {
+                    registeredPractitionerId = transformOnDemandAndMapId(practitionerReference, SubscriberTableId.PRACTITIONER, params);
+                } catch (Throwable t) {
+                    LOG.error("Error finding enterprise ID for practitioner reference " + practitionerReference.getReference());
                     throw t;
                 }
             }
@@ -247,6 +262,10 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 birthWeek);
 
         transformPatientAdditionals(fhirPatient, params, subscriberId);
+        //write practitioner id to patient_additional (for A31 message - ADT 09)
+        if (registeredPractitionerId != null) {
+            transformPractitionertoPatientAddtionals(params, subscriberId, registeredPractitionerId);
+        }
     }
 
     private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
@@ -839,7 +858,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         return SubscriberTableId.PATIENT;
     }
 
-
     private Reference findOrgReference(Patient fhirPatient, SubscriberTransformHelper params) throws Exception {
 
         //find a direct org reference first
@@ -880,6 +898,24 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         return null;
     }
 
+    private Reference findPractitionerReference(Patient fhirPatient,
+                                                  SubscriberTransformHelper params) throws Exception {
+        //find a practice reference
+        for (Reference reference : fhirPatient.getCareProvider()) {
+            ReferenceComponents comps = ReferenceHelper.getReferenceComponents(reference);
+            if (comps.getResourceType() == ResourceType.Practitioner) {
+
+                Practitioner practitioner = (Practitioner) params.findOrRetrieveResource(reference);
+                if (practitioner == null
+                        || !practitioner.hasPractitionerRole()) {
+                    continue;
+                } else {
+                    return reference;
+                }
+            }
+        }
+        return null;
+    }
 
     public static String findPostcodePrefix(String postcode) {
 
@@ -1086,6 +1122,18 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         }
 
         return ret;
+    }
+
+    /*
+     * Write practitionerId to patient_additional
+     */
+    private void transformPractitionertoPatientAddtionals(SubscriberTransformHelper params, SubscriberId id, Long practitionerId) throws Exception {
+        OutputContainer outputContainer = params.getOutputContainer();
+        PatientAdditional patientAdditional = outputContainer.getPatientAdditional();
+        Integer propertyConceptDbid =
+                IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, PROP_CODE_CM_GP_PRACTITIONER_CODE) ;//CM_ProblemSignificance
+        //write the IM values to the patient_additional table upsert
+        patientAdditional.writeUpsert(id, propertyConceptDbid, new Integer(practitionerId.intValue()), null);
     }
 
     private void transformPatientAdditionals(Patient fhir, SubscriberTransformHelper params, SubscriberId id) throws Exception {
