@@ -1130,8 +1130,14 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
     private void transformPractitionertoPatientAddtionals(SubscriberTransformHelper params, SubscriberId id, Long practitionerId) throws Exception {
         OutputContainer outputContainer = params.getOutputContainer();
         PatientAdditional patientAdditional = outputContainer.getPatientAdditional();
-        Integer propertyConceptDbid =
-                IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, PROP_CODE_CM_GP_PRACTITIONER_CODE) ;//CM_ProblemSignificance
+        Integer propertyConceptDbid = IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, PROP_CODE_CM_GP_PRACTITIONER_CODE) ;//CM_ProblemSignificance
+
+        //SD-382 - need to track how we're getting a null property ID going into the patient_additional table,
+        //so adding exceptions if we try to send nulls through
+        if (propertyConceptDbid == null) {
+            throw new Exception("Got a null concept ID for property code [" + PROP_CODE_CM_GP_PRACTITIONER_CODE + "] and scheme " + IMConstant.DISCOVERY_CODE);
+        }
+
         //write the IM values to the patient_additional table upsert
         patientAdditional.writeUpsert(id, propertyConceptDbid, new Integer(practitionerId.intValue()), null);
     }
@@ -1176,10 +1182,18 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                                 String valueScheme = parameterValue.getCoding().get(0).getSystem();
 
                                 //we need to look up DBids for both
-                                Integer propertyConceptDbid =
-                                        IMHelper.getIMConcept(propertyScheme, propertyCode);
-                                Integer valueConceptDbid =
-                                        IMHelper.getIMConcept(valueScheme, valueCode);
+                                Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
+                                Integer valueConceptDbid = IMHelper.getIMConcept(valueScheme, valueCode);
+
+                                //SD-382 - need to track how we're getting a null property ID going into the patient_additional table,
+                                //so adding exceptions if we try to send nulls through
+                                if (propertyConceptDbid == null) {
+                                    throw new Exception("Got a null concept ID for property code [" + propertyCode + "] and scheme " + propertyScheme);
+                                }
+                                if (valueConceptDbid == null) {
+                                    throw new Exception("Got a null concept ID for value code [" + valueCode + "] and scheme " + valueScheme);
+                                }
+
                                 //write the IM values to the patient_additional table upsert
                                 patientAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null);
                             } else {
@@ -1193,6 +1207,13 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                                 //the value is a StringType storing JSON
                                 StringType jsonValue = (StringType) parameter.getValue();
+
+                                //SD-382 - need to track how we're getting a null property ID going into the patient_additional table,
+                                //so adding exceptions if we try to send nulls through
+                                if (propertyConceptDbid == null) {
+                                    throw new Exception("Got a null concept ID for property code [" + propertyCode + "] and scheme " + propertyScheme);
+                                }
+
                                 patientAdditional.writeUpsert(id, propertyConceptDbid, null, jsonValue.getValue());
                             }
                         }
