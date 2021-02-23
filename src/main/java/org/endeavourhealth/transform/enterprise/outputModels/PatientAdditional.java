@@ -21,6 +21,11 @@ public class PatientAdditional extends AbstractEnterpriseCsvWriter {
                             String jsonValue
                             ) throws Exception {
 
+        //SD-382 - getting nulls in the property_id field for _additional tables
+        if (propertyId == null) {
+            throw new Exception("Null propertyId value for patient_additional record for patient " + id);
+        }
+
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
                 propertyId,

@@ -46,9 +46,15 @@ public class PatientAdditional extends AbstractTargetTable {
                             Integer valueId,
                             String jsonValue) throws Exception {
 
+        //SD-382 - getting nulls in the property_id field for _additional tables
+        if (propertyId == null) {
+            throw new Exception("Null propertyId value for patient_additional record for patient " + id.getSubscriberId());
+        }
+
         super.printRecord(convertBoolean(false),
                 "" + id.getSubscriberId(),
                 convertInt(propertyId),
                 convertInt(valueId),
-                jsonValue);   }
+                jsonValue);
+    }
 }
