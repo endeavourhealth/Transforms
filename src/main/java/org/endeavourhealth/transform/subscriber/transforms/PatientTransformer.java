@@ -18,6 +18,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.models.Subscrib
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.common.RalfBuilder;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.subscriber.*;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.*;
@@ -262,9 +263,16 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 birthWeek);
 
         transformPatientAdditionals(fhirPatient, params, subscriberId);
+
+
         //write practitioner id to patient_additional (for A31 message - ADT 09)
-        if (registeredPractitionerId != null) {
-            transformPractitionertoPatientAddtionals(params, subscriberId, registeredPractitionerId);
+        //SD-382 - adding isLive to stop this happening in production until it's tested
+        if (!TransformConfig.instance().isLive()) {
+
+            if (registeredPractitionerId != null) {
+                transformPractitionertoPatientAddtionals(params, subscriberId, registeredPractitionerId);
+            }
+
         }
     }
 
