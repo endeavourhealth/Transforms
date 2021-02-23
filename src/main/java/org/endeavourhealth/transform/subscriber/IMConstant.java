@@ -11,7 +11,6 @@ public class IMConstant {
     public static final String OPCS4 = "OPCS4";
     public static final String DISCOVERY_CODE = "CM_DiscoveryCode";
     public static final String NHS_DATA_DICTIONARY = "CM_NHS_DD";
-    public static final String FIN_CODE = "CM_PatientFIN";
     public static final String CDS_LOCAL = "CM_CDS";
     public static final String FHIR_ADMINISTRATIVE_GENDER = "FHIR_AG";
     public static final String FHIR_ETHNIC_CATEGORY = "FHIR_EC";
