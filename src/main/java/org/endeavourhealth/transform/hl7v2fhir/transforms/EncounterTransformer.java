@@ -585,13 +585,13 @@ public class EncounterTransformer {
                         = (Encounter) resourceDal.getCurrentVersionAsResource(imperialHL7Helper.getServiceId(), ResourceType.Encounter, comps.getId());
                 if (childEncounter != null) {
                     boolean deleteChild = false;
-                    if(("EMERGENCY".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A11".equalsIgnoreCase(msgType))) {
+                    if(("EMERGENCY".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A11".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
-                    } else if((("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A12".equalsIgnoreCase(msgType))) || ("ADT_A13".equalsIgnoreCase(msgType))) {
+                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A13".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
-                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A11".equalsIgnoreCase(msgType))) {
+                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A11".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
                     } else if("OUTPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) {
@@ -609,7 +609,7 @@ public class EncounterTransformer {
                 }
             }
             //finally, delete the top level parent
-            if ("ADT_A11".equalsIgnoreCase(msgType)) {
+            if ("A11".equalsIgnoreCase(msgType)) {
                 fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
             }
 
