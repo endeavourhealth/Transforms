@@ -46,7 +46,7 @@ public class EncounterTransformer {
      * @param patientGuid
      * @throws Exception
      */
-    public static void transformPV1ToEncounter(PV1 pv1, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType, String patientGuid) throws Exception {
+    public static void transformPV1ToEncounter(PV1 pv1, CX patientAccountNumber, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType, String patientGuid) throws Exception {
         CX visitNum = pv1.getVisitNumber();
         if(visitNum.getID().getValue() != null) {
             EncounterBuilder encounterBuilder = null;
@@ -56,12 +56,12 @@ public class EncounterTransformer {
             if (existingEncounter != null) {
                 encounterBuilder = new EncounterBuilder(existingEncounter);
                 encounterBuilder = updateExistingEncounterParent(pv1, imperialHL7Helper, msgType, patientGuid, encounterBuilder);
-                createChildEncounters(pv1, encounterBuilder, fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+                createChildEncounters(pv1, patientAccountNumber, encounterBuilder, fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
 
             } else {
                 encounterBuilder = new EncounterBuilder();
                 encounterBuilder = createEncountersParentMinimum(pv1, imperialHL7Helper, msgType, patientGuid, encounterBuilder);
-                createChildEncounters(pv1, encounterBuilder, fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+                createChildEncounters(pv1, patientAccountNumber, encounterBuilder, fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
             }
         }
     }
@@ -301,7 +301,7 @@ public class EncounterTransformer {
      * @param imperialHL7Helper
      * @throws Exception
      */
-    private static void createChildEncounters(PV1 pv1, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType, String patientGuid) throws Exception {
+    private static void createChildEncounters(PV1 pv1, CX patientAccountNumber, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType, String patientGuid) throws Exception {
 
         List<String> encounterIds = new ArrayList<String>();
         if("E".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
@@ -404,6 +404,16 @@ public class EncounterTransformer {
                 //add in additional extended data as Parameters resource with additional extension
                 ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(childEncounterBuilder);
                 containedParametersBuilder.removeContainedParameters();
+
+                if(patientAccountNumber!= null && patientAccountNumber.getID() != null) {
+
+                        CodeableConcept ccValue = new CodeableConcept();
+                        ccValue.addCoding().setCode(patientAccountNumber.getID().getValue())
+                                .setDisplay("Patient FIN");
+
+                        containedParametersBuilder.addParameter("Patient FIN", ccValue);
+                    }
+
 
                 String patientType = pv1.getPatientType().getValue();
                 if (!Strings.isNullOrEmpty(patientType)  && !patientType.equalsIgnoreCase("\"\"")) {
@@ -575,13 +585,13 @@ public class EncounterTransformer {
                         = (Encounter) resourceDal.getCurrentVersionAsResource(imperialHL7Helper.getServiceId(), ResourceType.Encounter, comps.getId());
                 if (childEncounter != null) {
                     boolean deleteChild = false;
-                    if(("EMERGENCY".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A11".equalsIgnoreCase(msgType))) {
+                    if(("EMERGENCY".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A11".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
-                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A13".equalsIgnoreCase(msgType))) {
+                    } else if((("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A12".equalsIgnoreCase(msgType))) || ("ADT_A13".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
-                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A11".equalsIgnoreCase(msgType))) {
+                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("ADT_A11".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
                     } else if("OUTPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) {
@@ -599,7 +609,7 @@ public class EncounterTransformer {
                 }
             }
             //finally, delete the top level parent
-            if ("A11".equalsIgnoreCase(msgType)) {
+            if ("ADT_A11".equalsIgnoreCase(msgType)) {
                 fhirResourceFiler.deletePatientResource(null, false, parentEncounterBuilder);
             }
 
