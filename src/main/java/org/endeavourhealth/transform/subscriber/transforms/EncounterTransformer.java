@@ -46,7 +46,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         org.endeavourhealth.transform.subscriber.targetTables.EncounterEvent targetEncounterEventTable = params.getOutputContainer().getEncounterEvents();
         org.endeavourhealth.transform.subscriber.targetTables.EncounterAdditional targetEncounterAdditionalTable = params.getOutputContainer().getEncounterAdditional();
 
-        Encounter fhir = (Encounter)resourceWrapper.getResource(); //returns null if deleted
+        Encounter fhir = (Encounter) resourceWrapper.getResource(); //returns null if deleted
 
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
@@ -86,10 +86,10 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         if (fhir.hasParticipant()) {
 
-            for (Encounter.EncounterParticipantComponent participantComponent: fhir.getParticipant()) {
+            for (Encounter.EncounterParticipantComponent participantComponent : fhir.getParticipant()) {
 
                 boolean primary = false;
-                for (CodeableConcept codeableConcept: participantComponent.getType()) {
+                for (CodeableConcept codeableConcept : participantComponent.getType()) {
                     for (Coding coding : codeableConcept.getCoding()) {
                         String typeCode = coding.getCode();
                         if (typeCode.equals(EncounterParticipantType.PRIMARY_PERFORMER.getCode()) //used for GP
@@ -162,15 +162,13 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                     && fhir.hasClass_Element()
                     && fhir.getClass_Element().hasExtension()) {
 
-                for (Extension classExtension: fhir.getClass_Element().getExtension()) {
+                for (Extension classExtension : fhir.getClass_Element().getExtension()) {
 
                     if (classExtension.getUrl().equals(FhirExtensionUri.ENCOUNTER_CLASS)) {
                         admissionMethod = "" + classExtension.getValue();
                     }
                 }
-            }
-
-            else {
+            } else {
                 admissionMethod = encounterClass.toCode();
             }
         }
@@ -207,8 +205,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                     datePrecisionConceptId,
                     episodeOfCareId,
                     serviceProviderOrganisationId,
-                      coreConceptId,
-                     nonCoreConceptId,
+                    coreConceptId,
+                    nonCoreConceptId,
                     ageAtEvent,
                     type,
                     subtype,
@@ -245,8 +243,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                     datePrecisionConceptId,
                     episodeOfCareId,
                     serviceProviderOrganisationId,
-                      coreConceptId,
-                     nonCoreConceptId,
+                    coreConceptId,
+                    nonCoreConceptId,
                     ageAtEvent,
                     type,
                     subtype,
@@ -263,7 +261,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
     private void transformEncounterAdditionals(Resource resource, SubscriberTransformHelper params, SubscriberId subscriberId) throws Exception {
 
-        Encounter fhir = (Encounter)resource;
+        Encounter fhir = (Encounter) resource;
 
         //if it has no extension data, then nothing further to do
         if (!fhir.hasExtension()) {
@@ -276,18 +274,18 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         if (additionalExtension != null) {
 
-            Reference idReference = (Reference)additionalExtension.getValue();
+            Reference idReference = (Reference) additionalExtension.getValue();
             String idReferenceValue = idReference.getReference();
             idReferenceValue = idReferenceValue.substring(1); //remove the leading "#" char
 
-            for (Resource containedResource: fhir.getContained()) {
+            for (Resource containedResource : fhir.getContained()) {
                 if (containedResource.getId().equals(idReferenceValue)) {
 
                     OutputContainer outputContainer = params.getOutputContainer();
                     EncounterAdditional encounterAdditional = outputContainer.getEncounterAdditional();
 
                     //additional extension data is stored as Parameter resources
-                    Parameters parameters = (Parameters)containedResource;
+                    Parameters parameters = (Parameters) containedResource;
 
                     //get all the entries in the parameters list
                     List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
@@ -299,7 +297,17 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                         if (parameter.hasName() && parameter.hasValue()) {
 
                             String propertyCode = parameter.getName();
-                            if (!propertyCode.startsWith("JSON_")) {
+                            if (propertyCode.equalsIgnoreCase("Patient FIN")) {
+                                String type = parameter.getValue().getClass().getSimpleName();
+                                String propertyScheme = IMConstant.FIN_CODE;
+                                if (type.equalsIgnoreCase("CodeableConcept")) {
+                                    CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                                    String valueCode = parameterValue.getCoding().get(0).getCode();
+                                    Integer propertyConceptDbid =
+                                            IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, propertyScheme) ;
+                                    encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, Integer.parseInt(valueCode), null);
+                                }
+                            } else if (!propertyCode.startsWith("JSON_")) {
 
                                 //these values are from IM API mapping
                                 String propertyScheme = IMConstant.DISCOVERY_CODE;
@@ -348,7 +356,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             return null;
         }
 
-        for (Encounter.EncounterLocationComponent loc: encounter.getLocation()) {
+        for (Encounter.EncounterLocationComponent loc : encounter.getLocation()) {
             if (loc.getStatus() == Encounter.EncounterLocationStatus.ACTIVE) {
                 Reference ref = loc.getLocation();
                 return transformOnDemandAndMapId(ref, SubscriberTableId.LOCATION, params);
@@ -388,7 +396,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
             return null;
         }
 
-        return (CodeableConcept)extension.getValue();
+        return (CodeableConcept) extension.getValue();
     }
 
 
@@ -464,7 +472,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 && fhir.hasClass_Element()
                 && fhir.getClass_Element().hasExtension()) {
 
-            for (Extension classExtension: fhir.getClass_Element().getExtension()) {
+            for (Extension classExtension : fhir.getClass_Element().getExtension()) {
                 if (classExtension.getUrl().equals(FhirExtensionUri.ENCOUNTER_CLASS)) {
                     return "" + classExtension.getValue();
                 }
@@ -513,7 +521,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         Reference locationReference = null;
 
         //use an active location
-        for (Encounter.EncounterLocationComponent location: fhir.getLocation()) {
+        for (Encounter.EncounterLocationComponent location : fhir.getLocation()) {
             if (location.hasStatus()
                     && location.getStatus() == Encounter.EncounterLocationStatus.ACTIVE) {
 
@@ -523,7 +531,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         //if no active location, use a completed one
         if (locationReference == null) {
-            for (Encounter.EncounterLocationComponent location: fhir.getLocation()) {
+            for (Encounter.EncounterLocationComponent location : fhir.getLocation()) {
                 if (location.hasStatus()
                         && location.getStatus() == Encounter.EncounterLocationStatus.COMPLETED) {
 
@@ -534,7 +542,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         //if no completed or active location any
         if (locationReference == null) {
-            for (Encounter.EncounterLocationComponent location: fhir.getLocation()) {
+            for (Encounter.EncounterLocationComponent location : fhir.getLocation()) {
                 locationReference = location.getLocation();
             }
         }
@@ -551,7 +559,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         if (fhir.hasExtension()) {
             Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
             if (extension != null) {
-                DateTimeType dtt = (DateTimeType)extension.getValue();
+                DateTimeType dtt = (DateTimeType) extension.getValue();
                 return dtt.getValue();
             }
         }
@@ -653,7 +661,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                 && fhir.hasClass_Element()
                 && fhir.getClass_Element().hasExtension()) {
 
-            for (Extension classExtension: fhir.getClass_Element().getExtension()) {
+            for (Extension classExtension : fhir.getClass_Element().getExtension()) {
                 if (classExtension.getUrl().equals(FhirExtensionUri.ENCOUNTER_CLASS)) {
                     //not 100% of the type of the value, so just append to a String
                     clsDesc = "" + classExtension.getValue();
@@ -663,7 +671,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
 
         //get type
         String typeDesc = null;
-        for (CodeableConcept typeCodeableConcept: fhir.getType()) {
+        for (CodeableConcept typeCodeableConcept : fhir.getType()) {
             //there should only be a single codeable concept, so just assign this
             typeDesc = typeCodeableConcept.getText();
         }
