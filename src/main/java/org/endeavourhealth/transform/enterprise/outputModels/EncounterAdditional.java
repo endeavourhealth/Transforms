@@ -20,6 +20,11 @@ public class EncounterAdditional extends AbstractEnterpriseCsvWriter {
                             String jsonValue
                             ) throws Exception {
 
+        //SD-382 - getting nulls in the property_id field for _additional tables
+        if (propertyId == null) {
+            throw new Exception("Null propertyId value for encounter_additional record for encounter " + id);
+        }
+
         super.printRecord(OutputContainer.UPSERT,
                 "" + id,
                 "" + propertyId,

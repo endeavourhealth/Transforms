@@ -46,8 +46,13 @@ public class ObservationAdditional extends AbstractTargetTable {
                             Integer valueId,
                             String jsonValue) throws Exception {
 
+        //SD-382 - getting nulls in the property_id field for _additional tables
+        if (propertyId == null) {
+            throw new Exception("Null propertyId value for observation_additional record for observation " + id.getSubscriberId());
+        }
+
         super.printRecord(convertBoolean(false),
-                convertLong(id.getSubscriberId()),
+                "" + id.getSubscriberId(),
                 convertInt(propertyId),
                 convertInt(valueId),
                 jsonValue);

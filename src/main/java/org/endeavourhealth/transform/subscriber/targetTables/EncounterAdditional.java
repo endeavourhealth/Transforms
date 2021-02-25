@@ -46,6 +46,11 @@ public class EncounterAdditional extends AbstractTargetTable {
                             Integer valueId,
                             String jsonValue) throws Exception {
 
+        //SD-382 - getting nulls in the property_id field for _additional tables
+        if (propertyId == null) {
+            throw new Exception("Null propertyId value for encounter_additional record for encounter " + subscriberId.getSubscriberId());
+        }
+
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 convertInt(propertyId),

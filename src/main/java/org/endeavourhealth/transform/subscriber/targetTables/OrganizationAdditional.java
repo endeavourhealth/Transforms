@@ -52,8 +52,13 @@ public class OrganizationAdditional extends AbstractTargetTable {
 			                String Value,
                             String name) throws Exception {
 
+        //SD-382 - getting nulls in the property_id field for _additional tables
+        if (propertyId == null) {
+            throw new Exception("Null propertyId value for organization_additional record for organization " + id);
+        }
+
         super.printRecord(convertBoolean(false),
-                convertLong(id.getSubscriberId()),
+                "" + id.getSubscriberId(),
                 convertInt(propertyId),
                 convertInt(valueId),
                 jsonValue,
