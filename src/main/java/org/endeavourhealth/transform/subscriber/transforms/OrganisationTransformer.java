@@ -223,6 +223,8 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
         typesToRemove.add(OrganisationType.MEDICINE_SUPPLIER); //SD-267
         typesToRemove.add(OrganisationType.SPECIALISED_COMMISSIONING_HUB); //SD-267
         typesToRemove.add(OrganisationType.TREATMENT_CENTRE); //SD-267
+        typesToRemove.add(OrganisationType.PCT_DERIVED); //SD-389
+        typesToRemove.add(OrganisationType.OUT_OF_HOURS_COST_CENTRE); //SD-389
 
         //for each of the above types, try removing from the set and if we're down to one, use it
         for (OrganisationType t: typesToRemove) {
