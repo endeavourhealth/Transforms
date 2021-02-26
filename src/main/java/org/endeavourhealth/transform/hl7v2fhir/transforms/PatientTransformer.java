@@ -130,7 +130,8 @@ public class PatientTransformer {
                     .setSystem(valueResponse.getConcept().getScheme()).setDisplay("Ethnicity");
             patientBuilder.
         }*/
-
+        ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
+        contactPointBuilder.removeExistingContactPoints(patientBuilder);
         XTN[] phones = pid.getPhoneNumberHome();
         addPhoneData(phones, patientBuilder, fhirResourceFiler, imperialHL7Helper);
 
@@ -150,19 +151,19 @@ public class PatientTransformer {
         for(XTN phone : phones) {
             ID useCd = phone.getTelecommunicationUseCode();
             String phoneString = String.valueOf(phone);
-            String phoneNumber = phoneString.contains("^") ?(String.valueOf(phone).split("\\^"))[0].substring(4,14) : phoneString;
+            String phoneNumber=phone.get9999999X99999CAnyText().toString();
             if("PRN".equalsIgnoreCase(String.valueOf(useCd))) {
-                if (!phoneNumber.isEmpty()) {
+                if ( phoneNumber !=null && !phoneNumber.isEmpty() ) {
                     createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
                 }
 
             } else if("PRS".equalsIgnoreCase(String.valueOf(useCd))) {
-                if (!phoneNumber.isEmpty()) {
+                if (phoneNumber !=null && !phoneNumber.isEmpty()) {
                     createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
                 }
             }
             else if("WPN".equalsIgnoreCase(String.valueOf(useCd))) {
-                if (!phoneNumber.isEmpty()) {
+                if (phoneNumber !=null && !phoneNumber.isEmpty()) {
                     createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.WORK, ContactPoint.ContactPointSystem.PHONE);
                 }
             }
