@@ -89,27 +89,6 @@ public class PatientTransformer {
         ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(patientBuilder);
         containedParametersBuilder.removeContainedParameters();
 
-        CX patientAccountNumber = pid.getPatientAccountNumber();
-        if (!Strings.isNullOrEmpty(patientAccountNumber.getID().getValue())  && !patientAccountNumber.getID().getValue().equalsIgnoreCase("\"\"")) {
-
-            MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                    "patient_FIN_number"
-            );
-            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
-            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                    "patient_FIN_number", patientAccountNumber.getID().getValue(), IMConstant.IMPERIAL_CERNER
-            );
-            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
-
-            CodeableConcept ccValue = new CodeableConcept();
-            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
-                    .setSystem(valueResponse.getConcept().getScheme());
-
-            containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
-        }
-
         /*String ethnicity = pid.getEthnicGroup().getValue();
         if (!Strings.isNullOrEmpty(ethnicity)) {
 

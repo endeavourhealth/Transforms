@@ -299,12 +299,12 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                             String propertyCode = parameter.getName();
                             if (propertyCode.equalsIgnoreCase("Patient FIN")) {
                                 String type = parameter.getValue().getClass().getSimpleName();
-                                String propertyScheme = IMConstant.FIN_CODE;
+                                String code = IMConstant.FIN_CODE;
                                 if (type.equalsIgnoreCase("CodeableConcept")) {
                                     CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
                                     String valueCode = parameterValue.getCoding().get(0).getCode();
                                     Integer propertyConceptDbid =
-                                            IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, propertyScheme) ;
+                                            IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, code) ;
                                     encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, Integer.parseInt(valueCode), null);
                                 }
                             } else if (!propertyCode.startsWith("JSON_")) {
