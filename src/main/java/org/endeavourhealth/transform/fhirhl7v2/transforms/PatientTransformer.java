@@ -522,10 +522,18 @@ public class PatientTransformer {
             DateTimeType dt = (DateTimeType)deceased;
             patientBuilder.setDateOfDeath(dt.getValue());
 
+        } else if (deceased instanceof DateType) {
+            //SD-395 - although FHIR Patient should only have DateTimeType or BooleanType, the HL7 Receiver has sent over
+            //a record with a DateType. Added this handler to deal with that.
+            DateType d = (DateType)deceased;
+            patientBuilder.setDateOfDeath(d.getValue());
+
         } else if (deceased instanceof BooleanType) {
             BooleanType bt = (BooleanType)deceased;
-            if (bt.getValue()) {
+            if (bt.getValue() != null
+                    && bt.getValue().booleanValue()) {
                 patientBuilder.setDateOfDeathBoolean(true);
+
             } else {
                 patientBuilder.clearDateOfDeath();
             }
