@@ -19,6 +19,7 @@ import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.common.RalfBuilder;
 import org.endeavourhealth.transform.common.TransformConfig;
+import org.endeavourhealth.transform.common.TransformConstant;
 import org.endeavourhealth.transform.subscriber.*;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.*;
@@ -118,7 +119,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         Integer birthYear = null;
         Integer birthMonth = null;
         Integer birthWeek = null;
-        Long registeredPractitionerId = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         personId = enterprisePersonId.longValue();
@@ -170,16 +170,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                     throw t;
                 }
             }
-            Reference practitionerReference= findPractitionerReference(fhirPatient, params); //ADT 09
-            if (practitionerReference != null) {
-                //added try/catch to track down a bug in Cerner->FHIR->Enterprise
-                try {
-                    registeredPractitionerId = transformOnDemandAndMapId(practitionerReference, SubscriberTableId.PRACTITIONER, params);
-                } catch (Throwable t) {
-                    LOG.error("Error finding enterprise ID for practitioner reference " + practitionerReference.getReference());
-                    throw t;
-                }
-            }
+
         }
 
         if (fhirPatient.hasBirthDate()) {
@@ -264,16 +255,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         transformPatientAdditionals(fhirPatient, params, subscriberId);
 
-
-        //write practitioner id to patient_additional (for A31 message - ADT 09)
-        //SD-382 - adding isLive to stop this happening in production until it's tested
-        if (!TransformConfig.instance().isLive()) {
-
-            if (registeredPractitionerId != null) {
-                transformPractitionertoPatientAddtionals(params, subscriberId, registeredPractitionerId);
-            }
-
-        }
     }
 
     private void transformTelecoms(long subscriberPatientId, long subscriberPersonId, Patient currentPatient, List<ResourceWrapper> fullHistory, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
@@ -1132,24 +1113,6 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         return ret;
     }
 
-    /*
-     * Write practitionerId to patient_additional
-     */
-    private void transformPractitionertoPatientAddtionals(SubscriberTransformHelper params, SubscriberId id, Long practitionerId) throws Exception {
-        OutputContainer outputContainer = params.getOutputContainer();
-        PatientAdditional patientAdditional = outputContainer.getPatientAdditional();
-        Integer propertyConceptDbid = IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, PROP_CODE_CM_GP_PRACTITIONER_CODE) ;//CM_ProblemSignificance
-
-        //SD-382 - need to track how we're getting a null property ID going into the patient_additional table,
-        //so adding exceptions if we try to send nulls through
-        if (propertyConceptDbid == null) {
-            throw new Exception("Got a null concept ID for property code [" + PROP_CODE_CM_GP_PRACTITIONER_CODE + "] and scheme " + IMConstant.DISCOVERY_CODE);
-        }
-
-        //write the IM values to the patient_additional table upsert
-        patientAdditional.writeUpsert(id, propertyConceptDbid, new Integer(practitionerId.intValue()), null);
-    }
-
     private void transformPatientAdditionals(Patient fhir, SubscriberTransformHelper params, SubscriberId id) throws Exception {
         //if it has no extension data, then nothing further to do
         if (!fhir.hasExtension()) {
@@ -1179,10 +1142,15 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
                         //each parameter entry  will have a key value pair of name and CodeableConcept value
                         if (parameter.hasName() && parameter.hasValue()) {
-
-                            //these values are from IM API mapping
                             String propertyCode = parameter.getName();
-                            if (!propertyCode.startsWith("JSON_")) {
+
+                             // ADT -09 - Parameter to differentiate a GP source data from an HL7 source data and also ensure if this is HL7 source
+                             // then only write to patient additional
+
+                            if (propertyCode != null && propertyCode.equals(TransformConstant.PARAMETER_GP_PRACTITIONER_ID)) {
+                                transformPractitionertoPatientAdditionals (params, id, parameter);
+                            }
+                            else if (!propertyCode.startsWith("JSON_")) {
                                 String propertyScheme = IMConstant.DISCOVERY_CODE;
 
                                 CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
@@ -1228,6 +1196,37 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                     }
                     break;
                 }
+            }
+        }
+    }
+
+    /*
+     * Write practitioner to patient_additional
+     */
+    private void transformPractitionertoPatientAdditionals(SubscriberTransformHelper params, SubscriberId id,
+                                                          Parameters.ParametersParameterComponent parameter) throws Exception {
+        Long registeredPractitionerId = null;
+        OutputContainer outputContainer = params.getOutputContainer();
+        PatientAdditional patientAdditional = outputContainer.getPatientAdditional();
+
+        Integer propertyConceptDbid = IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, PROP_CODE_CM_GP_PRACTITIONER_CODE);
+        //SD-382 - need to track how we're getting a null property ID going into the patient_additional table,
+        //so adding exceptions if we try to send nulls through
+        if (propertyConceptDbid == null) {
+            throw new Exception("Got a null concept ID for property code [" + PROP_CODE_CM_GP_PRACTITIONER_CODE + "] and scheme " + IMConstant.DISCOVERY_CODE);
+        }
+        Reference practitionerReference = (Reference) parameter.getValue();
+        if(practitionerReference != null) {
+            try {
+                registeredPractitionerId = transformOnDemandAndMapId(practitionerReference,
+                        SubscriberTableId.PRACTITIONER, params);
+            } catch (Throwable t) {
+                LOG.error("Error finding enterprise ID for practitioner reference " + practitionerReference.getReference());
+                throw t;
+            }
+            //write patient id, IM value, practitioner id to the patient_additional table upsert
+            if (registeredPractitionerId != null) {
+                patientAdditional.writeUpsert(id, propertyConceptDbid, registeredPractitionerId.intValue(), null);
             }
         }
     }
