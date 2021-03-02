@@ -73,18 +73,10 @@ public abstract class ImperialHL7FhirADTTransformer {
     private static void transformADT_A34(FhirResourceFiler fhirResourceFiler, ADT_A34 hapiMsg, ImperialHL7Helper imperialHL7Helper) throws Exception {
         ADT_A34 adtMsg = hapiMsg;
 
-        //Organization
-
-        OrganizationBuilder organizationBuilderDemographic = null;
-        organizationBuilderDemographic = new OrganizationBuilder();
-        organizationBuilderDemographic = OrganizationTransformer.transformPD1ToOrganization(adtMsg.getPD1(), organizationBuilderDemographic);
-        //Organization
-
         //Patient
         PatientBuilder patientBuilder = null;
         CX[] patientIdList = adtMsg.getPID().getPatientIDInternalID();
         String patientGuid = String.valueOf(patientIdList[0].getID());
-        boolean newPatient = false;
         Patient existingPatient = null;
         existingPatient = (Patient) imperialHL7Helper.retrieveResource(patientGuid, ResourceType.Patient);
         if (existingPatient != null) {
@@ -92,17 +84,10 @@ public abstract class ImperialHL7FhirADTTransformer {
         } else {
             patientBuilder = new PatientBuilder();
             imperialHL7Helper.setUniqueId(patientBuilder, patientGuid, null);
-            newPatient = true;
         }
 
         patientBuilder = PatientTransformer.transformPIDToPatient(adtMsg.getPID(), patientBuilder, fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
 
-        if(newPatient) {
-            patientBuilder.addCareProvider(ImperialHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
-            fhirResourceFiler.savePatientResource(null, true, patientBuilder);
-
-        }
-        //Patient
 
         //Observation
         ObservationBuilder observationBuilder = null;
