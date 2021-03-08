@@ -4,7 +4,10 @@ import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.model.v23.datatype.*;
 import ca.uhn.hl7v2.model.v23.message.*;
 import ca.uhn.hl7v2.model.v23.segment.MSH;
-import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.ReferenceComponents;
+import org.endeavourhealth.common.fhir.ReferenceHelper;
+import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.TransformConstant;
@@ -1095,13 +1098,42 @@ public abstract class ImperialHL7FhirADTTransformer {
         }
         //EpisodeOfCare
 
-        //Encounter
+       //Encounter
         Encounter existingParentEncounter
                 = (Encounter) imperialHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(adtMsg.getPV1().getVisitNumber().getID()));
-        if(existingParentEncounter != null) {
-            EncounterTransformer.deleteEncounterAndChildren(adtMsg.getPV1(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue());
-            EncounterTransformer.deleteEndDate(existingParentEncounter,fhirResourceFiler);
-        } else {
+
+        EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
+
+        if (existingParentEncounter!= null && existingParentEncounter.hasContained()) {
+            ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
+            ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+
+            for (List_.ListEntryComponent item : listBuilder.getContainedListItems()) {
+
+                Reference ref = item.getItem();
+                ReferenceComponents comps = ReferenceHelper.getReferenceComponents(ref);
+                if (comps.getResourceType() != ResourceType.Encounter) {
+                    continue;
+                }
+                Encounter childEncounter
+                        = (Encounter) resourceDal.getCurrentVersionAsResource(imperialHL7Helper.getServiceId(), ResourceType.Encounter, comps.getId());
+
+                if (childEncounter != null) {
+                    EncounterBuilder cBuilder = new EncounterBuilder(childEncounter);
+
+                        if (listBuilder.getContainedListItems().size() == 1) {
+                            cBuilder.getPeriod().setEnd(null);
+                            fhirResourceFiler.savePatientResource(null, false, cBuilder);
+                        } else {
+                            if (cBuilder.getPeriod().getEnd()!=null) {
+                            fhirResourceFiler.deletePatientResource(null, false, cBuilder);
+                        }
+                    }
+                }
+            }
+            EncounterTransformer.deleteEndDate(existingParentEncounter, fhirResourceFiler);
+        }
+        else {
             EncounterTransformer.transformPV1ToEncounter(adtMsg.getPV1(), adtMsg.getPID().getPatientAccountNumber(), fhirResourceFiler, imperialHL7Helper, adtMsg.getMSH().getMessageType().getTriggerEvent().getValue(), patientGuid);
         }
         //Encounter
