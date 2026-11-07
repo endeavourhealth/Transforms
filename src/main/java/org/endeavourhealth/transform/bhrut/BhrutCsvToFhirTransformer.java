@@ -40,6 +40,7 @@ public abstract class BhrutCsvToFhirTransformer {
     public final static  String  IM_EPISODES_TABLE_NAME  ="Episodes";
     public final static  String  IM_OUTPATIENTS_TABLE_NAME  ="Outpatients";
     public final static  String  IM_SPELLS_TABLE_NAME  ="Spells";
+    public final static String IM_REFERRING_CONSULTANT = "REFERRING_CONSULTANT";
     //
     public final static  String  IM_CAUSE_OF_DEATH = "CAUSEOFDEATH";
     public final static  String  IM_CAUSE_OF_DEATH_1B = "CAUSEOFDEATH 1B";
@@ -56,7 +57,9 @@ public abstract class BhrutCsvToFhirTransformer {
     public final static  String  IM_ADMINISTRATIVE_CATEGORY_CODE = "ADMINISTRATIVE_CATEGORY_CODE";
     public final static  String  IM_ADMIN_CATEGORY_CODE = "ADMIN_CATEGORY_CODE";
     public final static  String  IM_APPOINTMENT_STATUS_CODE = "APPOINTMENT_STATUS_CODE";
-
+    public final static String IM_ADMISSION_SPECIALITY_CODE = "ADMISSION_SPECIALTY_CODE";
+    public final static String IM_EPISODE_SPECIALTY_CODE = "EPISODE_SPECIALTY_CODE";
+    public final static String IM_OUTPATIENT_SPECIALTY_CODE = "SPECIALTY_CODE";
     public static final String BHRUT_ORG_ODS_CODE = "RF4";
 
     public static void transform(String exchangeBody, FhirResourceFiler processor, String version) throws Exception {

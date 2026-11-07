@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.adastra.csv.transforms;
 
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.core.terminology.SnomedCode;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -52,14 +53,14 @@ public class CLINICALCODESTransformer {
 
         CsvCell caseId = parser.getCaseId();
         CsvCell consultationId = parser.getConsultationId();
-        CsvCell readCode = parser.getCode();
+        CsvCell clinicalCode = parser.getCode();
 
         String observationId = caseId.getString()
                 + ":" + consultationId.getString()
-                + ":" + readCode.getString();
+                + ":" + clinicalCode.getString();
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
-        observationBuilder.setId(observationId, caseId, consultationId, readCode);
+        observationBuilder.setId(observationId, caseId, consultationId, clinicalCode);
 
         CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (!patientId.isEmpty()) {
@@ -90,26 +91,48 @@ public class CLINICALCODESTransformer {
             observationBuilder.setClinician(practitionerReference, userRefCell);
         }
 
-        if (!readCode.isEmpty()) {
+        //clinicalCode (previously readCode) can now be either Read2, Snomed or something else
+        //SD-884 fixes the setting of Snomed codes against the Read2 scheme now we detect what code type it might be
+        if (!clinicalCode.isEmpty()) {
 
             CodeableConceptBuilder codeableConceptBuilder
                     = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
 
-            // add coding
-            codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
-            codeableConceptBuilder.setCodingCode(readCode.getString(), readCode);
-            CsvCell readTerm = parser.getTerm();
-            codeableConceptBuilder.setCodingDisplay(readTerm.getString(), readTerm);
-            codeableConceptBuilder.setText(readTerm.getString(), readTerm);
+            //work out coding type. Read2 is 5 bytes, Snomed is pure numeric > 5 length
+            String code = clinicalCode.getString().trim();
+            int codeLength = clinicalCode.getString().length();
+            if ((codeLength > 5) && (StringUtils.isNumeric(code))) {
 
-            // attempt translation to Snomed
-            SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(readCode.getString());
-            if (snomedCode != null) {
-
+                // Add Snomed coding only
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
-                codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
-                codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
-             }
+                codeableConceptBuilder.setCodingCode(code, clinicalCode);
+                CsvCell snomedTerm = parser.getTerm();
+                codeableConceptBuilder.setCodingDisplay(snomedTerm.getString(), snomedTerm);
+                codeableConceptBuilder.setText(snomedTerm.getString(), snomedTerm);
+
+            } else if (codeLength == 5 || code.contains("-")) {
+
+                // add 5 byte Read2 coding or Read2 Synonym with hyphen
+                codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_READ2);
+                codeableConceptBuilder.setCodingCode(code, clinicalCode);
+                CsvCell readTerm = parser.getTerm();
+                codeableConceptBuilder.setCodingDisplay(readTerm.getString(), readTerm);
+                codeableConceptBuilder.setText(readTerm.getString(), readTerm);
+
+                // attempt to add Read2 translation to Snomed
+                SnomedCode snomedCode = TerminologyService.translateRead2ToSnomed(code);
+                if (snomedCode != null) {
+
+                    codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
+                    codeableConceptBuilder.setCodingCode(snomedCode.getConceptCode());
+                    codeableConceptBuilder.setCodingDisplay(snomedCode.getTerm());
+                }
+            } else {
+
+                TransformWarnings.log(LOG, parser, "Code scheme not detected for Adastra ClinicalCode: {}, file: {}",
+                        code, parser.getFilePath());
+                return;
+            }
         }
 
         // set consultation/encounter reference

@@ -5,6 +5,7 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -51,7 +52,6 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionConceptId = null;
-        // Long dmdId = null;
         String dose = null;
         BigDecimal quantityValue = null;
         String quantityUnit = null;
@@ -60,10 +60,10 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
         Long medicationStatementId = null;
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
-        // String originalTerm = null;
         String bnfReference = null;
         Double ageAtEvent = null;
         String issueMethod = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -97,17 +97,28 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
             originalTerm = CodeableConceptHelper.findSnomedConceptText(fhir.getMedicationCodeableConcept());
         }*/
 
-        Coding originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getMedicationCodeableConcept());
-        if (originalCoding == null) {
-            //we get lots of free-text medication from TPP, so removed this as there's no point logging it when there's no fix
-            //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+        //SD-567 - handle null medication codeableConcepts including logging the warning to monitor
+        Coding originalCoding;
+        if (fhir.hasMedicationCodeableConcept()) {
+            originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getMedicationCodeableConcept());
+            if (originalCoding == null) {
+                //we get lots of free-text medication from TPP, so removed this as there's no point logging it when there's no fix
+                //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+                return;
+            }
+        } else {
+            TransformWarnings.log(LOG, params, "MedicationOrder {} hasMedicationCodeableConcept==false", fhir.getId());
             return;
         }
         String originalCode = originalCoding.getCode();
-
         String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
+        String restrictMedsVSet = params.getConfig().getImRestrictedMedicationsValueSet();
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay(), restrictMedsVSet);
+        if (nonCoreConceptId == null) {
+            //if no concept returned (filtered out via value set), then skip the resource
+            return;
+        }
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
         if (fhir.hasDosageInstruction()) {
             if (fhir.getDosageInstruction().size() > 1) {
@@ -194,7 +205,9 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
             issueMethod = fhir.getNote();
         }
 
+        dateRecorded = params.includeDateRecorded(fhir);
 
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(subscriberId,
                 organizationId,
                 patientId,
@@ -213,8 +226,9 @@ public class MedicationOrderTransformer extends AbstractSubscriberTransformer {
                 nonCoreConceptId,
                 bnfReference,
                 ageAtEvent,
-                issueMethod);
-
+                issueMethod,
+                dateRecorded,
+                params);
     }
 
     @Override

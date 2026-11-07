@@ -1,21 +1,18 @@
 package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
-import ca.uhn.hl7v2.model.v23.datatype.HD;
 import ca.uhn.hl7v2.model.v23.datatype.ST;
 import ca.uhn.hl7v2.model.v23.datatype.XCN;
 import ca.uhn.hl7v2.model.v23.segment.OBR;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.NameBuilder;
-import org.endeavourhealth.transform.common.resourceBuilders.PractitionerBuilder;
+import org.endeavourhealth.transform.common.TransformConstant;
+import org.endeavourhealth.transform.common.resourceBuilders.*;
+import org.endeavourhealth.transform.hl7v2fhir.helpers.AcuteHL7Helper;
 import org.hl7.fhir.instance.model.HumanName;
 import org.hl7.fhir.instance.model.Practitioner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.hl7.fhir.instance.model.Reference;
+import org.hl7.fhir.instance.model.ResourceType;
 
 public class PractitionerTransformer {
-
-    private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransformer.class);
 
     /**
      *
@@ -24,25 +21,29 @@ public class PractitionerTransformer {
      * @return
      * @throws Exception
      */
-    public static PractitionerBuilder transformPV1ToPractitioner(XCN[] doctor, PractitionerBuilder practitioner) throws Exception {
-        //practitioner.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_PRACTITIONER));
-        practitioner.setActive(true);
+    public static PractitionerBuilder transformToPractitioner(XCN[] doctor, PractitionerBuilder practitioner) throws Exception {
 
-        if(doctor != null && doctor.length > 0) {
-            ST idNum = doctor[0].getIDNumber();
-            ST familyName = doctor[0].getFamilyName();
-            ST givenName = doctor[0].getGivenName();
-            HD assigningAuthority = doctor[0].getAssigningAuthority();
+        if(practitioner!=null && !practitioner.toString().isEmpty()) {
+            practitioner.setActive(true);
 
-            IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitioner);
-            identifierBuilder.setSystem("http://endeavourhealth.org/fhir/Identifier/gmc-number");
-            identifierBuilder.setValue(String.valueOf(idNum));
+            if (doctor != null && doctor.length > 0) {
+                ST idNum = doctor[0].getIDNumber();
+                ST familyName = doctor[0].getFamilyName();
+                ST givenName = doctor[0].getGivenName();
+                ST prefix = doctor[0].getPrefixEgDR();
+                //HD assigningAuthority = doctor[0].getAssigningAuthority();
 
-            practitioner.setId(String.valueOf(idNum));
-            NameBuilder nameBuilder = new NameBuilder(practitioner);
-            nameBuilder.setUse(HumanName.NameUse.USUAL);
-            nameBuilder.addGiven(String.valueOf(givenName));
-            nameBuilder.addFamily(String.valueOf(familyName));
+                IdentifierBuilder identifierBuilder = new IdentifierBuilder(practitioner);
+                identifierBuilder.setSystem("http://endeavourhealth.org/fhir/Identifier/gmc-number");
+                identifierBuilder.setValue(String.valueOf(idNum));
+
+                practitioner.setId(String.valueOf(idNum));
+                NameBuilder nameBuilder = new NameBuilder(practitioner);
+                nameBuilder.setUse(HumanName.NameUse.USUAL);
+                nameBuilder.addGiven(String.valueOf(givenName));
+                nameBuilder.addFamily(String.valueOf(familyName));
+                nameBuilder.addPrefix(String.valueOf(prefix));
+            }
         }
         return practitioner;
     }
@@ -79,4 +80,24 @@ public class PractitionerTransformer {
         fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
     }
 
+    public static void addPractitioner(PatientBuilder patientBuilder, Reference reference) {
+        //add in additional extended data as Parameters resource with additional extension
+        ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(patientBuilder);
+        containedParametersBuilder.removeContainedParameters();
+        containedParametersBuilder.addParameter(TransformConstant.PARAMETER_GP_PRACTITIONER_ID,
+                reference);
+    }
+
+    public static PractitionerBuilder createAcutePractitioner(FhirResourceFiler fhirResourceFiler, XCN[] doctor, OrganizationBuilder organizationBuilder) throws Exception {
+        PractitionerBuilder practitionerBuilder = new PractitionerBuilder();
+        if (doctor != null && doctor.length > 0) {
+            practitionerBuilder = PractitionerTransformer.transformToPractitioner(doctor, practitionerBuilder);
+            if (practitionerBuilder.getResourceId() != null && organizationBuilder.getResourceId() != null) {
+                PractitionerRoleBuilder roleBuilderConsulting = new PractitionerRoleBuilder(practitionerBuilder);
+                roleBuilderConsulting.setRoleManagingOrganisation(AcuteHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
+                fhirResourceFiler.saveAdminResource(null, practitionerBuilder);
+            }
+        }
+        return practitionerBuilder;
+    }
 }

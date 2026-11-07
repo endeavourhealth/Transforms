@@ -4,14 +4,15 @@ import ca.uhn.hl7v2.model.v23.datatype.CX;
 import ca.uhn.hl7v2.model.v23.datatype.TS;
 import ca.uhn.hl7v2.model.v23.datatype.XCN;
 import ca.uhn.hl7v2.model.v23.segment.PV1;
+import ca.uhn.hl7v2.model.v23.segment.EVN;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.ReferenceComponents;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.fhir.schema.EncounterParticipantType;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
-import org.endeavourhealth.im.models.mapping.MapColumnRequest;
-import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.core.database.dal.usermanager.caching.OrganisationCache;
+import org.endeavourhealth.core.database.rdbms.datasharingmanager.models.OrganisationEntity;
 import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
@@ -20,17 +21,17 @@ import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuil
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.EncounterBuilder;
-import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
-import org.endeavourhealth.transform.subscriber.IMConstant;
-import org.endeavourhealth.transform.subscriber.IMHelper;
+import org.endeavourhealth.transform.hl7v2fhir.helpers.AcuteHL7Helper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 public class EncounterTransformer {
 
@@ -41,27 +42,27 @@ public class EncounterTransformer {
      *
      * @param pv1
      * @param fhirResourceFiler
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @param msgType
      * @param patientGuid
      * @throws Exception
      */
-    public static void transformPV1ToEncounter(PV1 pv1, CX patientAccountNumber, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType, String patientGuid) throws Exception {
+    public static void transformPV1ToEncounter(PV1 pv1, EVN evn, CX patientAccountNumber, FhirResourceFiler fhirResourceFiler, AcuteHL7Helper acuteHL7Helper, String msgType, String patientGuid, String odsCode, String msgId) throws Exception {
         CX visitNum = pv1.getVisitNumber();
         if(visitNum.getID().getValue() != null) {
             EncounterBuilder encounterBuilder = null;
             Encounter existingEncounter = null;
             String visitId = String.valueOf(visitNum.getID());
-            existingEncounter = (Encounter) imperialHL7Helper.retrieveResource(visitId, ResourceType.Encounter);
+            existingEncounter = (Encounter) acuteHL7Helper.retrieveResource(visitId, ResourceType.Encounter);
             if (existingEncounter != null) {
                 encounterBuilder = new EncounterBuilder(existingEncounter);
-                encounterBuilder = updateExistingEncounterParent(pv1, imperialHL7Helper, msgType, patientGuid, encounterBuilder);
-                createChildEncounters(pv1, patientAccountNumber, encounterBuilder, fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+                encounterBuilder = updateExistingEncounterParent(pv1, acuteHL7Helper, msgType, patientGuid, encounterBuilder,odsCode);
+                createChildEncounters(pv1,evn, patientAccountNumber, encounterBuilder, fhirResourceFiler, acuteHL7Helper, msgType, patientGuid, odsCode,msgId);
 
             } else {
                 encounterBuilder = new EncounterBuilder();
-                encounterBuilder = createEncountersParentMinimum(pv1, imperialHL7Helper, msgType, patientGuid, encounterBuilder);
-                createChildEncounters(pv1, patientAccountNumber, encounterBuilder, fhirResourceFiler, imperialHL7Helper, msgType, patientGuid);
+                encounterBuilder = createEncountersParentMinimum(pv1, acuteHL7Helper, msgType, patientGuid, encounterBuilder,odsCode);
+                createChildEncounters(pv1,evn, patientAccountNumber, encounterBuilder, fhirResourceFiler, acuteHL7Helper, msgType, patientGuid, odsCode,msgId);
             }
         }
     }
@@ -69,14 +70,14 @@ public class EncounterTransformer {
     /**
      *
      * @param pv1
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @param msgType
      * @param patientGuid
      * @param parentTopEncounterBuilder
      * @return
      * @throws Exception
      */
-    private static EncounterBuilder createEncountersParentMinimum(PV1 pv1, ImperialHL7Helper imperialHL7Helper, String msgType, String patientGuid, EncounterBuilder parentTopEncounterBuilder) throws Exception {
+    private static EncounterBuilder createEncountersParentMinimum(PV1 pv1, AcuteHL7Helper acuteHL7Helper, String msgType, String patientGuid, EncounterBuilder parentTopEncounterBuilder, String odsCode) throws Exception {
         Encounter.EncounterClass classAttr = null;
         if("E".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
             classAttr = Encounter.EncounterClass.EMERGENCY;
@@ -100,16 +101,21 @@ public class EncounterTransformer {
         parentTopEncounterBuilder.setId(String.valueOf(pv1.getVisitNumber().getID()));
 
         TS admitDtTime = pv1.getAdmitDateTime();
-        String startDt = String.valueOf(admitDtTime.getTimeOfAnEvent());
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        Date stDt = formatter.parse(startDt.substring(0,4)+startDt.substring(4,6)+startDt.substring(6,8)+startDt.substring(8,10)+startDt.substring(10,12)+startDt.substring(12,14));
-        parentTopEncounterBuilder.setPeriodStart(stDt);
-
         TS dischargeDtTime = pv1.getDischargeDateTime();
-        Date dsDt = null;
-        if(!dischargeDtTime.isEmpty()) {
-            String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
-            dsDt = formatter.parse(endDt.substring(0,4)+endDt.substring(4,6)+endDt.substring(6,8)+endDt.substring(8,10)+endDt.substring(10,12)+endDt.substring(12,14));
+        Date dsDt=null;
+        if ( !admitDtTime.isEmpty() && admitDtTime !=null) {
+            String startDt = String.valueOf(admitDtTime.getTimeOfAnEvent());
+            DateFormat admitFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+            admitFormat.setTimeZone(TimeZone.getTimeZone("Europe/London"));
+            Date stDt = admitFormat.parse(startDt);
+            parentTopEncounterBuilder.setPeriodStart(stDt);
+
+            if (!dischargeDtTime.isEmpty()) {
+                String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
+                DateFormat dischargeFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+                dischargeFormat.setTimeZone(TimeZone.getTimeZone("Europe/London"));
+                dsDt = dischargeFormat.parse(endDt);
+            }
         }
 
         if (("A03".equalsIgnoreCase(msgType) && (!dischargeDtTime.isEmpty()))) {
@@ -119,7 +125,7 @@ public class EncounterTransformer {
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
         }
 
-        setCommonEncounterAttributes(pv1, parentTopEncounterBuilder, imperialHL7Helper, patientGuid, false);
+        setCommonEncounterAttributes(pv1, parentTopEncounterBuilder, acuteHL7Helper, patientGuid, false, odsCode);
         return parentTopEncounterBuilder;
     }
 
@@ -134,14 +140,14 @@ public class EncounterTransformer {
     /**
      *
      * @param pv1
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @param msgType
      * @param patientGuid
      * @param parentTopEncounterBuilder
      * @return
      * @throws Exception
      */
-    private static EncounterBuilder updateExistingEncounterParent(PV1 pv1, ImperialHL7Helper imperialHL7Helper, String msgType, String patientGuid, EncounterBuilder parentTopEncounterBuilder) throws Exception {
+    private static EncounterBuilder updateExistingEncounterParent(PV1 pv1, AcuteHL7Helper acuteHL7Helper, String msgType, String patientGuid, EncounterBuilder parentTopEncounterBuilder, String odsCode) throws Exception {
         Encounter.EncounterClass classAttr = null;
         if("E".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
             classAttr = Encounter.EncounterClass.EMERGENCY;
@@ -164,17 +170,21 @@ public class EncounterTransformer {
         parentTopEncounterBuilder.setClass(classAttr);
 
         TS admitDtTime = pv1.getAdmitDateTime();
-        String startDt = String.valueOf(admitDtTime.getTimeOfAnEvent());
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        Date stDt = formatter.parse(startDt.substring(0,4)+startDt.substring(4,6)+startDt.substring(6,8)+startDt.substring(8,10)+startDt.substring(10,12)+startDt.substring(12,14));
-        parentTopEncounterBuilder.setPeriodStart(stDt);
-
         TS dischargeDtTime = pv1.getDischargeDateTime();
-        Date dsDt = null;
-        if(!dischargeDtTime.isEmpty()) {
-            String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
-            dsDt = formatter.parse(endDt.substring(0,4)+endDt.substring(4,6)+endDt.substring(6,8)+endDt.substring(8,10)+endDt.substring(10,12)+endDt.substring(12,14));
+        Date dsDt=null;
+        if ( !admitDtTime.isEmpty() && admitDtTime !=null) {
+            String startDt = String.valueOf(admitDtTime.getTimeOfAnEvent());
+            DateFormat admitFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+            admitFormat.setTimeZone(TimeZone.getTimeZone("Europe/London"));
+            Date stDt = admitFormat.parse(startDt);
+            parentTopEncounterBuilder.setPeriodStart(stDt);
 
+            if (!dischargeDtTime.isEmpty()) {
+                String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
+                DateFormat dischargeFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+                dischargeFormat.setTimeZone(TimeZone.getTimeZone("Europe/London"));
+                dsDt = dischargeFormat.parse(endDt);
+            }
         }
 
         if (("A03".equalsIgnoreCase(msgType) && (!dischargeDtTime.isEmpty()))) {
@@ -183,7 +193,7 @@ public class EncounterTransformer {
         } else {
             parentTopEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
         }
-        setCommonEncounterAttributes(pv1, parentTopEncounterBuilder, imperialHL7Helper, patientGuid, false);
+        setCommonEncounterAttributes(pv1, parentTopEncounterBuilder, acuteHL7Helper, patientGuid, false,odsCode);
 
         return parentTopEncounterBuilder;
     }
@@ -192,10 +202,10 @@ public class EncounterTransformer {
      *
      * @param pv1
      * @param builder
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @throws Exception
      */
-    private static void setCommonEncounterAttributes(PV1 pv1, EncounterBuilder builder, ImperialHL7Helper imperialHL7Helper, String patientGuid, boolean encounterInd) throws Exception {
+    private static void setCommonEncounterAttributes(PV1 pv1, EncounterBuilder builder, AcuteHL7Helper acuteHL7Helper, String patientGuid, boolean encounterInd, String odsCode) throws Exception {
 
         String patientId = String.valueOf(patientGuid);
         String patientVisitId = String.valueOf(pv1.getVisitNumber().getID());
@@ -214,7 +224,7 @@ public class EncounterTransformer {
         if (null!=patientId && !patientId.isEmpty()) {
             Reference patientReference = ReferenceHelper.createReference(ResourceType.Patient, patientId);
             if (builder.isIdMapped()) {
-                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, imperialHL7Helper);
+                patientReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientReference, acuteHL7Helper);
             }
             builder.setPatient(patientReference);
         }
@@ -224,7 +234,7 @@ public class EncounterTransformer {
                     = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, patientVisitId);
             if (builder.isIdMapped()) {
                 episodeReference
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, imperialHL7Helper);
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(episodeReference, acuteHL7Helper);
             }
             builder.setEpisodeOfCare(episodeReference);
         }
@@ -235,7 +245,7 @@ public class EncounterTransformer {
                     = ReferenceHelper.createReference(ResourceType.Location, loc);
             if (builder.isIdMapped()) {
                 patientAssignedLocReference
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientAssignedLocReference, imperialHL7Helper);
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(patientAssignedLocReference, acuteHL7Helper);
             }
 
             if(builder.getLocation().size() > 0) {
@@ -249,14 +259,13 @@ public class EncounterTransformer {
 
         }
 
-        //Todo need to verify the practitioner code
         if (null!=consultingDoctorId && (!consultingDoctorId.isEmpty())) {
             Reference practitionerReference
                     = ReferenceHelper.createReference(ResourceType.Practitioner, consultingDoctorId);
             if (builder.isIdMapped()) {
 
                 practitionerReference
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, imperialHL7Helper);
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReference, acuteHL7Helper);
             }
             builder.addParticipant(practitionerReference, EncounterParticipantType.PRIMARY_PERFORMER);
         }
@@ -267,17 +276,20 @@ public class EncounterTransformer {
             if (builder.isIdMapped()) {
 
                 practitionerReferenceRd
-                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReferenceRd, imperialHL7Helper);
+                        = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerReferenceRd, acuteHL7Helper);
             }
             builder.addParticipant(practitionerReferenceRd, EncounterParticipantType.SECONDARY_PERFORMER);
         }
 
+        OrganisationEntity org = OrganisationCache.getOrganisationDetailsFromOdsCode(odsCode);
+        String name = org.getName();
+
         Reference organizationReference
-                = ReferenceHelper.createReference(ResourceType.Organization, "Imperial College Healthcare NHS Trust");
+                = ReferenceHelper.createReference(ResourceType.Organization, name);
         if (builder.isIdMapped()) {
 
             organizationReference
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, imperialHL7Helper);
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(organizationReference, acuteHL7Helper);
         }
         builder.setServiceProvider(organizationReference);
 
@@ -286,7 +298,7 @@ public class EncounterTransformer {
                     = ReferenceHelper.createReference(ResourceType.Encounter, patientVisitId);
 
             parentEncounter
-                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, imperialHL7Helper);
+                    = IdHelper.convertLocallyUniqueReferenceToEdsReference(parentEncounter, acuteHL7Helper);
 
             builder.setPartOf(parentEncounter);
         }
@@ -298,44 +310,62 @@ public class EncounterTransformer {
      * @param pv1
      * @param existingParentEncounterBuilder
      * @param fhirResourceFiler
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @throws Exception
      */
-    private static void createChildEncounters(PV1 pv1, CX patientAccountNumber, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType, String patientGuid) throws Exception {
+    private static void createChildEncounters(PV1 pv1,EVN evn, CX patientAccountNumber, EncounterBuilder existingParentEncounterBuilder, FhirResourceFiler fhirResourceFiler, AcuteHL7Helper acuteHL7Helper, String msgType, String patientGuid, String odsCode, String msgId) throws Exception {
 
         List<String> encounterIds = new ArrayList<String>();
         if("E".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
             if ("A03".equalsIgnoreCase(msgType)) {
-                encounterIds.add(pv1.getVisitNumber().getID() + ":02:EM");
-
-            } else if ("A08".equalsIgnoreCase(msgType)) {
-                Encounter existingChildEncounter = (Encounter) imperialHL7Helper.retrieveResource(pv1.getVisitNumber().getID() + ":02:EM", ResourceType.Encounter);
-                encounterIds.add(pv1.getVisitNumber().getID() + ":01:EM");
-                if(existingChildEncounter != null) {
-                    encounterIds.add(pv1.getVisitNumber().getID() + ":02:EM");
+                encounterIds.add(pv1.getVisitNumber().getID() + ":30:EM");
+            }  else if ("A02".equalsIgnoreCase(msgType)) {
+                encounterIds.add(pv1.getVisitNumber().getID() + ":20:EM");
+            }  else if ("A08".equalsIgnoreCase(msgType)) {
+                Encounter existChildEnctDisc = (Encounter) acuteHL7Helper.retrieveResource(pv1.getVisitNumber().getID() + ":30:EM", ResourceType.Encounter);
+                encounterIds.add(pv1.getVisitNumber().getID() + ":10:EM");
+                if(existChildEnctDisc != null) {
+                    encounterIds.add(pv1.getVisitNumber().getID() + ":30:EM");
                 }
-
-            } else {
-                encounterIds.add(pv1.getVisitNumber().getID() + ":01:EM");
+            }
+            else {
+                encounterIds.add(pv1.getVisitNumber().getID() + ":10:EM");
             }
 
         } else if("I".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
             if ("A03".equalsIgnoreCase(msgType)) {
-                encounterIds.add(pv1.getVisitNumber().getID() + ":02:IP");
+                encounterIds.add(pv1.getVisitNumber().getID() + ":30:IP");
 
+            } else if ("A02".equalsIgnoreCase(msgType)) {
+                String sequence = getNextUniqueSequenceId(acuteHL7Helper,pv1,"IP");
+                encounterIds.add(pv1.getVisitNumber().getID() + sequence);
             } else if ("A08".equalsIgnoreCase(msgType)) {
-                Encounter existingChildEncounter = (Encounter) imperialHL7Helper.retrieveResource(pv1.getVisitNumber().getID() + ":02:IP", ResourceType.Encounter);
-                encounterIds.add(pv1.getVisitNumber().getID() + ":01:IP");
-                if(existingChildEncounter != null) {
-                    encounterIds.add(pv1.getVisitNumber().getID() + ":02:IP");
+                encounterIds.add(pv1.getVisitNumber().getID() + ":10:IP");
+//                String exstChildEnctSequence = getlatestUniqueSequenceId(acuteHL7Helper,pv1, "IP");
+//                if(exstChildEnctSequence != null) {
+//                    encounterIds.add(pv1.getVisitNumber().getID() + exstChildEnctSequence);
+//                }
+                Encounter exstChildEnctDisc = (Encounter) acuteHL7Helper.retrieveResource(pv1.getVisitNumber().getID() + ":30:IP", ResourceType.Encounter);
+                if(exstChildEnctDisc != null) {
+                    encounterIds.add(pv1.getVisitNumber().getID() + ":30:IP");
                 }
 
-            } else {
-                encounterIds.add(pv1.getVisitNumber().getID() + ":01:IP");
+            }
+            else if("A12".equalsIgnoreCase(msgType)){
+                String latestChildEncId = pv1.getVisitNumber().getID() + getlatestUniqueSequenceId(acuteHL7Helper,pv1,"IP");
+                Encounter exstChildEnctTrans = (Encounter) acuteHL7Helper.retrieveResource(latestChildEncId, ResourceType.Encounter);
+                if(exstChildEnctTrans !=null){
+                    EncounterBuilder cBuilder = new EncounterBuilder(exstChildEnctTrans);
+                    fhirResourceFiler.deletePatientResource(null, false, cBuilder);
+                    fhirResourceFiler.savePatientResource(null, !existingParentEncounterBuilder.isIdMapped(), existingParentEncounterBuilder);
+                }
+            }
+            else {
+                encounterIds.add(pv1.getVisitNumber().getID() + ":10:IP");
             }
 
         } else if("O".equalsIgnoreCase(String.valueOf(pv1.getPatientClass()))) {
-            encounterIds.add(pv1.getVisitNumber().getID() + ":01:OP");
+            encounterIds.add(pv1.getVisitNumber().getID() + ":10:OP");
         }
 
         if(encounterIds != null) {
@@ -351,7 +381,9 @@ public class EncounterTransformer {
                     if ("A03".equalsIgnoreCase(msgType)) {
                         codeableConceptBuilderAdmission.setText("Emergency Discharge");
 
-                    } else {
+                    }else if ("A02".equalsIgnoreCase(msgType)){
+                        codeableConceptBuilderAdmission.setText("Emergency Transfer");
+                    }else {
                         codeableConceptBuilderAdmission.setText("Emergency Admission");
                     }
 
@@ -362,6 +394,8 @@ public class EncounterTransformer {
                     if ("A03".equalsIgnoreCase(msgType)) {
                         codeableConceptBuilderAdmission.setText("Inpatient Discharge");
 
+                    } else if ("A02".equalsIgnoreCase(msgType)){
+                        codeableConceptBuilderAdmission.setText("Inpatient Transfer");
                     } else {
                         codeableConceptBuilderAdmission.setText("Inpatient Admission");
                     }
@@ -376,20 +410,31 @@ public class EncounterTransformer {
 
                 childEncounterBuilder.setId(encounterId);
 
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-                TS admitDtTime = pv1.getAdmitDateTime();
-                if(!admitDtTime.isEmpty()) {
-                    String startDt = String.valueOf(admitDtTime.getTimeOfAnEvent());
-                    Date stDt = formatter.parse(startDt.substring(0,4)+startDt.substring(4,6)+startDt.substring(6,8)+startDt.substring(8,10)+startDt.substring(10,12)+startDt.substring(12,14));
-
-                    childEncounterBuilder.setPeriodStart(stDt);
+                TS clinicalDtTime = null;
+                if("10".equals(encounterId.split(":")[1])){
+                    clinicalDtTime = pv1.getAdmitDateTime();
                 }
-
+                else if("20".equals(encounterId.split(":")[1])){
+                    clinicalDtTime = evn.getEvn6_EventOccurred();
+                }
+                else if("30".equals(encounterId.split(":")[1])){
+                    clinicalDtTime = pv1.getDischargeDateTime();
+                }
                 TS dischargeDtTime = pv1.getDischargeDateTime();
-                Date dsDt = null;
-                if(!dischargeDtTime.isEmpty()) {
-                    String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
-                    dsDt = formatter.parse(endDt.substring(0,4)+endDt.substring(4,6)+endDt.substring(6,8)+endDt.substring(8,10)+endDt.substring(10,12)+endDt.substring(12,14));
+                Date dsDt=null;
+                if ( !clinicalDtTime.isEmpty() && clinicalDtTime !=null) {
+                    String startDt = String.valueOf(clinicalDtTime.getTimeOfAnEvent());
+                    DateFormat clinicalFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+                    clinicalFormat.setTimeZone(TimeZone.getTimeZone("Europe/London"));
+                    Date stDt = clinicalFormat.parse(startDt);
+                    childEncounterBuilder.setPeriodStart(stDt);
+
+                    if (!dischargeDtTime.isEmpty()) {
+                        String endDt = String.valueOf(dischargeDtTime.getTimeOfAnEvent());
+                        DateFormat dischargeFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+                        dischargeFormat.setTimeZone(TimeZone.getTimeZone("Europe/London"));
+                        dsDt = dischargeFormat.parse(endDt);
+                    }
                 }
 
                 if (("A03".equalsIgnoreCase(msgType) && (!dischargeDtTime.isEmpty()))) {
@@ -399,35 +444,30 @@ public class EncounterTransformer {
                     childEncounterBuilder.setStatus(Encounter.EncounterState.INPROGRESS);
                 }
 
-                setCommonEncounterAttributes(pv1, childEncounterBuilder, imperialHL7Helper, patientGuid, true);
+                setCommonEncounterAttributes(pv1, childEncounterBuilder, acuteHL7Helper, patientGuid, true, odsCode);
 
                 //add in additional extended data as Parameters resource with additional extension
                 ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(childEncounterBuilder);
                 containedParametersBuilder.removeContainedParameters();
 
-                if(patientAccountNumber!= null && patientAccountNumber.getID() != null) {
+                if (patientAccountNumber!= null && patientAccountNumber.getID() != null && patientAccountNumber.getID().getValue() !=null) {
+                    String finNumber = patientAccountNumber.getID().getValue();
+                    //these mapping values will need establishing as actuals in IM
+                    MapResponse propertyResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"fin_number",null);
+                    String propertyCode = propertyResponse.getConcept().getCode();
+                    String propertyName = "TEXT_"+propertyCode;
+                    containedParametersBuilder.addParameter(propertyName, finNumber);
+                }
 
-                        CodeableConcept ccValue = new CodeableConcept();
-                        ccValue.addCoding().setCode(patientAccountNumber.getID().getValue())
-                                .setDisplay("Patient FIN");
+                String encounterType = pv1.getPatientType().getValue();
+                if (!Strings.isNullOrEmpty(encounterType)  && !encounterType.equalsIgnoreCase("\"\"")) {
 
-                        containedParametersBuilder.addParameter("Patient FIN", ccValue);
+                    MapResponse propertyResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"encounter_type",null);
+                    MapResponse valueResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"encounter_type",encounterType);
+
+                    if(valueResponse.getWasCreated()) {
+                        AcuteHL7Helper.raiseMissingAlert(encounterType, "encounter_type", odsCode,msgType, acuteHL7Helper.getExchangeId().toString(), msgId,patientGuid, acuteHL7Helper);
                     }
-
-
-                String patientType = pv1.getPatientType().getValue();
-                if (!Strings.isNullOrEmpty(patientType)  && !patientType.equalsIgnoreCase("\"\"")) {
-
-                    MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "patient_type"
-                    );
-                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
-                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "patient_type", patientType, IMConstant.IMPERIAL_CERNER
-                    );
-                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
 
                     CodeableConcept ccValue = new CodeableConcept();
                     ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -440,16 +480,12 @@ public class EncounterTransformer {
                 String treatmentFunctionCode = pv1.getHospitalService().getValue();
                 if (!Strings.isNullOrEmpty(treatmentFunctionCode)  && !treatmentFunctionCode.equalsIgnoreCase("\"\"")) {
 
-                    MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "treatment_function_code"
-                    );
-                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
-                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "treatment_function_code", treatmentFunctionCode, IMConstant.IMPERIAL_CERNER
-                    );
-                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+                    MapResponse propertyResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"treatment_function_code",null);
+                    MapResponse valueResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"treatment_function_code",treatmentFunctionCode);
+
+                    if(valueResponse.getWasCreated()) {
+                        AcuteHL7Helper.raiseMissingAlert(treatmentFunctionCode, "treatment_function_code", odsCode,msgType,acuteHL7Helper.getExchangeId().toString(),msgId,patientGuid,acuteHL7Helper);
+                    }
 
                     CodeableConcept ccValue = new CodeableConcept();
                     ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -461,17 +497,12 @@ public class EncounterTransformer {
                 String admissionSourceCode = pv1.getAdmitSource().getValue();
                 if (!Strings.isNullOrEmpty(admissionSourceCode) && !admissionSourceCode.equalsIgnoreCase("\"\"")) {
 
-                    MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "admission_source_code"
-                    );
-                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                    MapResponse propertyResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"admission_source_code",null);
+                    MapResponse valueResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"admission_source_code",admissionSourceCode);
 
-                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "admission_source_code", admissionSourceCode, IMConstant.NHS_DATA_DICTIONARY
-                    );
-                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+                    if(valueResponse.getWasCreated()) {
+                        AcuteHL7Helper.raiseMissingAlert(admissionSourceCode, "admission_source_code", odsCode,msgType,acuteHL7Helper.getExchangeId().toString(),msgId,patientGuid,acuteHL7Helper);
+                    }
 
                     CodeableConcept ccValue = new CodeableConcept();
                     ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
@@ -482,69 +513,57 @@ public class EncounterTransformer {
                 String admissionMethodCode = pv1.getAdmissionType().getValue();
                 if (!Strings.isNullOrEmpty(admissionMethodCode) && !admissionMethodCode.equalsIgnoreCase("\"\"")) {
 
-                    MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "admission_method_code"
-                    );
-                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                    MapResponse propertyResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"admission_method_code",null);
+                    MapResponse valueResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"admission_method_code",admissionMethodCode);
 
-                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "admission_method_code", admissionMethodCode, IMConstant.NHS_DATA_DICTIONARY
-                    );
-                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+                    if(valueResponse.getWasCreated()) {
+                        AcuteHL7Helper.raiseMissingAlert(admissionMethodCode, "admission_method_code", odsCode,msgType,acuteHL7Helper.getExchangeId().toString(),msgId,patientGuid,acuteHL7Helper);
+                    }
 
                     CodeableConcept ccValue = new CodeableConcept();
                     ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
                             .setSystem(valueResponse.getConcept().getScheme());
                     containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
                 }
+                if ("A03".equalsIgnoreCase(msgType)) {
+                    String dischargeDisposition = pv1.getDischargeDisposition().getValue();
+                    if (!Strings.isNullOrEmpty(dischargeDisposition) && !dischargeDisposition.equalsIgnoreCase("\"\"")) {
 
-                String dischargeDisposition = pv1.getDischargeDisposition().getValue();
-                if (!Strings.isNullOrEmpty(dischargeDisposition) && !dischargeDisposition.equalsIgnoreCase("\"\"")) {
-                    MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "discharge_method"
-                    );
-                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                        MapResponse propertyResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"discharge_method",null);
+                        MapResponse valueResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"discharge_method",dischargeDisposition);
 
-                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "discharge_method", dischargeDisposition, IMConstant.NHS_DATA_DICTIONARY
-                    );
-                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+                        if(valueResponse.getWasCreated()) {
+                            AcuteHL7Helper.raiseMissingAlert(dischargeDisposition, "discharge_method", odsCode,msgType,acuteHL7Helper.getExchangeId().toString(),msgId,patientGuid,acuteHL7Helper);
+                        }
 
-                    CodeableConcept ccValue = new CodeableConcept();
-                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
-                            .setSystem(valueResponse.getConcept().getScheme());
-                    containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
-                }
+                        CodeableConcept ccValue = new CodeableConcept();
+                        ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                                .setSystem(valueResponse.getConcept().getScheme());
+                        containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                    }
 
-                String dischargedToLocation = pv1.getDischargedToLocation().toString();
-                if (!Strings.isNullOrEmpty(dischargedToLocation) && !dischargedToLocation.equalsIgnoreCase("\"\"")) {
-                    MapColumnRequest propertyRequest = new MapColumnRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "discharge_destination_code"
-                    );
-                    MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+                    String dischargedToLocation = pv1.getDischargedToLocation().getCm_dld1_DischargeLocation().toString();
+                    if (!Strings.isNullOrEmpty(dischargedToLocation) && !dischargedToLocation.equalsIgnoreCase("\"\"")) {
 
-                    MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                            "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                            "discharge_destination_code", dischargedToLocation, IMConstant.NHS_DATA_DICTIONARY
-                    );
-                    MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+                        MapResponse propertyResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"discharge_destination_code",null);
+                        MapResponse valueResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"discharge_destination_code",dischargedToLocation);
 
-                    CodeableConcept ccValue = new CodeableConcept();
-                    ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
-                            .setSystem(valueResponse.getConcept().getScheme());
-                    containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                        if(valueResponse.getWasCreated()) {
+                            AcuteHL7Helper.raiseMissingAlert(dischargedToLocation, "discharge_destination_code", odsCode,msgType,acuteHL7Helper.getExchangeId().toString(),msgId,patientGuid,acuteHL7Helper);
+                        }
+
+                        CodeableConcept ccValue = new CodeableConcept();
+                        ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                                .setSystem(valueResponse.getConcept().getScheme());
+                        containedParametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue);
+                    }
                 }
 
                 //and link the parent to this new child encounter
                 Reference childDischargeRef = ReferenceHelper.createReference(ResourceType.Encounter, encounterId);
                 if (existingParentEncounterBuilder.isIdMapped()) {
                     childDischargeRef
-                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, imperialHL7Helper);
+                            = IdHelper.convertLocallyUniqueReferenceToEdsReference(childDischargeRef, acuteHL7Helper);
                 }
                 existingEncounterList.addReference(childDischargeRef);
 
@@ -558,14 +577,14 @@ public class EncounterTransformer {
      *
      * @param pv1
      * @param fhirResourceFiler
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @param msgType
      * @throws Exception
      */
-    public static void deleteEncounterAndChildren(PV1 pv1, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType) throws Exception {
+    public static void deleteEncounterAndChildren(PV1 pv1, FhirResourceFiler fhirResourceFiler, AcuteHL7Helper acuteHL7Helper, String msgType, String msgId) throws Exception {
         //retrieve the existing Top level parent Encounter resource to perform a deletion plus any child encounters
         Encounter existingParentEncounter
-                = (Encounter) imperialHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(pv1.getVisitNumber().getID()));
+                = (Encounter) acuteHL7Helper.retrieveResourceForLocalId(ResourceType.Encounter, String.valueOf(pv1.getVisitNumber().getID()));
 
         EncounterBuilder parentEncounterBuilder
                 = new EncounterBuilder(existingParentEncounter);
@@ -582,16 +601,13 @@ public class EncounterTransformer {
                     continue;
                 }
                 Encounter childEncounter
-                        = (Encounter) resourceDal.getCurrentVersionAsResource(imperialHL7Helper.getServiceId(), ResourceType.Encounter, comps.getId());
+                        = (Encounter) resourceDal.getCurrentVersionAsResource(acuteHL7Helper.getServiceId(), ResourceType.Encounter, comps.getId());
                 if (childEncounter != null) {
                     boolean deleteChild = false;
                     if(("EMERGENCY".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A11".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
-                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A13".equalsIgnoreCase(msgType))) {
-                        deleteChild = true;
-
-                    } else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A11".equalsIgnoreCase(msgType))) {
+                    }  else if(("INPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) && ("A11".equalsIgnoreCase(msgType))) {
                         deleteChild = true;
 
                     } else if("OUTPATIENT".equalsIgnoreCase(childEncounter.getClass_().toString())) {
@@ -603,9 +619,6 @@ public class EncounterTransformer {
                         fhirResourceFiler.deletePatientResource(null, false, new EncounterBuilder(childEncounter));
                     }
 
-                } else {
-
-                    TransformWarnings.log(LOG, imperialHL7Helper, "Cannot find existing child Encounter: {} for deletion", childEncounter.getId());
                 }
             }
             //finally, delete the top level parent
@@ -614,8 +627,69 @@ public class EncounterTransformer {
             }
 
         } else {
-            TransformWarnings.log(LOG, imperialHL7Helper, "Cannot find existing Encounter: {} for deletion", String.valueOf(pv1.getVisitNumber().getID()));
+
+            TransformWarnings.log(LOG, acuteHL7Helper,
+                    "Cannot find existing Encounter  message type={}, Segment={}, EncounterID={}, MessageID={}",
+                    msgType,"Cannot find existing Encounter: {} for deletion",String.valueOf(pv1.getVisitNumber().getID()),msgId);
         }
     }
+    public static void undoChildEncounter(Encounter existingParentEncounter, AcuteHL7Helper acuteHL7Helper, FhirResourceFiler fhirResourceFiler) throws Exception {
+        EncounterBuilder parentEncounterBuilder = new EncounterBuilder(existingParentEncounter);
 
+        ContainedListBuilder listBuilder = new ContainedListBuilder(parentEncounterBuilder);
+        ResourceDalI resourceDal = DalProvider.factoryResourceDal();
+
+        for (List_.ListEntryComponent item : listBuilder.getContainedListItems()) {
+
+            Reference ref = item.getItem();
+            ReferenceComponents comps = ReferenceHelper.getReferenceComponents(ref);
+            if (comps.getResourceType() != ResourceType.Encounter) {
+                continue;
+            }
+            Encounter childEncounter
+                    = (Encounter) resourceDal.getCurrentVersionAsResource(acuteHL7Helper.getServiceId(), ResourceType.Encounter, comps.getId());
+
+            if (childEncounter != null) {
+                EncounterBuilder cBuilder = new EncounterBuilder(childEncounter);
+
+                if (listBuilder.getContainedListItems().size() == 1) {
+                    cBuilder.getPeriod().setEnd(null);
+                    fhirResourceFiler.savePatientResource(null, false, cBuilder);
+                } else {
+                    if (cBuilder.getPeriod()!=null && cBuilder.getPeriod().getEnd()!=null) {
+                        fhirResourceFiler.deletePatientResource(null, false, cBuilder);
+                    }
+                }
+            }
+        }
+        EncounterTransformer.deleteEndDate(existingParentEncounter, fhirResourceFiler);
+
+    }
+    public static String getNextUniqueSequenceId(AcuteHL7Helper acuteHL7Helper, PV1 pv1 , String patientClass) throws Exception {
+        String ret = null;
+        int count=1;
+        while(count>0){
+            Encounter existChildEnctTrans = (Encounter) acuteHL7Helper.retrieveResource(pv1.getVisitNumber().getID() + ":20:"+String.format("%02d", count)+":" + patientClass, ResourceType.Encounter);
+            if(existChildEnctTrans == null){
+                ret = ":20:"+String.format("%02d", count)+":" + patientClass;
+                break;
+            }
+            count++;
+        }
+        return ret;
+    }
+
+    public static String getlatestUniqueSequenceId(AcuteHL7Helper acuteHL7Helper, PV1 pv1, String patientClass) throws Exception {
+        String ret = null;
+        int count=1;
+        while(count>0){
+            Encounter existChildEnctTrans = (Encounter) acuteHL7Helper.retrieveResource(pv1.getVisitNumber().getID() + ":20:"+String.format("%02d", count)+":" + patientClass, ResourceType.Encounter);
+            if(existChildEnctTrans == null){
+                break;
+            }
+            ret = ":20:"+String.format("%02d", count)+":" + patientClass;
+            count++;
+        }
+        return ret;
+    }
 }

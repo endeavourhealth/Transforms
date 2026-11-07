@@ -3,53 +3,63 @@ package org.endeavourhealth.transform.hl7v2fhir.transforms;
 import ca.uhn.hl7v2.model.v23.datatype.XON;
 import ca.uhn.hl7v2.model.v23.segment.PD1;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
+import org.endeavourhealth.core.database.dal.usermanager.caching.OrganisationCache;
+import org.endeavourhealth.core.database.rdbms.datasharingmanager.models.OrganisationEntity;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.LocationBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.endeavourhealth.transform.hl7v2fhir.helpers.AcuteHL7Helper;
 import org.hl7.fhir.instance.model.Identifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.hl7.fhir.instance.model.ResourceType;
 
 public class OrganizationTransformer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(OrganizationTransformer.class);
-
     /**
-     *
-     * @param organization
      * @return
      * @throws Exception
      */
-    public static OrganizationBuilder transformPV1ToOrganization(OrganizationBuilder organization) throws Exception {
-        organization.setId("Imperial College Healthcare NHS Trust");
-        //organization.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
+    public static OrganizationBuilder createHL7OrgBuilder(String odsCode) throws Exception {
 
+        OrganisationEntity org = OrganisationCache.getOrganisationDetailsFromOdsCode(odsCode);
+        String name = org.getName();
+
+        OrganizationBuilder  organization = new OrganizationBuilder();
+        organization.setId(name);
         IdentifierBuilder identifierBuilder = new IdentifierBuilder(organization);
         identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
         identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-        identifierBuilder.setValue("RYJ");
+        identifierBuilder.setValue(odsCode);
 
-        organization.setName("Imperial College Healthcare NHS Trust");
+        organization.setName(name);
         return organization;
     }
 
     /**
      *
      * @param pd1
-     * @param organization
      * @return
      * @throws Exception
      */
-    public static OrganizationBuilder transformPD1ToOrganization(PD1 pd1, OrganizationBuilder organization) throws Exception {
+    public static OrganizationBuilder transformPD1ToOrganization(PD1 pd1) throws Exception {
         XON[] patientPrimaryFacility = pd1.getPatientPrimaryFacility();
-        organization.setId(patientPrimaryFacility[0].getIDNumber().getValue());
-
-        IdentifierBuilder identifierBuilder = new IdentifierBuilder(organization);
-        identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
-        identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
-        identifierBuilder.setValue(patientPrimaryFacility[0].getIDNumber().getValue());
-
-        organization.setName(patientPrimaryFacility[0].getOrganizationName().getValue());
+        OrganizationBuilder organization =new OrganizationBuilder();
+        if (patientPrimaryFacility[0].getIDNumber().getValue()!=null && !patientPrimaryFacility[0].getIDNumber().getValue().isEmpty() ) {
+            organization.setId(patientPrimaryFacility[0].getIDNumber().getValue());
+            IdentifierBuilder identifierBuilder = new IdentifierBuilder(organization);
+            identifierBuilder.setUse(Identifier.IdentifierUse.OFFICIAL);
+            identifierBuilder.setSystem(FhirIdentifierUri.IDENTIFIER_SYSTEM_ODS_CODE);
+            identifierBuilder.setValue(patientPrimaryFacility[0].getIDNumber().getValue());
+            organization.setName(patientPrimaryFacility[0].getOrganizationName().getValue());
+        }
         return organization;
     }
 
+    public static void saveOrganizationWithLocation(FhirResourceFiler fhirResourceFiler, OrganizationBuilder organizationBuilder, LocationBuilder locationBuilderOrg, OrganizationBuilder organizationBuilderDemographic) throws Exception {
+        organizationBuilder.setMainLocation(AcuteHL7Helper.createReference(ResourceType.Location, locationBuilderOrg.getResourceId()));
+        fhirResourceFiler.saveAdminResource(null, organizationBuilder);
+        if(organizationBuilderDemographic.getResourceId()!=null) {
+           fhirResourceFiler.saveAdminResource(null, organizationBuilderDemographic);
+        }
+    }
 }

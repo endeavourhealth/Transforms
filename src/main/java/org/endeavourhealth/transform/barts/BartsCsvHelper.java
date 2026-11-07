@@ -59,6 +59,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public static final String CODE_TYPE_SNOMED_UK_SUBSET = "SNMUKEMED";  // Found in Barts DIAGN files.
     public static final String CODE_TYPE_ICD_10 = "ICD10WHO";
     public static final String CODE_TYPE_ICD_10_d = "ICD-10";           // Found in Barts Diagnosis files, v rare.
+    public static final String CODE_TYPE_ICD_10_ = "ICD10";             // Found in Barts Problems file 2022-05-19 (SD-697)
     public static final String CODE_TYPE_OPCS_4 = "OPCS4";
     public static final String CODE_TYPE_HRG = "HRG";
     public static final String CODE_TYPE_CERNER = "CERNER";
@@ -67,6 +68,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public static final String SUS_RECORD_TYPE_OUTPATIENT = "OutPatient";
     public static final String SUS_RECORD_TYPE_EMERGENCY = "Emergency";
     public static final String SUS_RECORD_TYPE_EMERGENCY_CDS = "EmergencyCDS";
+    public static final String SUS_RECORD_TYPE_EMERGENCY_CDS_V2 = "EmergencyCDSV2";   //new file format post 14th June 2021
 
     private static final String PPREL_TO_RELATIONSHIP_TYPE = "PPREL_ID_TO_TYPE";
     public static final String ENCOUNTER_ID_TO_PERSON_ID = "ENCNTR_ID_TO_PERSON_ID";
@@ -101,6 +103,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private Map<StringMemorySaver, StringMemorySaver> internalIdMapCache = new HashMap<>(); //contains nulls so a regular map but uses the cacheLock
     private ReentrantLock cacheLock = new ReentrantLock();
     private Map<Long, SnomedLookup> cleveSnomedConceptMappings = new ConcurrentHashMap<>();
+    private Map<Long, String> eventIdBlobContent = new ConcurrentHashMap<>();
     private String cachedBartsOrgRefId = null;
     private Date cachedDataDate = null;
 
@@ -131,6 +134,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     private String version = null;
 
     private Set<String> personIdsToFilterOn = null;
+    private Set<String> eventCdsToFilterOn = null;
 
     public BartsCsvHelper(UUID serviceId, UUID systemId, UUID exchangeId, String primaryOrgHL7OrgOID, String version) {
         this.serviceId = serviceId;
@@ -362,8 +366,8 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
     public void processStagingForTargetEmergencyCds() throws Exception {
 
         if (TransformConfig.instance().isLive()) {
-
-            //move function to here for go live
+            //copied function to here for go live (IDD-59)
+            stagingRepository.processStagingForTargetEmergencyCds(this.exchangeId, this.serviceId);
         } else {
             stagingRepository.processStagingForTargetEmergencyCds(this.exchangeId, this.serviceId);
         }
@@ -436,8 +440,9 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
 
         if (TransformConfig.instance().isLive()) {
 
-            //remove this check for go live, removing null
-            return null;
+            //removed this check for go live and removed null return (IDD-59)
+            //return null;
+            return stagingRepository.getTargetEmergencyCds(this.exchangeId, this.serviceId);
         } else {
             List<StagingEmergencyCdsTarget> ret = stagingRepository.getTargetEmergencyCds(this.exchangeId, this.serviceId);
             return ret;
@@ -555,10 +560,11 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         if (index > -1) {
             String ret = conceptCodeIdentifier.substring(0, index);
             if (ret.equals(CODE_TYPE_SNOMED)
-                    || ret.equals(CODE_TYPE_ICD_10) || ret.equals(CODE_TYPE_ICD_10_d)
+                    || ret.equals(CODE_TYPE_ICD_10) || ret.equals(CODE_TYPE_ICD_10_d) || ret.equals(CODE_TYPE_ICD_10_)
                     || ret.equalsIgnoreCase(CODE_TYPE_OPCS_4)
                     || ret.equalsIgnoreCase(CODE_TYPE_HRG)
-                    || ret.equals(CODE_TYPE_SNOMED_UK_SUBSET)) {
+                    || ret.equals(CODE_TYPE_SNOMED_UK_SUBSET)
+                    || ret.equals(CODE_TYPE_CERNER)) {
                 return ret;
             } else {
                 throw new IllegalArgumentException("Unexpected code type [" + ret + "]");
@@ -1361,6 +1367,78 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
         return cleveSnomedConceptMappings.remove(id);
     }
 
+    public void cacheEventIdBlobContent (CsvCell eventIdCell, CsvCell blobContentsCell) {
+        Long id = eventIdCell.getLong();
+        String blobContents = blobContentsCell.getString();
+        if (blobContents.length() > 255) {
+            blobContents = blobContents.substring(0, 255);
+        }
+        eventIdBlobContent.put(id, blobContents);
+    }
+
+    public String getEventIdBlobContent(CsvCell eventIdCell) {
+        Long id = eventIdCell.getLong();
+        return eventIdBlobContent.get(id);
+    }
+
+    public void clearEventIdBlobContentCache () {
+        eventIdBlobContent.clear();
+    }
+
+    public boolean processRecordFilteringOnEventCd(AbstractCsvParser parser) throws TransformException {
+        CsvCell EventCdCell = parser.getCell("EVENT_CD");
+        if (EventCdCell == null) {
+            //if nothing that looks like an EventCd, process the record regardless
+            return true;
+        }
+
+        //check to see if the Event Cd value is in the filter
+        String eventCd = EventCdCell.getString();
+        return processRecordFilteringOnEventCd(eventCd);
+    }
+
+    public boolean processRecordFilteringOnEventCd(String eventCd) {
+
+        if (eventCdsToFilterOn == null) {
+            String filePath = TransformConfig.instance().getCernerEventCdFile();
+            if (Strings.isNullOrEmpty(filePath)) {
+                LOG.debug("Not filtering on Event Cds");
+                eventCdsToFilterOn = new HashSet<>();
+
+            } else {
+                eventCdsToFilterOn = new HashSet<>();
+                try {
+                    List<String> lines = Files.readAllLines(new File(filePath).toPath());
+                    for (String line : lines) {
+                        line = line.trim();
+
+                        //ignore comment lines
+                        if (line.startsWith("#")) {
+                            continue;
+                        }
+                        eventCdsToFilterOn.add(line);
+                    }
+                    LOG.debug("Filtering on " + eventCdsToFilterOn.size() + " Event Cds from " + filePath);
+
+                } catch (Exception ex) {
+                    LOG.error("Error reading in the Event Cd file: " + filePath, ex);
+                }
+            }
+        }
+
+        //if no filtering event cds, include regardless
+        if (eventCdsToFilterOn.isEmpty()) {
+            return true;
+        }
+
+        //records have an empty event cd when they're being deleted, and we don't want to skip processing them
+        if (Strings.isNullOrEmpty(eventCd)) {
+            return true;
+        }
+
+        return eventCdsToFilterOn.contains(eventCd);
+    }
+
     public boolean processRecordFilteringOnPatientId(AbstractCsvParser parser) throws TransformException {
         CsvCell personIdCell = parser.getCell("PERSON_ID");
         if (personIdCell == null) {
@@ -1400,7 +1478,7 @@ public class BartsCsvHelper implements HasServiceSystemAndExchangeIdI, CsvAudito
                     LOG.debug("Filtering on " + personIdsToFilterOn.size() + " patients from " + filePath);
 
                 } catch (Exception ex) {
-                    LOG.error("Error reading in person ID file " + filePath, ex);
+                    LOG.error("Error reading in the person ID file: " + filePath, ex);
                 }
             }
         }

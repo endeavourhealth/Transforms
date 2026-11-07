@@ -1,9 +1,7 @@
 package org.endeavourhealth.transform.subscriber;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
-import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.fhir.*;
 import org.endeavourhealth.common.utility.ExpiringCache;
 import org.endeavourhealth.core.database.dal.DalProvider;
@@ -31,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Pattern;
 
 public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI {
     private static final Logger LOG = LoggerFactory.getLogger(SubscriberTransformHelper.class);
@@ -60,6 +57,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private final Map<String, Object> resourcesSkippedReferences = new ConcurrentHashMap<>(); //treated as a set, but need concurrent access
     private final SubscriberConfig config;
     private final boolean isBulkDeleteFromSubscriber;
+    private final boolean isLastExchangeMessage;
     private Boolean shouldPatientRecordBeDeleted = null; //whether the record should exist in the enterprise DB (e.g. if confidential)
     private Patient cachedPatient = null;
     private static ExpiringCache<String, String> snomedToBnfChapter = new ExpiringCache<>(CACHE_DURATION);
@@ -71,19 +69,20 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
     private Long subscriberPersonId = null;
 
     public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, SubscriberConfig subscriberConfig,
-                                     List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber) throws Exception {
+                                     List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber, boolean isLastExchangeMessage) throws Exception {
 
-        this(serviceId, systemId, exchangeId, batchId, subscriberConfig, allResources, isBulkDeleteFromSubscriber, new OutputContainer());
+        this(serviceId, systemId, exchangeId, batchId, subscriberConfig, allResources, isBulkDeleteFromSubscriber, isLastExchangeMessage, new OutputContainer());
     }
 
     public SubscriberTransformHelper(UUID serviceId, UUID systemId, UUID exchangeId, UUID batchId, SubscriberConfig subscriberConfig,
-                List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber, OutputContainer outputContainer) throws Exception {
+                                     List<ResourceWrapper> allResources, boolean isBulkDeleteFromSubscriber, boolean isLastExchangeMessage, OutputContainer outputContainer) throws Exception {
         this.serviceId = serviceId;
         this.systemId = systemId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.outputContainer = outputContainer;
         this.isBulkDeleteFromSubscriber = isBulkDeleteFromSubscriber;
+        this.isLastExchangeMessage = isLastExchangeMessage;
 
         //load our config record for some parameters
         this.config = subscriberConfig;
@@ -131,25 +130,64 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
         return config.isIncludeObservationAdditional();
     }
 
+    public boolean isIncludeAppointmentAdditional() {
+        return config.isIncludeAppointmentAdditional();
+    }
+
+    public boolean isIncludeScheduleAdditional() {
+        return config.isIncludeScheduleAdditional();
+    }
+
+    public boolean isIncludePublisherMetaData() {
+        return config.isIncludePublisherMetaData();
+    }
+
     public boolean isBulkDeleteFromSubscriber() {
         return isBulkDeleteFromSubscriber;
     }
 
-    public Date includeDateRecorded(DomainResource fhir) {
-        Date dateRecorded = null;
-        if (isIncludeDateRecorded()) {
-            Extension recordedDate = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
-            if (recordedDate != null) {
-                DateTimeType value = (DateTimeType) recordedDate.getValue();
-                if (value.getValue() != null) {
-                    dateRecorded = value.getValue();
-                }
-            }
-        }
-        return dateRecorded;
+    public boolean isLastExchangeMessage() {
+        return isLastExchangeMessage;
     }
 
-     public boolean isIncludePatientAge() {
+    public boolean isIncludeReferralRequestAdditional(){
+        return config.isIncludeReferralRequestAdditional();
+    }
+
+    public Date includeDateRecorded(DomainResource fhir) {
+
+        if (!isIncludeDateRecorded()) {
+            return null;
+        }
+
+        Extension recordedDate = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
+        if (recordedDate != null) {
+            DateTimeType value = (DateTimeType) recordedDate.getValue();
+            if (value.hasValue()) {
+                return value.getValue();
+            }
+        }
+
+        //the allergy intolerance resource actually has a proper field for this, so the extension isn't used
+        if (fhir instanceof AllergyIntolerance) {
+            AllergyIntolerance a = (AllergyIntolerance) fhir;
+            if (a.hasRecordedDate()) {
+                return a.getRecordedDate();
+            }
+        }
+
+        //procedure request doesn't use the DDS extension, so need to get the proper element out
+        if (fhir instanceof ProcedureRequest) {
+            ProcedureRequest p = (ProcedureRequest)fhir;
+            if (p.hasOrderedOn()) {
+                return p.getOrderedOn();
+            }
+        }
+
+        return null;
+    }
+
+    public boolean isIncludePatientAge() {
         return config.isIncludePatientAge();
     }
 
@@ -301,7 +339,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
         this.shouldPatientRecordBeDeleted = Boolean.FALSE;
 
-                //retrieve the patient resource to see if the record has been deleted or is confidential
+        //retrieve the patient resource to see if the record has been deleted or is confidential
         Reference patientRef = ReferenceHelper.createReference(ResourceType.Patient, discoveryPatientId);
         ResourceWrapper patientWrapper = findOrRetrieveResourceWrapper(patientRef);
         if (patientWrapper != null) {
@@ -411,7 +449,6 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
         return true;
     }*/
-
     public boolean getShouldPatientRecordBeDeleted() {
         if (shouldPatientRecordBeDeleted == null) {
             throw new RuntimeException("Null shouldPatientRecordBeDeleted variable - this should always have been set");
@@ -678,7 +715,7 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
         UUID patientId = patientIds.get(0);
         ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
-        Patient patient = (Patient)resourceRepository.getCurrentVersionAsResource(serviceId, ResourceType.Patient, patientId.toString());
+        Patient patient = (Patient) resourceRepository.getCurrentVersionAsResource(serviceId, ResourceType.Patient, patientId.toString());
         if (!patient.hasManagingOrganization()) {
             throw new TransformException("Patient " + patient.getId() + " doesn't have a managing org for service " + serviceId);
         }
@@ -752,5 +789,33 @@ public class SubscriberTransformHelper implements HasServiceSystemAndExchangeIdI
 
     public SubscriberConfig getConfig() {
         return config;
+    }
+
+    public List<String> getSubscriberExcludedColumns(SubscriberTableId tableId, String [] permittedColumnExclusions) throws Exception {
+
+        Map<String, List<String>> excludedTableColumnsConfig = config.getExcludedTableColumns();
+        if (excludedTableColumnsConfig != null) {
+
+            //any excluded columns for this table?
+            List<String> excludedTableColumns = excludedTableColumnsConfig.get(tableId.getName());
+            if (excludedTableColumns != null && permittedColumnExclusions != null) {
+                //validate if column exclusions are permitted
+                for (String column: excludedTableColumns) {
+                    boolean columnPermitted = false;
+                    for (String permittedColumn: permittedColumnExclusions) {
+                        if (column.equalsIgnoreCase(permittedColumn)) {
+                            columnPermitted = true;
+                            break;
+                        };
+                    }
+                    if (!columnPermitted) {
+                        throw new Exception("Subscriber configuration excluded_table_columns contains non-permitted table column: table: "+tableId.getName()+", col: "+column);
+                    }
+                }
+            }
+            return excludedTableColumns;  //may be null if excluded_table_columns is set but not for this table
+        }
+        //no excluded columns configured, continue as is.
+        return null;
     }
 }

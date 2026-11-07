@@ -20,7 +20,7 @@ import java.util.List;
 
 public final class EmisOpenToFhirTransformer
 {
-    public static List<Resource> toFhirFullRecord(String eomMedicalRecord38Xml) throws TransformException
+    public static List<Resource> toFhirFullRecord(String eomMedicalRecord38Xml) throws Exception
     {
         MedicalRecordType medicalRecord = XmlHelper.deserialize(eomMedicalRecord38Xml, MedicalRecordType.class);
 

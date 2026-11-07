@@ -221,11 +221,14 @@ public class SRPrimaryCareMedicationTransformer {
         // set the medication statement reference link
         // in TPP, use the same medicationId for statement and order if it is an Acute
         // otherwise for a repeat order, use the previously created RepeatTemplate Id
-        CsvCell repeatTemplateMedicationId = parser.getIDRepeatTemplate();
-        if (!repeatTemplateMedicationId.isEmpty()) {
-            String repeatLocalId = SRRepeatTemplateTransformer.REPEAT_TEMPLATE_ID_PREFIX + repeatTemplateMedicationId.getString();
+        CsvCell repeatTemplateMedicationIdCell = parser.getIDRepeatTemplate();
+
+        //SD-529 is the IDRepeatTemplate is not set, then the field contains "-1" so this was wrong
+        //if (!repeatTemplateMedicationIdCell.isEmpty()) {
+        if (!TppCsvHelper.isEmptyOrNegative(repeatTemplateMedicationIdCell)) {
+            String repeatLocalId = SRRepeatTemplateTransformer.REPEAT_TEMPLATE_ID_PREFIX + repeatTemplateMedicationIdCell.getString();
             Reference statementReference = ReferenceHelper.createReference(ResourceType.MedicationStatement, repeatLocalId);
-            medicationOrderBuilder.setMedicationStatementReference(statementReference, repeatTemplateMedicationId);
+            medicationOrderBuilder.setMedicationStatementReference(statementReference, repeatTemplateMedicationIdCell);
 
         } else {
             Reference statementReference = ReferenceHelper.createReference(ResourceType.MedicationStatement, medicationId.getString());

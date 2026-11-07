@@ -35,7 +35,12 @@ public class ObservationPreTransformer {
             } catch (EmisCodeNotFoundException ex) {
                 csvHelper.logMissingCode(ex, parser.getPatientGuid(), parser.getObservationGuid(), parser);
 
-            } catch (Exception ex) {
+            } catch (StackOverflowError ex) {
+                //log the details when the stack overflow occurred : SD-732
+                LOG.error("StackOverFlow exception: "+ex+", ObservationGuid: "+parser.getObservationGuid()+", CodeId: "+parser.getCodeId());
+                throw new TransformException(parser.getCurrentState().toString(), ex);
+            }
+            catch (Exception ex) {
                 //because this is a pre-transformer to cache data, throw any exception so we don't continue
                 throw new TransformException(parser.getCurrentState().toString(), ex);
             }

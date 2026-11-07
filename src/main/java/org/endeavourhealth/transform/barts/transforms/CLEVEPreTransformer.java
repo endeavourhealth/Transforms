@@ -7,6 +7,8 @@ import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingClin
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.CLEVE;
@@ -40,6 +42,9 @@ public class CLEVEPreTransformer {
             while (parser.nextRecord()) {
 
                 if (!csvHelper.processRecordFilteringOnPatientId((AbstractCsvParser) parser)) {
+                    continue;
+                }
+                if (!csvHelper.processRecordFilteringOnEventCd((AbstractCsvParser) parser)) {
                     continue;
                 }
                 //no try/catch here, since any failure here means we don't want to continue
@@ -90,9 +95,10 @@ public class CLEVEPreTransformer {
         //only set additional values if active
         if (activeInd) {
 
-            // ignore non numeric events bt allow Covid results
+            // ignore non numeric events bt allow Covid results and IM mapped Blob Text results
             if (!isNumericResult(parser, csvHelper)
-                    && !isMappedTextualResult(parser)) {
+                    && !isMappedTextualResult(parser)
+                    && !isMappedBlobTextResult(parser, csvHelper)) {
                 return;
             }
 
@@ -191,6 +197,13 @@ public class CLEVEPreTransformer {
             CsvCell resultTextCell = parser.getEventResultText();
             if (!resultTextCell.isEmpty()) {
                 stagingClinicalEvent.setEventResultTxt(resultTextCell.getString());
+            } else {
+                //Set the Blob text set during Blob pre-transform for event_id - trimmed to 255 chars,
+                // not stored in compass but used to derive positive / negative results
+                String blobText = csvHelper.getEventIdBlobContent(eventIdCell);
+                if (!Strings.isNullOrEmpty(blobText)) {
+                    stagingClinicalEvent.setEventResultTxt(blobText);
+                }
             }
 
             //carry over date result
@@ -263,6 +276,84 @@ public class CLEVEPreTransformer {
             LOG.debug("Passing through text result for CLEVE " + parser.getEventId().getString() + " with raw code [" + eventCodeCell.getString() + "] mapped to Snomed concept [" + mappedSnomedConcept + "]");
             return true;
 
+        } else {
+            return false;
+        }
+    }
+
+    private static boolean isMappedBlobTextResult(CLEVE parser, BartsCsvHelper csvHelper) throws Exception {
+
+        //we are only interested (at this time) in Document clinical events with linked Blob data
+        CsvCell eventClassCell = parser.getEventCodeClass();
+        CernerCodeValueRef classCodeRef
+                = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_CLASS, eventClassCell);
+        String classCodeRefDesc = classCodeRef.getCodeDescTxt();
+        if (!classCodeRefDesc.equalsIgnoreCase("Document")) {
+            return false;
+        }
+
+        //check the result status
+        CsvCell eventStatusCell = parser.getEventResultStatusCode();
+        if (!BartsCsvHelper.isEmptyOrIsZero(eventStatusCell)) {
+            CernerCodeValueRef statusCodeRef
+                    = csvHelper.lookupCodeRef(CodeValueSet.CLINICAL_EVENT_STATUS, eventStatusCell);
+            String statusCodeRefDesc = statusCodeRef.getCodeDescTxt();
+
+            //We are only interested clinical events with an active / Authorised status linked Blob data
+            //The pre-transforms filters out the following status values, so check for those here:
+            //(24, 26, 28, 29, 30, 31, 32, 33, 36, 37, 39, 40, 654643)
+            if (statusCodeRefDesc.equalsIgnoreCase("Anticipated")
+                    || statusCodeRefDesc.equalsIgnoreCase("Order canceled")
+                    || statusCodeRefDesc.equalsIgnoreCase("Row created in error")
+                    || statusCodeRefDesc.equalsIgnoreCase("In Error")   //29, 30, 31
+                    || statusCodeRefDesc.equalsIgnoreCase("Specimen in Lab")
+                    || statusCodeRefDesc.equalsIgnoreCase("Order in Progress")
+                    || statusCodeRefDesc.equalsIgnoreCase("NotDone")
+                    || statusCodeRefDesc.equalsIgnoreCase("Superseded/Inactive")
+                    || statusCodeRefDesc.equalsIgnoreCase("Unauthenticated")
+                    || statusCodeRefDesc.equalsIgnoreCase("Undefined Code")
+                    || statusCodeRefDesc.equalsIgnoreCase("REJECTED")) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+        //if no blob document (224) data exists for this event (set during BlobContentsPOreTransformer)
+        //then there will be no mapping possible so return out
+        CsvCell eventIdCell = parser.getEventId();
+        String blobText = csvHelper.getEventIdBlobContent(eventIdCell);
+        if (Strings.isNullOrEmpty(blobText)) {
+            return false;
+        }
+
+        //finally, does the event code and document text have an IM mapped value?
+        CsvCell eventCdCell = parser.getEventCode();
+        MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                "CM_Org_Barts",
+                "CM_Sys_Cerner",
+                "CDE",
+                "CLEVE",
+                "EVENT_CD",
+                eventCdCell.getString(),
+                IMConstant.BARTS_CERNER,
+                blobText
+        );
+        MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+
+        if (valueResponse != null) {
+            if (valueResponse.getConcept() != null) {
+                LOG.debug("Passing through Blob Text result for CLEVE " + parser.getEventId().getString()
+                        + " with Cerner code [" + eventCdCell.getString()
+                        + "] mapped to IM concept code [" + valueResponse.getConcept().getCode() + "]");
+                return true;
+            } else {
+
+                //LOG.debug("Not passing through Blob Text result for CLEVE " + parser.getEventId().getString()
+                //        + " with Cerner code [" + eventCdCell.getString()
+                //        + "] with BlobText [" + blobText + "]");
+                return false;
+            }
         } else {
             return false;
         }

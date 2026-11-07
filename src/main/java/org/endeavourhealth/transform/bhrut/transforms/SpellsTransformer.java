@@ -58,8 +58,8 @@ public class SpellsTransformer {
     }
 
     public static void deleteResources(Spells parser,
-                                      FhirResourceFiler fhirResourceFiler,
-                                      BhrutCsvHelper csvHelper) throws Exception {
+                                       FhirResourceFiler fhirResourceFiler,
+                                       BhrutCsvHelper csvHelper) throws Exception {
 
         CsvCell idCell = parser.getId();
         Encounter existingParentSpellEncounter
@@ -189,16 +189,35 @@ public class SpellsTransformer {
         }
         CsvCell admissionSourceCodeCell = parser.getAdmissionSourceCode();
         if (!admissionSourceCodeCell.isEmpty()) {
-                BhrutCsvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMISSION_SOURCE_CODE,
-                        admissionSourceCodeCell.getString(),
-                        admissionSourceCodeCell,
-                        containedParametersBuilderAdmission,
-                        BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
+            BhrutCsvHelper.addParmIfNotNullNhsdd(BhrutCsvToFhirTransformer.IM_ADMISSION_SOURCE_CODE,
+                    admissionSourceCodeCell.getString(),
+                    admissionSourceCodeCell,
+                    containedParametersBuilderAdmission,
+                    BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
         }
+        CsvCell admissionSpecialityCodeCell = parser.getAdmissionSpecialtyCode();
+        if (!admissionSpecialityCodeCell.isEmpty() &&
+                !admissionSpecialityCodeCell.getString().equals("Unknow")) {
+            BhrutCsvHelper.addParmIfNotNullNhsdd(BhrutCsvToFhirTransformer.IM_ADMISSION_SPECIALITY_CODE,
+                    admissionSpecialityCodeCell.getString(),
+                    admissionSpecialityCodeCell,
+                    containedParametersBuilderAdmission,
+                    BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
+        }
+
+        CsvCell referringConsultantCell = parser.getReferringConsultant();
+        if (!referringConsultantCell.isEmpty()) {
+            BhrutCsvHelper.addParmIfNotNullJson(BhrutCsvToFhirTransformer.IM_REFERRING_CONSULTANT,
+                    referringConsultantCell.getString(),
+                    referringConsultantCell,
+                    containedParametersBuilderAdmission,
+                    BhrutCsvToFhirTransformer.IM_SPELLS_TABLE_NAME);
+        }
+
         CsvCell admissionMethodCodeCell = parser.getAdmissionMethodCode();
         if (!admissionMethodCodeCell.isEmpty()) {
 
-            BhrutCsvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMISSION_METHOD_CODE,
+            BhrutCsvHelper.addParmIfNotNullNhsdd(BhrutCsvToFhirTransformer.IM_ADMISSION_METHOD_CODE,
                     admissionMethodCodeCell.getString(),
                     admissionMethodCodeCell,
                     containedParametersBuilderAdmission,
@@ -442,8 +461,8 @@ public class SpellsTransformer {
         CsvCell odsCodeCell = parser.getAdmissionHospitalCode();
         Reference organisationReference;
         if (!odsCodeCell.isEmpty()) {
-                organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
-                     // if episode already ID mapped, get the mapped ID for the org
+            organisationReference = csvHelper.createOrganisationReference(odsCodeCell.getString());
+            // if episode already ID mapped, get the mapped ID for the org
             if (episodeOfCareBuilder.isIdMapped()) {
                 organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, fhirResourceFiler);
             }
@@ -468,7 +487,7 @@ public class SpellsTransformer {
         }
 
         csvHelper.getEpisodeOfCareCache().cacheEpisodeOfCareBuilder(idCell, episodeOfCareBuilder);
-        fhirResourceFiler.savePatientResource(parser.getCurrentState(),!episodeOfCareBuilder.isIdMapped(),episodeOfCareBuilder);
+        fhirResourceFiler.savePatientResource(parser.getCurrentState(), !episodeOfCareBuilder.isIdMapped(), episodeOfCareBuilder);
     }
 
     private static EncounterBuilder createEncountersParentMinimum(Spells parser, FhirResourceFiler fhirResourceFiler, BhrutCsvHelper csvHelper) throws Exception {
@@ -558,7 +577,7 @@ public class SpellsTransformer {
         if (!admissionHospitalCodeCell.isEmpty()) {
 
             Reference organizationReference
-                        = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
+                    = csvHelper.createOrganisationReference(admissionHospitalCodeCell.getString());
 
             if (builder.isIdMapped()) {
                 organizationReference

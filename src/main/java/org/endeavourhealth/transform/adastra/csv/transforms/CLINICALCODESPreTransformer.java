@@ -43,7 +43,7 @@ public class CLINICALCODESPreTransformer {
 
         CsvCell caseId = parser.getCaseId();
         CsvCell consultationId = parser.getConsultationId();
-        CsvCell readCode = parser.getCode();
+        CsvCell clinicalCode = parser.getCode();  //this can now be Read2 or Snomed
 
         CsvCell patientId = csvHelper.findCasePatient(caseId.getString());
         if (patientId.isEmpty()) {
@@ -55,7 +55,7 @@ public class CLINICALCODESPreTransformer {
         //create a unique observation Id
         String observationId = caseId.getString()
                 + ":" + consultationId.getString()
-                + ":" + readCode.getString();
+                + ":" + clinicalCode.getString();
 
         //cache the link between the observation and consultation
         if (!consultationId.isEmpty()) {

@@ -22,8 +22,17 @@ public class IMConstant {
     public static final String FHIR_PROCEDURE_REQUEST_STATUS = "FHIR_PRS";
     public static final String FHIR_REFERRAL_PRIORITY = "FHIR_RFP";
     public static final String FHIR_REFERRAL_TYPE = "FHIR_RFT";
+    public static final String FHIR_SBI = "FHIR_SBI";
+    public static final String FHIR_SCAI = "FHIR_SCAI";
+    public static final String FHIR_PROCEDURE_REQUEST_FREE_TEXT_TYPE = "FHIR_FPR";
     public static final String BARTS_CERNER = "BartsCerner";
     public static final String IMPERIAL_CERNER = "ImperialCerner";
+    public static final String CWH_CERNER = "CWHCerner";
+    public static final String KINGS_PIMS = "KingsPIMS";
+    public static final String LNWH_SILVER_LINK = "LNWHSilverlink";
+    public static final String LNWH_SYMPHONY = "LNWHSymphony";
+    public static final String THH_SILVER_LINK = "THHSilverlink";
+    public static final String THH_SYMPHONY = "THHSymphony";
     public static final String FHIR_ADDRESS_USE = "FHIR_AU";
     public static final String FHIR_TELECOM_SYSTEM = "FHIR_CPS";
     public static final String FHIR_TELECOM_USE = "FHIR_CPU";
@@ -34,5 +43,6 @@ public class IMConstant {
     public static final String TPP_LOCAL = "TPP_LOCAL";
     public static final String VISION_LOCAL = "VISION_LOCAL";
     public static final String ENCOUNTER_LEGACY = "LE_TYPE";
+    public static final String FHIR_LANGUAGE = "FHIR_LANG";
 
 }

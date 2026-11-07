@@ -5,13 +5,15 @@ import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingClinicalEventTarget;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.core.terminology.TerminologyService;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
@@ -41,7 +43,7 @@ public class ClinicalEventTargetTransformer {
 
     private static void processsClinicalEvents(FhirResourceFiler fhirResourceFiler, BartsCsvHelper csvHelper) throws Exception {
 
-        // retrieve the target procedures for the current exchangeId
+        // retrieve the target clinical events for the current exchangeId
         List<StagingClinicalEventTarget> targetClinicalEvents = csvHelper.retrieveTargetClinicalEvents();
         if (targetClinicalEvents == null) {
             return;
@@ -49,11 +51,17 @@ public class ClinicalEventTargetTransformer {
 
         int size = targetClinicalEvents.size();
         int done = 0;
-        //removing this as it's not actually a warning
-        //TransformWarnings.log(LOG, csvHelper, "Target Clinical events to transform to FHIR: {} for exchangeId: {}", new Integer(size), csvHelper.getExchangeId());
 
         for (StagingClinicalEventTarget targetClinicalEvent : targetClinicalEvents) {
-            createObservationFromTarget(targetClinicalEvent, fhirResourceFiler, csvHelper);
+
+            //perform the same event cd filtering here as in the pre-transform as previous
+            //staging data will still exist that was not filtered, and we want to skip that
+            //if event cd filtering is enabled and the code in not in the filter list
+            String eventCd = targetClinicalEvent.getLookupEventCode();
+            if (csvHelper.processRecordFilteringOnEventCd(eventCd)) {
+
+                createObservationFromTarget(targetClinicalEvent, fhirResourceFiler, csvHelper);
+            }
 
             done ++;
             if (done % 1000 == 0) {
@@ -228,22 +236,15 @@ public class ClinicalEventTargetTransformer {
             observationBuilder.setIsConfidential(true);
         }
 
-        updateCodeForMappedResultTexts(observationBuilder, csvHelper);
+        //try blob text mapping first
+        if (!updateCodeForMappedBlobTextResults(observationBuilder)) {
+
+            //if not blob text mapped, try the old style text term maps
+            updateCodeForMappedResultTexts(observationBuilder, csvHelper);
+        }
 
         //save resource
         fhirResourceFiler.savePatientResource(null, observationBuilder);
-
-        /*//if our observation has a result text that's mapped to a concept in the IM, then we should create a second
-        //observation for that result concept
-        ObservationBuilder resultObservationBuilder = createResultObservationIfNecessary(observationBuilder, csvHelper);
-        if (resultObservationBuilder != null) {
-            //save both resources
-            fhirResourceFiler.savePatientResource(null, observationBuilder, resultObservationBuilder);
-
-        } else {
-            //save resource
-            fhirResourceFiler.savePatientResource(null, observationBuilder);
-        }*/
     }
 
     /**
@@ -273,11 +274,15 @@ public class ClinicalEventTargetTransformer {
 
         //if the result text isn't mapped to a concept then return out
         String cernerCode = cernerCodeCoding.getCode();
+
+        //LOG.debug("updateCodeForMappedResultTexts method called for cernerCode: {} with resultString: {}", cernerCode, resultString);
+
         String mappedCernerCodeForResult = IMHelper.getMappedLegacyCodeForLegacyCodeAndTerm(IMConstant.BARTS_CERNER, cernerCode, resultString);
         if (Strings.isNullOrEmpty(mappedCernerCodeForResult)) {
             TransformWarnings.log(LOG, csvHelper, "CLEVE {} result with Code ID {} and result text [{}] not mapped to concept", observation.getId(), cernerCode, resultString);
             return;
         }
+        //LOG.debug("mappedCernerCodeForResult: {} for cernerCode: {} with resultString: {}", mappedCernerCodeForResult, cernerCode, resultString);
 
         //remove the existing codeable concept that was copied from the parent
         CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code, null);
@@ -308,6 +313,77 @@ public class ClinicalEventTargetTransformer {
 
         //set result text to NULL since it's now in the CodeableConcept
         observationBuilder.setValueString(null);
+    }
+
+    /*
+        This new method checks for a value mapped code using code + blob text using the new IM API
+     */
+    private static boolean updateCodeForMappedBlobTextResults(ObservationBuilder observationBuilder) throws Exception {
+        Observation observation = (Observation)observationBuilder.getResource();
+
+        //if no result text, then return false
+        if (!observation.hasValue()) {
+            return false;
+        }
+        Type value = observation.getValue();
+        if (!(value instanceof StringType)) {
+            return false;
+        }
+        StringType st = (StringType)value;
+        String resultBlobText = st.getValue();
+
+        //find the Cerner Code from the observation
+        CodeableConcept cc = observation.getCode();
+        Coding cernerCodeCoding = CodeableConceptHelper.findCoding(cc, FhirCodeUri.CODE_SYSTEM_BARTS_CERNER_CODE_ID);
+        if (cernerCodeCoding == null) {
+            throw new Exception("Failed to find Cerner coding in codeable concept for observation " + observation.getId());
+        }
+
+        //perform value mapping to see if the result code and blob text is value mapped else return out
+        String cernerCode = cernerCodeCoding.getCode();
+
+        //LOG.debug("Calling into getIMMappedPropertyValueResponse for cernerCode: {} with resultBlobText: {}", cernerCode, resultBlobText);
+
+        MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                "CM_Org_Barts",
+                "CM_Sys_Cerner",
+                "CDE",
+                "CLEVE",
+                "EVENT_CD",
+                cernerCode,
+                IMConstant.BARTS_CERNER,
+                resultBlobText
+        );
+        MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+        //if no value response map then return out false
+        if (valueResponse == null) {
+            return false;
+        }
+
+        if (valueResponse.getConcept() != null) {
+
+            LOG.debug("valueResponse code: {} for cernerCode: {} with resultBlobText: {}", valueResponse.getConcept().getCode(), cernerCode, resultBlobText);
+        } else {
+            //LOG.debug("Returning FALSE as valueResponse.getConcept is NULL for Cerner code: {} with resultBlobText: {}", cernerCode, resultBlobText);
+            return false;
+        }
+
+        //remove the existing codeable concept that was set using the raw code
+        CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code, null);
+
+        //create a new codeable concept with the value mapped code
+        CodeableConceptBuilder ccBuilder
+                = new CodeableConceptBuilder(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code);
+        String codingSystem = ObservationCodeHelper.mapImSchemeToCodingSystem(valueResponse.getConcept().getScheme());
+        ccBuilder.addCoding(codingSystem);
+        ccBuilder.setCodingCode(valueResponse.getConcept().getCode());
+        ccBuilder.setCodingDisplay(cernerCodeCoding.getDisplay());   //the original cerner code term
+        ccBuilder.setText(resultBlobText);  //the blob text
+
+        //set the observation result text to NULL since it's now in the new updated CodeableConcept
+        observationBuilder.setValueString(null);
+
+        return true;
     }
 
     /*private static ObservationBuilder createResultObservationIfNecessary(ObservationBuilder observationBuilder, BartsCsvHelper csvHelper) throws Exception {

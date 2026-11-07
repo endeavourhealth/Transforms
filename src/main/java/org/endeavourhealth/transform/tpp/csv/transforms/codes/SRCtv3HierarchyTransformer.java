@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3HierarchyRefDalI;
+import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3LookupDalI;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
@@ -26,83 +27,21 @@ public class SRCtv3HierarchyTransformer {
         AbstractCsvParser parser = parsers.get(SRCtv3Hierarchy.class);
         if (parser != null) {
 
-            //just bulk load the file into the DB
-            String filePath = parser.getFilePath();
-            Date dataDate = fhirResourceFiler.getDataDate();
             TppCtv3HierarchyRefDalI dal = DalProvider.factoryTppCtv3HierarchyRefDal();
-            dal.updateHierarchyTable(filePath, dataDate);
-        }
-    }
+            Date lastUpdated = dal.getMostRecentCtv3HierarchyDate();
+            Date dataDate = fhirResourceFiler.getDataDate();
 
-    /*public static void processRecord(SRCtv3Hierarchy parser, TppCsvHelper csvHelper, List<TppCtv3HierarchyRef> mappingsToSave) throws Exception {
+            //SD-781 - only update the table if our file is newer than what's in there
+            if (lastUpdated == null
+                    || dataDate.after(lastUpdated)) {
 
-        CsvCell rowId = parser.getRowIdentifier();
-        if (rowId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}",
-                    rowId.getString(), parser.getFilePath());
-            return;
-        }
-        CsvCell ctv3ParentReadCode = parser.getCtv3CodeParent();
-        if (ctv3ParentReadCode.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "ERROR: Parent Read code missing: {} for rowId{} in file : {}",
-                    ctv3ParentReadCode.getString(),rowId.getString(), parser.getFilePath());
-            return;
-        }
-        CsvCell ctv3ChildReadCode = parser.getCtv3CodeChild();
-        if (ctv3ChildReadCode.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "ERROR: Child Read code missing: {} for rowId{} in file : {}",
-                    ctv3ChildReadCode.getString(),rowId.getString(), parser.getFilePath());
-            return;
-        }
-        CsvCell ctv3ChildLevel = parser.getChildLevel();
-        if (ctv3ChildLevel.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "ERROR: Child level Read code missing: {} for rowId{} in file : {}",
-                    ctv3ChildLevel.getString(),rowId.getString(), parser.getFilePath());
-            return;
-        }
+                //bulk load the file into the DB
+                String filePath = parser.getFilePath();
+                dal.updateHierarchyTable(filePath, dataDate);
+            } else {
 
-        TppCtv3HierarchyRef mapping = new TppCtv3HierarchyRef(rowId.getLong(),
-                ctv3ParentReadCode.getString(),
-                ctv3ChildReadCode.getString(),
-                ctv3ChildLevel.getInt());
-
-        mappingsToSave.add(mapping);
-
-        if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
-            List<TppCtv3HierarchyRef> copy = new ArrayList<>(mappingsToSave);
-            mappingsToSave.clear();
-            csvHelper.submitToThreadPool(new Task(copy));
-        }
-    }
-
-    static class Task implements Callable {
-
-        private List<TppCtv3HierarchyRef> mappingsToSave;
-
-        public Task(List<TppCtv3HierarchyRef> mappingsToSave) {
-
-            this.mappingsToSave = mappingsToSave;
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            try {
-                //save to the DB
-                repository.save(mappingsToSave);
-
-            } catch (Throwable t) {
-                String msg = "Error saving CTV3 hierarchy records for row IDs ";
-                for (TppCtv3HierarchyRef mapping: mappingsToSave) {
-                    msg += mapping.getRowId();
-                    msg += ", ";
-                }
-
-                LOG.error(msg, t);
-                throw new TransformException(msg, t);
+                LOG.trace("Not updating Ctv3 hierarchy table as table last updated " + lastUpdated + " and current file is from " + dataDate);
             }
-
-            return null;
         }
-    }*/
+    }
 }

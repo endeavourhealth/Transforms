@@ -38,7 +38,10 @@ public enum SubscriberTableId {
     LOCATION_V2((byte)35, "location_v2"),
     ABP_ADDRESS_V2((byte)36, "abp_address_v2"),
     ADDRESS_V2((byte)37, "address_v2"),
-    UPRN_MATCH_EVENT_V2((byte)38, "uprn_match_event_v2");
+    UPRN_MATCH_EVENT_V2((byte)38, "uprn_match_event_v2"),
+    APPOINTMENT_ADDITIONAL((byte)39, "appointment_additional"),
+    SCHEDULE_ADDITIONAL((byte)40, "schedule_additional"),
+    REFERRAL_REQUEST_ADDITIONAL((byte)41, "referral_request_additional");
 
     private byte id;
     private String name;

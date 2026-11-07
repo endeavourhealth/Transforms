@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.emis.csv.helpers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.HttpStatus;
 import org.endeavourhealth.common.cache.ObjectMapperPool;
@@ -21,8 +20,6 @@ import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.admin.ServiceDalI;
 import org.endeavourhealth.core.database.dal.admin.models.Service;
-import org.endeavourhealth.core.database.dal.audit.ExchangeDalI;
-import org.endeavourhealth.core.database.dal.audit.models.Exchange;
 import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -34,6 +31,9 @@ import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceF
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
@@ -41,7 +41,8 @@ import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCs
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
 import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
-import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
+import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-
 
 
 public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
@@ -110,6 +110,46 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         this.parsers = parsers;
     }
 
+    public static void addParamIfNotNull(String columnName,
+                                              String value,
+                                              CsvCell cell,
+                                              ContainedParametersBuilder parametersBuilder,
+                                              String tableName) throws Exception {
+        MapResponse propertyResponse = getProperty(columnName, tableName);
+        MapResponse valueResponse = getColumnValue(value, tableName, columnName);
+        CodeableConcept ccValue = new CodeableConcept();
+        ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                .setSystem(valueResponse.getConcept().getScheme());
+        parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, cell);
+    }
+
+    private static MapResponse getProperty(String column,
+                                           String table) throws Exception {
+        MapColumnRequest propertyRequest = new MapColumnRequest(
+                EmisCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                EmisCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                null,
+                table,
+                column
+        );
+        MapResponse valueResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+        return valueResponse;
+    }
+
+    private static MapResponse getColumnValue(String cellString,
+                                                   String tableName,
+                                                   String columnName) throws Exception {
+        MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                EmisCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                EmisCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                null,
+                tableName,
+                columnName,
+                cellString,
+                IMConstant.EMIS_LOCAL);
+
+        return IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+    }
 
     @Override
     public UUID getServiceId() {
@@ -183,22 +223,25 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }*/
 
 
-
     /**
      * admin-type resources just use the EMIS CSV GUID as their reference
      */
     public Reference createPractitionerReference(CsvCell practitionerGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Practitioner, practitionerGuid.getString());
     }
+
     public static Reference createOrganisationReference(CsvCell organizationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Organization, organizationGuid.getString());
     }
+
     public Reference createLocationReference(CsvCell locationGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Location, locationGuid.getString());
     }
+
     public Reference createScheduleReference(CsvCell scheduleGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Schedule, scheduleGuid.getString());
     }
+
     public Reference createSlotReference(CsvCell patientGuid, CsvCell slotGuid) throws Exception {
         String resourceId = createUniqueId(patientGuid, slotGuid);
         return ReferenceHelper.createReference(ResourceType.Slot, resourceId);
@@ -228,30 +271,35 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public static Reference createPatientReference(CsvCell patientGuid) throws Exception {
         return ReferenceHelper.createReference(ResourceType.Patient, createUniqueId(patientGuid, null));
     }
+
     public Reference createAppointmentReference(CsvCell appointmentGuid, CsvCell patientGuid) throws Exception {
         if (appointmentGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing appointmentGuid");
         }
         return ReferenceHelper.createReference(ResourceType.Appointment, createUniqueId(patientGuid, appointmentGuid));
     }
+
     public Reference createEncounterReference(CsvCell encounterGuid, CsvCell patientGuid) throws Exception {
         if (encounterGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing encounterGuid");
         }
         return ReferenceHelper.createReference(ResourceType.Encounter, createUniqueId(patientGuid, encounterGuid));
     }
+
     public Reference createConditionReference(CsvCell problemGuid, CsvCell patientGuid) {
         if (problemGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing problemGuid");
         }
         return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
     }
+
     public Reference createMedicationStatementReference(CsvCell medicationStatementGuid, CsvCell patientGuid) throws Exception {
         if (medicationStatementGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing medicationStatementGuid");
         }
         return ReferenceHelper.createReference(ResourceType.MedicationStatement, createUniqueId(patientGuid, medicationStatementGuid));
     }
+
     public Reference createProblemReference(CsvCell problemGuid, CsvCell patientGuid) throws Exception {
         if (problemGuid.isEmpty()) {
             throw new IllegalArgumentException("Missing problemGuid");
@@ -259,7 +307,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         return ReferenceHelper.createReference(ResourceType.Condition, createUniqueId(patientGuid, problemGuid));
     }
 
-    public Reference createEpisodeReference(CsvCell patientGuid) throws Exception{
+    public Reference createEpisodeReference(CsvCell patientGuid) throws Exception {
         //we now use registration start date as part of the source ID for episodes of care, so we use the internal  ID map table to store that start date
         CsvCell regStartCell = getLatestEpisodeStartDate(patientGuid);
         if (regStartCell == null) {
@@ -320,8 +368,8 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             List<EpisodeOfCareBuilder> episodeBuilders = new ArrayList<>();
 
             List<ResourceWrapper> episodeWrappers = resourceRepository.getResourcesByPatient(serviceId, patientUuid, ResourceType.EpisodeOfCare.toString());
-            for (ResourceWrapper episodeWrapper: episodeWrappers) {
-                EpisodeOfCare episode = (EpisodeOfCare)episodeWrapper.getResource();
+            for (ResourceWrapper episodeWrapper : episodeWrappers) {
+                EpisodeOfCare episode = (EpisodeOfCare) episodeWrapper.getResource();
                 EpisodeOfCareBuilder builder = new EpisodeOfCareBuilder(episode);
                 episodeBuilders.add(builder);
             }
@@ -337,7 +385,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
                 return null;
             }
 
-            EpisodeOfCareBuilder latestEpisode = episodeBuilders.get(episodeBuilders.size()-1);
+            EpisodeOfCareBuilder latestEpisode = episodeBuilders.get(episodeBuilders.size() - 1);
             Date latestDate = latestEpisode.getRegistrationStartDate();
 
             //need to convert back to a string in the same format as the raw file
@@ -393,7 +441,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-
     public void cacheObservationParentRelationship(CsvCell parentObservationGuid,
                                                    CsvCell patientGuid,
                                                    CsvCell observationGuid,
@@ -447,7 +494,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     public void processRemainingObservationParentChildLinks(FhirResourceFiler fhirResourceFiler) throws Exception {
         List<StringMemorySaver> keys = new ArrayList<>(observationChildMap.keySet());
-        for (StringMemorySaver key: keys) {
+        for (StringMemorySaver key : keys) {
             String uid = key.toString();
             ReferenceList referenceList = observationChildMap.get(key);
             updateExistingObservationWithNewChildLinks(uid, referenceList, fhirResourceFiler);
@@ -462,11 +509,11 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //the parent "observation" may have been saved as an observation OR a diagnostic report, so try both
         ResourceBuilderBase resourceBuilder;
 
-        DiagnosticReport fhirDiagnosticReport = (DiagnosticReport)retrieveResource(locallyUniqueId, ResourceType.DiagnosticReport);
+        DiagnosticReport fhirDiagnosticReport = (DiagnosticReport) retrieveResource(locallyUniqueId, ResourceType.DiagnosticReport);
         if (fhirDiagnosticReport != null) {
             resourceBuilder = new DiagnosticReportBuilder(fhirDiagnosticReport);
         } else {
-            Observation fhirObservation = (Observation)retrieveResource(locallyUniqueId, ResourceType.Observation);
+            Observation fhirObservation = (Observation) retrieveResource(locallyUniqueId, ResourceType.Observation);
             if (fhirObservation != null) {
                 resourceBuilder = new ObservationBuilder(fhirObservation);
             } else {
@@ -477,7 +524,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         boolean changed = false;
 
-        for (int i=0; i<childResourceRelationships.size(); i++) {
+        for (int i = 0; i < childResourceRelationships.size(); i++) {
             Reference reference = childResourceRelationships.getReference(i);
             CsvCell[] sourceCells = childResourceRelationships.getSourceCells(i);
 
@@ -485,13 +532,13 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             Reference globallyUniqueReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
 
             if (resourceBuilder instanceof DiagnosticReportBuilder) {
-                DiagnosticReportBuilder diagnosticReportBuilder = (DiagnosticReportBuilder)resourceBuilder;
+                DiagnosticReportBuilder diagnosticReportBuilder = (DiagnosticReportBuilder) resourceBuilder;
                 if (diagnosticReportBuilder.addResult(globallyUniqueReference, sourceCells)) {
                     changed = true;
                 }
 
             } else {
-                ObservationBuilder observationBuilder = (ObservationBuilder)resourceBuilder;
+                ObservationBuilder observationBuilder = (ObservationBuilder) resourceBuilder;
                 if (observationBuilder.addChildObservation(globallyUniqueReference, sourceCells)) {
                     changed = true;
                 }
@@ -539,11 +586,11 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      * clinical resources that are in those problems
      */
     public void processRemainingProblemRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
-        for (StringMemorySaver key: newProblemChildren.keySet()) {
+        for (StringMemorySaver key : newProblemChildren.keySet()) {
             ReferenceList newLinkedItems = newProblemChildren.get(key);
 
             String locallyUniqueResourceProblemId = key.toString();
-            Condition existingCondition = (Condition)retrieveResource(locallyUniqueResourceProblemId, ResourceType.Condition);
+            Condition existingCondition = (Condition) retrieveResource(locallyUniqueResourceProblemId, ResourceType.Condition);
             if (existingCondition == null) {
                 //if the problem has been deleted, just skip it
                 return;
@@ -552,7 +599,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             ConditionBuilder conditionBuilder = new ConditionBuilder(existingCondition);
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(conditionBuilder);
 
-            for (int i=0; i<newLinkedItems.size(); i++) {
+            for (int i = 0; i < newLinkedItems.size(); i++) {
                 Reference reference = newLinkedItems.getReference(i);
                 CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
 
@@ -642,7 +689,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         StringMemorySaver key = new StringMemorySaver(uniqueId);
         return drugRecordExistingLastIssueDateMap.remove(key);
     }
-
 
 
     public void cacheBpComponent(CsvCell parentObservationGuid, CsvCell patientGuid, BpComponent bpComponent) {
@@ -751,7 +797,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         return locationOrganisationMap.remove(key);
     }
 
-    *//**
+    */
+
+    /**
      * called at the end of the transform to handle any changes to location/organisation mappings
      * that weren't handled when we went through the Location file (i.e. changes in the OrganisationLocation file
      * with no corresponding changes in the Location file)
@@ -786,7 +834,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             fhirResourceFiler.saveAdminResource(null, false, locationBuilder);
         }
     }*/
-
     public void cacheEthnicity(CsvCell patientGuid, CodeAndDate codeAndDate) throws Exception {
         String localUniquePatientId = createUniqueId(patientGuid, null);
         StringMemorySaver key = new StringMemorySaver(localUniquePatientId);
@@ -844,14 +891,14 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         HashSet<StringMemorySaver> patientGuids = new HashSet<>(ethnicityMap.keySet());
         patientGuids.addAll(new HashSet<>(maritalStatusMap.keySet()));
 
-        for (StringMemorySaver key: patientGuids) {
+        for (StringMemorySaver key : patientGuids) {
 
             CodeAndDate newEthnicity = ethnicityMap.get(key);
             CodeAndDate newMaritalStatus = maritalStatusMap.get(key);
 
             String patientGuid = key.toString();
 
-            Patient fhirPatient = (Patient)retrieveResource(patientGuid, ResourceType.Patient);
+            Patient fhirPatient = (Patient) retrieveResource(patientGuid, ResourceType.Patient);
             if (fhirPatient == null) {
                 //if we try to update the ethnicity on a deleted patient, or one we've never received, we'll get this exception, which is fine to ignore
                 continue;
@@ -920,7 +967,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //the findProblem removes from the map, so we can't iterate directly over the keySet and need to copy that into a separate collection
         //for (String uid: problemMap.keySet()) {
         List<StringMemorySaver> keys = new ArrayList<>(problemMap.keySet());
-        for (StringMemorySaver key: keys) {
+        for (StringMemorySaver key : keys) {
             ConditionBuilder conditionBuilder = problemMap.getAndRemoveFromCache(key);
 
             if (conditionBuilder == null) {
@@ -947,7 +994,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         String locallyUniqueId = newConditionBuilder.getResourceId();
 
-        Condition existingResource = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition);
+        Condition existingResource = (Condition) retrieveResource(locallyUniqueId, ResourceType.Condition);
         if (existingResource == null) {
             //emis seem to send bulk data containing deleted records, so ignore any attempt to downgrade
             //a problem that doesn't actually exist
@@ -1004,7 +1051,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
         ContainedListBuilder newContainedListBuilder = new ContainedListBuilder(newConditionBuilder);
         List<Reference> newLinkedItems = newContainedListBuilder.getReferences();
-        for (Reference reference: newLinkedItems) {
+        for (Reference reference : newLinkedItems) {
             Reference mappedReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(reference, fhirResourceFiler);
 
             containedListBuilder.addReference(mappedReference);
@@ -1020,7 +1067,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
      */
     private void downgradeExistingProblemToCondition(String locallyUniqueId, FhirResourceFiler fhirResourceFiler) throws Exception {
 
-        Condition existingProblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition);
+        Condition existingProblem = (Condition) retrieveResource(locallyUniqueId, ResourceType.Condition);
         if (existingProblem == null) {
             //emis seem to send bulk data containing deleted records, so ignore any attempt to downgrade
             //a problem that doesn't actually exist
@@ -1081,7 +1128,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }*/
 
 
-
     public void cacheNewConsultationChildRelationship(CsvCell consultationGuid,
                                                       CsvCell patientGuid,
                                                       CsvCell resourceGuid,
@@ -1110,11 +1156,11 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
     public void processRemainingNewConsultationRelationships(FhirResourceFiler fhirResourceFiler) throws Exception {
-        for (StringMemorySaver key: consultationNewChildMap.keySet()) {
+        for (StringMemorySaver key : consultationNewChildMap.keySet()) {
             ReferenceList newLinkedItems = consultationNewChildMap.get(key);
 
             String locallyUniqueResourceEncounterId = key.toString();
-            Encounter existingEncounter = (Encounter)retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
+            Encounter existingEncounter = (Encounter) retrieveResource(locallyUniqueResourceEncounterId, ResourceType.Encounter);
             if (existingEncounter == null) {
                 //if the problem has been deleted, just skip it
                 return;
@@ -1123,7 +1169,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             EncounterBuilder encounterBuilder = new EncounterBuilder(existingEncounter);
             ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
 
-            for (int i=0; i<newLinkedItems.size(); i++) {
+            for (int i = 0; i < newLinkedItems.size(); i++) {
                 Reference reference = newLinkedItems.getReference(i);
                 CsvCell[] sourceCells = newLinkedItems.getSourceCells(i);
 
@@ -1134,7 +1180,6 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
             fhirResourceFiler.savePatientResource(null, false, encounterBuilder);
         }
     }
-
 
 
     public void cacheProblemObservationGuid(CsvCell patientGuid, CsvCell problemGuid, String readCode) {
@@ -1163,7 +1208,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //so we'll need to retrieve it from the DB and cache the code
         String readCode = null;
 
-        Condition fhirPproblem = (Condition)retrieveResource(locallyUniqueId, ResourceType.Condition);
+        Condition fhirPproblem = (Condition) retrieveResource(locallyUniqueId, ResourceType.Condition);
 
         //we've had cases of data referring to non-existent problems, so check for null
         if (fhirPproblem != null) {
@@ -1183,10 +1228,10 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
     public void processRemainingMedicationIssueDates(FhirResourceFiler fhirResourceFiler) throws Exception {
 
         //both maps (first and last issue dates) will have the same key set
-        for (StringMemorySaver key: drugRecordNewLastIssueDateMap.keySet()) {
+        for (StringMemorySaver key : drugRecordNewLastIssueDateMap.keySet()) {
 
             String medicationStatementLocalId = key.toString();
-            MedicationStatement fhirMedicationStatement = (MedicationStatement)retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement);
+            MedicationStatement fhirMedicationStatement = (MedicationStatement) retrieveResource(medicationStatementLocalId, ResourceType.MedicationStatement);
             if (fhirMedicationStatement == null) {
                 //if the medication statement doesn't exist or has been deleted, then just skip it
                 continue;
@@ -1286,7 +1331,7 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
         //so it ends up chewing memory up. So recreate the map, so keep it leaner
         Map<StringMemorySaver, ResourceType> tmp = new HashMap<>();
 
-        for (StringMemorySaver key: observationChildMap.keySet()) {
+        for (StringMemorySaver key : observationChildMap.keySet()) {
             ResourceType cachedType = parentObservationResourceTypes.get(key);
             if (cachedType != null) {
                 tmp.put(key, cachedType);
@@ -1464,11 +1509,9 @@ public class EmisCsvHelper implements HasServiceSystemAndExchangeIdI {
 
             String parameters = mapper.writeValueAsString(jsonRequestRoot);
 
-
-            //use a slightly different URL now so that we can use a user from the machine realm in Keycloak
-            //TODO - finish tesitng this and get it using the new Keycloak user and different API
-            WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/postToExchange");
-            //WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/PostToExchangeApi");
+            //SD-131 use a slightly different URL now so that we can use a user from the machine realm in Keycloak
+            WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("machine-api/exchangeAudit/postToExchange");
+            //WebTarget target = ClientBuilder.newClient().target(ddsUrl).path("api/exchangeAudit/postToExchange");
 
 
             Response response = target

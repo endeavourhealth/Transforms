@@ -30,6 +30,7 @@ public abstract class CdsPreTransformerBase {
     private final static String CDS_RECORD_TYPE_BIRTH = "120";
     private final static String CDS_RECORD_TYPE_DELIVERY = "140";
     private final static String CDS_RECORD_TYPE_GENERAL = "130";
+    private static List<String> INVALID_RECORD_IDS = new ArrayList<>();
 
     protected static void processRecords(CdsRecordI parser, BartsCsvHelper csvHelper, String susRecordType,
                                          List<StagingProcedureCds> procedureBatch,
@@ -50,7 +51,7 @@ public abstract class CdsPreTransformerBase {
     }
 
     protected static void processInpatientRecords(CdsRecordInpatientI parser, BartsCsvHelper csvHelper,
-                                         List<StagingInpatientCds> inpatientCdsBatch) throws Exception {
+                                                  List<StagingInpatientCds> inpatientCdsBatch) throws Exception {
 
         if (TransformConfig.instance().isLive()) {
 
@@ -61,7 +62,7 @@ public abstract class CdsPreTransformerBase {
     }
 
     protected static void processOutpatientRecords(CdsRecordOutpatientI parser, BartsCsvHelper csvHelper,
-                                         List<StagingOutpatientCds> outpatientCdsBatch) throws Exception {
+                                                   List<StagingOutpatientCds> outpatientCdsBatch) throws Exception {
 
         if (TransformConfig.instance().isLive()) {
 
@@ -72,13 +73,26 @@ public abstract class CdsPreTransformerBase {
     }
 
     protected static void processEmergencyCdsRecords(CdsRecordEmergencyCDSI parser, BartsCsvHelper csvHelper,
-                                         List<StagingEmergencyCds> emergencyCdsBatch) throws Exception {
+                                                     List<StagingEmergencyCds> emergencyCdsBatch) throws Exception {
 
         if (TransformConfig.instance().isLive()) {
 
-            //move function to here for go live
+            //copied function to here for go live (IDD-59)
+            processEmergencies(parser, csvHelper, emergencyCdsBatch);
         } else {
             processEmergencies(parser, csvHelper, emergencyCdsBatch);
+        }
+    }
+
+    protected static void processEmergencyCdsRecordsV2(CdsRecordEmergencyCDSI parser, BartsCsvHelper csvHelper,
+                                                       List<StagingEmergencyCds> emergencyCdsBatch) throws Exception {
+
+        if (TransformConfig.instance().isLive()) {
+
+            //copied function to here for go live (IDD-59)
+            processEmergenciesV2(parser, csvHelper, emergencyCdsBatch);
+        } else {
+            processEmergenciesV2(parser, csvHelper, emergencyCdsBatch);
         }
     }
 
@@ -452,7 +466,7 @@ public abstract class CdsPreTransformerBase {
                 //} else {
                 //    throw new Exception("Failed to find term for OPCS-4 code " + opcsCode);
                 //}
-                TransformWarnings.log(LOG, csvHelper,"Undefined OPCS code from Barts {}",BARTS_UNKNOWN_OPCS_CODE_Y926);
+                TransformWarnings.log(LOG, csvHelper, "Undefined OPCS code from Barts {}", BARTS_UNKNOWN_OPCS_CODE_Y926);
                 term = "Barts undefined OPCS code " + opcsCode;
             }
             cdsRemainder.setLookupProcedureOpcsTerm(term);
@@ -757,7 +771,7 @@ public abstract class CdsPreTransformerBase {
         if (Strings.isNullOrEmpty(term)) {
             if (icdCode.equals(BARTS_UNKNOWN_ICD10_CODE_Z669)) {
                 term = "Undefined ICD-10 code from Barts";
-                TransformWarnings.log(LOG,csvHelper, "Undefined ICD10 code from Barts {}", icdCode);
+                TransformWarnings.log(LOG, csvHelper, "Undefined ICD10 code from Barts {}", icdCode);
             } else {
                 throw new Exception("Failed to find term for ICD-10 code " + icdCode);
             }
@@ -932,7 +946,7 @@ public abstract class CdsPreTransformerBase {
     }
 
     private static void processCriticalCares(CdsRecordCriticalCareI parser, BartsCsvHelper csvHelper,
-                                           List<StagingCriticalCareCds> criticalCareCdsBatch) throws Exception {
+                                             List<StagingCriticalCareCds> criticalCareCdsBatch) throws Exception {
 
         StagingCriticalCareCds stagingCriticalCareCds = new StagingCriticalCareCds();
 
@@ -1155,7 +1169,6 @@ public abstract class CdsPreTransformerBase {
         List<String> mhClassificationsList = new ArrayList<>();
         int dataNumber = 1;
         while (dataNumber < 11) {
-
             //get next data cell (range could be from 1-10)
             String dataCode = parser.getMHClassificationCode(dataNumber).getString();
             //if no more data break out of loop
@@ -1203,7 +1216,7 @@ public abstract class CdsPreTransformerBase {
         }
         //finally set the delimetered diagnosis data string
         Collections.sort(diagnosisList);
-        String diagnosis = String.join("|",diagnosisList);
+        String diagnosis = String.join("|", diagnosisList);
         stagingEmergencyCds.setDiagnosis(diagnosis);
 
         // process all Investigations data into a delimetered string format eg:
@@ -1320,8 +1333,391 @@ public abstract class CdsPreTransformerBase {
         saveEmergencyCdsBatch(emergencyCdsBatch, false, csvHelper);
     }
 
+    private static void processEmergenciesV2(CdsRecordEmergencyCDSI parser, BartsCsvHelper csvHelper,
+                                             List<StagingEmergencyCds> emergencyCdsBatch) throws Exception {
+
+        if (!isValidRecord(parser, csvHelper)) {
+            return;
+        }
+
+        StagingEmergencyCds stagingEmergencyCds = new StagingEmergencyCds();
+
+        CsvCell cdsUniqueIdCell = parser.getCdsUniqueId();
+        stagingEmergencyCds.setCdsUniqueIdentifier(cdsUniqueIdCell.getString());
+
+        //audit that our staging object came from this file and record
+        ResourceFieldMappingAudit audit = new ResourceFieldMappingAudit();
+        audit.auditRecord(cdsUniqueIdCell.getPublishedFileId(), cdsUniqueIdCell.getRecordNumber());
+        stagingEmergencyCds.setAudit(audit);
+
+        stagingEmergencyCds.setExchangeId(csvHelper.getExchangeId().toString());
+        stagingEmergencyCds.setDtReceived(csvHelper.getDataDate());
+
+        //Cds activity date is common to all Sus files so if it is missing, log and exit record
+        CsvCell cdsActivityDateCell = parser.getCdsActivityDate();
+        if (!cdsActivityDateCell.isEmpty()) {
+            stagingEmergencyCds.setCdsActivityDate(parser.getCdsActivityDate().getDate());
+        } else {
+            TransformWarnings.log(LOG, csvHelper, "Missing EmergencyCds cdsActivityDate CDS id {}", parser.getCdsUniqueId());
+            return;
+        }
+
+        stagingEmergencyCds.setCdsUpdateType(parser.getCdsUpdateType().getInt());
+
+        //the file only has a withheld reason. if populated, then withHeld = true
+        CsvCell withheldReasonCell = parser.getWithheldReason();
+        boolean isWithheld = !withheldReasonCell.isEmpty();
+        stagingEmergencyCds.setWithheld(new Boolean(isWithheld));
+
+        String localPatientId = parser.getLocalPatientId().getString();
+        if (!isWithheld) { //LocalPatientId and NHS number should be empty if withheld. Get personId from internal lookup
+
+            stagingEmergencyCds.setMrn(localPatientId);
+            stagingEmergencyCds.setNhsNumber(parser.getNhsNumber().getString());
+            String personId = csvHelper.getInternalId(InternalIdMap.TYPE_MRN_TO_MILLENNIUM_PERSON_ID, localPatientId);
+            if (Strings.isNullOrEmpty(personId)) {
+                TransformWarnings.log(LOG, csvHelper, "Failed to find personid for CDS id {}", parser.getCdsUniqueId());
+                return;
+            }
+            if (!csvHelper.processRecordFilteringOnPatientId(personId)) {
+                //TransformWarnings.log(LOG, csvHelper, "Skipping CDS record {} as not part of filtered subset", parser.getCdsUniqueId());
+                return;
+            }
+            stagingEmergencyCds.setLookupPersonId(Integer.valueOf(personId));
+            if (parser.getCdsUpdateType().getInt() == 1) {
+                //if the update type is 1, then the operation is a delete, as such the data will be removed so we do not need to transform
+                // we add to and save the batch then return
+                emergencyCdsBatch.add(stagingEmergencyCds);
+                saveEmergencyCdsBatch(emergencyCdsBatch, false, csvHelper);
+                return;
+            }
+        } else {
+
+            //if withheld and mrn / local patientId is null then log and return as we cannot derive patient and mrn cannot be null
+            if (Strings.isNullOrEmpty(localPatientId)) {
+                TransformWarnings.log(LOG, csvHelper, "Skipping withheld CDS record {} with no MRN", parser.getCdsUniqueId());
+                return;
+            }
+        }
+
+        CsvCell patientDob = parser.getPersonBirthDate();
+        if (patientDob != null && !patientDob.isEmpty()) {
+            stagingEmergencyCds.setDateOfBirth(patientDob.getDate());
+        }
+
+        stagingEmergencyCds.setPatientPathwayIdentifier(parser.getPatientPathwayIdentifier().getString());
+        stagingEmergencyCds.setDepartmentType(parser.getDepartmentType().getString());
+        stagingEmergencyCds.setAmbulanceIncidentNumber(parser.getAmbulanceCallIdentifier().getString());
+
+        String odsCode = parser.getTreatmentOrganisationCode().getString();
+        if (!Strings.isNullOrEmpty(odsCode)) {
+            String orgId = csvHelper.getInternalId(InternalIdMap.TYPE_CERNER_ODS_CODE_TO_ORG_ID, odsCode);
+            stagingEmergencyCds.setTreatmentOrganisationCode(orgId);
+        }
+
+        stagingEmergencyCds.setAttendanceIdentifier(parser.getAttendanceIdentifier().getString());
+        stagingEmergencyCds.setArrivalMode(parser.getArrivalMode().getString());
+        stagingEmergencyCds.setAttendanceCategory(parser.getAttendanceCategory().getString());
+        stagingEmergencyCds.setAttendanceSource(parser.getAttendanceSource().getString());
+
+        CsvCell arrivalDate = parser.getArrivalDate();
+        CsvCell arrivalTime = parser.getArrivalTime();
+        Date arrivalDateTime = CsvCell.getDateTimeFromTwoCells(arrivalDate, arrivalTime);
+        if (arrivalDateTime != null) {
+            stagingEmergencyCds.setArrivalDate(arrivalDateTime);
+        }
+        CsvCell initialAssessmentDate = parser.getInitialAssessmentDate();
+        CsvCell initialAssessmentTime = parser.getInitialAssessmentTime();
+        Date initialAssessmentDateTime = CsvCell.getDateTimeFromTwoCells(initialAssessmentDate, initialAssessmentTime);
+        if (initialAssessmentDateTime != null) {
+            stagingEmergencyCds.setInitialAssessmentDate(initialAssessmentDateTime);
+        }
+        stagingEmergencyCds.setChiefComplaint(parser.getChiefComplaint().getString());
+
+        CsvCell seenForTreatmentDate = parser.getDateSeenforTreatment();
+        CsvCell seenForTreatmentTime = parser.getTimeSeenforTreatment();
+        Date seenForTreatmentDateTime = CsvCell.getDateTimeFromTwoCells(seenForTreatmentDate, seenForTreatmentTime);
+        if (seenForTreatmentDateTime != null) {
+            stagingEmergencyCds.setSeenForTreatmentDate(seenForTreatmentDateTime);
+        }
+        CsvCell decidedToAdmitDate = parser.getDecidedtoAdmitDate();
+        CsvCell decidedToAdmitTime = parser.getDecidedtoAdmitTime();
+        Date decidedToAdmitDateTime = CsvCell.getDateTimeFromTwoCells(decidedToAdmitDate, decidedToAdmitTime);
+        if (decidedToAdmitDateTime != null) {
+            stagingEmergencyCds.setDecidedToAdmitDate(decidedToAdmitDateTime);
+        }
+        stagingEmergencyCds.setDischargeStatus(parser.getDischargeStatus().getString());
+
+        CsvCell conclusionDate = parser.getConclusionDate();
+        CsvCell conclusionTime = parser.getConclusionTime();
+        Date conclusionDateTime = CsvCell.getDateTimeFromTwoCells(conclusionDate, conclusionTime);
+        if (conclusionDateTime != null) {
+            stagingEmergencyCds.setConclusionDate(conclusionDateTime);
+        }
+        CsvCell departureDate = parser.getDepartureDate();
+        CsvCell departureTime = parser.getDepartureTime();
+        Date departureDateTime = CsvCell.getDateTimeFromTwoCells(departureDate, departureTime);
+        if (departureDateTime != null) {
+            stagingEmergencyCds.setDepartureDate(departureDateTime);
+        }
+        stagingEmergencyCds.setDischargeDestination(parser.getDischargeDestination().getString());
+        stagingEmergencyCds.setDischargeDestinationSiteId(parser.getDischargeDestinationSiteId().getString());
+        stagingEmergencyCds.setDischargeFollowUp(parser.getDischargeFollowUp().getString());
+
+        // new mental health repeating group processing
+        List<String> mhClassificationsList = new ArrayList<>();
+        String columnString = parser.getMHClassificationColumn().getString();
+
+        if (!Strings.isNullOrEmpty(columnString)) {
+            String[] column = getColumnContents(columnString);
+            for (int i = 0; i < column.length; i++) {
+                String[] fields = column[i].split("\\|");
+
+                String dataCode = fields[4];
+                if (Strings.isNullOrEmpty(dataCode)) {
+                    break;
+                }
+                String dataStartDate = fields[0];
+                String dataStartTime = fields[1];
+                String dataStartDateTime = dataStartDate.concat(" ").concat(dataStartTime).trim();
+                String dataEndDate = fields[2];
+                String dataEndTime = fields[3];
+                String dataEndDateTime = dataEndDate.concat(" ").concat(dataEndTime).trim();
+                mhClassificationsList.add(dataStartDateTime.concat("~").concat(dataEndDateTime).concat("~").concat(dataCode));
+            }
+        }
+        //finally set the delimetered MH data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(mhClassificationsList);
+        String mhClassifications = String.join("|", mhClassificationsList);
+        stagingEmergencyCds.setMhClassifications(mhClassifications);
+
+        // process all Diagnosis data into a delimetered string format eg:
+        // code|code
+        List<String> diagnosisList = new ArrayList<>();
+
+        //get next data cell (range could be from 1-20)
+        String diagnosisString = parser.getDiagnosisCol().getString();
+        if (!Strings.isNullOrEmpty(diagnosisString)) {
+            String[] diagnosisColumn = getColumnContents(diagnosisString);
+            for (int i = 0; i < diagnosisColumn.length; i++) {
+                String[] fields = diagnosisColumn[i].split("\\|");
+                String dataCode = fields[0];
+                //if no more data break out of loop
+                if (Strings.isNullOrEmpty(dataCode)) {
+                    break;
+                }
+                //check if diagnosis is confirmed.  we are only interested in confirmed diagnosis
+                String confirmedQualifierCode = "";
+                if (fields.length == 3) {
+                    confirmedQualifierCode = fields[2];
+                }
+                if (Strings.isNullOrEmpty(confirmedQualifierCode) || !confirmedQualifierCode.equalsIgnoreCase("410605003")) {
+                    continue;
+                }
+                diagnosisList.add(dataCode);
+            }
+        }
+        //finally set the delimetered diagnosis data string
+        Collections.sort(diagnosisList);
+        String diagnosis = String.join("|", diagnosisList);
+        stagingEmergencyCds.setDiagnosis(diagnosis);
+
+        // process all Investigations data into a delimetered string format eg:
+        // datetime~code
+        List<String> invList = new ArrayList<>();
+        String investigationString = parser.getInvestigationCol().getString();
+        if (!Strings.isNullOrEmpty(investigationString)) {
+            String[] investigationColumn = getColumnContents(investigationString);
+
+            for (int i = 0; i < investigationColumn.length; i++) {
+                String[] fields = investigationColumn[i].split("\\|");
+                String dataCode = fields[0];
+                if (Strings.isNullOrEmpty(dataCode)) {
+                    break;
+                }
+                String dataDate = fields[1];
+                String dataTime = fields[2];
+                String dataDateTime = dataDate.concat(" ").concat(dataTime);
+
+                // Data is in the format  datetime~treatment code.
+                // Often, the entries are duplicated, i.e. same code, date and time, so check before adding in new data again
+                String data = dataDateTime.concat("~").concat(dataCode);
+                if (!invList.contains(data)) {
+                    invList.add(data);
+                }
+            }
+        }
+        //finally set the delimetered investigations data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(invList);
+        String inv = String.join("|", invList);
+        stagingEmergencyCds.setInvestigations(inv);
+
+        // process all Treatment data into a delimetered string format eg:
+        // datetime~code
+        List<String> treatmentList = new ArrayList<>();
+        String treatmentString = parser.getTreatmentCol().getString();
+        if (!Strings.isNullOrEmpty(treatmentString)) {
+            String[] treatmentCol = getColumnContents(treatmentString);
+            for (int i = 0; i < treatmentCol.length; i++) {
+                String[] fields = treatmentCol[i].split("\\|");
+                //get next data cell
+                String dataCode = fields[0];
+
+                //if no more data break out of loop
+                if (Strings.isNullOrEmpty(dataCode)) {
+                    break;
+                }
+                String dataDate = fields[1];
+                String dataTime = fields[2];
+                String dataDateTime = dataDate.concat(" ").concat(dataTime);
+
+                // Data is in the format  datetime~treatment code.
+                // Often, the entries are duplicated, i.e. same code, date and time, so check before adding in new data again
+                String data = dataDateTime.concat("~").concat(dataCode);
+                if (!treatmentList.contains(data)) {
+                    treatmentList.add(dataDateTime.concat("~").concat(dataCode));
+                }
+            }
+        }
+
+        //finally set the date time delimetered treatment data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(treatmentList);
+        String treatments = String.join("|", treatmentList);
+        stagingEmergencyCds.setTreatments(treatments);
+
+        // process all Referal data into a delimetered string format eg:
+        // request date~assessment date~code
+        List<String> referralList = new ArrayList<>();
+
+        String referralString = parser.getReferralToServiceCol().getString();
+        if (!Strings.isNullOrEmpty(referralString)) {
+            String[] referralCol = getColumnContents(referralString);
+            for (int i = 0; i < referralCol.length; i++) {
+                String[] fields = referralCol[i].split("\\|");
+                //get next data cell
+                String dataCode = fields[0];
+                //if no more data break out of loop
+                if (Strings.isNullOrEmpty(dataCode)) {
+                    break;
+                }
+                String requestDate = fields[1];
+                String requestTime = fields[2];
+                String requestDateTime = requestDate.concat(" ").concat(requestTime);
+                if (fields.length > 3) {
+                    String assessmentDate = fields[3];
+                    String assessmentTime = fields[4];
+                    String assessmentDateTime = assessmentDate.concat(" ").concat(assessmentTime);
+                    referralList.add(requestDateTime.concat("~").concat(assessmentDateTime).concat("~").concat(dataCode));
+                } else {
+                    referralList.add(requestDateTime.concat("~").concat(dataCode));
+                }
+            }
+        }
+        //finally set the delimetered referrals data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(referralList);
+        String referrals = String.join("|", referralList);
+        stagingEmergencyCds.setReferredToServices(referrals);
+
+        // process all Safe Guarding data into a delimetered string format eg:
+        // code|code
+        List<String> safeGuardlingList = new ArrayList<>();
+        String safeguardingString = parser.getSafeguardingConcern().getString();
+        if (!Strings.isNullOrEmpty(safeguardingString)) {
+            String[] safeguardingColumn = getColumnContents(safeguardingString);
+            for (int i = 0; i < safeguardingColumn.length; i++) {
+                String[] groupArray = safeguardingColumn[i].split("\\|");
+                for (String field : groupArray) {
+                    safeGuardlingList.add(field);
+                }
+            }
+        }
+
+        //finally set the delimetered safe guarding data string, sorted (to prevent duplicates) and pipe delimetered
+        Collections.sort(safeGuardlingList);
+
+        String safeGuardingConcerns = String.join("|", safeGuardlingList);
+        stagingEmergencyCds.setSafeguardingConcerns(safeGuardingConcerns);
+
+        //finally, add the Cds batch for saving
+        emergencyCdsBatch.add(stagingEmergencyCds);
+        saveEmergencyCdsBatch(emergencyCdsBatch, false, csvHelper);
+    }
+
+    private static boolean isValidRecord(CdsRecordEmergencyCDSI parser, BartsCsvHelper csvHelper) throws Exception {
+            return parser.getCdsUpdateType().getInt() == 1 || (validateDates(parser, csvHelper) && validateRepeatingGroups(parser, csvHelper));
+    }
+
+    private static boolean validateRepeatingGroups(CdsRecordEmergencyCDSI parser, BartsCsvHelper csvHelper) throws Exception {
+        Map<CsvCell, String> repeatingGroupMap = new HashMap<>();
+        try {
+            if (parser.getInvestigationCol() != null && !parser.getInvestigationCol().getString().isEmpty()) {
+                repeatingGroupMap.put(parser.getInvestigationCol(), getColumnContents(parser.getInvestigationCol().getString())[0].split("\\|")[1]);
+            }
+            if (parser.getTreatmentCol() != null && !parser.getTreatmentCol().getString().isEmpty()) {
+                repeatingGroupMap.put(parser.getTreatmentCol(), getColumnContents(parser.getTreatmentCol().getString())[0].split("\\|")[1]);
+            }
+            if (parser.getReferralToServiceCol() != null && !parser.getReferralToServiceCol().getString().isEmpty()) {
+                repeatingGroupMap.put(parser.getReferralToServiceCol(), getColumnContents(parser.getReferralToServiceCol().getString())[0].split("\\|")[1]);
+            }
+            if (parser.getMHClassificationColumn() != null && !parser.getMHClassificationColumn().getString().isEmpty()) {
+                repeatingGroupMap.put(parser.getMHClassificationColumn(), getColumnContents(parser.getMHClassificationColumn().getString())[0].split("\\|")[1]);
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            INVALID_RECORD_IDS.add("ECDS-" + parser.getCdsUniqueId().getString());
+            TransformWarnings.log(LOG, csvHelper, "Invalid date found in unknown column, on record {}", parser.getCdsUniqueId());
+            return false;
+        }
+        for (Map.Entry<CsvCell, String> entry : repeatingGroupMap.entrySet()) {
+            if (entry.getValue().length() != 8) {
+                TransformWarnings.log(LOG, csvHelper, "Invalid date found in column {} for record {}",entry.getKey().getColIndex(), parser.getCdsUniqueId());
+                INVALID_RECORD_IDS.add("ECDS-" + parser.getCdsUniqueId().getString());
+                return false;
+            }
+
+        }
+        return true;
+    }
+
+    private static boolean validateDates(CdsRecordEmergencyCDSI parser, BartsCsvHelper csvHelper) throws Exception {
+        List<CsvCell> nonEmptyDates = new ArrayList<>();
+        if (parser.getDateSeenforTreatment() != null && !parser.getDateSeenforTreatment().getString().isEmpty())
+            nonEmptyDates.add(parser.getDateSeenforTreatment());
+        if (parser.getDecidedtoAdmitDate() != null && !parser.getDecidedtoAdmitDate().getString().isEmpty())
+            nonEmptyDates.add(parser.getDecidedtoAdmitDate());
+        if (parser.getCdsActivityDate() != null && !parser.getCdsActivityDate().getString().isEmpty())
+            nonEmptyDates.add(parser.getCdsActivityDate());
+        if (parser.getPersonBirthDate() != null && !parser.getPersonBirthDate().getString().isEmpty())
+            nonEmptyDates.add(parser.getPersonBirthDate());
+        if (parser.getArrivalDate() != null && !parser.getArrivalDate().getString().isEmpty())
+            nonEmptyDates.add(parser.getArrivalDate());
+        if (parser.getInitialAssessmentDate() != null && !parser.getInitialAssessmentDate().getString().isEmpty())
+            nonEmptyDates.add(parser.getInitialAssessmentDate());
+        if (parser.getConclusionDate() != null && !parser.getConclusionDate().getString().isEmpty())
+            nonEmptyDates.add(parser.getConclusionDate());
+        if (parser.getDepartureDate() != null && !parser.getDepartureDate().getString().isEmpty())
+            nonEmptyDates.add(parser.getDepartureDate());
+        for (CsvCell date : nonEmptyDates) {
+            if (date.getString().length() != 8) {
+                TransformWarnings.log(LOG, csvHelper, "Invalid date found in column {} for record {}",date.getColIndex(), parser.getCdsUniqueId());
+                INVALID_RECORD_IDS.add("ECDS-" + parser.getCdsUniqueId().getString());
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String[] getColumnContents(String columnString) {
+        String[] returnCol;
+        if (columnString.contains("~")) {
+            returnCol = columnString.split("~");
+        } else {
+            returnCol = new String[]{columnString};
+        }
+        return returnCol;
+    }
+
     private static void processOutpatients(CdsRecordOutpatientI parser, BartsCsvHelper csvHelper,
-                                          List<StagingOutpatientCds> outpatientCdsBatch) throws Exception {
+                                           List<StagingOutpatientCds> outpatientCdsBatch) throws Exception {
 
         StagingOutpatientCds stagingOutpatientCds = new StagingOutpatientCds();
 
@@ -1579,8 +1975,12 @@ public abstract class CdsPreTransformerBase {
         saveInpatientCdsBatch(inpatientCdsBatch, false, csvHelper);
     }
 
+    public static List<String> getInvalidRecords() {
+        return INVALID_RECORD_IDS;
+    }
+
     private static void processHomeDelBirths(CdsRecordInpatientI parser, BartsCsvHelper csvHelper,
-                                          List<StagingHomeDelBirthCds> homeDelBirthCdsBatch) throws Exception {
+                                             List<StagingHomeDelBirthCds> homeDelBirthCdsBatch) throws Exception {
 
         StagingHomeDelBirthCds stagingHomeDelBirthCds = new StagingHomeDelBirthCds();
 

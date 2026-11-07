@@ -12,7 +12,7 @@ import org.hl7.fhir.instance.model.*;
 import java.util.Date;
 
 public class AppointmentBuilder extends ResourceBuilderBase
-        implements HasCodeableConceptI {
+        implements HasCodeableConceptI, HasContainedParametersI {
 
     private Appointment appointment = null;
 
@@ -39,6 +39,9 @@ public class AppointmentBuilder extends ResourceBuilderBase
     public DomainResource getResource() {
         return appointment;
     }
+
+    @Override
+    public String getContainedParametersExtensionUrl() { return FhirExtensionUri.ADDITIONAL; }
 
     /**
      * used to record the PATIENT and assigned PRACTITIONER

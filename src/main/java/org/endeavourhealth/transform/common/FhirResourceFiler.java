@@ -120,7 +120,7 @@ public class FhirResourceFiler implements FhirResourceFilerI, HasServiceSystemAn
         validateResources(serviceId, mapIds, false, resources);
         ExchangeBatch batch = getPatientBatch(mapIds, resources);
         addResourceToQueue(parserState, true, mapIds, batch, false, resources);
-    }
+      }
 
     public void deletePatientResource(CsvCurrentState parserState, ResourceBuilderBase... resources) throws Exception {
         deletePatientResource(parserState, true, resources);

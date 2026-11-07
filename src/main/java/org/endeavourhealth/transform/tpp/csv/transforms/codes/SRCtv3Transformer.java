@@ -1,6 +1,7 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.codes;
 
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.publisherCommon.EmisCodeDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppConfigListOptionDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.TppCtv3LookupDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.TppCtv3Lookup;
@@ -33,75 +34,21 @@ public class SRCtv3Transformer {
         AbstractCsvParser parser = parsers.get(SRCtv3.class);
         if (parser != null) {
 
-            //just bulk load the file into the DB
-            String filePath = parser.getFilePath();
-            Date dataDate = fhirResourceFiler.getDataDate();
             TppCtv3LookupDalI dal = DalProvider.factoryTppCtv3LookupDal();
-            dal.updateLookupTable(filePath, dataDate);
-        }
-    }
+            Date lastUpdated = dal.getMostRecentCtv3CodeDate();
+            Date dataDate = fhirResourceFiler.getDataDate();
 
-    /*public static void processRecord(SRCtv3 parser, TppCsvHelper csvHelper, List<TppCtv3Lookup> mappingsToSave) throws Exception {
+            //SD-781 - only update the table if our file is newer than what's in there
+            if (lastUpdated == null
+                    || dataDate.after(lastUpdated)) {
 
-        //the RowId is no longer carried over into the DB. The RowId in this file is inconsistent, with
-        //the same code having different IDs over time. Because we never need to look up a code by its RowId this
-        //isn't a problem, but we're no longer carrying this over to avoid any confusion.
-        *//*CsvCell rowId = parser.getRowIdentifier();
-        if (rowId.isEmpty()) {
-            TransformWarnings.log(LOG, parser, "ERROR: invalid row Identifier: {} in file : {}",
-                    rowId.getString(), parser.getFilePath());
-            return;
-        }*//*
-        CsvCell ctv3Code = parser.getCtv3Code();
-        CsvCell ctv3Text = parser.getCtv3Text();
+                //bulk load the file into the DB
+                String filePath = parser.getFilePath();
+                dal.updateLookupTable(filePath, dataDate);
+            } else {
 
-        ResourceFieldMappingAudit auditWrapper = new ResourceFieldMappingAudit();
-
-        //auditWrapper.auditValue(rowId.getPublishedFileId(), rowId.getRecordNumber(), rowId.getColIndex(), ROW_ID);
-        auditWrapper.auditValue(ctv3Code.getPublishedFileId(), ctv3Code.getRecordNumber(), ctv3Code.getColIndex(), CTV3_CODE);
-        auditWrapper.auditValue(ctv3Text.getPublishedFileId(), ctv3Text.getRecordNumber(), ctv3Text.getColIndex(), CTV3_TEXT);
-
-        TppCtv3Lookup lookup = new TppCtv3Lookup();
-        lookup.setCtv3Code(ctv3Code.getString());
-        lookup.setCtv3Text(ctv3Text.getString());
-        lookup.setAudit(auditWrapper);
-
-        mappingsToSave.add(lookup);
-
-        if (mappingsToSave.size() >= TransformConfig.instance().getResourceSaveBatchSize()) {
-            List<TppCtv3Lookup> copy = new ArrayList<>(mappingsToSave);
-            mappingsToSave.clear();
-            csvHelper.submitToThreadPool(new Task(copy));
-        }
-    }
-
-    static class Task implements Callable {
-
-        private List<TppCtv3Lookup> mappingsToSave = null;
-
-        public Task(List<TppCtv3Lookup> mappingsToSave) {
-            this.mappingsToSave = mappingsToSave;
-        }
-
-        @Override
-        public Object call() throws Exception {
-
-            try {
-                //save to the DB
-                repository.save(mappingsToSave);
-
-            } catch (Throwable t) {
-                String msg = "Error saving CTV3 lookup records for row IDs ";
-                for (TppCtv3Lookup mapping: mappingsToSave) {
-                    msg += mapping.getCtv3Code();
-                    msg += ", ";
-                }
-
-                LOG.error(msg, t);
-                throw new TransformException(msg, t);
+                LOG.trace("Not updating Ctv3 code lookup table as table last updated " + lastUpdated + " and current file is from " + dataDate);
             }
-
-            return null;
         }
-    }*/
+    }
 }

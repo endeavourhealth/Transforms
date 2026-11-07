@@ -96,13 +96,12 @@ public class PractitionerTransformer extends AbstractSubscriberTransformer {
         gmcCode = getGMCCode(fhir.getIdentifier());
 
         model.writeUpsert(subscriberId,
-            organizationId,
-            name,
-            roleCode,
-            roleDesc,
-            gmcCode);
-
-
+                organizationId,
+                name,
+                roleCode,
+                roleDesc,
+                gmcCode,
+                params);
     }
 
     private static String getGMCCode(List<Identifier> identifiers) {

@@ -297,5 +297,14 @@ public class ReferralRequestBuilder extends ResourceBuilderBase
             super.auditStringExtension(extension, sourceCells);
         }
     }
+    public void setRecipientServiceOffered(String recipientServiceOffered, CsvCell... sourceCells){
+        if (Strings.isNullOrEmpty(recipientServiceOffered)) {
+            ExtensionConverter.removeExtension(this.referralRequest, FhirExtensionUri.REFERRAL_REQUEST_RECIPIENT_SERVICE_OFFERED);
+
+        } else {
+            Extension extension = ExtensionConverter.createOrUpdateStringExtension(this.referralRequest, FhirExtensionUri.REFERRAL_REQUEST_RECIPIENT_SERVICE_OFFERED, recipientServiceOffered);
+            super.auditStringExtension(extension, sourceCells);
+        }
+    }
 
 }

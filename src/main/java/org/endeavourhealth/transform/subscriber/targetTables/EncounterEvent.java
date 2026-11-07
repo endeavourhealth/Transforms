@@ -2,9 +2,11 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 public class EncounterEvent extends AbstractTargetTable {
 
@@ -38,7 +40,21 @@ public class EncounterEvent extends AbstractTargetTable {
                             Date endDate,
                             Long institutionLocationId,
                             Date dateRecorded,
-                            boolean finished) throws Exception {
+                            boolean finished,
+                            SubscriberTransformHelper params) throws Exception {
+
+        //get any configured excluded columns for this table
+        List<String> excludedTableColumns
+                = params.getSubscriberExcludedColumns(getTableId(), getPermittedColumnExclusions());
+        if (excludedTableColumns != null) {
+            //check each column set for exclusion and blank
+            for (String column: excludedTableColumns) {
+                switch (column) {
+                    case "age_at_event" : ageAtEvent = null; break;
+                    default : break;
+                }
+            }
+        }
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
@@ -61,7 +77,7 @@ public class EncounterEvent extends AbstractTargetTable {
                 type,
                 subtype,
                 admissionMethod,
-                convertDate(endDate),
+                convertDateTime(endDate), //SD-478
                 convertLong(institutionLocationId),
                 convertDateTime(dateRecorded),
                 convertBoolean(finished));
@@ -125,6 +141,13 @@ public class EncounterEvent extends AbstractTargetTable {
                 Long.class,
                 Date.class,
                 Boolean.TYPE
+        };
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return new String[] {
+                "age_at_event"
         };
     }
 }

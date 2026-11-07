@@ -37,7 +37,7 @@ public class CdsTailPreTransformerBase {
                 processTailRecordProcedure(parser, csvHelper, susRecordType, procedureBatch);
             }
         } else {
-            //on Cerner Transform server, just run the latest tail records for now
+            //on Cerner Transform server, just run the latest tail records for now (needs moving to islive when deployed for diagnosis/proc cds encounter tails)
             processCdsTailRecord(parser, csvHelper, susRecordType, cdsTailBatch);
 
             //these calls reinstated for testing with CDS encounters
@@ -56,7 +56,8 @@ public class CdsTailPreTransformerBase {
 
         if (TransformConfig.instance().isLive()) {
 
-            //move function to here for go live
+            //copied function to here for go live (IDD-59)
+            processCdsTailRecord(parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY_CDS, cdsTailBatch);
         } else {
             processCdsTailRecord(parser, csvHelper, BartsCsvHelper.SUS_RECORD_TYPE_EMERGENCY_CDS, cdsTailBatch);
         }

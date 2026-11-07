@@ -14,8 +14,25 @@ public class ClinicalCode extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-
-        if (version.equals(EmisCsvToFhirTransformer.VERSION_5_4)) {
+        if(version.equals(EmisCsvToFhirTransformer.VERSION_8_0)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_2)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_3)){//SD-1090
+            return new String[]{
+                    "CodeId",
+                    "Term",
+                    "ReadTermId",
+                    "SnomedCTConceptId",
+                    "SnomedCTDescriptionId",
+                    "NationalCode",
+                    "NationalCodeCategory",
+                    "NationalDescription",
+                    "EmisCodeCategoryDescription",
+                    "ProcessingId",
+                    "ParentCodeId"
+            };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_5_4) || version.equals(EmisCsvToFhirTransformer.VERSION_5_5)) {
             return new String[]{
                     "CodeId",
                     "Term",

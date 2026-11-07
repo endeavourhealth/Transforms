@@ -43,6 +43,14 @@ public class ObservationBuilder extends ResourceBuilderBase
         return FhirExtensionUri.ADDITIONAL;
     }
 
+    public void setCategory(CodeableConcept category){
+        this.observation.setCategory(category);
+    }
+
+    public void setCode(CodeableConcept code){
+        this.observation.setCode(code);
+    }
+
     public void setPatient(Reference patientReference, CsvCell... sourceCells) {
         this.observation.setSubject(patientReference);
 

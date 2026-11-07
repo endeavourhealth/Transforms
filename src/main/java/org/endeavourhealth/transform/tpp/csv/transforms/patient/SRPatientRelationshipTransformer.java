@@ -80,8 +80,7 @@ public class SRPatientRelationshipTransformer {
 
             CsvCell relationshipTypeCell = parser.getRelationshipType();
             if (!relationshipTypeCell.isEmpty()) {
-                String rel = csvHelper.tppRelationtoFhir(relationshipTypeCell.getString());
-                contactBuilder.setRelationship(rel, relationshipTypeCell);
+                contactBuilder.setRelationship(relationshipTypeCell.getString(), relationshipTypeCell);
             }
 
             CsvCell relationshipWithNameCell = parser.getRelationshipWithName();
@@ -117,37 +116,57 @@ public class SRPatientRelationshipTransformer {
             }
 
             CsvCell relWithTelephone = parser.getRelationshipWithTelephone();
-            if (!(relWithTelephone).isEmpty()) {
+            if (!relWithTelephone.isEmpty()) {
                 ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
                 contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
                 contactPointBuilder.setUse(ContactPoint.ContactPointUse.HOME);
                 contactPointBuilder.setValue(relWithTelephone.getString(), relWithTelephone);
             }
             CsvCell relWithWorkTelephone = parser.getRelationshipWithWorkTelephone();
-            if (!(relWithWorkTelephone).isEmpty()) {
+            if (!relWithWorkTelephone.isEmpty()) {
                 ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
                 contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
                 contactPointBuilder.setUse(ContactPoint.ContactPointUse.WORK);
                 contactPointBuilder.setValue(relWithWorkTelephone.getString(), relWithWorkTelephone);
             }
             CsvCell relWithMobileTelephone = parser.getRelationshipWithMobileTelephone();
-            if (!(relWithWorkTelephone).isEmpty()) {
+            if (!relWithWorkTelephone.isEmpty()) {
                 ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
                 contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.PHONE);
                 contactPointBuilder.setUse(ContactPoint.ContactPointUse.MOBILE);
                 contactPointBuilder.setValue(relWithMobileTelephone.getString(), relWithMobileTelephone);
             }
             CsvCell relationshipWithFax = parser.getRelationshipWithFax();
-            if (!(relationshipWithFax).isEmpty()) {
+            if (!relationshipWithFax.isEmpty()) {
                 ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
                 contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.FAX);
                 contactPointBuilder.setValue(relationshipWithFax.getString(), relationshipWithFax);
             }
             CsvCell relationshipWithEmail = parser.getRelationshipWithEmailAddress();
-            if (!(relationshipWithEmail).isEmpty()) {
+            if (!relationshipWithEmail.isEmpty()) {
                 ContactPointBuilder contactPointBuilder = new ContactPointBuilder(contactBuilder);
                 contactPointBuilder.setSystem(ContactPoint.ContactPointSystem.EMAIL);
                 contactPointBuilder.setValue(relationshipWithEmail.getString(), relationshipWithEmail);
+            }
+
+            //SD-253 - process the next of kin field into a new extension
+            CsvCell nextOfKinCell = parser.getNextOfKin();
+            if (nextOfKinCell.getBoolean()) {
+                contactBuilder.setIsNextOfKin(true, nextOfKinCell);
+            }
+
+            //SD-253 - may as well populate new extension to record if the person is a carer too, which can be represented in multiple ways
+            CsvCell carerCell = parser.getCaresForPatient();
+            CsvCell principalCarerCell = parser.getPrincipalCarerForPatient();
+            if (carerCell.getBoolean()) {
+                contactBuilder.setIsCarer(true, carerCell);
+
+            } else if (principalCarerCell.getBoolean()) {
+                contactBuilder.setIsCarer(true, principalCarerCell);
+
+            } else if (!relationshipTypeCell.isEmpty()
+                    && relationshipTypeCell.getString().equalsIgnoreCase("Carer")) {
+                contactBuilder.setIsCarer(true, relationshipTypeCell);
             }
 
             CsvCell startDateCell = parser.getDateEvent();

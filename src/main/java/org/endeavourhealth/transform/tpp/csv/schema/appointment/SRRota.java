@@ -23,10 +23,9 @@ public class SRRota extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
-                || version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+
+        if (version.equals(TppCsvToFhirTransformer.VERSION_A)) {
+            //used in test packs and early feeds
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -37,30 +36,50 @@ public class SRRota extends AbstractCsvParser {
                     "Location",
                     "Code",
                     "IDProfileOwner",
-                    "AllowOverBooking",
-                    "BookingContactNumber",
-                    "IDAppointmentRoom",
-                    "IDBranch",
-                    "RemovedData"
-            };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_92)) {
-            return new String[]{
-                    "RowIdentifier",
-                    "IDOrganisationVisibleTo",
-                    "DateCreation",
-                    "IDProfileCreatedBy",
-                    "Name",
-                    "RotaType",
-                    "Location",
-                    "Code",
-                    "IDProfileOwner",
-                    "DateStart",
                     "AllowOverBooking",
                     "BookingContactNumber",
                     "IDAppointmentRoom",
                     "IDBranch"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_93)) {
+
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_B)) {
+            //version of above with RemovedData col
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateCreation",
+                    "IDProfileCreatedBy",
+                    "Name",
+                    "RotaType",
+                    "Location",
+                    "Code",
+                    "IDProfileOwner",
+                    "AllowOverBooking",
+                    "BookingContactNumber",
+                    "IDAppointmentRoom",
+                    "IDBranch",
+                    "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_C)) {
+            //adding DateStart to the VERSION_A
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateCreation",
+                    "IDProfileCreatedBy",
+                    "Name",
+                    "RotaType",
+                    "Location",
+                    "Code",
+                    "IDProfileOwner",
+                    "DateStart", //new field
+                    "AllowOverBooking",
+                    "BookingContactNumber",
+                    "IDAppointmentRoom",
+                    "IDBranch"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_D)) {
+            //version of above with RemovedData
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -78,7 +97,8 @@ public class SRRota extends AbstractCsvParser {
                     "IDBranch",
                     "RemovedData"
             };
-        } else {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_E)) {
+            //SD-453 two new cols added
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -89,11 +109,37 @@ public class SRRota extends AbstractCsvParser {
                     "Location",
                     "Code",
                     "IDProfileOwner",
+                    "DateStart",
                     "AllowOverBooking",
                     "BookingContactNumber",
                     "IDAppointmentRoom",
                     "IDBranch",
+                    "Specialty", //new field
+                    "TreatmentCode" //new field
             };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_F)) {
+            //version of above with RemovedData
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateCreation",
+                    "IDProfileCreatedBy",
+                    "Name",
+                    "RotaType",
+                    "Location",
+                    "Code",
+                    "IDProfileOwner",
+                    "DateStart",
+                    "AllowOverBooking",
+                    "BookingContactNumber",
+                    "IDAppointmentRoom",
+                    "IDBranch",
+                    "Specialty", //new field
+                    "TreatmentCode", //new field
+                    "RemovedData" //new field
+            };
+        } else {
+            throw new IllegalArgumentException("Unsupported version " + version);
         }
     }
 
@@ -165,6 +211,13 @@ public class SRRota extends AbstractCsvParser {
         return super.getCell("RemovedData");
     }
 
+    public CsvCell getSpecialty() {
+        return super.getCell("Specialty");
+    }
+
+    public CsvCell getTreatmentCode() {
+        return super.getCell("TreatmentCode");
+    }
 
     @Override
     protected boolean isFileAudited() {

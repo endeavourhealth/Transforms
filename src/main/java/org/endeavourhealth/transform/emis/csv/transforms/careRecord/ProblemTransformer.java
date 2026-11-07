@@ -3,10 +3,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 import org.endeavourhealth.common.fhir.schema.ProblemRelationshipType;
 import org.endeavourhealth.common.fhir.schema.ProblemSignificance;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.transform.common.AbstractCsvParser;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.resourceBuilders.ConditionBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
@@ -85,12 +82,15 @@ public class ProblemTransformer {
         //NOTE: the text of "complaint" is wrong in that it's not the same as a "problem", but this is the String that was used
         conditionBuilder.setCategory("complaint", observationGuid);
 
-        CsvCell comments = parser.getComment();
-        if (!comments.isEmpty()) {
-            //until we see an example of this data, we don't know if this text is a duplication of the AssociatedText
-            //field on the observation table or not, so wait until we get something then work out where it should go
-            throw new TransformException("Received problem comments - need to see if a duplicate of observation notes and work out FHIR mapping");
-            //conditionBuilder.setAdditionalNotes(comments.getString(), comments);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell comments = parser.getComment();
+            if (!comments.isEmpty()) {
+                //until we see an example of this data, we don't know if this text is a duplication of the AssociatedText
+                //field on the observation table or not, so wait until we get something then work out where it should go
+                throw new TransformException("Received problem comments - need to see if a duplicate of observation notes and work out FHIR mapping");
+                //conditionBuilder.setAdditionalNotes(comments.getString(), comments);
+            }
         }
 
         CsvCell endDate = parser.getEndDate();

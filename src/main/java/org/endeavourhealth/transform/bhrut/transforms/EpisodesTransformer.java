@@ -21,6 +21,7 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Console;
 import java.lang.reflect.Method;
 import java.util.Map;
 
@@ -398,19 +399,28 @@ public class EpisodesTransformer {
 
         CsvCell adminCategoryCodeCe = parser.getAdministrativeCategoryCode();
         if (!adminCategoryCodeCe.isEmpty()) {
-            BhrutCsvHelper.addParmIfNotNullNhsdd( BhrutCsvToFhirTransformer.IM_ADMINISTRATIVE_CATEGORY_CODE,
+            BhrutCsvHelper.addParmIfNotNullNhsdd(BhrutCsvToFhirTransformer.IM_ADMINISTRATIVE_CATEGORY_CODE,
                     adminCategoryCodeCe.getString(),
                     adminCategoryCodeCe,
                     containedParametersBuilder,
                     BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
         }
-
+        CsvCell episodeSpecialtyCodeCell = parser.getEpisodeSpecialtyCode();
+        if (!episodeSpecialtyCodeCell.isEmpty() &&
+                !episodeSpecialtyCodeCell.getString().equals("Unknow")) {
+            BhrutCsvHelper.addParmIfNotNullNhsdd(
+                    BhrutCsvToFhirTransformer.IM_EPISODE_SPECIALTY_CODE,
+                    episodeSpecialtyCodeCell.getString(),
+                    episodeSpecialtyCodeCell,
+                    containedParametersBuilder,
+                    BhrutCsvToFhirTransformer.IM_EPISODES_TABLE_NAME);
+        }
         String episodeStartWardCode = parser.getEpisodeStartWardCode().getString();
         String episodeEndWardCode = parser.getEpisodeEndWardCode().getString();
         if (!Strings.isNullOrEmpty(episodeStartWardCode) || !Strings.isNullOrEmpty(episodeEndWardCode)) {
             // JsonObject episodeWardsObjs = new JsonObject();
             if (!Strings.isNullOrEmpty(episodeStartWardCode)) {
-                String columnName =  "EPISODE_START_WARD_CODE";
+                String columnName = "EPISODE_START_WARD_CODE";
                 JsonObject episodeWardsObjs = new JsonObject();
                 episodeWardsObjs.addProperty(columnName, episodeStartWardCode);
                 MapColumnRequest propertyRequest = new MapColumnRequest(
@@ -422,11 +432,11 @@ public class EpisodesTransformer {
                 );
                 MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
                 String propertyCode = propertyResponse.getConcept().getCode();
-                String propertyName = "JSON_"+propertyCode;
+                String propertyName = "JSON_" + propertyCode;
                 containedParametersBuilder.addParameter(propertyName, episodeWardsObjs.toString());
             }
             if (!Strings.isNullOrEmpty(episodeEndWardCode)) {
-                String columnName =  "EPISODE_END_WARD_CODE";
+                String columnName = "EPISODE_END_WARD_CODE";
                 JsonObject episodeWardsObjs = new JsonObject();
                 episodeWardsObjs.addProperty(columnName, episodeEndWardCode);
 
@@ -439,7 +449,7 @@ public class EpisodesTransformer {
                 );
                 MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
                 String propertyCode = propertyResponse.getConcept().getCode();
-                String propertyName = "JSON_"+propertyCode;
+                String propertyName = "JSON_" + propertyCode;
                 containedParametersBuilder.addParameter(propertyName, episodeWardsObjs.toString());
             }
         }
@@ -453,7 +463,7 @@ public class EpisodesTransformer {
 
         //finally, save the episode encounter which always exists
         fhirResourceFiler.savePatientResource(parser.getCurrentState(), !episodeEncounterBuilder.isIdMapped(), episodeEncounterBuilder);
-     }
+    }
 
     private static void setCommonEncounterAttributes(EncounterBuilder builder,
                                                      Episodes parser,
@@ -516,8 +526,8 @@ public class EpisodesTransformer {
     }
 
     private static void deleteClinicalResources(Episodes parser,
-                                             FhirResourceFiler fhirResourceFiler,
-                                             BhrutCsvHelper csvHelper) throws Exception {
+                                                FhirResourceFiler fhirResourceFiler,
+                                                BhrutCsvHelper csvHelper) throws Exception {
 
         CsvCell idCell = parser.getId();
         CsvCell dataUpdateStatusCell = parser.getDataUpdateStatus();

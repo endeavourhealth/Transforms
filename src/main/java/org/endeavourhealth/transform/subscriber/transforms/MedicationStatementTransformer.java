@@ -47,7 +47,6 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
             return;
         }
 
-        long id;
         long organizationId;
         long patientId;
         long personId;
@@ -55,8 +54,6 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         Long practitionerId = null;
         Date clinicalEffectiveDate = null;
         Integer datePrecisionConceptId = null;
-        // Long dmdId = null;
-//        boolean isActive;
         Date cancellationDate = null;
         String dose = null;
         BigDecimal quantityValue = null;
@@ -64,10 +61,10 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
         Integer authorisationTypeConceptId;
         Integer coreConceptId = null;
         Integer nonCoreConceptId = null;
-        // String originalTerm = null;
         String bnfReference = null;
         Double ageAtEvent = null;
         String issueMethod = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -96,21 +93,29 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
             originalTerm = CodeableConceptHelper.findSnomedConceptText(fhir.getMedicationCodeableConcept());
         }*/
 
-        Coding originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getMedicationCodeableConcept());
-        if (originalCoding == null) {
-            //we get lots of free-text medication from TPP, so removed this as there's no point logging it when there's no fix
-            //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+        //SD-567 - handle null medication codeableConcepts including logging the warning to monitor
+        Coding originalCoding;
+        if (fhir.hasMedicationCodeableConcept()) {
+            originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getMedicationCodeableConcept());
+            if (originalCoding == null) {
+                //we get lots of free-text medication from TPP, so removed this as there's no point logging it when there's no fix
+                //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+                return;
+            }
+        } else {
+            TransformWarnings.log(LOG, params, "MedicationStatement {} hasMedicationCodeableConcept==false", fhir.getId());
             return;
         }
+
         String originalCode = originalCoding.getCode();
-
-
         String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
+        String restrictMedsVSet = params.getConfig().getImRestrictedMedicationsValueSet();
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay(), restrictMedsVSet);
+        if (nonCoreConceptId == null) {
+            //if no concept returned (filtered out via value set), then skip the resource
+            return;
+        }
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
-
-//        isActive = fhir.hasStatus()
-//                && fhir.getStatus() == MedicationStatement.MedicationStatementStatus.ACTIVE;
 
         if (fhir.hasDosage()) {
             if (fhir.getDosage().size() > 1) {
@@ -198,7 +203,6 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
 
         if (snomedCodeString != null) {
             bnfReference = params.getSnomedToBnfChapter(snomedCodeString);
-            //LOG.info("bnfReference: " + bnfReference);
         }
 
         if (fhir.getPatient() != null) {
@@ -212,27 +216,29 @@ public class MedicationStatementTransformer extends AbstractSubscriberTransforme
             issueMethod = fhir.getNote();
         }
 
+        dateRecorded = params.includeDateRecorded(fhir);
 
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(subscriberId,
-            organizationId,
-            patientId,
-            personId,
-            encounterId,
-            practitionerId,
-            clinicalEffectiveDate,
-            datePrecisionConceptId,
-//            isActive,
-            cancellationDate,
-            dose,
-            quantityValue,
-            quantityUnit,
-            authorisationTypeConceptId,
-            coreConceptId,
-            nonCoreConceptId,
-            bnfReference,
-            ageAtEvent,
-            issueMethod);
-
+                organizationId,
+                patientId,
+                personId,
+                encounterId,
+                practitionerId,
+                clinicalEffectiveDate,
+                datePrecisionConceptId,
+                cancellationDate,
+                dose,
+                quantityValue,
+                quantityUnit,
+                authorisationTypeConceptId,
+                coreConceptId,
+                nonCoreConceptId,
+                bnfReference,
+                ageAtEvent,
+                issueMethod,
+                dateRecorded,
+                params);
     }
 
     @Override

@@ -61,7 +61,7 @@ public class EncounterTransformer {
             Date dtExistingParent = getRecordedDate(existingParentEncounter);
             Date dtNewEncounter = getRecordedDate(newEncounter);
             if ((dtExistingParent == null && dtNewEncounter == null)
-                    || !dtNewEncounter.before(dtExistingParent)) {
+                    || (dtNewEncounter != null && dtExistingParent != null && !dtNewEncounter.before(dtExistingParent))) {
 
                 //copy the contents of the new Encounter into the existing parent
                 //fields got from http://hl7.org/fhir/DSTU2/encounter.html

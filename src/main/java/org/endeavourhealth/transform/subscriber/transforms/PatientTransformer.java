@@ -15,11 +15,8 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.PseudoIdDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberPersonMappingDalI;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.PseudoIdAudit;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.PseudoIdBuilder;
 import org.endeavourhealth.transform.common.RalfBuilder;
-import org.endeavourhealth.transform.common.TransformConfig;
-import org.endeavourhealth.transform.common.TransformConstant;
 import org.endeavourhealth.transform.subscriber.*;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 import org.endeavourhealth.transform.subscriber.targetTables.*;
@@ -28,7 +25,7 @@ import org.hl7.fhir.instance.model.Practitioner;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.endeavourhealth.transform.common.TransformConstant;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -149,11 +146,20 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         if (ethnicityExtension != null) {
             CodeableConcept codeableConcept = (CodeableConcept) ethnicityExtension.getValue();
             String ethnicCodeId = "";
-            ethnicCodeId = CodeableConceptHelper.findCodingCode(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
-            String display = CodeableConceptHelper.findCodingDisplay(codeableConcept, FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
+            String display="";
+            String systemUri= IMConstant.FHIR_ETHNIC_CATEGORY;
+            Coding ethnicCoding = CodeableConceptHelper.findCoding(codeableConcept,FhirValueSetUri.VALUE_SET_ETHNIC_CATEGORY);
+            if (ethnicCoding == null) {
+                systemUri=IMConstant.DISCOVERY_CODE;
+                ethnicCoding = CodeableConceptHelper.findCoding(codeableConcept, IMConstant.DISCOVERY_CODE);
+            }
 
-            if (!ethnicCodeId.isEmpty()) {
-                ethnicCodeConceptId = IMHelper.getIMConcept(params, fhirPatient, IMConstant.FHIR_ETHNIC_CATEGORY, ethnicCodeId, display);
+            if (ethnicCoding != null) {
+                ethnicCodeId = ethnicCoding.getCode();
+                display = ethnicCoding.getDisplay();
+                if (!ethnicCodeId.isEmpty()) {
+                    ethnicCodeConceptId = IMHelper.getIMConcept(params, fhirPatient, systemUri, ethnicCodeId, display);
+                }
             }
         }
 
@@ -180,7 +186,37 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             } else {
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(fhirPatient.getBirthDate());
-                cal.set(Calendar.DAY_OF_MONTH, 1);
+
+                //if pseudonymised is set and a date of birth masking is set, perform that masking
+                //otherwise just mask the day of the month to 1 (default)
+                String dateOfBirthMask = params.getConfig().getDateOfBirthMask();
+                if (!Strings.isNullOrEmpty(dateOfBirthMask)) {
+
+                    //date of birth mask format is dd/MM/yyyy, eg.  01/01/yyyy
+                    //if the format is non numeric, do not mask that part otherwise masking using the numeric
+                    String[] parts = dateOfBirthMask.split("/");
+                    String dayMask = parts[0];
+                    if (!dayMask.equalsIgnoreCase("dd")) {
+
+                        int day = Integer.parseInt(dayMask);
+                        cal.set(Calendar.DAY_OF_MONTH, day);
+                    }
+                    String monthMask = parts[1];
+                    if (!monthMask.equalsIgnoreCase("MM")) {
+
+                        int month = Integer.parseInt(monthMask);
+                        cal.set(Calendar.MONTH, month - 1);  // Java month is zero-indexed
+                    }
+                    String yearMask = parts[2];
+                    if (!yearMask.equalsIgnoreCase("yyyy")) {
+
+                        int year = Integer.parseInt(yearMask);
+                        cal.set(Calendar.YEAR, year);
+                    }
+                } else {
+                    //the default pseudo dob masking is setting the day of the month to 1
+                    cal.set(Calendar.DAY_OF_MONTH, 1);
+                }
                 dateOfBirth = cal.getTime();
             }
         }
@@ -467,34 +503,28 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
         String match_number = ss[10];
         String match_building = ss[8];
         String match_flat = ss[9];
+        String pseudoUprn = null;
+
+        SubscriberConfig c = params.getConfig();
+        List<LinkDistributorConfig> salts = c.getRalfSalts();
+        if (!salts.isEmpty()) {
+            LinkDistributorConfig firstSalt = salts.get(0);
+            String base64Salt = firstSalt.getSalt();
+            byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
+            TreeMap<String, String> keys = new TreeMap<>();
+            keys.put("UPRN", "" + sUprn);
+            Crypto crypto = new Crypto();
+            crypto.SetEncryptedSalt(saltBytes);
+            pseudoUprn = crypto.GetDigest(keys);
+        }
+
+        //uprnRet = pseudoUprn;
 
         // null fields because isPseudonymised
         if (params.isPseudonymised()) {
             //LOG.debug("Pseduonymise!");
 
-            SubscriberConfig c = params.getConfig();
-            List<LinkDistributorConfig> salts = c.getRalfSalts();
-            LinkDistributorConfig firstSalt = salts.get(0);
-            String base64Salt = firstSalt.getSalt();
-
-            /*config = ConfigManager.getConfigurationAsJson(params.getSubscriberConfigName(), "db_subscriber");
-            JsonNode s = config.get("pseudo_salts");
-            ArrayNode arrayNode = (ArrayNode) s;
-            if (s == null) {throw new Exception("Unable to find UPRN salt");}
-            JsonNode arrayElement = arrayNode.get(0);
-            String base64Salt = arrayElement.get("salt").asText();*/
-
-            //LOG.debug(base64Salt);
-
-            byte[] saltBytes = Base64.getDecoder().decode(base64Salt);
-
-            TreeMap<String, String> keys = new TreeMap<>();
-            keys.put("UPRN", "" + sUprn);
-
-            Crypto crypto = new Crypto();
-            crypto.SetEncryptedSalt(saltBytes);
-            String pseudoUprn = crypto.GetDigest(keys);
-            sUprn = pseudoUprn;
+            sUprn = "";
             // nullify fields
             znumber = null;
             zstreet = null;
@@ -516,8 +546,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
 
         uprnwriter.writeUpsert(//uprn_subTableId,
                 //subTableId.getSubscriberId(),
-                subTableId.getSubscriberId(),
+                subTableId,
                 sUprn,
+                pseudoUprn,
                 stati, // status
                 sClass,
                 lat,
@@ -596,6 +627,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                 String msoa2011 = null;
                 String ward = null;
                 String localAuthority = null;
+                Double townsendDeprivationIndex = null;
 
                 if (!params.isPseudonymised()) {
                     addressLine1 = getAddressLine(address, 0);
@@ -627,6 +659,7 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                     msoa2011 = postcodeReference.getMsoa2011Code();
                     ward = postcodeReference.getWardCode();
                     localAuthority = postcodeReference.getLocalAuthorityCode();
+                    townsendDeprivationIndex = postcodeReference.getTownsendDeprivationScore();
                 }
 
                 writer.writeUpsert(subTableId,
@@ -647,7 +680,9 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                         msoa2001,
                         msoa2011,
                         ward,
-                        localAuthority);
+                        localAuthority,
+                        townsendDeprivationIndex,
+                        params);
 
                 // get the address details again for UPRN (might be Pseudonymised)
                 addressLine1 = getAddressLine(address, 0);
@@ -1140,39 +1175,35 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                     List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
                     for (Parameters.ParametersParameterComponent parameter : entries) {
 
-                        //each parameter entry  will have a key value pair of name and CodeableConcept value
+                        // each parameter entry will have a key value pair of either:
+                        //  1) TEXT_propertycode property plus TEXT data as a value
+                        //  2) JSON_propertycode property plus JSON data as value
+                        //  3) IM concept property code plus a CodeableConcept value (code and scheme)
                         if (parameter.hasName() && parameter.hasValue()) {
                             String propertyCode = parameter.getName();
 
-                             // ADT -09 - Parameter to differentiate a GP source data from an HL7 source data and also ensure if this is HL7 source
-                             // then only write to patient additional
-
+                            // ADT -09 - Parameter to differentiate a GP source data from an HL7 source data and also ensure if this is HL7 source
+                            // then only write to patient additional
                             if (propertyCode != null && propertyCode.equals(TransformConstant.PARAMETER_GP_PRACTITIONER_ID)) {
                                 transformPractitionertoPatientAdditionals (params, id, parameter);
-                            }
-                            else if (!propertyCode.startsWith("JSON_")) {
+                            //Handle basic TEXT data entries such as GP practitioner number
+                            } else if (propertyCode != null && propertyCode.equals("NMTH")) {
+                                transformMothertoPatientAdditionals(params, id, parameter);
+                            } else if (propertyCode.startsWith("TEXT_")) {
+
                                 String propertyScheme = IMConstant.DISCOVERY_CODE;
 
-                                CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
-                                String valueCode = parameterValue.getCoding().get(0).getCode();
-                                String valueScheme = parameterValue.getCoding().get(0).getSystem();
-
-                                //we need to look up DBids for both
+                                //get the IM concept property code
+                                propertyCode = propertyCode.replace("TEXT_", "");
                                 Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
-                                Integer valueConceptDbid = IMHelper.getIMConcept(valueScheme, valueCode);
-
-                                //SD-382 - need to track how we're getting a null property ID going into the patient_additional table,
-                                //so adding exceptions if we try to send nulls through
                                 if (propertyConceptDbid == null) {
-                                    throw new Exception("Got a null concept ID for property code [" + propertyCode + "] and scheme " + propertyScheme);
+                                    LOG.debug("Null value for propertyCode " + propertyCode);
                                 }
-                                if (valueConceptDbid == null) {
-                                    throw new Exception("Got a null concept ID for value code [" + valueCode + "] and scheme " + valueScheme);
-                                }
+                                //the value is a StringType storing the Text
+                                StringType textValue = (StringType) parameter.getValue();
+                                patientAdditional.writeUpsert(id, propertyConceptDbid, null, null, textValue.getValue());
 
-                                //write the IM values to the patient_additional table upsert
-                                patientAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null);
-                            } else {
+                            } else if (propertyCode.startsWith("JSON_")) {
 
                                 //Handle JSON blobs
                                 String propertyScheme = IMConstant.DISCOVERY_CODE;
@@ -1189,44 +1220,43 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
                                 if (propertyConceptDbid == null) {
                                     throw new Exception("Got a null concept ID for property code [" + propertyCode + "] and scheme " + propertyScheme);
                                 }
+                                patientAdditional.writeUpsert(id, propertyConceptDbid, null, jsonValue.getValue(), null);
 
-                                patientAdditional.writeUpsert(id, propertyConceptDbid, null, jsonValue.getValue());
+                            } else {
+
+                                //and finally, these values are from IM API mapping, an IM property_id and value_id pair
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
+                                String type = parameter.getValue().getClass().getSimpleName();
+
+                                //only CodeableConcept values should exist
+                                if (type.equalsIgnoreCase("CodeableConcept")) {
+                                    CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
+                                    String valueCode = parameterValue.getCoding().get(0).getCode();
+                                    String valueScheme = parameterValue.getCoding().get(0).getSystem();
+
+                                    //we need to look up DBids for both
+                                    Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
+                                    Integer valueConceptDbid = IMHelper.getIMConcept(valueScheme, valueCode);
+
+                                    //SD-382 - need to track how we're getting a null property ID going into the patient_additional table,
+                                    //so adding exceptions if we try to send nulls through
+                                    if (propertyConceptDbid == null) {
+                                        throw new Exception("Got a null concept ID for property code [" + propertyCode + "] and scheme " + propertyScheme);
+                                    }
+                                    if (valueConceptDbid == null) {
+                                        throw new Exception("Got a null concept ID for value code [" + valueCode + "] and scheme " + valueScheme);
+                                    }
+
+                                    //write the IM values to the patient_additional table upsert
+                                    patientAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null, null);
+                                } else {
+                                    throw new Exception("Unsupported value type [" + type + "] for property code [" + propertyCode + "] and scheme " + propertyScheme);
+                                }
                             }
                         }
                     }
                     break;
                 }
-            }
-        }
-    }
-
-    /*
-     * Write practitioner to patient_additional
-     */
-    private void transformPractitionertoPatientAdditionals(SubscriberTransformHelper params, SubscriberId id,
-                                                          Parameters.ParametersParameterComponent parameter) throws Exception {
-        Long registeredPractitionerId = null;
-        OutputContainer outputContainer = params.getOutputContainer();
-        PatientAdditional patientAdditional = outputContainer.getPatientAdditional();
-
-        Integer propertyConceptDbid = IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, PROP_CODE_CM_GP_PRACTITIONER_CODE);
-        //SD-382 - need to track how we're getting a null property ID going into the patient_additional table,
-        //so adding exceptions if we try to send nulls through
-        if (propertyConceptDbid == null) {
-            throw new Exception("Got a null concept ID for property code [" + PROP_CODE_CM_GP_PRACTITIONER_CODE + "] and scheme " + IMConstant.DISCOVERY_CODE);
-        }
-        Reference practitionerReference = (Reference) parameter.getValue();
-        if(practitionerReference != null) {
-            try {
-                registeredPractitionerId = transformOnDemandAndMapId(practitionerReference,
-                        SubscriberTableId.PRACTITIONER, params);
-            } catch (Throwable t) {
-                LOG.error("Error finding enterprise ID for practitioner reference " + practitionerReference.getReference());
-                throw t;
-            }
-            //write patient id, IM value, practitioner id to the patient_additional table upsert
-            if (registeredPractitionerId != null) {
-                patientAdditional.writeUpsert(id, propertyConceptDbid, registeredPractitionerId.intValue(), null);
             }
         }
     }
@@ -1248,6 +1278,67 @@ public class PatientTransformer extends AbstractSubscriberTransformer {
             }
         }
 
+    }
+
+    private void transformMothertoPatientAdditionals(SubscriberTransformHelper params, SubscriberId id,
+                                                     Parameters.ParametersParameterComponent parameter) throws Exception {
+        Long naturalMotherPatientId = null;
+        OutputContainer outputContainer = params.getOutputContainer();
+        PatientAdditional patientAdditional = outputContainer.getPatientAdditional();
+
+        Integer propertyConceptDbid = IMHelper.getIMConcept(IMConstant.SNOMED, "65656005");   // Natural Mother (Qualifer)
+
+        //so adding exceptions if we try to send nulls through
+        if (propertyConceptDbid == null) {
+            throw new Exception("Got a null concept ID for property code [65656005] and scheme " + IMConstant.SNOMED);
+        }
+        Reference naturalMotherPatientReference = (Reference) parameter.getValue();
+        if(null != naturalMotherPatientReference) {
+            try {
+                naturalMotherPatientId = transformOnDemandAndMapId(naturalMotherPatientReference,
+                        SubscriberTableId.PATIENT, params);
+            } catch (Throwable t) {
+                LOG.error("Error finding Subscriber ID for patient reference " + naturalMotherPatientReference.getReference());
+                throw t;
+            }
+            //write patient id, IM value, patient (mother) id to the patient_additional table upsert
+            if (null != naturalMotherPatientId) {
+                patientAdditional.writeUpsert(id, propertyConceptDbid, null, null, naturalMotherPatientId.toString());
+
+            }
+        }
+    }
+
+    /*
+     * Write practitioner to patient_additional
+     */
+    private void transformPractitionertoPatientAdditionals(SubscriberTransformHelper params, SubscriberId id,
+                                                           Parameters.ParametersParameterComponent parameter) throws Exception {
+        Long registeredPractitionerId = null;
+        OutputContainer outputContainer = params.getOutputContainer();
+        PatientAdditional patientAdditional = outputContainer.getPatientAdditional();
+
+        Integer propertyConceptDbid = IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, PROP_CODE_CM_GP_PRACTITIONER_CODE);
+        //SD-382 - need to track how we're getting a null property ID going into the patient_additional table,
+        //so adding exceptions if we try to send nulls through
+        if (propertyConceptDbid == null) {
+            throw new Exception("Got a null concept ID for property code [" + PROP_CODE_CM_GP_PRACTITIONER_CODE + "] and scheme " + IMConstant.DISCOVERY_CODE);
+        }
+        Reference practitionerReference = (Reference) parameter.getValue();
+        if(practitionerReference != null) {
+            try {
+                registeredPractitionerId = transformOnDemandAndMapId(practitionerReference,
+                        SubscriberTableId.PRACTITIONER, params);
+            } catch (Throwable t) {
+                LOG.error("Error finding enterprise ID for practitioner reference " + practitionerReference.getReference());
+                throw t;
+            }
+            //write patient id, IM value, practitioner id to the patient_additional table upsert
+            if (registeredPractitionerId != null) {
+                patientAdditional.writeUpsert(id, propertyConceptDbid, null, null, registeredPractitionerId.toString());
+
+            }
+        }
     }
 
     public void transformRalfs(String uprn,

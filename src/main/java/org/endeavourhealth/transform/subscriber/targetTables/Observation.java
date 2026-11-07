@@ -2,9 +2,11 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 public class Observation extends AbstractTargetTable {
 
@@ -49,7 +51,21 @@ public class Observation extends AbstractTargetTable {
                             Double ageAtEvent,
                             Integer episodicityConceptId,
                             Boolean isPrimary,
-                            Date dateRecorded) throws Exception {
+                            Date dateRecorded,
+                            SubscriberTransformHelper params) throws Exception {
+
+        //get any configured excluded columns for this table
+        List<String> excludedTableColumns
+                = params.getSubscriberExcludedColumns(getTableId(), getPermittedColumnExclusions());
+        if (excludedTableColumns != null) {
+            //check each column set for exclusion and blank
+            for (String column: excludedTableColumns) {
+                switch (column) {
+                    case "age_at_event" : ageAtEvent = null; break;
+                    default : break;
+                }
+            }
+        }
 
         if (includeDateRecorded) {
             super.printRecord(convertBoolean(false),
@@ -59,7 +75,7 @@ public class Observation extends AbstractTargetTable {
                     "" + personId,
                     convertLong(encounterId),
                     convertLong(practitionerId),
-                    convertDate(clinicalEffectiveDate),
+                    convertDateTime(clinicalEffectiveDate), //SD-498
                     convertInt(datePrecisionConceptId),
                     // convertLong(snomedConceptId),
                     convertBigDecimal(resultValue),
@@ -87,7 +103,7 @@ public class Observation extends AbstractTargetTable {
                     "" + personId,
                     convertLong(encounterId),
                     convertLong(practitionerId),
-                    convertDate(clinicalEffectiveDate),
+                    convertDateTime(clinicalEffectiveDate), //SD-498
                     convertInt(datePrecisionConceptId),
                     // convertLong(snomedConceptId),
                     convertBigDecimal(resultValue),
@@ -229,5 +245,12 @@ public class Observation extends AbstractTargetTable {
                     Boolean.TYPE,
             };
         }
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return new String[] {
+                "age_at_event"
+        };
     }
 }

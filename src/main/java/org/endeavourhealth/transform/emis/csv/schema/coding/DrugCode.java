@@ -14,12 +14,27 @@ public class DrugCode extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "CodeId",
-                "Term",
-                "DmdProductCodeId",
-                "ProcessingId"
-        };
+        if(version.equals(EmisCsvToFhirTransformer.VERSION_8_0)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_2)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_3)){//SD:1090
+            return new String[]{
+                    "CodeId",
+                    "Term",
+                    "DmdProductCodeId",
+                    "BNFChapterRef",
+                    "ProcessingId"
+            };
+        } else {
+            return new String[]{
+                    "CodeId",
+                    "Term",
+                    "DmdProductCodeId",
+                    "ProcessingId"
+            };
+        }
+
     }
 
     @Override

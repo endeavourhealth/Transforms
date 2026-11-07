@@ -169,16 +169,11 @@ public class ENCNTPreTransformer {
                 checkAndSaveConsultantIds();
                 checkAndCreateEncounterUuids();
 
-
-                //don't create the EpisodeOfCare yet, as we don't want to create one for every ENCNT. Just
-                //call this fn to set up the Episode ID and FIN -> UUID mappings, so they can be picked up when
+                //don't create the EpisodeOfCare yet, as we don't want to create one for every ENCNT.
+                // Just call this fn to set up the Episode ID and FIN -> UUID mappings, so they can be picked up when
                 //we do process the CDS encounter files to fall back on if EpisodeId is not provided
-
-                //TODO - remove live check after test
-                if (!TransformConfig.instance().isLive()) {
-                    for (CacheENCNT o : batch) {
-                        csvHelper.getEpisodeOfCareCache().setUpEpisodeOfCareBuilderMappings(o.encounterIdCell, o.personIdCell, o.episodeIdCell, o.finCell, o.visitIdCell);
-                    }
+                for (CacheENCNT o : batch) {
+                    csvHelper.getEpisodeOfCareCache().setUpEpisodeOfCareBuilderMappings(o.encounterIdCell, o.personIdCell, o.episodeIdCell, o.finCell, o.visitIdCell);
                 }
 
             }catch (Throwable t) {

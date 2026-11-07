@@ -14,26 +14,90 @@ public class Slot extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "SlotGuid",
-                "AppointmentDate",
-                "AppointmentStartTime",
-                "PlannedDurationInMinutes",
-                "PatientGuid",
-                "SendInTime",
-                "LeftTime",
-                "DidNotAttend",
-                "PatientWaitInMin",
-                "AppointmentDelayInMin",
-                "ActualDurationInMinutes",
-                "OrganisationGuid",
-                "SessionGuid",
-                "DnaReasonCodeId",
-                "Deleted",
-                "ProcessingId"
-        };
+        if(version.equals(EmisCsvToFhirTransformer.VERSION_8_0)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_1)) {
+            return new String[]{
+                    "SlotGuid",
+                    "AppointmentDate",
+                    "AppointmentStartTime",
+                    "PlannedDurationInMinutes",
+                    "PatientGuid",
+                    "SendInTime",
+                    "LeftTime",
+                    "DidNotAttend",
+                    "PatientWaitInMin",
+                    "AppointmentDelayInMin",
+                    "ActualDurationInMinutes",
+                    "OrganisationGuid",
+                    "SessionGuid",
+                    "DnaReasonCodeId",
+                    "BookedDate",
+                    "BookedTime",
+                    "SlotStatus",
+                    "SlotType",
+                    "IsBookableOnline",
+                    "BookingMethod",
+                    "ExternalPatientGuid",
+                    "ExternalPatientOrganisation",
+                    "ModeOfContact",
+                    "Deleted",
+                    "ProcessingId"
+            };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_8_2) ||
+                version.equals(EmisCsvToFhirTransformer.VERSION_8_3)){
+           return new String[]{"SlotGuid",
+                   "AppointmentDate",
+                   "AppointmentStartTime",
+                   "PlannedDurationInMinutes",
+                   "PatientGuid",
+                   "SendInTime",
+                   "LeftTime",
+                   "DidNotAttend",
+                   "PatientWaitInMin",
+                   "AppointmentDelayInMin",
+                   "ActualDurationInMinutes",
+                   "OrganisationGuid",
+                   "SessionGuid",
+                   "DnaReasonCodeId",
+                   "BookedDate",
+                   "BookedTime",
+                   "SlotStatus",
+                   "SlotType",
+                   "IsBlocked",
+                   "ServiceSetting",
+                   "ContextType",
+                   "NationalSlotCategoryName",
+                   "NationalSlotCategoryDescription",
+                   "IsBookableOnline",
+                   "BookingMethod",
+                   "ExternalPatientGuid",
+                   "ExternalPatientOrganisation",
+                   "ModeOfContact",
+                   "Deleted",
+                   "ProcessingId"
+           };
+        } else {
+            return new String[]{
+                    "SlotGuid",
+                    "AppointmentDate",
+                    "AppointmentStartTime",
+                    "PlannedDurationInMinutes",
+                    "PatientGuid",
+                    "SendInTime",
+                    "LeftTime",
+                    "DidNotAttend",
+                    "PatientWaitInMin",
+                    "AppointmentDelayInMin",
+                    "ActualDurationInMinutes",
+                    "OrganisationGuid",
+                    "SessionGuid",
+                    "DnaReasonCodeId",
+                    "Deleted",
+                    "ProcessingId"
+            };
+        }
     }
-
 
     @Override
     protected boolean isFileAudited() {
@@ -81,6 +145,48 @@ public class Slot extends AbstractCsvParser {
     }
     public CsvCell getDnaReasonCodeId() {
         return super.getCell("DnaReasonCodeId");
+    }
+    public CsvCell getBookedDate() {
+        return super.getCell("BookedDate");
+    }
+    public CsvCell getBookedTime() {
+        return super.getCell("BookedTime");
+    }
+    public CsvCell getSlotStatus() {
+        return super.getCell("SlotStatus");
+    }
+    public CsvCell getSlotType() {
+        return super.getCell("SlotType");
+    }
+    public CsvCell getIsBookableOnline() {
+        return super.getCell("IsBookableOnline");
+    }
+    public CsvCell getBookingMethod() {
+        return super.getCell("BookingMethod");
+    }
+    public CsvCell getIsBlocked(){
+        return super.getCell("IsBlocked");
+    }
+    public CsvCell getServiceSetting(){
+        return super.getCell("ServiceSetting");
+    }
+
+    public CsvCell getNationalSlotCategoryName(){
+        return super.getCell("NationalSlotCategoryName");
+    }
+
+    public CsvCell getContextType(){
+        return super.getCell("ContextType");
+    }
+
+    public CsvCell getExternalPatientGuid() {
+        return super.getCell("ExternalPatientGuid");
+    }
+    public CsvCell getExternalPatientOrganisation() {
+        return super.getCell("ExternalPatientOrganisation");
+    }
+    public CsvCell getModeOfContact() {
+        return super.getCell("ModeOfContact");
     }
     public CsvCell getDeleted() {
         return super.getCell("Deleted");

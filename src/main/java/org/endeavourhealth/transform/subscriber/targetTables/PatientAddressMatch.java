@@ -2,7 +2,6 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.joda.time.DateTime;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -16,17 +15,17 @@ public class PatientAddressMatch extends AbstractTargetTable {
     public Class[] getColumnTypes() {
         return new Class[]{
                 Byte.TYPE, // thingy
-                //Long.TYPE, // id (bigint)
                 Long.TYPE, // patient_address_id (bigint)
                 String.class, // uprn (varchar)
+                String.class, // uprn_ralf00 (varchar)
                 Integer.class, // status (tinyint)
-                String.class, // classification (varchar)
+                String.class, // uprn_property_classification (varchar)
                 BigDecimal.class, // latitude (double)
                 BigDecimal.class, // longitude (double)
                 BigDecimal.class, // x (double)
                 BigDecimal.class, // y (double)
                 String.class, // qualifier (varchar)
-                String.class, // algorithm (varchar)
+                String.class, // match_rule (varchar)
                 Date.class, // match_date (datetime)
                 String.class, // abp_address_number (varchar)
                 String.class, // abp_address_street (varchar)
@@ -40,7 +39,7 @@ public class PatientAddressMatch extends AbstractTargetTable {
                 String.class, // match_pattern_building (varchar)
                 String.class, // match_pattern_flat (varchar)
                 String.class, // algorithm_version (varchar)
-                String.class // epoc (varchar)
+                String.class // epoch (varchar)
         };
     }
 
@@ -48,16 +47,17 @@ public class PatientAddressMatch extends AbstractTargetTable {
     public String[] getCsvHeaders() {
         return new String[]{
                 "is_delete",
-                "id", // "patient_address_id"
+                "patient_address_id",
                 "uprn",
+                "uprn_ralf00",
                 "status",
-                "classification",
+                "uprn_property_classification",
                 "latitude",
                 "longitude",
-                "xcoordinate",
-                "ycoordinate",
+                "uprn_xcoordinate",
+                "uprn_ycoordinate",
                 "qualifier",
-                "algorithm",
+                "match_rule",
                 "match_date",
                 "abp_address_number",
                 "abp_address_street",
@@ -71,7 +71,7 @@ public class PatientAddressMatch extends AbstractTargetTable {
                 "match_pattern_building",
                 "match_pattern_flat",
                 "algorithm_version",
-                "epoc"
+                "epoch"
         };
     }
 
@@ -80,24 +80,25 @@ public class PatientAddressMatch extends AbstractTargetTable {
         return SubscriberTableId.PATIENT_ADDRESS_MATCH;
     }
 
-    public void writeDelete(SubscriberId subscriberId) throws Exception {
+    public void writeDelete(SubscriberId patient_address_id) throws Exception {
         super.printRecord(
                 convertBoolean(true),
-                "" + subscriberId.getSubscriberId()
+                "" + patient_address_id.getSubscriberId()
         );
     }
 
-    public void writeUpsert(//SubscriberId subscriberId,
-                            long patient_address_id,
+    public void writeUpsert(
+                            SubscriberId patient_address_id,
                             String uprn,
+                            String uprnRalf00,
                             Integer status,
                             String classification,
                             BigDecimal latitude,
                             BigDecimal longitude,
-                            BigDecimal xcoordinate,
-                            BigDecimal ycoordinate,
+                            BigDecimal uprnxcoordinate,
+                            BigDecimal uprnycoordinate,
                             String qualifier,
-                            String algorithm,
+                            String match_rule,
                             Date match_date,
                             String abp_address_number,
                             String abp_address_street,
@@ -111,22 +112,22 @@ public class PatientAddressMatch extends AbstractTargetTable {
                             String match_pattern_building,
                             String match_pattern_flat,
                             String algorithm_version,
-                            String epoc
+                            String epoch
     ) throws Exception {
 
         super.printRecord(
                 convertBoolean(false),
-                //"" + subscriberId.getSubscriberId(),
-                "" + patient_address_id,
+                "" + patient_address_id.getSubscriberId(),
                 uprn,
+                uprnRalf00,
                 convertInt(status),
                 classification,
                 convertBigDecimal(latitude),
                 convertBigDecimal(longitude),
-                convertBigDecimal(xcoordinate),
-                convertBigDecimal(ycoordinate),
+                convertBigDecimal(uprnxcoordinate),
+                convertBigDecimal(uprnycoordinate),
                 qualifier,
-                algorithm,
+                match_rule,
                 convertDateTime(match_date),
                 abp_address_number,
                 abp_address_street,
@@ -140,9 +141,16 @@ public class PatientAddressMatch extends AbstractTargetTable {
                 match_pattern_building,
                 match_pattern_flat,
                 algorithm_version,
-                epoc
+                epoch
         );
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return null;
+//        return new String[] {
+//          //implement which columns can be excluded from the database write for extra pseudo level blanking
+//        };
     }
 }
 
-                

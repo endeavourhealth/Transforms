@@ -9,31 +9,7 @@ package org.endeavourhealth.transform.bhrut.schema;
 //import com.univocity.parsers.csv.CsvParser;
 //import com.univocity.parsers.csv.CsvParserSettings;
 
-import com.google.gson.Gson;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.csv.QuoteMode;
-import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.transform.bhrut.BhrutCsvHelper;
-import org.endeavourhealth.transform.bhrut.BhrutCsvToFhirTransformer;
-import org.endeavourhealth.transform.common.CsvCell;
-import org.hibernate.criterion.Example;
-import org.hl7.fhir.instance.model.Organization;
-//import org.apache.commons.csv.CSVFormat;
-//import org.apache.commons.csv.CSVParser;
-//import org.apache.commons.csv.CSVRecord;
-//import
-
-import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-
-import static org.endeavourhealth.common.ods.OdsWebService.lookupOrganisationViaRest;
 //import com.univocity.parsers.csv.CsvParser;
 //import com.univocity.parsers.csv.CsvParserSettings;
 //import ca.uhn.fhir.context.FhirContext;

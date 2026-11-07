@@ -2,10 +2,6 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.joda.time.DateTime;
-
-import java.math.BigDecimal;
-import java.util.Date;
 
 
 public class Address_v2 extends AbstractTargetTable {
@@ -24,7 +20,8 @@ public class Address_v2 extends AbstractTargetTable {
 				String.class, // city
 				String.class, // county
 				String.class, // postcode
-				Long.class // location_id
+				Long.class, // location_id
+                String.class // source
         };
     }
 
@@ -39,7 +36,8 @@ public class Address_v2 extends AbstractTargetTable {
 				"city",
 				"county",
 				"postcode",
-				"location_id"
+				"location_id",
+                "source"
         };
     }
 
@@ -63,7 +61,8 @@ public class Address_v2 extends AbstractTargetTable {
 			    			String city,
 			    			String county,
 							String postcode,
-							Long location_id
+							Long location_id,
+                            String source
     ) throws Exception {
 
         super.printRecord(
@@ -76,7 +75,16 @@ public class Address_v2 extends AbstractTargetTable {
 				city,
 				county,
 				postcode,
-				convertLong(location_id)
+				convertLong(location_id),
+                source
         );
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return null;
+//        return new String[] {
+//          //implement which columns can be excluded from the database write for extra pseudo level blanking
+//        };
     }
 }

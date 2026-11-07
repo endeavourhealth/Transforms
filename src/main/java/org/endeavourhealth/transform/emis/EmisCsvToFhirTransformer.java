@@ -34,8 +34,16 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public abstract class EmisCsvToFhirTransformer {
+    public static final String IM_PROVIDER_CONCEPT_ID = "CM_Org_EMIS";
+    public static final String IM_SYSTEM_CONCEPT_ID = "CM_Sys_EMISWeb";
     private static final Logger LOG = LoggerFactory.getLogger(EmisCsvToFhirTransformer.class);
 
+    public static final String VERSION_8_3 = "8.3";
+    public static final String VERSION_8_2 = "8.2"; //version being received live from Emis as of 1st May 2025
+    public static final String VERSION_8_1 = "8.1"; //version being received live from Emis as of 31st May 2024
+    public static final String VERSION_8_0_1 = "8.0.1"; //version being received live from Emis on 30th May 2024
+    public static final String VERSION_8_0 = "8.0"; //version being received live from Emis as of Jan 2024
+    public static final String VERSION_5_5 = "5.5"; //version received live from Emis as on 29th February 2024
     public static final String VERSION_5_4 = "5.4"; //version being received live from Emis as of Dec 2016
     public static final String VERSION_5_3 = "5.3"; //version being received live from Emis as of Nov 2016
     public static final String VERSION_5_1 = "5.1"; //version received in official emis test pack
@@ -148,17 +156,24 @@ public abstract class EmisCsvToFhirTransformer {
     public static String determineVersion(List<ExchangePayloadFile> files) throws Exception {
 
         List<String> possibleVersions = new ArrayList<>();
+
+        possibleVersions.add(VERSION_5_5);   //See SD981
         possibleVersions.add(VERSION_5_4);
         possibleVersions.add(VERSION_5_3);
         possibleVersions.add(VERSION_5_1);
         possibleVersions.add(VERSION_5_0);
+        possibleVersions.add(VERSION_8_0);
+        possibleVersions.add(VERSION_8_1);    //SD-1016
+        possibleVersions.add(VERSION_8_0_1);  //SD-1016
+        possibleVersions.add(VERSION_8_2); //SD-1090
+        possibleVersions.add(VERSION_8_3); //SD-1190
 
         for (ExchangePayloadFile fileObj : files) {
-
             //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
             AbstractCsvParser parser = createParserForFile(null, null, null, null, fileObj);
 
             //calling this will return the possible versions that apply to this parser
+
             possibleVersions = parser.testForValidVersions(possibleVersions);
             if (possibleVersions.isEmpty()) {
                 break;
@@ -220,22 +235,12 @@ public abstract class EmisCsvToFhirTransformer {
 
         String name = FilenameUtils.getBaseName(firstFilePath); //file name without extension
         String[] toks = name.split("_");
-        if (toks.length != 5) {
-            throw new TransformException("Failed to extract data sharing agreement GUID from filename " + firstFilePath);
-        }
-        return toks[4];
+
+        //SD-374 with the move to AWS Emis are changing the file name format to add a new element at the start, so we must support old and new
+        //but in both cases, it's simply the last element that's always the data sharing agreement
+        return toks[toks.length-1];
     }
 
-    /*private static Date findExtractDate(String filePath) throws Exception {
-        String name = FilenameUtils.getBaseName(filePath);
-        String[] toks = name.split("_");
-        if (toks.length != 5) {
-            throw new TransformException("Failed to find extract date in filename " + filePath);
-        }
-        String dateStr = toks[3];
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-        return sdf.parse(dateStr);
-    }*/
 
     private static void transformParsers(String version,
                                          Map<Class, AbstractCsvParser> parsers,
@@ -264,23 +269,23 @@ public abstract class EmisCsvToFhirTransformer {
         //check the sharing agreement to see if it's been disabled
         SharingOrganisationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-        //these transforms don't create resources themselves, but cache data that the subsequent ones rely on
-        ClinicalCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        DrugCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
-        csvHelper.queueExchangesForFoundMissingCodes(); //if we've found some missing codes, re-queue exchanges
+        //this transform caches data required by the SlotTransformer and SessionTransformer, so is done first
+        SessionUserTransformer.transform(parsers, fhirResourceFiler, csvHelper);
 
-        boolean processAdminData = true;
-
-        //massive hack to allow the clinical observations to be processed faster - audit skipping it so we can come back later
-        /*if (TransformConfig.instance().isEmisSkipAdminData()) {
-            auditSkippingAdminData(fhirResourceFiler);
-            processAdminData = false;
-        }*/
-
+        //SD-480 if we're filtering on specific patients, then we've already processed all the admin data
+        //so skip it all for performance reasons
+        boolean processAdminData = !csvHelper.getPatientFilter().isFilteringOnPatients();
         if (processAdminData) {
 
+            //these transforms don't create resources themselves, but cache data that the subsequent ones rely on
+            LOG.trace("Doing clinical and drug code transforms");
+            ClinicalCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            DrugCodeTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            csvHelper.queueExchangesForFoundMissingCodes(); //if we've found some missing codes, re-queue exchanges
+
             //create our starting admin resources if required
-            csvHelper.getAdminHelper().applyAdminResourceCacheIfRequired(fhirResourceFiler, csvHelper);
+            //no longer creating cache due to the increase in size causing a >30gb heap issue (SD-792)
+            //csvHelper.getAdminHelper().applyAdminResourceCacheIfRequired(fhirResourceFiler, csvHelper);
 
             LOG.trace("Starting orgs, locations and user transforms");
             OrganisationLocationTransformer.transform(parsers, fhirResourceFiler, csvHelper);
@@ -295,8 +300,7 @@ public abstract class EmisCsvToFhirTransformer {
             csvHelper.getAdminHelper().processAdminChanges(fhirResourceFiler, csvHelper); //transform changed and required staff
 
             //appointments
-            LOG.trace("Starting appointments transforms");
-            SessionUserTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            LOG.trace("Starting session transform");
             SessionTransformer.transform(parsers, fhirResourceFiler, csvHelper);
         }
 

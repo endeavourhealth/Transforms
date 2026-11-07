@@ -12,6 +12,7 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberOrgMa
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.endeavourhealth.transform.enterprise.outputModels.Organization;
 import org.endeavourhealth.transform.enterprise.outputModels.OutputContainer;
 import org.endeavourhealth.transform.enterprise.transforms.*;
 import org.endeavourhealth.transform.subscriber.FhirToSubscriberCsvTransformer;
@@ -76,7 +77,24 @@ public class FhirToEnterpriseCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
+    /**
+     * generates an empty payload that still counts as valid for this subscriber type but doesn't actually do anything
+     */
+    public static String createEmptyPayload() throws Exception {
+        OutputContainer data = new OutputContainer(true);
 
+        //the Remote Filer must have some transaction to process, otherwise it will regard
+        //the payload as in error, so the safest thing to send is a delete for a record we know cannot be there
+        Organization writer = data.getOrganisations();
+        writer.writeDelete(0);
+
+        byte[] bytes = data.writeToZip();
+        if (bytes == null) {
+            //although we're trying to create an empty payload, it shouldn't actually be empty
+            throw new Exception("Not expecting null bytes");
+        }
+        return Base64.getEncoder().encodeToString(bytes);
+    }
 
     public static Long findEnterpriseOrgId(UUID serviceId, EnterpriseTransformHelper params) throws Exception {
 

@@ -3,6 +3,7 @@ package org.endeavourhealth.transform.emis.csv.transforms.careRecord;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformConfig;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ProcedureRequestBuilder;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -99,9 +100,12 @@ public class DiaryTransformer {
             procedureRequestBuilder.setPerformer(practitionerReference, clinicianGuid);
         }
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            procedureRequestBuilder.addNotes(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                procedureRequestBuilder.addNotes(associatedText.getString(), associatedText);
+            }
         }
 
         CsvCell locationTypeDescription = parser.getLocationTypeDescription();

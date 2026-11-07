@@ -3,7 +3,6 @@ package org.endeavourhealth.transform.subscriber.transforms;
 import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
@@ -79,8 +78,8 @@ public class LocationTransformer extends AbstractSubscriberTransformer {
                 typeCode,
                 typeDesc,
                 postcode,
-                managingOrganisationId);
-
+                managingOrganisationId,
+                params);
     }
 
     @Override

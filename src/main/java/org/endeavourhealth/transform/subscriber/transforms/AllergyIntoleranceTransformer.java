@@ -1,12 +1,9 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -40,7 +37,8 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
-                || params.getShouldPatientRecordBeDeleted()) {
+                || params.getShouldPatientRecordBeDeleted()
+                || isEnded(fhir)) {
             model.writeDelete(subscriberId);
             return;
         }
@@ -100,10 +98,14 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
             return;
         }
         String originalCode = originalCoding.getCode();
-
         String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
+        String restrictVSet = params.getConfig().getImRestrictedValueSet();
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay(), restrictVSet);
+        if (nonCoreConceptId == null) {
+            //if no concept returned (filtered out via value set), then skip the resource
+            return;
+        }
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
         if (fhir.getPatient() != null) {
             Reference ref = fhir.getPatient();
@@ -127,7 +129,28 @@ public class AllergyIntoleranceTransformer extends AbstractSubscriberTransformer
                 coreConceptId,
                 nonCoreConceptId,
                 ageAtEvent,
-                dateRecorded);
+                dateRecorded,
+                params);
+    }
+
+    /**
+     * SD-489 - if the allergy has an explicit end date or is set to be inactive then we want it excluded
+     */
+    public static boolean isEnded(AllergyIntolerance fhir) {
+
+        if (fhir.hasStatus()
+                && (fhir.getStatus() == AllergyIntolerance.AllergyIntoleranceStatus.INACTIVE
+                || fhir.getStatus() == AllergyIntolerance.AllergyIntoleranceStatus.RESOLVED
+                || fhir.getStatus() == AllergyIntolerance.AllergyIntoleranceStatus.REFUTED
+                || fhir.getStatus() == AllergyIntolerance.AllergyIntoleranceStatus.ENTEREDINERROR)) {
+            return true;
+        }
+
+        if (fhir.hasLastOccurence()) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override

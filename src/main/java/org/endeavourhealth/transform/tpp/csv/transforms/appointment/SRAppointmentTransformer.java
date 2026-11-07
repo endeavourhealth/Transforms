@@ -5,11 +5,11 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRe
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
-import org.endeavourhealth.transform.tpp.csv.helpers.cache.AppointmentFlagCache;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
+import org.endeavourhealth.transform.tpp.csv.helpers.cache.AppointmentFlagCache;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -184,7 +184,15 @@ public class SRAppointmentTransformer {
 
         CsvCell telephoneApptCell = parser.getTelephoneAppointment();
         if (telephoneApptCell.getBoolean()) {
+
             appointmentBuilder.setType("Telephone Appointment", telephoneApptCell);
+            ContainedParametersBuilder cpb = new ContainedParametersBuilder(appointmentBuilder);
+            //add param if not exist
+            TppCsvHelper.addParamIfNotNull("mode",
+                    "Telephone Appointment",
+                    telephoneApptCell,
+                    cpb,
+                    "appointment");
         }
 
         CsvCell appointmentStatusCell = parser.getAppointmentStatus();
@@ -222,7 +230,8 @@ public class SRAppointmentTransformer {
         } else if (status.equalsIgnoreCase("arrived")) {
             return Appointment.AppointmentStatus.ARRIVED;
 
-        } else if (status.equalsIgnoreCase("in progress")) {
+        } else if (status.equalsIgnoreCase("in progress")
+            || status.equalsIgnoreCase("visit")) {     // added for SD-936
             return Appointment.AppointmentStatus.BOOKED;
 
         } else if (status.equalsIgnoreCase("waiting")) {
@@ -235,6 +244,9 @@ public class SRAppointmentTransformer {
             return Appointment.AppointmentStatus.CANCELLED;
 
         } else if (status.toLowerCase().startsWith("rejected")) {
+            return Appointment.AppointmentStatus.CANCELLED;
+
+        } else if (status.toLowerCase().startsWith("patient refused appointment")) {
             return Appointment.AppointmentStatus.CANCELLED;
 
         } else {

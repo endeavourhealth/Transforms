@@ -72,7 +72,20 @@ public interface CdsRecordEmergencyCDSI {
 
     //Safe Guarding 1 - 10
     CsvCell getSafeguardingConcern(int dataNumber);
+    CsvCell getSafeguardingConcern();
 
     CsvCurrentState getCurrentState();
     DateFormat getDateFormat();
+
+    CsvCell getMHClassificationColumn();
+
+    CsvCell getDiagnosisCol();
+
+    CsvCell getInvestigationCol();
+
+    CsvCell getTreatmentCol();
+
+    CsvCell getReferralToServiceCol();
+
+    CsvCell getAmbulanceCallIdentifier();
 }

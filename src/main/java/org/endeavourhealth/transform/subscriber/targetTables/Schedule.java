@@ -2,8 +2,10 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 
 import java.util.Date;
+import java.util.List;
 
 public class Schedule extends AbstractTargetTable {
 
@@ -22,14 +24,29 @@ public class Schedule extends AbstractTargetTable {
                             Date startDate,
                             String type,
                             String location,
-                            String name) throws Exception {
+                            String name,
+                            SubscriberTransformHelper params) throws Exception {
+
+        //get any configured excluded columns for this table
+        List<String> excludedTableColumns
+                = params.getSubscriberExcludedColumns(getTableId(), getPermittedColumnExclusions());
+        if (excludedTableColumns != null) {
+            //check each column set for exclusion and blank
+            for (String column: excludedTableColumns) {
+                switch (column) {
+                    case "name" : name = null; break;
+                    case "location" : location = null; break;
+                    default : break;
+                }
+            }
+        }
 
         super.printRecord(
                 convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 "" + organisationId,
                 convertLong(practitionerId),
-                convertDate(startDate),
+                convertDateTime(startDate), //SD-498
                 type,
                 location,
                 name);
@@ -65,6 +82,14 @@ public class Schedule extends AbstractTargetTable {
                 String.class,
                 String.class,
                 String.class
+        };
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return new String[] {
+                "name",
+                "location"
         };
     }
 }

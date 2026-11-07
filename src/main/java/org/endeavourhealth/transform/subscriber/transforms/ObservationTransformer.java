@@ -11,8 +11,6 @@ import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.transform.common.TransformConfig;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
@@ -118,11 +116,16 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
             return;
         }
-        String originalCode = originalCoding.getCode();
 
+        String originalCode = originalCoding.getCode();
         String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
+        String restrictVSet = params.getConfig().getImRestrictedValueSet();
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay(), restrictVSet);
+        if (nonCoreConceptId == null) {
+            //if no concept returned (filtered out via value set), then skip the resource
+            return;
+        }
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
         if (fhir.hasValue()) {
             Type value = fhir.getValue();
@@ -183,28 +186,29 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
 
         model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(subscriberId,
-            organizationId,
-            patientId,
-            personId,
-            encounterId,
-            practitionerId,
-            clinicalEffectiveDate,
-            datePrecisionConceptId,
-            resultValue,
-            resultValueUnits,
-            resultDate,
-            resultString,
-            resultConceptId,
-            isProblem,
-            isReview,
-            problemEndDate,
-            parentObservationId,
-            coreConceptId,
-            nonCoreConceptId,
-            ageAtEvent,
-            episodicityConceptId,
-            isPrimary,
-            dateRecorded);
+                organizationId,
+                patientId,
+                personId,
+                encounterId,
+                practitionerId,
+                clinicalEffectiveDate,
+                datePrecisionConceptId,
+                resultValue,
+                resultValueUnits,
+                resultDate,
+                resultString,
+                resultConceptId,
+                isProblem,
+                isReview,
+                problemEndDate,
+                parentObservationId,
+                coreConceptId,
+                nonCoreConceptId,
+                ageAtEvent,
+                episodicityConceptId,
+                isPrimary,
+                dateRecorded,
+                params);
 
 
         //we also need to populate the observation additional table with observation extension data if the config is set
@@ -289,7 +293,7 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
                 }
 
                 //transform the IM values to the encounter_additional table upsert
-                observationAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null);
+                observationAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null, null);
                 System.out.println("observation significance : " + significanceDisplay);
             }
         }
@@ -326,7 +330,7 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             }
 
             //transform the IM values to the encounter_additional table upsert
-            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  reference);
+            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  reference, null);
             System.out.println("refRange : " + reference);
         }
     }
@@ -363,7 +367,7 @@ public class ObservationTransformer extends AbstractSubscriberTransformer {
             }
             String jsonString = new JSONObject()
                     .put("date_value", delayDays).toString();
-            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  jsonString);
+            observationAdditional.writeUpsert(id, propertyConceptDbid,null,  jsonString, null);
 
         }
     }

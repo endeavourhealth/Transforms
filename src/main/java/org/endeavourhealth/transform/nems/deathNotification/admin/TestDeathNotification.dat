@@ -1,0 +1,187 @@
+<Bundle xmlns="http://hl7.org/fhir">
+    <id value="bf1020e9-6707-4c1a-b49b-b7d5c2145970"/>
+    <meta>
+        <profile value="http://hl7.org/fhir/STU3/StructureDefinition/Bundle"/>
+    </meta>
+    <type value="message"/>
+    <entry>
+        <fullUrl value="urn:uuid:2f36c7f6-270e-4f84-99c6-58a69c6780cb"/>
+        <resource>
+            <MessageHeader>
+                <id value="2f36c7f6-270e-4f84-99c6-58a69c6780cb"/>
+                <meta>
+                    <versionId value="2"/>
+                    <lastUpdated value="2023-02-21T14:43:12+00:00"/>
+                    <profile value="https://fhir.nhs.uk/STU3/StructureDefinition/Event-MessageHeader-1"/>
+                </meta>
+                <extension url="https://fhir.nhs.uk/STU3/StructureDefinition/Extension-MessageEventType-1">
+                    <valueCodeableConcept>
+                        <coding>
+                            <system value="https://fhir.nhs.uk/STU3/CodeSystem/MessageEventType-1"/>
+                            <code value="new"/>
+                            <display value="New event message"/>
+                        </coding>
+                    </valueCodeableConcept>
+                </extension>
+                <extension url="https://fhir.nhs.uk/STU3/StructureDefinition/Extension-RoutingDemographics-1">
+                    <extension url="nhsNumber">
+                        <valueIdentifier>
+                            <system value="https://fhir.nhs.uk/Id/nhs-number"/>
+                            <value value="9728016859"/>
+                        </valueIdentifier>
+                    </extension>
+                    <extension url="name">
+                        <valueHumanName>
+                            <use value="official"/>
+                            <family value="GRAHAM"/>
+                            <given value="BELLE"/>
+                        </valueHumanName>
+                    </extension>
+                    <extension url="birthDateTime">
+                            <valueDateTime value="2015-01-11T00:00:00+00:00"/>
+                    </extension>
+                </extension>
+                <event>
+                    <system value="https://fhir.nhs.uk/STU3/CodeSystem/EventType-1"/>
+                    <code value="pds-death-notification-1"/>
+                    <display value="PDS Death Notification"/>
+                </event>
+                <timestamp value="2023-02-21T14:43:12+00:00"/>
+                <source>
+                   <contact>
+                       <system value="phone"/>
+                       <value value="0113 397 3970"/>
+                       <use value="work"/>
+                   </contact>
+                   <endpoint value="urn:nhs:addressing:asid:618729461037"/>
+                </source>
+                <responsible>
+                    <reference value="urn:uuid:8835aba3-723c-46fe-82b6-5c6d2e530ab1"/>
+                </responsible>
+                <focus>
+                    <reference value="urn:uuid:96afd49d-b852-4f93-a662-3cc5d6424b52"/>
+                </focus>
+                </MessageHeader>
+        </resource>
+    </entry>
+    <entry>
+        <fullUrl value="urn:uuid:db0bdce2-940f-4cb8-92e3-7f7eff462de9"/>
+        <resource>
+            <HealthcareService>
+                <id value="db0bdce2-940f-4cb8-92e3-7f7eff462de9"/>
+                <meta>
+                    <profile value="https://fhir.hl7.org.uk/STU3/StructureDefinition/CareConnect-HealthcareService-1"/>
+                </meta>
+                <identifier>
+                    <system value="https://fhir.nhs.uk/Id/ods-organization-code"/>
+                    <value value="X26"/>
+                </identifier>
+                <providedBy>
+                    <reference value="urn:uuid:8835aba3-723c-46fe-82b6-5c6d2e530ab1"/>
+<identifier>
+    <value value="X26"/>
+</identifier>
+                </providedBy>
+                <type>
+                    <coding>
+                        <system value="https://fhir.nhs.uk/STU3/CodeSystem/EMS-HealthcareServiceType-1"/>
+                        <code value="PDS"/>
+                        <display value="Personal Demographics Service"/>
+                    </coding>
+                </type>
+                </HealthcareService>
+        </resource>
+    </entry>
+    <entry>
+        <fullUrl value="urn:uuid:96afd49d-b852-4f93-a662-3cc5d6424b52"/>
+        <resource>
+            <Communication>
+                <id value="96afd49d-b852-4f93-a662-3cc5d6424b52"/>
+                <meta>
+                    <profile value="https://fhir.hl7.org.uk/STU3/StructureDefinition/CareConnect-Communication-1"/>
+                </meta>
+                <status value="completed"/>
+                <subject>
+                    <reference value="urn:uuid:576784a8-6465-4393-b03d-324d237a8f9e"/>
+<display value="GRAHAM, BELLE"/>
+                </subject>
+                <sent value="2023-02-21T14:43:12+00:00"/>
+                <payload>
+                    <contentReference>
+                    <reference value="urn:uuid:576784a8-6465-4393-b03d-324d237a8f9e"/>
+<display value="GRAHAM, BELLE"/>
+                    </contentReference>
+                </payload>
+                </Communication>
+        </resource>
+    </entry>
+    <entry>
+        <fullUrl value="urn:uuid:576784a8-6465-4393-b03d-324d237a8f9e"/>
+        <resource>
+            <Patient>
+                <id value="576784a8-6465-4393-b03d-324d237a8f9e"/>
+                <meta>
+                    <versionId value="2"/>
+                    <profile value="https://fhir.hl7.org.uk/STU3/StructureDefinition/CareConnect-Patient-1"/>
+                </meta>
+                <extension url="https://fhir.hl7.org.uk/STU3/StructureDefinition/Extension-CareConnect-DeathNotificationStatus-1">
+                    <extension url="deathNotificationStatus">
+                        <valueCodeableConcept>
+                            <coding>
+                                <system value="https://fhir.hl7.org.uk/STU3/CodeSystem/CareConnect-DeathNotificationStatus-1"/>
+                                <code value="1"/>
+                            </coding>
+                        </valueCodeableConcept>
+                    </extension>
+                </extension>
+                <identifier>
+                    <extension url="https://fhir.hl7.org.uk/STU3/StructureDefinition/Extension-CareConnect-NHSNumberVerificationStatus-1">
+                        <valueCodeableConcept>
+                            <coding>
+                                <system value="https://fhir.hl7.org.uk/STU3/CareConnect-NHSNumberVerificationStatus-1"/>
+                                <code value="01"/>
+                                <display value="Number present and verified"/>
+                            </coding>
+                        </valueCodeableConcept>
+                    </extension>
+                    <system value="https://fhir.nhs.uk/Id/nhs-number"/>
+                    <value value="9728016859"/>
+                </identifier>
+                <name>
+                    <use value="official"/>
+                    <family value="GRAHAM"/>
+                    <given value="BELLE"/>
+                </name>
+                <gender value="female"/>
+                <birthDate value="2015-01-11">
+                    <extension url="http://hl7.org/fhir/StructureDefinition/patient-birthTime">
+                        <valueDateTime value="2015-01-11T00:00:00+00:00"/>
+                    </extension>
+                </birthDate>
+                <deceasedDateTime value="2023-02-21T00:00:00+00:00"/>
+                <address>
+                    <use value="home"/>
+                    <line value="27 PRINCESS MAY ROAD"/>
+                    <line value="LONDON"/>
+                    <postalCode value="N16 8DF"/>
+                </address>
+                </Patient>
+        </resource>
+    </entry>
+    <entry>
+        <fullUrl value="urn:uuid:8835aba3-723c-46fe-82b6-5c6d2e530ab1"/>
+        <resource>
+            <Organization>
+                <id value="8835aba3-723c-46fe-82b6-5c6d2e530ab1"/>
+                <meta>
+                    <profile value="https://fhir.hl7.org.uk/STU3/StructureDefinition/CareConnect-Organization-1"/>
+                </meta>
+                <identifier>
+                    <system value="https://fhir.nhs.uk/Id/ods-organization-code"/>
+                    <value value="X26"/>
+                </identifier>
+                <name value="NHS ENGLAND - X26"/>
+                </Organization>
+        </resource>
+    </entry>
+</Bundle>

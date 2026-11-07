@@ -22,11 +22,30 @@ public class SRDrugSensitivity extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
-                || version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_89)
-                || version.equals(TppCsvToFhirTransformer.VERSION_93)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_A)) {
+            //original version
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "DateStarted",
+                    "DateEnded",
+                    "FormulationSpecific",
+                    "IDDrugCode",
+                    "IDMultiLexAction",
+                    "IDReferralIn",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_B)) {
+            //same as above but with RemovedData
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -48,8 +67,9 @@ public class SRDrugSensitivity extends AbstractCsvParser {
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
             };
-        } else {
-            return new String[]{
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_C)) {
+            //SD-453 new col added
+            return new String[] {
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
                     "DateEventRecorded",
@@ -67,9 +87,37 @@ public class SRDrugSensitivity extends AbstractCsvParser {
                     "IDEvent",
                     "IDPatient",
                     "IDOrganisation",
-                    "IDOrganisationRegisteredAt"
+                    "IDOrganisationRegisteredAt",
+                    "NameOfMedication" //new col
             };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_D)) {
+            //SD-453 same as above but with RemovedData
+            return new String[] {
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "DateEvent",
+                    "IDProfileEnteredBy",
+                    "IDDoneBy",
+                    "TextualEventDoneBy",
+                    "IDOrganisationDoneAt",
+                    "DateStarted",
+                    "DateEnded",
+                    "FormulationSpecific",
+                    "IDDrugCode",
+                    "IDMultiLexAction",
+                    "IDReferralIn",
+                    "IDEvent",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "IDOrganisationRegisteredAt",
+                    "NameOfMedication", //new col
+                    "RemovedData"
+            };
+        } else {
+            throw new IllegalArgumentException("Unsupported version " + version);
         }
+
     }
 
     public CsvCell getRowIdentifier() {
@@ -146,6 +194,10 @@ public class SRDrugSensitivity extends AbstractCsvParser {
 
     public CsvCell getRemovedData() {
         return super.getCell("RemovedData");
+    }
+
+    public CsvCell getNameOfMedication() {
+        return super.getCell("NameOfMedication");
     }
 
 

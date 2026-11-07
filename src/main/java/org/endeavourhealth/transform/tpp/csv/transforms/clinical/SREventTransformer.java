@@ -62,7 +62,7 @@ public class SREventTransformer {
 
         if (deleteData != null && deleteData.getIntAsBoolean()) {
             // get previously filed resource for deletion
-            Encounter encounter = (Encounter)csvHelper.retrieveResource(eventIdCell.getString(), ResourceType.Encounter);
+            Encounter encounter = (Encounter) csvHelper.retrieveResource(eventIdCell.getString(), ResourceType.Encounter);
             if (encounter != null) {
                 EncounterBuilder encounterBuilder = new EncounterBuilder(encounter);
                 encounterBuilder.setDeletedAudit(deleteData);
@@ -129,13 +129,15 @@ public class SREventTransformer {
         ReferenceList linkedAppointmentReferences = csvHelper.getAndRemoveEncounterAppointmentLink(eventIdCell);
         if (linkedAppointmentReferences != null) {
             Reference ref = linkedAppointmentReferences.getReference(0); //the list will only ever contain one item
-            encounterBuilder.setAppointment(ref);
+            CsvCell[] sourceCells = linkedAppointmentReferences.getSourceCells(0);
+            encounterBuilder.setAppointment(ref, sourceCells);
         }
 
         CsvCell branchIdCell = parser.getIDBranch();
         if (!branchIdCell.isEmpty()) {
             Reference locationReference = ReferenceHelper.createReference(ResourceType.Location, branchIdCell.getString());
             encounterBuilder.addLocation(locationReference, branchIdCell);
+
         } else {
             //if no branchID is present, this means it was done at the main surgery, so link to the location we will have
             //creating using the ID of the org as it's source ID
@@ -206,12 +208,13 @@ public class SREventTransformer {
 
         ResourceDalI resourceDal = DalProvider.factoryResourceDal();
         UUID patientUuid = IdHelper.getEdsResourceId(csvHelper.getServiceId(), ResourceType.Patient, patientId.getString());
-        if (patientUuid==null) {
-            TransformWarnings.log(LOG,csvHelper, "SEVERE: Resource lookup failed for patient Id {}: Service{}", patientId.getString(), csvHelper.getServiceId());
+        if (patientUuid == null) {
+            TransformWarnings.log(LOG, csvHelper, "SEVERE: Resource lookup failed for patient Id {}: Service{}", patientId.getString(), csvHelper.getServiceId());
             return null;
         }
+
         List<ResourceWrapper> episodeWrappers = resourceDal.getResourcesByPatient(csvHelper.getServiceId(), patientUuid, ResourceType.EpisodeOfCare.toString());
-        for (ResourceWrapper wrapper: episodeWrappers) {
+        for (ResourceWrapper wrapper : episodeWrappers) {
             if (wrapper.isDeleted()) {
                 continue;
             }
@@ -236,15 +239,19 @@ public class SREventTransformer {
             }
         }
 
-        if (mostRecentEnded != null) {
-            Reference episodeReference = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, mostRecentEnded.getResourceId().toString());
-            episodeReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(csvHelper, episodeReference);
-            episodeId = ReferenceHelper.getReferenceId(episodeReference);
-
-            //and save the mapping so we don't have to repeat this again
-            csvHelper.saveInternalId(SRPatientRegistrationTransformer.PATIENT_ID_TO_ACTIVE_EPISODE_ID, patientId.getString(), episodeId);
+        //
+        if (mostRecentEnded == null) {
+            TransformWarnings.log(LOG, csvHelper, "SEVERE: No episodes found for TPP patient Id {}", patientUuid);
+            return null;
         }
 
-        return null;
+        Reference episodeReference = ReferenceHelper.createReference(ResourceType.EpisodeOfCare, mostRecentEnded.getResourceId().toString());
+        episodeReference = IdHelper.convertEdsReferenceToLocallyUniqueReference(csvHelper, episodeReference);
+        episodeId = ReferenceHelper.getReferenceId(episodeReference);
+
+        //and save the mapping so we don't have to repeat this again
+        csvHelper.saveInternalId(SRPatientRegistrationTransformer.PATIENT_ID_TO_ACTIVE_EPISODE_ID, patientId.getString(), episodeId);
+
+        return episodeId;
     }
 }

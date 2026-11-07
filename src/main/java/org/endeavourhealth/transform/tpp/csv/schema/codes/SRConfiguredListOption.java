@@ -58,6 +58,27 @@ public class SRConfiguredListOption extends AbstractCsvParser {
                     "MHSDSCode",
                     "RemovedData"
             };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_94)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "ConfiguredList",
+                    "ConfiguredListOption",
+                    "CDSCode",
+                    "CAMHSCode",
+                    "MHSDSCode",
+                    "CYPHS/CIDS/CSDSCode"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_95)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "ConfiguredList",
+                    "ConfiguredListOption",
+                    "CDSCode",
+                    "CAMHSCode",
+                    "MHSDSCode",
+                    "CYPHS/CIDS/CSDSCode",
+                    "RemovedData"
+            };
         } else {
             return new String[]{
                     "RowIdentifier",

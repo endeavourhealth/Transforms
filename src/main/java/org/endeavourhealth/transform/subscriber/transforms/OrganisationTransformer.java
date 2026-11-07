@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class OrganisationTransformer extends AbstractSubscriberTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(OrganisationTransformer.class);
@@ -178,9 +177,9 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
             typeCode,
             typeDesc,
             postcode,
-            parentOrganisationId);
-
-
+            parentOrganisationId,
+            params
+            );
     }
 
     @Override
@@ -210,21 +209,27 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
 
         //if multiple types, try removing specific types until we get down to a single one
         List<OrganisationType> typesToRemove = new ArrayList<>();
-        typesToRemove.add(OrganisationType.PRESCRIBING_COST_CENTRE); //EVERY GP practice has this
-        typesToRemove.add(OrganisationType.STRATEGIC_PARTNERSHIP); //every STP is also a Strategic Partnership
-        typesToRemove.add(OrganisationType.FOUNDATION_TRUST); //some hospital trusts as also foundation trusts
-        typesToRemove.add(OrganisationType.HOSPICE); //Homerton is a Hospice as well as a trust
-        typesToRemove.add(OrganisationType.REGISTERED_UNDER_PART_2_CARE_STDS_ACT_2000);
-        typesToRemove.add(OrganisationType.LEVEL_04_PCT); ////another one - SD-263
-        typesToRemove.add(OrganisationType.EXTENDED_ACCESS_HUB); //SD-267
-        typesToRemove.add(OrganisationType.EXTENDED_ACCESS_PROVIDER); //SD-267
-        typesToRemove.add(OrganisationType.NHS_TRUST_DERIVED); //SD-267
-        typesToRemove.add(OrganisationType.LEVEL_04_PCT); //SD-267
-        typesToRemove.add(OrganisationType.MEDICINE_SUPPLIER); //SD-267
-        typesToRemove.add(OrganisationType.SPECIALISED_COMMISSIONING_HUB); //SD-267
-        typesToRemove.add(OrganisationType.TREATMENT_CENTRE); //SD-267
-        typesToRemove.add(OrganisationType.PCT_DERIVED); //SD-389
-        typesToRemove.add(OrganisationType.OUT_OF_HOURS_COST_CENTRE); //SD-389
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_PRESCRIBING_COST_CENTRE)); //EVERY GP practice has this
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_STRATEGIC_PARTNERSHIP)); //every STP is also a Strategic Partnership
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_FOUNDATION_TRUST)); //some hospital trusts as also foundation trusts
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_HOSPICE)); //Homerton is a Hospice as well as a trust
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_REGISTERED_UNDER_PART_2_CARE_STDS_ACT_2000));
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_LEVEL_04_PCT)); ////another one - SD-263
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_EXTENDED_ACCESS_HUB)); //SD-267
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_EXTENDED_ACCESS_PROVIDER)); //SD-267
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_NHS_TRUST_DERIVED)); //SD-267
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_LEVEL_04_PCT)); //SD-267
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_MEDICINE_SUPPLIER)); //SD-267
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_SPECIALISED_COMMISSIONING_HUB)); //SD-267
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_TREATMENT_CENTRE)); //SD-267
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_PCT_DERIVED)); //SD-389
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_OUT_OF_HOURS_COST_CENTRE)); //SD-389
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_COMMISSIONING_HUB)); //SD-400
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_NHS_TRUST_SITE)); //SD-400
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_SOCIAL_CARE_SITE)); //SD-400
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_COVID_VACCINATION_CENTRE)); //SD-400
+        typesToRemove.add(OrganisationType.fromCode(OrganisationType.CODE_LOCAL_AUTHORITY)); //SD-490
+
 
         //for each of the above types, try removing from the set and if we're down to one, use it
         for (OrganisationType t: typesToRemove) {
@@ -275,10 +280,10 @@ public class OrganisationTransformer extends AbstractSubscriberTransformer {
         }
 
         List<OrganisationType> parentTypesToIgnore = new ArrayList<>();
-        parentTypesToIgnore.add(OrganisationType.PRIMARY_CARE_NETWORK); //most practices have one or more PCNs as a parent, in addition to CCG, so remove thos
-        parentTypesToIgnore.add(OrganisationType.SUSTAINABILITY_TRANSFORMATION_PARTNERSHIP); //some orgs have an STP as their direct parent and a parent further up, so remove as the direct parent
-        parentTypesToIgnore.add(OrganisationType.GOVERNMENT_OFFICE_REGION); //old SHAs have this as an odd parent
-        parentTypesToIgnore.add(OrganisationType.HEALTH_AUTHORITY);
+        parentTypesToIgnore.add(OrganisationType.fromCode(OrganisationType.CODE_PRIMARY_CARE_NETWORK)); //most practices have one or more PCNs as a parent, in addition to CCG, so remove thos
+        parentTypesToIgnore.add(OrganisationType.fromCode(OrganisationType.CODE_SUSTAINABILITY_TRANSFORMATION_PARTNERSHIP)); //some orgs have an STP as their direct parent and a parent further up, so remove as the direct parent
+        parentTypesToIgnore.add(OrganisationType.fromCode(OrganisationType.CODE_GOVERNMENT_OFFICE_REGION)); //old SHAs have this as an odd parent
+        parentTypesToIgnore.add(OrganisationType.fromCode(OrganisationType.CODE_HEALTH_AUTHORITY));
 
         for (OrganisationType t: parentTypesToIgnore) {
 

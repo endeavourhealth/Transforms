@@ -75,4 +75,12 @@ public class EpisodeOfCare extends AbstractTargetTable {
                 Long.class
         };
     }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return null;
+//        return new String[] {
+//          //implement which columns can be excluded from the database write for extra pseudo level blanking
+//        };
+    }
 }

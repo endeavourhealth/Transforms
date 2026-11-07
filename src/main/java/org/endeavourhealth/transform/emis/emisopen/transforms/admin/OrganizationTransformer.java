@@ -19,7 +19,7 @@ public class OrganizationTransformer {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrganizationTransformer.class);
 
-    public static void transform(MedicalRecordType medicalRecordType, List<Resource> resources) throws TransformException {
+    public static void transform(MedicalRecordType medicalRecordType, List<Resource> resources) throws Exception {
 
         List<TypeOfLocationType> locationTypes = medicalRecordType.getLocationTypeList().getLocationType();
 
@@ -28,7 +28,7 @@ public class OrganizationTransformer {
         }
     }
 
-    private static Organization createOrganization(LocationType locationType, TypeOfLocationType typeOfLocationType) throws TransformException
+    private static Organization createOrganization(LocationType locationType, TypeOfLocationType typeOfLocationType) throws Exception
     {
         Organization organization = new Organization();
         organization.setMeta(new Meta().addProfile(FhirProfileUri.PROFILE_URI_ORGANIZATION));
@@ -62,7 +62,7 @@ public class OrganizationTransformer {
         return organization;
     }
 
-    private static OrganisationType convertOrganisationType(String csvOrganisationType) {
+    private static OrganisationType convertOrganisationType(String csvOrganisationType) throws Exception {
         try {
             return OrganisationType.fromDescription(csvOrganisationType);
         } catch (Exception ex) {
@@ -74,19 +74,19 @@ public class OrganizationTransformer {
             if (csvOrganisationType.equalsIgnoreCase("General Practice")
                     || csvOrganisationType.equalsIgnoreCase("General Practice Surgery")
                     || csvOrganisationType.equalsIgnoreCase("Main Surgery")) {
-                return OrganisationType.GP_PRACTICE;
+                return OrganisationType.fromCode(OrganisationType.CODE_GP_PRACTICE);
 
             } else if (csvOrganisationType.equalsIgnoreCase("CCG")) {
-                return OrganisationType.CCG;
+                return OrganisationType.fromCode(OrganisationType.CODE_CCG);
 
             } else if (csvOrganisationType.equalsIgnoreCase("PCT Site")
                     || csvOrganisationType.equalsIgnoreCase("Primary Care Trust")) {
-                return OrganisationType.PCT;
+                return OrganisationType.fromCode(OrganisationType.CODE_PCT);
 
             } else if (csvOrganisationType.equalsIgnoreCase("Hospital")
                     || csvOrganisationType.equalsIgnoreCase("NHS Trust Site")
                     || csvOrganisationType.equalsIgnoreCase("NHS Trust")) {
-                return OrganisationType.NHS_TRUST;
+                return OrganisationType.fromCode(OrganisationType.CODE_NHS_TRUST);
 
             } else {
                 return null;

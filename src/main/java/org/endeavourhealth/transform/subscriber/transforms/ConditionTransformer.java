@@ -6,8 +6,6 @@ import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.transform.common.TransformConfig;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
@@ -108,11 +106,14 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
             return;
         }
         String originalCode = originalCoding.getCode();
-
         String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
+        String restrictVSet = params.getConfig().getImRestrictedValueSet();
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay(), restrictVSet);
+        if (nonCoreConceptId == null) {
+            //if no concept returned (filtered out via value set), then skip the resource
+            return;
+        }
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
-
 
         //if it's a problem set the boolean to say so
         if (fhir.hasMeta()) {
@@ -185,7 +186,8 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
                 ageAtEvent,
                 episodicityConceptId,
                 isPrimary,
-                dateRecorded);
+                dateRecorded,
+                params);
 
         //we also need to populate the observation additional table with observation extension data
 
@@ -239,7 +241,7 @@ public class ConditionTransformer extends AbstractSubscriberTransformer {
 
                 }
                 //transform the IM values to the encounter_additional table upsert
-                observationAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null);
+                observationAdditional.writeUpsert(id, propertyConceptDbid, valueConceptDbid, null, null);
                 System.out.println("significance = " + significanceDisplay);
             }
         }

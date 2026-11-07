@@ -97,7 +97,7 @@ public class PPRELTransformer {
         CsvCell workPhone = parser.getWorkPhoneNumber();
         CsvCell emailAddress = parser.getEmailAddress();
 
-        //the PPREL file contains recorss for phone family members (with names, addresses etc.) but also empty
+        //the PPREL file contains records for family members (with names, addresses etc.) but also empty
         //records that are just used to record family history. Don't bother adding these empty relationships to the patient record
         if (title.isEmpty()
                 && firstName.isEmpty()
@@ -235,6 +235,15 @@ public class PPRELTransformer {
             if (!types.isEmpty()) {
                 String typeStr = String.join(", ", types);
                 contactBuilder.setRelationship(typeStr, cells.toArray(new CsvCell[]{}));
+
+                //SD-253 - set new extensions to record carer and next of kin
+                String lower = typeStr.toLowerCase();
+                if (lower.contains("carer")) {
+                    contactBuilder.setIsCarer(true, cells.toArray(new CsvCell[]{}));
+                }
+                if (lower.contains("next of kin")) {
+                    contactBuilder.setIsNextOfKin(true, cells.toArray(new CsvCell[]{}));
+                }
             }
 
             //PPNAM transformer removes any names added by the ADT transform, so we would need to do the same if the ADT

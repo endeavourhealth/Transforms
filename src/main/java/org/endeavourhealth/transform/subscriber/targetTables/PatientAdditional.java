@@ -21,6 +21,7 @@ public class PatientAdditional extends AbstractTargetTable {
                 Long.TYPE,
                 Integer.class,
                 Integer.class,
+                String.class,
                 String.class
         };
     }
@@ -32,7 +33,8 @@ public class PatientAdditional extends AbstractTargetTable {
                 "id",
                 "property_id",
                 "value_id",
-                "json_value"
+                "json_value",
+                "text_value"
         };
     }
 
@@ -44,7 +46,8 @@ public class PatientAdditional extends AbstractTargetTable {
     public void writeUpsert(SubscriberId id,
                             Integer propertyId,
                             Integer valueId,
-                            String jsonValue) throws Exception {
+                            String jsonValue,
+                            String textValue) throws Exception {
 
         //SD-382 - getting nulls in the property_id field for _additional tables
         if (propertyId == null) {
@@ -55,6 +58,15 @@ public class PatientAdditional extends AbstractTargetTable {
                 "" + id.getSubscriberId(),
                 convertInt(propertyId),
                 convertInt(valueId),
-                jsonValue);
+                jsonValue,
+                textValue);
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return null;
+//        return new String[] {
+//          //implement which columns can be excluded from the database write for extra pseudo level blanking
+//        };
     }
 }

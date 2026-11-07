@@ -1,7 +1,6 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
 import com.google.common.base.Strings;
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
@@ -10,13 +9,12 @@ import org.endeavourhealth.common.fhir.schema.ReferralType;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.im.client.IMClient;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+import org.endeavourhealth.transform.subscriber.targetTables.ReferralRequestAdditional;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -43,12 +41,15 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
         org.endeavourhealth.transform.subscriber.targetTables.ReferralRequest model = params.getOutputContainer().getReferralRequests();
 
         ReferralRequest fhir = (ReferralRequest)resourceWrapper.getResource(); //returns null if deleted
-
+        ReferralRequestAdditional referralRequestAdditional = params.getOutputContainer().getReferralRequestAdditionals();
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
                 || params.getShouldPatientRecordBeDeleted()) {
             model.writeDelete(subscriberId);
+            if (params.isIncludeReferralRequestAdditional()) {
+                referralRequestAdditional.writeDelete(subscriberId);
+            }
             return;
         }
 
@@ -112,11 +113,14 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 return;
             }
             String originalCode = originalCoding.getCode();
-
-
             String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
+            String restrictVSet = params.getConfig().getImRestrictedValueSet();
+            nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay(), restrictVSet);
+            if (nonCoreConceptId == null) {
+                //if no concept returned (filtered out via value set), then skip the resource
+                return;
+            }
             coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-            nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
         }
         /*Long snomedConceptId = findSnomedConceptId(fhir.getType());
         model.setSnomedConceptId(snomedConceptId);*/
@@ -206,7 +210,9 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 //SD-308 - we can't always map the inbound free-text referral priority to one of the hard-coded valueset, so may
                 //carry it through as free-text, in which case just look up using that text
                 String text = codeableConcept.getText();
-                referralRequestPriorityConceptId = IMClient.getConceptDbidForTypeTerm(IMConstant.FHIR_REFERRAL_PRIORITY, text, true);
+                //referralRequestPriorityConceptId = IMClient.getConceptDbidForTypeTerm(IMConstant.FHIR_REFERRAL_PRIORITY, text, true);
+                //SD-978 - changed to use IMHelper with retries
+                referralRequestPriorityConceptId = IMHelper.getConceptDbidForTypeTerm(fhir, IMConstant.FHIR_REFERRAL_PRIORITY, text);
             }
         }
 
@@ -220,7 +226,9 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             } else if (codeableConcept.hasText()) {
                 //if we don't have a value in the valueset, we can still use the IM to look up a concept for the textual term
                 String text = codeableConcept.getText();
-                referralRequestTypeConceptId = IMClient.getConceptDbidForTypeTerm(IMConstant.FHIR_REFERRAL_TYPE, text, true);
+                //referralRequestTypeConceptId = IMClient.getConceptDbidForTypeTerm(IMConstant.FHIR_REFERRAL_TYPE, text, true);
+                //SD-978 - changed to use IMHelper with retries
+                referralRequestTypeConceptId = IMHelper.getConceptDbidForTypeTerm(fhir, IMConstant.FHIR_REFERRAL_TYPE, text);
             }
         }
 
@@ -252,6 +260,11 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
             ageAtEvent = getPatientAgeInDecimalYears(patient, clinicalEffectiveDate);
         }
 
+
+        if(params.isIncludeReferralRequestAdditional()){
+            transformToReferralRequestAdditionals(subscriberId, fhir, referralRequestAdditional);
+        }
+
         dateRecorded = params.includeDateRecorded(fhir);
 
         model.setIncludeDateRecorded(params.isIncludeDateRecorded());
@@ -274,7 +287,32 @@ public class ReferralRequestTransformer extends AbstractSubscriberTransformer {
                 coreConceptId,
                 nonCoreConceptId,
                 ageAtEvent,
-                dateRecorded);
+                dateRecorded,
+                params);
+    }
+
+    private void transformToReferralRequestAdditionals(SubscriberId subscriberId, ReferralRequest fhir,
+                                                       ReferralRequestAdditional referralRequestAdditional) throws Exception {
+        StringType serviceOfferedType = (StringType)ExtensionConverter.findExtensionValue(fhir,
+                FhirExtensionUri.REFERRAL_REQUEST_RECIPIENT_SERVICE_OFFERED);
+        if (serviceOfferedType != null) {
+            String textValue = serviceOfferedType.toString();
+            String propertyScheme = IMConstant.DISCOVERY_CODE;
+            String propertyCode = "DM_ReferralServiceOffered";
+            Integer propertyId = IMHelper.getIMConcept(propertyScheme, propertyCode);
+            referralRequestAdditional.writeUpsert(subscriberId, propertyId, null, null, textValue);
+        }
+
+        StringType referralRecipientType = (StringType)ExtensionConverter.findExtensionValue(fhir,
+                FhirExtensionUri. REFERRAL_REQUEST_RECIPIENT_FREE_TEXT);
+
+        if (referralRecipientType != null) {
+            String textValue = referralRecipientType.toString();
+            String propertyScheme = IMConstant.DISCOVERY_CODE;
+            String propertyCode = "DM_ReferralRecipient";
+            Integer propertyId = IMHelper.getIMConcept(propertyScheme, propertyCode);
+            referralRequestAdditional.writeUpsert(subscriberId, propertyId, null, null, textValue);
+        }
 
     }
 

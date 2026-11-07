@@ -162,7 +162,7 @@ public class ObservationTransformer {
         potentialResourceTypes.add(ResourceType.Observation);
 
         Set<ResourceType> ret = new HashSet<>();
-        
+
         for (ResourceType resourceType: potentialResourceTypes) {
             if (wasSavedAsResourceType(hasServiceId, patientGuid, observationGuid, resourceType)) {
                 ret.add(resourceType);
@@ -177,7 +177,7 @@ public class ObservationTransformer {
         UUID uuid = IdHelper.getEdsResourceId(hasServiceId.getServiceId(), resourceType, sourceId);
         return uuid != null;
     }*/
-    
+
 
     public static void createResource(Observation parser,
                                        FhirResourceFiler fhirResourceFiler,
@@ -480,9 +480,12 @@ public class ObservationTransformer {
             }
         }
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            referralRequestBuilder.setDescription(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                referralRequestBuilder.setDescription(associatedText.getString(), associatedText);
+            }
         }
 
         CsvCell enteredByGuid = parser.getEnteredByUserInRoleGuid();
@@ -603,9 +606,12 @@ public class ObservationTransformer {
         CsvCell codeId = parser.getCodeId();
         CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(diagnosticOrderBuilder, false, codeId, CodeableConceptBuilder.Tag.Diagnostic_Order_Main_Code, csvHelper);
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            diagnosticOrderBuilder.setNote(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                diagnosticOrderBuilder.setNote(associatedText.getString(), associatedText);
+            }
         }
 
         CsvCell effectiveDate = parser.getEffectiveDate();
@@ -692,9 +698,12 @@ public class ObservationTransformer {
         CsvCell codeId = parser.getCodeId();
         CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(specimenBuilder, false, codeId, CodeableConceptBuilder.Tag.Specimen_Main_Code, csvHelper);
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            specimenBuilder.setNotes(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                specimenBuilder.setNotes(associatedText.getString(), associatedText);
+            }
         }
 
         CsvCell effectiveDate = parser.getEffectiveDate();
@@ -800,8 +809,11 @@ public class ObservationTransformer {
         CsvCell codeId = parser.getCodeId();
         CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(allergyIntoleranceBuilder, false, codeId, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code, csvHelper);
 
-        CsvCell associatedText = parser.getAssociatedText();
-        allergyIntoleranceBuilder.setNote(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            allergyIntoleranceBuilder.setNote(associatedText.getString(), associatedText);
+        }
 
         CsvCell documentGuid = parser.getDocumentGuid();
         if (!documentGuid.isEmpty()) {
@@ -881,9 +893,12 @@ public class ObservationTransformer {
         CsvCell codeId = parser.getCodeId();
         CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(diagnosticReportBuilder, false, codeId, CodeableConceptBuilder.Tag.Diagnostic_Report_Main_Code, csvHelper);
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            diagnosticReportBuilder.setConclusion(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                diagnosticReportBuilder.setConclusion(associatedText.getString(), associatedText);
+            }
         }
 
         CsvCell effectiveDate = parser.getEffectiveDate();
@@ -994,9 +1009,12 @@ public class ObservationTransformer {
             procedureBuilder.addPerformer(practitionerReference, clinicianGuid);
         }
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            procedureBuilder.addNotes(associatedText.getString());
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                procedureBuilder.addNotes(associatedText.getString());
+            }
         }
 
         CsvCell consultationGuid = parser.getConsultationGuid();
@@ -1088,6 +1106,12 @@ public class ObservationTransformer {
             return;
         }
 
+        CsvCell episodeType = parser.getEpisode();
+        //SD-1078
+        if (episodeType != null && !episodeType.isEmpty()){
+            conditionBuilder.setEpisodicity(episodeType.getString(), episodeType);
+        }
+
         CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
         if (!clinicianGuid.isEmpty()) {
             Reference reference = csvHelper.createPractitionerReference(clinicianGuid);
@@ -1115,9 +1139,12 @@ public class ObservationTransformer {
         //can't be confident this is true, so don't set
         //fhirCondition.setVerificationStatus(Condition.ConditionVerificationStatus.CONFIRMED);
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            conditionBuilder.setNotes(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                conditionBuilder.setNotes(associatedText.getString(), associatedText);
+            }
         }
 
         CsvCell consultationGuid = parser.getConsultationGuid();
@@ -1289,9 +1316,12 @@ public class ObservationTransformer {
             }
         }
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            observationBuilder.setNotes(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                observationBuilder.setNotes(associatedText.getString(), associatedText);
+            }
         }
 
         CsvCell consultationGuid = parser.getConsultationGuid();
@@ -1405,9 +1435,12 @@ public class ObservationTransformer {
         CsvCell codeId = parser.getCodeId();
         CodeableConceptBuilder codeableConceptBuilder = EmisCodeHelper.createCodeableConcept(familyMemberHistoryBuilder, false, codeId, CodeableConceptBuilder.Tag.Family_Member_History_Main_Code, csvHelper);
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            familyMemberHistoryBuilder.setNotes(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                familyMemberHistoryBuilder.setNotes(associatedText.getString(), associatedText);
+            }
         }
 
         CsvCell clinicianGuid = parser.getClinicianUserInRoleGuid();
@@ -1518,11 +1551,13 @@ public class ObservationTransformer {
             immunizationBuilder.setEncounter(encounterReference, consultationGuid);
         }
 
-        CsvCell associatedText = parser.getAssociatedText();
-        if (!associatedText.isEmpty()) {
-            immunizationBuilder.setNote(associatedText.getString(), associatedText);
+        //SD-374 - ignore free-text from Emis until storage decision made
+        if (TransformConfig.instance().isEmisProcessFreeText()) {
+            CsvCell associatedText = parser.getAssociatedText();
+            if (!associatedText.isEmpty()) {
+                immunizationBuilder.setNote(associatedText.getString(), associatedText);
+            }
         }
-
 
         CsvCell enteredByGuid = parser.getEnteredByUserInRoleGuid();
         if (!enteredByGuid.isEmpty()) {

@@ -65,4 +65,12 @@ public class OrganizationAdditional extends AbstractTargetTable {
 		        Value,
                 name);
     }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return null;
+//        return new String[] {
+//          //implement which columns can be excluded from the database write for extra pseudo level blanking
+//        };
+    }
 }

@@ -2,8 +2,10 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 
 import java.util.Date;
+import java.util.List;
 
 public class Flag extends AbstractTargetTable {
 
@@ -24,15 +26,28 @@ public class Flag extends AbstractTargetTable {
                             Date effectiveDate,
                             Integer datePrecisionConceptId,
                             boolean isActive,
-                            String flagText
-    ) throws Exception {
+                            String flagText,
+                            SubscriberTransformHelper params) throws Exception {
+
+        //get any configured excluded columns for this table
+        List<String> excludedTableColumns
+                = params.getSubscriberExcludedColumns(getTableId(), getPermittedColumnExclusions());
+        if (excludedTableColumns != null) {
+            //check each column set for exclusion and blank
+            for (String column: excludedTableColumns) {
+                switch (column) {
+                    case "flag_text" : flagText = null; break;
+                    default : break;
+                }
+            }
+        }
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
                 "" + organisationId,
                 "" + patientId,
                 "" + personId,
-                convertDate(effectiveDate),
+                convertDateTime(effectiveDate), //SD-498
                 convertInt(datePrecisionConceptId),
                 convertBoolean(isActive),
                 flagText);
@@ -70,6 +85,13 @@ public class Flag extends AbstractTargetTable {
                 Integer.class,
                 Boolean.class,
                 String.class,
+        };
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return new String[] {
+          "flag_text"
         };
     }
 }

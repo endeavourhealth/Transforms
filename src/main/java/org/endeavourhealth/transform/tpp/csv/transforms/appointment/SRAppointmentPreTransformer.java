@@ -4,9 +4,9 @@ import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRAppointment;
-import org.endeavourhealth.transform.tpp.csv.schema.clinical.SRCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,17 @@ public class SRAppointmentPreTransformer {
         CsvCell profileIdCell = parser.getIDProfileClinician();
         if (profileIdCell.isEmpty()
                 || profileIdCell.getString().equals("-1")) {
-            throw new Exception("Unexpected IDProfileClinician cell value: " + profileIdCell);
+            //throw new Exception("Unexpected IDProfileClinician cell value: " + profileIdCell);
+
+            //SD-934.  TPP have suddenly started sending -1 in this cell for very old rotas
+            //So instead of throwing an exception and stopping the transform queue fo 99.9% of data, log this
+            // as a warning and return out without setting the cache.
+            // NOTE: Compass schedule does not require an actor / practitioner as a mandatory NOT NULL field
+            TransformWarnings.log(LOG,
+                    csvHelper,
+                    "Unexpected or empty value: {} in SRAppointment IDProfileClinician field for IDRota: {}",
+                    profileIdCell, rotaIdCell);
+            return;
         }
 
         csvHelper.getRotaDateAndStaffCache().cacheRotaProfile(rotaIdCell, profileIdCell);

@@ -14,18 +14,38 @@ public class UserInRole extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "UserInRoleGuid",
-                "OrganisationGuid",
-                "Title",
-                "GivenName",
-                "Surname",
-                "JobCategoryCode",
-                "JobCategoryName",
-                "ContractStartDate",
-                "ContractEndDate",
-                "ProcessingId"
-        };
+        if(version.equals(EmisCsvToFhirTransformer.VERSION_8_0)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_2)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_3)){
+            return new String[]{
+                    "UserInRoleGuid",
+                    "OrganisationGuid",
+                    "Title",
+                    "GivenName",
+                    "Surname",
+                    "JobCategoryCode",
+                    "JobCategoryName",
+                    "ContractStartDate",
+                    "ContractEndDate",
+                    "RegistrationNumber",
+                    "ProcessingId"
+            };
+        } else {
+            return new String[]{
+                    "UserInRoleGuid",
+                    "OrganisationGuid",
+                    "Title",
+                    "GivenName",
+                    "Surname",
+                    "JobCategoryCode",
+                    "JobCategoryName",
+                    "ContractStartDate",
+                    "ContractEndDate",
+                    "ProcessingId"
+            };
+        }
     }
 
 

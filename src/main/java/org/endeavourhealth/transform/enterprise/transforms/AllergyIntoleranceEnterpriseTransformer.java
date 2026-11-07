@@ -7,6 +7,7 @@ import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.enterprise.EnterpriseTransformHelper;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.enterprise.outputModels.AbstractEnterpriseCsvWriter;
+import org.endeavourhealth.transform.subscriber.transforms.AllergyIntoleranceTransformer;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,8 @@ public class AllergyIntoleranceEnterpriseTransformer extends AbstractEnterpriseT
         //if deleted, confidential or the entire patient record shouldn't be there, then delete
         if (resourceWrapper.isDeleted()
                 //|| isConfidential(fhir)
-                || params.getShouldPatientRecordBeDeleted()) {
+                || params.getShouldPatientRecordBeDeleted()
+                || AllergyIntoleranceTransformer.isEnded(fhir)) {
             csvWriter.writeDelete(enterpriseId.longValue());
             return;
         }

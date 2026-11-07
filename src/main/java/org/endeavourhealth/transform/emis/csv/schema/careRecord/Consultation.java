@@ -34,6 +34,30 @@ public class Consultation extends AbstractCsvParser {
                     "IsConfidential",
                     "ProcessingId"
             };
+        } else if(version.equals(EmisCsvToFhirTransformer.VERSION_8_0)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_2)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_3)){
+            return new String[]{
+                    "ConsultationGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "AppointmentSlotGuid",
+                    "ConsultationSourceTerm",
+                    "ConsultationSourceCodeId",
+                    "Complete",
+                    "ConsultationType",
+                    "Deleted",
+                    "IsConfidential",
+                    "ProcessingId"
+            };
         } else {
             return new String[]{
                     "ConsultationGuid",
@@ -97,6 +121,9 @@ public class Consultation extends AbstractCsvParser {
     }
     public CsvCell getComplete() {
         return super.getCell("Complete");
+    }
+    public CsvCell getConsultationType(){
+        return super.getCell("ConsultationType");
     }
     public CsvCell getDeleted() {
         return super.getCell("Deleted");

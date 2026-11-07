@@ -1,10 +1,9 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
+import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.common.TransformWarnings;
+import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
@@ -77,17 +76,41 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
             datePrecisionConceptId = convertDatePrecision(params, fhir, dt.getPrecision(), clinicalEffectiveDate.toString());
         }
 
-        Coding originalCoding = ObservationCodeHelper.findOriginalCoding(fhir.getCode());
-        if (originalCoding == null) {
-            //SD-297 - no longer needed
-            //TransformWarnings.log(LOG, params, "No suitable Coding found for {} {}", fhir.getResourceType(), fhir.getId());
+        String restrictVSet = params.getConfig().getImRestrictedValueSet();
+        CodeableConcept codeableConcept = fhir.getCode();
+        Coding originalCoding = ObservationCodeHelper.findOriginalCoding(codeableConcept);
+        if (originalCoding != null) {
+
+            String originalCode = originalCoding.getCode();
+            String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
+            nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay(), restrictVSet);
+            if (nonCoreConceptId == null) {
+                //if no concept returned (filtered out via value set), then skip the resource
+                return;
+            }
+            coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
+
+        } else if (codeableConcept.hasText()) {
+
+            //SD-159 - none of the TPP SRRecall data is coded so we just have a CodeableConcept with text, so in that case
+            //we can attempt to look up/generate an IM concept for that
+
+            //IM only supports value sets made up of codes and schemes, so if we have a restricting value set, then by definition this one is filtered out
+            if (!Strings.isNullOrEmpty(restrictVSet)) {
+                return;
+            }
+
+            String text = codeableConcept.getText();
+            //nonCoreConceptId = IMClient.getConceptDbidForTypeTerm(IMConstant.FHIR_PROCEDURE_REQUEST_FREE_TEXT_TYPE, text, true);
+            //SD-978 - changed to use IMHelper with retries
+            nonCoreConceptId = IMHelper.getConceptDbidForTypeTerm(fhir, IMConstant.FHIR_PROCEDURE_REQUEST_FREE_TEXT_TYPE, text);
+            coreConceptId = IMHelper.getIMMappedConceptForTypeTerm(fhir, IMConstant.FHIR_PROCEDURE_REQUEST_FREE_TEXT_TYPE, text);
+
+        } else {
+
+            //if not original coding or free-text, then there's nothing useful to transform
             return;
         }
-        String originalCode = originalCoding.getCode();
-
-        String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
-        coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
         if (fhir.hasStatus()) {
             procedureRequestStatusConceptId = IMHelper.getIMConcept(params, fhir, IMConstant.FHIR_PROCEDURE_REQUEST_STATUS,
@@ -116,7 +139,8 @@ public class ProcedureRequestTransformer extends AbstractSubscriberTransformer {
                 coreConceptId,
                 nonCoreConceptId,
                 ageAtEvent,
-                dateRecorded);
+                dateRecorded,
+                params);
     }
 
     @Override

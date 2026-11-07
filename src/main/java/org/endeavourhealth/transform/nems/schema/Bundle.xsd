@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://hl7.org/fhir" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Bundle" type="fhir:BundleType" xmlns:fhir="http://hl7.org/fhir"/>
+  <xs:complexType name="idType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="profileType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="metaType">
+    <xs:sequence>
+      <xs:element type="fhir:versionIdType" name="versionId" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:lastUpdatedType" name="lastUpdated" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:profileType" name="profile" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="typeType" mixed="true">
+    <xs:sequence>
+      <xs:element type="fhir:codingType" name="coding" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="value" use="optional"/>
+  </xs:complexType>
+  <xs:complexType name="fullUrlType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="versionIdType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="lastUpdatedType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="systemType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="valueType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="valueIdentifierType">
+    <xs:sequence>
+      <xs:element type="fhir:systemType" name="system" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:valueType" name="value" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="extensionType">
+    <xs:sequence>
+      <xs:element type="fhir:valueIdentifierType" name="valueIdentifier" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:valueHumanNameType" name="valueHumanName" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:valueDateTimeType" name="valueDateTime" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:extensionType" name="extension" maxOccurs="unbounded" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:valueCodeableConceptType" name="valueCodeableConcept" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="url" use="optional"/>
+  </xs:complexType>
+  <xs:complexType name="useType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="familyType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="givenType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="valueHumanNameType">
+    <xs:sequence>
+      <xs:element type="fhir:useType" name="use" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:familyType" name="family" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:givenType" name="given" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="valueDateTimeType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="codeType" mixed="true">
+    <xs:sequence>
+      <xs:element type="fhir:codingType" name="coding" maxOccurs="unbounded" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="value" use="optional"/>
+  </xs:complexType>
+  <xs:complexType name="displayType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="codingType">
+    <xs:sequence>
+      <xs:element type="fhir:systemType" name="system" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:codeType" name="code" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:displayType" name="display" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="valueCodeableConceptType">
+    <xs:sequence>
+      <xs:element type="fhir:codingType" name="coding" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="eventType">
+    <xs:sequence>
+      <xs:element type="fhir:systemType" name="system" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:codeType" name="code" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:displayType" name="display" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="timestampType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="contactType">
+    <xs:sequence>
+      <xs:element type="fhir:systemType" name="system" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:valueType" name="value" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:useType" name="use" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="endpointType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="sourceType">
+    <xs:sequence>
+      <xs:element type="fhir:contactType" name="contact" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:endpointType" name="endpoint" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="referenceType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="responsibleType">
+    <xs:sequence>
+      <xs:element type="fhir:referenceType" name="reference" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="focusType">
+    <xs:sequence>
+      <xs:element type="fhir:referenceType" name="reference" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="MessageHeaderType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:extensionType" name="extension" maxOccurs="unbounded" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:eventType" name="event" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:timestampType" name="timestamp" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:sourceType" name="source" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:responsibleType" name="responsible" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:focusType" name="focus" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="resourceType">
+    <xs:sequence>
+      <xs:element type="fhir:MessageHeaderType" name="MessageHeader" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:HealthcareServiceType" name="HealthcareService" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:CommunicationType" name="Communication" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:PatientType" name="Patient" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:RelatedPersonType" name="RelatedPerson" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:OrganizationType" name="Organization" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:ObservationType" name="Observation" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:PractitionerType" name="Practitioner" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:EpisodeOfCareType" name="EpisodeOfCare" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="entryType">
+    <xs:sequence>
+      <xs:element type="fhir:fullUrlType" name="fullUrl" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:resourceType" name="resource" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="identifierType">
+    <xs:sequence>
+      <xs:element type="fhir:extensionType" name="extension" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:systemType" name="system" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:valueType" name="value" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="providedByType">
+    <xs:sequence>
+      <xs:element type="fhir:referenceType" name="reference" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:identifierType" name="identifier" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="HealthcareServiceType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:identifierType" name="identifier" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:providedByType" name="providedBy" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:typeType" name="type" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="statusType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="subjectType">
+    <xs:sequence>
+      <xs:element type="fhir:referenceType" name="reference" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:displayType" name="display" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="sentType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="contentReferenceType">
+    <xs:sequence>
+      <xs:element type="fhir:referenceType" name="reference" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:displayType" name="display" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="payloadType">
+    <xs:sequence>
+      <xs:element type="fhir:contentReferenceType" name="contentReference" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CommunicationType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:statusType" name="status" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:subjectType" name="subject" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:sentType" name="sent" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:payloadType" name="payload" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="nameType" mixed="true">
+    <xs:sequence>
+      <xs:element type="fhir:useType" name="use" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:familyType" name="family" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:givenType" name="given" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:periodType" name="period" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="value" use="optional"/>
+  </xs:complexType>
+  <xs:complexType name="birthDateType" mixed="true">
+    <xs:sequence>
+      <xs:element type="fhir:extensionType" name="extension" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="value" use="optional"/>
+  </xs:complexType>
+  <xs:complexType name="generalPractitionerType">
+    <xs:sequence>
+      <xs:element type="fhir:referenceType" name="reference" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="otherType">
+    <xs:sequence>
+      <xs:element type="fhir:referenceType" name="reference" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="linkType">
+    <xs:sequence>
+      <xs:element type="fhir:otherType" name="other" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:typeType" name="type" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PatientType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:extensionType" name="extension" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:identifierType" name="identifier" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:nameType" name="name" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:genderType" name="gender" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:birthDateType" name="birthDate" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:generalPractitionerType" name="generalPractitioner" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:linkType" name="link" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:addressType" name="address" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:multipleBirthIntegerType" name="multipleBirthInteger" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="patientType1">
+    <xs:sequence>
+      <xs:element type="fhir:referenceType" name="reference" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:displayType" name="display" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="relationshipType">
+    <xs:sequence>
+      <xs:element type="fhir:codingType" name="coding" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RelatedPersonType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:patientType1" name="patient" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:relationshipType" name="relationship" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="startType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="periodType">
+    <xs:sequence>
+      <xs:element type="fhir:startType" name="start" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="genderType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="lineType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="postalCodeType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="addressType">
+    <xs:sequence>
+      <xs:element type="fhir:useType" name="use" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:lineType" name="line" maxOccurs="unbounded" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:postalCodeType" name="postalCode" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:typeType" name="type" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:countryType" name="country" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="multipleBirthIntegerType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="OrganizationType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:identifierType" name="identifier" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:typeType" name="type" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:addressType" name="address" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:nameType" name="name" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="categoryType">
+    <xs:sequence>
+      <xs:element type="fhir:codingType" name="coding" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="unitType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="valueQuantityType">
+    <xs:sequence>
+      <xs:element type="fhir:valueType" name="value" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:unitType" name="unit" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:systemType" name="system" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:codeType" name="code" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ObservationType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:statusType" name="status" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:categoryType" name="category" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:codeType" name="code" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:subjectType" name="subject" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:valueQuantityType" name="valueQuantity" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:valueCodeableConceptType" name="valueCodeableConcept" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="countryType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="value"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="PractitionerType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:nameType" name="name" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="managingOrganizationType">
+    <xs:sequence>
+      <xs:element type="fhir:referenceType" name="reference" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="EpisodeOfCareType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:statusType" name="status" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:typeType" name="type" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:patientType1" name="patient" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:managingOrganizationType" name="managingOrganization" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="BundleType">
+    <xs:sequence>
+      <xs:element type="fhir:idType" name="id" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:metaType" name="meta" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:typeType" name="type" xmlns:fhir="http://hl7.org/fhir"/>
+      <xs:element type="fhir:entryType" name="entry" maxOccurs="unbounded" minOccurs="0" xmlns:fhir="http://hl7.org/fhir"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

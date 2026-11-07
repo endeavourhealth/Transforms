@@ -14,32 +14,151 @@ public class Observation extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "ObservationGuid",
-                "PatientGuid",
-                "OrganisationGuid",
-                "EffectiveDate",
-                "EffectiveDatePrecision",
-                "EnteredDate",
-                "EnteredTime",
-                "ClinicianUserInRoleGuid",
-                "EnteredByUserInRoleGuid",
-                "ParentObservationGuid",
-                "CodeId",
-                "ProblemGuid",
-                "AssociatedText",
-                "ConsultationGuid",
-                "Value",
-                "NumericUnit",
-                "ObservationType",
-                "NumericRangeLow",
-                "NumericRangeHigh",
-                "DocumentGuid",
-                "Deleted",
-                "IsConfidential",
-                "ProcessingId"
-
-        };
+        if (version.equals(EmisCsvToFhirTransformer.VERSION_8_0)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_2)) {
+            return new String[]{
+                    "ObservationGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "ParentObservationGuid",
+                    "CodeId",
+                    "ProblemGuid",
+                    "ConsultationGuid",
+                    "AssociatedText",
+                    "Value",
+                    "NumericUnit",
+                    "ObservationType",
+                    "NumericRangeLow",
+                    "NumericRangeHigh",
+                    "DocumentGuid",
+                    "Qualifiers",
+                    "Abnormal",
+                    "AbnormalReason",
+                    "Episode",
+                    "Deleted",
+                    "IsConfidential",
+                    "NumericOperator",
+                    "ProcessingId"
+            };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_8_3)) {
+            return new String[]{
+                    "ObservationGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "ParentObservationGuid",
+                    "CodeId",
+                    "ProblemGuid",
+                    "ConsultationGuid",
+                    "AssociatedText",
+                    "Value",
+                    "NumericUnit",
+                    "ObservationType",
+                    "OriginalTerm",
+                    "NumericRangeLow",
+                    "NumericRangeHigh",
+                    "DocumentGuid",
+                    "Qualifiers",
+                    "Abnormal",
+                    "AbnormalReason",
+                    "Episode",
+                    "Deleted",
+                    "IsConfidential",
+                    "NumericOperator",
+                    "ProcessingId"
+            };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_5_5)) {
+            return new String[]{
+                    "ObservationGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "ParentObservationGuid",
+                    "CodeId",
+                    "ProblemGuid",
+                    "ConsultationGuid",         //SD981 - EMIS sent on 29th Feb with
+                    "AssociatedText",           //these two columns switched around
+                    "Value",
+                    "NumericUnit",
+                    "ObservationType",
+                    "NumericRangeLow",
+                    "NumericRangeHigh",
+                    "DocumentGuid",
+                    "Deleted",
+                    "IsConfidential",
+                    "ProcessingId"
+            };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_5_4)) {
+            return new String[]{
+                    "ObservationGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "ParentObservationGuid",
+                    "CodeId",
+                    "ProblemGuid",
+                    "AssociatedText",           //SD981 - retain previous version explicitly
+                    "ConsultationGuid",
+                    "Value",
+                    "NumericUnit",
+                    "ObservationType",
+                    "NumericRangeLow",
+                    "NumericRangeHigh",
+                    "DocumentGuid",
+                    "Deleted",
+                    "IsConfidential",
+                    "ProcessingId"
+            };
+        } else {
+            return new String[]{
+                    "ObservationGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "ParentObservationGuid",
+                    "CodeId",
+                    "ProblemGuid",
+                    "AssociatedText",
+                    "ConsultationGuid",
+                    "Value",
+                    "NumericUnit",
+                    "ObservationType",
+                    "NumericRangeLow",
+                    "NumericRangeHigh",
+                    "DocumentGuid",
+                    "Deleted",
+                    "IsConfidential",
+                    "ProcessingId"
+            };
+        }
     }
 
     @Override
@@ -50,69 +169,107 @@ public class Observation extends AbstractCsvParser {
     public CsvCell getObservationGuid() {
         return super.getCell("ObservationGuid");
     }
+
     public CsvCell getPatientGuid() {
         return super.getCell("PatientGuid");
     }
+
     public CsvCell getOrganisationGuid() {
         return super.getCell("OrganisationGuid");
     }
+
     public CsvCell getEffectiveDate() {
         return super.getCell("EffectiveDate");
     }
+
     public CsvCell getEffectiveDatePrecision() {
         return super.getCell("EffectiveDatePrecision");
     }
+
     public CsvCell getEnteredDate() {
         return super.getCell("EnteredDate");
     }
+
     public CsvCell getEnteredTime() {
         return super.getCell("EnteredTime");
     }
+
     public CsvCell getClinicianUserInRoleGuid() {
         return super.getCell("ClinicianUserInRoleGuid");
     }
+
     public CsvCell getEnteredByUserInRoleGuid() {
         return super.getCell("EnteredByUserInRoleGuid");
     }
+
     public CsvCell getParentObservationGuid() {
         return super.getCell("ParentObservationGuid");
     }
+
     public CsvCell getCodeId() {
         return super.getCell("CodeId");
     }
+
     public CsvCell getProblemGuid() {
         return super.getCell("ProblemGuid");
     }
+
     public CsvCell getAssociatedText() {
         return super.getCell("AssociatedText");
     }
+
     public CsvCell getConsultationGuid() {
         return super.getCell("ConsultationGuid");
     }
+
     public CsvCell getValue() {
         return super.getCell("Value");
     }
+
     public CsvCell getNumericUnit() {
         return super.getCell("NumericUnit");
     }
+
     public CsvCell getObservationType() {
         return super.getCell("ObservationType");
     }
+
     public CsvCell getNumericRangeLow() {
         return super.getCell("NumericRangeLow");
     }
+
     public CsvCell getNumericRangeHigh() {
         return super.getCell("NumericRangeHigh");
     }
+
     public CsvCell getDocumentGuid() {
         return super.getCell("DocumentGuid");
     }
+
+    public CsvCell getQualifiers() {
+        return super.getCell("Qualifiers");
+    }
+
+    public CsvCell getAbnormal() {
+        return super.getCell("Abnormal");
+    }
+
+    public CsvCell getAbnormalReason() {
+        return super.getCell("AbnormalReason");
+    }
+
+    public CsvCell getEpisode() {
+        return super.getCell("Episode");
+    }
+
     public CsvCell getDeleted() {
         return super.getCell("Deleted");
     }
+
     public CsvCell getIsConfidential() {
         return super.getCell("IsConfidential");
     }
+
     public CsvCell getProcessingId() {
         return super.getCell("ProcessingId");
     }

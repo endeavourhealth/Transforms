@@ -219,6 +219,7 @@ SourceCode,SourceTerm,TargetCode,Comment
 9t0F.,"Black: other Black - E+W 2011",P,"Any other Black background"
 9t0G.,"Other eth grp: Arab - E+W 2011",S,"Any other ethnic group"
 9t0H.,"Other: any other grp- E+W 2011",S,"Any other ethnic group"
+9t10.,"White - Northern Ireland ethnic category 2011 census",B,Irish
 9t12.,"White+Black Caribbean- NI 2011",D,"White and Black Caribbean"
 9t13.,"White+Black African - NI 2011",E,"White and Black African"
 9t14.,"White+Asian - NI 2011 census",F,"White and Asian"
@@ -242,3 +243,4 @@ SourceCode,SourceTerm,TargetCode,Comment
 9t2F.,"Black - Scotland 2011 cens",M,Caribbean
 9t2H.,"Other grp: Arab- Scotland 2011",S,"Any other ethnic group"
 9t2J.,"Other grp - Scotland 2011 cens",S,"Any other ethnic group"
+9t27.,"Asian or Asian Scottish or Asian British: Pakistani, Pakistani Scottish or Pakistani British - Scotland ethnic category 2011 census",J,Pakistani

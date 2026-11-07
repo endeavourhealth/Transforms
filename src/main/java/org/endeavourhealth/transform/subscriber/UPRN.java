@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.json.*;
+import java.util.Base64;
 
 public class UPRN {
 	private static final Logger LOG = LoggerFactory.getLogger(UPRN.class);
@@ -73,14 +74,22 @@ public class UPRN {
 		try (MetricsTimer timer = MetricsHelper.recordTime("UPRN.getcsv")) {
 
 			String baseUrl = config.get("uprn_endpoint").asText();
+			String username = config.get("username").asText();
+			String password = config.get("password").asText();
+
 			String url = baseUrl + "api/getcsv?adrec=" + URLEncoder.encode(adrec, "UTF-8")+"&delim=~&ids="+ids;
 
 			URL obj = new URL(url);
 
 			HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
 			con.setRequestMethod("GET");
-			con.setRequestProperty("Authorization", "Bearer " + getUPRNToken());
 
+			// Basic Authentication
+			String authString = username + ":" + password;
+			String encodedAuthString = Base64.getEncoder().encodeToString(authString.getBytes());
+			String authHeaderValue = "Basic " + encodedAuthString;
+
+			con.setRequestProperty("Authorization", authHeaderValue);
 			int responseCode = con.getResponseCode();
 			if (responseCode != HttpURLConnection.HTTP_OK) {
 				throw new IOException("HTTP response " + responseCode + " returned for GET to " + url);

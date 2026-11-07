@@ -109,7 +109,8 @@ public class ProblemPreTransformer {
         }
 
         if (vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10)
-                || vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
+                || vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d)
+                || vocab.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_)) {
             probTerm = TerminologyService.lookupIcd10CodeDescription(probCode);
             if (Strings.isNullOrEmpty(probTerm)) {
                 throw new Exception("Failed to find term for ICD-10 code [" + probCode + "]");

@@ -166,54 +166,92 @@ public class EmisCustomCsvHelper {
      */
     private void createMissingEpisodes(List<RegStatusObj> regStatusList, List<EpisodeOfCareBuilder> builders) throws Exception {
 
-        //go through the sorted status list and work out distinct registration periods, then
-        //create episodes to support that
-        CsvCell lastStartCell = null;
+        //we often do not get end statuses for temporary registrations, so we may find multiple potential "start" statuses
+        //so track them all but separate by reg type
+        Map<RegistrationType, RegStatusObj> possibleStartsOfEpisodes = new HashMap<>();
 
         for (RegStatusObj statusObj: regStatusList) {
+            //LOG.trace("Got reg status " + statusObj);
 
-            CsvCell statusDateTimeCell = statusObj.getDateTimeCell();
             RegistrationStatus status = statusObj.convertRegistrationStatus();
-            if (RegistrationStatusTransformer.isDeductionRegistrationStatus(status)) {
+            RegistrationType regType = statusObj.convertRegistrationType();
 
-                //if we've got a deduction status after a registration status, then that is a complete past-episode
-                if (lastStartCell != null) {
+            if (!RegistrationStatusTransformer.isDeductionRegistrationStatus(status)) {
+                //LOG.trace("    Is NOT a deduction status");
+
+                //see if we're the start of a new run for this reg type
+                if (!possibleStartsOfEpisodes.containsKey(regType)) {
+                    possibleStartsOfEpisodes.put(regType, statusObj);
+                    //LOG.trace("    Found new start of registration");
+                }
+
+            } else {
+                //LOG.trace("    Is a deduction status");
+
+                //if we've got a deduction status after a registration status for the same reg type, then that is a complete past-episode
+                RegStatusObj possibleStartOfEpisode = possibleStartsOfEpisodes.get(regType);
+                if (possibleStartOfEpisode != null) {
+                    //LOG.trace("    Got start of start of registration " + lastPossibleStartOfEpisode);
 
                     //find an episode for the date range we've got
-                    EpisodeOfCareBuilder existingBuilder = null;
-                    for (EpisodeOfCareBuilder builder: builders) {
+                    CsvCell startRegTypeCell = possibleStartOfEpisode.getRegTypeCell();
+                    CsvCell startDateCell = possibleStartOfEpisode.getDateTimeCell();
+                    CsvCell orgGuidCell = statusObj.getOrganisationGuidCell();
+                    CsvCell endDateCell = statusObj.getDateTimeCell();
 
-                        Date startDate = lastStartCell.getDate(); //specifically using dates, not date times
-                        Date endDate = statusDateTimeCell.getDate(); //specifically using dates, not date times
+                    //only create the new episode if we don't already have one overlapping it
+                    Date startDate = startDateCell.getDate(); //specifically using dates, not date times
+                    Date endDate = endDateCell.getDate(); //specifically using dates, not date times
+                    Period proposedPeriod = PeriodHelper.createPeriod(startDate, endDate);
+                    //LOG.trace("    Checking for existing registration from " + formatDate(startDate) + " to " + formatDate(endDate));
 
-                        EpisodeOfCare episodeOfCare = (EpisodeOfCare)builder.getResource();
-                        Period period = episodeOfCare.getPeriod();
-                        if (PeriodHelper.isWithin(period, startDate)
-                            && PeriodHelper.isWithin(period, endDate)) {
-                            existingBuilder = builder;
+                    boolean createNewEpisode = true;
+
+                    //SD-441 - we have some very confusing data with a registration, deduction and re-registration all on the same day,
+                    //but because the start date is part of the unique identifier we simply can't support that. So ignore any proposed
+                    //episode that would last just one day
+                    if (startDate.equals(endDate)) {
+                        createNewEpisode = false;
+                    }
+
+                    for (EpisodeOfCareBuilder builder : builders) {
+
+                        EpisodeOfCare episodeOfCare = (EpisodeOfCare) builder.getResource();
+                        Period episodePeriod = episodeOfCare.getPeriod();
+
+                        //LOG.trace("        Checking episode " + episodeOfCare.getId() + " with period " + formatDate(period.getStart()) + " to " + formatDate(period.getEnd()));
+                        if (PeriodHelper.overlaps(episodePeriod, proposedPeriod)) {
+                            //LOG.trace("             Overlaps so do not create new episode");
+                            createNewEpisode = false;
                             break;
                         }
                     }
 
                     //create a new one
-                    if (existingBuilder == null) {
-                        EpisodeOfCareBuilder builder = createMissingEpisode(statusObj.getPatientGuidCell(), lastStartCell, statusDateTimeCell, statusObj.getRegTypeCell(), statusObj.getOrganisationGuidCell());
+                    if (createNewEpisode) {
+                        EpisodeOfCareBuilder builder = createMissingEpisode(statusObj.getPatientGuidCell(), startDateCell, endDateCell, startRegTypeCell, orgGuidCell);
                         builders.add(builder);
                     }
-
-                    //reset these so we can spot the next start of a registration
-                    lastStartCell = null;
                 }
 
-            } else {
-                //see if we're the start of a new run
-                if (lastStartCell == null) {
-                    lastStartCell = statusDateTimeCell;
-                }
+                //once we've hit a deduction status, then all proceeding starts of episode can be discarded
+                possibleStartsOfEpisodes.clear();
             }
         }
 
 
+    }
+
+    /**
+     * helper for logging, so dates are in a more readable format
+     */
+    private static String formatDate(Date d) {
+        if (d == null) {
+            return "NULL";
+        } else {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss");
+            return dateFormat.format(d);
+        }
     }
 
     /*private void createMissingEpisodes(List<RegStatusObj> regStatusList, List<EpisodeOfCareBuilder> builders) throws Exception {
@@ -269,15 +307,21 @@ public class EmisCustomCsvHelper {
 
     private EpisodeOfCareBuilder createMissingEpisode(CsvCell patientGuidCell, CsvCell startDateCell, CsvCell endDateCell, CsvCell regTypeCell, CsvCell organisationGuidCell) throws Exception {
 
-        //need to re-format the patient and org GUIDs to be the same format as used in the
-        //proper extract, otherwise the ID mapper won't be able to map them
+        //re-format the patient GUID so it's the same as the regular Emis ones (so the ID mapper can work)
         String patientGuid = patientGuidCell.getString();
         String formattedPatientGuid = "{" + patientGuid.toUpperCase() + "}";
         patientGuidCell = CsvCell.factoryWithNewValue(patientGuidCell, formattedPatientGuid);
 
+        //re-format the org GUID so it's the same as the regular Emis ones
         String organisationGuid = organisationGuidCell.getString();
         String formattedOrganisationGuid = "{" + organisationGuid.toUpperCase() + "}";
         organisationGuidCell = CsvCell.factoryWithNewValue(organisationGuidCell, formattedOrganisationGuid);
+
+        //re-format the date so it matches the regular Emis ones
+        Date startDate = startDateCell.getDate();
+        SimpleDateFormat df = new SimpleDateFormat(EmisCsvToFhirTransformer.DATE_FORMAT_YYYY_MM_DD);
+        String startDateStr = "RegStatus:" + df.format(startDate); //we need to differentiate them from ones created by the regular extract
+        startDateCell = CsvCell.factoryWithNewValue(startDateCell, startDateStr);
 
         //create the episode builder and populate with what we can
         EpisodeOfCareBuilder episodeBuilder = new EpisodeOfCareBuilder();
@@ -294,7 +338,6 @@ public class EmisCustomCsvHelper {
         RegistrationType registrationType = EmisMappingHelper.findRegistrationTypeFromCode(regTypeCell.getInt());
         episodeBuilder.setRegistrationType(registrationType, regTypeCell);
 
-        Date startDate = startDateCell.getDate();
         episodeBuilder.setRegistrationStartDate(startDate, startDateCell);
 
         Date endDate = endDateCell.getDate();
@@ -492,6 +535,16 @@ public class EmisCustomCsvHelper {
                 sb.append(status.getDescription());
             } catch (Exception ex) {
                 sb.append("UNKNOWN STATUS " + regStatusCell.getInt());
+            }
+
+            sb.append(", type: ");
+            try {
+                RegistrationType type = convertRegistrationType();
+                sb.append(type.getCode());
+                sb.append(" ");
+                sb.append(type.getDescription());
+            } catch (Exception ex) {
+                sb.append("UNKNOWN TYPE " + regTypeCell.getInt());
             }
 
             return sb.toString();

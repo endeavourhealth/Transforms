@@ -24,38 +24,26 @@ public abstract class FhirTransformer {
      */
     public static void transform(Exchange exchange, FhirResourceFiler fhirResourceFiler, String version) throws Exception {
         String HL7Message = exchange.getBody();
-        //get HL7 message from the table based on id
-        /*Connection connection = ConnectionManager.getHL7v2InboundConnection();
-        PreparedStatement ps = null;
-        try {
-            String sql = "SELECT * from imperial where payload_id=?";
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, String.valueOf(exchange.getId()));
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    if(resultSet.next()) {
-                        HL7Message = resultSet.getString("hl7_message");
-                    }
-                }
-            }
-            connection.commit();
-        } catch (Exception ex) {
-            LOG.error("", ex);
-            SlackHelper.sendSlackMessage(SlackHelper.Channel.EnterpriseAgeUpdaterAlerts, "Exception in transform for exchange id (" + exchange.getId() + ")", ex);
-        } finally {
-            if (ps != null) {
-                ps.close();
-            }
-            connection.close();
-        }*/
-        //get HL7 message from the table based on id
+        String sourceSystem= exchange.getHeader("SenderLocalIdentifier");
 
         Message hapiMsg = parseHL7Message(HL7Message);
-        String msgType = (hapiMsg.printStructure()).substring(0, 3);
+        if(hapiMsg != null) {
+            String msgType = (hapiMsg.printStructure()).substring(0, 3);
 
-        if("ADT".equalsIgnoreCase(msgType)) {
-            ImperialHL7FhirADTTransformer.transform(fhirResourceFiler, version, hapiMsg);
-        } else if("ORU".equalsIgnoreCase(msgType)) {
-            ImperialHL7FhirORUTransformer.transform(fhirResourceFiler, version, hapiMsg);
+            if ("ADT".equalsIgnoreCase(msgType)) {
+                AcuteHL7FhirADTTransformer.transform(fhirResourceFiler, sourceSystem, hapiMsg);
+            } else if ("ORU".equalsIgnoreCase(msgType)) {
+                LOG.info("Sending slack alert for : ORU message  received");
+                SlackHelper.sendSlackMessage(SlackHelper.Channel.Hl7v2Receiver, "ORU message  received.");
+              //  AcuteHL7FhirORUTransformer.transform(fhirResourceFiler, version, hapiMsg);
+            } else {
+                LOG.info("Sending slack alert for : Unknown message type received");
+                SlackHelper.sendSlackMessage(SlackHelper.Channel.Hl7v2Receiver, "Unknown message type received.");
+            }
+        }
+        else{
+            LOG.info("Sending slack alert for : Unknown message format received");
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.Hl7v2Receiver, "Unknown message format received.");
         }
     }
 
@@ -80,10 +68,10 @@ public abstract class FhirTransformer {
             hapiMsg = pipeParser.parse(hl7Message);
         } catch (EncodingNotSupportedException e) {
             e.printStackTrace();
-            SlackHelper.sendSlackMessage(SlackHelper.Channel.EnterpriseAgeUpdaterAlerts, "Exception in parseHL7Message", e);
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.Hl7v2Receiver, "Exception in parseHL7Message", e);
         } catch (HL7Exception e) {
             e.printStackTrace();
-            SlackHelper.sendSlackMessage(SlackHelper.Channel.EnterpriseAgeUpdaterAlerts, "Exception in parseHL7Message", e);
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.Hl7v2Receiver, "Exception in parseHL7Message", e);
         }
         return hapiMsg;
     }

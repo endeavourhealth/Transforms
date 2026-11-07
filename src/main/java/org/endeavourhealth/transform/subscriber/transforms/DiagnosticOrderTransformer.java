@@ -1,11 +1,11 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.*;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
+import org.endeavourhealth.common.fhir.FhirProfileUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMConstant;
 import org.endeavourhealth.transform.subscriber.IMHelper;
@@ -68,6 +68,7 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
         Double ageAtEvent = null;
         Integer episodicityConceptId = null;
         Boolean isPrimary = null;
+        Date dateRecorded = null;
 
         organizationId = params.getSubscriberOrganisationId().longValue();
         patientId = params.getSubscriberPatientId().longValue();
@@ -105,9 +106,13 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
         }
         String originalCode = originalCoding.getCode();
         String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
-
+        String restrictVSet = params.getConfig().getImRestrictedValueSet();
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay(), restrictVSet);
+        if (nonCoreConceptId == null) {
+            //if no concept returned (filtered out via value set), then skip the resource
+            return;
+        }
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
 
         //if it's a problem set the boolean to say so
         if (fhir.hasMeta()) {
@@ -149,6 +154,9 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
             }
         }
 
+        dateRecorded = params.includeDateRecorded(fhir);
+
+        model.setIncludeDateRecorded(params.isIncludeDateRecorded());
         model.writeUpsert(subscriberId,
                 organizationId,
                 patientId,
@@ -170,8 +178,9 @@ public class DiagnosticOrderTransformer extends AbstractSubscriberTransformer {
                 nonCoreConceptId,
                 ageAtEvent,
                 episodicityConceptId,
-                isPrimary);
-
+                isPrimary,
+                dateRecorded,
+                params);
     }
 
     @Override

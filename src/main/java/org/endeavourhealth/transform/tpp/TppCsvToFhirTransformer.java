@@ -32,6 +32,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public abstract class TppCsvToFhirTransformer {
+    public static final String IM_PROVIDER_CONCEPT_ID = "CM_Org_TPP";
+    public static final String IM_SYSTEM_CONCEPT_ID = "CM_Sys_SystmOne";
     private static final Logger LOG = LoggerFactory.getLogger(TppCsvToFhirTransformer.class);
 
     public static final String DATE_FORMAT = "dd MMM yyyy";
@@ -51,6 +53,14 @@ public abstract class TppCsvToFhirTransformer {
     public static final String VERSION_91 = "91"; //Basically 90 but no RemovedData
     public static final String VERSION_92 = "92"; //Basically 91 plus 1 new column in SRRota (DateStart), no RemovedData
     public static final String VERSION_93 = "93"; //Basically 92 plus RemovedData
+    public static final String VERSION_94 = "94"; //Basically 93 plus 1 new column in SRConfiguredListOption (CYPHS/CIDS/CSDSCode), no RemovedData
+    public static final String VERSION_95 = "95"; //Basically 94 plus RemovedData
+    public static final String VERSION_A = "A"; //SD-453 - moving away from trying to match to TPP version numbers because they don't use
+    public static final String VERSION_B = "B";
+    public static final String VERSION_C = "C";
+    public static final String VERSION_D = "D";
+    public static final String VERSION_E = "E";
+    public static final String VERSION_F = "F";
 
     private static Set<String> cachedFileNamesToIgnore = null; //set of file names we know contain data but will not be processing
 
@@ -131,68 +141,6 @@ public abstract class TppCsvToFhirTransformer {
     /**
      * the TPP schema changes without notice, so rather than define the version in the SFTP reader,
      * and then need to back pedal when we find it's changed, dynamically work it out from the CSV headers
-     * 16/08/2019 - changing from requiring one consistent version for all files in a batch to
-     * accepting the latest version of compatible parsers for each file.
-     */
-//    public static String determineVersion(String[] files) throws Exception {
-//
-//        List<String> possibleVersions = new ArrayList<>();
-//        Map<String, List<String>> breadcrumbs = new HashMap<String, List<String>>();
-//
-//        possibleVersions.add(VERSION_93);
-//        possibleVersions.add(VERSION_92);
-//        possibleVersions.add(VERSION_91);
-//        possibleVersions.add(VERSION_90);
-//        possibleVersions.add(VERSION_TEST_PACK_3);
-//        possibleVersions.add(VERSION_TEST_PACK_2);
-//        possibleVersions.add(VERSION_89);
-//        possibleVersions.add(VERSION_88);
-//        possibleVersions.add(VERSION_87);
-//        possibleVersions.add(VERSION_TEST_PACK);
-//
-//        for (String filePath : files) {
-//
-//            try {
-//                //create a parser for the file but with a null version, which will be fine since we never actually parse any data from it
-//                AbstractCsvParser parser = createParserForFile(null, null, null, null, filePath);
-//
-//                //calling this will return the possible versions that apply to this parser
-//                possibleVersions = parser.testForValidVersions(possibleVersions);
-//                breadcrumbs.put(filePath, possibleVersions);
-//                if (possibleVersions.isEmpty()) {
-//                    break;
-//                }
-//
-//            } catch (ClassNotFoundException ex) {
-//                //we don't have parsers for every file, since there are a lot of secondary-care (etc.) files
-//                //that we don't transform, but we also want to make sure that they're EMPTY unless we explicitly
-//                //have decided to ignore a non-empty file
-//                ensureFileIsEmpty(filePath);
-//            } catch (IOException eio) {
-//                LOG.error("", eio);
-//            }
-//        }
-//
-//        //if we end up with one or more possible versions that do apply, then
-//        //return the first, since that'll be the most recent one
-//        if (!possibleVersions.isEmpty()) {
-//            return possibleVersions.get(0);
-//        }
-//        // We've run out of goes so print some breadcrumbs
-//        LOG.info("Filename : possible versions");
-//        for (String filePath : files) {
-//            if (breadcrumbs.get(filePath) != null ) {
-//                LOG.info(filePath + ":" + breadcrumbs.get(filePath).toString());
-//            } else {
-//                LOG.info(filePath + ": has NULL breadcrumbs reference");
-//            }
-//        }
-//        throw new TransformException("Unable to determine version for TPP CSV");
-//    }
-
-    /**
-     * the TPP schema changes without notice, so rather than define the version in the SFTP reader,
-     * and then need to back pedal when we find it's changed, dynamically work it out from the CSV headers
      */
     public static Map<String, String> calculateVersionForFiles(String[] files,
                                                                HasServiceSystemAndExchangeIdI hasServiceSystemAndExchangeId) throws Exception {
@@ -200,6 +148,14 @@ public abstract class TppCsvToFhirTransformer {
         Map<String, String> ret = new HashMap<>();
 
         List<String> possibleVersions = new ArrayList<>();
+        possibleVersions.add(VERSION_F);
+        possibleVersions.add(VERSION_E);
+        possibleVersions.add(VERSION_D);
+        possibleVersions.add(VERSION_C);
+        possibleVersions.add(VERSION_B);
+        possibleVersions.add(VERSION_A);
+        possibleVersions.add(VERSION_95);
+        possibleVersions.add(VERSION_94);
         possibleVersions.add(VERSION_93);
         possibleVersions.add(VERSION_92);
         possibleVersions.add(VERSION_91);
@@ -236,7 +192,7 @@ public abstract class TppCsvToFhirTransformer {
             LOG.trace("Found " + compatibleVersions.size() + " possible versions");
 
             if (compatibleVersions.isEmpty()) {
-                ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId);
+                //ensureFileIsEmpty(filePath, hasServiceSystemAndExchangeId); //SD-424 - doing confuses things because if we're at this point, we KNOW we're not ignoring the file
                 versionFailures.add(filePath); //Not dropping straight out as multiple files may have changed so let's find them all
 
             } else {
@@ -342,10 +298,8 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SROverseasVisitorChargingCategory");
             set.add("SRPatientGroups");
             set.add("SRProblemSubstance");
-            set.add("SRReferralIn");
             set.add("SRReferralInIntervention");
             set.add("SRReferralInReferralReason");
-            set.add("SRReferralInStatusDetails");
             set.add("SRWaitingList");
             set.add("SRSchoolHistory");
             set.add("SRTeam");
@@ -394,6 +348,7 @@ public abstract class TppCsvToFhirTransformer {
             set.add("SRTTOMedication");
             set.add("SROnAdmissionMedication");
             set.add("SRSectionRightsExplained");
+            set.add("SRRestrictiveIntervention"); //SD-425
 
             cachedFileNamesToIgnore = set;
         }
@@ -412,7 +367,6 @@ public abstract class TppCsvToFhirTransformer {
 
     @SuppressWarnings("unchecked")
     private static AbstractCsvParser createParserForFile(UUID serviceId, UUID systemId, UUID exchangeId, String version, String filePath) throws Exception {
-
         String fName = FilenameUtils.getBaseName(filePath);
         String domain = getDomainFromFileName(fName);
         String clsName = "org.endeavourhealth.transform.tpp.csv.schema." + domain + "." + fName;
@@ -479,7 +433,9 @@ public abstract class TppCsvToFhirTransformer {
             return "patient";
 
         } else if (fileName.equals("SRReferralOut")
-                || fileName.equals("SRReferralOutStatusDetails")) {
+                || fileName.equals("SRReferralOutStatusDetails")
+                || fileName.equals("SRReferralIn")
+                || fileName.equals("SRReferralInStatusDetails")){
             return "referral";
 
         } else if (fileName.equals("SRStaffMember")
@@ -538,6 +494,7 @@ public abstract class TppCsvToFhirTransformer {
         SRCodePreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches ethnicities, marital status and new links to consultation
         SRImmunisationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
         SRReferralOutPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
+        SRReferralInPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to referral
         SRDrugSensitivityPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
         SRPrimaryCareMedicationPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
         SRRecallPreTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches new links to consultation
@@ -590,6 +547,8 @@ public abstract class TppCsvToFhirTransformer {
             //referrals
             SRReferralOutStatusDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches status records
             SRReferralOutTransformer.transform(parsers, fhirResourceFiler, csvHelper);
+            SRReferralInStatusDetailsTransformer.transform(parsers, fhirResourceFiler, csvHelper); //caches status records
+            SRReferralInTransformer.transform(parsers, fhirResourceFiler, csvHelper); //transform referral in
             csvHelper.getReferralStatusCache().processRemainingReferralStatuses(fhirResourceFiler); //handle any record statuses without registrations
             fhirResourceFiler.waitUntilEverythingIsSaved();
 
@@ -605,6 +564,7 @@ public abstract class TppCsvToFhirTransformer {
             SRPersonAtRiskTransformer.transform(parsers, fhirResourceFiler, csvHelper); //added to replace the above
             SRSpecialNotesTransformer.transform(parsers, fhirResourceFiler, csvHelper);
             SRRecallTransformer.transform(parsers, fhirResourceFiler, csvHelper); //was missing SD-159
+
         }
 
         //only after processing all the above files do we know what staff members we're actually interested in transforming

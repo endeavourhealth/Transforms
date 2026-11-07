@@ -194,8 +194,14 @@ public class EpisodeOfCareResourceCache {
             return retrieveAndCacheBuilder(finLocalRef, personIdCell, activeIndicatorCell);
         }
 
-        //if its get to here then there is no episodeId or encounterId map to episode or fin map to episode at the moment
-        //this may subsequently come through on an ENCNTR record which would update the encounter record mapping
+        //if its get to here then there is no episodeId or encounterId map to episode or fin map to episode
+        //so use a unique combination of encounterId and PersonId to create the episode reference
+        String personId = personIdCell.getString();
+        if (!Strings.isNullOrEmpty(encounterId) && !Strings.isNullOrEmpty(personId)) {
+
+            String localEpisodeRef = createEpisodeReferenceFromEncounterAndPerson(encounterId, personId);
+            return retrieveAndCacheBuilder(localEpisodeRef, personIdCell, activeIndicatorCell);
+        }
 
         return null;
     }
@@ -223,6 +229,9 @@ public class EpisodeOfCareResourceCache {
     }
     private static String createEpisodeReferenceFromFin(String fin) {
         return "FIN:" + fin;
+    }
+    private static String createEpisodeReferenceFromEncounterAndPerson(String encounterId, String personId) {
+        return "ENCNT_ID_PERSON_ID:" + encounterId+":"+personId;
     }
 
     private void saveEncounterIdToEpisodeAndFinMappings(CsvCell encounterIdCell, CsvCell episodeIdcell, CsvCell finCell) throws Exception {

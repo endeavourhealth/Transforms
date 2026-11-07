@@ -5,15 +5,13 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCodeHelper;
 import org.endeavourhealth.transform.emis.csv.helpers.EmisCsvHelper;
 import org.endeavourhealth.transform.emis.csv.schema.appointment.Slot;
-import org.hl7.fhir.instance.model.Appointment;
-import org.hl7.fhir.instance.model.Duration;
-import org.hl7.fhir.instance.model.Reference;
-import org.hl7.fhir.instance.model.ResourceType;
+import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +24,7 @@ public class SlotTransformer {
                                  FhirResourceFiler fhirResourceFiler,
                                  EmisCsvHelper csvHelper) throws Exception {
 
-        Slot parser = (Slot)parsers.get(Slot.class);
+        Slot parser = (Slot) parsers.get(Slot.class);
         while (parser != null && parser.nextRecord()) {
             try {
                 if (csvHelper.shouldProcessRecord(parser)) {
@@ -41,7 +39,6 @@ public class SlotTransformer {
                 fhirResourceFiler.logTransformRecordError(ex, parser.getCurrentState());
             }
         }
-
         //call this to abort if we had any errors, during the above processing
         fhirResourceFiler.failIfAnyErrors();
     }
@@ -80,6 +77,33 @@ public class SlotTransformer {
         EmisCsvHelper.setUniqueId(slotBuilder, patientGuid, slotGuid);
         EmisCsvHelper.setUniqueId(appointmentBuilder, patientGuid, slotGuid);
 
+        CsvCell bookingDateCell = parser.getBookedDate();
+        CsvCell bookingTimeCell = parser.getBookedTime();
+        //SD-1078
+        if (bookingDateCell != null && bookingTimeCell != null) {
+           if(!bookingDateCell.isEmpty() && !bookingTimeCell.isEmpty()) {
+               Date bookingDateTime = CsvCell.getDateTimeFromTwoCells(bookingDateCell, bookingTimeCell);
+               appointmentBuilder.setBookedDateTime(bookingDateTime, bookingDateCell, bookingTimeCell);
+           }
+        }
+
+
+        CsvCell modeOfContactCell = parser.getModeOfContact();
+        //SD-1078
+        if (modeOfContactCell != null && !modeOfContactCell.isEmpty()) {
+            ContainedParametersBuilder cpb = new ContainedParametersBuilder(appointmentBuilder);
+            EmisCsvHelper.addParamIfNotNull(
+                    "mode",
+                    modeOfContactCell.getString(),
+                    modeOfContactCell,
+                    cpb,
+                    "appointment");
+        }
+        CsvCell slotTypeCell = parser.getSlotType();
+        //SD-1078
+        if (slotTypeCell != null && !slotTypeCell.isEmpty()) {
+            appointmentBuilder.setType(slotTypeCell.getString(), slotTypeCell);
+        }
         //moved this higher up, because we need to have set the patient ID on the resource before we delete it
         Reference patientReference = EmisCsvHelper.createPatientReference(patientGuid);
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientGuid);
@@ -220,5 +244,6 @@ public class SlotTransformer {
 
         return ret;
     }
+
 
 }

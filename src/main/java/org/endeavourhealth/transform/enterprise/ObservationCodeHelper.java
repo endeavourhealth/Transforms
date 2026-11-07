@@ -202,6 +202,10 @@ public class ObservationCodeHelper {
         } else if (system.equals(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP)) {
             return "TPPAG_" + originalCoding.getCode();
 
+        } else if (system.equals(FhirCodeUri.CODE_SYSTEM_CM_DISCOVERY_CODE)) {
+            //Discovery codes are prefixed with a CM_ already, so just return unformatted.
+            return originalCoding.getCode();
+
         } else {
             throw new TransformException("Unsupported original code system [" + system + "]");
         }
@@ -277,8 +281,28 @@ public class ObservationCodeHelper {
             str = IMConstant.VISION_LOCAL;
         } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_CTV3)) {
             str = IMConstant.TPP_LOCAL;
-        } else if (codingSystem.equalsIgnoreCase(IMConstant.DISCOVERY_CODE)) {
-            str = IMConstant.IMPERIAL_CERNER;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CM_DISCOVERY_CODE)) {
+            str = IMConstant.DISCOVERY_CODE;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_IMPERIAL_CERNER_CODE_ID)) {
+                str = IMConstant.IMPERIAL_CERNER;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CHELWEST_CERNER_CODE_ID)) {
+            str = IMConstant.CWH_CERNER;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_KINGS_PIMS_ID)) {
+            str = IMConstant.KINGS_PIMS;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_LNWH_SILVER_LINK_ID)) {
+            str = IMConstant.LNWH_SILVER_LINK;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_LNWH_SYMPHONY_ID)) {
+            str = IMConstant.LNWH_SYMPHONY;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_THH_SILVER_LINK_ID)) {
+            str = IMConstant.THH_SILVER_LINK;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_FHIR_STILLBORN_INDICATOR)) {
+            str = IMConstant.FHIR_SBI;
+        }  else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_FHIR_SUSPECTED_CONGENITAL_ABNORMALITY_INDICATOR)) {
+            str = IMConstant.FHIR_SCAI;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_THH_SYMPHONY_ID)) {
+            str = IMConstant.THH_SYMPHONY;
+        } else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_CARE_CONNECT_LANGUAGE )) {
+            str = IMConstant.FHIR_LANGUAGE;
         }
         else if (codingSystem.equalsIgnoreCase(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP)) {
             //no support in IM for Action Groups
@@ -292,5 +316,36 @@ public class ObservationCodeHelper {
         }
 
         return str;
+    }
+
+    public static String mapImSchemeToCodingSystem(String imScheme) throws Exception {
+        String systemCode=null;
+        if(imScheme.equalsIgnoreCase(IMConstant.DISCOVERY_CODE)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_CM_DISCOVERY_CODE;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.FHIR_LANGUAGE )) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_CARE_CONNECT_LANGUAGE;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.IMPERIAL_CERNER)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_IMPERIAL_CERNER_CODE_ID;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.KINGS_PIMS)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_KINGS_PIMS_ID;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.LNWH_SILVER_LINK)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_LNWH_SILVER_LINK_ID;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.LNWH_SYMPHONY)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_LNWH_SYMPHONY_ID;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.FHIR_SBI)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_FHIR_STILLBORN_INDICATOR;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.FHIR_SCAI)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_FHIR_SUSPECTED_CONGENITAL_ABNORMALITY_INDICATOR;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.THH_SILVER_LINK)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_THH_SILVER_LINK_ID;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.THH_SYMPHONY)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_THH_SYMPHONY_ID;
+        } else if (imScheme.equalsIgnoreCase(IMConstant.CWH_CERNER)) {
+            systemCode = FhirCodeUri.CODE_SYSTEM_CHELWEST_CERNER_CODE_ID;
+        }
+        else {
+            throw new Exception("No mapping to code scheme for IM scheme " + imScheme);
+        }
+        return systemCode;
     }
 }

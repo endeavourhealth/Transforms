@@ -2,9 +2,11 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 public class ProcedureRequest extends AbstractTargetTable {
 
@@ -36,7 +38,21 @@ public class ProcedureRequest extends AbstractTargetTable {
                             Integer coreConceptId,
                             Integer nonCoreConceptId,
                             Double ageAtEvent,
-                            Date dateRecorded) throws Exception {
+                            Date dateRecorded,
+                            SubscriberTransformHelper params) throws Exception {
+
+        //get any configured excluded columns for this table
+        List<String> excludedTableColumns
+                = params.getSubscriberExcludedColumns(getTableId(), getPermittedColumnExclusions());
+        if (excludedTableColumns != null) {
+            //check each column set for exclusion and blank
+            for (String column: excludedTableColumns) {
+                switch (column) {
+                    case "age_at_event" : ageAtEvent = null; break;
+                    default : break;
+                }
+            }
+        }
 
         if (includeDateRecorded) {
             super.printRecord(convertBoolean(false),
@@ -46,7 +62,7 @@ public class ProcedureRequest extends AbstractTargetTable {
                     "" + personId,
                     convertLong(encounterId),
                     convertLong(practitionerId),
-                    convertDate(clinicalEffectiveDate),
+                    convertDateTime(clinicalEffectiveDate), //SD-498
                     convertInt(datePrecisionConceptId),
                     convertInt(procedureRequestStatusConceptId),
                     convertInt(coreConceptId),
@@ -61,7 +77,7 @@ public class ProcedureRequest extends AbstractTargetTable {
                     "" + personId,
                     convertLong(encounterId),
                     convertLong(practitionerId),
-                    convertDate(clinicalEffectiveDate),
+                    convertDateTime(clinicalEffectiveDate), //SD-498
                     convertInt(datePrecisionConceptId),
                     convertInt(procedureRequestStatusConceptId),
                     convertInt(coreConceptId),
@@ -149,5 +165,12 @@ public class ProcedureRequest extends AbstractTargetTable {
                     BigDecimal.class,
             };
         }
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return new String[] {
+                "age_at_event"
+        };
     }
 }

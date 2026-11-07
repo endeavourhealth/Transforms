@@ -65,6 +65,62 @@ public class DrugRecord extends AbstractCsvParser {
                     "Deleted",
                     "ProcessingId"
             };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_5_5)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)) {
+            return new String[]{
+                    "DrugRecordGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "CodeId",
+                    "Dosage",
+                    "Quantity",
+                    "QuantityUnit",
+                    "ProblemObservationGuid",
+                    "PrescriptionType",
+                    "IsActive",
+                    "CancellationDate",
+                    "NumberOfIssues",
+                    "NumberOfIssuesAuthorised",
+                    "IsConfidential",
+                    "Deleted",
+                    "ProcessingId"
+            };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_8_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_2)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_3))//SD:1190
+        { //SD:1090
+            //SD-1016 : addition of ExpiryDate column
+            return new String[]{
+                    "DrugRecordGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "CodeId",
+                    "Dosage",
+                    "Quantity",
+                    "QuantityUnit",
+                    "ProblemObservationGuid",
+                    "PrescriptionType",
+                    "IsActive",
+                    "CancellationDate",
+                    "NumberOfIssues",
+                    "NumberOfIssuesAuthorised",
+                    "IsConfidential",
+                    "Deleted",
+                    "ExpiryDate",
+                    "ProcessingId"
+            };
         } else {
             return new String[]{
                     "DrugRecordGuid",
@@ -169,79 +225,4 @@ public class DrugRecord extends AbstractCsvParser {
     public CsvCell getIsConfidential() {
         return super.getCell("IsConfidential");
     }
-
-
-    /*public String getDrugRecordGuid() {
-        return super.getString("DrugRecordGuid");
-    }
-    public String getPatientGuid() {
-        return super.getString("PatientGuid");
-    }
-    public String getOrganisationGuid() {
-        return super.getString("OrganisationGuid");
-    }
-    public Date getEffectiveDate() throws TransformException {
-        return super.getDate("EffectiveDate");
-    }
-    public String getEffectiveDatePrecision() {
-        return super.getString("EffectiveDatePrecision");
-    }
-    public Date getEnteredDate() throws TransformException {
-        return super.getDate("EnteredDate");
-    }
-    public Date getEnteredDateTime() throws TransformException {
-        return super.getDateTime("EnteredDate", "EnteredTime");
-    }
-    public String getClinicianUserInRoleGuid() {
-        return super.getString("ClinicianUserInRoleGuid");
-    }
-    public String getEnteredByUserInRoleGuid() {
-        return super.getString("EnteredByUserInRoleGuid");
-    }
-    public Long getCodeId() {
-        return super.getLong("CodeId");
-    }
-    public String getDosage() {
-        return super.getString("Dosage");
-    }
-    public Double getQuantity() {
-        return super.getDouble("Quantity");
-    }
-    public String getQuantityUnit() {
-        return super.getString("QuantityUnit");
-    }
-    public String getProblemObservationGuid() {
-        return super.getString("ProblemObservationGuid");
-    }
-    public String getPrescriptionType() {
-        return super.getString("PrescriptionType");
-    }
-    public boolean getIsActive() {
-        return super.getBoolean("IsActive");
-    }
-    public Date getCancellationDate() throws TransformException {
-        return super.getDate("CancellationDate");
-    }
-    public Integer getNumberOfIssues() {
-        return super.getInt("NumberOfIssues");
-    }
-    public Integer getNumberOfIssuesAuthorised() {
-        return super.getInt("NumberOfIssuesAuthorised");
-    }
-    public boolean getDeleted() {
-        return super.getBoolean("Deleted");
-    }
-    public Integer getProcessingId() {
-        return super.getInt("ProcessingId");
-    }
-    public boolean getIsConfidential() {
-        return super.getBoolean("IsConfidential");
-    }
-
-    *//**
-     * special function to handle mis-spelt column name in EMIS test pack
-     *//*
-    public String getClinicanUserInRoleGuid() {
-        return super.getString("ClinicanUserInRoleGuid");
-    }*/
 }

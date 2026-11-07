@@ -58,7 +58,11 @@ public class Patient extends AbstractCsvParser {
                     "ExternalUsusalGPOrganisation",
                     "ProcessingId"
             };
-        } else {
+        } else if(version.equals(EmisCsvToFhirTransformer.VERSION_8_0)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_2)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_3)){
             return new String[] {
                     "PatientGuid",
                     "OrganisationGuid",
@@ -96,7 +100,48 @@ public class Patient extends AbstractCsvParser {
                     "ExternalUsualGPGuid",
                     "ExternalUsualGP",
                     "ExternalUsualGPOrganisation",
+                    "ContactComments",
                     "ProcessingId"
+            };
+        } else {
+            return new String[] {
+                "PatientGuid",
+                "OrganisationGuid",
+                "UsualGpUserInRoleGuid",
+                "Sex",
+                "DateOfBirth",
+                "DateOfDeath",
+                "Title",
+                "GivenName",
+                "MiddleNames",
+                "Surname",
+                "DateOfRegistration",
+                "NhsNumber",
+                "PatientNumber",
+                "PatientTypeDescription",
+                "DummyType",
+                "HouseNameFlatNumber",
+                "NumberAndStreet",
+                "Village",
+                "Town",
+                "County",
+                "Postcode",
+                "ResidentialInstituteCode",
+                "NHSNumberStatus",
+                "CarerName",
+                "CarerRelation",
+                "PersonGuid",
+                "DateOfDeactivation",
+                "Deleted",
+                "SpineSensitive",
+                "IsConfidential",
+                "EmailAddress",
+                "HomePhone",
+                "MobilePhone",
+                "ExternalUsualGPGuid",
+                "ExternalUsualGP",
+                "ExternalUsualGPOrganisation",
+                "ProcessingId"
             };
         }
 

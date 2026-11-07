@@ -161,8 +161,9 @@ public class PublishedFileAuditHelper {
                     }
                 }
 
+                //SD-528 - WRONG - this should be outside the loop!
                 //if we have a trailing record, audit that
-                if (currentRecordStart != currentBytePos) {
+                /*if (currentRecordStart != currentBytePos) {
                     PublishedFileRecord fileRecord = new PublishedFileRecord();
                     fileRecord.setPublishedFileId(fileAuditId);
                     fileRecord.setRecordNumber(recordNumber);
@@ -175,6 +176,23 @@ public class PublishedFileAuditHelper {
                         handleErrors(errors);
                         nextTask = new AuditRowTask();
                     }
+                }*/
+            }
+
+            //SD-528 - moved here, so it's actually after the loop has exited
+            //if we have a trailing record, audit that
+            if (currentRecordStart != currentBytePos) {
+                PublishedFileRecord fileRecord = new PublishedFileRecord();
+                fileRecord.setPublishedFileId(fileAuditId);
+                fileRecord.setRecordNumber(recordNumber);
+                fileRecord.setByteStart(currentRecordStart);
+                fileRecord.setByteLength((int) (currentBytePos - currentRecordStart));
+
+                nextTask.addRecord(fileRecord);
+                if (nextTask.isFull()) {
+                    List<ThreadPoolError> errors = threadPool.submit(nextTask);
+                    handleErrors(errors);
+                    nextTask = new AuditRowTask();
                 }
             }
 

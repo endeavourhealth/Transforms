@@ -12,15 +12,19 @@ public class TransformConfig {
     private static final Logger LOG = LoggerFactory.getLogger(TransformConfig.class);
 
     private String sharedStoragePath;
+    private String mappingStoragePath;
     private int attemptsPermmitedPerExchange;
     private String killFileLocation;
     private Set<String> emisDisabledOdsCodesAllowed;
     private boolean emisAllowMissingCodes;
     private boolean emisAllowUnmappedRegistrationTypes;
+    private boolean emisProcessFreeText; //SD-374 - allow us to skip free-text
     //private boolean emisSkipAdminData;
     private Set<String> softwareFormatsToDrainQueueOnFailure;
     private String cernerPatientIdFile;
+    private String cernerEventCdFile;
     private boolean cernerCDSEncountersOnly;
+    private List<String> cernerKnownInvalidCodes;
     private String bhrutPatientIdFile;
     private int maxTransformErrorsBeforeAbort;
     private List<Pattern> warningsToFailOn;
@@ -54,14 +58,17 @@ public class TransformConfig {
 
         //set some defaults
         //this.sharedStoragePath = null; //can't really default this
+        //this.mappingStoragePath = null; //no appropriate default for this
         this.attemptsPermmitedPerExchange = 5;
         //this.killFileLocation = null; //no default
         this.emisDisabledOdsCodesAllowed = new HashSet<>();
         this.emisAllowMissingCodes = false;
         this.emisAllowUnmappedRegistrationTypes = false;
+        this.emisProcessFreeText = false; //skip it by default
         //this.emisSkipAdminData = false;
         this.softwareFormatsToDrainQueueOnFailure = new HashSet<>();
         this.cernerPatientIdFile = null;
+        this.cernerEventCdFile = null;
         this.cernerCDSEncountersOnly = false;
         this.bhrutPatientIdFile = null;
         this.maxTransformErrorsBeforeAbort = 50;
@@ -75,6 +82,7 @@ public class TransformConfig {
         this.rabbitMessagePerSecondThrottle = 5000;
         this.emisOdsCodesAndStartDates = new HashMap<>();
         this.adminBatchMaxSize = 30000; //largest known patient has 14k resources, so cap at double
+        this.cernerKnownInvalidCodes = new ArrayList<>();
 
         try {
 
@@ -108,10 +116,23 @@ public class TransformConfig {
             this.cernerPatientIdFile = node.asText();
         }
 
+        node = json.get("event_cd_file");
+        if (node != null) {
+            this.cernerEventCdFile = node.asText();
+        }
+
         node = json.get("cds_encounters_only");
         if (node != null) {
             this.cernerCDSEncountersOnly = node.asBoolean();
         }
+        node  = json.get("known_invalid_codes");
+        if (node != null){
+            for (int i = 0; i < node.size(); i++){
+                String invalidCode = node.get(i).asText();
+                this.cernerKnownInvalidCodes.add(invalidCode);
+            }
+        }
+
     }
     private void loadBhrutConfig(JsonNode json) {
         if (json == null) {
@@ -135,6 +156,11 @@ public class TransformConfig {
             this.sharedStoragePath = node.asText();
         }
 
+        node = json.get("mapping_storage_path");
+        if (node != null) {
+            this.mappingStoragePath = node.asText();
+        }
+
         node = json.get("disable_saving_resources");
         if (node != null) {
             this.disableSavingResources = node.asBoolean();
@@ -153,11 +179,6 @@ public class TransformConfig {
         node = json.get("kill_file_location");
         if (node != null) {
             this.killFileLocation = node.asText();
-        }
-
-        node = json.get("shared_storage_path");
-        if (node != null) {
-            this.sharedStoragePath = node.asText();
         }
 
         node = json.get("transform_errors_before_abort");
@@ -281,6 +302,11 @@ public class TransformConfig {
             this.emisAllowUnmappedRegistrationTypes = subNode.asBoolean();
         }
 
+        subNode = json.get("process_free_text");
+        if (subNode != null) {
+            this.emisProcessFreeText = subNode.asBoolean();
+        }
+
         /*subNode = json.get("skip_admin_data");
         if (subNode != null) {
             this.emisSkipAdminData = subNode.asBoolean();
@@ -312,6 +338,10 @@ public class TransformConfig {
         return sharedStoragePath;
     }
 
+    public String getMappingStoragePath() {
+        return mappingStoragePath;
+    }
+
     public int getAttemptsPermmitedPerExchange() {
         return attemptsPermmitedPerExchange;
     }
@@ -330,6 +360,10 @@ public class TransformConfig {
 
     public boolean isEmisAllowUnmappedRegistrationTypes() {
         return emisAllowUnmappedRegistrationTypes;
+    }
+
+    public boolean isEmisProcessFreeText() {
+        return emisProcessFreeText;
     }
 
     public Set<String> getSoftwareFormatsToDrainQueueOnFailure() {
@@ -368,6 +402,10 @@ public class TransformConfig {
         return cernerPatientIdFile;
     }
 
+    public String getCernerEventCdFile() {
+        return cernerEventCdFile;
+    }
+
     public boolean isCernerCDSEncountersOnly() {
         return cernerCDSEncountersOnly;
     }
@@ -393,6 +431,10 @@ public class TransformConfig {
 
     public int getAdminBatchMaxSize() {
         return adminBatchMaxSize;
+    }
+
+    public List<String> getCernerKnownInvalidCodes() {
+        return cernerKnownInvalidCodes;
     }
 
     /*public boolean isEmisSkipAdminData() {

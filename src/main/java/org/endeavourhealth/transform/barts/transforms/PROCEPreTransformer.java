@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.publisherStaging.StagingPROCEDalI;
 import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingPROCE;
-import org.endeavourhealth.core.database.dal.publisherStaging.models.StagingProcedure;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
 import org.endeavourhealth.core.terminology.TerminologyService;
@@ -114,7 +113,14 @@ public class PROCEPreTransformer {
 
             CsvCell sliceCell = parser.getEncounterSliceID();
             if (!sliceCell.isEmpty()) {
-                stagingPROCE.setEncounterSliceId(sliceCell.getInt());
+                //SD-853 - handle > Max Int values.
+                try {
+                    stagingPROCE.setEncounterSliceId(sliceCell.getInt());
+
+                } catch (NumberFormatException ex) {
+                    stagingPROCE.setEncounterSliceId(Integer.valueOf("0"));  //default back to 0
+                    TransformWarnings.log(LOG, csvHelper, "PROCE {} has ENCNTR_SLICE_ID {} > Max Integer (2147483647)", procedureIdCell, sliceCell);
+                }
             }
 
             CsvCell dateCell = parser.getProcedureDateTime();

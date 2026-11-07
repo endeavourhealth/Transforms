@@ -5,28 +5,26 @@ import ca.uhn.hl7v2.model.v23.segment.MRG;
 import ca.uhn.hl7v2.model.v23.segment.PID;
 import com.google.common.base.Strings;
 import org.endeavourhealth.common.cache.ParserPool;
+import org.endeavourhealth.common.fhir.ExtensionConverter;
+import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.common.fhir.ReferenceHelper;
-import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.Religion;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.database.dal.DalProvider;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.CernerCodeValueRef;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.im.models.mapping.MapColumnRequest;
-import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
 import org.endeavourhealth.im.models.mapping.MapResponse;
-import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.ResourceMergeMapHelper;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.openhr.schema.VocSex;
 import org.endeavourhealth.transform.emis.openhr.transforms.common.SexConverter;
 import org.endeavourhealth.transform.fhirhl7v2.FhirHl7v2Filer;
-import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
-import org.endeavourhealth.transform.subscriber.IMConstant;
-import org.endeavourhealth.transform.subscriber.IMHelper;
+import org.endeavourhealth.transform.hl7v2fhir.helpers.AcuteHL7Helper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,18 +43,18 @@ public class PatientTransformer {
      * @param pid
      * @param patientBuilder
      * @param fhirResourceFiler
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @return
      * @throws Exception
      */
-    public static PatientBuilder transformPIDToPatient(PID pid, PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType) throws Exception {
-        CX[] patientIdList = pid.getPatientIDInternalID();
-        String id = String.valueOf(patientIdList[0].getID());
-        String nhsNumber = String.valueOf(patientIdList[1].getID());
+    public static PatientBuilder transformPIDToPatient(PID pid, PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, AcuteHL7Helper acuteHL7Helper, String msgType, String odsCode, String msgId) throws Exception {
+        String id = AcuteHL7Helper.getPatientGUID(pid);
+        String nhsNumber = AcuteHL7Helper.getPatientNHSNumber(pid);
+        String idURL="https://fhir.hl7.org.uk/Id/"+odsCode.toLowerCase();
         createIdentifier(patientBuilder, fhirResourceFiler, nhsNumber, Identifier.IdentifierUse.OFFICIAL, "http://fhir.nhs.net/Id/nhs-number");
 
         //store the patient ID to the patient resource
-        createIdentifier(patientBuilder, fhirResourceFiler, id, Identifier.IdentifierUse.SECONDARY, "https://fhir.hl7.org.uk/Id/ryj");
+        createIdentifier(patientBuilder, fhirResourceFiler, id, Identifier.IdentifierUse.SECONDARY, idURL);
 
         TS dob = pid.getDateOfBirth();
         if (!dob.isEmpty()) {
@@ -77,45 +75,32 @@ public class PatientTransformer {
         }
 
         IS sex = pid.getSex();
-        VocSex sexEnum = VocSex.fromValue(String.valueOf(sex));
-        Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
-        patientBuilder.setGender(gender);
+        if (!Strings.isNullOrEmpty(pid.getSex().getValue()) && !pid.getSex().getValue().equalsIgnoreCase("\"\"")) {
+            String receivedGender = String.valueOf(sex);
+            if(!(receivedGender.equals(String.valueOf('U')) || receivedGender.equals(String.valueOf('M')) || receivedGender.equals(String.valueOf('F')) || receivedGender.equals(String.valueOf('I')))){
+                String alert_message ="Received Invalid Gender type : " +receivedGender + " for Organization = " + odsCode + " ,Message ID = " + msgId +" ,Exchange ID = "+ acuteHL7Helper.getExchangeId().toString() + " and message type = " + msgType;
+                TransformWarnings.log(LOG,acuteHL7Helper,
+                        "Received Invalid Gender for message type={}, Segment={}, MRN={}, MessageID={}",
+                        msgType,alert_message, AcuteHL7Helper.getPatientGUID(pid),msgId);
 
-        String ethnicity = pid.getEthnicGroup().getValue();
-        if (!Strings.isNullOrEmpty(ethnicity) && !ethnicity.equalsIgnoreCase("\"\"")) {
-            patientBuilder.setEthnicity(EthnicCategory.fromCode(pid.getEthnicGroup().getValue()));
+                LOG.debug(alert_message);
+                SlackHelper.sendSlackMessage(SlackHelper.Channel.Hl7v2Receiver, alert_message);
+                receivedGender= String.valueOf('U');
+            }
+            VocSex sexEnum = VocSex.fromValue(receivedGender);
+            Enumerations.AdministrativeGender gender = SexConverter.convertSexToFhir(sexEnum);
+            patientBuilder.setGender(gender);
         }
+        String ethnicity = pid.getEthnicGroup().getValue();
+        addEthnicity(ethnicity, patientBuilder, msgType, acuteHL7Helper, odsCode, msgId,pid);
 
-        ContainedParametersBuilder containedParametersBuilder = new ContainedParametersBuilder(patientBuilder);
-        containedParametersBuilder.removeContainedParameters();
-
-        /*String ethnicity = pid.getEthnicGroup().getValue();
-        if (!Strings.isNullOrEmpty(ethnicity)) {
-
-            MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                    "ethnicity"
-            );
-            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
-
-            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                    "ethnicity", ethnicity, IMConstant.NHS_DATA_DICTIONARY
-            );
-            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
-
-            CodeableConcept ccValue = patientBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Patient_Language,false);
-            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
-                    .setSystem(valueResponse.getConcept().getScheme()).setDisplay("Ethnicity");
-            patientBuilder.
-        }*/
         ContactPointBuilder contactPointBuilder = new ContactPointBuilder(patientBuilder);
         contactPointBuilder.removeExistingContactPoints(patientBuilder);
         XTN[] phones = pid.getPhoneNumberHome();
-        addPhoneData(phones, patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        addPhoneData(phones, patientBuilder, fhirResourceFiler, acuteHL7Helper);
 
         XTN[] businessPhones = pid.getPhoneNumberBusiness();
-        addPhoneData(businessPhones, patientBuilder, fhirResourceFiler, imperialHL7Helper);
+        addPhoneData(businessPhones, patientBuilder, fhirResourceFiler, acuteHL7Helper);
 
         createName(patientBuilder, pid, fhirResourceFiler);
         createAddress(patientBuilder, pid, fhirResourceFiler);
@@ -125,38 +110,57 @@ public class PatientTransformer {
 
         return patientBuilder;
     }
+    /*
+     * Add ethnicity to Patient resource as an extension
+     */
+    private static void addEthnicity(String ethnicity, PatientBuilder patientBuilder, String msgType,
+                                     AcuteHL7Helper acuteHL7Helper, String odsCode, String msgId,PID pid) throws Exception {
 
-    private static void addPhoneData(XTN[] phones, PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper) throws Exception {
+        if (!Strings.isNullOrEmpty(ethnicity) && !ethnicity.equalsIgnoreCase("\"\"")) {
+            MapResponse valueResponse = acuteHL7Helper.retrieveIMLookupMap(odsCode, "ethnicity", ethnicity);
+            if (valueResponse.getWasCreated()) {
+                acuteHL7Helper.raiseMissingAlert(ethnicity, "ethnicity", odsCode, msgType, acuteHL7Helper.getExchangeId().toString(),msgId,AcuteHL7Helper.getPatientGUID(pid),acuteHL7Helper);
+            }
+            ExtensionConverter.removeExtension(patientBuilder.getResource(),FhirExtensionUri.PATIENT_ETHNICITY);
+            CodeableConcept ccValue = new CodeableConcept();
+            ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                    .setSystem(valueResponse.getConcept().getScheme()).setDisplay(ethnicity);
+
+            Extension extension = ExtensionConverter.createExtension( FhirExtensionUri.PATIENT_ETHNICITY, ccValue) ;
+            patientBuilder.getResource().addExtension(extension);
+        }
+    }
+
+    private static void addPhoneData(XTN[] phones, PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, AcuteHL7Helper acuteHL7Helper) throws Exception {
         for(XTN phone : phones) {
             ID useCd = phone.getTelecommunicationUseCode();
-            String phoneString = String.valueOf(phone);
+            //  String phoneString = String.valueOf(phone);
             String phoneNumber=phone.get9999999X99999CAnyText().toString();
             if("PRN".equalsIgnoreCase(String.valueOf(useCd))) {
                 if ( phoneNumber !=null && !phoneNumber.isEmpty() ) {
-                    createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
+                    createContact(patientBuilder, fhirResourceFiler, acuteHL7Helper, phoneNumber, ContactPoint.ContactPointUse.HOME, ContactPoint.ContactPointSystem.PHONE);
                 }
 
             } else if("PRS".equalsIgnoreCase(String.valueOf(useCd))) {
                 if (phoneNumber !=null && !phoneNumber.isEmpty()) {
-                    createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
+                    createContact(patientBuilder, fhirResourceFiler, acuteHL7Helper, phoneNumber, ContactPoint.ContactPointUse.MOBILE, ContactPoint.ContactPointSystem.PHONE);
                 }
             }
             else if("WPN".equalsIgnoreCase(String.valueOf(useCd))) {
                 if (phoneNumber !=null && !phoneNumber.isEmpty()) {
-                    createContact(patientBuilder, fhirResourceFiler, imperialHL7Helper, phoneNumber, ContactPoint.ContactPointUse.WORK, ContactPoint.ContactPointSystem.PHONE);
+                    createContact(patientBuilder, fhirResourceFiler, acuteHL7Helper, phoneNumber, ContactPoint.ContactPointUse.WORK, ContactPoint.ContactPointSystem.PHONE);
                 }
             }
-    }
+        }
     }
 
     /**
      * A34 messages merge all content from one patient (minor patient) to another (the major patient)
      */
-    public static void performA34PatientMerge(FhirHl7v2Filer.AdtResourceFiler filer, PID pid, MRG mrg, ImperialHL7Helper imperialHL7Helper) throws Exception {
+    public static void performA34PatientMerge(FhirHl7v2Filer.AdtResourceFiler filer, PID pid, MRG mrg, AcuteHL7Helper acuteHL7Helper,boolean existingPatient) throws Exception {
 
-        CX[] patientIdList = pid.getPatientIDInternalID();
-        String majorPId = String.valueOf(patientIdList[0].getID());
-        String minorPId = String.valueOf((mrg.getPriorPatientIDInternal())[0].getID());
+        String majorPId = AcuteHL7Helper.getPatientGUID(pid);
+        String minorPId = AcuteHL7Helper.getMergeMRN(mrg,"MRN");
 
         UUID majPatientId = IdHelper.getEdsResourceId(filer.getServiceId(), ResourceType.Patient, majorPId);
         String majorPatientId = String.valueOf(majPatientId);
@@ -174,12 +178,12 @@ public class PatientTransformer {
         idMappings.put(minorPatientReference, majorPatientReference);
 
         Patient existingMajorPatient = null;
-        existingMajorPatient = (Patient) imperialHL7Helper.retrieveResource(majorPId, ResourceType.Patient);
+        existingMajorPatient = (Patient) acuteHL7Helper.retrieveResource(majorPId, ResourceType.Patient);
 
         Patient existingMinorPatient = null;
-        existingMinorPatient = (Patient) imperialHL7Helper.retrieveResource(minorPId, ResourceType.Patient);
+        existingMinorPatient = (Patient) acuteHL7Helper.retrieveResource(minorPId, ResourceType.Patient);
 
-        if(existingMajorPatient != null && existingMinorPatient != null) {
+        if((existingMajorPatient != null || existingPatient) && existingMinorPatient != null) {
             List<ResourceWrapper> minorPatientResources = resourceRepository.getResourcesByPatient(filer.getServiceId(), UUID.fromString(minorPatientId));
 
             //copy the resources to the major patient
@@ -192,7 +196,8 @@ public class PatientTransformer {
                     //we don't want to move patient resources, so just delete it
                     filer.deletePatientResource(new GenericBuilder(fhirOriginal));
 
-                } else {
+                }
+                else {
                     //for all other resources, re-map the IDs and save to the DB
                     try {
                         //FHIR copy functions don't copy the ID or Meta, so deserialise twice instead
@@ -281,7 +286,7 @@ public class PatientTransformer {
      */
     private static void createIdentifier(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, String cell,
                                          Identifier.IdentifierUse use, String system) throws Exception {
-        if (!cell.isEmpty()) {
+        if (null!=cell && !cell.isEmpty()) {
             IdentifierBuilder identifierBuilder = new IdentifierBuilder(patientBuilder);
             identifierBuilder.setUse(use);
             identifierBuilder.setSystem(system);
@@ -374,13 +379,13 @@ public class PatientTransformer {
      *
      * @param patientBuilder
      * @param fhirResourceFiler
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @param cell
      * @param use
      * @param system
      * @throws Exception
      */
-    private static void createContact(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String cell,
+    private static void createContact(PatientBuilder patientBuilder, FhirResourceFiler fhirResourceFiler, AcuteHL7Helper acuteHL7Helper, String cell,
                                       ContactPoint.ContactPointUse use, ContactPoint.ContactPointSystem system) throws Exception {
 
         if (!cell.isEmpty()) {
@@ -455,4 +460,79 @@ public class PatientTransformer {
         }
     }
 
+    public static PatientBuilder transformPatient(AcuteHL7Helper acuteHL7Helper, PractitionerBuilder practitionerBuilderDemographic, OrganizationBuilder organizationBuilder, OrganizationBuilder organizationBuilderDemographic,
+                                                  FhirResourceFiler fhirResourceFiler, PID pid, String msgType, String odsCode, String msgId) throws Exception {
+        //Patient
+        PatientBuilder patientBuilder = null;
+        String patientGuid = AcuteHL7Helper.getPatientGUID(pid);
+        boolean newPatient = false;
+        Patient existingPatient = null;
+        existingPatient = (Patient) acuteHL7Helper.retrieveResource(patientGuid, ResourceType.Patient);
+        if (existingPatient != null) {
+            patientBuilder = new PatientBuilder(existingPatient);
+        } else {
+            patientBuilder = new PatientBuilder();
+            acuteHL7Helper.setUniqueId(patientBuilder, patientGuid, null);
+            newPatient = true;
+        }
+        patientBuilder = PatientTransformer.transformPIDToPatient(pid, patientBuilder, fhirResourceFiler, acuteHL7Helper, msgType, odsCode, msgId);
+        Reference practitionerAddCareProviderReference = null;
+        if (newPatient) {
+            patientBuilder.setManagingOrganisation(acuteHL7Helper.createReference(ResourceType.Organization, organizationBuilder.getResourceId()));
+            if (practitionerBuilderDemographic.getResourceId()!=null) {
+                practitionerAddCareProviderReference = acuteHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+                patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+            }
+            if (organizationBuilderDemographic.getResourceId()!=null) {
+                patientBuilder.addCareProvider(acuteHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId()));
+            }
+            //add in additional extended data as Parameters resource with additional extension
+            PractitionerTransformer.addPractitioner(patientBuilder, practitionerAddCareProviderReference);
+            UUID EdsId = acuteHL7Helper.mapLocalIdToEDSId(patientBuilder.getResource().getId(),ResourceType.Patient);
+            acuteHL7Helper.MapRemainingSourceIdsWithEDSId(AcuteHL7Helper.getRemainingSourceids(pid,"Patient"),String.valueOf(EdsId),ResourceType.Patient);
+            fhirResourceFiler.savePatientResource(null, true, patientBuilder);
+        } else {
+            Reference organisationReference = acuteHL7Helper.createOrganizationReference(organizationBuilder.getResourceId());
+            organisationReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(organisationReference, acuteHL7Helper);
+            patientBuilder.setManagingOrganisation(organisationReference);
+            if (practitionerBuilderDemographic.getResourceId()!=null) {
+                practitionerAddCareProviderReference = acuteHL7Helper.createReference(ResourceType.Practitioner, practitionerBuilderDemographic.getResourceId());
+                practitionerAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(practitionerAddCareProviderReference, acuteHL7Helper);
+                patientBuilder.addCareProvider(practitionerAddCareProviderReference);
+            }
+            if (organizationBuilderDemographic.getResourceId()!=null) {
+                Reference OrgAddCareProviderReference = acuteHL7Helper.createReference(ResourceType.Organization, organizationBuilderDemographic.getResourceId());
+                OrgAddCareProviderReference = IdHelper.convertLocallyUniqueReferenceToEdsReference(OrgAddCareProviderReference, acuteHL7Helper);
+                patientBuilder.addCareProvider(OrgAddCareProviderReference);
+            }
+            //add in additional extended data as Parameters resource with additional extension
+            PractitionerTransformer.addPractitioner(patientBuilder, practitionerAddCareProviderReference);
+            acuteHL7Helper.MapRemainingSourceIdsWithEDSId(AcuteHL7Helper.getRemainingSourceids(pid,"Patient"),patientBuilder.getResource().getId(),ResourceType.Patient);
+            fhirResourceFiler.savePatientResource(null, false, patientBuilder);
+        }
+        return patientBuilder;
+    }
+
+    /* public static MessageHeader transformPIDToMsgHeader(MSH msh) throws Exception {
+        MessageHeader messageHeader = new MessageHeader();
+        HD sendingApplication = msh.getSendingApplication();
+        HD sendingFacility = msh.getSendingFacility();
+        HD receivingApplication = msh.getReceivingApplication();
+        HD receivingFacility = msh.getReceivingFacility();
+        TS dateTime = msh.getDateTimeOfMessage();
+        CM_MSG msgType = msh.getMessageType();
+        ST msgCtrlId = msh.getMessageControlID();
+        ID versionId = msh.getVersionID();
+        String msgTrigger = msh.getMessageType().getTriggerEvent().getValue();
+        messageHeader.getSource().setSoftware(String.valueOf(sendingApplication));
+        messageHeader.getSource().setName(String.valueOf(sendingFacility));
+        //messageHeader.getSource().addExtension().setValue((IBaseDatatype) receivingApplication);
+        messageHeader.addDestination().setName(String.valueOf(receivingFacility));
+        //Date dt = dateTime;
+        //messageHeader.setTimestamp(dateTime);
+        messageHeader.getEvent().setCode(String.valueOf(msgType));
+        //messageHeader.addExtension().setValue((IBaseDatatype) msgCtrlId);
+        messageHeader.getEvent().setVersion(String.valueOf(versionId));
+        return messageHeader;
+    } */
 }

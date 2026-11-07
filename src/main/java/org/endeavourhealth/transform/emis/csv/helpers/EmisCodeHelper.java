@@ -1,36 +1,28 @@
 package org.endeavourhealth.transform.emis.csv.helpers;
 
 import com.google.common.base.Strings;
-import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.common.fhir.FhirCodeUri;
 import org.endeavourhealth.common.fhir.schema.EthnicCategory;
 import org.endeavourhealth.common.fhir.schema.MaritalStatus;
 import org.endeavourhealth.common.utility.ExpiringCache;
 import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.audit.models.TransformWarning;
 import org.endeavourhealth.core.database.dal.publisherCommon.EmisCodeDalI;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisCodeType;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisDrugCode;
-import org.endeavourhealth.core.database.dal.publisherTransform.models.ResourceFieldMappingAudit;
-import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.terminology.Read2Code;
-import org.endeavourhealth.core.terminology.TerminologyService;
 import org.endeavourhealth.transform.common.CsvCell;
-import org.endeavourhealth.transform.common.ResourceParser;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.HasCodeableConceptI;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.emis.csv.exceptions.EmisCodeNotFoundException;
 import org.endeavourhealth.transform.emis.csv.schema.coding.ClinicalCodeType;
-import org.hl7.fhir.instance.model.Coding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class EmisCodeHelper {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCodeHelper.class);
@@ -73,6 +65,17 @@ public class EmisCodeHelper {
         //just in case
         if (Strings.isNullOrEmpty(readCode)) {
             throw new Exception("Null code or system from Emis lookup for code " + codeMap.getReadCode());
+        }
+
+        //if the original code (non Emis local code) is a Synonym then use that to populate the FHIR resource
+        if (!isEmisCode) {
+
+            String readCodeOriginal = codeMap.getReadCode();  //the original non adjusted code inc. Synonyms
+            int index = readCodeOriginal.indexOf("-");
+            if (index > -1) {
+                //LOG.debug("Using original readCode Synonym value: "+readCodeOriginal+" instead of adjusted code: "+readCode);
+                readCode = readCodeOriginal;  //set the readCode as the original Synonym
+            }
         }
 
         String readCodeSystem = null;
@@ -181,26 +184,37 @@ public class EmisCodeHelper {
         return ret;
     }
 
-    private static void findClinicalCodeOrParentRead2Code(Long codeId, List<EmisClinicalCode> parents) throws Exception {
+    private static boolean findClinicalCodeOrParentRead2Code(Long codeId, List<EmisClinicalCode> parents) throws Exception {
 
         EmisClinicalCode codeMapping = findClinicalCode(codeId);
 
         //if it's a true Read2 code, then just add to the list and return out
         if (!codeMapping.isEmisCode()) {
             parents.add(codeMapping);
-            return;
+            return true;
         }
 
         //if it's not a Read2 code, then we need to find the true-Read2 parents
         List<Long> parentCodes = codeMapping.getParentCodes();
         if (parentCodes == null || parentCodes.isEmpty()) {
-            return;
+            return false;
         }
 
-        //recurse to find all Read2 codes for all parents
+        //Recurse to find all Read2 codes for all parents
+        //This sort will ensure the lowest parent_code_id is used to start with to avoid the
+        //StackOverFlowError when using the much higher values introduced in July 2022: SD-732
+        Collections.sort(parentCodes);
         for (Long parentCode: parentCodes) {
-            findClinicalCodeOrParentRead2Code(parentCode, parents);
+            boolean found = findClinicalCodeOrParentRead2Code(parentCode, parents);
+            //The EMIS code update contains multiple parents, some with an endless hierarchy which creates
+            //the StackOverFlowError, so once the first true Read2 code is found, break out the recursion
+            if (found) {
+                //LOG.info("Read2 parent code found for codeId: "+parentCode+", will return out of findClinicalCodeOrParentRead2Code");
+                return true;
+            }
         }
+
+        return false;
     }
 
     public static EmisClinicalCode findClinicalCode(CsvCell codeIdCell) throws Exception {

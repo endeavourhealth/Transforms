@@ -6,8 +6,8 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMappingRe
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
-import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.resourceBuilders.AppointmentBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ScheduleBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.SlotBuilder;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
-import java.util.UUID;
 
 public class SRVisitTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(SRVisitTransformer.class);
@@ -115,7 +114,7 @@ public class SRVisitTransformer {
 
     private static Date calculateEndDateTime(CsvCell startDateCell, CsvCell durationCell) throws Exception {
         if (startDateCell.isEmpty()
-            || durationCell.isEmpty()) {
+                || durationCell.isEmpty()) {
             return null;
         }
 
@@ -131,12 +130,11 @@ public class SRVisitTransformer {
     }
 
     private static void createAppointment(SRVisit parser,
-                                       FhirResourceFiler fhirResourceFiler,
-                                       TppCsvHelper csvHelper) throws Exception {
+                                          FhirResourceFiler fhirResourceFiler,
+                                          TppCsvHelper csvHelper) throws Exception {
 
         CsvCell visitIdCell = parser.getRowIdentifier();
         String uniqueId = getUniqueId(visitIdCell);
-
 
 
         //handle delete
@@ -145,13 +143,12 @@ public class SRVisitTransformer {
 
             //to delete the existing FHIR Appointment, we need the patient reference populated, but the record being processed
             //won't have that set, so we need to retrieve the version off the DB first
-            Appointment appointment = (Appointment)csvHelper.retrieveResource(uniqueId, ResourceType.Appointment);
-            Slot slot = (Slot)csvHelper.retrieveResource(uniqueId, ResourceType.Slot);
+            Appointment appointment = (Appointment) csvHelper.retrieveResource(uniqueId, ResourceType.Appointment);
+            Slot slot = (Slot) csvHelper.retrieveResource(uniqueId, ResourceType.Slot);
 
             if (appointment != null && slot != null) {
                 AppointmentBuilder appointmentBuilder = new AppointmentBuilder(appointment);
                 appointmentBuilder.setDeletedAudit(deleteDataCell);
-
                 SlotBuilder slotBuilder = new SlotBuilder(slot);
                 slotBuilder.setDeletedAudit(deleteDataCell);
 
@@ -192,6 +189,13 @@ public class SRVisitTransformer {
 
         //critical that we set this because otherwise we can't tell visits from regular appointments
         appointmentBuilder.setType("Home Visit");
+
+        ContainedParametersBuilder cpb = new ContainedParametersBuilder(appointmentBuilder);
+        TppCsvHelper.addParamIfNotNull("mode",
+                "Home Visit",
+                null,
+                cpb,
+                "appointment");
 
         Reference patientReference = csvHelper.createPatientReference(patientIdCell);
         appointmentBuilder.addParticipant(patientReference, Appointment.ParticipationStatus.ACCEPTED, patientIdCell);

@@ -2,10 +2,8 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
-import org.joda.time.DateTime;
 
 import java.math.BigDecimal;
-import java.util.Date;
 
 
 public class Location_v2 extends AbstractTargetTable {
@@ -107,5 +105,13 @@ public class Location_v2 extends AbstractTargetTable {
 				imp_code
         );
     }
+
+	@Override
+	public String[] getPermittedColumnExclusions() {
+		return null;
+//        return new String[] {
+//          //implement which columns can be excluded from the database write for extra pseudo level blanking
+//        };
+	}
 }
 

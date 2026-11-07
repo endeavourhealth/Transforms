@@ -50,6 +50,9 @@ public class IMHelper {
     private static ExpiringCache<String, String> conceptIdCache = new ExpiringCache<>(CACHE_DURATION);
     private static Set<String> nullconceptIdCache = new ExpiringSet<>(CACHE_DURATION);
 
+    private static Set<String> valueSetCache = new ExpiringSet<>(CACHE_DURATION);
+    private static Set<String> nullValueSetCache = new ExpiringSet<>(CACHE_DURATION);
+
     public static Integer getIMMappedConcept(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String scheme, String code) throws Exception {
 
         if (code == null
@@ -104,6 +107,56 @@ public class IMHelper {
         }
     }
 
+    public static Integer getIMConcept(HasServiceSystemAndExchangeIdI params,
+                                       Resource fhirResource,
+                                       String scheme,
+                                       String code,
+                                       String term,
+                                       String restrictValueSet) throws Exception {
+
+        //perform the original IM lookup to get and auto create using the term if missing
+        Integer nonCoreConceptId = getIMConcept(params, fhirResource, scheme, code, term);
+
+        //but then determine the return value or null depending on the restricted value set if specified
+        if (!Strings.isNullOrEmpty(restrictValueSet)) {
+
+            //check value set cache first to see if this scheme code is present with the valueset identifier
+            String key = createCacheKey(restrictValueSet, scheme, code);
+            boolean inValueSetCache = valueSetCache.contains(key);
+            if (!inValueSetCache) {
+
+                //then check if it has already been checked and is in the null cache
+                boolean inNullValueSetCache = nullValueSetCache.contains(key);
+                if (!inNullValueSetCache) {
+
+                    //if not in either cache, hit the IM API with retries
+                    boolean inIMValueSet = isSchemaCodeInVSetWithRetry(scheme, code, restrictValueSet);
+                    if (inIMValueSet) {
+
+                        //add the scheme code to the value set cache
+                        valueSetCache.add(key);
+
+                        //conceptId returned after IM API value set lookup check
+                        return nonCoreConceptId;
+                    }
+                    //not in the IM value set so add to the null cache to avoid calling the API again
+                    nullValueSetCache.add(key);
+
+                    //the scheme and code are not in the value set (cache or API), so log the fact (once only per session) before returning out
+                    LOG.info("Scheme: " + scheme + ", Code: " + code + ", not in valueset: " + restrictValueSet + ", ignoring nonCoreConceptId: " + nonCoreConceptId);
+                }
+                return null;
+
+            } else {
+                //conceptId returned after valid value set cache check
+                return nonCoreConceptId;
+            }
+        }
+        //original conceptId returned without value set check
+        return nonCoreConceptId;
+    }
+
+
     public static Integer getIMConcept(HasServiceSystemAndExchangeIdI params, Resource fhirResource, String scheme, String code, String term) throws Exception {
 
         if (code == null
@@ -134,6 +187,27 @@ public class IMHelper {
         }
 
         return ret;
+    }
+
+    private static Boolean isSchemaCodeInVSetWithRetry(String scheme, String code, String restrictValueSet) throws Exception {
+
+        //SD-978: When calling into this without a retry we often see 401 errors, so we should retry
+        //in-line with other IM calls until successful or number of retry lives have passed
+        int lives = RETRY_COUNT;
+
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + scheme + ", " + code + ", " + restrictValueSet);
+                return  IMClient.isSchemeCodeInVSet(scheme, code, restrictValueSet);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call isSchemeCodeInVSet with scheme [" + scheme + "] code [" + code + "] valueset [" + restrictValueSet + "]", ex);
+                }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+            }
+        }
     }
 
     private static Integer getConceptDbidForSchemeCodeWithRetry(String scheme, String code, String term) throws Exception {
@@ -537,6 +611,10 @@ public class IMHelper {
         return scheme + ":" + code;
     }
 
+    private static String createCacheKey(String valueSet, String scheme, String code) {
+        return valueSet + ":" + scheme + ":" + code;
+    }
+
     private static String createMapColumnCacheKey(MapColumnRequest propertyRequest) {
         return propertyRequest.getProvider() + ":" + propertyRequest.getSystem() + ":" + propertyRequest.getSchema() + ":"
                 + propertyRequest.getTable() + ":" + propertyRequest.getColumn();
@@ -562,9 +640,8 @@ public class IMHelper {
                 || nullMappedColumnRequestResponseCache.contains(mapColumnCacheKey)) {
             return ret;
         }
-        //then try the API
-        LOG.trace("Going to IM API for " + propertyRequest);
-        ret = IMClient.getMapProperty(propertyRequest);
+        //then try the API with retry
+        ret = getIMMappedPropertyResponseWithRetry(propertyRequest);
         //store in the cache using the cache key and response
         if (ret == null) {
             nullMappedColumnRequestResponseCache.add(mapColumnCacheKey);
@@ -573,6 +650,25 @@ public class IMHelper {
         }
 
         return ret;
+    }
+
+    private static MapResponse getIMMappedPropertyResponseWithRetry(MapColumnRequest propertyRequest) throws Exception {
+
+        int lives = RETRY_COUNT;
+
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + propertyRequest);
+                return IMClient.getMapProperty(propertyRequest);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getMapProperty for propertyRequest [" + propertyRequest + "]", ex);
+                }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+            }
+        }
     }
 
     /*
@@ -588,8 +684,7 @@ public class IMHelper {
             return ret;
         }
         //then try the API
-        LOG.trace("Going to IM API for " + valueRequest);
-        ret = IMClient.getMapPropertyValue(valueRequest);
+        ret = getIMMappedPropertyValueResponseWithRetry(valueRequest);
 
         //store in the cache using the cache key and response
         if (ret == null) {
@@ -599,5 +694,24 @@ public class IMHelper {
         }
 
         return ret;
+    }
+
+    private static MapResponse getIMMappedPropertyValueResponseWithRetry(MapColumnValueRequest valueRequest) throws Exception {
+
+        int lives = RETRY_COUNT;
+
+        while (true) {
+            lives--;
+            try {
+                LOG.trace("Going to IM API for " + valueRequest);
+                return IMClient.getMapPropertyValue(valueRequest);
+            } catch (Exception ex) {
+                if (lives <= 0) {
+                    throw new Exception("Failed to call getMapPropertyValue for valueRequest [" + valueRequest + "]", ex);
+                }
+                Thread.sleep(THREAD_SLEEP_TIME);
+                LOG.warn("Exception " + ex.getMessage() + " calling into IM - will try " + lives + " more times");
+            }
+        }
     }
 }

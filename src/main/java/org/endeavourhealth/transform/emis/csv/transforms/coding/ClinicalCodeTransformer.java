@@ -43,14 +43,29 @@ public abstract class ClinicalCodeTransformer {
         ClinicalCode parser = (ClinicalCode)parsers.get(ClinicalCode.class);
         if (parser != null) {
 
-            //create the extra file of Snomed terms for all the Code Ids we've got
-            File extraColsFile = createExtraColsFile(parser, csvHelper);
 
-            //bulk load the file into the DB
-            String filePath = parser.getFilePath();
-            Date dataDate = fhirResourceFiler.getDataDate();
             EmisCodeDalI dal = DalProvider.factoryEmisCodeDal();
-            dal.updateClinicalCodeTable(filePath, extraColsFile.getAbsolutePath(), dataDate);
+            Date lastUpdated = dal.getMostRecentClinicalCodeDate();
+            Date dataDate = fhirResourceFiler.getDataDate();
+
+            //SD-480 only update the table if our file is newer than what's in there
+            if (lastUpdated == null
+                    || dataDate.after(lastUpdated)) {
+                //create the extra file of Snomed terms for all the Code Ids we've got
+                File extraColsFile = createExtraColsFile(parser, csvHelper);
+
+                //bulk load the file into the DB
+                String filePath = parser.getFilePath();
+
+                dal.updateClinicalCodeTable(filePath, extraColsFile.getAbsolutePath(), dataDate);
+
+                //delete the file we created
+                FileHelper.deleteRecursiveIfExists(extraColsFile);
+
+            } else {
+                LOG.trace("Not updating clinical code table as table last updated " + lastUpdated + " and current file is from " + dataDate);
+            }
+
 
             //then load up any missing codes we have and see if they've appeared
             Set<Long> missingCodes = csvHelper.retrieveMissingCodes(EmisCodeType.CLINICAL_CODE);
@@ -72,9 +87,6 @@ public abstract class ClinicalCodeTransformer {
 
             //log any found missing codes
             csvHelper.addFoundMissingCodes(foundMissingCodes);
-
-            //delete the file we created
-            FileHelper.deleteRecursiveIfExists(extraColsFile);
         }
     }
 

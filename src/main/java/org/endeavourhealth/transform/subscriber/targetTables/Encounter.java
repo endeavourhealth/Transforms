@@ -2,9 +2,11 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 public class Encounter extends AbstractTargetTable {
 
@@ -42,7 +44,21 @@ public class Encounter extends AbstractTargetTable {
                             String admissionMethod,
                             Date endDate,
                             String institutionLocationId,
-                            Date dateRecorded) throws Exception {
+                            Date dateRecorded,
+                            SubscriberTransformHelper params) throws Exception {
+
+        //get any configured excluded columns for this table
+        List<String> excludedTableColumns
+                = params.getSubscriberExcludedColumns(getTableId(), getPermittedColumnExclusions());
+        if (excludedTableColumns != null) {
+            //check each column set for exclusion and blank
+            for (String column: excludedTableColumns) {
+                switch (column) {
+                    case "age_at_event" : ageAtEvent = null; break;
+                    default : break;
+                }
+            }
+        }
 
         if (includeDateRecorded) {
             super.printRecord(convertBoolean(false),
@@ -52,7 +68,7 @@ public class Encounter extends AbstractTargetTable {
                     "" + personId,
                     convertLong(practitionerId),
                     convertLong(appointmentId),
-                    convertDate(clinicalEffectiveDate),
+                    convertDateTime(clinicalEffectiveDate), //SD-498
                     convertInt(datePrecisionConceptId),
                     // convertLong(snomedConceptId),
                     // originalCode,
@@ -65,7 +81,7 @@ public class Encounter extends AbstractTargetTable {
                     type,
                     subtype,
                     admissionMethod,
-                    convertDate(endDate),
+                    convertDateTime(endDate), //SD-498
                     institutionLocationId,
                     convertDateTime(dateRecorded));
         } else {
@@ -76,7 +92,7 @@ public class Encounter extends AbstractTargetTable {
                     "" + personId,
                     convertLong(practitionerId),
                     convertLong(appointmentId),
-                    convertDate(clinicalEffectiveDate),
+                    convertDateTime(clinicalEffectiveDate), //SD-498
                     convertInt(datePrecisionConceptId),
                     // convertLong(snomedConceptId),
                     // originalCode,
@@ -89,7 +105,7 @@ public class Encounter extends AbstractTargetTable {
                     type,
                     subtype,
                     admissionMethod,
-                    convertDate(endDate),
+                    convertDateTime(endDate), //SD-498
                     institutionLocationId);
         }
     }
@@ -197,5 +213,12 @@ public class Encounter extends AbstractTargetTable {
                     String.class,
             };
         }
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return new String[] {
+                "age_at_event"
+        };
     }
 }

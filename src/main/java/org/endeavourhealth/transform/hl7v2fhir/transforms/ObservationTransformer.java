@@ -1,7 +1,8 @@
 package org.endeavourhealth.transform.hl7v2fhir.transforms;
 
 import ca.uhn.hl7v2.model.Varies;
-import ca.uhn.hl7v2.model.v23.datatype.*;
+import ca.uhn.hl7v2.model.v23.datatype.CE;
+import ca.uhn.hl7v2.model.v23.datatype.CX;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.group.ORU_R01_ORDER_OBSERVATION;
 import ca.uhn.hl7v2.model.v23.segment.MSH;
@@ -11,15 +12,15 @@ import com.google.common.base.Strings;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.endeavourhealth.im.models.mapping.MapColumnRequest;
-import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
 import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.TransformWarnings;
-import org.endeavourhealth.transform.common.resourceBuilders.*;
-import org.endeavourhealth.transform.hl7v2fhir.helpers.ImperialHL7Helper;
-import org.endeavourhealth.transform.subscriber.IMConstant;
-import org.endeavourhealth.transform.subscriber.IMHelper;
+import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.IdentifierBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.ObservationBuilder;
+import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
+import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
+import org.endeavourhealth.transform.hl7v2fhir.helpers.AcuteHL7Helper;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
+import java.util.UUID;
 
 public class ObservationTransformer {
 
@@ -37,35 +38,29 @@ public class ObservationTransformer {
      *
      * @param pid
      * @param observationBuilder
-     * @param fhirResourceFiler
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @return
      * @throws Exception
      */
-    public static ObservationBuilder transformPIDToObservation(PID pid, ObservationBuilder observationBuilder, FhirResourceFiler fhirResourceFiler, ImperialHL7Helper imperialHL7Helper, String msgType) throws Exception {
-        CX[] patientIdList = pid.getPatientIDInternalID();
+    public static ObservationBuilder transformPIDToObservation(PID pid, ObservationBuilder observationBuilder, AcuteHL7Helper acuteHL7Helper, String msgType, String odsCode, String msgId) throws Exception {
 
         String religion = pid.getReligion().getValue();
         CodeableConcept ccValue = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
         observationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
-        // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
         CodeableConcept ccValue1 = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
 
         if (!Strings.isNullOrEmpty(religion) && !religion.equalsIgnoreCase("\"\"")) {
-            MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                    "religion"
-            );
-            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+            MapResponse propertyResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"religion",null);
+            MapResponse valueResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"religion",religion);
 
-            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                    "religion", religion, IMConstant.IMPERIAL_CERNER
-            );
-            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+            if(valueResponse.getWasCreated()) {
+                AcuteHL7Helper.raiseMissingAlert(religion, "religion", odsCode,msgType,acuteHL7Helper.getExchangeId().toString(),msgId,AcuteHL7Helper.getPatientGUID(pid),acuteHL7Helper);
+            }
+
+            String codingSystem = ObservationCodeHelper.mapImSchemeToCodingSystem(valueResponse.getConcept().getScheme());
+
             ccValue1.setText(propertyResponse.getConcept().getCode());
-            ccValue1.addCoding().setCode(valueResponse.getConcept().getCode())
-                    .setSystem(valueResponse.getConcept().getScheme()).setDisplay(religion);
+            ccValue1.addCoding().setCode(valueResponse.getConcept().getCode()).setSystem(codingSystem).setDisplay(religion);
         }
         return observationBuilder;
     }
@@ -77,32 +72,26 @@ public class ObservationTransformer {
      * @return
      * @throws Exception
      */
-    public static ObservationBuilder transformPIDPrimaryLanguageToObservation(PID pid, ObservationBuilder observationBuilder, String msgType) throws Exception {
+    public static ObservationBuilder transformPIDPrimaryLanguageToObservation(PID pid, ObservationBuilder observationBuilder, AcuteHL7Helper acuteHL7Helper,String msgType, String odsCode, String msgId) throws Exception {
         CE primaryLanguage = pid.getPrimaryLanguage();
         String language = String.valueOf(primaryLanguage.getIdentifier());
 
         CodeableConcept ccValue = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
         observationBuilder.removeCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
-        // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
         CodeableConcept ccValue1 = observationBuilder.createNewCodeableConcept(CodeableConceptBuilder.Tag.Observation_Main_Code,true);
 
         if (!Strings.isNullOrEmpty(language) && !language.equalsIgnoreCase("\"\"")) {
-            MapColumnRequest propertyRequest = new MapColumnRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                    "language"
-            );
-            MapResponse propertyResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+            MapResponse propertyResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"language",null);
+            MapResponse valueResponse = AcuteHL7Helper.retrieveIMLookupMap(odsCode,"language",language);
 
-            MapColumnValueRequest valueRequest = new MapColumnValueRequest(
-                    "CM_Org_Imperial","CM_Sys_Cerner","HL7v2", msgType,
-                    "language", language, IMConstant.IMPERIAL_CERNER
-            );
-            MapResponse valueResponse = IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+            if(valueResponse.getWasCreated()) {
+                AcuteHL7Helper.raiseMissingAlert(language, "language", odsCode,msgType,acuteHL7Helper.getExchangeId().toString(),msgId,AcuteHL7Helper.getPatientGUID(pid),acuteHL7Helper);
+            }
 
-            // CodeableConceptBuilder.removeExistingCodeableConcept(observationBuilder, CodeableConceptBuilder.Tag.Observation_Main_Code,ccValue);
+            String codingSystem = ObservationCodeHelper.mapImSchemeToCodingSystem(valueResponse.getConcept().getScheme());
+
             ccValue1.setText(propertyResponse.getConcept().getCode());
-            ccValue1.addCoding().setCode(valueResponse.getConcept().getCode())
-                    .setSystem(valueResponse.getConcept().getScheme()).setDisplay(language);
+            ccValue1.addCoding().setCode(valueResponse.getConcept().getCode()).setSystem(codingSystem).setDisplay(language);
         }
         return observationBuilder;
     }
@@ -112,11 +101,11 @@ public class ObservationTransformer {
      * @param obr
      * @param orderObserv
      * @param fhirResourceFiler
-     * @param imperialHL7Helper
+     * @param acuteHL7Helper
      * @throws Exception
      */
     public static void createObservation(PID pid, MSH msh, OBR obr, ORU_R01_ORDER_OBSERVATION orderObserv, FhirResourceFiler fhirResourceFiler,
-                                         ImperialHL7Helper imperialHL7Helper, ORU_R01_OBSERVATION loopVal) throws Exception {
+                                         AcuteHL7Helper acuteHL7Helper, ORU_R01_OBSERVATION loopVal) throws Exception {
 
         ObservationBuilder observationBuilder = new ObservationBuilder();
         String uniqueId = obr.getFillerOrderNumber().getEntityIdentifier().getValue()+loopVal.getOBX().getObservationIdentifier().getIdentifier().getValue();
@@ -132,13 +121,9 @@ public class ObservationTransformer {
         identifierBuilder.setValue(uniqueId);
 
         //patient reference
-        CX[] patientIdList = pid.getPatientIDInternalID();
-        String patientGuid = String.valueOf(patientIdList[0].getID());
+        String patientGuid = AcuteHL7Helper.getPatientGUID(pid);
 
-        /*String observationGuid = String.valueOf(obr.getFillerOrderNumber());
-        ImperialHL7Helper.setUniqueId(observationBuilder, patientGuid, observationGuid);*/
-
-        Reference patientReference = ImperialHL7Helper.createPatientReference(patientGuid);
+        Reference patientReference = AcuteHL7Helper.createPatientReference(patientGuid);
         observationBuilder.setPatient(patientReference);
 
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -203,8 +188,7 @@ public class ObservationTransformer {
                 }
             }
             catch (NumberFormatException ex) {
-                // LOG.warn("Range not set for Clinical Event " + parser.getEventId().getString() + " due to invalid reference range");
-                TransformWarnings.log(LOG, imperialHL7Helper, "Range not set for clinical event due to invalid reference range. Id:{}", uniqueId);
+                TransformWarnings.log(LOG, acuteHL7Helper, "Range not set for clinical event due to invalid reference range. Id:{}", uniqueId);
 
             }
 
@@ -231,23 +215,72 @@ public class ObservationTransformer {
 
     private static Date calculateDate(String delayDays, Date observationDate) {
         try {
-        JsonParser parser = new JsonParser();
-        JsonElement jsonTree = parser.parse(delayDays);
-        JsonObject jsonObject = jsonTree.getAsJsonObject();
-        String value = jsonObject.get("patientDelay").toString();
-        int days = 0;
-        if (value.length() > 2) {
-            days = Integer.parseInt(value.substring(1, 3));
-        }
-        Calendar c = Calendar.getInstance();
-        c.setTime(observationDate);
-        c.add(Calendar.DATE, days);
-        return c.getTime(); }
+            JsonParser parser = new JsonParser();
+            JsonElement jsonTree = parser.parse(delayDays);
+            JsonObject jsonObject = jsonTree.getAsJsonObject();
+            String value = jsonObject.get("patientDelay").toString();
+            int days = 0;
+            if (value.length() > 2) {
+                days = Integer.parseInt(value.substring(1, 3));
+            }
+            Calendar c = Calendar.getInstance();
+            c.setTime(observationDate);
+            c.add(Calendar.DATE, days);
+            return c.getTime(); }
         catch (Exception e) {
             LOG.error("Problem in parsing ObservationDate :" + observationDate + " delay days:" + delayDays);
             return null;
         }
     }
 
+    public static void transformObservation(AcuteHL7Helper acuteHL7Helper, FhirResourceFiler fhirResourceFiler, PID pid, String msgType, PatientBuilder patientBuilder, String patientGuid, String source, String msgId) throws Exception {
+        ObservationBuilder observationBuilder = null;
+        boolean newObservation = false;
+        Observation existingObservation = null;
+        existingObservation = (Observation) acuteHL7Helper.retrieveResource(patientGuid + "Religion", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            acuteHL7Helper.setUniqueId(observationBuilder, patientGuid + "Religion", null);
+            newObservation = true;
+        }
+
+        observationBuilder = ObservationTransformer.transformPIDToObservation(pid, observationBuilder, acuteHL7Helper, msgType,source,msgId);
+        if (newObservation) {
+            observationBuilder.setPatient(acuteHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            UUID EdsId = acuteHL7Helper.mapLocalIdToEDSId(patientGuid+"Religion", ResourceType.Observation);
+            acuteHL7Helper.MapRemainingSourceIdsWithEDSId(AcuteHL7Helper.getRemainingSourceids(pid,"Religion"),String.valueOf(EdsId),ResourceType.Observation);
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+        } else {
+            Reference patientReference = acuteHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            observationBuilder.setPatient(patientReference);
+            acuteHL7Helper.MapRemainingSourceIdsWithEDSId(AcuteHL7Helper.getRemainingSourceids(pid,"Religion"),observationBuilder.getResource().getId(),ResourceType.Observation);
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+        //Observation
+        newObservation = false;
+        existingObservation = (Observation) acuteHL7Helper.retrieveResource(patientGuid + "Language", ResourceType.Observation);
+        if (existingObservation != null) {
+            observationBuilder = new ObservationBuilder(existingObservation);
+        } else {
+            observationBuilder = new ObservationBuilder();
+            acuteHL7Helper.setUniqueId(observationBuilder, patientGuid + "Language", null);
+            newObservation = true;
+        }
+        observationBuilder = ObservationTransformer.transformPIDPrimaryLanguageToObservation(pid, observationBuilder,acuteHL7Helper, msgType,source,msgId);
+        if (newObservation) {
+            observationBuilder.setPatient(acuteHL7Helper.createReference(ResourceType.Patient, patientBuilder.getResourceId()));
+            UUID EdsId = acuteHL7Helper.mapLocalIdToEDSId(patientGuid+"Language", ResourceType.Observation);
+            acuteHL7Helper.MapRemainingSourceIdsWithEDSId(AcuteHL7Helper.getRemainingSourceids(pid,"Language"),String.valueOf(EdsId),ResourceType.Observation);
+
+            fhirResourceFiler.savePatientResource(null, true, observationBuilder);
+        } else {
+            Reference patientReference = acuteHL7Helper.createPatientReference(patientBuilder.getResourceId());
+            observationBuilder.setPatient(patientReference);
+            acuteHL7Helper.MapRemainingSourceIdsWithEDSId(AcuteHL7Helper.getRemainingSourceids(pid,"Language"),observationBuilder.getResource().getId(),ResourceType.Observation);
+            fhirResourceFiler.savePatientResource(null, false, observationBuilder);
+        }
+    }
 
 }

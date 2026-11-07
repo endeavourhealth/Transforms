@@ -63,4 +63,9 @@ public class EmisPatientFiler {
         return false;
     }
 
+    public boolean isFilteringOnPatients() {
+        return filterPatientGuids != null
+                && !filterPatientGuids.isEmpty();
+    }
+
 }

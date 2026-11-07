@@ -1,0 +1,47 @@
+package org.endeavourhealth.transform.nwlextracts;
+
+public enum CodeValueSet {
+
+    LOCATION_NAME(220),
+    SERVICE_RESOURCE(221),
+    NHS_NUMBER_STATUS(29882),
+    GENDER(57),
+    ETHNIC_GROUP(27),
+    LANGUAGE(36),
+    RELIGION(49),
+    MARITAL_STATUS(38),
+    NAME_USE(213),
+    PERSONNEL_POSITION(88),
+    SPECIALITY(3394),
+    PRINCIPAL_TYPE(401),
+    RELATIONSHIP_TO_PATIENT(40),
+    PERSON_RELATIONSHIP_TYPE(351),
+    PHONE_TYPE(43),
+    TREATMENT_FUNCTION(34),
+    ALIAS_TYPE(4),
+    CLINICAL_CODE_TYPE(72),
+    CLINICAL_EVENT_NORMALCY(52),
+    CLINICAL_EVENT_UNITS(54),
+    ENCOUNTER_TYPE(71),
+    PHONE_METHOD(23056),
+    CLINICIAL_RELATIONSHIP_TYPE(331),
+    APPOINTMENT_TYPE(14230),
+    DECEASED_STATUS(268),
+    CLINICAL_EVENT_STATUS(8),
+    CLINICAL_EVENT_CLASS(53),
+    ADDRESS_TYPE(212),
+    PROCEDURE_ORDERS(200),
+    SURGEON_SPECIALITY_GROUP(357),
+    WOUND_CLASS(10038),
+    DIAG_TYPE(17);
+
+    private final long value;
+
+    CodeValueSet(long v) {
+        value = v;
+    }
+
+    public long value() {
+        return value;
+    }
+}

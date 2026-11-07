@@ -6,10 +6,7 @@ import org.endeavourhealth.common.cache.ObjectMapperPool;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.transform.subscriber.json.LinkDistributorConfig;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class SubscriberConfig {
 
@@ -23,7 +20,13 @@ public class SubscriberConfig {
     public enum CohortType {
         AllPatients,
         ExplicitPatients,
-        GpRegisteredAt
+        GpRegisteredAt,
+        ActiveOnlyGpRegisteredAt
+    }
+
+    public enum CohortPersistence {
+        Retain,
+        Remove
     }
 
     public enum SubscriberLocation {
@@ -44,13 +47,28 @@ public class SubscriberConfig {
     private List<LinkDistributorConfig> pseudoSalts = new ArrayList<>();
     private List<LinkDistributorConfig> ralfSalts = new ArrayList<>();
     private CohortType cohortType;
-    private Set<String> cohortGpServices = new HashSet<>(); //if cohort is GpRegisteredAt, this gives the ODS codes the patients should be registered at
+    private CohortPersistence cohortPersistence;
+    //if cohort is GpRegisteredAt or ActiveOnlyGpRegisteredAt, this gives the ODS codes the patients should be registered at
+    private Set<String> cohortGpServices = new HashSet<>();
     private Integer remoteSubscriberId;
     private String enterpriseServerUrl;
     private boolean includePatientAge;
     private String description; //textual description/reminder of what each config is for
     private SubscriberLocation subscriberLocation;
     private boolean includeObservationAdditional;
+    private boolean includeAppointmentAdditional;   //SD-796
+    private boolean includeScheduleAdditional;
+    private boolean includeReferralRequestAdditional;
+    private Integer minPatientAgeYears;    //the minimum age of the patient in years to be included, to support 18+ for example
+    private boolean includePublisherMetaData;
+    private String imRestrictedValueSet;   //the IM value set identifier used to restrict concepts being sent to the subscriber, non medication
+    private String imRestrictedMedicationsValueSet;  //similar to imRestrictedValueSet but contain medication codes only
+    private String activeOnlyIncludeEndedAfterDate;   //the date (format dd/MM/yyyy which any non active registrations, i.e. left /dead are retained / not excluded)
+    private String dateOfBirthMask;   //masking format for the date of birth (format dd/MM/yyyy, i.e.  01/01/yyyy)
+    private Map<String, List<String>> excludedTableColumns = new HashMap<>();  //excluded table columns for blanking at subscriber transform upsert time
+    //private Map<String, List<String>> optOutType1Codes = new HashMap<>();  //opt out type 1 codes
+
+    private Set<String> cohortInclusionSnomedConcepts = new HashSet<>();  //for cohort inclusion, i.e. Diabetic
 
     //compass v1 properties
 
@@ -97,12 +115,20 @@ public class SubscriberConfig {
         return ralfSalts;
     }
 
+    public Integer getMinPatientAgeYears() {
+        return minPatientAgeYears;
+    }
+
     public Integer getRemoteSubscriberId() {
         return remoteSubscriberId;
     }
 
     public CohortType getCohortType() {
         return cohortType;
+    }
+
+    public CohortPersistence getCohortPersistence() {
+        return cohortPersistence;
     }
 
     public String getSubscriberConfigName() {
@@ -131,6 +157,47 @@ public class SubscriberConfig {
 
     public boolean isIncludeObservationAdditional() {
         return includeObservationAdditional;
+    }
+
+    public boolean isIncludeAppointmentAdditional() {
+        return includeAppointmentAdditional;
+    }
+
+    public boolean isIncludeScheduleAdditional() {
+        return includeScheduleAdditional;
+    }
+    public boolean isIncludeReferralRequestAdditional() {
+        return includeReferralRequestAdditional;
+    }
+
+    public boolean isIncludePublisherMetaData() {
+        return includePublisherMetaData;
+    }
+
+    public String getImRestrictedValueSet() {
+        return imRestrictedValueSet;
+    }
+
+    public String getImRestrictedMedicationsValueSet() {
+        return imRestrictedMedicationsValueSet;
+    }
+
+    public String getActiveOnlyIncludeEndedAfterDate() {
+        return activeOnlyIncludeEndedAfterDate;
+    }
+
+    public String getDateOfBirthMask() {
+        return dateOfBirthMask;
+    }
+
+    public Map<String, List<String>> getExcludedTableColumns() {
+        return excludedTableColumns;
+    }
+
+    //public Map<String, List<String>> getOptOutType1Codes() {return optOutType1Codes;}
+
+    public Set<String> getCohortInclusionSnomedConcepts() {
+        return cohortInclusionSnomedConcepts;
     }
 
     public static SubscriberConfig readFromConfig(String subscriberConfigName) throws Exception {
@@ -185,7 +252,13 @@ public class SubscriberConfig {
         }
         this.cohortType = parseCohortType(config.get("cohort_type").asText());
 
-        if (cohortType == CohortType.GpRegisteredAt) {
+        if (config.has("cohort_persistence")) {
+            this.cohortPersistence = parseCohortPersistence(config.get("cohort_persistence").asText());
+        } else {
+            this.cohortPersistence = CohortPersistence.Remove;
+        }
+
+        if (cohortType == CohortType.GpRegisteredAt || cohortType == CohortType.ActiveOnlyGpRegisteredAt) {
             JsonNode arr = config.get("cohort");
             for (int i=0; i<arr.size(); i++) {
                 String odsCode = arr.get(i).asText();
@@ -232,6 +305,67 @@ public class SubscriberConfig {
         this.includeObservationAdditional = config.has("include_observation_additional")
                 && config.get("include_observation_additional").asBoolean();
 
+        this.includeAppointmentAdditional = config.has("include_appointment_additional")
+                && config.get("include_appointment_additional").asBoolean();
+
+        this.includeScheduleAdditional = config.has("include_schedule_additional")
+                && config.get("include_schedule_additional").asBoolean();
+
+        this.includeReferralRequestAdditional = config.has("include_referral_request_additional")
+                && config.get("include_referral_request_additional").asBoolean();
+
+        if (config.has("min_patient_age_years")) {
+            this.minPatientAgeYears = config.get("min_patient_age_years").asInt();
+        }
+
+        this.includePublisherMetaData = config.has("include_publisher_meta_data")
+                && config.get("include_publisher_meta_data").asBoolean();
+
+        if (config.has ("im_restricted_value_set")) {
+            this.imRestrictedValueSet = config.get("im_restricted_value_set").asText();
+        }
+
+        if (config.has ("im_restricted_medications_value_set")) {
+            this.imRestrictedMedicationsValueSet = config.get("im_restricted_medications_value_set").asText();
+        }
+
+        if (config.has ("active_only_include_ended_after_date")) {
+            this.activeOnlyIncludeEndedAfterDate = config.get("active_only_include_ended_after_date").asText();
+        }
+
+        if (config.has ("date_of_birth_mask")) {
+            this.dateOfBirthMask = config.get("date_of_birth_mask").asText();
+        }
+
+        if (config.has("excluded_table_columns")) {
+
+            JsonNode arrayNodes = config.get("excluded_table_columns");
+            for (JsonNode tableNode : arrayNodes) {
+
+                Iterator<Map.Entry<String, JsonNode>> iter = tableNode.fields();
+                while (iter.hasNext()) {
+                    Map.Entry<String, JsonNode> entry = iter.next();
+                    String tableName = entry.getKey();              //table name
+                    JsonNode columnNodes = entry.getValue();        //column(s) as JsonNode(s)
+                    List<String> tableColumns = new ArrayList();
+                    for (JsonNode columnNode : columnNodes) {
+                        String columnName = columnNode.asText();    //column
+                        tableColumns.add(columnName);
+                    }
+                    excludedTableColumns.put(tableName, tableColumns);
+                }
+            }
+        }
+
+        if (config.has("cohort_inclusion_snomed_concepts")) {
+
+            JsonNode arr = config.get("cohort_inclusion_snomed_concepts");
+            for (int i=0; i<arr.size(); i++) {
+                String conceptCode = arr.get(i).asText();
+                cohortInclusionSnomedConcepts.add(conceptCode);
+            }
+        }
+
         //version-specific config
         if (subscriberType == SubscriberType.CompassV1) {
 
@@ -273,8 +407,24 @@ public class SubscriberConfig {
         } else if (type.equals("gp_registered_at")) {
             return CohortType.GpRegisteredAt;
 
+        } else if (type.equals("active_only_gp_registered_at")) {
+            return CohortType.ActiveOnlyGpRegisteredAt;
+
         } else {
             throw new RuntimeException("Unsupported cohort type [" + type + "]");
+        }
+    }
+
+    private static CohortPersistence parseCohortPersistence(String persistence) {
+
+        if (persistence.equals("retain")) {
+            return CohortPersistence.Retain;
+
+        } else if (persistence.equals("remove")) {
+            return CohortPersistence.Remove;
+
+        } else {
+            throw new RuntimeException("Unsupported cohort persistence [" + persistence + "]");
         }
     }
 
@@ -309,6 +459,7 @@ public class SubscriberConfig {
         sb.append("subscriberType = [" + subscriberType + "],\r\n");
         sb.append("isPseudonymised = [" + isPseudonymised + "],\r\n");
         sb.append("cohortType = [" + cohortType + "],\r\n");
+        sb.append("cohortPersistence = [" + cohortPersistence + "],\r\n");
         sb.append("cohortGpServices = [" + cohortGpServices.size() + "],\r\n");
         sb.append("pseudoSalts = [" + pseudoSalts.size() + "],\r\n");
         sb.append("ralfSalts = [" + ralfSalts.size() + "],\r\n");
@@ -321,8 +472,10 @@ public class SubscriberConfig {
         sb.append("enterpriseServerUrl = [" + enterpriseServerUrl + "],\r\n");
         sb.append("includePatientAge = [" + includePatientAge + "],\r\n");
         sb.append("description = [" + description + "],\r\n");
-        sb.append("subscriberLocation = [" + subscriberLocation + "]");
-
+        sb.append("subscriberLocation = [" + subscriberLocation + "],\r\n");
+        sb.append("activeOnlyIncludeEndedAfterDate = [" + activeOnlyIncludeEndedAfterDate + "],\r\n");
+        sb.append("dateOfBirthMask = [" + dateOfBirthMask + "],\r\n");
+        sb.append("minPatientAgeYears = [" + minPatientAgeYears + "]");
 
         return sb.toString();
     }

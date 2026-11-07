@@ -38,6 +38,7 @@ public class OutputContainer {
         csvWriters.add(new Location(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Practitioner(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Schedule(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new ScheduleAdditional(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Patient(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new EpisodeOfCare(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Appointment(csvFormat, dateFormat, timeFormat));
@@ -45,6 +46,7 @@ public class OutputContainer {
         csvWriters.add(new EncounterEvent(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Flag(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new ReferralRequest(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new ReferralRequestAdditional(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new ProcedureRequest(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new Observation(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new MedicationStatement(csvFormat, dateFormat, timeFormat));
@@ -61,6 +63,7 @@ public class OutputContainer {
         csvWriters.add(new PatientPseudoId(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAdditional(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new PatientAddressRalf(csvFormat, dateFormat, timeFormat));
+        csvWriters.add(new AppointmentAdditional(csvFormat, dateFormat, timeFormat));
 
         csvWriters.add(new Organization_v2(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new OrganizationContact_v2(csvFormat, dateFormat, timeFormat));
@@ -70,6 +73,8 @@ public class OutputContainer {
         csvWriters.add(new Address_v2(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new UprnMatchEvent_v2(csvFormat, dateFormat, timeFormat));
         csvWriters.add(new OrganizationAdditional(csvFormat, dateFormat, timeFormat));
+
+        csvWriters.add(new OrganizationMetaData(csvFormat, dateFormat, timeFormat));
     }
 
     public byte[] writeToZip() throws Exception {
@@ -236,6 +241,9 @@ public class OutputContainer {
     public ReferralRequest getReferralRequests() {
         return findCsvWriter(ReferralRequest.class);
     }
+    public ReferralRequestAdditional getReferralRequestAdditionals() {
+        return findCsvWriter(ReferralRequestAdditional.class);
+    }
 
     public ProcedureRequest getProcedureRequests() {
         return findCsvWriter(ProcedureRequest.class);
@@ -299,6 +307,14 @@ public class OutputContainer {
         return findCsvWriter(PatientAdditional.class);
     }
 
+    public ScheduleAdditional getScheduleAdditional() {
+        return findCsvWriter(ScheduleAdditional.class);
+    }
+
+    public AppointmentAdditional getAppointmentAdditional(){
+        return findCsvWriter(AppointmentAdditional.class);
+    }
+
     public PatientAddressRalf getPatientAddressRalf() {
         return findCsvWriter(PatientAddressRalf.class);
     }
@@ -310,4 +326,6 @@ public class OutputContainer {
     public Address_v2 getAddress_v2() {return findCsvWriter(Address_v2.class);}
 
     public UprnMatchEvent_v2 getUprnMatchEvent_v2() {return findCsvWriter(UprnMatchEvent_v2.class);}
+
+    public OrganizationMetaData getOrganizationMetaData() { return findCsvWriter(OrganizationMetaData.class); }
 }

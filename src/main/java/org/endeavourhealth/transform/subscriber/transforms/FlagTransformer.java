@@ -75,15 +75,13 @@ public class FlagTransformer extends AbstractSubscriberTransformer {
                 effectiveDate,
                 datePrecisionConceptId,
                 isActive,
-                flagText);
-
-
+                flagText,
+                params);
     }
 
     @Override
     protected SubscriberTableId getMainSubscriberTableId() {
         return SubscriberTableId.FLAG;
     }
-
 
 }

@@ -98,7 +98,7 @@ public class IdHelper {
     /**
      * checks for multiple target UUIDs for a set of source IDs
      */
-     public static Map<Reference, UUID> getEdsResourceIds(UUID serviceId, Set<Reference> sourceIds) throws Exception {
+    public static Map<Reference, UUID> getEdsResourceIds(UUID serviceId, Set<Reference> sourceIds) throws Exception {
 
         Map<Reference, UUID> ret = new HashMap<>();
 
@@ -127,6 +127,64 @@ public class IdHelper {
                     ret.put(sourceReference, edsId);
 
                     String sourceReferenceValue = sourceReference.getReference();
+                    addToCache(serviceId, sourceReferenceValue, edsId);
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public static Map<Reference, UUID> getEdsResourceIds(UUID serviceId, Set<ArrayList<Reference>> sourceIds, boolean isArrayList) throws Exception {
+
+        Map<Reference, UUID> ret = new HashMap<>();
+
+        List<Reference> referencesForDb = new ArrayList<>();
+        List<ArrayList<Reference>> referencesListsForDb = new ArrayList<>();
+
+        for (ArrayList<Reference> sourceReferences: sourceIds) {
+            String sourceReferenceValue = sourceReferences.get(0).getReference();
+
+            UUID edsId = checkCache(serviceId, sourceReferenceValue);
+            if (edsId != null) {
+                ret.put(sourceReferences.get(0), edsId);
+            } else {
+                referencesForDb.add(sourceReferences.get(0));
+                referencesForDb.add(sourceReferences.get(1));
+                referencesListsForDb.add(sourceReferences);
+            }
+        }
+
+        //if we need to hit the DB for any...
+        if (!referencesForDb.isEmpty()) {
+            Map<Reference, Reference> map = repository.findEdsReferencesFromSourceReferences(serviceId, referencesForDb);
+            for (ArrayList<Reference> sourceReferences: referencesListsForDb) {
+                Reference mappedReference = null;
+                Reference edsReference = null;
+                for (Reference sourceReference: sourceReferences) {
+                    if(map.get(sourceReference) != null){
+                        mappedReference = sourceReference;
+                        edsReference = map.get(sourceReference);
+                        break;
+                    }
+                }
+                if(mappedReference != null){
+                    for (Reference sourceReference: sourceReferences) {
+                        if(!sourceReference.equals(mappedReference)){
+                            ReferenceComponents comps = ReferenceHelper.getReferenceComponents(sourceReference);
+                            ResourceType resourceType = comps.getResourceType();
+                            String sourceId = comps.getId();
+                            repository.findOrCreate(serviceId,resourceType.toString(),sourceId,UUID.fromString(ReferenceHelper.getReferenceComponents(edsReference).getId()));
+                        }
+                    }
+                }
+
+                if (edsReference != null) {
+                    String edsIdStr = ReferenceHelper.getReferenceId(edsReference);
+                    UUID edsId = UUID.fromString(edsIdStr);
+                    ret.put(sourceReferences.get(0), edsId);
+
+                    String sourceReferenceValue = sourceReferences.get(0).getReference();
                     addToCache(serviceId, sourceReferenceValue, edsId);
                 }
             }

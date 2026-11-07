@@ -16,7 +16,6 @@ import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -173,7 +172,8 @@ public class ConditionTargetTransformer {
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_SNOMED_CT);
 
             } else if (conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10) ||
-                        conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
+                        conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d) ||
+                        conditionCodeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_)) {
 
                 codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_ICD10);
 

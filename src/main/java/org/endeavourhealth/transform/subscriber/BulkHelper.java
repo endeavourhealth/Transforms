@@ -114,7 +114,7 @@ public class BulkHelper {
     public static String getSubscriberContainerForUPRNData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, String subscriberConfigName, UUID patientId) throws Exception {
 
         SubscriberConfig subscriberConfig = SubscriberConfig.readFromConfig(subscriberConfigName);
-        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, null, batchUUID, subscriberConfig, resources, false);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, null, batchUUID, subscriberConfig, resources, false, false);
 
         // Check if patient exists in target DB
         boolean patientFoundInSubscriber = checkIfPatientIsInSubscriberDatabase(params, patientId.toString());
@@ -232,7 +232,7 @@ public class BulkHelper {
     public static String getSubscriberContainerForPatientData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
 
         SubscriberConfig subscriberConfig = SubscriberConfig.readFromConfig(subscriberConfigName);
-        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, null, batchUUID, subscriberConfig, resources, false);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, null, batchUUID, subscriberConfig, resources, false, false);
 
         // Check if patient exists in target DB
         boolean patientFoundInSubscriber = checkIfPatientIsInSubscriberDatabase(params, patientId.toString());
@@ -270,7 +270,7 @@ public class BulkHelper {
     public static String getSubscriberContainerForEpisodeData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, UUID protocolUUID, String subscriberConfigName, UUID patientId) throws Exception {
 
         SubscriberConfig subscriberConfig = SubscriberConfig.readFromConfig(subscriberConfigName);
-        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, null, batchUUID, subscriberConfig, resources, false);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, null, batchUUID, subscriberConfig, resources, false, false);
 
         // Check if patient exists in target DB
         boolean patientFoundInSubscriber = checkIfPatientIsInSubscriberDatabase(params, patientId.toString());
@@ -309,7 +309,7 @@ public class BulkHelper {
     public static String getSubscriberContainerForObservationAdditionalData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, String subscriberConfigName, UUID patientId) throws Exception {
 
         SubscriberConfig subscriberConfig = SubscriberConfig.readFromConfig(subscriberConfigName);
-        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, UUID.randomUUID(), batchUUID, subscriberConfig, resources, false);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, UUID.randomUUID(), batchUUID, subscriberConfig, resources, false, false);
         params.populatePatientAndPersonIds();
 
         // Check if patient exists in target DB
@@ -347,7 +347,7 @@ public class BulkHelper {
     public static String getSubscriberContainerForConditionAdditionalData(List<ResourceWrapper> resources, UUID serviceUUID, UUID batchUUID, String subscriberConfigName, UUID patientId) throws Exception {
 
         SubscriberConfig subscriberConfig = SubscriberConfig.readFromConfig(subscriberConfigName);
-        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, UUID.randomUUID(), batchUUID, subscriberConfig, resources, false);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceUUID, null, UUID.randomUUID(), batchUUID, subscriberConfig, resources, false, false );
         params.populatePatientAndPersonIds();
 
         // Check if patient exists in target DB

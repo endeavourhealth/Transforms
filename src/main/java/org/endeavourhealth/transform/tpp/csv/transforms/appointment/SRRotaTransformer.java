@@ -4,16 +4,21 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppConfigLis
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.ScheduleBuilder;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCsvHelper;
 import org.endeavourhealth.transform.tpp.csv.helpers.cache.RotaDetailsObject;
 import org.endeavourhealth.transform.tpp.csv.schema.appointment.SRRota;
 import org.hl7.fhir.instance.model.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
 
 public class SRRotaTransformer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SRRotaTransformer.class);
 
     public static void transform(Map<Class, AbstractCsvParser> parsers,
                                  FhirResourceFiler fhirResourceFiler,
@@ -123,6 +128,27 @@ public class SRRotaTransformer {
                     scheduleBuilder.setPlanningHorizonStart(cachedStartDate);
                 }
             }
+        }
+
+        //SD-453 - got two new columns added which always seem to be -1 so just validate that's always the case
+        CsvCell specialtyCell = parser.getSpecialty();
+        if (specialtyCell != null && !TppCsvHelper.isEmptyOrNegative(specialtyCell)) {
+            //throw new Exception("Unexpected non-empty value " + specialtyCell.getString() + " in SRRota Specialty field");
+            //SD-661. Received an arbatory value of 30309 which means nothing so will only log these values out as
+            //a transform warning instead so they can be monitored instead of stopping the transform process.
+            TransformWarnings.log(LOG,
+                    csvHelper,
+                    "Unexpected non-empty value: {} in SRRota Specialty field for rotaId: {}",
+                    specialtyCell, rotaIdCell);
+        }
+        CsvCell treatmentCodeCell = parser.getTreatmentCode();
+        if (treatmentCodeCell != null && !TppCsvHelper.isEmptyOrNegative(treatmentCodeCell)) {
+            //throw new Exception("Unexpected non-empty value " + treatmentCodeCell.getString() + " in SRRota TreatmentCode field");
+            //SD-661 - Log a transform warning instead so they can be monitored instead of stopping the transform process.
+            TransformWarnings.log(LOG,
+                    csvHelper,
+                    "Unexpected non-empty value: {} in SRRota TreatmentCode field for rotaId: {}",
+                    treatmentCodeCell, rotaIdCell);
         }
 
         fhirResourceFiler.saveAdminResource(parser.getCurrentState(), scheduleBuilder);

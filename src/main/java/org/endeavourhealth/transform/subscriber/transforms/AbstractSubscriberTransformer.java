@@ -103,10 +103,44 @@ public abstract class AbstractSubscriberTransformer {
 
                 SubscriberId subscriberId = idsForMainTable.get(sourceId);
                 if (subscriberId == null) {
-                    //if we've got a null enterprise ID, then it means the ID mapper doesn't want us to do anything
-                    //with the resource (e.g. ihe resource is a duplicate instance of another Organisation that is already transformed)
-                    params.setResourceAsSkipped(resourceWrapper);
-                    continue;
+
+                    //non practitioner or orgs cannot be mapped so skip next part (continue by default)
+                    if (!resourceType.equals(ResourceType.Organization)
+                            && !resourceType.equals(ResourceType.Practitioner)) {
+
+                        //if we've got a null enterprise ID, then it means the ID mapper doesn't want us to do anything
+                        //LOG.debug("ResourceType: " + resourceType + ", resourceId: " + resourceId + ", sourceId: " +sourceId+" has NULL subscriberId, so skipping");
+                        params.setResourceAsSkipped(resourceWrapper);
+                        continue;
+
+                    } else {
+
+                        //see if this resource is mapped to another instance of the same concept (e.g. practitioner / organisation),
+                        UUID mappedResourceId
+                                = checkInstanceMapCache(params.getSubscriberConfigName(), resourceType, resourceWrapper.getResourceId());
+                        if (mappedResourceId != null) {
+
+                            //the mapped sourceId will have been cached during mapIds
+                            String mappedSourceId
+                                    = ReferenceHelper.createResourceReference(resourceType, mappedResourceId.toString());
+                            //then look for the subscriberId using the mapped sourceId
+                            subscriberId = idsForMainTable.get(mappedSourceId);
+
+                            //if we have STILL not got an Subscriber ID (mapped this time), then it means the ID mapper doesn't want us to do anything
+                            if (subscriberId == null) {
+                                //LOG.debug("ResourceType: " + resourceType + ", resourceId: " + resourceId + ", sourceId: " + sourceId + " has NULL subscriberId, so skipping");
+                                params.setResourceAsSkipped(resourceWrapper);
+                                continue;
+                            } else {
+                                //Mapped Subscriber ID found for org or practitioner, so proceed to transform
+                                //LOG.debug("Mapped ResourceType: " + resourceType + ", resourceId: " + resourceId + ", mappedResourceId: " + mappedResourceId + " has subscriberId: "+subscriberId.getSubscriberId());
+                            }
+                        } else {
+                            //org or practitioner has no ID, mapped or otherwise
+                            params.setResourceAsSkipped(resourceWrapper);
+                            continue;
+                        }
+                    }
                 }
 
                 //check to see if we've already transformed this resource in this batch already,
@@ -375,10 +409,26 @@ public abstract class AbstractSubscriberTransformer {
                 continue;
             }
 
-            //if this resource is mapped to a different instance of the same concept (e.g. it's a duplicate instance
-            //of an organisation), then we don't want to generate an ID for it
+            //if this resource is mapped to a DIFFERENT instance of the same concept (e.g. it's a duplicate instance
+            //of an organisation pr practitioner), then we don't want to generate an ID for it, but look up both
+            //mapped and main sourceIds - DDSEUS-306
             if (isResourceMappedToAnotherInstance(wrapper, params)) {
-                continue;
+
+                ResourceType resourceType = wrapper.getResourceTypeObj();
+                UUID resourceId = wrapper.getResourceId();
+
+                //check the instance mapped cache for an ID as it is mapped and different to the sourceId
+                UUID mappedResourceId
+                        = checkInstanceMapCache(params.getSubscriberConfigName(), resourceType, resourceId);
+
+                //lookup the mapped instance and use that to find the subscriberId further down the method
+                if (mappedResourceId != null) {
+
+                    String mappedSourceId
+                            = ReferenceHelper.createResourceReference(resourceType, mappedResourceId.toString());
+                    resourcesToFindOnDb.add(mappedSourceId);
+                }
+                //continue;   DDSEUS-306 - was preventing main sourceId lookup, if had mapped but no mappedSourceId
             }
 
             //if we didn't find an ID in memory, then we'll either want to simply find on the DB or find and create on the DB
@@ -431,8 +481,8 @@ public abstract class AbstractSubscriberTransformer {
         UUID resourceId = resource.getResourceId();
 
         //only orgs and practitioners are mapped to other instances
-        if (!resourceType.equals(ResourceType.Organization.toString())
-                && !resourceType.equals(ResourceType.Practitioner.toString())) {
+        if (!resourceType.equals(ResourceType.Organization)
+                && !resourceType.equals(ResourceType.Practitioner)) {
             return false;
         }
 
@@ -449,6 +499,8 @@ public abstract class AbstractSubscriberTransformer {
             }
 
             addToInstanceMapCache(params.getSubscriberConfigName(), resourceType, resourceId, mappedResourceId);
+
+            //LOG.debug("ResourceType: " + resourceType + ", resourceId: " + resourceId + " has mappedResourceId: " + mappedResourceId);
         }
 
         //if the mapped ID is different to the resource ID then it's mapped to another instance
@@ -591,10 +643,16 @@ public abstract class AbstractSubscriberTransformer {
                         Thread.sleep(1000);
                         mappedInstanceEnterpriseId = findSubscriberId(params, targetTable, mappedSourceId);
                         if (mappedInstanceEnterpriseId == null) {
-                            throw new TransformException("Failed to find subscriber ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
+                            //throw new TransformException("Failed to find subscriber ID for mapped instance " + resourceType.toString() + " " + mappedResourceId.toString() + " and original ID " + resourceId);
+                            LOG.trace("Failed to find subscriber ID for mapped instance " + resourceType + " " + mappedResourceId + " and original ID " + resourceId);
+                            //if it has reached here, the practitioner or organization has not been transformed previously
+                            //so let the process continue to transform it on demand. SD-764 - transform performance
+                            LOG.trace("Will transform on demand: "+sourceId);
                         }
+                    } else {
+
+                        return new Long(mappedInstanceEnterpriseId.getSubscriberId());
                     }
-                    return new Long(mappedInstanceEnterpriseId.getSubscriberId());
                 }
             }
 

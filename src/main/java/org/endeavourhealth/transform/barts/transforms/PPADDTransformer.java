@@ -1,6 +1,5 @@
 package org.endeavourhealth.transform.barts.transforms;
 
-import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.AddressHelper;
 import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
@@ -8,7 +7,10 @@ import org.endeavourhealth.transform.barts.BartsCodeableConceptHelper;
 import org.endeavourhealth.transform.barts.BartsCsvHelper;
 import org.endeavourhealth.transform.barts.CodeValueSet;
 import org.endeavourhealth.transform.barts.schema.PPADD;
-import org.endeavourhealth.transform.common.*;
+import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
+import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.ParserI;
 import org.endeavourhealth.transform.common.resourceBuilders.AddressBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ContactPointBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
@@ -254,6 +256,7 @@ public class PPADDTransformer {
                 || typeDesc.equalsIgnoreCase("temporary")
                 || typeDesc.equalsIgnoreCase("Prevous Address") //note the wrong spelling is in the Cerner data CVREF file
                 || typeDesc.equalsIgnoreCase("Alternate Address")
+                || typeDesc.equalsIgnoreCase("billing")
         ) {
             return null;
 
@@ -273,7 +276,8 @@ public class PPADDTransformer {
         //NOTE there are 20+ address types in CVREF, but only the types known to be used are mapped below
         if (typeDesc.equalsIgnoreCase("Birth Address")
                 || typeDesc.equalsIgnoreCase("home")
-                || typeDesc.equalsIgnoreCase("mailing")) {
+                || typeDesc.equalsIgnoreCase("mailing")
+                || typeDesc.equalsIgnoreCase("billing")) {
             return Address.AddressUse.HOME;
 
         } else if (typeDesc.equalsIgnoreCase("business")) {

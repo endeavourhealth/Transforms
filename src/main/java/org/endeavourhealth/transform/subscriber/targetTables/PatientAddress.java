@@ -2,8 +2,11 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 
+import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 public class PatientAddress extends AbstractTargetTable {
     public PatientAddress(CSVFormat csvFormat, String dateFormat, String timeFormat) throws Exception {
@@ -32,7 +35,8 @@ public class PatientAddress extends AbstractTargetTable {
                 String.class,
                 String.class,
                 String.class,
-                String.class
+                String.class,
+                BigDecimal.class
         };
     }
 
@@ -58,7 +62,8 @@ public class PatientAddress extends AbstractTargetTable {
                 "msoa_2001_code",
                 "msoa_2011_code",
                 "ward_code",
-                "local_authority_code"
+                "local_authority_code",
+                "townsend_deprivation_index"
         };
     }
 
@@ -92,7 +97,27 @@ public class PatientAddress extends AbstractTargetTable {
                             String msoa2001,
                             String msoa2011,
                             String ward,
-                            String localAuthority) throws Exception {
+                            String localAuthority,
+                            Double townsendDeprivationIndex,
+                            SubscriberTransformHelper params) throws Exception {
+
+        //get any configured excluded columns for this table
+        List<String> excludedTableColumns
+                = params.getSubscriberExcludedColumns(getTableId(), getPermittedColumnExclusions());
+        if (excludedTableColumns != null) {
+            //check each column set for exclusion and blank
+            for (String column: excludedTableColumns) {
+                switch (column) {
+                    case "postcode" : postcode = null; break;
+                    case "lsoa_2001_code" : lsoa2001 = null; break;
+                    case "lsoa_2011_code" : lsoa2011 = null; break;
+                    case "msoa_2001_code" : msoa2001 = null; break;
+                    case "msoa_2011_code" : msoa2011 = null; break;
+                    case "ward_code" : ward = null; break;
+                    default : break;
+                }
+            }
+        }
 
         super.printRecord(
                 convertBoolean(false),
@@ -114,7 +139,20 @@ public class PatientAddress extends AbstractTargetTable {
                 msoa2001,
                 msoa2011,
                 ward,
-                localAuthority
+                localAuthority,
+                convertDouble(townsendDeprivationIndex)
         );
+    }
+
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return new String[] {
+                "postcode",
+                "lsoa_2001_code",
+                "lsoa_2011_code",
+                "msoa_2001_code",
+                "msoa_2011_code",
+                "ward_code"
+        };
     }
 }

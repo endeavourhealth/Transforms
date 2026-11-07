@@ -196,7 +196,8 @@ public class SRPatientRegistrationTransformer {
             } else if (tok.equalsIgnoreCase("TEMPORARY")
                     || tok.equalsIgnoreCase("Temporary Resident < 16 days")
                     || tok.equalsIgnoreCase("Temporary Resident 16 days to 3 months")
-                    || tok.equalsIgnoreCase("Temporary Resident (telephone consultation)")) {
+                    || tok.equalsIgnoreCase("Temporary Resident (telephone consultation)")
+                    || tok.equalsIgnoreCase("Temporary - Cohort Management")) { //SD-413
                 types.add(RegistrationType.TEMPORARY);
             } else if (tok.equalsIgnoreCase("APPLIED")) {
                 types.add(RegistrationType.PRE_REGISTRATION);
@@ -214,8 +215,12 @@ public class SRPatientRegistrationTransformer {
                 types.add(RegistrationType.EMERGENCY);
             } else if (tok.equalsIgnoreCase("Other")
                     || tok.equalsIgnoreCase("Patient")
+                    || tok.equalsIgnoreCase("Online User")
                     || tok.equalsIgnoreCase("Incomplete")
-                    || tok.equalsIgnoreCase("Remotely Registered")) {
+                    || tok.equalsIgnoreCase("Remotely Registered")
+                    || tok.equalsIgnoreCase("Carer")   //SD-982
+                    || tok.equalsIgnoreCase("Prisoner")   //SD-984
+                    || tok.equalsIgnoreCase("Unknown Patient")) {
                 types.add(RegistrationType.OTHER);
 
             } else {
@@ -227,7 +232,7 @@ public class SRPatientRegistrationTransformer {
             return types.get(0);
         }
 
-        //if we have multiple reg types, choese the most significant one
+        //if we have multiple reg types, choose the most significant one
         if (types.contains(RegistrationType.REGULAR_GMS)) {
             return RegistrationType.REGULAR_GMS;
 

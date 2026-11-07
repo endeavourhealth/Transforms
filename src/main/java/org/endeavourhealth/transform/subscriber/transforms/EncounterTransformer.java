@@ -213,7 +213,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                     admissionMethod,
                     endDate,
                     institutionLocationIdStr,
-                    dateRecorded);
+                    dateRecorded,
+                    params);
 
             //we also need to populate the encounter_additional table with encounter extension data
             transformEncounterAdditionals(fhir, params, subscriberId);
@@ -252,7 +253,8 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                     endDate,
                     institutionLocationId,
                     dateRecorded,
-                    isFinished);
+                    isFinished,
+                    params);
 
             //we also need to populate the encounter_additional table with encounter extension data
             transformEncounterAdditionals(fhir, params, subscriberId);
@@ -291,32 +293,55 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                     List<Parameters.ParametersParameterComponent> entries = parameters.getParameter();
                     for (Parameters.ParametersParameterComponent parameter : entries) {
 
-                        //each parameter entry will have a key value pair of either:
-                        //  1) JSON_name plus JSON data as value
-                        //  2) IM concept plus a CodeableConcept value
+                        // each parameter entry will have a key value pair of either:
+                        //  1) TEXT_propertycode property plus TEXT data as a value
+                        //  2) JSON_propertycode property plus JSON data as value
+                        //  3) IM concept property code plus a CodeableConcept value (code and scheme)
                         if (parameter.hasName() && parameter.hasValue()) {
 
                             String propertyCode = parameter.getName();
-                            if (propertyCode.equalsIgnoreCase("Patient FIN")) {
-                                String type = parameter.getValue().getClass().getSimpleName();
-                                String code = IMConstant.FIN_CODE;
-                                if (type.equalsIgnoreCase("CodeableConcept")) {
-                                    CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
-                                    String valueCode = parameterValue.getCoding().get(0).getCode();
-                                    Integer propertyConceptDbid =
-                                            IMHelper.getIMConcept(IMConstant.DISCOVERY_CODE, code) ;
-                                    encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, Integer.parseInt(valueCode), null);
-                                }
-                            } else if (!propertyCode.startsWith("JSON_")) {
 
-                                //these values are from IM API mapping
+                            //Handle basic TEXT data entries such as FIN number
+                            if (propertyCode.startsWith("TEXT_")) {
+
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
+
+                                //get the IM concept property code
+                                propertyCode = propertyCode.replace("TEXT_", "");
+                                Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
+                                if (propertyConceptDbid == null) {
+                                    LOG.debug("Null value for propertyCode " + propertyCode);
+                                }
+                                //the value is a StringType storing the Text
+                                StringType textValue = (StringType) parameter.getValue();
+                                encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, null, null, textValue.getValue());
+
+                            } else if (propertyCode.startsWith("JSON_")) {
+
+                                //Handle JSON data entries such as CDS birth details
+                                String propertyScheme = IMConstant.DISCOVERY_CODE;
+
+                                //get the IM concept property code
+                                propertyCode = propertyCode.replace("JSON_", "");
+                                Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
+                                if (propertyConceptDbid == null) {
+                                    LOG.debug("Null value for propertyCode " + propertyCode);
+                                }
+                                //the value is a StringType storing JSON
+                                StringType jsonValue = (StringType) parameter.getValue();
+                                encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, null, jsonValue.getValue(), null);
+
+                            } else {
+                                //and finally, these values are from IM API mapping, an IM property_id and value_id pair
                                 String propertyScheme = IMConstant.DISCOVERY_CODE;
                                 String type = parameter.getValue().getClass().getSimpleName();
+
+                                //only CodeableConcept values should exist
                                 if (type.equalsIgnoreCase("CodeableConcept")) {
                                     CodeableConcept parameterValue = (CodeableConcept) parameter.getValue();
                                     String valueCode = parameterValue.getCoding().get(0).getCode();
                                     String valueScheme = parameterValue.getCoding().get(0).getSystem();
-                                    //we need to look up DBids for both
+                                    //we need to look up DBids for both property and value
                                     Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
                                     if (propertyConceptDbid == null) {
                                         LOG.debug("No property found for scheme: " + propertyScheme + ":code:" + propertyCode + ".");
@@ -326,21 +351,11 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
                                     Integer valueConceptDbid = IMHelper.getIMConcept(valueScheme, valueCode);
 
                                     //transform the IM values to the encounter_additional table upsert
-                                    encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid, null);
+                                    encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, valueConceptDbid, null, null);
                                 }
-                            } else {
-                                //Handle JSON blobs
-                                String propertyScheme = IMConstant.DISCOVERY_CODE;
-
-                                //get the IM concept code
-                                propertyCode = propertyCode.replace("JSON_", "");
-                                Integer propertyConceptDbid = IMHelper.getIMConcept(propertyScheme, propertyCode);
-                                if (propertyConceptDbid == null) {
-                                    LOG.debug("Null value for propertyCode " + propertyCode);
+                                else {
+                                    throw new Exception("Unsupported value type [" + type + "] for property code [" + propertyCode + "] and scheme " + propertyScheme);
                                 }
-                                //the value is a StringType storing JSON
-                                StringType jsonValue = (StringType) parameter.getValue();
-                                encounterAdditional.writeUpsert(subscriberId, propertyConceptDbid, null, jsonValue.getValue());
                             }
                         }
                     }
@@ -555,17 +570,7 @@ public class EncounterTransformer extends AbstractSubscriberTransformer {
         }
     }
 
-    private Date findRecordingDate(Encounter fhir) {
-        if (fhir.hasExtension()) {
-            Extension extension = ExtensionConverter.findExtension(fhir, FhirExtensionUri.RECORDED_DATE);
-            if (extension != null) {
-                DateTimeType dtt = (DateTimeType) extension.getValue();
-                return dtt.getValue();
-            }
-        }
 
-        return null;
-    }
 
     /*private void transformEncounterRaw(Long enterpriseId, Resource resource, SubscriberTransformParams params,
                                        long id, long organisationId, long patientId, long personId, long practitionerId,

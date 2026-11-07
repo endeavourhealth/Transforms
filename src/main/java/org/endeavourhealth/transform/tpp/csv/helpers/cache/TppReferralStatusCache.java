@@ -134,7 +134,12 @@ public class TppReferralStatusCache {
 
     private static String findReferralStatusDesc(CsvCell referralStatusCell) throws Exception {
         TppConfigListOption tppConfigListOption = TppCsvHelper.lookUpTppConfigListOption(referralStatusCell);
-        return tppConfigListOption.getListOptionName();
+        //SD-1012 - prevent NPE for referrals with status of -1
+        if (tppConfigListOption != null) {
+            return tppConfigListOption.getListOptionName();
+        } else {
+            return null;
+        }
     }
 
     static class ReferralStatusWrapper {

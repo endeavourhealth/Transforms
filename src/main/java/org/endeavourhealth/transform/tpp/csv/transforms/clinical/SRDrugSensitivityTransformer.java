@@ -6,6 +6,7 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.TppMultilexP
 import org.endeavourhealth.transform.common.AbstractCsvParser;
 import org.endeavourhealth.transform.common.CsvCell;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
+import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.common.resourceBuilders.AllergyIntoleranceBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.CodeableConceptBuilder;
 import org.endeavourhealth.transform.tpp.csv.helpers.TppCodingHelper;
@@ -97,6 +98,8 @@ public class SRDrugSensitivityTransformer {
 
         CsvCell endDate = parser.getDateEnded();
         if (!endDate.isEmpty()) {
+            //note, it's not possible to set a FUTURE end date on SystmOne drug sensitivities, so we don't
+            //need to worry about ones with an end date set that are still currently active
             allergyIntoleranceBuilder.setStatus(AllergyIntolerance.AllergyIntoleranceStatus.INACTIVE);
             allergyIntoleranceBuilder.setEndDate(endDate.getDate(), endDate);
 
@@ -109,7 +112,7 @@ public class SRDrugSensitivityTransformer {
 
         CodeableConceptBuilder codeableConceptBuilder = new CodeableConceptBuilder(allergyIntoleranceBuilder, CodeableConceptBuilder.Tag.Allergy_Intolerance_Main_Code);
 
-        // map multi-lex drug product code to CTV3 read for coded allergy substance
+        //map Multilex product ID to CTV3 read for coded allergy substance
         CsvCell drugCodeIdCell = parser.getIDDrugCode();
         if (!TppCsvHelper.isEmptyOrNegative(drugCodeIdCell)) {
 
@@ -120,15 +123,23 @@ public class SRDrugSensitivityTransformer {
                 String ctv3Code = lookUpMultiLexToCTV3Map.getCtv3ReadCode();
                 CsvCell ctv3CodeCell = CsvCell.factoryWithNewValue(drugCodeIdCell, ctv3Code);
                 TppCodingHelper.addCodes(codeableConceptBuilder, null, null, ctv3CodeCell, null);
+
+            } else {
+                //if we fail to look up a CTV3 code for the Multilex product ID then we essentially know nothing about the
+                //drug the patient is sensitive to, but only log this out if we also do not have the drug name (which is a new field)
+                CsvCell drugNameCell = parser.getNameOfMedication();
+                if (drugNameCell == null || drugNameCell.isEmpty()) {
+                    TransformWarnings.log(LOG, csvHelper, "TPP Multilex lookup failed for product ID {}", drugCodeIdCell);
+                }
             }
         }
 
-        // get multi-lex action group / thereputic category
+        //get Multilex action group / thereputic category
         CsvCell drugMultilexActionIdCell = parser.getIDMultiLexAction();
         if (!TppCsvHelper.isEmptyOrNegative(drugMultilexActionIdCell)) {
 
             codeableConceptBuilder.addCoding(FhirCodeUri.CODE_SYSTEM_TPP_DRUG_ACTION_GROUP);
-            codeableConceptBuilder.setCodingCode(drugMultilexActionIdCell.getString());
+            codeableConceptBuilder.setCodingCode(drugMultilexActionIdCell.getString(), drugMultilexActionIdCell);
 
             String name = csvHelper.lookUpMultilexActionGroupNameForId(drugMultilexActionIdCell);
             if (!Strings.isNullOrEmpty(name)) {
@@ -136,6 +147,12 @@ public class SRDrugSensitivityTransformer {
                 codeableConceptBuilder.setCodingDisplay(name);
                 codeableConceptBuilder.setText(name);
             }
+        }
+
+        //SD-453 - TPP have added a new column to give the actual drug name
+        CsvCell drugNameCell = parser.getNameOfMedication();
+        if (drugNameCell != null && !drugNameCell.isEmpty()) {
+            codeableConceptBuilder.setText(drugNameCell.getString(), drugNameCell);
         }
 
         // set consultation/encounter reference

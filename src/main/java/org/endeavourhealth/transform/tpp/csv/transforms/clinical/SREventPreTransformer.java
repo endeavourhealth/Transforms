@@ -1,5 +1,6 @@
 package org.endeavourhealth.transform.tpp.csv.transforms.clinical;
 
+import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.ContainedListBuilder;
@@ -90,20 +91,32 @@ public class SREventPreTransformer {
         @Override
         public Object call() throws Exception {
             try {
-
-                //carry over linked items from any previous instance of this Consultation
                 Encounter previousVersion = (Encounter)csvHelper.retrieveResource(encounterIdCell.getString(), ResourceType.Encounter);
                 if (previousVersion != null) { //if this is the first time, then we'll have a null resource
 
+                    //carry over linked items from any previous instance of this Consultation
                     EncounterBuilder encounterBuilder = new EncounterBuilder(previousVersion);
                     ContainedListBuilder containedListBuilder = new ContainedListBuilder(encounterBuilder);
 
-                    List<Reference> previousReferencesDiscoveryIds = containedListBuilder.getReferences();
+                    List<Reference> refs = containedListBuilder.getReferences();
+                    if (!refs.isEmpty()) {
+                        //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
+                        refs = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, refs);
 
-                    //the references will be mapped to Discovery UUIDs, so we need to convert them back to local IDs
-                    List<Reference> previousReferencesLocalIds = IdHelper.convertEdsReferencesToLocallyUniqueReferences(csvHelper, previousReferencesDiscoveryIds);
+                        csvHelper.cacheConsultationPreviousLinkedResources(encounterIdCell, refs);
+                    }
 
-                    csvHelper.cacheConsultationPreviousLinkedResources(encounterIdCell, previousReferencesLocalIds);
+                    //SD-472 we also need to carry over the previously saved link to FHIR Appointments from the SREventLink file
+                    //which is not present if TPP just re-bulk SREvent on its own
+                    if (previousVersion.hasAppointment()) {
+                        Reference ref = previousVersion.getAppointment();
+
+                        //reverse map the DDS UUID to the source TPP ID
+                        ref = IdHelper.convertEdsReferenceToLocallyUniqueReference(csvHelper, ref);
+                        String sourceId = ReferenceHelper.getReferenceId(ref);
+
+                        csvHelper.cacheNewEncounterAppointmentLink(encounterIdCell, sourceId, ResourceType.Appointment, CsvCell.factoryDummyWrapper(""));
+                    }
                 }
 
             } catch (Throwable t) {

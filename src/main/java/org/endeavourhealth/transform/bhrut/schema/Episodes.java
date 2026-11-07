@@ -24,6 +24,7 @@ public class Episodes extends AbstractCsvParser {
     protected String[] getCsvHeaders(String version) {
         return getHeaders(version);
     }
+
     private static String[] getHeaders(String version) {
         return new String[]{
                 "EXTERNAL_ID",

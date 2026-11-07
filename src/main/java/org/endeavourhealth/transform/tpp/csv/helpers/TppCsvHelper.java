@@ -15,12 +15,19 @@ import org.endeavourhealth.core.database.dal.publisherCommon.models.*;
 import org.endeavourhealth.core.database.dal.publisherTransform.InternalIdDalI;
 import org.endeavourhealth.core.database.dal.publisherTransform.models.InternalIdMap;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.im.models.mapping.MapColumnRequest;
+import org.endeavourhealth.im.models.mapping.MapColumnValueRequest;
+import org.endeavourhealth.im.models.mapping.MapResponse;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceList;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListNoCsvCells;
 import org.endeavourhealth.transform.common.referenceLists.ReferenceListSingleCsvCells;
+import org.endeavourhealth.transform.common.resourceBuilders.ContainedParametersBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.PatientBuilder;
 import org.endeavourhealth.transform.common.resourceBuilders.ResourceBuilderBase;
+import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
+import org.endeavourhealth.transform.tpp.TppCsvToFhirTransformer;
 import org.endeavourhealth.transform.tpp.csv.helpers.cache.*;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -41,22 +48,23 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     private static final String ALLERGIC_DISORDER = "Xa1pQ";
     private static final ParserPool PARSER_POOL = new ParserPool();
 
-    private static TppMappingRefDalI tppMappingRefDalI = DalProvider.factoryTppMappingRefDal();
-    private static TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
-    private static TppImmunisationContentDalI tppImmunisationContentDalI = DalProvider.factoryTppImmunisationContentDal();
-    private static InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
-    private static TppMultilexLookupDalI multiLexToCTV3MapDalI = DalProvider.factoryTppMultiLexDal();
-    private static TppCtv3HierarchyRefDalI ctv3HierarchyRefDalI = DalProvider.factoryTppCtv3HierarchyRefDal();
-    private static ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
+    private static final TppMappingRefDalI tppMappingRefDalI = DalProvider.factoryTppMappingRefDal();
+    private static final TppConfigListOptionDalI tppConfigListOptionDalI = DalProvider.factoryTppConfigListOptionDal();
+    private static final TppImmunisationContentDalI tppImmunisationContentDalI = DalProvider.factoryTppImmunisationContentDal();
+    private static final TppMultilexLookupDalI multiLexToCTV3MapDalI = DalProvider.factoryTppMultiLexDal();
+    private static final TppCtv3HierarchyRefDalI ctv3HierarchyRefDalI = DalProvider.factoryTppCtv3HierarchyRefDal();
+    private static final InternalIdDalI internalIdDal = DalProvider.factoryInternalIdDal();
+    private static final ResourceDalI resourceRepository = DalProvider.factoryResourceDal();
 
     //note the below are static maps so they will apply to all transforms until the app is restarted
-    private static Map<Integer, TppMappingRef> hmTppMappingRefs = new ConcurrentHashMap<>();
-    private static Map<Integer, TppConfigListOption> hmTppConfigListOptions = new ConcurrentHashMap<>();
-    private static Map<Integer, TppImmunisationContent> hmTppImmunisationContents = new ConcurrentHashMap<>();
-    private static Map<Integer, TppMultilexProductToCtv3Map> hmMultiLexProductIdToCTV3Map = new ConcurrentHashMap<>();
-    private static Map<Integer, String> hmMultilexActionGroupNames = new ConcurrentHashMap<>();
-    private static Map<StringMemorySaver, StringMemorySaver> hmInternalIdMapCache = new ConcurrentHashMap<>();
+    private static final Map<Integer, TppMappingRef> hmTppMappingRefs = new ConcurrentHashMap<>();
+    private static final Map<Integer, TppConfigListOption> hmTppConfigListOptions = new ConcurrentHashMap<>();
+    private static final Map<Integer, TppImmunisationContent> hmTppImmunisationContents = new ConcurrentHashMap<>();
+    private static final Map<Integer, TppMultilexProductToCtv3Map> hmMultiLexProductIdToCTV3Map = new ConcurrentHashMap<>();
+    private static final Map<Integer, String> hmMultilexActionGroupNames = new ConcurrentHashMap<>();
 
+    //non-static caches as these should go out of scope at the end of a transform
+    private Map<StringMemorySaver, StringMemorySaver> hmInternalIdMapCache = new ConcurrentHashMap<>(); //SD-511 this SHOULD NOT be a static cache
     private Map<Long, ReferenceList> consultationNewChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> consultationExistingChildMap = new ConcurrentHashMap<>();
     private Map<Long, ReferenceList> encounterAppointmentOrVisitMap = new ConcurrentHashMap<>();
@@ -221,26 +229,23 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return consultationNewChildMap.remove(consultationIdCell.getLong());
     }
 
+    /**
+     * caches the link between SREvent and SRAppointment, from the SREventLink file
+     */
     public void cacheNewEncounterAppointmentLink(CsvCell eventIdCell,
-                                                 String resourceGuid,
-                                                 ResourceType resourceType) {
+                                                 String sourceId,
+                                                 ResourceType resourceType,
+                                                 CsvCell sourceCell) {
 
         Long eventId = eventIdCell.getLong();
-        ReferenceList list = encounterAppointmentOrVisitMap.get(eventId);
-        if (list == null) {
-            //we know there will only be a single CsvCell so use this implementation to save memory
-            list = new ReferenceListSingleCsvCells();
-            //list = new ReferenceList();
-            encounterAppointmentOrVisitMap.put(eventId, list);
-        }
+        Reference reference = ReferenceHelper.createReference(resourceType, sourceId);
 
-        String resourceLocalUniqueId = resourceGuid;
-        Reference resourceReference = ReferenceHelper.createReference(resourceType, resourceLocalUniqueId);
-        list.add(resourceReference, eventIdCell);
+        ReferenceList list = new ReferenceListSingleCsvCells();
+        list.add(reference, sourceCell);
+        encounterAppointmentOrVisitMap.put(eventId, list);
     }
 
     public ReferenceList getAndRemoveEncounterAppointmentLink(CsvCell eventIdCell) {
-
         Long eventId = eventIdCell.getLong();
         return encounterAppointmentOrVisitMap.remove(eventId);
     }
@@ -445,7 +450,9 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         if (ret == null) {
             ret = multiLexToCTV3MapDalI.getMultilexToCtv3MapForProductId(productId.intValue());
             if (ret == null) {
-                TransformWarnings.log(LOG, this, "TPP Multilex lookup failed for product ID {}", multiLexProductIdCell);
+                //SD-315 & SD-453 - TPP have added the drug name field to the file, so although we can't map to CTV3, we can at least
+                //get a drug name. I don't think we can get any better than this, so remove this warning.
+                //TransformWarnings.log(LOG, this, "TPP Multilex lookup failed for product ID {}", multiLexProductIdCell);
                 return null;
             }
 
@@ -504,17 +511,6 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         }
     }
 
-    public void saveInternalIdsNoCache(List<InternalIdMap> mappings) throws Exception {
-
-        internalIdDal.save(mappings);
-
-        //add them to the cache
-//        for (InternalIdMap mapping : mappings) {
-//            StringMemorySaver cacheKey = new StringMemorySaver(mapping.getIdType() + "|" + mapping.getSourceId());
-//            hmInternalIdMapCache.put(cacheKey, new StringMemorySaver(mapping.getDestinationId()));
-//        }
-    }
-
     public String getInternalId(String idType, String sourceId) throws Exception {
         StringMemorySaver cacheKey = new StringMemorySaver(idType + "|" + sourceId);
         StringMemorySaver cached = hmInternalIdMapCache.get(cacheKey);
@@ -534,8 +530,12 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
     }
 
 
-
-    public String tppRelationtoFhir(String tppTerm) {
+    /**
+     * The FHIR relationship type is stored in free-text so there's no need to map it at all
+     * Also, the below is unsafe as it maps anything not matching the if.. conditions to "caregiver" which
+     * is completedly wrong.
+     */
+    /*public String tppRelationtoFhir(String tppTerm) {
         // I considered an enum but e.g. father will include step, foster, grand etc fathers
         // Notes: contains instead of equals for fiance in case they include fiancee later
         // contains(GRAND) as the only case where a xxxFATHER is not a parent
@@ -564,7 +564,7 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         } else {
             return "caregiver";
         }
-    }
+    }*/
 
 
     public StaffMemberCache getStaffMemberCache() {
@@ -732,7 +732,46 @@ public class TppCsvHelper implements HasServiceSystemAndExchangeIdI {
         return csvCell.isEmpty()
                 || csvCell.getLong().longValue() <= 0L;
     }
+    public static void addParamIfNotNull(String columnName,
+                                         String value,
+                                         CsvCell cell,
+                                         ContainedParametersBuilder parametersBuilder,
+                                         String tableName) throws Exception {
+        MapResponse propertyResponse = getProperty(columnName, tableName);
+        MapResponse valueResponse = getColumnValue(value, tableName, columnName);
+        CodeableConcept ccValue = new CodeableConcept();
+        ccValue.addCoding().setCode(valueResponse.getConcept().getCode())
+                .setSystem(valueResponse.getConcept().getScheme());
+        parametersBuilder.addParameter(propertyResponse.getConcept().getCode(), ccValue, cell);
+    }
 
+    private static MapResponse getProperty(String column,
+                                           String table) throws Exception {
+        MapColumnRequest propertyRequest = new MapColumnRequest(
+                TppCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                TppCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                null,
+                table,
+                column
+        );
+        MapResponse valueResponse = IMHelper.getIMMappedPropertyResponse(propertyRequest);
+        return valueResponse;
+    }
+
+    private static MapResponse getColumnValue(String cellString,
+                                              String tableName,
+                                              String columnName) throws Exception {
+        MapColumnValueRequest valueRequest = new MapColumnValueRequest(
+                TppCsvToFhirTransformer.IM_PROVIDER_CONCEPT_ID,
+                TppCsvToFhirTransformer.IM_SYSTEM_CONCEPT_ID,
+                null,
+                tableName,
+                columnName,
+                cellString,
+                IMConstant.TPP_LOCAL);
+
+        return IMHelper.getIMMappedPropertyValueResponse(valueRequest);
+    }
 
     public class DateAndCode {
         private DateTimeType date = null;

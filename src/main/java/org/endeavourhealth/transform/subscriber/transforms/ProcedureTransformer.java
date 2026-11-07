@@ -1,13 +1,10 @@
 package org.endeavourhealth.transform.subscriber.transforms;
 
-import org.endeavourhealth.common.fhir.CodeableConceptHelper;
 import org.endeavourhealth.common.fhir.ExtensionConverter;
 import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
-import org.endeavourhealth.transform.common.TransformWarnings;
 import org.endeavourhealth.transform.enterprise.ObservationCodeHelper;
 import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
@@ -109,11 +106,14 @@ public class ProcedureTransformer extends AbstractSubscriberTransformer {
             return;
         }
         String originalCode = originalCoding.getCode();
-
         String conceptScheme = ObservationCodeHelper.mapCodingSystemToImScheme(originalCoding);
+        String restrictVSet = params.getConfig().getImRestrictedValueSet();
+        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay(), restrictVSet);
+        if (nonCoreConceptId == null) {
+            //if no concept returned (filtered out via value set), then skip the resource
+            return;
+        }
         coreConceptId = IMHelper.getIMMappedConcept(params, fhir, conceptScheme, originalCode);
-        nonCoreConceptId = IMHelper.getIMConcept(params, fhir, conceptScheme, originalCode, originalCoding.getDisplay());
-
 
         parentObservationId = ObservationTransformer.transformParentResourceReference(fhir, params);
 
@@ -156,7 +156,8 @@ public class ProcedureTransformer extends AbstractSubscriberTransformer {
                 ageAtEvent,
                 episodicityConceptId,
                 isPrimary,
-                dateRecorded);
+                dateRecorded,
+                params);
     }
 
     @Override

@@ -13,6 +13,7 @@ import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
 import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.im.client.IMClient;
 import org.endeavourhealth.transform.common.resourceBuilders.OrganizationBuilder;
+import org.endeavourhealth.transform.emis.openhr.schema.OpenHR001Person;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
 import org.endeavourhealth.transform.subscriber.UPRN;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
@@ -205,7 +206,7 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
                 OrganisationType odsType = null;
 
                 Set<OrganisationType> types = new HashSet<>(odsOrg.getOrganisationTypes());
-                types.remove(OrganisationType.PRESCRIBING_COST_CENTRE); //always remove so we match to the "better" type
+                types.remove(OrganisationType.fromCode(OrganisationType.CODE_PRESCRIBING_COST_CENTRE)); //always remove so we match to the "better" type
                 if (types.size() == 1) {
                     odsType = types.iterator().next();
                 } else {
@@ -257,23 +258,64 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
 
             String adrec = ""; String address_line_1 = ""; String address_line_2 = ""; String address_line_3 = "";
             String city =""; String district = ""; String uprn_ralf00 = "";
+            String source ="";
+
+            List<List<String>> addr = new ArrayList<>();
             if (fhir.hasAddress()) {
-                Address address = fhir.getAddress().get(0);
-                adrec = address.getText().toString();
-                if (address.hasPostalCode()) {postcode = address.getPostalCode();}
-                if (address.hasDistrict()) {district = address.getDistrict();} // Ilford
-                if (address.hasCity()) {city = address.getCity();};
-                if (address.hasLine()) {
-                    Integer c = 1;
-                    for (StringType st: address.getLine()) {
-                        if (c.equals(1)) {address_line_1=st.toString();}
-                        if (c.equals(2)) {address_line_2=st.toString();}
-                        if (c.equals(3)) {address_line_3=st.toString();}
-                        ++c;
+                for (Address address: fhir.getAddress()) {
+                    //Address address = fhir.getAddress().get(0);
+
+                    adrec = address.getText().toString();
+                    source = address.getId(); // source (cqc or ods)
+
+                    List<String> row = new ArrayList<>();
+                    row.add(source); // 0
+
+                    if (address.hasPostalCode()) {
+                        postcode = address.getPostalCode();
+                        row.add(postcode); // 1
                     }
+                    if (address.hasDistrict()) {
+                        district = address.getDistrict();
+                        row.add(district); //2
+                    } // Ilford
+                    if (address.hasCity()) {
+                        city = address.getCity();
+                        row.add(city); // 3
+                    }
+                    ;
+                    if (address.hasLine()) {
+                        Integer c = 1;
+                        for (StringType st : address.getLine()) {
+                            if (c.equals(1)) {
+                                address_line_1 = st.toString();
+                                row.add(address_line_1);
+                            }
+                            if (c.equals(2)) {
+                                address_line_2 = st.toString();
+                                row.add(address_line_2);
+                            }
+                            if (c.equals(3)) {
+                                address_line_3 = st.toString();
+                                row.add(address_line_3);
+                            }
+                            ++c;
+                        }
+                    }
+                    addr.add(row);
                 }
             }
 
+            String cqc_address = "";
+            for(List<String> rec: addr)
+            {
+                for (int i = 0; i < addr.size(); i++) {
+                    if(!addr.get(0).equals("cqc")) continue;
+                    cqc_address = cqc_address + addr.get(i) +" ~";
+                }
+            }
+
+            // get cqc address ** TO DO get the cqc address from the string list (there should always be a cqc address)
             String csv_address = address_line_1+"~"+address_line_2+"~"+address_line_3+"~"+city+"~"+district+"~"+postcode.replaceAll(" ","");
             csv_address = csv_address.toLowerCase();
 
@@ -393,11 +435,11 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
                  */
 
                 // address_v2 (address_id)
-                sql = "SELECT id FROM address_v2 where location_id='"+location_id+"'";
-                address_id = getId(connectionWrapper, params, sql);
-                if (address_id.isEmpty()) {
-                    address_id = GetLastInsertId(configName);
-                }
+                //sql = "SELECT id FROM address_v2 where location_id='"+location_id+"'";
+                //address_id = getId(connectionWrapper, params, sql);
+                //if (address_id.isEmpty()) {
+                //    address_id = GetLastInsertId(configName);
+                //}
 
                 if (!sLatitude.isEmpty()) {
                     latitude = new BigDecimal(sLatitude);
@@ -435,16 +477,45 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
                 );
 
                 // address_v2
-                address_model_v2.writeUpsert(
-                        Long.parseLong(address_id),
-                        address_line_1,
-                        address_line_2,
-                        address_line_3,
-                        city,
-                        district,
-                        postcode,
-                        Long.parseLong(location_id)
-                );
+
+                for (Address address: fhir.getAddress()) {
+
+                    postcode=""; district=""; city=""; address_line_1=""; address_line_2=""; address_line_3="";
+                    source = address.getId();
+
+                    // address_v2 (address_id)
+                    sql = "SELECT id FROM address_v2 where location_id='"+location_id+"' and source='"+source+"'";
+                    address_id = getId(connectionWrapper, params, sql);
+                    if (address_id.isEmpty()) {
+                        address_id = GetLastInsertId(configName);
+                    }
+
+                    if (address.hasPostalCode()) postcode = address.getPostalCode();
+                    if (address.hasDistrict()) district = address.getDistrict();
+                    if (address.hasCity()) city = address.getCity();
+
+                    if (address.hasLine()) {
+                        Integer c = 1;
+                        for (StringType st : address.getLine()) {
+                            if (c.equals(1)) address_line_1 = st.toString();
+                            if (c.equals(2)) address_line_2 = st.toString();
+                            if (c.equals(3)) address_line_3 = st.toString();
+                            ++c;
+                        }
+                    }
+
+                    address_model_v2.writeUpsert(
+                            Long.parseLong(address_id),
+                            address_line_1,
+                            address_line_2,
+                            address_line_3,
+                            city,
+                            district,
+                            postcode,
+                            Long.parseLong(location_id),
+                            source
+                    );
+                }
             }
 
             // abp_address_v2
@@ -590,6 +661,9 @@ public class OrganisationTransformer_v2 extends AbstractSubscriberTransformer {
     {
         Connection connection = ConnectionManager.getSubscriberTransformConnection(configName);
         String sql = "insert into cqc_id_map(cqc_id, guid) values(?,?);";
+
+        LOG.warn(" >> "+Scheme+"~"+Code+"~"+DBID.toString());
+
         PreparedStatement preparedStmt = null;
         preparedStmt = connection.prepareStatement(sql);
         preparedStmt.setString(1,Scheme+"~"+Code);

@@ -136,7 +136,8 @@ public class DiagnosisPreTransformer {
             diagCode = snomedCode.getConceptCode();  //update the code to be an actual Snomed ConceptId
 
         } else if (vocab.equals(BartsCsvHelper.CODE_TYPE_ICD_10)
-                || vocab.equals(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
+                || vocab.equals(BartsCsvHelper.CODE_TYPE_ICD_10_d)
+                || vocab.equals(BartsCsvHelper.CODE_TYPE_ICD_10_)) {
 
             //rare occurance of ICD10 codes in Diagnosis file
             diagTerm = TerminologyService.lookupIcd10CodeDescription(diagCode);
@@ -165,8 +166,18 @@ public class DiagnosisPreTransformer {
             }
 
         } else {
-            throw new Exception("Unexpected coding scheme vocab " + vocabCell.getString());
+            //SD-548 : new unmapped code approach. Instead of throwing an exception and stopping the pipeline, log the unmapped
+            //code scheme / code as a Transform Warning for further mapping.  This will trap the newly discovered HRG vocab
+            TransformWarnings.log(LOG,
+                    csvHelper,
+                    "Unexpected coding scheme vocab: {} with code: {} for Diagnosis id: {}",
+                    vocabCell, diagCode, diagnosisIdCell);
+            return;
         }
+
+//        else {
+//            throw new Exception("Unexpected coding scheme vocab " + vocabCell.getString());
+//        }
 
         obj.setDiagCd(diagCode);
         obj.setDiagTerm(diagTerm);

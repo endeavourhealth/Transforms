@@ -266,18 +266,18 @@ public abstract class AbstractCsvParser implements AutoCloseable, ParserI {
         try {
 
             for (String possibleVersion : possibleVersions) {
-                String[] expectedHeaders = getCsvHeaders(possibleVersion);
                 try {
+                    String[] expectedHeaders = getCsvHeaders(possibleVersion);
                     CsvHelper.validateCsvHeaders(csvReader, filePath, expectedHeaders);
 
-                    //if we call the above and don't get an exception, the possible versio is valid for the headers found
+                    //if we call the above and don't get an exception, the possible version is valid for the headers found
                     ret.add(possibleVersion);
                     //LOG.trace("Valid version " + possibleVersion);
 
                 } catch (IllegalArgumentException ex) {
                     //if we get this exception, the headers don't match the possible version
-                    //LOG.trace("Not valid version " + possibleVersion + " failed for " + filePath);
-                    //LOG.error("Illegal argument exception " + ex.getMessage());
+                    LOG.error("Not valid version " + possibleVersion + " failed for " + filePath);
+                    LOG.error("Illegal argument exception " + ex.getMessage());
                 }
             }
 

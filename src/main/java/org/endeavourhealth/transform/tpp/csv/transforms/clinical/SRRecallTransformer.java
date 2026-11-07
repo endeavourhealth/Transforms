@@ -77,7 +77,7 @@ public class SRRecallTransformer {
 
         CsvCell recallDateCell = parser.getDateRecall();
         if (!recallDateCell.isEmpty()) {
-            DateTimeType dateTimeType = new DateTimeType(recallDateCell.getDate());
+            DateTimeType dateTimeType = new DateTimeType(recallDateCell.getDateTime());
             procedureRequestBuilder.setScheduledDate(dateTimeType, recallDateCell);
         }
 

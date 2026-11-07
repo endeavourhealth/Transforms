@@ -477,7 +477,8 @@ public class StaffMemberCache {
         } else if (nationalIdType.equalsIgnoreCase("NMC")) {
             return FhirIdentifierUri.IDENTIFIER_SYSTEM_NMC_NUMBER;
 
-        } else if (nationalIdType.equalsIgnoreCase("GDP ID")) { //general dental practitioner
+        } else if (nationalIdType.equalsIgnoreCase("GDP ID") //general dental practitioner
+                || nationalIdType.equalsIgnoreCase("GDC")) { // general dental council
             return FhirIdentifierUri.IDENTIFIER_SYSTEM_GDP_NUMBER;
 
         } else if (nationalIdType.equalsIgnoreCase("RPSGB")) { //royal pharmaceutical society of GB
@@ -500,6 +501,11 @@ public class StaffMemberCache {
             return null;
 
         } else if (nationalIdType.equalsIgnoreCase("Other")) {
+            return null;
+
+            //SD-722. A single staff member with a GOC type which is not supported, needs handling.
+            //second attempt.
+        } else if (nationalIdType.equalsIgnoreCase("GOC")) {
             return null;
 
         } else {

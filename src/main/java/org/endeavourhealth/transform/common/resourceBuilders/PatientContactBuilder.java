@@ -337,6 +337,33 @@ public class PatientContactBuilder implements HasNameI, HasAddressI, HasContactP
         auditValue("gender", sourceCells);
     }
 
+    public void setIsNextOfKin(boolean isNextOfKin, CsvCell... sourceCells) {
+
+        //only add the extension if the contact IS a next of kin, to avoid bloat
+        if (isNextOfKin) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_NEXT_OF_KIN, true);
+
+            int index = this.contact.getExtension().indexOf(extension);
+            auditValue("extension[" + index + "].valueBoolean", sourceCells);
+
+        } else {
+            ExtensionConverter.removeExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_NEXT_OF_KIN);
+        }
+    }
+
+    public void setIsCarer(boolean isCarer, CsvCell... sourceCells) {
+
+        //only add the extension if the contact IS a next of kin, to avoid bloat
+        if (isCarer) {
+            Extension extension = ExtensionConverter.createOrUpdateBooleanExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_CARER, true);
+
+            int index = this.contact.getExtension().indexOf(extension);
+            auditValue("extension[" + index + "].valueBoolean", sourceCells);
+
+        } else {
+            ExtensionConverter.removeExtension(this.contact, FhirExtensionUri.PATIENT_CONTACT_CARER);
+        }
+    }
 
     /**
      * removes the last added contact point if it already exists in the resource, if not will end any

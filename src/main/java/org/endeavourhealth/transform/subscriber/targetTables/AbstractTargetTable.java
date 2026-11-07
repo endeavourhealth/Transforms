@@ -17,13 +17,6 @@ public abstract class AbstractTargetTable extends AbstractCsvWriter {
     public abstract Class[] getColumnTypes();
     public abstract String[] getCsvHeaders();
     public abstract SubscriberTableId getTableId();
+    public abstract String[] getPermittedColumnExclusions();
 
-    /*protected String getEventTypeDesc(SubscriberId subscriberId) {
-        if (subscriberId.getDtUpdatedPreviouslySent() == null) {
-            return "" + EventLog.EVENT_LOG_INSERT;
-
-        } else {
-            return "" + EventLog.EVENT_LOG_UPDATE;
-        }
-    }*/
 }

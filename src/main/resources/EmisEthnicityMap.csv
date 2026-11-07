@@ -271,3 +271,24 @@ ESCTMI5,Mixed ethnic census group,G,Any other mixed background
 ^ESCTOT474034,"Other ethnic, Black/White origin",G,Any other mixed background
 ^ESCTOT474040,"Other ethnic, other mixed origin",G,Any other mixed background
 ESCTBL5-1,Black,P,Any other Black background
+916E.,Patient ethnicity unknown,,Leave blank
+^ESCTET840653,Ethnicity not stated,Z,Not stated
+^ESCTEU685309,European (ethnic group),,Leave blank
+^ESCT1551947,White: Scottish-Scotland ethnic category 2022 census,A,British
+^ESCT1551955,White: Other British-Scotland ethnic category 2022 census,A,British
+^ESCT1551959,White: Polish-Scotland ethnic category 2022 census,C,Any other White background
+^ESCT1551957,White: Irish-Scotland ethnic category 2022 census,B,Irish
+^ESCT1551961,White: Gypsy/Traveller-Scotland ethnic category 2022 census,C,Any other White background
+^ESCT1551963,White: Roma-Scotland ethnic category 2022 census,C,Any other White background
+^ESCT1551965,White: Showman/Showwoman-Scotland ethnic category 2022 census,S,Any other ethnic group
+^ESCT1551970,White: Other White ethnic group-Scotland ethnic category 2022 census,C,Any other White background
+^ESCT1551972,Mixed or multiple ethnic groups: any mixed or multiple ethnic groups-Scotland ethnic category 2022 census,G,Any other mixed background
+^ESCT1551974,"Asian, Scottish Asian or British Asian: Pakistani, Scottish Pakistani or British Pakistani-Scotland ethnic category 2022 census",J,Pakistani
+^ESCT1551976,"Asian, Scottish Asian or British Asian: Indian, Scottish Indian or British Indian-Scotland ethnic category 2022 census",H,Indian
+^ESCT1551978,"Asian, Scottish Asian or British Asian: Bangladeshi, Scottish Bangladeshi or British Bangladeshi-Scotland ethnic category 2022 census",K,Bangladeshi
+^ESCT1551980,"Asian, Scottish Asian or British Asian: Chinese, Scottish Chinese or British Chinese-Scotland ethnic category 2022 census",R,Chinese
+^ESCT1551982,"Asian, Scottish Asian or British Asian: other-Scotland ethnic category 2022 census",L,Any other Asian background
+^ESCT1551984,"African, Scottish African or British African-Scotland ethnic category 2022 census",N,African
+^ESCT1551986,Caribbean or Black-Scotland ethnic category 2022 census,M,Caribbean
+^ESCT1551988,"Other ethnic group: Arab, Scottish Arab or British Arab-Scotland ethnic category 2022 census",S,Any other ethnic group
+^ESCT1551990,Other ethnic group: Other-Scotland ethnic category 2022 census,S,Any other ethnic group

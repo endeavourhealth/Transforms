@@ -2,6 +2,7 @@ package org.endeavourhealth.transform.barts.schema;
 
 import org.endeavourhealth.transform.barts.BartsCsvToFhirTransformer;
 import org.endeavourhealth.transform.common.AbstractCsvParser;
+import org.endeavourhealth.transform.common.CsvCell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,16 @@ public class BlobContent extends AbstractCsvParser {
                 "LAST_PROCESS_DT_TM",
                 "TOTAL_UPDATES"
         };
+    }
+
+    public CsvCell getEventId() {
+        return super.getCell("EVENT_ID");
+    }
+    public CsvCell getBlobContents() {
+        return super.getCell("BLOB_CONTENTS");
+    }
+    public CsvCell getBlobClassRef() {
+        return super.getCell("BLOB_CLASS_REF");
     }
 
     @Override

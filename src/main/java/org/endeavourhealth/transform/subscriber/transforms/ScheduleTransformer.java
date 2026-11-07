@@ -6,8 +6,11 @@ import org.endeavourhealth.common.fhir.FhirExtensionUri;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
-import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.transform.subscriber.IMConstant;
+import org.endeavourhealth.transform.subscriber.IMHelper;
 import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+import org.endeavourhealth.transform.subscriber.targetTables.AppointmentAdditional;
+import org.endeavourhealth.transform.subscriber.targetTables.ScheduleAdditional;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.hl7.fhir.instance.model.*;
 import org.slf4j.Logger;
@@ -31,9 +34,13 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
     protected void transformResource(SubscriberId subscriberId, ResourceWrapper resourceWrapper, SubscriberTransformHelper params) throws Exception {
 
         org.endeavourhealth.transform.subscriber.targetTables.Schedule model = params.getOutputContainer().getSchedules();
+        ScheduleAdditional scheduleAdditional = params.getOutputContainer().getScheduleAdditional();
 
         if (resourceWrapper.isDeleted()) {
             model.writeDelete(subscriberId);
+            if (params.isIncludeScheduleAdditional()) {
+                scheduleAdditional.writeDelete(subscriberId);
+            }
             return;
         }
 
@@ -71,10 +78,13 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
             }
         }
         //in the absence of a specific named location, see if we have a location TYPE set
-        if (Strings.isNullOrEmpty(location)) {
-            StringType stringType = (StringType)ExtensionConverter.findExtensionValue(fhir, FhirExtensionUri.SCHEDULE_LOCATION_TYPE);
-            if (stringType != null) {
-                location = stringType.toString();
+        StringType locationStringType = (StringType)ExtensionConverter.findExtensionValue(fhir, FhirExtensionUri.SCHEDULE_LOCATION_TYPE);
+        if (locationStringType != null) {
+            if (Strings.isNullOrEmpty(location)) {
+
+                location = locationStringType.toString();
+            } else if(params.isIncludeScheduleAdditional()){
+                transformToScheduleAdditionals(subscriberId, fhir, scheduleAdditional, locationStringType.toString());
             }
         }
 
@@ -100,18 +110,28 @@ public class ScheduleTransformer extends AbstractSubscriberTransformer {
 
 
         model.writeUpsert(subscriberId,
-            organisationId,
-            practitionerId,
-            startDate,
-            type,
-            location,
-            name);
+                organisationId,
+                practitionerId,
+                startDate,
+                type,
+                location,
+                name,
+                params);
+    }
 
 
+    private void transformToScheduleAdditionals(SubscriberId subscriberId, Schedule fhir,
+                                                   ScheduleAdditional scheduleAdditional, String textValue) throws Exception {
+        String propertyScheme = IMConstant.DISCOVERY_CODE;
+        String propertyCode = "DM_AppointmentLocationType";
+        Integer propertyId = IMHelper.getIMConcept(propertyScheme, propertyCode);
+
+        scheduleAdditional.writeUpsert(subscriberId, propertyId, null, null, textValue);
     }
 
     @Override
     protected SubscriberTableId getMainSubscriberTableId() {
         return SubscriberTableId.SCHEDULE;
     }
+
 }

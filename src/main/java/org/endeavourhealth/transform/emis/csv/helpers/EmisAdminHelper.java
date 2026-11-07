@@ -92,7 +92,7 @@ public class EmisAdminHelper {
         createPractitioners(fhirResourceFiler, csvHelper, userIdsToTransform);
 
         //only after actually saving everything, do we flag our admin cache as applied
-        setAdminCacheApplied(csvHelper);
+        //setAdminCacheApplied(csvHelper);   //(SD-792) - no longer needed
 
         //set everything to null to free up memory and cause exceptions if accessed
         this.locationIdsChanged = null;

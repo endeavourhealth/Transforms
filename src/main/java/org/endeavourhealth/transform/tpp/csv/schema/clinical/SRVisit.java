@@ -23,11 +23,7 @@ public class SRVisit extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        if (version.equals(TppCsvToFhirTransformer.VERSION_93)
-                || version.equals(TppCsvToFhirTransformer.VERSION_90)
-                || version.equals(TppCsvToFhirTransformer.VERSION_TEST_PACK)
-                || version.equals(TppCsvToFhirTransformer.VERSION_87)
-                || version.equals(TppCsvToFhirTransformer.VERSION_89)) {
+        if (version.equals(TppCsvToFhirTransformer.VERSION_A)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -46,8 +42,7 @@ public class SRVisit extends AbstractCsvParser {
                     "IDOrganisationRegisteredAt",
                     "RemovedData"
             };
-        } else if (version.equals(TppCsvToFhirTransformer.VERSION_91)
-                || version.equals(TppCsvToFhirTransformer.VERSION_88)) {
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_B)) {
             return new String[]{
                     "RowIdentifier",
                     "IDOrganisationVisibleTo",
@@ -64,25 +59,48 @@ public class SRVisit extends AbstractCsvParser {
                     "IDOrganisation",
                     "Duration",
                     "IDOrganisationRegisteredAt"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_C)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "DateBooked",
+                    "DateRequested",
+                    "CurrentStatus",
+                    "IDProfileRequested",
+                    "IDProfileAssigned",
+                    "FollowUpDetails",
+                    "IDReferralIn",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "Duration",
+                    "IDOrganisationRegisteredAt",
+                    "IDVisitDeferredTo",   //SD-899 new column version for community delta, value always -1
+                    "RemovedData"
+            };
+        } else if (version.equals(TppCsvToFhirTransformer.VERSION_D)) {
+            return new String[]{
+                    "RowIdentifier",
+                    "IDOrganisationVisibleTo",
+                    "DateEventRecorded",
+                    "IDProfileEnteredBy",
+                    "DateBooked",
+                    "DateRequested",
+                    "CurrentStatus",
+                    "IDProfileRequested",
+                    "IDProfileAssigned",
+                    "FollowUpDetails",
+                    "IDReferralIn",
+                    "IDPatient",
+                    "IDOrganisation",
+                    "Duration",
+                    "IDOrganisationRegisteredAt",
+                    "IDVisitDeferredTo"   //SD-899 new column version for community bulk, value always -1
             };
         } else {
-            return new String[]{
-                    "RowIdentifier",
-                    "IDOrganisationVisibleTo",
-                    "DateEventRecorded",
-                    "IDProfileEnteredBy",
-                    "DateBooked",
-                    "DateRequested",
-                    "CurrentStatus",
-                    "IDProfileRequested",
-                    "IDProfileAssigned",
-                    "FollowUpDetails",
-                    "IDReferralIn",
-                    "IDPatient",
-                    "IDOrganisation",
-                    "Duration",
-                    "IDOrganisationRegisteredAt"
-            };
+            throw new IllegalArgumentException("Unsupported version " + version);
         }
     }
 
@@ -170,6 +188,10 @@ public class SRVisit extends AbstractCsvParser {
 
     public CsvCell getIDOrganisationRegisteredAt() {
         return super.getCell("IDOrganisationRegisteredAt");
+    }
+
+    public CsvCell getIDVisitDeferredTo() {
+        return super.getCell("IDVisitDeferredTo");
     }
 
     public CsvCell getRemovedData() {

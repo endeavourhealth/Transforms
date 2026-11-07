@@ -90,20 +90,27 @@ public class PMITransformer {
 
         CsvCell sex = parser.getGender();
         if (!sex.isEmpty()) {
-            int genderCode = sex.getInt();
-            switch (genderCode) {
-                case 0:
-                    patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
-                    break;
-                case 1:
-                    patientBuilder.setGender(Enumerations.AdministrativeGender.MALE, sex);
-                    break;
-                case 2:
-                    patientBuilder.setGender(Enumerations.AdministrativeGender.FEMALE, sex);
-                    break;
-                case 9:
-                    patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
-                    break;
+            if (!sex.getString().equals("X")) {
+                int genderCode = sex.getInt().intValue();
+                switch (genderCode) {
+                    case 0:
+                        patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
+                        break;
+                    case 1:
+                        patientBuilder.setGender(Enumerations.AdministrativeGender.MALE, sex);
+                        break;
+                    case 2:
+                        patientBuilder.setGender(Enumerations.AdministrativeGender.FEMALE, sex);
+                        break;
+                    case 9:
+                        patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
+                        break;
+                    default:
+                        throw new Exception("Unexpected gender value [" + genderCode + "]");
+                }
+            } else {
+                //SD-778 - if the cell is not empty and contains an "X"
+                patientBuilder.setGender(Enumerations.AdministrativeGender.UNKNOWN, sex);
             }
         }
 

@@ -150,6 +150,11 @@ public class SRReferralOutTransformer {
                     recipientServiceTypes.add(term);
                 }
             }
+            TppConfigListOption recipientServiceOffered = csvHelper.lookUpTppConfigListOption(serviceOffered);
+            if (recipientServiceOffered!=null && !Strings.isNullOrEmpty(recipientServiceOffered.getListOptionName())) {
+                String recipientString = recipientServiceOffered.getListOptionName();
+                referralRequestBuilder.setRecipientServiceOffered(recipientString, serviceOffered);
+            }
         }
 
         CsvCell referralTypeCell = parser.getTypeOfReferral();

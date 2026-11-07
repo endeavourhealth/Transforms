@@ -2,6 +2,9 @@ package org.endeavourhealth.transform.subscriber.targetTables;
 
 import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
+import org.endeavourhealth.transform.subscriber.SubscriberTransformHelper;
+
+import java.util.List;
 
 public class Location extends AbstractTargetTable {
 
@@ -20,7 +23,24 @@ public class Location extends AbstractTargetTable {
                             String typeCode,
                             String typeDesc,
                             String postcode,
-                            Long managingOrganisationId) throws Exception {
+                            Long managingOrganisationId,
+                            SubscriberTransformHelper params) throws Exception {
+
+        //get any configured excluded columns for this table
+        List<String> excludedTableColumns
+                = params.getSubscriberExcludedColumns(getTableId(), getPermittedColumnExclusions());
+        if (excludedTableColumns != null) {
+            //check each column set for exclusion and blank
+            for (String column: excludedTableColumns) {
+                switch (column) {
+                    case "name" : name = null; break;
+                    case "type_code" : typeCode = null; break;
+                    case "type_desc" : typeDesc = null; break;
+                    case "postcode" : postcode = null; break;
+                    default : break;
+                }
+            }
+        }
 
         super.printRecord(convertBoolean(false),
                 "" + subscriberId.getSubscriberId(),
@@ -63,4 +83,13 @@ public class Location extends AbstractTargetTable {
         return SubscriberTableId.LOCATION;
     }
 
+    @Override
+    public String[] getPermittedColumnExclusions() {
+        return new String[] {
+                "name",
+                "type_code",
+                "type_desc",
+                "postcode"
+        };
+    }
 }

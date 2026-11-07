@@ -146,6 +146,16 @@ public class PatientTransformer {
                 if (!types.isEmpty()) {
                     String typeStr = String.join(", ", types);
                     contactBuilder.setRelationship(typeStr);
+
+                    //SD-253 - set new extensions to record carer and next of kin
+                    String lower = typeStr.toLowerCase();
+                    if (lower.contains("carer")) {
+                        contactBuilder.setIsCarer(true);
+                    }
+                    if (lower.contains("next of kin")) {
+                        contactBuilder.setIsNextOfKin(true);
+                    }
+
                 }
             }
 

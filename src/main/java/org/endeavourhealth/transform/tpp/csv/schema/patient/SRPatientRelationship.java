@@ -285,6 +285,9 @@ public class SRPatientRelationship extends AbstractCsvParser {
         return super.getCell("PersonalGuardianOrProxy");
     }
 
+    /**
+     * possible values: true, false
+     */
     public CsvCell getNextOfKin() {
         return super.getCell("NextOfKin");
     }

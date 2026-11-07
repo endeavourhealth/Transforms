@@ -140,6 +140,17 @@ public class OutpatientsTransformer {
                     addParmIfNotNullNhsdd(BhrutCsvToFhirTransformer.IM_APPOINTMENT_STATUS_CODE, appointmentStatusCodeCell.getString(),
                             appointmentStatusCodeCell, containedParametersBuilder, BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
                 }
+                CsvCell specialityCodeCell = parser.getSpecialtyCode();
+                if (!specialityCodeCell.isEmpty()) {
+
+                    BhrutCsvHelper.addParmIfNotNullNhsdd(
+                            BhrutCsvToFhirTransformer.IM_OUTPATIENT_SPECIALTY_CODE,
+                            specialityCodeCell.getString(),
+                            specialityCodeCell,
+                            containedParametersBuilder,
+                            BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
+                }
+
 
                 //NOTE: NHS code retired so don't IM map
 //                CsvCell appointmentOutcomeCodeCell = parser.getAppointmentOutcomeCode();
@@ -153,6 +164,23 @@ public class OutpatientsTransformer {
                 //save the encounter
                 fhirResourceFiler.savePatientResource(parser.getCurrentState(), !encounterBuilder.isIdMapped(), encounterBuilder);
             }
+        }
+
+        //Need to add the Outpatient Specialty to the appointment as future dated appointments
+        //do not have an associated Encounter record. BHRUTDEV-12
+        CsvCell specialityCodeCell = parser.getSpecialtyCode();
+        if (!specialityCodeCell.isEmpty()) {
+
+            //add the appointment additional parameters
+            ContainedParametersBuilder apptContainedParametersBuilder = new ContainedParametersBuilder(appointmentBuilder);
+            apptContainedParametersBuilder.removeContainedParameters();
+
+            BhrutCsvHelper.addParmIfNotNullNhsdd(
+                    BhrutCsvToFhirTransformer.IM_OUTPATIENT_SPECIALTY_CODE,
+                    specialityCodeCell.getString(),
+                    specialityCodeCell,
+                    apptContainedParametersBuilder,
+                    BhrutCsvToFhirTransformer.IM_OUTPATIENTS_TABLE_NAME);
         }
 
         //the remaining appointment details

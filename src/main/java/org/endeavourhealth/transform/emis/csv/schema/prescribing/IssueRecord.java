@@ -15,7 +15,78 @@ public class IssueRecord extends AbstractCsvParser {
     @Override
     protected String[] getCsvHeaders(String version) {
 
-        if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
+        if (version.equals(EmisCsvToFhirTransformer.VERSION_8_0)) {
+            return new String[]{
+                    "IssueRecordGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "DrugRecordGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "CodeId",
+                    "Dosage",
+                    "Quantity",
+                    "QuantityUnit",
+                    "ProblemObservationGuid",
+                    "CourseDurationInDays",
+                    "EstimatedNhsCost",
+                    "IsConfidential",
+                    "EmisCode",
+                    "PatientMessage",
+                    "ScriptPharmacyStamp",
+                    "Compliance",
+                    "AverageCompliance",
+                    "IsPrescribedAsContraceptive",
+                    "IsPrivatelyPrescribed",
+                    "PharmacyMessage",
+                    "PharmacyText",
+                    "ConsultationGuid",
+                    "ExpiryDate",
+                    "ReviewDate",
+                    "Deleted",
+                    "ProcessingId"
+            };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_8_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)) {
+            //SD-1016 : removal of ExpiryDate column
+            return new String[]{
+                    "IssueRecordGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "DrugRecordGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "CodeId",
+                    "Dosage",
+                    "Quantity",
+                    "QuantityUnit",
+                    "ProblemObservationGuid",
+                    "CourseDurationInDays",
+                    "EstimatedNhsCost",
+                    "IsConfidential",
+                    "EmisCode",
+                    "PatientMessage",
+                    "ScriptPharmacyStamp",
+                    "Compliance",
+                    "AverageCompliance",
+                    "IsPrescribedAsContraceptive",
+                    "IsPrivatelyPrescribed",
+                    "PharmacyMessage",
+                    "PharmacyText",
+                    "ConsultationGuid",
+                    "ReviewDate",
+                    "Deleted",
+                    "ProcessingId"
+            };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_5_0)) {
             return new String[]{
                     "IssueRecordGuid",
                     "PatientGuid",
@@ -61,6 +132,65 @@ public class IssueRecord extends AbstractCsvParser {
                     "Deleted",
                     "ProcessingId"
             };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_5_5)) {
+            return new String[]{
+                    "IssueRecordGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "DrugRecordGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "CodeId",
+                    "Dosage",
+                    "Quantity",
+                    "QuantityUnit",
+                    "ProblemObservationGuid",
+                    "CourseDurationInDays",
+                    "EstimatedNhsCost",
+                    "IsConfidential",
+                    "Deleted",
+                    "ProcessingId"
+            };
+        } else if (version.equals(EmisCsvToFhirTransformer.VERSION_8_2)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_3)) {
+            return new String[]{
+                    "IssueRecordGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "DrugRecordGuid",
+                    "EffectiveDate",
+                    "EffectiveDatePrecision",
+                    "EnteredDate",
+                    "EnteredTime",
+                    "ClinicianUserInRoleGuid",
+                    "EnteredByUserInRoleGuid",
+                    "CodeId",
+                    "Dosage",
+                    "Quantity",
+                    "QuantityUnit",
+                    "ProblemObservationGuid",
+                    "CourseDurationInDays",
+                    "EstimatedNhsCost",
+                    "IsConfidential",
+                    "EmisCode",
+                    "PatientMessage",
+                    "ScriptPharmacyStamp",
+                    "Compliance",
+                    "AverageCompliance",
+                    "IsPrescribedAsContraceptive",
+                    "IsPrivatelyPrescribed",
+                    "PharmacyMessage",
+                    "PharmacyText",
+                    "ConsultationGuid",
+                    "ReviewDate",
+                    "IssueMethodDescription",
+                    "Deleted",
+                    "ProcessingId"
+            };
         } else {
             return new String[]{
                     "IssueRecordGuid",
@@ -96,24 +226,31 @@ public class IssueRecord extends AbstractCsvParser {
     public CsvCell getIssueRecordGuid() {
         return super.getCell("IssueRecordGuid");
     }
+
     public CsvCell getPatientGuid() {
         return super.getCell("PatientGuid");
     }
+
     public CsvCell getOrganisationGuid() {
         return super.getCell("OrganisationGuid");
     }
+
     public CsvCell getEffectiveDate() {
         return super.getCell("EffectiveDate");
     }
+
     public CsvCell getEffectiveDatePrecision() {
         return super.getCell("EffectiveDatePrecision");
     }
+
     public CsvCell getEnteredDate() {
         return super.getCell("EnteredDate");
     }
+
     public CsvCell getEnteredTime() {
         return super.getCell("EnteredTime");
     }
+
     public CsvCell getClinicianUserInRoleGuid() {
         CsvCell ret = super.getCell("ClinicianUserInRoleGuid");
         //special handling for handling mis-spelt column in EMIS test pack
@@ -122,42 +259,56 @@ public class IssueRecord extends AbstractCsvParser {
         }
         return ret;
     }
+
     public CsvCell getEnteredByUserInRoleGuid() {
         return super.getCell("EnteredByUserInRoleGuid");
     }
+
     public CsvCell getCodeId() {
         return super.getCell("CodeId");
     }
+
     public CsvCell getQuantity() {
         return super.getCell("Quantity");
     }
+
     public CsvCell getCourseDurationInDays() {
         return super.getCell("CourseDurationInDays");
     }
+
     public CsvCell getEstimatedNhsCost() {
         return super.getCell("EstimatedNhsCost");
     }
+
     public CsvCell getProblemObservationGuid() {
         return super.getCell("ProblemObservationGuid");
     }
+
     public CsvCell getDosage() {
         return super.getCell("Dosage");
     }
+
     public CsvCell getQuantityUnit() {
         return super.getCell("QuantityUnit");
     }
+
     public CsvCell getDrugRecordGuid() {
         return super.getCell("DrugRecordGuid");
     }
+
     public CsvCell getDeleted() {
         return super.getCell("Deleted");
     }
+
     public CsvCell getProcessingId() {
         return super.getCell("ProcessingId");
     }
+
     public CsvCell getIsConfidential() {
         return super.getCell("IsConfidential");
     }
 
-
+    public CsvCell getIssueMethodDescription() {
+        return super.getCell("IssueMethodDescription");
+    }
 }

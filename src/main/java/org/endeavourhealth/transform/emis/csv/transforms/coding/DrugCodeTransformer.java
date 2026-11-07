@@ -30,11 +30,22 @@ public class DrugCodeTransformer {
         DrugCode parser = (DrugCode)parsers.get(DrugCode.class);
         if (parser != null) {
 
-            //bulk load the file into the DB
-            String filePath = parser.getFilePath();
-            Date dataDate = fhirResourceFiler.getDataDate();
             EmisCodeDalI dal = DalProvider.factoryEmisCodeDal();
-            dal.updateDrugCodeTable(filePath, dataDate);
+            Date lastUpdated = dal.getMostRecentDrugCodeDate();
+            Date dataDate = fhirResourceFiler.getDataDate();
+            //SD-480 only update the table if our file is newer than what's in there
+            if (lastUpdated == null
+                    || dataDate.after(lastUpdated)) {
+
+                //bulk load the file into the DB
+                String filePath = parser.getFilePath();
+                dal.updateDrugCodeTable(filePath, dataDate);
+
+            } else {
+                LOG.trace("Not updating drug code table as table last updated " + lastUpdated + " and current file is from " + dataDate);
+            }
+
+
 
             //Retrieve the full code list from the error table where dt_fixed is null
             Set<Long> missingDrugCodes = csvHelper.retrieveMissingCodes(EmisCodeType.DRUG_CODE);

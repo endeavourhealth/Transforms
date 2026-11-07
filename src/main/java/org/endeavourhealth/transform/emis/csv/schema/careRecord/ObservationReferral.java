@@ -15,28 +15,58 @@ public class ObservationReferral extends AbstractCsvParser {
 
     @Override
     protected String[] getCsvHeaders(String version) {
-        return new String[]{
-                "ObservationGuid",
-                "PatientGuid",
-                "OrganisationGuid",
-                "ReferralTargetOrganisationGuid",
-                "ReferralUrgency",
-                "ReferralServiceType",
-                "ReferralMode",
-                "ReferralReceivedDate",
-                "ReferralReceivedTime",
-                "ReferralEndDate",
-                "ReferralSourceId",
-                "ReferralSourceOrganisationGuid",
-                "ReferralUBRN",
-                "ReferralReasonCodeId",
-                "ReferringCareProfessionalStaffGroupCodeId",
-                "ReferralEpisodeRTTMeasurementTypeId",
-                "ReferralEpisodeClosureDate",
-                "ReferralEpisodeDischargeLetterIssuedDate",
-                "ReferralClosureReasonCodeId",
-                "ProcessingId"
-        };
+        if(version.equals(EmisCsvToFhirTransformer.VERSION_8_0)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_0_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_1)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_2)
+                || version.equals(EmisCsvToFhirTransformer.VERSION_8_3)){
+            return new String[]{
+                    "ObservationGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "ReferralTargetOrganisationGuid",
+                    "ReferralUrgency",
+                    "ReferralServiceType",
+                    "ReferralMode",
+                    "ReferralReceivedDate",
+                    "ReferralReceivedTime",
+                    "ReferralEndDate",
+                    "ReferralSourceId",
+                    "ReferralSourceOrganisationGuid",
+                    "ReferralUBRN",
+                    "ReferralReasonCodeId",
+                    "ReferringCareProfessionalStaffGroupCodeId",
+                    "ReferralEpisodeRTTMeasurementTypeId",
+                    "ReferralEpisodeClosureDate",
+                    "ReferralEpisodeDischargeLetterIssuedDate",
+                    "ReferralClosureReasonCodeId",
+                    "TransportRequired",
+                    "ProcessingId"
+            };
+        } else {
+            return new String[]{
+                    "ObservationGuid",
+                    "PatientGuid",
+                    "OrganisationGuid",
+                    "ReferralTargetOrganisationGuid",
+                    "ReferralUrgency",
+                    "ReferralServiceType",
+                    "ReferralMode",
+                    "ReferralReceivedDate",
+                    "ReferralReceivedTime",
+                    "ReferralEndDate",
+                    "ReferralSourceId",
+                    "ReferralSourceOrganisationGuid",
+                    "ReferralUBRN",
+                    "ReferralReasonCodeId",
+                    "ReferringCareProfessionalStaffGroupCodeId",
+                    "ReferralEpisodeRTTMeasurementTypeId",
+                    "ReferralEpisodeClosureDate",
+                    "ReferralEpisodeDischargeLetterIssuedDate",
+                    "ReferralClosureReasonCodeId",
+                    "ProcessingId"
+            };
+        }
     }
 
     @Override
@@ -100,6 +130,9 @@ public class ObservationReferral extends AbstractCsvParser {
     }
     public CsvCell getReferralClosureReasonCodeId() {
         return super.getCell("ReferralClosureReasonCodeId");
+    }
+    public CsvCell getTransportRequired(){
+        return super.getCell("TransportRequired");
     }
     public CsvCell getProcessingId() {
         return super.getCell("ProcessingId");

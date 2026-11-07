@@ -143,7 +143,16 @@ public class DrugRecordTransformer {
                 if (mostRecentIssueDate == null) {
                     //if we don't have a new last issue date, we'll have pre-cached the existing one from our pre-transformer
                     IssueRecordIssueDate existingIssueDate = csvHelper.getExistingDrugRecordLastIssueDate(drugRecordGuid, patientGuid);
-                    inferredEndDate = calculateEndDate(existingIssueDate);
+                    if (existingIssueDate == null) {
+                        //on rare occasions (once as part of SD-657), two drugRecordGuid appear in the file with a single
+                        //issue record link leading to null values extracted from the caches for the first record's issue.
+                        //Therefore do not attempt to calculate the EndDate using a NULL data for the second record and
+                        //let the cancellationDate get set as NULL.
+                        LOG.debug("NULL existingIssueDate, firstIssueDate and mostRecentIssueDate cached values found for drugRecordGuid: "+drugRecordGuid+" and patientGuid: "+patientGuid);
+                        LOG.debug("Unable to calculate drug end date for cancellation so setting as NULL for drugRecordGuid: "+drugRecordGuid);
+                    } else {
+                        inferredEndDate = calculateEndDate(existingIssueDate);
+                    }
 
                 } else {
                     inferredEndDate = calculateEndDate(mostRecentIssueDate);

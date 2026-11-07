@@ -176,6 +176,7 @@ public class VisionCodeHelper {
             }
 
         } else if (code.length() == 7) {
+
             //the vast majority of codes are seven-characters, with a five-letter Read2 code (or local code) and
             //then a two-digit term code
             String prefix = code.substring(0, 5);
@@ -183,6 +184,12 @@ public class VisionCodeHelper {
                 //if the first five characters are a true Read2 code, then use that as the code
                 return prefix;
             } else {
+
+                //SD-414 - got new bad data from Vision
+                if (code.equalsIgnoreCase("Invitat")) {
+                    return code;
+                }
+
                 //if not a true Read2 code then validate that the last two digits are a numeric term code
                 String suffix = code.substring(5);
                 try {

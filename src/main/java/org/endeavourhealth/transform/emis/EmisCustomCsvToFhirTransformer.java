@@ -74,10 +74,9 @@ public class EmisCustomCsvToFhirTransformer {
                 }
 
             } finally {
-                try {
+
+                if (parser != null) {
                     parser.close();
-                } catch (IOException ex) {
-                    //don't worry if this fails, as we're done anyway
                 }
             }
         }

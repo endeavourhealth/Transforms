@@ -146,7 +146,8 @@ public class DIAGNPreTransformer {
 
             String diagnosisTerm;
             if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10) ||
-                    codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d)) {
+                    codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_d) ||
+                    codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_ICD_10_)) {
                 diagnosisTerm = TerminologyService.lookupIcd10CodeDescription(codeId);
                 if (Strings.isNullOrEmpty(diagnosisTerm)) {
                     throw new Exception("Failed to find term for ICD10 code " + codeId);
@@ -168,7 +169,14 @@ public class DIAGNPreTransformer {
                 TransformWarnings.log(LOG, csvHelper, "DIAGN record {} has HRG code in concept cell {}", diagnosisIdCell, conceptCell);
                 return;
 
-            } else  if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
+            } else if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_CERNER)) {
+
+                // SD-763: single CERNER code discovered with NKP as code. Not much we can do with it but
+                // log as a warning and return out
+                TransformWarnings.log(LOG, csvHelper, "DIAGN record {} has CERNER code in concept cell {}", diagnosisIdCell, conceptCell);
+                return;
+            }
+            else  if (codeType.equalsIgnoreCase(BartsCsvHelper.CODE_TYPE_OPCS_4)) {
 
                 //OPCS4 codes have been detected in Barts Problem files, so checking here also
                 diagnosisTerm = TerminologyService.lookupOpcs4ProcedureName(codeId);

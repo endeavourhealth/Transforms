@@ -1,15 +1,11 @@
 package org.endeavourhealth.transform.emis.csv.transforms.admin;
 
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.fhir.FhirIdentifierUri;
 import org.endeavourhealth.common.fhir.NameHelper;
-import org.endeavourhealth.common.fhir.PeriodHelper;
 import org.endeavourhealth.common.fhir.schema.NhsNumberVerificationStatus;
 import org.endeavourhealth.common.fhir.schema.RegistrationType;
-import org.endeavourhealth.core.database.dal.DalProvider;
-import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
-import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
 import org.endeavourhealth.core.database.dal.publisherCommon.models.EmisClinicalCode;
-import org.endeavourhealth.core.fhirStorage.FhirSerializationHelper;
 import org.endeavourhealth.transform.common.*;
 import org.endeavourhealth.transform.common.resourceBuilders.*;
 import org.endeavourhealth.transform.emis.EmisCsvToFhirTransformer;
@@ -25,7 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.crypto.dsig.TransformException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 public class PatientTransformer {
 
@@ -344,7 +343,22 @@ public class PatientTransformer {
             nameBuilder.setUse(HumanName.NameUse.OFFICIAL);
             nameBuilder.addPrefix(titleCell.getString(), titleCell);
             nameBuilder.addGiven(givenNameCell.getString(), givenNameCell);
-            nameBuilder.addGiven(middleNamesCell.getString(), middleNamesCell);
+
+            //https://endeavourhealth.atlassian.net/browse/SD-637
+            String middleNames = middleNamesCell.getString();
+            if (!Strings.isNullOrEmpty(middleNames)) {
+                if (middleNames.length() > 255) {
+
+                    String givenName = givenNameCell.getString();
+                    if (!Strings.isNullOrEmpty(givenName)) {
+                        //to accommodate the 255 total length of target first_names including a single space
+                        middleNames = middleNames.substring(0, 255 - givenName.length() - 1);
+                    } else {
+                        middleNames = middleNames.substring(0, 255);  //v rare but need to check
+                    }
+                }
+            }
+            nameBuilder.addGiven(middleNames, middleNamesCell);
             nameBuilder.addFamily(surnameCell.getString(), surnameCell);
 
             //make sure to de-duplicate the name if we've just added a new instance with the same value
@@ -426,6 +440,9 @@ public class PatientTransformer {
 
             String typeStr = String.join(", ", relationshipTypes);
             contactBuilder.setRelationship(typeStr, carerRelationshipCell);
+
+            //the fields are specific for recording carers, so this is implicitly true
+            contactBuilder.setIsCarer(true, carerNameCell);
 
             //make sure to de-duplicate the name if we've just added a new instance with the same value
             PatientContactBuilder.deDuplicateLastPatientContact(patientBuilder, fhirResourceFiler.getDataDate());

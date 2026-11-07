@@ -6,6 +6,9 @@ import org.endeavourhealth.common.fhir.ReferenceHelper;
 import org.endeavourhealth.common.utility.ThreadPool;
 import org.endeavourhealth.common.utility.ThreadPoolError;
 import org.endeavourhealth.core.database.dal.DalProvider;
+import org.endeavourhealth.core.database.dal.admin.LibraryRepositoryHelper;
+import org.endeavourhealth.core.database.dal.audit.LastDataDalI;
+import org.endeavourhealth.core.database.dal.audit.models.LastDataReceived;
 import org.endeavourhealth.core.database.dal.eds.PatientLinkDalI;
 import org.endeavourhealth.core.database.dal.ehr.ResourceDalI;
 import org.endeavourhealth.core.database.dal.ehr.models.ResourceWrapper;
@@ -14,10 +17,12 @@ import org.endeavourhealth.core.database.dal.subscriberTransform.SubscriberOrgMa
 import org.endeavourhealth.core.database.dal.subscriberTransform.models.SubscriberId;
 import org.endeavourhealth.core.exceptions.TransformException;
 import org.endeavourhealth.core.fhirStorage.FhirResourceHelper;
+import org.endeavourhealth.core.xml.QueryDocument.LibraryItem;
 import org.endeavourhealth.transform.common.FhirResourceFiler;
 import org.endeavourhealth.transform.common.FhirToXTransformerBase;
 import org.endeavourhealth.transform.common.IdHelper;
 import org.endeavourhealth.transform.common.exceptions.PatientResourceException;
+import org.endeavourhealth.transform.subscriber.targetTables.Organization;
 import org.endeavourhealth.transform.subscriber.targetTables.OutputContainer;
 import org.endeavourhealth.transform.subscriber.targetTables.SubscriberTableId;
 import org.endeavourhealth.transform.subscriber.transforms.*;
@@ -27,10 +32,7 @@ import org.hl7.fhir.instance.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
@@ -44,13 +46,22 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
                                            UUID batchId,
                                            List<ResourceWrapper> resources,
                                            SubscriberConfig subscriberConfig,
-                                           boolean isBulkDeleteFromSubscriber) throws Exception {
+                                           boolean isBulkDeleteFromSubscriber,
+                                           boolean isLastExchangeMessage) throws Exception {
 
         LOG.info("Transforming batch " + batchId + " and " + resources.size() + " resources for service " + serviceId + " -> " + subscriberConfig.getSubscriberConfigName());
 
         validateResources(resources);
 
-        SubscriberTransformHelper params = new SubscriberTransformHelper(serviceId, systemId, exchangeId, batchId, subscriberConfig, resources, isBulkDeleteFromSubscriber);
+        SubscriberTransformHelper params = new SubscriberTransformHelper(
+                serviceId,
+                systemId,
+                exchangeId,
+                batchId,
+                subscriberConfig,
+                resources,
+                isBulkDeleteFromSubscriber,
+                isLastExchangeMessage);
 
         Long enterpriseOrgId = findEnterpriseOrgId(serviceId, params, resources);
         params.setSubscriberOrganisationId(enterpriseOrgId);
@@ -85,6 +96,25 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
         }
     }
 
+    /**
+     * generates an empty payload that still counts as valid for this subscriber type but doesn't actually do anything
+     */
+    public static String createEmptyPayload() throws Exception {
+        OutputContainer data = new OutputContainer();
+
+        //the Remote Filer must have some transaction to process, otherwise it will regard
+        //the payload as in error, so the safest thing to send is a delete for a record we know cannot be there
+        Organization writer = data.getOrganisations();
+        SubscriberId id = new SubscriberId(SubscriberTableId.ORGANIZATION.getId(), 0L, null);
+        writer.writeDelete(id);
+
+        byte[] bytes = data.writeToZip();
+        if (bytes == null) {
+            //although we're trying to create an empty payload, it shouldn't actually be empty
+            throw new Exception("Not expecting null bytes");
+        }
+        return Base64.getEncoder().encodeToString(bytes);
+    }
 
     /**
      * performs validation on the resources to make sure everything is as expected
@@ -294,6 +324,8 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             transformResources(ResourceType.Slot, threadPool, params);
             transformResources(ResourceType.QuestionnaireResponse, threadPool, params);
 
+            transformOrganizationMetaData(params);
+
         } finally {
 
             //close the thread pool
@@ -355,10 +387,38 @@ public class FhirToSubscriberCsvTransformer extends FhirToXTransformerBase {
             //slots are handled in the appointment transformer, so have no dedicated one
             return null;
         } else if (resourceType == ResourceType.QuestionnaireResponse) {
-            //no target table for questionnaire reponse
+            //no target table for questionnaire response
             return null;
         } else {
             throw new TransformException("Unhandled resource type " + resourceType);
+        }
+    }
+
+    private static void transformOrganizationMetaData(SubscriberTransformHelper params) throws Exception {
+
+        //if it's the last message in the exchange and meta data is enabled, populate the organization_metadata table
+        //with the details of the publishing organisation service's software system, last data received and cut off date
+        if (params.isLastExchangeMessage() && params.isIncludePublisherMetaData()) {
+
+            //get details for the last data received for this organisation service
+            LastDataDalI dal = DalProvider.factoryLastDataDal();
+            List<LastDataReceived> lastDataReceivedList = dal.getLastDataReceived(params.getServiceId());
+            //an organisation may have moved to/from other systems. we are only interested in the latest one
+            int latestSystemDataIndex = lastDataReceivedList.size()-1;
+            LastDataReceived lastDataReceived = lastDataReceivedList.get(latestSystemDataIndex);
+            UUID systemId = lastDataReceived.getSystemId();
+
+            LibraryItem libraryItem = LibraryRepositoryHelper.getLibraryItemUsingCache(systemId);
+            String publishingSoftware = libraryItem.getName();
+            Date lastReceivedDDSData = lastDataReceived.getReceivedDate();
+            Date lastReceivedCutoff = lastDataReceived.getExtractCutoff();
+
+            //get the transformed subscriberId for the publishing organisation
+            long subscriberOrganizationId = params.getSubscriberOrganisationId();
+
+            org.endeavourhealth.transform.subscriber.targetTables.OrganizationMetaData model
+                    = params.getOutputContainer().getOrganizationMetaData();
+            model.writeUpsert(subscriberOrganizationId, publishingSoftware, lastReceivedDDSData, lastReceivedCutoff);
         }
     }
 
